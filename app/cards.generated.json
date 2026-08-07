@@ -1,0 +1,4221 @@
+[
+  {
+    "page": 2,
+    "id": "p2",
+    "name": "Gimble, Presenteado Sortudo",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Controle criaturas do tipo Dragão para poder upar 2 Dragões → Nível 2 de nivel                      4 Dragões → Nível 3 Quando uma Criatura da classe Dragão deixa o campo, cure 1 de vida.                            I Uma vez por turno, voce pode desvirar uma II     Criatura da classe Dragão no seu campo de batalha. No inicio da sua fase de manutenção, suas Criaturas da classe Dragão em campo recebem um marcador +1/+1.                      III",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/002",
+    "hero": true,
+    "imageCard": false
+  },
+  {
+    "page": 3,
+    "id": "p3",
+    "name": "Valorian, o pseudodragão",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Voar. Ascenção 10: Procure por um \"Valorian, o Dragão Verdadeiro\" em sua mão ou deck e coloque-o campo no lugar de Valorian, o pseudodragão.",
+    "tags": [
+      "Voar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/003",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 4,
+    "id": "p4",
+    "name": "Dr.Elizabeth",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Primeiro Ato: Procure por uma carta da classe Dragão no seu deck.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/004",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 5,
+    "id": "p5",
+    "name": "Wyvern",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 2,
+    "text": "Voar. Indomavel. Quando essa carta causar dano de combate, cause 1 de dano as criaturas adjacentes a criatura defensora.",
+    "tags": [
+      "Voar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/005",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 6,
+    "id": "p6",
+    "name": "Smallgui",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 2,
+    "hp": 3,
+    "text": "Primeiro Ato: Pode causar 2 de dano a uma criatura a escolha.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/006",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 7,
+    "id": "p7",
+    "name": "Xarqiroth",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 2,
+    "hp": 4,
+    "text": "Primeiro Ato: Compre 2 carta se você controlar outra criatura da classe Dragão.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/007",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 8,
+    "id": "p8",
+    "name": "Breathker",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 3,
+    "hp": 4,
+    "text": "Voar. Suporte: +0/+1.",
+    "tags": [
+      "Voar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/008",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 9,
+    "id": "p9",
+    "name": "Dancadon",
+    "type": "Criatura",
+    "cost": 5,
+    "atk": 4,
+    "hp": 4,
+    "text": "Uma vez por turno, quando uma criatura da classe Dragão aliado sofreria dano letal, ele permanece com 1 de vida.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/009",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 10,
+    "id": "p10",
+    "name": "Dragão de Limo",
+    "type": "Criatura",
+    "cost": 5,
+    "atk": 4,
+    "hp": 1,
+    "text": "Atropelar. Ultimo Suspiro: Explode em acido, causando 2 de dano a todas as criaturas em campo.",
+    "tags": [
+      "Atropelar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/010",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 11,
+    "id": "p11",
+    "name": "Valorian, o Dragão Verdadeiro",
+    "type": "Criatura",
+    "cost": 7,
+    "atk": 7,
+    "hp": 7,
+    "text": "Voar. Sempre que uma criatura da classe Dragão entra em campo, cause 2 de dano ao herói inimigo.",
+    "tags": [
+      "Voar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/011",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 12,
+    "id": "p12",
+    "name": "Ilusão Dracônica Menor",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Coloque em campo uma imagem de Dragão Filhote.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/012",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 13,
+    "id": "p13",
+    "name": "Ilusão Dracônica",
+    "type": "Feitiço",
+    "cost": 4,
+    "text": "Coloque em campo uma imagem de Dragão Jovem. Se voce possui um Dragão Filhote em campo, reduza o custo para jogar esta carta em 2 e substitua o Dragão Filhote pelo Dragão Jovem.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/013",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 14,
+    "id": "p14",
+    "name": "Ilusão Dracônica Maior",
+    "type": "Feitiço",
+    "cost": 6,
+    "text": "Coloque em campo uma imagem de Dragão Ancião. Se voce possui um Dragão Jovem em campo, reduza o custo para jogar esta carta em 3 e substitua o Dragão Jovem pelo Dragão Ancião.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/014",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 15,
+    "id": "p15",
+    "name": "Sabedoria Ancestral",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Se você controlar uma carta da classe Dragão, compre 2 cartas. Caso contrário, compre 1.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/015",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 16,
+    "id": "p16",
+    "name": "Escama Protetora",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Uma criatura da classe Dragão recebe +0/+2 durante este turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/016",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 17,
+    "id": "p17",
+    "name": "Investida Alada",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Um criatura da classe Dragão desvirado pode atacar imediatamente uma criatura alvo a escolha.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/017",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 18,
+    "id": "p18",
+    "name": "Bater as Asas",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Retorne uma criatura da classe Dragão alvo para sua mão.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/018",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 19,
+    "id": "p19",
+    "name": "Coração de Rubi",
+    "type": "Artefato",
+    "cost": 3,
+    "text": "A criatura vinculada recebe +0/+2 e caso seja da classe Dragão, recebe também Defensor.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/019",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 20,
+    "id": "p20",
+    "name": "Anel de Esmeralda",
+    "type": "Artefato",
+    "cost": 2,
+    "text": "Vire: Destrua este artefato e depois aumente seu limite de energia maximo em 1.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/020",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 21,
+    "id": "p21",
+    "name": "Garras do Leviatã",
+    "type": "Artefato",
+    "cost": 2,
+    "text": "A criatura vinculada recebe Voar, e caso seja da classe Dragão, recebe +2/+0.",
+    "tags": [
+      "Voar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/021",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 22,
+    "id": "p22",
+    "name": "Alpes Dracônicos",
+    "type": "Terreno",
+    "cost": 4,
+    "text": "Sempre que uma criatura não imagem da classe Dragão morrer, crie uma imagem de Dragão Filhote.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/022",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 23,
+    "id": "p23",
+    "name": "Dragão Filhote",
+    "type": "Criatura",
+    "cost": 0,
+    "atk": 2,
+    "hp": 1,
+    "text": "Primeiro Ato: Pode causar 1 de dano a uma criatura.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/023",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 24,
+    "id": "p24",
+    "name": "Dragão Jovem",
+    "type": "Criatura",
+    "cost": 0,
+    "atk": 4,
+    "hp": 2,
+    "text": "Voar. Primeiro Ato: Pode causar 3 de dano a uma criatura e 1 de dano as criaturas adjacentes ao alvo.",
+    "tags": [
+      "Voar",
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/024",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 25,
+    "id": "p25",
+    "name": "Dragão Ancião",
+    "type": "Criatura",
+    "cost": 0,
+    "atk": 6,
+    "hp": 3,
+    "text": "Voar. Primeiro Ato: Pode causar 5 de dano a uma criatura e 2 de dano as criaturas adjacentes ao alvo.",
+    "tags": [
+      "Voar",
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/025",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 26,
+    "id": "p26",
+    "name": "Sr. Goblin, o Mercador de Bugigangas",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Jogue várias cartas em um só turno para subir de 3 cartas → Nível 2 nível!                         5 cartas → Nível 3 Quando um Goblin deixar o campo, compre 1. (Limite de 1 vez por turno)                          I Você compra 1 carta adicional na sua etapa II      de manutenção. Seu primeiro Goblin a ser invocado no turno, custa 0.                                            III",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/026",
+    "hero": true,
+    "imageCard": false
+  },
+  {
+    "page": 27,
+    "id": "p27",
+    "name": "BURRO DE CARGA",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Primeiro Ato: Sua próxima carta neste turno custa 1 a menos de energia.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/027",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 28,
+    "id": "p28",
+    "name": "TIRA DENTES",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 1,
+    "text": "Primeiro Ato: Retorne uma carta de custo 3 ou menos para mão de seu dono.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/028",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 29,
+    "id": "p29",
+    "name": "CARRETA FURACÃO",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Fura-fila: Recebe Investida e +1 de Ofensividade.",
+    "tags": [
+      "Investida",
+      "Fura-fila"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/029",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 30,
+    "id": "p30",
+    "name": "BIRIBA, O FOLGADO",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 1,
+    "hp": 1,
+    "text": "Fura-fila: Recebe +1/+1 para cada carta que você jogou neste turno.",
+    "tags": [
+      "Fura-fila"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/030",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 31,
+    "id": "p31",
+    "name": "BOMBARDEIRO MALUCO",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 1,
+    "text": "Fura-fila: Cause 2 de dano a um alvo.",
+    "tags": [
+      "Fura-fila"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/031",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 32,
+    "id": "p32",
+    "name": "ZOIUDO, O LARÁPIO",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 3,
+    "hp": 2,
+    "text": "Veloz. Fura-fila: Destrua uma criatura de custo máximo X. X é o número de cartas que você jogou neste turno.",
+    "tags": [
+      "Veloz",
+      "Fura-fila"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/032",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 33,
+    "id": "p33",
+    "name": "FUSCÃO, O AGIOTA",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 2,
+    "hp": 3,
+    "text": "Sempre que você jogar 1 carta com Fura-fila, compre 1 carta.",
+    "tags": [
+      "Fura-fila"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/033",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 34,
+    "id": "p34",
+    "name": "BAFO DE FUMAÇA",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 1,
+    "text": "Primeiro Ato: Cause 1 de dano a uma criatura. Se ela morrer, repita este efeito.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/034",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 35,
+    "id": "p35",
+    "name": "BOMBARDEIRO GENTE BOA",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Sempre que você invocar um Goblin, ative o seguinte efeito: Cause 1 de dano a um alvo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/035",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 36,
+    "id": "p36",
+    "name": "CHAMINÉ, O MAFIOSO",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 1,
+    "text": "Primeiro Ato: Procure 1 carta “Suborno” no seu cemitério e coloque-a na sua mão. Fura-fila: Apenas neste turno recebe o Último Suspiro: Retorne esta carta para sua mão.",
+    "tags": [
+      "Fura-fila",
+      "Primeiro Ato",
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/036",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 37,
+    "id": "p37",
+    "name": "BUCHA DE CANHÃO",
+    "type": "Encanto",
+    "cost": 0,
+    "text": "No seu turno, você pode destruir um Goblin aliado e aplicar o seguinte efeito: Cause dano igual à ofensividade do Goblin a um alvo. (Limite de 1 uso por turno)",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/037",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 38,
+    "id": "p38",
+    "name": "TRAMBUCO DO PIPOCO",
+    "type": "Artefato",
+    "cost": 0,
+    "text": "No seu turno, você pode equipar este artefato em qualquer Goblin à sua escolha. Ele recebe Veloz e +2 de Ofensividade. Se o Goblin equipado for destruído, você pode pagar 2 de energia para equipar este artefato em outro Goblin.",
+    "tags": [
+      "Veloz"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/038",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 39,
+    "id": "p39",
+    "name": "CARCAÇA CHUMBADA DE TANQUE",
+    "type": "Encanto",
+    "cost": 0,
+    "text": "No seu turno, sempre que um Goblin seu deixar o campo, coloque 1 marcador nesta carta. Remova 5 marcadores: Coloque 1 imagem de \"SUPER MEGATANQUE CHUMBO 3000\" no seu campo até o fim do turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/039",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 40,
+    "id": "p40",
+    "name": "SUPER MEGATANQUE CHUMBO 3000",
+    "type": "Criatura",
+    "cost": 0,
+    "atk": 5,
+    "hp": 1,
+    "text": "Atropelar. Investida. Ao atacar uma criatura, também causa dano contra as criaturas adjacentes a ela. Esta criatura deixa o campo no fim do turno.",
+    "tags": [
+      "Atropelar",
+      "Investida"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/040",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 41,
+    "id": "p41",
+    "name": "METE O PÉ!!!",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Retorne 1 criatura aliada para mão. Fura-fila: A criatura custa 1 a menos de energia neste turno.",
+    "tags": [
+      "Fura-fila"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/041",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 42,
+    "id": "p42",
+    "name": "FIADO NÃO É ROUBADO",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Compre 1 carta. Fura-fila: O custo de “FIADO NÃO É ROUBADO” diminui em 1 de energia.",
+    "tags": [
+      "Fura-fila"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/042",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 43,
+    "id": "p43",
+    "name": "HOJE É POR CONTA DA CASA!",
+    "type": "Feitiço",
+    "cost": 0,
+    "text": "Sua próxima carta não-criatura custa 2 a menos neste turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/043",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 44,
+    "id": "p44",
+    "name": "SUBORNO",
+    "type": "Feitiço",
+    "cost": 0,
+    "text": "Receba 1 de energia neste turno. Neste turno, você não armazena energia reserva.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/044",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 45,
+    "id": "p45",
+    "name": "BICUDA NA FUÇA!",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Escolha uma criatura e cause 1 de dano para cada carta jogada neste turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/045",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 46,
+    "id": "p46",
+    "name": "TRANQUEIRA-MÁTICA ELETROSTÁTICA",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Jogue quantas cartas quiser para tentar gerar 1 imagem de uma bugiganga no fim do seu turno: 1-4 cartas: Você sofre 1 de dano para cada carta. 5 cartas: “BUCHA DE CANHÃO” 6 cartas: “TRAMBUCO DE PIPOCO” 7+ cartas: “CARCAÇA CHUMBADA DE TANQUE”",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/046",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 47,
+    "id": "p47",
+    "name": "COMBADO NÃO SAI CARO",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Até o fim deste turno, sempre que um Goblin seu deixar o campo ative o efeito: Receba 1 de energia.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/047",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 48,
+    "id": "p48",
+    "name": "PINGA QUE LEVANTA ATÉ DEFUNTO",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Ressuscite 1 Goblin do seu cemitério, ele morre no final do turno. Fura-fila: Ele tem Investida neste turno.",
+    "tags": [
+      "Investida",
+      "Fura-fila"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/048",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 49,
+    "id": "p49",
+    "name": "PARQUE DOS GURI CAÇA-BOBOS",
+    "type": "Terreno",
+    "cost": 4,
+    "text": "O número de cartas que você joga no seu turno define os efeitos que seus Goblins receberão até o fim do turno: 4 cartas: Atropelar. 5 cartas: Investida. 6 cartas: Último Suspiro: Cause 1 de dano. 7+ cartas: Toque da Morte.",
+    "tags": [
+      "Atropelar",
+      "Investida",
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/049",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 50,
+    "id": "p50",
+    "name": "Saymon, o Primeiro",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Perca vida múltiplas vezes em um mesmo turno para 3 vezes → Nível 2 poder subir de nível.          5 vezes → Nível 3 Perca 2 de vida e cause 1 de dano a qualquer alvo. (Limite de 1 vez por turno)                   I Pague 2 de vida e conceda Roubo de Vida a II    uma criatura. (Limite de 1 vez por turno) Na primeira vez que receber um dano letal, fique imune a dano por 1 turno. Após isso, suas curas recuperam +2 de vida adicional.         III",
+    "tags": [
+      "Roubo de Vida"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/050",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 51,
+    "id": "p51",
+    "name": "Colecionador",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Se você tem 10 cartas no seu cemitério, bana-as e aumente em 1 o nível de “Colecionador”. Sua mão não tem número máximo de cartas. 22   No início do seu turno, compre uma carta a mais. Se você tem 20 cartas na mão, você ganha o jogo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/051",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 52,
+    "id": "p52",
+    "name": "Se você tem 5 cartas no seu cemitério, bana-as e aumente",
+    "type": "Herói",
+    "cost": 0,
+    "text": "em 1 o nível de “Colecionador”. Sua mão não tem número máximo de cartas.             I No início do seu turno, compre uma carta a II    mais. Se você tem 25 cartas na mão, você ganha o jogo.                                              III",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/052",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 53,
+    "id": "p53",
+    "name": "Colecionador",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Se você tem 5 cartas no seu cemitério, bana-as e aumente em 1 o nível de “Colecionador”. Sua mão não tem número máximo de cartas.             I No início do seu turno, compre uma carta a II    mais. Se você tem 25 cartas na mão, você ganha o jogo.                                              III",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/053",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 54,
+    "id": "p54",
+    "name": "Uruk, a Encantriz da Evocação",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Conjure feitiços para poder   {   4 feitiços → Nível 2 subir de nível.                   8 feitiços → Nível 3 Fim do turno: Ative o efeito do elemento do último feitiço que conjurou neste turno: Fogo: 1 de dano ao alvo. | Terra: Compre 1 carta.         I Água: Restaure 1 de vida. | Ar: Receba 1 de energia. O primeiro feitiço conjurado por você no seu II       turno custa 1 a menos de energia. O último feitiço conjurado por você no seu turno é duplicado.                                       III",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/054",
+    "hero": true,
+    "imageCard": false
+  },
+  {
+    "page": 55,
+    "id": "p55",
+    "name": "Orbe Cromático",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Elemento: Não Definido Escolha entre Água, Ar, Fogo ou Terra para ser o elemento deste feitiço. Cause 1 de dano a uma criatura. (Aplica efeitos elementais.)",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/055",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 56,
+    "id": "p56",
+    "name": "Punho Sísmico",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Elemento: Terra. Cause 1 de dano em até duas criaturas. Neste turno, seu próximo feitiço de Fogo recebe o efeito: “Aplica Sufocado até o inicio do seu próximo turno.”",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/056",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 57,
+    "id": "p57",
+    "name": "Tempestade de Areia",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Elemento: Terra. Reduza em 2 o ataque de todas as criaturas inimigas até o ínicio do seu próximo turno. Neste turno, seu próximo feitiço de Fogo recebe o efeito: “Aplica Sufocado até o inicio do seu próximo turno.”",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/057",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 58,
+    "id": "p58",
+    "name": "Terremoto",
+    "type": "Feitiço",
+    "cost": 5,
+    "text": "Elemento: Terra. Cause 0 de dano a todas as criaturas. Este dano é aumentado em +1 para cada criatura inimiga em campo. Neste turno, seu próximo feitiço de Fogo recebe o efeito: “Aplica Sufocado até o inicio do seu próximo turno.”",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/058",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 59,
+    "id": "p59",
+    "name": "Mudra Sovna, a Escola de Magia",
+    "type": "Terreno",
+    "cost": 5,
+    "text": "No seu turno, seus feitiços custam 1 a menos de energia.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/059",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 60,
+    "id": "p60",
+    "name": "Anel de Safira",
+    "type": "Artefato",
+    "cost": 0,
+    "text": "Vire: Destrua este artefato e preencha sua energia reserva. (Só funciona se houver espaço na sua energia reserva.)",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/060",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 61,
+    "id": "p61",
+    "name": "Levantar Maré",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Elemento: Água. Coloque 1 imagem de “Clone de Água” em seu campo. O “Clone de Água” aplica os efeitos elementais deste feitiço. Neste turno, seu próximo feitiço de Ar recebe o efeito: “Aplica Atordoado até o inicio do seu próximo turno.”",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/061",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 62,
+    "id": "p62",
+    "name": "Bolha Protetora",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Elemento: Água. Cancele o próximo dano que você ou uma criatura sofreria neste turno. Neste turno, seu próximo feitiço de Ar recebe o efeito: “Aplica Atordoado até o inicio do seu próximo turno.”",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/062",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 63,
+    "id": "p63",
+    "name": "Nevasca",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Elemento: Água. Alveje todas as criaturas inimigas e aplique Congelado em todas elas até o final do turno. Se alguma já estiver Congelada, ela recebe 2 de dano. Neste turno, seu próximo feitiço de Ar recebe o efeito: “Aplica Atordoado até o inicio do seu próximo turno.”",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/063",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 64,
+    "id": "p64",
+    "name": "Alta Voltagem",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Elemento: Ar. Cause 1 de dano a uma criatura. A criatura recebe 1 de dano adicional para cada criatura adjacente a ela. Neste turno, seu próximo feitiço de Água recebe o efeito: “Aplica Congelado até o inicio do seu próximo turno.”",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/064",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 65,
+    "id": "p65",
+    "name": "Nuvem Esmagadora",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Elemento: Ar. Retorne uma criatura para a mão de seu dono. No próximo turno do oponente, a primeira criatura que ele conjurar custa 1 de energia adicional. Neste turno, seu próximo feitiço de Água recebe o efeito: “Aplica Congelado até o inicio do seu próximo turno.”",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/065",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 66,
+    "id": "p66",
+    "name": "Tufão",
+    "type": "Feitiço",
+    "cost": 6,
+    "text": "Elemento: Ar. Retorne todas as criaturas para as mãos de seus donos.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/066",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 67,
+    "id": "p67",
+    "name": "Obliterar",
+    "type": "Feitiço",
+    "cost": 0,
+    "text": "Elemento: Fogo. Ao conjurar este feitiço, consuma toda a sua energia disponível, incluindo a sua energia reserva. Cause dano a uma criatura igual à energia consumida desta forma.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/067",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 68,
+    "id": "p68",
+    "name": "Lança Ardente",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Elemento: Fogo. Cause 2 de dano a uma criatura. Neste turno, seu próximo feitiço de Terra recebe o efeito: “Aplica Imobilizado até o inicio do seu próximo turno.”",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/068",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 69,
+    "id": "p69",
+    "name": "Bola de Fogo",
+    "type": "Feitiço",
+    "cost": 4,
+    "text": "Elemento: Fogo. Cause 4 de dano a uma criatura e 1 de dano às criaturas adjacentes. Neste turno, seu próximo feitiço de Terra recebe o efeito: “Aplica Imobilizado até o inicio do seu próximo turno.”",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/069",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 70,
+    "id": "p70",
+    "name": "Maestria Elemental",
+    "type": "Encanto",
+    "cost": 4,
+    "text": "Escolha um elemento e invoque a imagem correspondente. (Limite de 1 imagem por elemento) Fogo: “Maestria Elemental: Piromancia”. Água: “Maestria Elemental: Hidromancia”. Terra: “Maestria Elemental: Geomancia”. Ar: “Maestria Elemental: Aeromancia”.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/070",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 71,
+    "id": "p71",
+    "name": "Maestria Elemental: Aeromancia",
+    "type": "Encanto",
+    "cost": 0,
+    "text": "O primeiro feitiço de Ar conjurado por você em cada turno concede 1 de energia reserva. (Só funciona se houver espaço na sua energia reserva.)",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/071",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 72,
+    "id": "p72",
+    "name": "Maestria Elemental: Hidromancia",
+    "type": "Encanto",
+    "cost": 0,
+    "text": "O primeiro feitiço de Água conjurado por você em cada turno restaura 3 de vida.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/072",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 73,
+    "id": "p73",
+    "name": "Maestria Elemental: Geomancia",
+    "type": "Encanto",
+    "cost": 0,
+    "text": "O primeiro feitiço de Terra conjurado por você em cada turno permite você reduzir em 3 a Ofensividade ou a Vitalidade de uma criatura. (O valor final da Ofensividade ou Vitalidade não pode ser menor que 1.)",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/073",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 74,
+    "id": "p74",
+    "name": "Maestria Elemental: Piromancia",
+    "type": "Encanto",
+    "cost": 0,
+    "text": "O primeiro feitiço de Fogo conjurado por você em cada turno tem Atropelar e causa 2 de dano adicional.",
+    "tags": [
+      "Atropelar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/074",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 75,
+    "id": "p75",
+    "name": "Eclipse Final",
+    "type": "Feitiço",
+    "cost": 9,
+    "text": "Cause 2 de dano a um alvo. Repita este efeito para cada outro feitiço que você conjurou neste turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/075",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 76,
+    "id": "p76",
+    "name": "Golem Rochedo",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 2,
+    "hp": 4,
+    "text": "Defensor 2. Primeiro Ato: Se você conjurou um feitiço neste turno, esta criatura recebe Robusto.",
+    "tags": [
+      "Robusto",
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/076",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 77,
+    "id": "p77",
+    "name": "Manipuladora Arcana",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 2,
+    "text": "Primeiro Ato: Seu próximo feitiço custa 1 a menos neste turno.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/077",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 78,
+    "id": "p78",
+    "name": "Arquimago Sombrio",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 3,
+    "text": "Sempre que você conjurar um feitiço, esta criatura recebe +1/+0.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/078",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 79,
+    "id": "p79",
+    "name": "Athos, o Bibliotecário",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 3,
+    "text": "Quando você conjurar um feitiço no seu turno, compre 1 carta. (Limite de 1 vez por turno)",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/079",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 80,
+    "id": "p80",
+    "name": "Feiticeira Espectral",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 3,
+    "hp": 3,
+    "text": "Sempre que você conjurar um feitiço coloque 1 marcador nesta carta. Remova X marcadores: Procure no seu deck um feitiço de custo máximo X e coloque-o em seu mão. (Limite de 1 ativação por turno)",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/080",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 81,
+    "id": "p81",
+    "name": "Clone de Água",
+    "type": "Criatura",
+    "cost": 0,
+    "atk": 0,
+    "hp": 1,
+    "text": "Último Suspiro: Aplique Congelado a uma criatura até o ínicio do seu próximo turno.",
+    "tags": [
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/081",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 82,
+    "id": "p82",
+    "name": "Fênix Cintilante",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Voar. Último Suspiro: Procure outra Fênix no seu deck e coloque-a na sua mão.",
+    "tags": [
+      "Voar",
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/082",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 83,
+    "id": "p83",
+    "name": "Ignis, a Chama Eterna",
+    "type": "Criatura",
+    "cost": 0,
+    "atk": 5,
+    "hp": 5,
+    "text": "Primeiro Ato: Cause 5 de dano a uma criatura. Ao atacar, cause 1 de dano às criaturas adjacentes ao alvo.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/083",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 84,
+    "id": "p84",
+    "name": "Undaris, a Voz do Oceano",
+    "type": "Criatura",
+    "cost": 0,
+    "atk": 4,
+    "hp": 6,
+    "text": "Primeiro Ato: Restaure 4 de vida. No final do seu turno, restaure 1 de vida.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/084",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 85,
+    "id": "p85",
+    "name": "Terron, o Guardiao Ancestral",
+    "type": "Criatura",
+    "cost": 0,
+    "atk": 3,
+    "hp": 6,
+    "text": "Defensor 4. Primeiro Ato: Recebe +1 de Vitalidade para cada criatura inimiga.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/085",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 86,
+    "id": "p86",
+    "name": "Zephyrus, o Relâmpago Voraz",
+    "type": "Criatura",
+    "cost": 0,
+    "atk": 6,
+    "hp": 4,
+    "text": "Voar. Primeiro Ato e Último Suspiro: Receba 1 de energia.",
+    "tags": [
+      "Voar",
+      "Primeiro Ato",
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/086",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 87,
+    "id": "p87",
+    "name": "Invocar Elemental",
+    "type": "Feitiço",
+    "cost": 6,
+    "text": "Escolha um elemento          e    invoque   a   imagem correspondente: Fogo: “Ignis, a Chama Eterna”. Água: “Terron, o Guardião Ancestral”. Terra: “Undaris, a Voz do Oceano”. Ar: “Zephyrus, o Relâmpago Voraz”.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/087",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 88,
+    "id": "p88",
+    "name": "Acumulador",
+    "type": "Herói",
+    "cost": 0,
+    "text": "O custo de “Acumulador” é igual ao número de cartas na sua mão, sem contar essa carta. Quando essa carta entrar em campo, adicione x marcadores +1/+1 a ela, sendo x a quantidade de cartas que você tem em sua mão. 0                   CRIATURA",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/088",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 89,
+    "id": "p89",
+    "name": "Jogador Viciado",
+    "type": "Herói",
+    "cost": 3,
+    "text": "No ínico de seu turno você pode comprar uma carta. Se for uma criatura você recebe dano igual ao custo daquela carta. 1                  CRIATURA",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/089",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 90,
+    "id": "p90",
+    "name": "Silhueta Noturna",
+    "type": "Herói",
+    "cost": 4,
+    "text": "Voar. Se Silhueta Noturna for enviada ao cemitério, retorne-a para o campo no início do seu próximo turno. 1                  CRIATURA",
+    "tags": [
+      "Voar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/090",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 91,
+    "id": "p91",
+    "name": "Especialista em Escudos",
+    "type": "Herói",
+    "cost": 5,
+    "text": "Indestrutível 0                  CRIATURA",
+    "tags": [
+      "Indestrutível"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/091",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 92,
+    "id": "p92",
+    "name": "Barreira de Mártires",
+    "type": "Herói",
+    "cost": 1,
+    "text": "\"Barreira mártires\" terá vitalidade igual ao número de constantes de Divino que você controla. 0                     CRIATURA",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/092",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 93,
+    "id": "p93",
+    "name": "Jogo Justo",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Vire 3 criaturas que você controla. Você compra duas cartas.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/093",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 94,
+    "id": "p94",
+    "name": "Chave Rara",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Procure por um terreno cruel em seu deck e coloque ele em campo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/094",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 95,
+    "id": "p95",
+    "name": "Epifania",
+    "type": "Feitiço",
+    "cost": 9,
+    "text": "Para cada carta em seu cemitério, compre uma carta.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/095",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 96,
+    "id": "p96",
+    "name": "Não disse por favor",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Retorne a criatura alvo para a mão de seu dono.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/096",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 97,
+    "id": "p97",
+    "name": "Chinela de mãe",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Anule a carta alvo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/097",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 98,
+    "id": "p98",
+    "name": "Aqui não",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Destrua a criatura atacante alvo, caso ela seja de custo 4 ou menos.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/098",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 99,
+    "id": "p99",
+    "name": "Sepultar",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Escolha o jogador alvo. Ele escolhe uma carta da mão e envia ao cemitério.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/099",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 100,
+    "id": "p100",
+    "name": "Divinus AMP",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Bana até 3 cartas de divino do seu campo. Depois, compre 2 cartas para cada carta banida dessa forma.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/100",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 101,
+    "id": "p101",
+    "name": "Trabalho honesto",
+    "type": "Encanto",
+    "cost": 4,
+    "text": "No início de cada um de seus turnos, você recebe 1 de energia.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/101",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 102,
+    "id": "p102",
+    "name": "Desenterrar",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Escolha uma criatura de custo 5 ou menor de seu cemitério e coloque no campo de batalha.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/102",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 103,
+    "id": "p103",
+    "name": "Poção da Ira",
+    "type": "Artefato",
+    "cost": 3,
+    "text": "Vire: Destrua esse artefato. A criatura alvo recebe +4/+4. A criatura afetada é destruída no fim do turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/103",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 104,
+    "id": "p104",
+    "name": "Recomeço",
+    "type": "Feitiço",
+    "cost": 10,
+    "text": "Embaralhe as cartas do seu cemitério no seu deck. Bana esta carta.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/104",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 105,
+    "id": "p105",
+    "name": "Anti-arterfato",
+    "type": "Artefato",
+    "cost": 3,
+    "text": "Vire: Destrua este artefato (não pode ser impedido). Em seguida, destrua o artefato alvo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/105",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 106,
+    "id": "p106",
+    "name": "Plantão de Cura",
+    "type": "Encanto",
+    "cost": 6,
+    "text": "Sempre que receber dano, cure 1 ponto de vida.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/106",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 107,
+    "id": "p107",
+    "name": "Pergaminho: Estabilizar",
+    "type": "Artefato",
+    "cost": 2,
+    "text": "Pague 1 e destrua esse artefato: Até o final do seu turno, todas as suas criaturas recebem \"Vire: adicione 1 energia a sua reserva de energia\".",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/107",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 108,
+    "id": "p108",
+    "name": "Cemitério Amaldiçoado",
+    "type": "Terreno",
+    "cost": 5,
+    "text": "Toda vez que uma criatura não imagem sua morrer, crie uma imagem de criatura fantasma 1/1 com \"Voar\".",
+    "tags": [
+      "Voar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/108",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 109,
+    "id": "p109",
+    "name": "Anel de Diamante",
+    "type": "Artefato",
+    "cost": 1,
+    "text": "Vire duas criaturas que você controla: Adicione 2 de energia.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/109",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 110,
+    "id": "p110",
+    "name": "Tifon, a Peste",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Veja suas criaturas morrer     3 criaturas→ Nível 2 para poder upar de nivel       7 criaturas→ Nível 3 Durante o seu turno, quando uma criatura sua morrer, você pode comprar 1 carta. (Max 3 por turno) I Sempre que uma criatura sua com Último II    Suspiro morrer, cause 1 de dano ao herói inimigo. Criaturas ativam seu Último Suspiro duas vezes.                                           III",
+    "tags": [
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/110",
+    "hero": true,
+    "imageCard": false
+  },
+  {
+    "page": 111,
+    "id": "p111",
+    "name": "Bestial Filhote",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Último Suspiro: Cause 1 de dano ao herói inimigo.",
+    "tags": [
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/111",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 112,
+    "id": "p112",
+    "name": "Condenado",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Último Suspiro: Conceda +1/+1 a uma criatura aliada.",
+    "tags": [
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/112",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 113,
+    "id": "p113",
+    "name": "Bestial",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 2,
+    "text": "Último Suspiro: Cause 2 de dano a qualquer criatura.",
+    "tags": [
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/113",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 114,
+    "id": "p114",
+    "name": "Vingador",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 3,
+    "text": "Sempre que outra criatura sua morrer, esta criatura recebe +1/+0 até o fim do turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/114",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 115,
+    "id": "p115",
+    "name": "Indomável",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 3,
+    "hp": 1,
+    "text": "Investida. Indomável. Não pode bloquear.",
+    "tags": [
+      "Investida",
+      "Indomável"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/115",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 116,
+    "id": "p116",
+    "name": "Conjurador",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 2,
+    "text": "Ultimo Suspiro: Ganhe 1 de energia reserva.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/116",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 117,
+    "id": "p117",
+    "name": "Brutamontes",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 1,
+    "hp": 4,
+    "text": "Atropelar. Primeiro Ato: Sacrifique até 3 criaturas aliadas em campo para ganhar +2/+0 por criatura.",
+    "tags": [
+      "Atropelar",
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/117",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 118,
+    "id": "p118",
+    "name": "Reanimador",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 3,
+    "hp": 3,
+    "text": "Último Suspiro: Retorne uma criatura com custo 2 ou menos do seu cemitério ao campo.",
+    "tags": [
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/118",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 119,
+    "id": "p119",
+    "name": "Explosivo",
+    "type": "Criatura",
+    "cost": 5,
+    "atk": 4,
+    "hp": 3,
+    "text": "Último Suspiro: Cause dano ao herói inimigo igual ao número de criaturas que morreram neste turno.",
+    "tags": [
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/119",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 120,
+    "id": "p120",
+    "name": "Primordial",
+    "type": "Criatura",
+    "cost": 6,
+    "atk": 4,
+    "hp": 4,
+    "text": "Ao matar uma criatura inimiga, \"O Primordial\" traz de volta a campo uma criatura de custo 1 do seu cemitério. Último Suspiro: Você pode sacrificar uma outra criatura aliada para manter \"O Primordial\" em campo.",
+    "tags": [
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/120",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 121,
+    "id": "p121",
+    "name": "Ritual da Ametista de Sangue",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Sacrifique uma criatura aliada. Cause 2 de dano uma criatura.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/121",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 122,
+    "id": "p122",
+    "name": "Marcha dos Condenados",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Retorne até 2 criaturas com Último Suspiro do seu cemitério para sua mão.",
+    "tags": [
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/122",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 123,
+    "id": "p123",
+    "name": "Tremor da Fenda",
+    "type": "Feitiço",
+    "cost": 4,
+    "text": "Cause 3 de dano a todas as criaturas em campo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/123",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 124,
+    "id": "p124",
+    "name": "Saliva acida",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Forneça Toque da Morte a uma criatura Malorga neste turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/124",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 125,
+    "id": "p125",
+    "name": "Ataque Temerário",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Uma criatura ganha +2/+0 até o fim do turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/125",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 126,
+    "id": "p126",
+    "name": "Totem das Cinzas",
+    "type": "Encanto",
+    "cost": 4,
+    "text": "Sempre que uma criatura sua morrer, coloque um marcador nesta carta. Voce pode consumir marcadores para trazer criaturas do seu cemitério a campo. O custo de marcadores é igual ao custo da carta alvo x2.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/126",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 127,
+    "id": "p127",
+    "name": "Estandarte da Ruína",
+    "type": "Encanto",
+    "cost": 3,
+    "text": "Uma vez por turno, voce pode ativar o efeito de Ultimo Suspiro da criatura no topo do seu cemitério.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/127",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 128,
+    "id": "p128",
+    "name": "Altar da Carnificina",
+    "type": "Terreno",
+    "cost": 4,
+    "text": "Uma vez por turno, quando uma criatura sua morrer, voce pode conceder Toque da Morte a uma outra criatura aliada, até o final deste turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/128",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 129,
+    "id": "p129",
+    "name": "Saymon, o Primeiro",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Sempre que perder vida coloque 1 marcador no 3 marcadores → Nível 2 Saymon até o fim do turno        5 marcadores → Nível 3 Pague 2 de vida: No seu turno, cause 1 de dano a um alvo. (Limite de 1 vez por turno) I Pague 2 de vida: Conceda Roubo de Vida a II     uma criatura. (Limite de 1 vez por turno) Seus efeitos que custam vida não podem deixar sua vida abaixo de 1.                      III",
+    "tags": [
+      "Roubo de Vida"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/129",
+    "hero": true,
+    "imageCard": false
+  },
+  {
+    "page": 130,
+    "id": "p130",
+    "name": "Servo Iniciante",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 3,
+    "hp": 2,
+    "text": "Primeiro Ato: Você perde 3 de vida.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/130",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 131,
+    "id": "p131",
+    "name": "Discípulo de Sangue",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 2,
+    "text": "Sempre que você perder vida no seu turno, esta criatura recebe +1/+0.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/131",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 132,
+    "id": "p132",
+    "name": "Morcego Rastreador",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 3,
+    "text": "Voar. Na primeira vez que você perder vida no seu turno, compre 1 carta.",
+    "tags": [
+      "Voar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/132",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 133,
+    "id": "p133",
+    "name": "O Carniceiro",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 5,
+    "hp": 3,
+    "text": "Atropelar. Primeiro Ato: Você perde 4 de vida.",
+    "tags": [
+      "Atropelar",
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/133",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 134,
+    "id": "p134",
+    "name": "O Cobra Dor",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 3,
+    "hp": 3,
+    "text": "No início do seu turno, perca 2 de vida e coloque 1 marcador nesta carta. Remova X marcodores: Recupere X de vida.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/134",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 135,
+    "id": "p135",
+    "name": "Condutor de Rasnóvia",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 3,
+    "hp": 3,
+    "text": "Primeiro Ato: Compre 1 carta. Pague 4 de vida e mude o efeito do Primeiro Ato para: Procure um vampiro de custo 4 ou mais no seu deck e coloque-o na sua mão.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/135",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 136,
+    "id": "p136",
+    "name": "Extrator da Lua sangrenta",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 4,
+    "hp": 3,
+    "text": "Roubo de Vida. Sempre que o oponente invocar uma criatura, ataque-a.",
+    "tags": [
+      "Roubo de Vida"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/136",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 137,
+    "id": "p137",
+    "name": "Viúva Negra",
+    "type": "Criatura",
+    "cost": 5,
+    "atk": 4,
+    "hp": 4,
+    "text": "Último Suspiro: Restaure 4 de vida. Pague 3 de vida: Esta criatura recebe Toque da Morte até o final do turno.",
+    "tags": [
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/137",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 138,
+    "id": "p138",
+    "name": "Olhos Sangrentos",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 5,
+    "hp": 3,
+    "text": "Pague 2 de vida: Esta criatura recebe Veloz até o final do turno.",
+    "tags": [
+      "Veloz"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/138",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 139,
+    "id": "p139",
+    "name": "Dominus Nox",
+    "type": "Criatura",
+    "cost": 10,
+    "atk": 7,
+    "hp": 5,
+    "text": "Primeiro Ato: Restaure 4 de vida Custa 1 a menos para cada 1 de vida que você perdeu neste turno. (Custo mínimo 1)",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/139",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 140,
+    "id": "p140",
+    "name": "Lorde de Sangue",
+    "type": "Criatura",
+    "cost": 6,
+    "atk": 5,
+    "hp": 5,
+    "text": "Roubo de Vida. Suporte: Roubo de Vida.",
+    "tags": [
+      "Roubo de Vida"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/140",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 141,
+    "id": "p141",
+    "name": "Pacto de Sangue",
+    "type": "Artefato",
+    "cost": 2,
+    "text": "Vire: Perca 2 de vida e conceda +2/+0 a criatura equipada até o fim do turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/141",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 142,
+    "id": "p142",
+    "name": "Dança Macabra",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Até o final do turno, transforme uma criatura em vampiro. Enquanto estiver sob este efeito, ela não pode combater outros vampiros.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/142",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 143,
+    "id": "p143",
+    "name": "Nascer do Sol",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Destrua um vampiro e recupere 4 de vida.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/143",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 144,
+    "id": "p144",
+    "name": "Despertar da Noite",
+    "type": "Feitiço",
+    "cost": 4,
+    "text": "Roubo de Vida. Cause 2 de dano a todas as criaturas.",
+    "tags": [
+      "Roubo de Vida"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/144",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 145,
+    "id": "p145",
+    "name": "Mordida Fatal",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Roubo de Vida. Cause 3 de dano a uma criatura. Se o dano causado destruí-la, coloque esta carta no fundo de seu deck.",
+    "tags": [
+      "Roubo de Vida"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/145",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 146,
+    "id": "p146",
+    "name": "Túmulo do Sacrifício",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "A próxima criatura que for invocada nesse turno custará vida ao invés de energia.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/146",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 147,
+    "id": "p147",
+    "name": "Silêncio Ensurdecedor",
+    "type": "Encanto",
+    "cost": 3,
+    "text": "Aplique Sufocar na carta alvo no campo, anulando seus efeitos e palavras-chave. Este efeito permanece enquanto este encanto estiver em campo. No final do turno, pague 2 de vida. Caso contrário, destrua esta carta.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/147",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 148,
+    "id": "p148",
+    "name": "Castelo Carmesim",
+    "type": "Terreno",
+    "cost": 4,
+    "text": "Sempre que você perder vida no seu turno, aplique o seguinte efeito: Na primeira vez, compre 1 carta. Na segunda vez, cause 2 de dano a um alvo. Na terceira vez, recupere 2 de vida. Da quarta vez em diante, recupere 1 de vida.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/148",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 149,
+    "id": "p149",
+    "name": "O Ufanista",
+    "type": "Criatura",
+    "cost": 5,
+    "atk": 6,
+    "hp": 3,
+    "text": "Primeiro Ato: Descarte duas Custa 1 a menos para cada vampiro em campo.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/149",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 150,
+    "id": "p150",
+    "name": "Anel de Casamento",
+    "type": "Artefato",
+    "cost": 1,
+    "text": "Equipe este anel a uma criatura aliada e escolha uma outra criatura alvo para receber o seguinte efeito: “Quando uma das criaturas conectadas por este efeito deixar o campo, a outra também seguirá o mesmo destino”.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/150",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 151,
+    "id": "p151",
+    "name": "Nada se cria, tudo se copia",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Ative o efeito de Primeiro Ato de uma criatura.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/151",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 152,
+    "id": "p152",
+    "name": "Tessália, a Mão de Ferro",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Sempre que seu Comandante atacar, coloque 1 marcador na 3 marcadores → Nível 2 Tessália.                         6 marcadores → Nível 3 A criatura no centro do seu campo é seu Comandante e recebe +2 de Ofensividade. Você não pode atacar com outras criaturas sem um Comandante. I Seu Comandante tem Atropelar. O bônus de II      Ofensividade que ele recebe agora é +3. Uma vez por turno, se seu Comandante seria destruído durante a fase de combate, você pode destruir outra criatura aliada em seu lugar.        III",
+    "tags": [
+      "Atropelar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/152",
+    "hero": true,
+    "imageCard": false
+  },
+  {
+    "page": 153,
+    "id": "p153",
+    "name": "Anel de Rubi",
+    "type": "Artefato",
+    "cost": 0,
+    "text": "Vire: Destrua este artefato e receba 2 de energia neste turno (podendo exceder sua energia máxima). No seu próximo turno, você não pode aumentar sua energia máxima.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/153",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 154,
+    "id": "p154",
+    "name": "Correntes Purificadoras",
+    "type": "Artefato",
+    "cost": 2,
+    "text": "Toda vez que a criatura equipada for alvo de um efeito, feitiço ou feitiço acelerado, você compra uma carta. Se essa carta seria enviada ao cemitério, bana-a.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/154",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 155,
+    "id": "p155",
+    "name": "Machado Indomável",
+    "type": "Artefato",
+    "cost": 3,
+    "text": "A criatura equipada recebe Indomável e +3 de Ofensividade.",
+    "tags": [
+      "Indomável"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/155",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 156,
+    "id": "p156",
+    "name": "Armadura de Ferro Maciço",
+    "type": "Artefato",
+    "cost": 3,
+    "text": "A criatura equipada recebe Robusto.",
+    "tags": [
+      "Robusto"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/156",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 157,
+    "id": "p157",
+    "name": "Frenesi",
+    "type": "Feitiço",
+    "cost": 4,
+    "text": "Escolha uma criatura: Neste turno, ela ataca 1 vez adicional. Após o fim do turno, a criatura escolhida é destruída..",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/157",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 158,
+    "id": "p158",
+    "name": "Punição Divina",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Acelerado Destrua uma criatura virada. Você recupera vida equivalente ao custo da criatura destruída.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/158",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 159,
+    "id": "p159",
+    "name": "Escudo Anulador",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Acelerado Anule o efeito da carta alvo até o final do turno. O controlador da carta afetada compra 1 carta.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/159",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 160,
+    "id": "p160",
+    "name": "Vingança",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Acelerado Escolha uma criatura. Se aquela criatura causou dano a você ou uma criatura sua nesse turno, ela é destruída.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/160",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 161,
+    "id": "p161",
+    "name": "Condenar",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Escolha uma criatura. Neste turno, se ela não participar do combate, destrua-a no final do turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/161",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 162,
+    "id": "p162",
+    "name": "Castigo",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Acelerado Destrua uma criatura que foi alvo de um efeito, feitiço ou feitiço acelerado neste turno.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/162",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 163,
+    "id": "p163",
+    "name": "Arte da Guerra",
+    "type": "Terreno",
+    "cost": 3,
+    "text": "Enquanto “Arte da Guerra” estiver em campo: No início da fase de combate, os jogadores podem reposicionar as criaturas que controlam e qualquer carta vinculada a elas. Em seguida, o combate prossegue normalmente.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/163",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 164,
+    "id": "p164",
+    "name": "Sentinela da Ordem",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 2,
+    "text": "Suporte: +0/+1.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/164",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 165,
+    "id": "p165",
+    "name": "Escudeiro Cruel",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 0,
+    "hp": 3,
+    "text": "Ganha +1 de Ofensividade sempre que receber dano e sobreviver.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/165",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 166,
+    "id": "p166",
+    "name": "Especialista Anti-magia",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 2,
+    "text": "Feitiços que tem esta carta como alvo custam +1 de energia.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/166",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 167,
+    "id": "p167",
+    "name": "O Combatente",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 3,
+    "hp": 3,
+    "text": "Durante o seu turno, esta criatura tem +1 de Ofensividade.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/167",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 168,
+    "id": "p168",
+    "name": "Inspetor Desconfiado",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 2,
+    "hp": 4,
+    "text": "A primeiro vez que o oponente tentar conjurar um feitiço no turno, ele escolhe um: Ele perde 1 de vida. Você compra 1 carta.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/168",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 169,
+    "id": "p169",
+    "name": "Veterano de Guerra",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 4,
+    "hp": 3,
+    "text": "Alerta.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/169",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 170,
+    "id": "p170",
+    "name": "J.J.J.J.JR.",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 2,
+    "hp": 2,
+    "text": "Primeiro Ato: Escolha uma criatura. Bana a criatura alvo até que essa carta deixe o campo de batalha.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/170",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 171,
+    "id": "p171",
+    "name": "Duelista Silenciosa",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 3,
+    "hp": 1,
+    "text": "Veloz. Se \"Duelista Silencioso\" e “Duelista Silenciosa” estiverem em campo, ambos recebem Barreira Mágica.",
+    "tags": [
+      "Veloz",
+      "Barreira Mágica"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/171",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 172,
+    "id": "p172",
+    "name": "Duelista Silencioso",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 4,
+    "hp": 1,
+    "text": "Veloz. Se \"Duelista Silencioso\" e “Duelista Silenciosa” estiverem em campo, ambos recebem Robusto.",
+    "tags": [
+      "Veloz",
+      "Robusto"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/172",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 173,
+    "id": "p173",
+    "name": "Cavaleiro Negro",
+    "type": "Criatura",
+    "cost": 5,
+    "atk": 4,
+    "hp": 4,
+    "text": "No seu turno, quando uma criatura inimiga for destruída, coloque um marcador +1/+1 nesta carta. (Limite de 1 ativação por turno.)",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/173",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 174,
+    "id": "p174",
+    "name": "General Yara, a Estrategista",
+    "type": "Criatura",
+    "cost": 6,
+    "atk": 6,
+    "hp": 6,
+    "text": "No início do combate, cada jogador olha a próxima carta do próprio deck. Em seguida, o controlador desta carta escolhe um: • Ambos compram a carta olhada. • Ambos colocam a carta olhada no fundo do deck.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/174",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 175,
+    "id": "p175",
+    "name": "General Atos, o Tirano",
+    "type": "Criatura",
+    "cost": 7,
+    "atk": 4,
+    "hp": 8,
+    "text": "Ao final do turno, se nenhum feitiço foi conjurado neste turno, cause 3 de dano diretamente à vida do jogador alvo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/175",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 176,
+    "id": "p176",
+    "name": "General Nilo, o Carrasco",
+    "type": "Criatura",
+    "cost": 8,
+    "atk": 8,
+    "hp": 6,
+    "text": "Indomável. Não pode defender. Se Nilo destruir uma criatura em combate, ele pode realizar um novo ataque. (Limite de 1 uso por turno)",
+    "tags": [
+      "Indomável"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/176",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 177,
+    "id": "p177",
+    "name": "Aegis da Chama Eterna",
+    "type": "Artefato",
+    "cost": 5,
+    "text": "A criatura equipada recebe Defensor 5. Uma vez por turno: Se a criatura equipada estiver prestes a ser destruída em combate, você pode sacrificar outra criatura aliada para ser destruída no lugar.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/177",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 178,
+    "id": "p178",
+    "name": "Mestra da Vigília",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 1,
+    "hp": 4,
+    "text": "Alerta.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/178",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 179,
+    "id": "p179",
+    "name": "Inspetor Aposentado",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 3,
+    "hp": 3,
+    "text": "Sempre que o oponente comprar cartas fora da etapa de manutenção, ele escolhe um: Perder 1 de vida para cada carta comprada. Revelar as cartas compradas.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/179",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 180,
+    "id": "p180",
+    "name": "Quarion Siannodel",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Controle criaturas com nomes          2 criaturas → nível 2 diferentes em campo para poder        4 criaturas → nível 3 subir de nível. Quando um Primeiro Ato de uma criatura sua é ativado, compre 1 carta. (Limite de 1 uso por turno) I A primeira criatura que você controla que II      morrer no seu turno, retorna para sua mão. A primeira criatura com Primeiro Ato que você invocar em seu turno ativa o efeito dela 1 vez adicional.                                   III",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/180",
+    "hero": true,
+    "imageCard": false
+  },
+  {
+    "page": 181,
+    "id": "p181",
+    "name": "Saideira dos Recrutas!",
+    "type": "Terreno",
+    "cost": 3,
+    "text": "Os efeitos de Primeiro Ato das criaturas “Recruta” também são ativados quando elas deixam o campo. (Alguns tentaram competir na bebida com o pinguço… e foram para casa antes do segundo brinde.)",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/181",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 182,
+    "id": "p182",
+    "name": "Chefe da Guarda",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 3,
+    "hp": 4,
+    "text": "Enquanto está carta estiver em campo, os efeitos de seus recrutas são acionados duas vezes.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/182",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 183,
+    "id": "p183",
+    "name": "Recruta Apaixonado",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 2,
+    "text": "Primeiro Ato: Conceda +2 de Vitalidade para uma criatura aliada neste turno. Se a criatura alvo for “Recruta Elegante” conceda +3 de Vitalidade neste turno.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/183",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 184,
+    "id": "p184",
+    "name": "Recruta Elegante",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 1,
+    "text": "Primeiro Ato: Vire uma criatura.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/184",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 185,
+    "id": "p185",
+    "name": "Recruta Exibido",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 2,
+    "text": "Primeiro Ato: Recebe +1 de Ofensividade para cada outro Recruta que você controla em campo.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/185",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 186,
+    "id": "p186",
+    "name": "Recruta Solidário",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 1,
+    "text": "Primeiro Ato: Conceda +2 de Ofensividade a carta alvo neste turno.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/186",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 187,
+    "id": "p187",
+    "name": "Recruta Bom de Briga",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 1,
+    "text": "Primeiro Ato: Cause 2 de dano a criatura alvo.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/187",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 188,
+    "id": "p188",
+    "name": "Recruta Trapaceira",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 1,
+    "text": "Primeiro Ato: Cause 1 de dano ao alvo. Se o alvo estiver virado, cause 2 de dano.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/188",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 189,
+    "id": "p189",
+    "name": "Recruta Pinguço",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 2,
+    "text": "Primeiro Ato: Recupere 2 de vida.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/189",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 190,
+    "id": "p190",
+    "name": "Recruta Vigilante",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 2,
+    "text": "Primeiro Ato: Retorne uma criatura virada para mão de seu dono.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/190",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 191,
+    "id": "p191",
+    "name": "Bater em Retirada",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Retorne 1 criatura aliada de custo 3 ou menos para sua mão.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/191",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 192,
+    "id": "p192",
+    "name": "Caneca da Sorte",
+    "type": "Artefato",
+    "cost": 2,
+    "text": "A criatura equipada recebe +2/-1. Se equipada no “Recruta Pinguço”, ele agora se chama “Pinguço Sortudo” e não sofre dano de feitiços.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/192",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 193,
+    "id": "p193",
+    "name": "Diálogo, o Martelo Esmagador",
+    "type": "Artefato",
+    "cost": 5,
+    "text": "A criatura equipada recebe +3/+2. Se equipada no “Recruta Bom de Briga”, ele agora se chama “Bruto Bom de Papo” e recebe o efeito: \"Sempre que destruir uma criatura, seja causando dano com seu efeito de carta ou em combate, receba +1/+0.\"",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/193",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 194,
+    "id": "p194",
+    "name": "Estandarte da Ordem",
+    "type": "Artefato",
+    "cost": 3,
+    "text": "A criatura equipada recebe “Suporte +1/+1\". Se equipada no “Recruta Solidário”, ele agora se chama “Solidário mas não Solitário” e o bônus concedido por esta carta aumenta para +2/+2.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/194",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 195,
+    "id": "p195",
+    "name": "Escudo Duro na Queda",
+    "type": "Artefato",
+    "cost": 4,
+    "text": "A criatura equipada recebe +1/+4. Se equipada no “Recruta Apaixonado”, ele agora se chama “O Último Romântico” e recebe Defensor 2.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/195",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 196,
+    "id": "p196",
+    "name": "Gran Finale",
+    "type": "Artefato",
+    "cost": 4,
+    "text": "A criatura equipada recebe +2/+2. Se equipada na “Recruta Elegante”, ela agora se chama “Femme Fatale” e recebe o efeito: \"Se esta criatura for derrotada em combate, retorne a criatura equipada e a criatura vencedora para as mãos de seus donos.\"",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/196",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 197,
+    "id": "p197",
+    "name": "“Fatiadora Práteáda”",
+    "type": "Artefato",
+    "cost": 1,
+    "text": "A criatura equipada recebe -2/+0 e ganha Atropelar. Se equipada no “Recruta Exibido”, ele agora se chama “Recruta Iludido” e recebe apenas o Atropelar. (Foi o Sr. Goblin que me vendeu...)",
+    "tags": [
+      "Atropelar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/197",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 198,
+    "id": "p198",
+    "name": "Bárbaro Cansado",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 3,
+    "text": "Pague 1: Essa carta recebe +4/+4 até o fim da etapa de combate. Ative essa habilidade apenas se essa carta estiver defendendo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/198",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 199,
+    "id": "p199",
+    "name": "Assassino de Aluguel",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 2,
+    "text": "Primeiro Ato: Compre 2 cartas e em seguida descarte 2 cartas da mão.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/199",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 200,
+    "id": "p200",
+    "name": "Torneio dos Campeões",
+    "type": "Terreno",
+    "cost": 5,
+    "text": "Enquanto esta estiver em campo, campeões também participam do combate e podem realizar ou defender ataques. Heróis tem Ofensividade equivalente ao seu nível. Se a vida do seu herói chegar a 0, a partida se encerra e você perde.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/200",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 201,
+    "id": "p201",
+    "name": "Escudeiro Fiél",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Você pode redirecionar o dano que seria dado a uma de suas criaturas para qualquer \"Escudeiro Fiél\" no seu campo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/201",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 202,
+    "id": "p202",
+    "name": "Juramento Solene",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Recupere 2 pontos de vida para cada criatura virada em campo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/202",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 203,
+    "id": "p203",
+    "name": "Recrutas ao Resgate!",
+    "type": "Feitiço",
+    "cost": 10,
+    "text": "Você pode sacrificar qualquer número de criaturas que controla. Em seguida, este feitiço irá custar 2 a menos para cada espaço de criatura preenchido no seu campo. Procure no seu deck por criaturas “Recruta” e coloque-as em campo até preencher todos os seus espaços de criatura disponíveis. Depois, embaralhe seu deck.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/203",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 204,
+    "id": "p204",
+    "name": "Circulo de Proteção Divina",
+    "type": "Terreno",
+    "cost": 5,
+    "text": "Suas criaturas viradas tem barreira mágica.",
+    "tags": [
+      "Barreira Mágica"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/204",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 205,
+    "id": "p205",
+    "name": "Escudo Vingativo",
+    "type": "Artefato",
+    "cost": 2,
+    "text": "Criatura equipada ganha +0/+2 e “Quando esta criatura sair do campo, destrua uma criatura virada do oponente.”",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/205",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 206,
+    "id": "p206",
+    "name": "Infusão Proibida",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Escolha uma criatura. Até o final do turno, ela recebe +1/+1 para cada feitiço ou feitiço acelerado usados neste turno.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/206",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 207,
+    "id": "p207",
+    "name": "Dízimo",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Quando um de seus oponentes utilizar uma carta, da mão dele, que tenha como alvo uma das constantes dele, redirecione esse alvo para uma de suas criaturas.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/207",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 208,
+    "id": "p208",
+    "name": "O Informante",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Último Suspiro: Compre 1 carta.",
+    "tags": [
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/208",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 209,
+    "id": "p209",
+    "name": "A Dama de Ferro",
+    "type": "Feitiço",
+    "cost": 6,
+    "text": "Envie para o cemitério todos os feitiços e feitiços acelerados da sua mão e deck. Em seguida, embaralhe seu deck. Coloque 1 imagem de “Tessália, a Mão de Ferro” no seu campo. Você só pode conjurar “A Dama de Ferro” uma vez por partida.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/209",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 210,
+    "id": "p210",
+    "name": "Tessália, a Mão de Ferro",
+    "type": "Criatura",
+    "cost": 0,
+    "atk": 8,
+    "hp": 8,
+    "text": "Sempre que “Tessália, a Mão de Ferro” for alvo de qualquer efeito, feitiço ou feitiço acelerado do oponente, escolha um: Anule o efeito. Cause 4 de dano a vida do oponente.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/210",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 211,
+    "id": "p211",
+    "name": "Rasmus, o Barista do Tempo",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Rasmus pode subir nível pela        5 Gatos → nível 2 quantidade de Gatos em jogo         7 Gatos → nível 3 Nv. 1 - Após utilizar 10 Feitiços com Café no nome, crie uma imagem de Café Especial em sua mão. I Sempre que um Gato causar dano à vida de II    um jogador, cure 1 de vida. Criaturas do tipo Gato podem entrar em espaços de Criatura e de Não Criatura. (Em espaço de Não Criatura, não podem ser atreladas a um Artefato) III",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/211",
+    "hero": true,
+    "imageCard": false
+  },
+  {
+    "page": 212,
+    "id": "p212",
+    "name": "Café do Tempo",
+    "type": "Terreno",
+    "cost": 5,
+    "text": "Durante a fase de manutenção, crie uma imagem de Gato Multidimensional no campo do jogador atual.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/212",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 213,
+    "id": "p213",
+    "name": "Gato Multidimensional",
+    "type": "Criatura",
+    "cost": 0,
+    "atk": 0,
+    "hp": 1,
+    "text": "Não pode bloquear. Primeiro ato: perca 1 de vida. Pague 1 de energia: bana esta carta Final do turno: Se nenhum Gato entrou em seu campo neste turno, perca 1 de vida. (Não pode ser sacrificado para liberar espaço de campo)",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/213",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 214,
+    "id": "p214",
+    "name": "Morris, o Gato Popular",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 2,
+    "hp": 4,
+    "text": "A Ofensividade e Vitalidade é igual a quantidade de Gatos em jogo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/214",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 215,
+    "id": "p215",
+    "name": "Gato do Barista",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 1,
+    "text": "Primeiro ato: Busque uma carta com Café no nome em seu deck.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/215",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 216,
+    "id": "p216",
+    "name": "Lazuli, o Gato Dragão",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 3,
+    "hp": 3,
+    "text": "Voar.",
+    "tags": [
+      "Voar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/216",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 217,
+    "id": "p217",
+    "name": "Gato de Rua",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Se for o único Gato em Campo, após ser destruído, traga Gato de Rua de volta para o Campo. “Sete vidas, galera\"",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/217",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 218,
+    "id": "p218",
+    "name": "Gato de Batalha",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 2,
+    "hp": 2,
+    "text": "Enquanto estiver em campo, seus Gatos tem +1/+1.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/218",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 219,
+    "id": "p219",
+    "name": "Gato de Fazenda",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 1,
+    "hp": 2,
+    "text": "Enquanto estiver em campo, sua primeira carta jogada em seu turno custa 1 a menos de energia.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/219",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 220,
+    "id": "p220",
+    "name": "Gato Aprendiz de Bruxa",
+    "type": "Criatura",
+    "cost": 6,
+    "atk": 3,
+    "hp": 3,
+    "text": "Barreira Mágica. Suporte: Barreira Mágica.",
+    "tags": [
+      "Barreira Mágica"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/220",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 221,
+    "id": "p221",
+    "name": "Gato Afeiçoado",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 1,
+    "hp": 2,
+    "text": "Ao entrar em campo, escolha uma criatura. Quando o Gato Afeiçoado ou a criatura escolhida deixarem o campo, a outra é destruída.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/221",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 222,
+    "id": "p222",
+    "name": "Erva de Gato",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Busque uma criatura do tipo Gato em seu deck.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/222",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 223,
+    "id": "p223",
+    "name": "Promoção de Café",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Compre 1 Carta. Se você já jogou um Feitiço neste turno, compre mais 1 carta.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/223",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 224,
+    "id": "p224",
+    "name": "Café Gelado",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Acelerado. Devolva a criatura alvo para a mão de seu controlador. Se for um Gato, pode ser jogado por 0 de custo neste turno.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/224",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 225,
+    "id": "p225",
+    "name": "Café Descafeinado",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Acelerado. Aplique Sufocado à carta alvo até o final do turno.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/225",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 226,
+    "id": "p226",
+    "name": "Café Derramado",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Acelerado. Se a criatura alvo recebeu efeito de outra carta neste turno, destrua ela. \"Pode chorar pelo Café Derramado\"",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/226",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 227,
+    "id": "p227",
+    "name": "Abstinência de Café",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Acelerado. Vire a criatura alvo. Enquanto não receber um efeito vindo de outro Feitiço, essa criatura continua virada.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/227",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 228,
+    "id": "p228",
+    "name": "Rebelião dos Gatos",
+    "type": "Feitiço",
+    "cost": 7,
+    "text": "Para cada Gato em campo, cause 1 de dano ao oponente alvo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/228",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 229,
+    "id": "p229",
+    "name": "Máquina de Expresso",
+    "type": "Encanto",
+    "cost": 3,
+    "text": "Vire: Crie uma imagem de Café Expresso em sua mão.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/229",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 230,
+    "id": "p230",
+    "name": "Café Expresso",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Acelerado Escolha um efeito para a criatura alvo receber até o final do turno: +1 de Ofensividade +1 de Vitalidade",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/230",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 231,
+    "id": "p231",
+    "name": "Café Especial",
+    "type": "Feitiço",
+    "cost": 0,
+    "text": "Escolha um efeito: Crie 3 imagens de Gato Multidimensional em quaisquer campos. Cure 10 de vida. Compre 3 cartas. Suba de nível (não pode subir acima do nível 3).",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/231",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 232,
+    "id": "p232",
+    "name": "Infusão de Café",
+    "type": "Encanto",
+    "cost": 5,
+    "text": "Vire: dê Barreira Mágica à constante alvo.",
+    "tags": [
+      "Barreira Mágica"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/232",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 233,
+    "id": "p233",
+    "name": "Gato Multidimensional",
+    "type": "Criatura",
+    "cost": 0,
+    "atk": 1,
+    "hp": 1,
+    "text": "1                           1 Gato",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/233",
+    "hero": false,
+    "imageCard": true
+  },
+  {
+    "page": 234,
+    "id": "p234",
+    "name": "Café Expresso",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Desvire a criatura alvo. Ela ganha +1/+1 até o fim do turno. \"Aproveite enquanto está quente\"",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/234",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 235,
+    "id": "p235",
+    "name": "Anel de Safira",
+    "type": "Artefato",
+    "cost": 0,
+    "text": "Vire: Destrua este artefato e preencha sua reserva de energia.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/235",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 236,
+    "id": "p236",
+    "name": "Café Pingado",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "A próxima vez que a criatura alvo receberia dano neste turno, previna 1 desse dano.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/236",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 237,
+    "id": "p237",
+    "name": "Café com Leite",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Negue a próxima fonte de dano à criatura alvo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/237",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 238,
+    "id": "p238",
+    "name": "Cappuccino",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Escolha uma criatura. Até o começo de seu próximo turno, ela recebe +1/+1 e o seguinte efeito: Ao causar dano de combate, vire a criatura combatente. Ela não desvira na próxima fase de manutenção.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/238",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 239,
+    "id": "p239",
+    "name": "Café Mocha",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Compre 1 carta. Se você já jogou uma carta “Café” neste turno, compre mais 1 carta.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/239",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 240,
+    "id": "p240",
+    "name": "Café Latte Macchiato",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Devolva a criatura alvo para a mão de seu controlador. Se for um Gato, ela entra apto a atacar quando for conjurada novamente.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/240",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 241,
+    "id": "p241",
+    "name": "Café Filtrado",
+    "type": "Feitiço",
+    "cost": 4,
+    "text": "Escolha uma criatura. Até o começo de seu próximo turno, ela ganha +5/+5, mas não desvira na próxima sua fase de manutenção.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/241",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 242,
+    "id": "p242",
+    "name": "Café Duplo",
+    "type": "Feitiço",
+    "cost": 4,
+    "text": "Escolha duas criaturas. Até o começo de seu próximo turno, cada uma ganha +1/+1.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/242",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 243,
+    "id": "p243",
+    "name": "Café Blend Supremo",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "A próxima vez que aplicar o efeito de uma carta com Café no nome em uma criatura, aplique uma vez adicional.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/243",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 244,
+    "id": "p244",
+    "name": "Gato de Colo",
+    "type": "Criatura",
+    "cost": 5,
+    "atk": 0,
+    "hp": 1,
+    "text": "Indestrutível.",
+    "tags": [
+      "Indestrutível"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/244",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 245,
+    "id": "p245",
+    "name": "O Gato Cachorro",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 1,
+    "hp": 1,
+    "text": "Para cada Gato em campo, esta criatura tem +1/0. Para cada Cachorro em campo, esta criatura tem 0/+1. \"É um gato ou um cachorro?\"",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/245",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 246,
+    "id": "p246",
+    "name": "Gato Dorminhoco",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 2,
+    "hp": 4,
+    "text": "Entra virado. Ao receber o bônus de uma carta \"Café\", desvire.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/246",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 247,
+    "id": "p247",
+    "name": "Gato Viciado",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 2,
+    "text": "Quando uma criatura receber os efeitos de uma carta \"Café\", copie os efeitos do Café no Gato Viciado.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/247",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 248,
+    "id": "p248",
+    "name": "Ritual do Barista",
+    "type": "Feitiço",
+    "cost": 5,
+    "text": "Para cada Café servido neste turno, escolha um: Compre uma carta Vire uma criatura Dê mais +2/+2 a uma criatura",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/248",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 249,
+    "id": "p249",
+    "name": "Café Preto Sem Açúcar",
+    "type": "Feitiço",
+    "cost": 4,
+    "text": "Escolha uma criatura. Até o começo de seu próximo turno, ela ganha um marcador +5/+5, mas não desvira na próxima sua fase de manutenção.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/249",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 250,
+    "id": "p250",
+    "name": "Tentar de Novo",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Descarte sua mão e compre o mesmo número de cartas.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/250",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 251,
+    "id": "p251",
+    "name": "Compra Estratégica",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Compre 1 carta. Caso seja: Criatura: sofra o custo dela em dano. Feitiço: repita o efeito desta carta. Artefato ou Encanto: nada acontece. Terreno Cruel: descarte a carta comprada.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/251",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 252,
+    "id": "p252",
+    "name": "Café Expresso Duplo",
+    "type": "Herói",
+    "cost": 2,
+    "text": "Aumente em 2 pontos de vitalidade de um alvo à sua escolha. “Dois é melhor do que um” FEITIÇO INSTANTÂNEO",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/252",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 253,
+    "id": "p253",
+    "name": "Descarte Estratégico",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Seu oponente escolhe aleatoriamente uma carta de sua mão para ser descartada. Caso seja: Criatura: cause o custo dela em dano a um alvo de sua escolha. Feitiço: o oponente escolhe uma carta da mão para descartar. Feitiço acelerado: jogue a carta escolhida. Artefato ou Encanto: descarte a carta escolhida. Terreno Cruel: o oponente finaliza o turno.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/253",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 254,
+    "id": "p254",
+    "name": "Hora do Café",
+    "type": "Encanto",
+    "cost": 5,
+    "text": "Sempre que um Café for servido, compre uma carta. \"Sempre é hora do café\"",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/254",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 255,
+    "id": "p255",
+    "name": "Ngoro, o Investigador",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Gere Pistas para    poder                 → 5 Pistas nível 2 evoluir de nivel:                         → 10 Pistas nível 3 Sempre que você Investigar, ganhe 1 Pista. No inicio do seu turno, Investigue 1 no deck alvo.                                         I Sempre que você Investigar, você pode gastar 2 Pistas. Se fizer isso, escolha um: II     • Compre 1 carta • O oponente tritura 2 cartas Gaste 3 Pistas: De Furtivo a uma criatura aliada, neste turno.                              III",
+    "tags": [
+      "Furtivo"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/255",
+    "hero": true,
+    "imageCard": false
+  },
+  {
+    "page": 256,
+    "id": "p256",
+    "name": "Cria de Ladino",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 0,
+    "hp": 1,
+    "text": "Ultimo Suspiro: O oponente Tritura 2 cartas.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/256",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 257,
+    "id": "p257",
+    "name": "Saral",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Primeiro Ato: Investigue 2 no deck alvo.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/257",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 258,
+    "id": "p258",
+    "name": "Contrabandista",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 1,
+    "text": "Primeiro Ato: Procure por uma carta do tipo Artefato no seu deck.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/258",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 259,
+    "id": "p259",
+    "name": "Allen Burn",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 1,
+    "text": "Furtivo Sempre que esta criatura causar dano direto a um campeão, Investigue 1 no deck dele.",
+    "tags": [
+      "Furtivo"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/259",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 260,
+    "id": "p260",
+    "name": "Nburnu",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 2,
+    "text": "Veloz Ganha +1 de Ofensividade para cada carta triturada no turno.",
+    "tags": [
+      "Veloz"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/260",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 261,
+    "id": "p261",
+    "name": "Espião Infiltrado",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 2,
+    "hp": 3,
+    "text": "Sempre que voce Revelar uma Criatura, durante um Investigar, esta carta recebe +1 ofensividade até o fim do turno.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/261",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 262,
+    "id": "p262",
+    "name": "Nmali",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 2,
+    "hp": 3,
+    "text": "Sempre que voce Revelar um Feitiço durante um Investigar, Triture 1 carta no deck do oponente",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/262",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 263,
+    "id": "p263",
+    "name": "Liaz",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 3,
+    "hp": 4,
+    "text": "Durante um Investigar, ao Revelar: Criatura→   Cause 1 dano a uma criatura inimiga. Feitiço→   Essa carta ganha Barreira Magica. Artefato→   Essa carta ganha Furtivo. Os efeitos duram até o fim do turno.",
+    "tags": [
+      "Furtivo"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/263",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 264,
+    "id": "p264",
+    "name": "Carthana",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 2,
+    "hp": 3,
+    "text": "Barreira Mágica Toda vez que um oponente colocar uma criatura em campo, Investigue 1.",
+    "tags": [
+      "Barreira Mágica"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/264",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 265,
+    "id": "p265",
+    "name": "Sua escolha",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "O oponente alvo escolhe entre: 1 - O controlador dessa carta compra 2 cartas. 2 - Triturar 2 cartas.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/265",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 266,
+    "id": "p266",
+    "name": "Queima de Arquivos",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Até o fim deste turno, as próximas 2 cartas Arquivadas serão enviadas diretamente ao cemitério.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/266",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 267,
+    "id": "p267",
+    "name": "Anel de Ametista",
+    "type": "Artefato",
+    "cost": 1,
+    "text": "Vire: Adicione 1 energia até o final do turno. Você só pode ativar esse efeito enquanto controlar ao menos uma constante de caos.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/267",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 268,
+    "id": "p268",
+    "name": "Luvas do larapio",
+    "type": "Artefato",
+    "cost": 3,
+    "text": "A critura vinculada recebe Atropelar Sempre que a criatura vinculada causar dano direto a um campeão, ele tritura cartas igual a quantidade de dano sofrido.",
+    "tags": [
+      "Atropelar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/268",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 269,
+    "id": "p269",
+    "name": "Adaga de Ametista de Sangue",
+    "type": "Artefato",
+    "cost": 1,
+    "text": "A criatura vinculada recebe +2 de ofensividade. Toda vez que a criatura causar dano, pague 1 de vida",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/269",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 270,
+    "id": "p270",
+    "name": "Manto da Invisibilidade",
+    "type": "Artefato",
+    "cost": 3,
+    "text": "A criatura vinculada recebe Furtivo.",
+    "tags": [
+      "Furtivo"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/270",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 271,
+    "id": "p271",
+    "name": "Prestidigitação",
+    "type": "Encanto",
+    "cost": 3,
+    "text": "Quando você comprar uma carta, você pode escolher comprar do fundo do deck.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/271",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 272,
+    "id": "p272",
+    "name": "Base de Investigação",
+    "type": "Terreno",
+    "cost": 4,
+    "text": "Sempre que você Revelar uma carta durante Investigar, escolha um efeito baseado no tipo: → • Criatura   o oponente Tritura 1 carta → • Feitiço  cause 1 dano a uma criatura inimiga → • Artefato   adicione 1 de energia a reserva → • Encanto    compre 1 carta → • Terreno Cruel    o oponente descarta 1 carta da mão",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/272",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 273,
+    "id": "p273",
+    "name": "Zayan, a Líder Revolucionária",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Se houverem constantes sem efeito     3 constantes→ nível 2 em campo, você pode subir de nível.   4 constantes → nível 3 No início de cada etapa de combate, escolha uma criatura alvo, sem efeito. Ela recebe +1/+1 até o fim do turno. I Se uma de suas criaturas sem efeito seria II       destruída, você pode escolher outra de suas criaturas para ser destruída em seu lugar. Todas as suas criaturas sem efeito recebem um marcador de investida.                            III",
+    "tags": [
+      "Investida"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/273",
+    "hero": true,
+    "imageCard": false
+  },
+  {
+    "page": 274,
+    "id": "p274",
+    "name": "Maria vai com as outras",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 0,
+    "hp": 0,
+    "text": "A ofensividade e vitalidade desta carta serão iguais a criatura de maior ofensividade no seu campo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/274",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 275,
+    "id": "p275",
+    "name": "Cidadão de Sel Kanthar",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 2,
+    "text": "",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/275",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 276,
+    "id": "p276",
+    "name": "Meretriz",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 2,
+    "hp": 3,
+    "text": "",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/276",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 277,
+    "id": "p277",
+    "name": "Cidadão Enfurecido",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 3,
+    "hp": 2,
+    "text": "",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/277",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 278,
+    "id": "p278",
+    "name": "Revolucionário",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 2,
+    "hp": 2,
+    "text": "Último Suspiro: Bana a constante alvo.",
+    "tags": [
+      "Último Suspiro"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/278",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 279,
+    "id": "p279",
+    "name": "Fazendeiro Irado",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 4,
+    "hp": 3,
+    "text": "",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/279",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 280,
+    "id": "p280",
+    "name": "Líder Recluso",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 2,
+    "hp": 2,
+    "text": "Primeiro ato: Busque uma criatura sem efeito do seu deck e adicione a sua mão. Depois, embaralhe o seu deck.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/280",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 281,
+    "id": "p281",
+    "name": "Soldado Exilado",
+    "type": "Criatura",
+    "cost": 5,
+    "atk": 4,
+    "hp": 6,
+    "text": "",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/281",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 282,
+    "id": "p282",
+    "name": "Víbora Desgarrada",
+    "type": "Criatura",
+    "cost": 7,
+    "atk": 8,
+    "hp": 7,
+    "text": "",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/282",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 283,
+    "id": "p283",
+    "name": "Mímico",
+    "type": "Criatura",
+    "cost": 5,
+    "atk": 7,
+    "hp": 5,
+    "text": "Essa criatura não pode atacar. Se essa criatura sofrer dano de qualquer fonte advinda de um oponente, ela se torna uma criatura sem efeito.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/283",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 284,
+    "id": "p284",
+    "name": "Chorinho",
+    "type": "Encanto",
+    "cost": 3,
+    "text": "No fim do seu turno, se você controlar apenas criaturas de ordem e comprou duas ou mais cartas neste turno, compre uma carta.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/284",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 285,
+    "id": "p285",
+    "name": "Medida Desesperada",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Suas criaturas recebem atropelar até o fim do seu turno. Se sua vida for menor ou igual a 10, o bônus passa a ser +2/+2.",
+    "tags": [
+      "Atropelar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/285",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 286,
+    "id": "p286",
+    "name": "Informante Fofoqueiro",
+    "type": "Feitiço",
+    "cost": 3,
+    "text": "Compre até 3 cartas. Para cada carta não-criatura comprada dessa forma, você recebe 3 de dano.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/286",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 287,
+    "id": "p287",
+    "name": "Tortura Coletiva",
+    "type": "Feitiço",
+    "cost": 4,
+    "text": "Escolha duas criaturas de cada um dos jogadores. Todas as criaturas alvo recebem 1 de dano repetidamente até que duas criaturas sejam destruídas.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/287",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 288,
+    "id": "p288",
+    "name": "Contramedida",
+    "type": "Feitiço",
+    "cost": 5,
+    "text": "Acelerado. Destrua duas criaturas.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/288",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 289,
+    "id": "p289",
+    "name": "Logística",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Acelerado. Procure por 2 cartas de criatura em seu deck e as coloque em sua mão. Depois coloque duas cartas da sua mão no fundo de seu deck. Embaralhe o seu deck.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/289",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 290,
+    "id": "p290",
+    "name": "Recrutamento Revolucionário",
+    "type": "Terreno",
+    "cost": 4,
+    "text": "No início do turno de cada jogador, se ele controlar controlar uma criatura sem efeitos, ele compra uma carta.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/290",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 291,
+    "id": "p291",
+    "name": "Campeão de Natureza",
+    "type": "Herói",
+    "cost": 0,
+    "text": "Acumule marcadores para       10 marcadores → Nível 2 subir de nível.               20 marcadores → Nível 3 Uma vez durante o seu turno, escolha até duas constantes alvo. Elas recebem, cada uma, dois marcadores de ação. I Se qualquer marcador de ação seria colocado em qualquer carta, coloque aquele II      número de marcadores e depois coloque um adicional do mesmo tipo. Remova quatro marcadores            de   suas constantes, vire a criatura alvo.                III",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/291",
+    "hero": true,
+    "imageCard": false
+  },
+  {
+    "page": 292,
+    "id": "p292",
+    "name": "CRIATURA 1",
+    "type": "Criatura",
+    "cost": 1,
+    "atk": 1,
+    "hp": 1,
+    "text": "Vire: coloque um marcador de ação em qualquer carta.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/292",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 293,
+    "id": "p293",
+    "name": "CRIATURA 2",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 2,
+    "hp": 3,
+    "text": "Remova x marcadores de ação dessa carta e busque no seu deck um artefato com custo menor ou igual ao número de marcadores removidos.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/293",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 294,
+    "id": "p294",
+    "name": "CRIATURA 3",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 1,
+    "hp": 2,
+    "text": "Remova dois marcadores de ação dessa carta: Desvire a criatura alvo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/294",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 295,
+    "id": "p295",
+    "name": "CRIATURA 4",
+    "type": "Criatura",
+    "cost": 2,
+    "atk": 0,
+    "hp": 3,
+    "text": "Toda vez que uma criatura entrar em campo, essa carta recebe um marcador de ação.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/295",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 296,
+    "id": "p296",
+    "name": "CRIATURA 5",
+    "type": "Criatura",
+    "cost": 6,
+    "atk": 5,
+    "hp": 4,
+    "text": "Alerta. Na etapa de combate essa criatura pode atacar enquanto tiver marcadores de ação. Toda vez que essa criatura atacar, remova dois marcadores de ação dela.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/296",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 297,
+    "id": "p297",
+    "name": "CRIATURA 6",
+    "type": "Criatura",
+    "cost": 4,
+    "atk": 3,
+    "hp": 3,
+    "text": "Atropelar. Sempre que essa carta causar dano, você pode remover um marcador de uma constante em campo e adicionar um marcador de ação nessa constante.",
+    "tags": [
+      "Atropelar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/297",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 298,
+    "id": "p298",
+    "name": "CRIATURA 7",
+    "type": "Criatura",
+    "cost": 3,
+    "atk": 0,
+    "hp": 3,
+    "text": "Vire: Escolha a criatura alvo. Ela perde todos os seus marcadores de ação e recebe a mesma quantidade em marcadores +1/+1. No fim do seu turno, bana a sua criatura com mais marcadores +1/+1 em campo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/298",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 299,
+    "id": "p299",
+    "name": "CRIATURA 8",
+    "type": "Criatura",
+    "cost": 5,
+    "atk": 4,
+    "hp": 4,
+    "text": "Remova qualquer número de marcadores de ação dessa carta. Para cada 3 marcadores removidos, você compra uma carta.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/299",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 300,
+    "id": "p300",
+    "name": "CRIATURA 9",
+    "type": "Criatura",
+    "cost": 6,
+    "atk": 4,
+    "hp": 4,
+    "text": "Remova 5 marcadores de suas constantes. Você pode procurar por uma carta de encanto ou feitiço do seu deck.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/300",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 301,
+    "id": "p301",
+    "name": "BOMBA",
+    "type": "Criatura",
+    "cost": 8,
+    "atk": 1,
+    "hp": 7,
+    "text": "Primeiro Ato: Dobre o número de marcadores de todas as cartas em campo. Sua energia máxima é reduzida a metade da atual, arredondado para cima.",
+    "tags": [
+      "Primeiro Ato"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/301",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 302,
+    "id": "p302",
+    "name": "MÁSCARA PROFANA",
+    "type": "Artefato",
+    "cost": 5,
+    "text": "Toda vez que a criatura equipada for alvo de um efeito, o oponente alvo pode escolher entre: A criatura equipada recebe dois marcadores de ação. A Criatura equipada recebe um marcador +1/+1.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/302",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 303,
+    "id": "p303",
+    "name": "MÁSCARA REFLETORA",
+    "type": "Artefato",
+    "cost": 5,
+    "text": "Toda vez que a criatura equipada for alvo de efeitos, você pode remover 5 marcadores de suas constantes e mudar o alvo para outra constante em seu campo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/303",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 304,
+    "id": "p304",
+    "name": "MÁSCARA DO PACTO",
+    "type": "Artefato",
+    "cost": 0,
+    "text": "Suas cartas de criatura custam 1 a menos. No fim do seu turno, você recebe 1 de dano.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/304",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 305,
+    "id": "p305",
+    "name": "MÁSCARA DA ARANHA RAINHA",
+    "type": "Artefato",
+    "cost": 1,
+    "text": "Se você controla qualquer outra constante de natureza, a criatura equipada não pode mais ser defendida por criaturas sem voar.",
+    "tags": [
+      "Voar"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/305",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 306,
+    "id": "p306",
+    "name": "Anel de Esmeralda",
+    "type": "Artefato",
+    "cost": 2,
+    "text": "Vire: Destrua este artefato e depois adicione 1 de energia máxima.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/306",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 307,
+    "id": "p307",
+    "name": "FUGA",
+    "type": "Feitiço",
+    "cost": 2,
+    "text": "Acelerado. Retorne a criatura alvo para a mão do seu controlador. Se havia qualquer artefato atrelado a criatura alvo, o custo dela passa a ser 0 e o controle do artefato passa para o jogador alvo, que não seja seu controlador anterior.",
+    "tags": [
+      "Acelerado"
+    ],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/307",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 308,
+    "id": "p308",
+    "name": "SOPRO NATURAL",
+    "type": "Feitiço",
+    "cost": 4,
+    "text": "Se você possui 5 ou mais criaturas no cemitério, retorne 3 criaturas do seu cemitério para a sua mão e depois bana o seu cemitério.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/308",
+    "hero": false,
+    "imageCard": false
+  },
+  {
+    "page": 309,
+    "id": "p309",
+    "name": "ENCANTO 1",
+    "type": "Encanto",
+    "cost": 6,
+    "text": "Se você controla apenas uma cópia de “Encanto 1”, no fim do turno, mova todos os marcadores de suas outras constantes para essa carta. No fim do seu turno, para cada três marcadores nessa carta, seus oponentes recebem 1 de dano. Remova 2 marcadores de ação dessa carta: Coloque 1 marcador de ação em qualquer alvo.",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/309",
+    "hero": false,
+    "imageCard": false
+  }
+]
