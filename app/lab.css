@@ -1,3 +1,4 @@
+
 /* Hemsfell playtest board — explicit zones prevent cards and controls from overlapping. */
 .hs-board{height:max(100dvh,960px);min-height:960px;min-width:1180px;overflow:auto;background:radial-gradient(ellipse at 57% 47%,#334b4e 0,#1a2d31 36%,#091317 72%),linear-gradient(90deg,#0c1b20,#263b3d 55%,#0c1b20)}
 .hs-board:after{content:"";position:absolute;inset:66px 24px 18px;border:1px solid #e0c67e25;border-radius:28px;box-shadow:inset 0 0 100px #0009;pointer-events:none}
@@ -71,3 +72,372 @@
 /* Private search browser and explicit shuffle feedback. */
 .search-deck-overlay{z-index:155;background:#01040aea;backdrop-filter:blur(8px)}.search-deck-dialog{width:min(1120px,96vw);height:min(880px,94vh);display:grid;grid-template-rows:auto auto 1fr auto;overflow:hidden;border:1px solid #70c99a85;border-radius:15px;background:linear-gradient(150deg,#152a2a,#070d15 68%);color:#f3eddf;box-shadow:0 35px 110px #000}.search-deck-dialog>header{padding:15px 21px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff17;background:#040b0cdd}.search-deck-dialog>header span{color:#79dda5;font:900 8px Arial;letter-spacing:.15em}.search-deck-dialog>header h2{margin:4px 0 0;font-size:23px}.search-deck-dialog>header>b{color:#e5ca7a;font:800 10px Arial}.search-instruction{padding:13px 21px;display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #ffffff12;background:#0b1718}.search-instruction p{margin:0;color:#dce7e1;font:12px Arial}.search-instruction p strong{color:#86e2ad;font-size:16px}.search-instruction span{color:#90a19e;font:9px Arial;text-align:right}.search-card-grid{padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));align-content:start;gap:18px 10px;overflow:auto}.search-card-grid>div{min-width:0;padding:8px 5px;display:flex;flex-direction:column;align-items:center;gap:5px;border:1px solid transparent;border-radius:8px;text-align:center}.search-card-grid .original-card{width:92px}.search-card-grid>div>b{max-width:100%;overflow:hidden;color:#e6e8e7;font:800 8px Arial;text-overflow:ellipsis;white-space:nowrap}.search-card-grid>div>small{color:#768582;font:7px Arial}.search-card-grid .search-invalid{opacity:.32;filter:grayscale(.7)}.search-card-grid .search-valid{border-color:#56d78a35;background:#4bd9870c}.search-card-grid .search-valid:hover,.search-card-grid .search-selected{border-color:#64e69a;background:#48cc8026;box-shadow:0 0 20px #44d58230}.search-card-grid .original-card.is-selected:after{content:"ESCOLHIDA"}.search-deck-dialog>footer{padding:13px 20px;display:flex;align-items:center;justify-content:flex-end;gap:10px;border-top:1px solid #ffffff14;background:#04090f}.search-deck-dialog>footer span{margin-right:auto;color:#96a6a2;font:10px Arial}.search-deck-dialog>footer button{padding:10px 14px;border:1px solid #ffffff24;background:#121d24;color:#dce5e2;font:800 8px Arial;text-transform:uppercase;letter-spacing:.07em}.search-deck-dialog>footer .confirm-search{border-color:#64d994;background:#1f603c;color:#eafff1}.search-deck-dialog>footer button:disabled{opacity:.35;cursor:not-allowed}.deck-shuffle-effect{position:absolute;right:24px;z-index:145;width:170px;height:104px;padding:13px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;border:1px solid #f0cf77;border-radius:10px;background:#07101bf2;box-shadow:0 0 30px #e6bd50,0 18px 35px #000;pointer-events:none;animation:shuffle-notice 1.5s ease both}.deck-shuffle-effect.owner-1{top:183px}.deck-shuffle-effect.owner-0{top:522px}.deck-shuffle-effect>div{position:absolute;left:50%;top:31px;width:54px;height:50px;transform:translateX(-50%)}.deck-shuffle-effect i{position:absolute;width:33px;height:45px;display:grid;place-items:center;border:1px solid #f0cc6e;border-radius:4px;background:#153654;color:#f0cc6e;font:900 11px Georgia;font-style:normal;box-shadow:0 4px 8px #000;animation:shuffle-fan .55s ease-in-out infinite alternate}.deck-shuffle-effect i:nth-child(2){animation-delay:-.1s}.deck-shuffle-effect i:nth-child(3){animation-delay:-.2s}.deck-shuffle-effect i:nth-child(4){animation-delay:-.3s}.deck-shuffle-effect i:nth-child(5){animation-delay:-.4s}.deck-shuffle-effect>b{color:#f2d37f;font:900 7px Arial;letter-spacing:.12em}.deck-shuffle-effect>span{margin-top:2px;color:#98a6b4;font:7px Arial}
 @keyframes deck-card-shuffle{to{transform:translate(8px,-3px) rotate(7deg)}}@keyframes shuffle-fan{0%{left:0;transform:rotate(-15deg)}100%{left:23px;transform:rotate(15deg)}}@keyframes shuffle-notice{0%{opacity:0;transform:scale(.7)}15%,82%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
+
+/* Final tabletop layout: overrides earlier playtest coordinates with two mirrored five-slot fields. */
+@media(min-width:901px){
+ .hs-board{height:100dvh!important;min-height:720px!important;min-width:0!important;overflow:hidden!important;background:radial-gradient(ellipse at 50% 48%,#294551 0,#14262e 48%,#070d12 90%)!important}
+ .hs-board:after{inset:48px 12px 12px!important;border-radius:12px}
+ .hs-board .game-bar{height:46px!important}
+ .hs-board .player-hero{left:16px!important;width:220px!important;transform:none!important}.hs-board .player-hero.enemy{top:58px!important}.hs-board .player-hero:not(.enemy){bottom:76px!important}
+ .hs-board .hero-abilities{left:16px!important;width:220px!important;transform:none!important}.hs-board .hero-abilities.enemy{top:144px!important}.hs-board .hero-abilities:not(.enemy){bottom:166px!important}
+ .hs-board .board-half{position:absolute!important;left:calc(50% - min(36vw,500px))!important;width:min(72vw,1000px)!important;height:214px!important;margin:0!important;padding:8px 12px!important;display:grid!important;grid-template-columns:104px minmax(0,1fr)!important;grid-template-rows:minmax(154px,1fr) auto!important;gap:7px 12px!important;border:1px solid #d2b05a4a!important;background:linear-gradient(90deg,#07121bd9,transparent 16%,transparent 84%,#07121bd9)!important;box-shadow:inset 0 1px #efd27a30,inset 0 -1px #000b!important;z-index:10!important}
+ .hs-board .opponent-half{top:166px!important;bottom:auto!important}.hs-board .player-half{top:auto!important;bottom:136px!important}
+ .hs-board .terrain-slot{position:static!important;left:auto!important;top:auto!important;transform:none!important;width:auto!important;height:auto!important;grid-column:1!important;grid-row:1 / 3!important;align-self:center!important;justify-self:stretch!important;display:grid!important;place-items:center!important;gap:6px!important;padding:5px!important;border:1px solid #d6b46455!important;border-radius:4px!important;background:#07121ac9!important}
+ .hs-board .terrain-slot>em{position:static!important;max-width:none!important;font-size:7px!important}.hs-board .terrain-slot .original-card{width:64px!important;margin:0!important}
+ .hs-board .paired-field{position:static!important;left:auto!important;top:auto!important;width:auto!important;height:auto!important;grid-area:1 / 2!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:16px minmax(78px,1fr) 16px 54px!important;gap:5px 9px!important;min-width:0!important;z-index:auto!important}
+ .hs-board .paired-field>em{position:static!important;left:auto!important;right:auto!important;display:block!important;align-self:end!important;font:700 8px Arial!important;letter-spacing:.08em!important;text-align:center!important;color:#e6d097b8!important}.hs-board .creature-label{grid-column:1 / -1!important;grid-row:1!important}.hs-board .support-label{grid-column:1 / -1!important;grid-row:3!important}
+ .hs-board .field-column{position:static!important;display:grid!important;grid-row:2 / 5!important;grid-template-rows:minmax(78px,1fr) 54px!important;gap:21px!important;min-width:0!important}.hs-board .field-column:nth-of-type(1){grid-column:1!important}.hs-board .field-column:nth-of-type(2){grid-column:2!important}.hs-board .field-column:nth-of-type(3){grid-column:3!important}.hs-board .field-column:nth-of-type(4){grid-column:4!important}.hs-board .field-column:nth-of-type(5){grid-column:5!important}.hs-board .field-slot{position:relative!important;display:grid!important;place-items:center!important;border:1px solid #d3b56538!important;border-radius:4px!important;background:linear-gradient(145deg,#0a1821e8,#02070cbc)!important;box-shadow:inset 0 0 20px #000a!important}.hs-board .creature-slot{grid-row:1!important}.hs-board .auxiliary-slot{grid-row:2!important}.hs-board .field-slot>span{width:auto!important;height:auto!important;border:0!important;border-radius:0!important;color:#c3a76a55!important;font-size:11px!important}.hs-board .creature-slot .original-card.is-small{width:min(100%,82px)!important}.hs-board .auxiliary-slot .original-card.is-small{width:min(100%,60px)!important}
+ .hs-board .enemy-field{grid-template-rows:16px 54px 16px minmax(78px,1fr)!important}.hs-board .enemy-field .support-label{grid-row:1!important}.hs-board .enemy-field .creature-label{grid-row:3!important}.hs-board .enemy-field .field-column{grid-template-rows:54px minmax(78px,1fr)!important}.hs-board .enemy-field .auxiliary-slot{grid-row:1!important}.hs-board .enemy-field .creature-slot{grid-row:2!important}
+ .hs-board .energy-board{grid-column:2!important;grid-row:2!important;width:100%!important;max-width:none!important;margin:0!important;align-self:end!important;padding:5px 8px!important;border-radius:4px!important}.hs-board .battle-divider{top:50%!important;left:50%!important;width:min(68vw,930px)!important;height:30px!important;transform:translate(-50%,-50%)!important;z-index:20!important}
+ .hs-board .side-piles{width:152px!important;right:14px!important;display:grid!important;grid-template-columns:repeat(2,72px)!important;gap:7px!important}.hs-board .enemy-piles{top:74px!important}.hs-board .player-piles{top:auto!important;bottom:16px!important}.hs-board .pile-zone{width:72px!important;height:88px!important;grid-template-rows:50px auto auto!important}.hs-board .opponent-hand{left:50%!important;top:52px!important;transform:translateX(-50%)!important}.hs-board .player-hand{left:50%!important;bottom:-52px!important;width:min(680px,58vw)!important;height:170px!important;transform:translateX(-50%)!important;z-index:30!important}.hs-board .player-hand .original-card{width:126px!important;margin-left:-34px!important}.hs-board .phase-orb{right:174px!important;top:calc(50% - 42px)!important;bottom:auto!important}.hs-board .phase-orb button{width:86px!important;height:86px!important}.hs-board .surrender-button{right:174px!important;bottom:22px!important}
+}
+
+@media(min-width:901px){
+ .hs-board .board-half{height:290px!important;box-sizing:border-box!important;grid-template-rows:232px 40px!important}
+ .hs-board .opponent-half{top:145px!important}.hs-board .player-half{bottom:80px!important}
+ .hs-board .paired-field{height:232px!important;grid-template-rows:16px 114px 16px 86px!important;gap:0 9px!important;align-self:stretch!important}
+ .hs-board .field-column{grid-template-rows:114px 86px!important;gap:16px!important;align-items:center!important}
+ .hs-board .field-slot{width:82px!important;aspect-ratio:.72!important;height:auto!important;justify-self:center!important;align-self:center!important}
+ .hs-board .auxiliary-slot{width:62px!important}
+ .hs-board .creature-slot .original-card.is-small{width:72px!important}.hs-board .auxiliary-slot .original-card.is-small{width:54px!important}
+ .hs-board .enemy-field{height:232px!important;grid-template-rows:16px 86px 16px 114px!important}
+ .hs-board .enemy-field .field-column{grid-template-rows:86px 114px!important}.hs-board .enemy-field .auxiliary-slot{width:62px!important}.hs-board .enemy-field .creature-slot{width:82px!important}
+ .hs-board .opponent-half{grid-template-rows:40px 232px!important}.hs-board .opponent-half .energy-board{grid-row:1!important;align-self:start!important}.hs-board .opponent-half .paired-field{grid-row:2!important}.hs-board .opponent-half .terrain-slot{grid-row:1 / 3!important}
+ .hs-board .player-hand{bottom:-110px!important}
+}
+
+@media(min-width:901px){
+ .hs-board .board-half{height:308px!important;grid-template-rows:246px 46px!important}.hs-board .opponent-half{top:80px!important}.hs-board .player-half{bottom:82px!important}
+ .hs-board .paired-field,.hs-board .enemy-field{height:246px!important;grid-template-rows:20px 103px 20px 103px!important;row-gap:0!important}.hs-board .enemy-field{grid-template-rows:20px 103px 20px 103px!important}
+ .hs-board .field-column,.hs-board .enemy-field .field-column{grid-template-rows:103px 103px!important;gap:20px!important}
+ .hs-board .field-slot,.hs-board .auxiliary-slot,.hs-board .enemy-field .creature-slot,.hs-board .enemy-field .auxiliary-slot{width:74px!important;aspect-ratio:.72!important;height:auto!important}
+ .hs-board .creature-slot .original-card.is-small,.hs-board .auxiliary-slot .original-card.is-small{width:64px!important}
+ .hs-board .energy-board{height:40px!important;box-sizing:border-box!important;border:1px solid #d6b25d73!important;box-shadow:0 5px 16px #000b!important}.hs-board .player-half .energy-board{transform:translateY(10px)!important}.hs-board .opponent-half{grid-template-rows:40px 232px!important}.hs-board .opponent-half .energy-board{transform:translateY(-10px)!important}
+ .hs-board .player-hero{width:260px!important;height:124px!important;min-height:124px!important;box-sizing:border-box!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto auto!important;padding:8px 10px 8px 64px!important;overflow:visible!important}.hs-board .hero-progress{grid-column:1 / -1!important;grid-row:2!important;width:100%!important;display:grid!important;grid-template-columns:auto auto minmax(0,1fr)!important;gap:6px!important;align-items:center!important}.hs-board .hero-progress small{font-size:8px!important}.hs-board .hero-progress b{font-size:12px!important;white-space:nowrap!important}.hs-board .hero-progress span{font-size:8px!important;overflow:visible!important;text-overflow:clip!important;white-space:normal!important;line-height:1.2!important}.hs-board .player-hero.enemy{top:58px!important}.hs-board .player-hero:not(.enemy){bottom:76px!important}
+}
+
+@media(max-width:900px){
+ .hs-board{width:100%!important;min-width:0!important;height:100dvh!important;min-height:720px!important;overflow:hidden!important}.hs-board .player-hero,.hs-board .hero-abilities,.hs-board .side-piles,.hs-board .opponent-hand{display:none!important}
+ .hs-board .board-half{position:absolute!important;left:12px!important;width:calc(100% - 24px)!important;height:190px!important;margin:0!important;padding:4px!important;box-sizing:border-box!important;display:grid!important;grid-template-columns:52px minmax(0,1fr)!important;grid-template-rows:150px 32px!important;gap:4px!important;border:1px solid #d2b05a4a!important;background:#07121ad9!important}.hs-board .opponent-half{top:90px!important;bottom:auto!important}.hs-board .player-half{top:auto!important;bottom:140px!important}
+ .hs-board .terrain-slot{position:static!important;left:auto!important;top:auto!important;transform:none!important;width:auto!important;height:auto!important;grid-column:1!important;grid-row:1 / 3!important;padding:2px!important;border-radius:3px!important}.hs-board .terrain-slot>em{position:static!important;font-size:5px!important}.hs-board .terrain-slot .original-card{width:42px!important;margin:0!important}
+ .hs-board .paired-field,.hs-board .enemy-field{position:static!important;left:auto!important;top:auto!important;width:auto!important;height:150px!important;grid-area:1 / 2!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:12px 61px 12px 61px!important;gap:0 3px!important;min-width:0!important}.hs-board .paired-field>em{position:static!important;display:block!important;font-size:6px!important;letter-spacing:0!important;text-align:center!important}.hs-board .creature-label{grid-column:1 / -1!important;grid-row:1!important}.hs-board .support-label{grid-column:1 / -1!important;grid-row:3!important}
+ .hs-board .field-column,.hs-board .enemy-field .field-column{position:static!important;display:grid!important;grid-row:2 / 5!important;grid-template-rows:61px 61px!important;gap:12px!important;min-width:0!important}.hs-board .field-column:nth-of-type(1){grid-column:1!important}.hs-board .field-column:nth-of-type(2){grid-column:2!important}.hs-board .field-column:nth-of-type(3){grid-column:3!important}.hs-board .field-column:nth-of-type(4){grid-column:4!important}.hs-board .field-column:nth-of-type(5){grid-column:5!important}.hs-board .field-slot,.hs-board .auxiliary-slot,.hs-board .enemy-field .creature-slot,.hs-board .enemy-field .auxiliary-slot{position:relative!important;width:44px!important;aspect-ratio:.72!important;height:auto!important;justify-self:center!important;align-self:center!important;display:grid!important;place-items:center!important;border-radius:3px!important}.hs-board .creature-slot{grid-row:1!important}.hs-board .auxiliary-slot{grid-row:2!important}.hs-board .creature-slot .original-card.is-small,.hs-board .auxiliary-slot .original-card.is-small{width:38px!important}
+ .hs-board .enemy-field{grid-template-rows:12px 61px 12px 61px!important}.hs-board .enemy-field .support-label{grid-row:1!important}.hs-board .enemy-field .creature-label{grid-row:3!important}.hs-board .enemy-field .auxiliary-slot{grid-row:1!important}.hs-board .enemy-field .creature-slot{grid-row:2!important}
+ .hs-board .energy-board{grid-column:2!important;grid-row:2!important;width:100%!important;height:32px!important;box-sizing:border-box!important;margin:0!important;padding:3px 5px!important;border:1px solid #d6b25d73!important;transform:translateY(5px)!important}.hs-board .energy-board .energy-track,.hs-board .energy-board .reserve-track{grid-template-columns:35px 1fr 24px!important;font-size:6px!important}.hs-board .energy-board i{height:5px!important}.hs-board .opponent-half{grid-template-rows:32px 150px!important}.hs-board .opponent-half .energy-board{grid-row:1!important;transform:translateY(-5px)!important}.hs-board .opponent-half .paired-field{grid-row:2!important}.hs-board .opponent-half .terrain-slot{grid-row:1 / 3!important}
+ .hs-board .battle-divider{top:43%!important;width:78vw!important;height:25px!important;font-size:6px!important}.hs-board .player-hand{left:50%!important;bottom:-26px!important;width:100%!important;height:140px!important;transform:translateX(-50%)!important;padding-left:14px!important;overflow:hidden!important}.hs-board .player-hand .original-card{width:78px!important;margin-left:-45px!important}.hs-board .phase-orb{right:8px!important;bottom:135px!important;top:auto!important}.hs-board .phase-orb button{width:62px!important;height:62px!important;font-size:7px!important}.hs-board .surrender-button{right:8px!important;bottom:102px!important;font-size:6px!important;padding:6px!important}
+}
+
+@media(min-width:901px){
+ .hs-board .player-hero.enemy{top:34px!important}.hs-board .hero-abilities.enemy{top:188px!important}
+ .hs-board .player-hero:not(.enemy){bottom:54px!important}.hs-board .hero-abilities:not(.enemy){bottom:220px!important}
+ .hs-board .reserve-track{min-width:150px!important}
+}
+
+/* Hero inspector: compact, icon-first power blocks for levels I/II/III. */
+.inspector-hero-kit{margin-top:12px;padding:10px;border:1px solid #d7ae5759;border-radius:8px;background:linear-gradient(145deg,#111c2be8,#050b12)}
+.inspector-hero-kit>header{display:grid;gap:4px;padding-bottom:8px;border-bottom:1px solid #ffffff16}
+.inspector-hero-kit>header b{color:#f1cd7b;font:800 10px Arial;letter-spacing:.12em;text-transform:uppercase}
+.inspector-hero-kit>header span{color:#e3e8ef;font:12px/1.45 Arial}
+.inspector-hero-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.inspector-hero-meta span{padding:3px 7px;border:1px solid #ffffff1f;border-radius:999px;background:#0b1522;color:#bdc8d7;font:800 8px Arial;letter-spacing:.04em}
+.inspector-hero-powers{display:grid;gap:7px;margin-top:8px}
+.inspector-hero-powers article{display:grid;grid-template-columns:24px 1fr;gap:8px;align-items:flex-start;padding:7px;border:1px solid #ffffff14;border-radius:7px;background:#0a131ecf}
+.inspector-hero-powers i{width:24px;height:24px;display:grid;place-items:center;border:1px solid #d7ae57;border-radius:50%;background:#322712;color:#ffe9b6;font:900 8px Arial;font-style:normal;letter-spacing:.04em}
+.inspector-hero-powers p{margin:0;color:#dce4ec;font:11px/1.45 Arial}
+.inspector-hero-kit{border-color:color-mix(in srgb,var(--deck,#d7ae57) 64%,#ffffff2b);background:linear-gradient(145deg,color-mix(in srgb,var(--deck,#d7ae57) 24%,#0b1420),#050b12)}
+.inspector-hero-meta span{border-color:color-mix(in srgb,var(--deck,#d7ae57) 45%,#ffffff2a)}
+.inspector-hero-powers i{border-color:color-mix(in srgb,var(--deck,#d7ae57) 72%,#ffe8bb);background:color-mix(in srgb,var(--deck,#d7ae57) 35%,#2a2010)}
+.inspector-card-kit{margin-top:12px;padding:10px;border:1px solid #ffffff1f;border-radius:8px;background:linear-gradient(145deg,#0f1928d9,#060c13)}
+.inspector-card-kit>header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid #ffffff14}
+.inspector-card-kit>header b{color:#8fcef6;font:800 10px Arial;letter-spacing:.12em;text-transform:uppercase}
+.inspector-card-kit>header span{color:#b3bfcc;font:800 8px Arial;letter-spacing:.06em;text-transform:uppercase}
+.inspector-card-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.inspector-card-meta span{padding:3px 7px;border:1px solid #ffffff1f;border-radius:999px;background:#09101a;color:#d6dde6;font:800 8px Arial;letter-spacing:.04em}
+.inspector-hero-powers article,.inspector-card-kit{animation:inspector-rise .28s ease both}
+.inspector-hero-powers article:nth-child(2){animation-delay:.04s}
+.inspector-hero-powers article:nth-child(3){animation-delay:.08s}
+@keyframes inspector-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:760px){
+ .inspector-hero-meta{gap:5px}
+ .inspector-hero-meta span{font-size:7px}
+ .inspector-hero-powers article{grid-template-columns:22px 1fr;padding:6px}
+ .inspector-hero-powers p{font-size:10px}
+ .inspector-card-meta span{font-size:7px}
+}
+
+/* Board hero rail now mirrors the inspector structure for powers and criteria. */
+.player-hero{position:absolute;overflow:visible}
+.hero-level-criteria{position:absolute;left:8px;top:68px;max-width:56px;padding:2px 4px;border:1px solid color-mix(in srgb,var(--deck,#d7ae57) 72%,#fff2cd);border-radius:6px;background:color-mix(in srgb,var(--deck,#d7ae57) 22%,#0b1522);color:#f6e3b2;font:800 6px/1.15 Arial;letter-spacing:.04em;text-align:center;box-shadow:0 3px 10px #0008}
+.hero-progress{grid-template-columns:auto auto minmax(0,1fr)!important;grid-template-areas:"label value text" "bar bar bar"!important;align-items:center!important;column-gap:6px!important;row-gap:4px!important}
+.hero-progress small{grid-area:label;color:#9fb0c4;font:800 8px Arial;text-transform:uppercase;letter-spacing:.08em}
+.hero-progress b{grid-area:value;color:#f0d28a;font:800 11px Arial}
+.hero-progress span{grid-area:text;color:#b7c5d6;font:800 8px Arial;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hero-progress>div{grid-area:bar}
+
+.hero-abilities{padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+.hero-abilities-kit{padding:10px;border:1px solid color-mix(in srgb,var(--deck,#d7ae57) 64%,#ffffff2b);border-radius:8px;background:linear-gradient(145deg,color-mix(in srgb,var(--deck,#d7ae57) 22%,#0d1826),#050b12);box-shadow:0 10px 24px #0008}
+.hero-abilities-kit>header{display:grid;gap:4px;padding-bottom:8px;border-bottom:1px solid #ffffff16}
+.hero-abilities-kit>header b{color:#f2cf7d;font:800 9px Arial;letter-spacing:.12em;text-transform:uppercase}
+.hero-abilities-kit>header span{color:#e1e8f0;font:11px/1.4 Arial}
+.hero-abilities-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.hero-abilities-meta span{padding:3px 6px;border:1px solid color-mix(in srgb,var(--deck,#d7ae57) 45%,#ffffff2b);border-radius:999px;background:#0b1522;color:#c5d1df;font:800 7px Arial;letter-spacing:.04em}
+.hero-abilities-list{display:grid;gap:7px;margin-top:8px}
+.ability-card{min-height:34px;display:grid;grid-template-columns:22px 1fr auto;gap:7px;align-items:center;padding:7px;border:1px solid #ffffff14;border-radius:7px;background:#0a131ecf}
+.ability-card i{width:22px;height:22px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--deck,#d7ae57) 72%,#ffe8bb);border-radius:50%;background:color-mix(in srgb,var(--deck,#d7ae57) 35%,#2a2010);color:#ffe9b6;font:900 8px Arial;font-style:normal}
+.ability-card p{margin:0;color:#dde6ef;font:10px/1.35 Arial}
+.ability-card small{color:#8ea0b5;font:800 7px Arial;text-transform:uppercase}
+.ability-card button{min-width:64px;padding:6px;border:1px solid color-mix(in srgb,var(--deck,#d7ae57) 70%,white);background:color-mix(in srgb,var(--deck,#d7ae57) 28%,#0b1118);color:white;font:800 7px Arial;text-transform:uppercase}
+.ability-card button:disabled,.ability-card.locked{opacity:.45}
+
+@media(min-width:901px){
+ .hero-level-criteria{left:10px;top:72px;max-width:62px;font-size:7px}
+}
+
+/* Unified board hero panel: info + abilities together, simpler and cleaner. */
+.player-hero{padding:8px 10px 10px 66px!important;border:1px solid color-mix(in srgb,var(--deck,#d7ae57) 55%,#2e3b49)!important;background:linear-gradient(145deg,#0c1622f2,#050a10f2)!important;box-shadow:0 10px 22px #0008!important}
+.player-hero .hero-header{margin-top:0}
+.player-hero .hero-stats{opacity:.92}
+.player-hero .hero-level-criteria{opacity:.95}
+.player-hero .hero-abilities-kit{margin-top:6px;padding:7px 8px;border-radius:7px}
+.player-hero .hero-abilities-kit>header{padding-bottom:6px}
+.player-hero .hero-abilities-meta{margin-top:6px}
+.player-hero .hero-abilities-list{margin-top:6px;gap:5px}
+.player-hero .ability-card{padding:5px;min-height:29px;grid-template-columns:20px 1fr auto;gap:6px}
+.player-hero .ability-card i{width:20px;height:20px;font-size:7px}
+.player-hero .ability-card p{font-size:9px;line-height:1.28}
+.player-hero .ability-card small{font-size:6px}
+.player-hero .ability-card button{min-width:58px;padding:5px;font-size:6px}
+.player-hero .hero-abilities-kit>header b{font-size:8px;letter-spacing:.09em}
+.player-hero .hero-abilities-meta{display:none}
+.player-hero.enemy .ability-card{grid-template-columns:20px minmax(0,1fr)!important}
+
+.player-hero .hero-stats{gap:5px!important;font-size:9px!important}
+.player-hero .hero-progress small{font-size:7px!important}
+.player-hero .hero-progress b{font-size:10px!important}
+.player-hero .hero-progress span{font-size:7px!important}
+
+@media(min-width:901px){
+ .hs-board .player-hero{width:300px!important;height:auto!important;min-height:180px!important;display:grid!important;grid-template-columns:56px minmax(0,1fr) auto!important;grid-template-rows:auto auto auto auto!important;column-gap:8px!important;row-gap:4px!important;align-content:start!important}
+ .hs-board .player-hero.enemy{top:26px!important}
+ .hs-board .player-hero:not(.enemy){bottom:18px!important}
+ .hs-board .phase-orb{left:calc(50% + min(36vw,500px) + 28px)!important;right:auto!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;z-index:32!important}
+ .hs-board .phase-orb button{width:92px!important;height:92px!important}
+}
+
+@media(max-width:900px){
+ .player-hero .hero-abilities-kit{padding:6px}
+ .player-hero .ability-card{grid-template-columns:18px 1fr auto}
+ .player-hero .ability-card i{width:18px;height:18px}
+}
+
+/* Final cleanup: single compact hero panel with minimal visual noise. */
+.player-hero{border-radius:8px!important}
+.player-hero .hero-level-criteria{font-size:6px!important;line-height:1.15!important;max-width:52px!important;padding:2px 3px!important}
+.player-hero .hero-header b{font-size:10px!important}
+.player-hero .hero-header span{font-size:8px!important;padding:1px 5px!important}
+.player-hero .hero-stats{gap:4px!important}
+.player-hero .hero-stats span{font-size:9px!important;opacity:.92}
+.player-hero .hero-progress{column-gap:5px!important;row-gap:3px!important}
+.player-hero .hero-progress small{font-size:7px!important;letter-spacing:.05em!important}
+.player-hero .hero-progress b{font-size:9px!important}
+.player-hero .hero-progress span{font-size:7px!important}
+.player-hero .hero-abilities-kit{margin-top:5px!important;padding:5px 6px!important;border-radius:6px!important;background:#0a121be8!important;box-shadow:none!important}
+.player-hero .hero-abilities-kit>header{padding:0 0 4px!important;border-bottom:1px solid #ffffff14!important}
+.player-hero .hero-abilities-kit>header b{font-size:7px!important;letter-spacing:.08em!important;color:#d9e3ef!important}
+.player-hero .hero-abilities-list{margin-top:4px!important;gap:4px!important}
+.player-hero .ability-card{padding:4px!important;min-height:24px!important;grid-template-columns:18px 1fr auto!important;border:1px solid #ffffff12!important;background:#0b1520!important;border-radius:6px!important}
+.player-hero .ability-card i{width:18px!important;height:18px!important;font-size:7px!important;background:#1f2a38!important;border-color:#47637f!important;color:#d7e7fa!important}
+.player-hero .ability-card p{font-size:8px!important;line-height:1.2!important;color:#ced8e3!important}
+.player-hero .ability-card button{min-width:50px!important;padding:4px!important;font-size:6px!important}
+
+@media(min-width:901px){
+ .hs-board .player-hero{width:286px!important;min-height:158px!important;padding:7px 9px 8px 64px!important}
+ .hs-board .player-hero.enemy{top:24px!important}
+ .hs-board .player-hero:not(.enemy){bottom:16px!important}
+}
+
+/* Basic hero panel mode: only core info, with photo-driven detail interaction. */
+.player-hero{min-height:108px!important;row-gap:3px!important}
+.hero-panel-hint{position:absolute;left:0;bottom:calc(100% + 6px);max-width:300px;padding:4px 6px;border:1px solid #ffffff1f;border-radius:6px;background:#050c14e8;color:#b7c5d7;font:700 7px/1.3 Arial;letter-spacing:.03em;pointer-events:none}
+.hero-photo-hitbox{position:absolute;left:8px;top:7px;width:46px;height:57px;padding:0;border:0;border-radius:4px;background:transparent;cursor:pointer;z-index:3}
+.hero-photo-hitbox:hover{box-shadow:0 0 0 2px #d7ae57 inset,0 0 9px #d7ae57}
+.hero-photo-hitbox:focus-visible{outline:2px solid #d7ae57;outline-offset:2px}
+.player-hero .hero-progress{grid-column:2 / 4!important}
+
+@media(max-width:900px){
+ .hero-panel-hint{display:none}
+}
+
+/* ==========================================================================
+   PAINEL DO HERÓI (.player-hero) - AJUSTES DE LAYOUT E INTERAÇÃO
+   ========================================================================== */
+
+.hero-photo-hitbox,
+.hero-level-criteria,
+.hero-panel-hint,
+.player-hero .hero-progress small,
+.player-hero .hero-progress span {
+    display: none !important;
+}
+
+/* 2. Container principal unificado com 2 colunas */
+.hs-board .player-hero {
+    position: absolute !important;
+    width: 330px !important;
+    height: auto !important;
+    min-height: 120px !important;
+    padding: 10px 12px !important;
+    box-sizing: border-box !important;
+    display: grid !important;
+    /* Coluna 1: Imagem (82px) | Coluna 2: Conteúdo + Botão (Flexível) */
+    grid-template-columns: 82px minmax(0, 1fr) !important;
+    grid-template-rows: auto auto auto auto !important;
+    gap: 4px 10px !important;
+    align-items: center !important;
+    background: rgba(10, 20, 30, 0.94) !important;
+    border: 1px solid rgba(215, 174, 87, 0.35) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
+    overflow: visible !important;
+}
+
+/* 3. Imagem do Herói na Coluna Esquerda + Efeito Hover Interativo */
+.player-hero canvas.remote-card-art {
+    grid-column: 1 !important;
+    grid-row: 1 / span 4 !important; /* Ocupa do topo até a base na esquerda */
+    width: 80px !important;
+    height: 112px !important;
+    border-radius: 8px !important;
+    border: 2px solid rgba(215, 174, 87, 0.4) !important;
+    object-fit: cover !important;
+    cursor: pointer !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
+    position: relative !important;
+    z-index: 5 !important;
+}
+
+/* Contorno brilhante para indicar interatividade ao passar o mouse */
+.player-hero canvas.remote-card-art:hover,
+.player-hero canvas.remote-card-art:focus {
+    border-color: #f0d28a !important;
+    box-shadow: 0 0 16px rgba(240, 210, 138, 0.8), 0 0 0 2px rgba(240, 210, 138, 0.4) !important;
+    transform: scale(1.04) !important;
+}
+
+/* 4. Coluna Direita: Header (Nome do Herói) */
+.player-hero .hero-header {
+    grid-column: 2 !important;
+    grid-row: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    min-width: 0 !important;
+}
+
+.player-hero .hero-header b {
+    font-size: 13px !important;
+    color: #ffffff !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+.player-hero .hero-header span {
+    font-size: 9px !important;
+    color: #9daab8 !important;
+    text-transform: uppercase !important;
+}
+
+/* 5. Coluna Direita: Barra de XP (Restrita ao lado direito) */
+.player-hero .hero-progress {
+    grid-column: 2 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 3px !important;
+    margin: 2px 0 !important;
+}
+
+.player-hero .hero-progress b {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    color: #f0d28a !important;
+    font: 800 11px Arial, sans-serif !important;
+}
+
+.player-hero .hero-progress b::before {
+    content: "XP" !important;
+    color: #4dadf7 !important;
+    font-weight: 900 !important;
+}
+
+.player-hero .hero-progress > div {
+    width: 100% !important;
+    height: 14px !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 999px !important;
+    overflow: hidden !important;
+}
+
+/* 6. Coluna Direita: Status de Vida e Energia */
+.player-hero .hero-stats {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+}
+
+/* 7. Coluna Direita: Botão Evoluir (Inserido DENTRO do painel) */
+.player-hero > button.level-button,
+.player-hero button.level-button {
+    position: static !important; /* Anula o posicionamento fora do painel do lab.css */
+    top: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    grid-column: 2 !important;
+    grid-row: 4 !important;
+    justify-self: end !important;
+    width: 95px !important;
+    height: 26px !important;
+    margin-top: 4px !important;
+    border: 1px solid #d3ae57 !important;
+    background: #3a2d18 !important;
+    color: #f0d995 !important;
+    font: 800 9px Arial !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+}
+
+/* 8. Tooltip de Informações ao Passar o Mouse na Imagem */
+.player-hero .card-tooltip,
+.player-hero .hero-tooltip {
+    position: absolute !important;
+    left: 0 !important;
+    bottom: calc(100% + 8px) !important;
+    width: 280px !important;
+    padding: 12px !important;
+    background: rgba(5, 10, 16, 0.98) !important;
+    border: 1px solid #d9ad55 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.9) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
+    transition: opacity 0.2s ease, transform 0.2s ease !important;
+    transform: translateY(6px) !important;
+    z-index: 100 !important;
+    pointer-events: none !important;
+}
+
+.player-hero canvas.remote-card-art:hover ~ .card-tooltip,
+.player-hero canvas.remote-card-art:hover ~ .hero-tooltip {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: translateY(0) !important;
+}

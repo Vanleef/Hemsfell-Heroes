@@ -6,6 +6,8 @@ type Room = {
   guest: { heroId: string | null } | null;
   status: "waiting" | "started";
   createdAt: number;
+  game: unknown | null;
+  revision: number;
 };
 
 const ROOMS = (globalThis as any).__HH_ROOMS__ || new Map<string, Room>();
@@ -21,11 +23,12 @@ export async function POST(req: NextRequest) {
       guest: null,
       status: "waiting",
       createdAt: Date.now(),
+      game: null,
+      revision: 0,
     };
     ROOMS.set(id, room);
     const url = new URL(req.url);
-    // link will be consumed by client which will read ?room= param
-    return NextResponse.json({ id, link: `${url.origin}${url.pathname.replace(/\/api\/rooms\/?$/,'')}/../../?room=${id}` });
+    return NextResponse.json({ ...room, link: `${url.origin}/?room=${id}` });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

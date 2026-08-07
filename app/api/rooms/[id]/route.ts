@@ -6,6 +6,8 @@ type Room = {
   guest: { heroId: string | null } | null;
   status: "waiting" | "started";
   createdAt: number;
+  game: unknown | null;
+  revision: number;
 };
 
 const ROOMS = (globalThis as any).__HH_ROOMS__ || new Map<string, Room>();
@@ -40,8 +42,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (action === "start") {
       if (!room.host?.heroId || !room.guest?.heroId) return NextResponse.json({ error: "both players must select decks" }, { status: 400 });
       room.status = "started";
+      room.game = null;
+      room.revision += 1;
       ROOMS.set(id, room);
-      return NextResponse.json({ started: true, players: [room.host.heroId, room.guest.heroId] });
+      return NextResponse.json(room);
+    }
+    if (action === "sync") {
+      if (room.status !== "started" || !body?.game) return NextResponse.json({ error: "game has not started" }, { status: 400 });
+      if (typeof body.revision === "number" && body.revision < room.revision) return NextResponse.json({ error: "stale game state", revision: room.revision }, { status: 409 });
+      room.game = body.game;
+      room.revision += 1;
+      ROOMS.set(id, room);
+      return NextResponse.json({ revision: room.revision });
     }
     return NextResponse.json({ error: "unknown action" }, { status: 400 });
   } catch (err) {
