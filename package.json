@@ -7,17 +7,18 @@
   },
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
-    "dev": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vite",
-    "build": "bash scripts/build-verified.sh",
-    "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
+    "dev": "node scripts/run-env.mjs WRANGLER_LOG_PATH=.wrangler/wrangler.log -- vite",
+    "build": "node scripts/run-env.mjs WRANGLER_LOG_PATH=.wrangler/wrangler.log -- bash scripts/build-verified.sh",
+    "start": "node scripts/run-env.mjs WRANGLER_LOG_PATH=.wrangler/wrangler.log -- vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
-    "validate:artifact": "bash scripts/validate-artifact.sh",
-    "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
+    "validate:artifact": "node scripts/run-env.mjs WRANGLER_LOG_PATH=.wrangler/wrangler.log -- bash scripts/validate-artifact.sh",
+    "lint": "node scripts/run-env.mjs WRANGLER_LOG_PATH=.wrangler/wrangler.log -- bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
+    "db:generate": "node scripts/run-env.mjs WRANGLER_LOG_PATH=.wrangler/wrangler.log -- bash scripts/sites-env.sh -- drizzle-kit generate"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
     "next": "16.2.6",
+    "node": "^26.7.0",
     "pdfjs-dist": "6.2.108",
     "react": "19.2.6",
     "react-dom": "19.2.6"
