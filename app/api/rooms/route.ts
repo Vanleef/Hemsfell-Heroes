@@ -33,6 +33,6 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   // Return basic info about rooms (for debugging)
-  const out = Array.from(ROOMS.values()).map(r => ({ id: r.id, status: r.status, createdAt: r.createdAt }));
+  const out = Array.from(ROOMS.values() as Room[]).map(r => ({ id: r.id, status: r.status, createdAt: r.createdAt }));
   return NextResponse.json(out);
 }

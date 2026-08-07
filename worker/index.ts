@@ -2,6 +2,9 @@
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
 
+type Fetcher = { fetch(request: Request): Promise<Response> };
+type D1Database = unknown;
+
 const HEMSFELL_CATALOG_FILE_ID = "1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC";
 const HEMSFELL_CATALOG_URL = `https://drive.usercontent.google.com/download?id=${HEMSFELL_CATALOG_FILE_ID}&export=download&confirm=t`;
 

@@ -33,10 +33,16 @@ yarn-error.log*
 # vercel
 .vercel
 
-# typescript
+# generated and build files
 next-env.d.ts
 /dist/
-/.wrangler/
-/.sites-runtime/
+/build/
+.wrangler/
+.sites-runtime/
 /outputs/
 /work/
+
+# local editor files
+.vscode/
+.idea/
+*.log
