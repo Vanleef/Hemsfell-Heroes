@@ -407,3 +407,9 @@
 .screen-game .visual-effect.fx-targeted>.remote-card-art{width:105px!important;height:147px!important;border:2px solid #ffe08a!important;border-radius:8px!important;box-shadow:0 0 24px #e9c65d!important;animation:fx-card 1.45s ease both!important}
 .effect-link{height:54px;display:flex;align-items:center;justify-content:center;gap:4px}.effect-link i{width:25px;height:2px;background:linear-gradient(90deg,transparent,#ffe076);box-shadow:0 0 9px #ffd75b}.effect-link i:last-child{background:linear-gradient(90deg,#ffe076,transparent)}.effect-link b{color:#ffe287;font:900 24px Arial;text-shadow:0 0 14px #ffd95d;animation:effect-arrow .7s ease-in-out infinite alternate}.visual-effect section small{color:#b9c7d0;font:8px/1.35 Arial}
 @keyframes effect-arrow{to{transform:translateX(7px);filter:brightness(1.4)}}
+
+/* Delayed impact feedback: the card shakes and glows before state mutation. */
+.original-card.is-impacting{animation:card-impact-shake .44s cubic-bezier(.36,.07,.19,.97) infinite;filter:brightness(1.35) saturate(1.35);outline:2px solid #ff6e64;box-shadow:0 0 0 3px #ff6e6438,0 0 22px #ff674b9c,0 0 45px #e8a94455;z-index:8000!important}
+.original-card.is-impacting:after{content:"✦";position:absolute;inset:0;display:grid;place-items:center;color:#fff0ad;font:800 30px Georgia;pointer-events:none;text-shadow:0 0 18px #ffb14a;animation:impact-flare .44s ease-in-out infinite alternate}
+@keyframes card-impact-shake{0%,100%{transform:translate3d(0,0,0) rotate(0)}20%{transform:translate3d(-4px,1px,0) rotate(-1.5deg)}40%{transform:translate3d(4px,-1px,0) rotate(1.5deg)}60%{transform:translate3d(-3px,0,0) rotate(-1deg)}80%{transform:translate3d(3px,1px,0) rotate(1deg)}}
+@keyframes impact-flare{from{opacity:.2;transform:scale(.75)}to{opacity:1;transform:scale(1.2)}}
