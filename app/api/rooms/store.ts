@@ -1,13 +1,5 @@
-export type Participant = { heroId: string | null; token: string };
-export type Room = {
-  id: string;
-  host: Participant;
-  guest: Participant | null;
-  status: "waiting" | "started";
-  createdAt: number;
-  revision: number;
-  game: unknown | null;
-};
+import type { Room } from "./machine";
+export type { Room } from "./machine";
 
 const schema = "CREATE TABLE IF NOT EXISTS multiplayer_rooms (id TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at INTEGER NOT NULL)";
 
@@ -35,9 +27,12 @@ export async function writeRoom(room: Room) {
 export function roomView(room: Room, includeGame = false) {
   return {
     id: room.id,
-    host: { heroId: room.host.heroId },
-    guest: room.guest ? { heroId: room.guest.heroId } : null,
+    host: { heroId: room.host.heroId, accepted: room.host.accepted, deckLocked: room.host.deckLocked, mulliganDone: room.host.mulliganDone, mulliganCount: room.host.mulliganCount },
+    guest: room.guest ? { heroId: room.guest.heroId, accepted: room.guest.accepted, deckLocked: room.guest.deckLocked, mulliganDone: room.guest.mulliganDone, mulliganCount: room.guest.mulliganCount } : null,
     status: room.status,
+    settings: room.settings,
+    coinWinner: room.coinWinner,
+    startingRole: room.startingRole,
     createdAt: room.createdAt,
     revision: room.revision,
     ...(includeGame ? { game: room.game } : {}),
