@@ -362,3 +362,23 @@
 /* A complete criterion creates an aura even before the player can pay the energy cost. */
 .screen-game .player-hero.level-ready>.remote-card-art{animation:hero-level-ready 1.6s ease-in-out infinite!important}.screen-game .player-hero.level-ready .hero-evolution{border-color:#ffe176!important;box-shadow:0 0 20px #efc85d88!important}.screen-game .fx-ability{border-color:#ffe382!important;background:radial-gradient(circle at 30% 50%,#ffd45f70,#17100af2 58%,#03070ce8)!important;box-shadow:0 0 60px #ffd75eaa,0 25px 70px #000!important}
 @keyframes hero-level-ready{50%{filter:brightness(1.18) drop-shadow(0 0 13px #ffe069)}}@keyframes level-button-ready{50%{transform:translateX(-50%) scale(1.06);box-shadow:0 0 28px #ffe374}}
+
+/* Board clarity v7: the center contains only playable slots and resource tracks. */
+.screen-game .battle-divider{display:none!important}
+.screen-game .paired-field{padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+.screen-game .paired-field .field-slot{box-shadow:inset 0 0 0 1px #071017,0 4px 12px #0007!important}
+.screen-game .field-energy{box-shadow:0 5px 14px #0008!important}
+.screen-game .phase-orb{left:calc(var(--field-left) + var(--field-width) + 13px)!important;right:auto!important;top:50%!important;transform:translateY(-50%)!important}
+
+/* The hero art and evolution panel own independent hover zones. */
+.screen-game .hero-power-trigger{position:absolute!important;inset:0!important;z-index:3!important;border-radius:9px!important;outline:0!important}
+.screen-game .hero-power-trigger>.remote-card-art{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:block!important;border:1px solid color-mix(in srgb,var(--deck) 76%,#f0d47c)!important;border-radius:9px!important;background:#061017!important;box-shadow:0 10px 24px #000c!important}
+.screen-game .player-hero.level-ready .hero-power-trigger>.remote-card-art{animation:hero-level-ready 1.6s ease-in-out infinite!important}
+.screen-game .player-hero:hover + .hero-abilities,.screen-game .player-hero:focus-within + .hero-abilities{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+.screen-game .player-hero:has(.hero-power-trigger:hover) + .hero-abilities,.screen-game .player-hero:has(.hero-power-trigger:focus-visible) + .hero-abilities,.screen-game .hero-abilities:hover{display:block!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+.screen-game .hero-abilities:before{content:"";position:absolute;left:-14px;top:0;width:14px;height:100%}
+
+/* Dropping a creature over an occupied creature slot performs the rulebook's
+   replacement: the old creature is banished before the new one enters. */
+.screen-game .field-slot.replace-drop{border-color:#b77cff!important;box-shadow:inset 0 0 0 1px #44245f,0 0 16px #9a55df88!important}
+.screen-game .field-slot.replace-drop:after{content:"SUBSTITUIR · BANIR";position:absolute;left:50%;bottom:3px;z-index:30;transform:translateX(-50%);padding:3px 5px;border-radius:4px;background:#35124fd9;color:#f1d9ff;font:900 5px Arial;letter-spacing:.06em;white-space:nowrap;pointer-events:none}
