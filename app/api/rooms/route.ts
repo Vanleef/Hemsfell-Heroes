@@ -1,15 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-type Room = {
-  id: string;
-  host: { heroId: string | null };
-  guest: { heroId: string | null } | null;
-  status: "waiting" | "started";
-  createdAt: number;
-};
-
-const ROOMS = (globalThis as any).__HH_ROOMS__ || new Map<string, Room>();
-(globalThis as any).__HH_ROOMS__ = ROOMS;
+import { rooms, type Room } from "./store";
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,10 +12,9 @@ export async function POST(req: NextRequest) {
       status: "waiting",
       createdAt: Date.now(),
     };
-    ROOMS.set(id, room);
+    rooms.set(id, room);
     const url = new URL(req.url);
-    // link will be consumed by client which will read ?room= param
-    return NextResponse.json({ id, link: `${url.origin}${url.pathname.replace(/\/api\/rooms\/?$/,'')}/../../?room=${id}` });
+    return NextResponse.json({ id, link: `${url.origin}/?room=${encodeURIComponent(id)}` });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
@@ -33,6 +22,6 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   // Return basic info about rooms (for debugging)
-  const out = Array.from(ROOMS.values() as Room[]).map(r => ({ id: r.id, status: r.status, createdAt: r.createdAt }));
+  const out = Array.from(rooms.values()).map(r => ({ id: r.id, status: r.status, createdAt: r.createdAt }));
   return NextResponse.json(out);
 }
