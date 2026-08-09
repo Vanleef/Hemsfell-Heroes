@@ -433,3 +433,12 @@
 .screen-game .combat-cinematic,.screen-game .visual-effect,.screen-game .defense-decision,.screen-game .response-dialog,.screen-game .target-banner{z-index:9000!important}
 .screen-game .side-piles{z-index:40!important}
 @media(max-width:900px){.screen-game .hs-board{--field-left:132px!important;--field-width:calc(100vw - 270px)!important}.screen-game .phase-orb{left:auto!important;right:12px!important}.screen-game .player-hand{height:150px!important}.screen-game .paired-field .field-slot{border-radius:6px!important}}
+
+/* Keep the utility piles close to the central play area instead of leaving a
+   dead gap on the right. Their larger portrait footprint improves readability
+   while the dedicated column keeps them out of the interaction lane. */
+.screen-game .side-piles{left:calc(var(--field-left) + var(--field-width) + 18px)!important;right:auto!important;width:210px!important;grid-template-columns:repeat(2,100px)!important;gap:10px!important}
+.screen-game .side-piles.enemy-piles{top:146px!important}.screen-game .side-piles.player-piles{top:558px!important}
+.screen-game .side-piles .pile-zone{width:100px!important;height:122px!important;grid-template-rows:72px auto auto!important;padding:8px!important}
+.screen-game .side-piles .pile-card{height:72px!important}.screen-game .side-piles .pile-zone b{font-size:8px!important}.screen-game .side-piles .pile-zone strong{font-size:15px!important}.screen-game .side-piles .pile-zone small{font-size:7px!important}
+@media(max-width:1080px){.screen-game .side-piles{left:auto!important;right:10px!important;width:184px!important;grid-template-columns:repeat(2,87px)!important}.screen-game .side-piles .pile-zone{width:87px!important}}
