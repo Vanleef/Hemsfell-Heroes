@@ -1,3 +1,5 @@
+import { ROOM_LIMITS } from "./constants";
+
 export type RoomRole = "host" | "guest";
 export type RoomStatus = "waiting" | "deck-selection" | "coin-choice" | "mulligan" | "started" | "finished";
 
@@ -29,15 +31,19 @@ export type Room = {
   game: any | null;
 };
 
-export const defaultSettings: MatchSettings = { startingLife: 30, responseSeconds: 30, turnSeconds: 120 };
+export const defaultSettings: MatchSettings = {
+  startingLife: ROOM_LIMITS.life.fallback,
+  responseSeconds: ROOM_LIMITS.responseSeconds.fallback,
+  turnSeconds: ROOM_LIMITS.turnSeconds.fallback,
+};
 
 export function sanitizeSettings(value: Partial<MatchSettings> | undefined): MatchSettings {
   const clamp = (n: unknown, min: number, max: number, fallback: number) =>
     Math.min(max, Math.max(min, Number.isFinite(Number(n)) ? Math.round(Number(n)) : fallback));
   return {
-    startingLife: clamp(value?.startingLife, 10, 100, 30),
-    responseSeconds: clamp(value?.responseSeconds, 10, 120, 30),
-    turnSeconds: clamp(value?.turnSeconds, 30, 600, 120),
+    startingLife: clamp(value?.startingLife, ROOM_LIMITS.life.min, ROOM_LIMITS.life.max, ROOM_LIMITS.life.fallback),
+    responseSeconds: clamp(value?.responseSeconds, ROOM_LIMITS.responseSeconds.min, ROOM_LIMITS.responseSeconds.max, ROOM_LIMITS.responseSeconds.fallback),
+    turnSeconds: clamp(value?.turnSeconds, ROOM_LIMITS.turnSeconds.min, ROOM_LIMITS.turnSeconds.max, ROOM_LIMITS.turnSeconds.fallback),
   };
 }
 
