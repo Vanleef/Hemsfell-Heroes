@@ -442,3 +442,11 @@
 .screen-game .side-piles .pile-zone{width:100px!important;height:122px!important;grid-template-rows:72px auto auto!important;padding:8px!important}
 .screen-game .side-piles .pile-card{height:72px!important}.screen-game .side-piles .pile-zone b{font-size:8px!important}.screen-game .side-piles .pile-zone strong{font-size:15px!important}.screen-game .side-piles .pile-zone small{font-size:7px!important}
 @media(max-width:1080px){.screen-game .side-piles{left:auto!important;right:10px!important;width:184px!important;grid-template-columns:repeat(2,87px)!important}.screen-game .side-piles .pile-zone{width:87px!important}}
+
+/* Final center tightening: preserve the lateral terrain axis while bringing
+   both Cruel Terrain slots toward the interaction lane. */
+.screen-game .terrain-slot.enemy-terrain{left:305px!important;top:158px!important}
+.screen-game .terrain-slot.player-terrain{left:305px!important;top:512px!important}
+.screen-game .paired-field.player-field{top:548px!important}
+.screen-game .field-energy.player-energy{top:790px!important}
+.screen-game .player-hand{top:850px!important}
