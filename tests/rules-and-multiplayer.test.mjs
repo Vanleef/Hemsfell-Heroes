@@ -144,6 +144,8 @@ test("trigger lifecycle covers entries, deaths and turn boundaries",()=>{
  assert.match(page,/const resolveCreatureEntryTriggers/);
  assert.match(page,/Valorian causou 2 de dano/);
  assert.match(page,/Bombardeiro Gente Boa causou 1 de dano/);
+ assert.match(page,/Acumulador recebeu \+\$\{cardsInHand\}/);
+ assert.match(page,/Extrator da Lua Sangrenta atacou/);
  assert.match(page,/Gimble I curou 1 de vida/);
  assert.match(page,/Sr\. Goblin I comprou 1 carta/);
  assert.match(page,/Tifon II causou 1 de dano/);
