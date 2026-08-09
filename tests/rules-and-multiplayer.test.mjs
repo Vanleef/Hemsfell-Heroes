@@ -225,7 +225,8 @@ test("room creation request stays valid TypeScript without escaped object keys",
 
 
 test("local multiplayer does not require a production storage binding",()=>{
- assert.match(roomStore,/developmentRooms/);
- assert.match(roomStore,/useDevelopmentMemory/);
- assert.match(roomStore,/NODE_ENV === "development"/);
+ assert.match(roomStore,/memoryRooms/);
+ assert.match(roomStore,/useMemoryStore/);
+ assert.match(roomStore,/allowMemoryFallback/);
+ assert.match(roomStore,/HEMSFELL_ROOM_STORE !== "d1"/);
 });
