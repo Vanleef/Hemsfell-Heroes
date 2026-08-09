@@ -4,7 +4,9 @@
  * The game is a prototype, but the API must still reject oversized and
  * prototype-polluting payloads before they reach the persistent room state.
  */
-export const MAX_ROOM_PAYLOAD_BYTES = 512 * 1024;
+import { ROOM_LIMITS } from "./constants";
+
+export const MAX_ROOM_PAYLOAD_BYTES = ROOM_LIMITS.payloadBytes;
 const MAX_DEPTH = 32;
 const forbiddenKeys = new Set(["__proto__", "prototype", "constructor"]);
 
@@ -49,10 +51,8 @@ export function isBoundedGame(value: unknown): value is JsonRecord {
   if (!Array.isArray(players) || players.length !== 2) return false;
   return players.every((player) => {
     if (!isPlainRecord(player)) return false;
-    const zones: Array<[string, number]> = [
-      ["hand", 30], ["deck", 80], ["extraDeck", 40], ["board", 5],
-      ["support", 5], ["grave", 160], ["obscuro", 160],
-    ];
-    return zones.every(([zone, max]) => Array.isArray(player[zone]) && player[zone].length <= max);
+    return Object.entries(ROOM_LIMITS.zones).every(([zone, max]) =>
+      Array.isArray(player[zone]) && player[zone].length <= max,
+    );
   });
 }
