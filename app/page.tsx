@@ -540,7 +540,7 @@ function DeckShuffleEffect({owner}:{owner:0|1}){return <div className={`deck-shu
 
 function DeckPicker({label,value,onChange}:{label:string;value:DeckId;onChange:(v:DeckId)=>void}){const d=deckById(value);return <label className="deck-picker" style={{"--deck":d.color} as React.CSSProperties}><span>{label}</span><RemoteCardArt page={d.heroPage} name={d.name} priority/><select value={value} onChange={e=>onChange(e.target.value as DeckId)}>{deckDefs.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select><b>{d.faction}</b><small>{d.style}</small></label>}
 function PlayerHero({player,enemy=false,onLevel,targetClass="",onTarget}:{player:Player;enemy?:boolean;onLevel?:()=>void;targetClass?:string;onTarget?:()=>void}){
- const d=deckById(player.heroId),targets=levelTargets(player),need=targets[player.level-1]??999,cost=player.level===1?2:3,unit=d.requirement.match(/\d+\/\d+\s*(.*)/)?.[1]||"marcos",progressReady=player.level<3&&player.heroXP>=need,canLevel=progressReady&&player.energy+player.reserve>=cost&&player.levelUpsThisTurn===0;
+ const d=deckById(player.heroId),targets=levelTargets(player),need=targets[player.level-1]??999,cost=player.level===1?2:3,unit=d.requirement.match(/\d+\/\d+\s*(.*)/)?.[1]||"marcos",progressReady=player.level<3&&player.heroXP>=need,canLevel=progressReady&&player.levelUpsThisTurn===0,canAfford=player.energy+player.reserve>=cost;
  return <div className={`player-hero ${enemy?"enemy":""} ${progressReady?"level-ready":""} ${targetClass}`} style={{"--deck":d.color} as React.CSSProperties} onClick={onTarget} role={onTarget?"button":undefined}>
   {/* Only this trigger opens the power tooltip. Keeping evolution outside it prevents both tooltips from opening together. */}
   <div className="hero-power-trigger" tabIndex={0} aria-label={`Mostrar poderes de ${heroDisplayName(player.heroId)}`}>
@@ -554,7 +554,7 @@ function PlayerHero({player,enemy=false,onLevel,targetClass="",onTarget}:{player
    <div className="evolution-track"><i style={{width:`${Math.min(100,player.level>=3?100:(player.heroXP/Math.max(1,need))*100)}%`}}/></div>
    <div className="evolution-tooltip" role="tooltip"><p>{evolutionCriterionSummary(player.heroId)}</p><b>➜</b><div><span>{targets[0]} {unit} → Nível 2</span><span>{targets[1]} {unit} → Nível 3</span></div></div>
   </div>
-  {!enemy&&canLevel&&<button className="level-button" onClick={e=>{e.stopPropagation();onLevel?.()}}>Evoluir · {cost}</button>}
+  {!enemy&&canLevel&&<button className="level-button" disabled={!canAfford} title={canAfford?"Evoluir agora":"Energia insuficiente para evoluir"} onClick={e=>{e.stopPropagation();onLevel?.()}}>Evoluir · {cost}</button>}
  </div>
 }
 
