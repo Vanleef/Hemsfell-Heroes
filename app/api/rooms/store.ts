@@ -5,9 +5,13 @@ import { get, put } from "@vercel/blob";
 
 const schema = "CREATE TABLE IF NOT EXISTS multiplayer_rooms (id TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at INTEGER NOT NULL)";
 
-/* Local Next.js has no Worker binding. Keep this process-only fallback out of production. */
-const developmentRooms = new Map<string, Room>();
-const useDevelopmentMemory = () => process.env.NODE_ENV === "development" && process.env.HEMSFELL_ROOM_STORE !== "remote";
+/* Process fallback keeps previews usable when no D1/Blob binding is configured.
+   Set HEMSFELL_ROOM_STORE=d1 to require durable D1 in a production deployment. */
+const memoryRooms = new Map<string, Room>();
+const useMemoryStore = () => process.env.HEMSFELL_ROOM_STORE === "memory" || process.env.NODE_ENV === "development";
+const allowMemoryFallback = () => process.env.HEMSFELL_ROOM_STORE !== "d1";
+const readMemoryRoom = (id: string) => structuredClone(memoryRooms.get(id) ?? null);
+const writeMemoryRoom = (room: Room) => memoryRooms.set(room.id, structuredClone(room));
 
 async function d1() {
   /* Resolve the Worker binding lazily. This keeps the production artifact
@@ -25,21 +29,26 @@ function usesVercelBlob() {
 }
 
 export async function readRoom(id: string): Promise<Room | null> {
-  if (useDevelopmentMemory()) return structuredClone(developmentRooms.get(id) ?? null);
+  if (useMemoryStore()) return readMemoryRoom(id);
   if (usesVercelBlob()) {
     const result = await get(roomPath(id), { access: "private", useCache: false });
     if (!result || result.statusCode !== 200) return null;
     return JSON.parse(await new Response(result.stream).text()) as Room;
   }
 
-  const db = await d1();
-  const row = await db.prepare("SELECT payload FROM multiplayer_rooms WHERE id = ?").bind(id).first() as { payload: string } | null;
-  return row ? JSON.parse(row.payload) as Room : null;
+  try {
+    const db = await d1();
+    const row = await db.prepare("SELECT payload FROM multiplayer_rooms WHERE id = ?").bind(id).first() as { payload: string } | null;
+    return row ? JSON.parse(row.payload) as Room : null;
+  } catch (error) {
+    if (!allowMemoryFallback()) throw error;
+    return readMemoryRoom(id);
+  }
 }
 
 export async function writeRoom(room: Room) {
-  if (useDevelopmentMemory()) {
-    developmentRooms.set(room.id, structuredClone(room));
+  if (useMemoryStore()) {
+    writeMemoryRoom(room);
     return;
   }
   if (usesVercelBlob()) {
@@ -53,9 +62,14 @@ export async function writeRoom(room: Room) {
     return;
   }
 
-  const db = await d1();
-  await db.prepare("INSERT INTO multiplayer_rooms (id, payload, updated_at) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at")
-    .bind(room.id, JSON.stringify(room), Date.now()).run();
+  try {
+    const db = await d1();
+    await db.prepare("INSERT INTO multiplayer_rooms (id, payload, updated_at) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at")
+      .bind(room.id, JSON.stringify(room), Date.now()).run();
+  } catch (error) {
+    if (!allowMemoryFallback()) throw error;
+    writeMemoryRoom(room);
+  }
 }
 
 type SecretZone = "hand" | "deck" | "extraDeck";
