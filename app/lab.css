@@ -456,3 +456,8 @@
 .screen-game .terrain-slot.enemy-terrain,.screen-game .terrain-slot.player-terrain{left:calc(var(--field-left) + var(--field-width) + 12px)!important;z-index:45!important}
 .screen-game .side-piles{left:calc(var(--field-left) + var(--field-width) + 132px)!important}
 @media(max-width:1080px){.screen-game .terrain-slot.enemy-terrain,.screen-game .terrain-slot.player-terrain{left:auto!important;right:204px!important}.screen-game .side-piles{left:auto!important;right:10px!important}}
+
+/* Correction: terrain sits to the left of the creature grid, with its own
+   reserved column and the same Y alignment as the corresponding field. */
+.screen-game .terrain-slot.enemy-terrain,.screen-game .terrain-slot.player-terrain{left:calc(var(--field-left) - 112px)!important;right:auto!important}
+@media(max-width:1080px){.screen-game .terrain-slot.enemy-terrain,.screen-game .terrain-slot.player-terrain{left:10px!important;right:auto!important}}
