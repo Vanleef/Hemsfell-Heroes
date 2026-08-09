@@ -61,3 +61,32 @@ test("online priority and authoritative deadlines prevent simultaneous actions",
  assert.match(page,/baseRevision/);
  assert.match(page,/Aguardando resposta do oponente/);
 });
+
+
+test("deferred elemental text never forces an immediate target",()=>{
+ assert.match(page,/const immediateEffectText=.*split\(\/neste turno/);
+ assert.match(page,/const targetRule=.*immediateEffectText\(c\)/);
+ assert.doesNotMatch(page,/const targetRule=.*test\(c\.text\).*atordoad/);
+});
+
+test("elemental chain is consumed by the matching next spell and announces impact",()=>{
+ assert.match(page,/p\.elementChain\?\.element===element/);
+ assert.match(page,/Cadeia Elemental consumida/);
+ assert.match(page,/deferUnitImpact\(unit,owner===0\?1:0/);
+ assert.match(page,/p\.elementChain=elementChainFrom\(c\)/);
+});
+
+test("turned, positive and negative card states have distinct visuals",()=>{
+ assert.match(page,/unit\?\.exhausted\?"is-exhausted"/);
+ assert.match(page,/status-frozen/);
+ assert.match(page,/status-stunned/);
+ assert.match(page,/status-suffocated/);
+ assert.match(page,/status-immobilized/);
+ assert.match(css,/\.original-card\.is-exhausted\{[^}]*rotate\(90deg\)/s);
+ assert.match(css,/positive-card-bloom/);
+ assert.match(css,/elemental-ready/);
+ assert.match(css,/frozen-card-pulse/);
+ assert.match(css,/stunned-card-jolt/);
+ assert.match(css,/suffocated-card-throb/);
+ assert.match(css,/immobilized-card-lock/);
+});
