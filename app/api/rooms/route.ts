@@ -3,6 +3,8 @@ import { roomView, type Room, writeRoom } from "./store";
 import { defaultSettings, participant, sanitizeSettings } from "./machine";
 import { isPlainRecord, readSafeJson } from "./validation";
 
+export const runtime = "nodejs";
+
 export async function POST(req: NextRequest) {
   try {
     const parsed = await readSafeJson(req);
@@ -14,7 +16,8 @@ export async function POST(req: NextRequest) {
     await writeRoom(room);
     const url = new URL(req.url);
     return NextResponse.json({...roomView(room),token,link:`${url.origin}/?room=${encodeURIComponent(id)}`});
-  } catch {
+  } catch (error) {
+    console.error("[rooms] create failed", error);
     return NextResponse.json({ error: "request failed" }, { status: 500 });
   }
 }
