@@ -163,3 +163,12 @@ test("investigate dispatches revealed-card triggers without consuming the reveal
  assert.match(page,/Base de Investigação comprou 1 carta/);
  assert.match(page,/if\(investigator\.heroId==="ngoro"\)/);
 });
+
+
+test("life-loss triggers use one event dispatcher",()=>{
+ assert.match(page,/const resolveLifeLossTriggers/);
+ assert.match(page,/Saymon recebeu 1 marcador por perder vida/);
+ assert.match(page,/Discípulo de Sangue recebeu \+1\/\+0/);
+ assert.match(page,/Castelo Carmesim: primeira perda de vida/);
+ assert.match(page,/const g=structuredClone\(old\),before:\[number,number\]/);
+});
