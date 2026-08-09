@@ -5,6 +5,10 @@ import { get, put } from "@vercel/blob";
 
 const schema = "CREATE TABLE IF NOT EXISTS multiplayer_rooms (id TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at INTEGER NOT NULL)";
 
+/* Local Next.js has no Worker binding. Keep this process-only fallback out of production. */
+const developmentRooms = new Map<string, Room>();
+const useDevelopmentMemory = () => process.env.NODE_ENV === "development" && process.env.HEMSFELL_ROOM_STORE !== "remote";
+
 async function d1() {
   /* Resolve the Worker binding lazily. This keeps the production artifact
      importable by the Node-based validator while still using D1 at runtime. */
@@ -21,6 +25,7 @@ function usesVercelBlob() {
 }
 
 export async function readRoom(id: string): Promise<Room | null> {
+  if (useDevelopmentMemory()) return structuredClone(developmentRooms.get(id) ?? null);
   if (usesVercelBlob()) {
     const result = await get(roomPath(id), { access: "private", useCache: false });
     if (!result || result.statusCode !== 200) return null;
@@ -33,6 +38,10 @@ export async function readRoom(id: string): Promise<Room | null> {
 }
 
 export async function writeRoom(room: Room) {
+  if (useDevelopmentMemory()) {
+    developmentRooms.set(room.id, structuredClone(room));
+    return;
+  }
   if (usesVercelBlob()) {
     await put(roomPath(room.id), JSON.stringify(room), {
       access: "private",
