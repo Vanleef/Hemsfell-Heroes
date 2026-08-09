@@ -7,14 +7,16 @@
   },
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
-    "dev": "vite",
+    "dev": "next dev",
     "build": "bash scripts/build-verified.sh",
     "vercel-build": "next build",
     "start": "vinext start",
     "test": "npm run build && node --test tests/*.test.mjs",
     "validate:artifact": "bash scripts/validate-artifact.sh",
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate"
+    "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate",
+    "dev:vinext": "vite",
+    "check:vinext": "vinext check"
   },
   "dependencies": {
     "@vercel/blob": "2.7.0",
