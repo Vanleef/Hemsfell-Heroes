@@ -546,5 +546,6 @@
 
 /* Tessália's central creature lane is the Commander seat. It is visually distinct without changing slot geometry. */
 .field-slot.creature-slot.commander-slot{border-color:#b94149;background:radial-gradient(circle at 50% 20%,#a52d3438,#13070b73 72%);box-shadow:inset 0 0 26px #cf40494d,0 0 10px #9d29332e}
-.field-slot.creature-slot.commander-slot::before{content:"COMANDANTE";position:absolute;top:-12px;left:50%;transform:translateX(-50%);z-index:7;padding:2px 6px;border:1px solid #e7908a;border-radius:4px;background:#401016;color:#ffd8cc;font:800 6px Arial;letter-spacing:.1em;white-space:nowrap;pointer-events:none}
+.field-slot.creature-slot.commander-slot::before{content:"COMANDANTE";position:absolute;inset:6px 6px auto;z-index:1;display:grid;place-items:center;min-height:14px;border:1px solid #e7908a66;border-radius:4px;background:#40101655;color:#ffd8cc;font:800 6px Arial;letter-spacing:.1em;white-space:nowrap;pointer-events:none}
 .field-slot.creature-slot.commander-slot:has(.original-card){border-color:#ee6263;box-shadow:inset 0 0 30px #db45465c,0 0 15px #c9333c5c}
+.field-slot.creature-slot.commander-slot:has(.original-card)::before{display:none}
