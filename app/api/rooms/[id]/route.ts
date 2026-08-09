@@ -1,22 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readRoom, roleFor, roomView, writeRoom } from "../store";
+import { preserveOpponentSecrets, readRoom, roleFor, roomView, writeRoom } from "../store";
 import { applyTimeout, bothDecksLocked, canSync, deadline, participant, prepareCoin, sanitizeSettings } from "../machine";
+import { isBoundedGame, isPlainRecord, isRoomId, readSafeJson } from "../validation";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isRoomId(id)) return NextResponse.json({ error: "not found" }, { status: 404 });
   const room = await readRoom(id);
   if (!room) return NextResponse.json({ error: "not found" }, { status: 404 });
   if (applyTimeout(room)) { room.revision++; await writeRoom(room); }
   const role = roleFor(room, new URL(req.url).searchParams.get("token"));
-  return NextResponse.json(roomView(room, !!role));
+  return NextResponse.json(roomView(room, !!role, role));
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  if (!isRoomId(id)) return NextResponse.json({ error: "not found" }, { status: 404 });
   const room = await readRoom(id);
   if (!room) return NextResponse.json({ error: "not found" }, { status: 404 });
   try {
-    const body = await req.json();
+    const parsed = await readSafeJson(req);
+    if (!parsed.body) return NextResponse.json({ error: parsed.error ?? "invalid request" }, { status: 400 });
+    const body = parsed.body;
     if (body?.action === "join") {
       if (room.guest) return NextResponse.json({ error: "room full" }, { status: 409 });
       const token = crypto.randomUUID();
@@ -31,13 +36,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (body.action === "select") {
       const participant = room[role];
       if (!participant) return NextResponse.json({ error: "player not connected" }, { status: 409 });
-      participant.heroId = body.heroId ?? null;
+      participant.heroId = typeof body.heroId === "string" ? body.heroId : null;
       participant.deckLocked = !!body.locked;
       if (bothDecksLocked(room)) prepareCoin(room);
       room.revision++;
     } else if (body.action === "settings") {
       if (role !== "host" || room.status !== "waiting") return NextResponse.json({ error: "settings are locked" }, { status: 403 });
-      room.settings = sanitizeSettings(body.settings);
+      room.settings = sanitizeSettings(isPlainRecord(body.settings) ? body.settings : undefined);
       room.revision++;
     } else if (body.action === "choose_start") {
       if (room.status !== "coin-choice" || room.coinWinner !== role) return NextResponse.json({ error: "only coin winner chooses" }, { status: 403 });
@@ -46,7 +51,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       room.revision++;
     } else if (body.action === "initialize") {
       if (role !== "host" || room.status !== "mulligan" || room.game) return NextResponse.json({ error: "game already initialized" }, { status: 409 });
-      if (!body.game) return NextResponse.json({ error: "missing game" }, { status: 400 });
+      if (!isBoundedGame(body.game)) return NextResponse.json({ error: "invalid game state" }, { status: 400 });
       room.game = body.game;
       room.game.turnDeadline = null;
       room.revision++;
@@ -77,17 +82,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       room.revision++;
     } else if (body.action === "sync") {
       if (room.status !== "started") return NextResponse.json({ error: "room not started" }, { status: 409 });
+      if (!isBoundedGame(body.game)) return NextResponse.json({ error: "invalid game state" }, { status: 400 });
       const permission = canSync(room, role, body.game, body.baseRevision);
-      if (!permission.ok) return NextResponse.json({ error: permission.error, ...roomView(room, true) }, { status: permission.status });
-      room.game = body.game;
+      if (!permission.ok) return NextResponse.json({ error: permission.error, ...roomView(room, true, role) }, { status: permission.status });
+      room.game = preserveOpponentSecrets(room, body.game, role);
       if (room.game.pendingResponse && !room.game.pendingResponse.deadline) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
       room.revision++;
     } else if (body.action === "timeout") {
       if (applyTimeout(room)) room.revision++;
     } else return NextResponse.json({ error: "unknown action" }, { status: 400 });
     await writeRoom(room);
-    return NextResponse.json(roomView(room, true));
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return NextResponse.json(roomView(room, true, role));
+  } catch {
+    return NextResponse.json({ error: "request failed" }, { status: 500 });
   }
 }
