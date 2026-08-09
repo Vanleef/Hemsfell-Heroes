@@ -6,6 +6,7 @@ const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
 const css=await readFile(new URL("../app/lab.css",import.meta.url),"utf8");
 const roomApi=await readFile(new URL("../app/api/rooms/[id]/route.ts",import.meta.url),"utf8");
 const roomMachine=await readFile(new URL("../app/api/rooms/machine.ts",import.meta.url),"utf8");
+const roomStore=await readFile(new URL("../app/api/rooms/store.ts",import.meta.url),"utf8");
 const hosting=JSON.parse(await readFile(new URL("../.openai/hosting.json",import.meta.url),"utf8"));
 const catalogRoute=await readFile(new URL("../app/api/hemsfell-card-catalog.pdf/route.ts",import.meta.url),"utf8");
 const roomValidation=await readFile(new URL("../app/api/rooms/validation.ts",import.meta.url),"utf8");
@@ -220,4 +221,11 @@ test("remote card art reuses document pages instead of reopening them per card",
 test("room creation request stays valid TypeScript without escaped object keys",()=>{
  assert.match(page,/body: JSON\.stringify\(\{ settings \}\)/);
  assert.doesNotMatch(page,/\\\\:/);
+});
+
+
+test("local multiplayer does not require a production storage binding",()=>{
+ assert.match(roomStore,/developmentRooms/);
+ assert.match(roomStore,/useDevelopmentMemory/);
+ assert.match(roomStore,/NODE_ENV === "development"/);
 });
