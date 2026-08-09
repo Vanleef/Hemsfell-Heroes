@@ -10,6 +10,7 @@ const hosting=JSON.parse(await readFile(new URL("../.openai/hosting.json",import
 const catalogRoute=await readFile(new URL("../app/api/hemsfell-card-catalog.pdf/route.ts",import.meta.url),"utf8");
 const roomValidation=await readFile(new URL("../app/api/rooms/validation.ts",import.meta.url),"utf8");
 const nextConfig=await readFile(new URL("../next.config.ts",import.meta.url),"utf8");
+const roomConstants=await readFile(new URL("../app/api/rooms/constants.ts",import.meta.url),"utf8");
 
 test("rulebook resource and turn invariants stay automated",()=>{
  assert.match(page,/life:startingLife/);
@@ -189,6 +190,7 @@ test("global effects and Tessália's Commander lane stay deterministic",()=>{
 
 
 test("room APIs reject unsafe input and never expose opponent hidden zones",()=>{
+ assert.match(roomConstants,/ROOM_LIMITS/);
  assert.match(roomValidation,/MAX_ROOM_PAYLOAD_BYTES/);
  assert.match(roomValidation,/forbiddenKeys/);
  assert.match(roomValidation,/isBoundedGame/);
