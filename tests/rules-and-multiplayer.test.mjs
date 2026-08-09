@@ -11,6 +11,7 @@ const catalogRoute=await readFile(new URL("../app/api/hemsfell-card-catalog.pdf/
 const roomValidation=await readFile(new URL("../app/api/rooms/validation.ts",import.meta.url),"utf8");
 const nextConfig=await readFile(new URL("../next.config.ts",import.meta.url),"utf8");
 const roomConstants=await readFile(new URL("../app/api/rooms/constants.ts",import.meta.url),"utf8");
+const remoteCardArt=await readFile(new URL("../app/remote-card-art.tsx",import.meta.url),"utf8");
 
 test("rulebook resource and turn invariants stay automated",()=>{
  assert.match(page,/life:startingLife/);
@@ -206,4 +207,11 @@ test("browser-facing routes include baseline hardening headers",()=>{
  assert.match(nextConfig,/X-Content-Type-Options/);
  assert.match(nextConfig,/X-Frame-Options/);
  assert.match(nextConfig,/Permissions-Policy/);
+});
+
+
+test("remote card art reuses document pages instead of reopening them per card",()=>{
+ assert.match(remoteCardArt,/const pagePromises = new Map/);
+ assert.match(remoteCardArt,/function loadCatalogPage/);
+ assert.match(remoteCardArt,/void loadCatalogPage\(page\)/);
 });
