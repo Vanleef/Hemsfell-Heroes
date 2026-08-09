@@ -7,7 +7,7 @@
   },
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
-    "dev": "next dev",
+    "dev": "next dev -H 0.0.0.0",
     "build": "bash scripts/build-verified.sh",
     "vercel-build": "next build",
     "start": "vinext start",
