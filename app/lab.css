@@ -468,14 +468,14 @@
 
 /* Card-state motion language -------------------------------------------------
    Positive changes glow outward, while negative states use a distinct color
-   and cadence. A turned permanent is always rotated exactly 90° clockwise. */
+   and cadence. A turned permanent keeps its normal orientation and carries the VIRADA tag. */
 .screen-game .field-slot .original-card.is-exhausted{
- transform:rotate(90deg) scale(.76)!important;
+ transform:none!important;
  transform-origin:center center!important;
  z-index:24!important;
 }
 .screen-game .field-slot .original-card.is-exhausted:hover{
- transform:rotate(90deg) scale(.84)!important;
+ transform:translateY(-5px) scale(1.04)!important;
 }
 .screen-game .original-card.effect-positive:not(.effect-negative){
  animation:positive-card-bloom 1.8s ease-in-out infinite;
@@ -533,9 +533,9 @@
  50%{filter:sepia(.72) brightness(.96);transform:translateY(2px)}
 }
 @keyframes turned-card-impact{
- 0%,100%{transform:rotate(90deg) scale(.76) translate3d(0,0,0)}
- 25%{transform:rotate(88deg) scale(.78) translate3d(-3px,1px,0)}
- 75%{transform:rotate(92deg) scale(.78) translate3d(3px,-1px,0)}
+ 0%,100%{transform:translate3d(0,0,0)}
+ 25%{transform:translate3d(-3px,1px,0)}
+ 75%{transform:translate3d(3px,-1px,0)}
 }
 @media(prefers-reduced-motion:reduce){
  .screen-game .original-card.effect-positive,
