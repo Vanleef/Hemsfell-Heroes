@@ -461,3 +461,6 @@
    reserved column and the same Y alignment as the corresponding field. */
 .screen-game .terrain-slot.enemy-terrain,.screen-game .terrain-slot.player-terrain{left:calc(var(--field-left) - 112px)!important;right:auto!important}
 @media(max-width:1080px){.screen-game .terrain-slot.enemy-terrain,.screen-game .terrain-slot.player-terrain{left:10px!important;right:auto!important}}
+
+/* Deployment guard: terrain is always anchored before the central field. */
+.screen-game .terrain-slot{right:auto!important}
