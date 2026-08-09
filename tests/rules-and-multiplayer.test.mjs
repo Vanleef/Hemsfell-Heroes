@@ -98,3 +98,24 @@ test("the official card catalogue is available in native Next development",()=>{
  assert.match(catalogRoute,/content-type": "application\/pdf"/);
  assert.match(catalogRoute,/export async function GET/);
 });
+
+
+test("Uruk I resolves only the latest elemental spell at end of turn",()=>{
+ assert.match(page,/lastElement\?:ElementName/);
+ assert.match(page,/p\.lastElement=element;p\.lastElementSource=spell\.name/);
+ assert.match(page,/const resolveUrukLevelOne=/);
+ assert.match(page,/URUK I ·/);
+ assert.match(page,/element==="Fogo"/);
+ assert.match(page,/element==="Terra"/);
+ assert.match(page,/element==="Água"/);
+ assert.match(page,/p\.energy=Math\.min\(p\.maxEnergy,p\.energy\+1\)/);
+ assert.match(page,/p\.lastElement=undefined;p\.lastElementSource=undefined/);
+});
+
+test("visual effects coalesce accidental duplicates but explicit copies may repeat",()=>{
+ assert.match(page,/visualFxDedupeRef/);
+ assert.match(page,/allowRepeat=false/);
+ assert.match(page,/now-previous<1450/);
+ assert.match(page,/allowVisualRepeat=false/);
+ assert.match(page,/activation>0/);
+});
