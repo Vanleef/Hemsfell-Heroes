@@ -7,6 +7,7 @@ const css=await readFile(new URL("../app/lab.css",import.meta.url),"utf8");
 const roomApi=await readFile(new URL("../app/api/rooms/[id]/route.ts",import.meta.url),"utf8");
 const roomMachine=await readFile(new URL("../app/api/rooms/machine.ts",import.meta.url),"utf8");
 const hosting=JSON.parse(await readFile(new URL("../.openai/hosting.json",import.meta.url),"utf8"));
+const catalogRoute=await readFile(new URL("../app/api/hemsfell-card-catalog.pdf/route.ts",import.meta.url),"utf8");
 
 test("rulebook resource and turn invariants stay automated",()=>{
  assert.match(page,/life:startingLife/);
@@ -89,4 +90,11 @@ test("turned, positive and negative card states have distinct visuals",()=>{
  assert.match(css,/stunned-card-jolt/);
  assert.match(css,/suffocated-card-throb/);
  assert.match(css,/immobilized-card-lock/);
+});
+
+
+test("the official card catalogue is available in native Next development",()=>{
+ assert.match(catalogRoute,/drive\.usercontent\.google\.com/);
+ assert.match(catalogRoute,/content-type": "application\/pdf"/);
+ assert.match(catalogRoute,/export async function GET/);
 });
