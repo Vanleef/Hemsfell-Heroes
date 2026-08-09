@@ -119,3 +119,22 @@ test("visual effects coalesce accidental duplicates but explicit copies may repe
  assert.match(page,/allowVisualRepeat=false/);
  assert.match(page,/activation>0/);
 });
+
+
+test("spell-cast triggers resolve from permanent text with one animation each",()=>{
+ assert.match(page,/unit\.page===78/);
+ assert.match(page,/unit\.bonusAtk\+=1/);
+ assert.match(page,/unit\.page===79/);
+ assert.match(page,/athos-spell-\$\{unit\.uid\}/);
+ assert.match(page,/draw\(g,p\)/);
+ assert.match(page,/unit\.page===80/);
+ assert.match(page,/GATILHO · ATHOS/);
+ assert.match(page,/resolveSpellCastTriggers\(g,owner,c,\(label,detail,source,target\)=>/);
+});
+
+test("Uruk fire explicitly asks for an enemy creature or enemy hero",()=>{
+ assert.match(page,/kind:"uruk-fire"/);
+ assert.match(page,/criatura inimiga ou o herói inimigo/);
+ assert.match(page,/targeting\?\.kind==="uruk-fire"/);
+ assert.match(page,/endTurn\(uid\)/);
+});
