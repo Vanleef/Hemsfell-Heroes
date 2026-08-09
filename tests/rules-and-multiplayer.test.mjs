@@ -8,6 +8,8 @@ const roomApi=await readFile(new URL("../app/api/rooms/[id]/route.ts",import.met
 const roomMachine=await readFile(new URL("../app/api/rooms/machine.ts",import.meta.url),"utf8");
 const hosting=JSON.parse(await readFile(new URL("../.openai/hosting.json",import.meta.url),"utf8"));
 const catalogRoute=await readFile(new URL("../app/api/hemsfell-card-catalog.pdf/route.ts",import.meta.url),"utf8");
+const roomValidation=await readFile(new URL("../app/api/rooms/validation.ts",import.meta.url),"utf8");
+const nextConfig=await readFile(new URL("../next.config.ts",import.meta.url),"utf8");
 
 test("rulebook resource and turn invariants stay automated",()=>{
  assert.match(page,/life:startingLife/);
@@ -183,4 +185,23 @@ test("global effects and Tessália's Commander lane stay deterministic",()=>{
  assert.match(page,/O Comandante de Tessália atacou/);
  assert.match(page,/commander-slot/);
  assert.match(css,/\.commander-slot/);
+});
+
+
+test("room APIs reject unsafe input and never expose opponent hidden zones",()=>{
+ assert.match(roomValidation,/MAX_ROOM_PAYLOAD_BYTES/);
+ assert.match(roomValidation,/forbiddenKeys/);
+ assert.match(roomValidation,/isBoundedGame/);
+ assert.match(roomApi,/readSafeJson/);
+ assert.match(roomApi,/preserveOpponentSecrets/);
+ assert.match(roomApi,/isRoomId/);
+ assert.match(roomApi,/request failed/);
+ assert.match(roomMachine,/stale revision/);
+});
+
+test("browser-facing routes include baseline hardening headers",()=>{
+ assert.match(nextConfig,/poweredByHeader: false/);
+ assert.match(nextConfig,/X-Content-Type-Options/);
+ assert.match(nextConfig,/X-Frame-Options/);
+ assert.match(nextConfig,/Permissions-Policy/);
 });
