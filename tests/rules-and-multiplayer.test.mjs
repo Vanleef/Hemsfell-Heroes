@@ -154,3 +154,12 @@ test("trigger lifecycle covers entries, deaths and turn boundaries",()=>{
  assert.match(page,/GATO-METRO detectou/);
  assert.match(page,/Ngoro I investigou 1 carta/);
 });
+
+
+test("investigate dispatches revealed-card triggers without consuming the reveal",()=>{
+ assert.match(page,/Espião Infiltrado recebeu \+1\/\+0/);
+ assert.match(page,/Nmali triturou/);
+ assert.match(page,/Base de Investigação concedeu 1 de energia/);
+ assert.match(page,/Base de Investigação comprou 1 carta/);
+ assert.match(page,/if\(investigator\.heroId==="ngoro"\)/);
+});
