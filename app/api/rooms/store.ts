@@ -1,4 +1,4 @@
-import type { Room } from "./machine";
+import type { Room, RoomRole } from "./machine";
 export type { Room } from "./machine";
 
 import { get, put } from "@vercel/blob";
@@ -49,7 +49,53 @@ export async function writeRoom(room: Room) {
     .bind(room.id, JSON.stringify(room), Date.now()).run();
 }
 
-export function roomView(room: Room, includeGame = false) {
+type SecretZone = "hand" | "deck" | "extraDeck";
+
+const hiddenCard = (index: number) => ({
+  id: `hidden-${index}`,
+  name: "Carta oculta",
+  type: "Feitiço",
+  cost: 0,
+  text: "",
+  tags: [],
+  image: "",
+  hero: false,
+  imageCard: false,
+  revealed: false,
+});
+
+/** The opponent needs zone counts, never the identities of hidden cards. */
+function publicGameView(room: Room, role: RoomRole) {
+  if (!room.game) return null;
+  const game = structuredClone(room.game);
+  const privateIndex = role === "host" ? 1 : 0;
+  const opponent = game.players?.[privateIndex];
+  if (opponent) {
+    (["hand", "deck", "extraDeck"] as SecretZone[]).forEach((zone) => {
+      if (Array.isArray(opponent[zone])) opponent[zone] = opponent[zone].map((_: unknown, index: number) => hiddenCard(index));
+    });
+  }
+  return game;
+}
+
+/**
+ * A sync from one player never becomes authoritative for the other player's
+ * private zones. This blocks both accidental overwrites and client-side peeking.
+ */
+export function preserveOpponentSecrets(room: Room, nextGame: any, role: RoomRole) {
+  if (!room.game || !nextGame) return nextGame;
+  const privateIndex = role === "host" ? 1 : 0;
+  const current = room.game.players?.[privateIndex];
+  const incoming = nextGame.players?.[privateIndex];
+  if (current && incoming) {
+    (["hand", "deck", "extraDeck"] as SecretZone[]).forEach((zone) => {
+      incoming[zone] = structuredClone(current[zone] ?? []);
+    });
+  }
+  return nextGame;
+}
+
+export function roomView(room: Room, includeGame = false, role?: RoomRole | null) {
   return {
     id: room.id,
     host: { heroId: room.host.heroId, accepted: room.host.accepted, deckLocked: room.host.deckLocked, mulliganDone: room.host.mulliganDone, mulliganCount: room.host.mulliganCount },
@@ -60,7 +106,7 @@ export function roomView(room: Room, includeGame = false) {
     startingRole: room.startingRole,
     createdAt: room.createdAt,
     revision: room.revision,
-    ...(includeGame ? { game: room.game } : {}),
+    ...(includeGame ? { game: role ? publicGameView(room, role) : null } : {}),
   };
 }
 
