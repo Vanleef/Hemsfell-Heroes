@@ -211,9 +211,8 @@ const activeCardEffect=(card:CardDef,player:Player,owner:0|1,response:PendingRes
 
 function OriginalCard({card,controller,small=false,disabled=false,selected=false,targetClass="",activeEffect="",draggable=false,onDragStart,onDragEnd,onClick}:{card:CardDef|Unit;controller?:Player;small?:boolean;disabled?:boolean;selected?:boolean;targetClass?:string;activeEffect?:string;draggable?:boolean;onDragStart?:(e:React.DragEvent)=>void;onDragEnd?:()=>void;onClick?:()=>void}){
  const unit="uid" in card?card:undefined,modifiers=unit?statModifiers(controller,unit):{atk:0,hp:0},liveAttack=unit?currentAtk(unit,controller):0,liveVitality=unit?currentHp(unit,controller):0,shownCost=!unit&&controller?effectiveCost(card,controller):card.cost,costChanged=shownCost!==card.cost;
- /* Board cards expose semantic visual states. Turning is represented by a
-    clockwise quarter-turn; buffs, elemental readiness and each debuff keep
-    separate classes so their animation language is immediately recognizable. */
+ /* Board cards expose semantic visual states. A turned card preserves its
+    orientation and receives the VIRADA status tag; buffs and debuffs use separate classes. */
  const negativeState=unit?.suffocated?"status-suffocated":unit?.stunned?"status-stunned":unit?.frozen?"status-frozen":unit?.immobilized?"status-immobilized":"";
  const elementalReady=activeEffect.startsWith("CADEIA:"),positiveState=!!unit&&!negativeState&&(modifiers.atk>0||modifiers.hp>0||!!activeEffect);
  return <button className={`original-card ${small?"is-small":""} ${disabled?"is-disabled":""} ${selected?"is-selected":""} ${card.imageCard?"is-image-card":""} ${activeEffect?"effect-active":""} ${elementalReady?"effect-elemental":""} ${positiveState?"effect-positive":""} ${negativeState?"effect-negative "+negativeState:""} ${unit?.exhausted?"is-exhausted":""} ${unit?.impacting?"is-impacting":""} ${targetClass}`} disabled={disabled} draggable={draggable&&!disabled} onDragStart={onDragStart} onDragEnd={onDragEnd} onClick={onClick} aria-label={card.name} data-active-effect={activeEffect||undefined}>
