@@ -100,7 +100,17 @@ const spendCardEnergy=(p:Player,c:CardDef,cost:number,asResponse=false)=>{if(asR
 const bankRemainingEnergy=(p:Player)=>{p.reserve=Math.min(3,p.reserve+p.energy);p.energy=0};
 const resetTurnState=(p:Player)=>{p.turnCardsPlayed=0;p.turnSpellsPlayed=0;p.turnDeaths=0;p.levelUpsThisTurn=0;p.abilityUses={};p.elementChain=undefined;p.lastElement=undefined;p.lastElementSource=undefined;p.nextCardDiscount=0;p.nextNonCreatureDiscount=0;p.nextSpellDiscount=0;p.nextSummonPaysLife=false;[...p.board,...p.support,...(p.terrain?[p.terrain]:[])].forEach(unit=>{unit.temporaryAtk=0;unit.temporaryHp=0;unit.temporaryTags=[]})};
 const draw=(g:Game,p:Player,n=1)=>{for(let i=0;i<n;i++){const c=p.deck.shift();if(c)p.hand.push(c);else{p.life=0;log(g,`${deckById(p.heroId).name} tentou comprar sem cartas e perdeu.`,"danger")}}};
-const resolveSpellCastTriggers=(g:Game,owner:0|1,spell:CardDef)=>{const p=g.players[owner],element=cardElement(spell);if(element){p.lastElement=element;p.lastElementSource=spell.name}p.board.filter(unit=>unit.page===80&&!unit.suffocated).forEach(unit=>unit.markers++);if(p.board.some(unit=>unit.page===80&&!unit.suffocated))log(g,"Feiticeira Espectral recebeu 1 marcador ao conjurar um Feitiço.","effect");if(element==="Ar"&&p.support.some(unit=>unit.page===71&&!unit.suffocated)&&!p.abilityUses.aeromancia){p.reserve=Math.min(3,p.reserve+1);p.abilityUses.aeromancia=1;log(g,"Aeromancia concedeu 1 de energia à Reserva.","energy")}if(element==="Água"&&p.support.some(unit=>unit.page===72&&!unit.suffocated)&&!p.abilityUses.hidromancia){p.life=Math.min(30,p.life+3);p.abilityUses.hidromancia=1;log(g,"Hidromancia restaurou 3 de vida.","heal")}};
+/* Every "when you cast a spell" permanent resolves here. Keeping these triggers
+   together ensures player and AI casts follow the exact same rule path. */
+const resolveSpellCastTriggers=(g:Game,owner:0|1,spell:CardDef,onTrigger?:(label:string,detail:string,source:CardDef|Unit,target?:CardDef)=>void)=>{
+ const p=g.players[owner],element=cardElement(spell),announce=(label:string,detail:string,source:CardDef|Unit)=>onTrigger?.(label,detail,source,spell);
+ if(element){p.lastElement=element;p.lastElementSource=spell.name}
+ p.board.filter(unit=>unit.page===78&&!unit.suffocated).forEach(unit=>{unit.bonusAtk+=1;announce("GATILHO · ARQUIMAGO",`${unit.name} recebeu +1/+0 por ${spell.name}.`,unit);log(g,`Arquimago Sombrio recebeu +1/+0 ao conjurar ${spell.name}.`,"effect")});
+ p.board.filter(unit=>unit.page===79&&!unit.suffocated&&g.active===owner).forEach(unit=>{const key=`athos-spell-${unit.uid}`;if(p.abilityUses[key])return;p.abilityUses[key]=1;draw(g,p);announce("GATILHO · ATHOS",`${unit.name} comprou 1 carta por ${spell.name}.`,unit);log(g,`Athos, o Bibliotecário comprou 1 carta ao conjurar ${spell.name}.`,"effect")});
+ p.board.filter(unit=>unit.page===80&&!unit.suffocated).forEach(unit=>{unit.markers++;announce("GATILHO · FEITICEIRA",`${unit.name} recebeu 1 marcador por ${spell.name}.`,unit);log(g,`Feiticeira Espectral recebeu 1 marcador ao conjurar ${spell.name}.`,"effect")});
+ if(element==="Ar"&&p.support.some(unit=>unit.page===71&&!unit.suffocated)&&!p.abilityUses.aeromancia){p.reserve=Math.min(3,p.reserve+1);p.abilityUses.aeromancia=1;const source=p.support.find(unit=>unit.page===71&&!unit.suffocated)!;announce("GATILHO · AEROMANCIA",`Aeromancia concedeu 1 de Reserva por ${spell.name}.`,source);log(g,"Aeromancia concedeu 1 de energia à Reserva.","energy")}
+ if(element==="Água"&&p.support.some(unit=>unit.page===72&&!unit.suffocated)&&!p.abilityUses.hidromancia){p.life=Math.min(30,p.life+3);p.abilityUses.hidromancia=1;const source=p.support.find(unit=>unit.page===72&&!unit.suffocated)!;announce("GATILHO · HIDROMANCIA",`Hidromancia restaurou 3 de vida por ${spell.name}.`,source);log(g,"Hidromancia restaurou 3 de vida.","heal")}
+};
 const resolveMaintenanceTriggers=(g:Game,owner:0|1)=>{const p=g.players[owner];p.board.filter(unit=>unit.page===134&&!unit.suffocated).forEach(unit=>{p.life-=2;unit.markers++;log(g,`O Cobra Dor fez ${deckById(p.heroId).name} perder 2 de vida e recebeu 1 marcador.`,"damage")})};
 const cleanName=(value:string)=>value.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9]+/g," ").trim().toLowerCase();
 const baseCard=(c:CardDef|Unit):CardDef=>({page:c.page,id:c.id,name:c.name,type:c.type,cost:c.cost,atk:c.atk,hp:c.hp,text:c.text,tags:[...c.tags],image:c.image,hero:c.hero,imageCard:c.imageCard});
@@ -385,7 +395,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
    }else if(c.type==="Terreno"){
     if(p.terrain){const previous=p.terrain;sendToGrave(g,p,previous);log(g,`${previous.name} foi substituído pelo novo Terreno Cruel.`,"effect")}p.terrain=asUnit(c,0);resolveText(g,owner,p.terrain,targetUid,selectedImageName,cafeEffect)
     }else{
-     p.spellsPlayed++;resolveSpellCastTriggers(g,owner,c);if(archetype==="uruk")p.heroXP++;if(archetype==="rasmus"&&/café|cafe/i.test(c.name)){p.coffeeSpells++;if(p.coffeeSpells===10)summonImage(g,owner,"Café Especial","hand")}sendToGrave(g,p,c);resolveText(g,owner,c,targetUid,selectedImageName,cafeEffect)
+     p.spellsPlayed++;resolveSpellCastTriggers(g,owner,c,(label,detail,source,target)=>queueMicrotask(()=>showFx("ability",label,detail,baseCard(source),target)));if(archetype==="uruk")p.heroXP++;if(archetype==="rasmus"&&/café|cafe/i.test(c.name)){p.coffeeSpells++;if(p.coffeeSpells===10)summonImage(g,owner,"Café Especial","hand")}sendToGrave(g,p,c);resolveText(g,owner,c,targetUid,selectedImageName,cafeEffect)
    }
    if(furaActive&&p.board.some(unit=>unit.page===33)){draw(g,p);log(g,"Fuscão, o Agiota comprou 1 carta pelo Fura-Fila ativado.","effect")}
    if(mode==="online")g.pendingResponse=asResponse?null:{responder:owner===0?1:0,actor:owner,action:c.name,deadline:Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000};
@@ -426,7 +436,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
   if(!game)return;
   const activePlayer=game.players[game.active];
   if(game.active===0&&activePlayer.heroId==="uruk"&&activePlayer.level>=1&&activePlayer.lastElement==="Fogo"&&!urukTargetUid){
-   setTargeting({kind:"uruk-fire",source:"Uruk I · Fogo: escolha quem receberá 1 de dano"});
+   setTargeting({kind:"uruk-fire",source:"Uruk I · Fogo: escolha uma criatura inimiga ou o herói inimigo"});
    return
   }
   update(g=>{const owner=g.active;resolveUrukLevelOne(g,owner,urukTargetUid);finishImageEffects(g,owner);const p=g.players[owner];bankRemainingEnergy(p);g.active=g.active===0?1:0;g.phase="manutencao";g.round++;g.turnDeadline=Date.now()+(roomInfo?.settings?.turnSeconds??120)*1000;log(g,`Turno ${g.round}: ${deckById(g.players[g.active].heroId).name}.`,"phase")})
@@ -482,7 +492,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
        resolveText(g,1,c,host?.uid,selectedImage);
       }else if(c.type==="Terreno"){
        if(p.terrain)sendToGrave(g,p,p.terrain);p.terrain=asUnit(c,0);resolveText(g,1,c,undefined,selectedImage);
-    }else{p.spellsPlayed++;resolveSpellCastTriggers(g,1,c);if(p.heroId==="rasmus"&&/café|cafe/i.test(c.name)){p.coffeeSpells++;if(p.coffeeSpells===10)summonImage(g,1,"Café Especial","hand")}sendToGrave(g,p,c);resolveText(g,1,c,target,selectedImage,cafeEffect)}
+    }else{p.spellsPlayed++;resolveSpellCastTriggers(g,1,c,(label,detail,source,target)=>queueMicrotask(()=>showFx("ability",label,detail,baseCard(source),target)));if(p.heroId==="rasmus"&&/café|cafe/i.test(c.name)){p.coffeeSpells++;if(p.coffeeSpells===10)summonImage(g,1,"Café Especial","hand")}sendToGrave(g,p,c);resolveText(g,1,c,target,selectedImage,cafeEffect)}
      }else g.phase="combate";
     }else{
      const urukFireTarget=p.lastElement==="Fogo"?(g.players[0].board[0]?.uid||"enemy-hero"):undefined;
