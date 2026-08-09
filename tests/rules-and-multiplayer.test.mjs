@@ -6,8 +6,13 @@ const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
 const css=await readFile(new URL("../app/lab.css",import.meta.url),"utf8");
 const roomApi=await readFile(new URL("../app/api/rooms/[id]/route.ts",import.meta.url),"utf8");
 const roomMachine=await readFile(new URL("../app/api/rooms/machine.ts",import.meta.url),"utf8");
+const roomStore=await readFile(new URL("../app/api/rooms/store.ts",import.meta.url),"utf8");
 const hosting=JSON.parse(await readFile(new URL("../.openai/hosting.json",import.meta.url),"utf8"));
 const catalogRoute=await readFile(new URL("../app/api/hemsfell-card-catalog.pdf/route.ts",import.meta.url),"utf8");
+const roomValidation=await readFile(new URL("../app/api/rooms/validation.ts",import.meta.url),"utf8");
+const nextConfig=await readFile(new URL("../next.config.ts",import.meta.url),"utf8");
+const roomConstants=await readFile(new URL("../app/api/rooms/constants.ts",import.meta.url),"utf8");
+const remoteCardArt=await readFile(new URL("../app/remote-card-art.tsx",import.meta.url),"utf8");
 
 test("rulebook resource and turn invariants stay automated",()=>{
  assert.match(page,/life:startingLife/);
@@ -183,4 +188,45 @@ test("global effects and Tessália's Commander lane stay deterministic",()=>{
  assert.match(page,/O Comandante de Tessália atacou/);
  assert.match(page,/commander-slot/);
  assert.match(css,/\.commander-slot/);
+});
+
+
+test("room APIs reject unsafe input and never expose opponent hidden zones",()=>{
+ assert.match(roomConstants,/ROOM_LIMITS/);
+ assert.match(roomValidation,/MAX_ROOM_PAYLOAD_BYTES/);
+ assert.match(roomValidation,/forbiddenKeys/);
+ assert.match(roomValidation,/isBoundedGame/);
+ assert.match(roomApi,/readSafeJson/);
+ assert.match(roomApi,/preserveOpponentSecrets/);
+ assert.match(roomApi,/isRoomId/);
+ assert.match(roomApi,/request failed/);
+ assert.match(roomMachine,/stale revision/);
+});
+
+test("browser-facing routes include baseline hardening headers",()=>{
+ assert.match(nextConfig,/poweredByHeader: false/);
+ assert.match(nextConfig,/X-Content-Type-Options/);
+ assert.match(nextConfig,/X-Frame-Options/);
+ assert.match(nextConfig,/Permissions-Policy/);
+});
+
+
+test("remote card art reuses document pages instead of reopening them per card",()=>{
+ assert.match(remoteCardArt,/const pagePromises = new Map/);
+ assert.match(remoteCardArt,/function loadCatalogPage/);
+ assert.match(remoteCardArt,/void loadCatalogPage\(page\)/);
+});
+
+
+test("room creation request stays valid TypeScript without escaped object keys",()=>{
+ assert.match(page,/body: JSON\.stringify\(\{ settings \}\)/);
+ assert.doesNotMatch(page,/\\\\:/);
+});
+
+
+test("local multiplayer does not require a production storage binding",()=>{
+ assert.match(roomStore,/memoryRooms/);
+ assert.match(roomStore,/useMemoryStore/);
+ assert.match(roomStore,/allowMemoryFallback/);
+ assert.match(roomStore,/HEMSFELL_ROOM_STORE !== "d1"/);
 });

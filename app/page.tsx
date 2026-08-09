@@ -257,13 +257,31 @@ const syncOnlineGame=(next:Game)=>{
 
 const stopPolling = ()=>{if(pollRef.current){window.clearInterval(pollRef.current);pollRef.current=undefined}};
 
-const createRoom = async ()=>{
-    try{
-        const res = await fetch('/api/rooms',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({settings})});
-        const data = await res.json(); if(!res.ok)throw new Error(data?.error||'failed');
-        const id = data.id; localStorage.setItem(`hemsfell-room-${id}`,JSON.stringify({token:data.token,isHost:true}));setMode('online'); setRoomId(id); setRoomToken(data.token); setRoomLink(`${location.origin}/?room=${id}`); setRoomInfo(data); setIsHost(true); roomRevisionRef.current=data.revision??0; setScreen('setup');
-        pollRoom(id,data.token,true);
-    }catch(e){console.error(e);}
+/** Create a room with a compact, readable request boundary. */
+const createRoom = async () => {
+  try {
+    const response = await fetch("/api/rooms", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ settings }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error || "failed");
+
+    const id = data.id as string;
+    localStorage.setItem(`hemsfell-room-${id}`, JSON.stringify({ token: data.token, isHost: true }));
+    setMode("online");
+    setRoomId(id);
+    setRoomToken(data.token);
+    setRoomLink(`${location.origin}/?room=${id}`);
+    setRoomInfo(data);
+    setIsHost(true);
+    roomRevisionRef.current = data.revision ?? 0;
+    setScreen("setup");
+    pollRoom(id, data.token, true);
+  } catch (error) {
+    console.error("Could not create multiplayer room", error);
+  }
 };
 
 const joinRoomWithPost = async (id:string)=>{

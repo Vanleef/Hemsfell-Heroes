@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 const CATALOG_URL = "/api/hemsfell-card-catalog.pdf";
 let catalogPromise: Promise<import("pdfjs-dist").PDFDocumentProxy> | null = null;
+const pagePromises = new Map<number, Promise<import("pdfjs-dist").PDFPageProxy>>();
 
 async function loadCatalog() {
   if (!catalogPromise) {
@@ -20,6 +21,19 @@ async function loadCatalog() {
     });
   }
   return catalogPromise;
+}
+
+/** Reuse PDF page proxies when a card appears in hand, board and inspector. */
+function loadCatalogPage(page: number) {
+  let pending = pagePromises.get(page);
+  if (!pending) {
+    pending = loadCatalog().then((catalog) => {
+      if (page < 1 || page > catalog.numPages) throw new Error("Card page is outside the catalogue");
+      return catalog.getPage(page);
+    });
+    pagePromises.set(page, pending);
+  }
+  return pending;
 }
 
 type RemoteCardArtProps = {
@@ -51,10 +65,9 @@ export function RemoteCardArt({ page, name, className = "", style, priority = fa
     let cancelled = false;
     let renderTask: import("pdfjs-dist").RenderTask | undefined;
 
-    void loadCatalog()
-      .then(async (catalog) => {
-        if (page < 1 || page > catalog.numPages) throw new Error(`Página ${page} não existe no catálogo`);
-        const pdfPage = await catalog.getPage(page);
+    setFailed(false);
+    void loadCatalogPage(page)
+      .then(async (pdfPage) => {
         if (cancelled || !canvasRef.current) return;
         const canvas = canvasRef.current;
         const baseViewport = pdfPage.getViewport({ scale: 1 });
