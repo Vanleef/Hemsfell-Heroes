@@ -14,8 +14,6 @@ const readMemoryRoom = (id: string) => structuredClone(memoryRooms.get(id) ?? nu
 const writeMemoryRoom = (room: Room) => memoryRooms.set(room.id, structuredClone(room));
 
 async function d1() {
-  /* Resolve the Worker binding lazily. This keeps the production artifact
-     importable by the Node-based validator while still using D1 at runtime. */
   const { env } = await import("cloudflare:workers");
   if (!env.DB) throw new Error("Multiplayer database unavailable");
   await env.DB.prepare(schema).run();
@@ -28,12 +26,32 @@ function usesVercelBlob() {
   return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 }
 
+async function readBlobRoom(id: string): Promise<Room | null> {
+  const result = await get(roomPath(id), { access: "private", useCache: false });
+  if (!result || result.statusCode !== 200) return null;
+  return JSON.parse(await new Response(result.stream).text()) as Room;
+}
+
+async function writeBlobRoom(room: Room) {
+  await put(roomPath(room.id), JSON.stringify(room), {
+    access: "private",
+    addRandomSuffix: false,
+    allowOverwrite: true,
+    cacheControlMaxAge: 60,
+    contentType: "application/json",
+  });
+}
+
 export async function readRoom(id: string): Promise<Room | null> {
   if (useMemoryStore()) return readMemoryRoom(id);
   if (usesVercelBlob()) {
-    const result = await get(roomPath(id), { access: "private", useCache: false });
-    if (!result || result.statusCode !== 200) return null;
-    return JSON.parse(await new Response(result.stream).text()) as Room;
+    try {
+      return await readBlobRoom(id);
+    } catch (error) {
+      if (!allowMemoryFallback()) throw error;
+      console.error("[rooms] Blob read failed; using memory fallback", error);
+      return readMemoryRoom(id);
+    }
   }
 
   try {
@@ -42,6 +60,7 @@ export async function readRoom(id: string): Promise<Room | null> {
     return row ? JSON.parse(row.payload) as Room : null;
   } catch (error) {
     if (!allowMemoryFallback()) throw error;
+    console.error("[rooms] D1 read failed; using memory fallback", error);
     return readMemoryRoom(id);
   }
 }
@@ -52,14 +71,15 @@ export async function writeRoom(room: Room) {
     return;
   }
   if (usesVercelBlob()) {
-    await put(roomPath(room.id), JSON.stringify(room), {
-      access: "private",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      cacheControlMaxAge: 60,
-      contentType: "application/json",
-    });
-    return;
+    try {
+      await writeBlobRoom(room);
+      return;
+    } catch (error) {
+      if (!allowMemoryFallback()) throw error;
+      console.error("[rooms] Blob write failed; using memory fallback", error);
+      writeMemoryRoom(room);
+      return;
+    }
   }
 
   try {
@@ -68,6 +88,7 @@ export async function writeRoom(room: Room) {
       .bind(room.id, JSON.stringify(room), Date.now()).run();
   } catch (error) {
     if (!allowMemoryFallback()) throw error;
+    console.error("[rooms] D1 write failed; using memory fallback", error);
     writeMemoryRoom(room);
   }
 }
@@ -87,7 +108,6 @@ const hiddenCard = (index: number) => ({
   revealed: false,
 });
 
-/** The opponent needs zone counts, never the identities of hidden cards. */
 function publicGameView(room: Room, role: RoomRole) {
   if (!room.game) return null;
   const game = structuredClone(room.game);
@@ -101,10 +121,6 @@ function publicGameView(room: Room, role: RoomRole) {
   return game;
 }
 
-/**
- * A sync from one player never becomes authoritative for the other player's
- * private zones. This blocks both accidental overwrites and client-side peeking.
- */
 export function preserveOpponentSecrets(room: Room, nextGame: any, role: RoomRole) {
   if (!room.game || !nextGame) return nextGame;
   const privateIndex = role === "host" ? 1 : 0;
