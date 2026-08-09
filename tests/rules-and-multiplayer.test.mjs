@@ -138,3 +138,17 @@ test("Uruk fire explicitly asks for an enemy creature or enemy hero",()=>{
  assert.match(page,/targeting\?\.kind==="uruk-fire"/);
  assert.match(page,/endTurn\(uid\)/);
 });
+
+
+test("trigger lifecycle covers entries, deaths and turn boundaries",()=>{
+ assert.match(page,/const resolveCreatureEntryTriggers/);
+ assert.match(page,/Valorian causou 2 de dano/);
+ assert.match(page,/Bombardeiro Gente Boa causou 1 de dano/);
+ assert.match(page,/Gimble I curou 1 de vida/);
+ assert.match(page,/Sr\. Goblin I comprou 1 carta/);
+ assert.match(page,/Tifon II causou 1 de dano/);
+ assert.match(page,/GATILHO · UNDARIS/);
+ assert.match(page,/GATILHO · RITUAL/);
+ assert.match(page,/GATO-METRO detectou/);
+ assert.match(page,/Ngoro I investigou 1 carta/);
+});
