@@ -37,7 +37,7 @@ export const defaultSettings: MatchSettings = {
   turnSeconds: ROOM_LIMITS.turnSeconds.fallback,
 };
 
-export function sanitizeSettings(value: Partial<MatchSettings> | undefined): MatchSettings {
+export function sanitizeSettings(value: Partial<MatchSettings> | Record<string, unknown> | undefined): MatchSettings {
   const clamp = (n: unknown, min: number, max: number, fallback: number) =>
     Math.min(max, Math.max(min, Number.isFinite(Number(n)) ? Math.round(Number(n)) : fallback));
   return {
