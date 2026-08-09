@@ -14,7 +14,7 @@ async function ready() {
 
 export async function readRoom(id: string): Promise<Room | null> {
   const db = await ready();
-  const row = await db.prepare("SELECT payload FROM multiplayer_rooms WHERE id = ?").bind(id).first<{payload:string}>();
+  const row = await db.prepare("SELECT payload FROM multiplayer_rooms WHERE id = ?").bind(id).first() as { payload: string } | null;
   return row ? JSON.parse(row.payload) as Room : null;
 }
 
