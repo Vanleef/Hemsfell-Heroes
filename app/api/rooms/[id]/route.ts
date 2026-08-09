@@ -2,16 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { readRoom, roleFor, roomView, writeRoom } from "../store";
 import { applyTimeout, bothDecksLocked, canSync, deadline, participant, prepareCoin, sanitizeSettings } from "../machine";
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-  const room = await readRoom(params.id);
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const room = await readRoom(id);
   if (!room) return NextResponse.json({ error: "not found" }, { status: 404 });
   if (applyTimeout(room)) { room.revision++; await writeRoom(room); }
   const role = roleFor(room, new URL(req.url).searchParams.get("token"));
   return NextResponse.json(roomView(room, !!role));
 }
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
-  const room = await readRoom(params.id);
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const room = await readRoom(id);
   if (!room) return NextResponse.json({ error: "not found" }, { status: 404 });
   try {
     const body = await req.json();
