@@ -54,7 +54,7 @@ const deckById=(id:string)=>deckDefs.find(d=>d.id===id)!;
 const heroDisplayName=(id:string)=>({gimble:"Gimble",goblin:"Sr Goblin",uruk:"Uruk",tifon:"Tifon",saymon:"Saymon",tessalia:"Tessália",quarion:"Quarion",rasmus:"Rasmus",ngoro:"Ngoro",zayan:"Zayan",natureza:"Campeão de Natureza"}[id]??deckById(id).name.split(",")[0]);
 const evolutionHint=(id:string,level:number)=>{const hints:Record<string,string[]>={gimble:["Reúna Dragões e faça a ninhada crescer","Alcance a marca de 2 Dragões em jogo","Domine 4 Dragões para o ápice"],goblin:["Jogue cartas em sequência para alimentar o mercado","Atinja 3 cartas jogadas no mesmo turno","Complete 5 cartas no turno para a evolução final"],uruk:["Conjure feitiços para carregar os elementos","Conjure 4 feitiços e canalize o próximo elemento","Conjure 8 feitiços para dominar os elementos"],tifon:["Veja aliados tombarem e transforme perdas em vantagem","Registre 3 mortes aliadas","Registre 7 mortes para liberar o Último Suspiro"],saymon:["Pague vida para transformar dor em poder","Perca 3 pontos de vida ao longo da partida","Perca 5 pontos e alcance o limiar vampírico"]};return hints[id]?.[Math.min(2,Math.max(0,level-1))]??"Cumpra o marco exibido para liberar o próximo poder"};
 /* Interpreted summaries keep the evolution tooltip concise and readable. */
-const evolutionCriterionSummary=(id:string)=>({gimble:"Reúna Dragões no seu campo para fazer a ninhada crescer.",goblin:"Jogue várias cartas no mesmo turno para movimentar o mercado.",uruk:"Conjure feitiços para dominar progressivamente os elementos.",tifon:"Transforme a morte de criaturas aliadas em poder.",saymon:"Perca vida múltiplas vezes para alimentar sua natureza vampírica.",tessalia:"Declare ataques para provar o comando de Tessália.",quarion:"Ative Primeiros Atos de criaturas com nomes diferentes.",rasmus:"Reúna Gatos aliados e fortaleça a cafeteria temporal.",ngoro:"Acumule Pistas por meio de Investigar.",zayan:"Mantenha constantes aliadas em campo para sustentar a revolução.",natureza:"Distribua marcadores de ação entre suas constantes."}[id]??"Cumpra o objetivo do herói para liberar o próximo nível.");
+const evolutionCriterionSummary=(id:string)=>({gimble:"Reúna Dragões no seu campo para fazer a ninhada crescer.",goblin:"Jogue várias cartas no mesmo turno para movimentar o mercado.",uruk:"Conjure feitiços para dominar progressivamente os elementos.",tifon:"Transforme a morte de criaturas aliadas em poder.",saymon:"Perca vida múltiplas vezes para alimentar sua natureza vampírica.",tessalia:"Declare ataques com seu Comandante.",quarion:"Ative Primeiros Atos de criaturas com nomes diferentes.",rasmus:"Reúna Gatos aliados e fortaleça a cafeteria temporal.",ngoro:"Acumule Pistas por meio de Investigar.",zayan:"Mantenha constantes aliadas em campo para sustentar a revolução.",natureza:"Distribua marcadores de ação entre suas constantes."}[id]??"Cumpra o objetivo do herói para liberar o próximo nível.");
 /* Listas de teste fornecidas pelo autor. O número é a página/arte canônica do catálogo,
    portanto a composição e a ilustração deixam de depender de intervalos aproximados. */
 const suppliedDeckPages:Partial<Record<DeckId,Array<[number,number]>>>= {
@@ -690,7 +690,7 @@ function PlayerHero({player,enemy=false,onLevel,targetClass="",onTarget}:{player
    <span className="hero-level">NÍVEL {player.level}</span>
   </div>
   <div className="hero-evolution" tabIndex={0} aria-label={`Critérios de evolução de ${heroDisplayName(player.heroId)}`}>
-   <small>{player.level>=3?"EVOLUÇÃO CONCLUÍDA":"PROGRESSO PARA O PRÓXIMO NÍVEL"}</small>
+   <small>{player.level>=3?"EVOLUÇÃO CONCLUÍDA":"PRÓXIMO NÍVEL"}</small>
    <strong>{player.level>=3?"3/3":`${player.heroXP}/${need}`}</strong>
    <div className="evolution-track"><i style={{width:`${Math.min(100,player.level>=3?100:(player.heroXP/Math.max(1,need))*100)}%`}}/></div>
    <div className="evolution-tooltip" role="tooltip"><p>{evolutionCriterionSummary(player.heroId)}</p><b>➜</b><div><span>{targets[0]} {unit} → Nível 2</span><span>{targets[1]} {unit} → Nível 3</span></div></div>
@@ -704,7 +704,7 @@ function HeroAbilities({player,enemy=false,onAbility}:{player:Player;enemy?:bool
  return <aside className={`hero-abilities ${enemy?"enemy":""}`} style={{"--deck":d.color} as React.CSSProperties}>
   {/* This contextual panel is intentionally separate from evolution, which lives over the card. */}
   {/* The compact title leaves the tooltip body for the actual abilities and actions. */}
-  <header><b>Poderes do herói</b><span>{player.level}/3</span></header>
+  <b>Habilidades</b>
   {d.abilities.map((ability,slot)=>{
    const active=isActiveAbility(d.id,slot),key=`${d.id}-${slot}`,locked=slot+1>player.level,used=!!player.abilityUses[key];
    const noResource=d.id==="saymon"&&(slot===0||slot===1)?player.life<=2:d.id==="ngoro"&&slot===2?player.heroXP<3:false;
