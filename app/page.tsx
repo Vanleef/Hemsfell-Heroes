@@ -300,7 +300,17 @@ useEffect(()=>{
 },[]);
 useEffect(()=>{const id=window.setInterval(()=>setClockNow(Date.now()),250);return()=>window.clearInterval(id)},[]);
 useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadline=game.pendingResponse?.deadline??game.turnDeadline;if(!deadline||deadline>clockNow)return;const key=`${game.round}-${game.pendingResponse?.action??"turn"}-${deadline}`;if(timeoutSentRef.current===key)return;timeoutSentRef.current=key;roomAction("timeout")},[clockNow,mode,roomId,roomToken,game?.pendingResponse?.deadline,game?.turnDeadline]);
- const update=(fn:(g:Game)=>void)=>setGame(old=>{if(!old)return old;const g=structuredClone(old);fn(g);removeDead(g,(owner,card)=>resolveText(g,owner,card));g.players.forEach((p,i)=>{if(p.life<=0)g.winner=i===0?1:0});queueMicrotask(()=>syncOnlineGame(g));return g});
+ /* One centralized life-loss dispatcher keeps damage/payment triggers consistent across cards and heroes. */
+ const resolveLifeLossTriggers=(g:Game,before:[number,number])=>{
+  g.players.forEach((p,index)=>{
+   const loss=Math.max(0,before[index]-p.life);if(!loss)return;
+   const foe=g.players[index===0?1:0] as Player;
+   if(p.heroId==="saymon"){p.heroXP+=1;log(g,"Saymon recebeu 1 marcador por perder vida.","effect")}
+   if(g.active===index)p.board.filter(unit=>unit.page===131&&!unit.suffocated).forEach(unit=>{unit.temporaryAtk=(unit.temporaryAtk||0)+1;log(g,`Discípulo de Sangue recebeu +1/+0 após perda de vida.`,"effect")});
+   p.support.filter(unit=>unit.page===148&&!unit.suffocated).forEach(unit=>{const key=`castelo-carmesim-${g.round}`,count=(p.abilityUses[key]||0)+1;p.abilityUses[key]=count;if(count===1){draw(g,p);log(g,"Castelo Carmesim: primeira perda de vida comprou 1 carta.","effect")}else if(count===3){p.life=Math.min(30,p.life+2);log(g,"Castelo Carmesim: terceira perda de vida restaurou 2.","heal")}else if(count>=4){foe.life=Math.max(0,foe.life-4);log(g,"Castelo Carmesim: quarta perda de vida causou 4 ao inimigo.","damage")}});
+  })
+ };
+ const update=(fn:(g:Game)=>void)=>setGame(old=>{if(!old)return old;const g=structuredClone(old),before:[number,number]=[g.players[0].life,g.players[1].life];fn(g);resolveLifeLossTriggers(g,before);removeDead(g,(owner,card)=>resolveText(g,owner,card));g.players.forEach((p,i)=>{if(p.life<=0)g.winner=i===0?1:0});queueMicrotask(()=>syncOnlineGame(g));return g});
  const setSharedCombat=(action:CombatAction|null)=>{setCombatAction(action);if(mode==="online")update(g=>{g.combatAction=action})};
  const setSharedResponse=(response:PendingResponse|null)=>{const timed=response?{...response,deadline:response.deadline??Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000}:null;setResponseWindow(timed);if(mode==="online")update(g=>{g.pendingResponse=timed})};
  useEffect(()=>{if(mode!=="online"||!game)return;setCombatAction(game.combatAction??null);const pending=game.pendingResponse??null;if(!pending){setResponseWindow(null);return}if(pending.responder!==0){setResponseWindow(pending);return}/* The responder first sees the opponent's serialized card animation. */const timer=window.setTimeout(()=>setResponseWindow(pending),1450);return()=>window.clearTimeout(timer)},[mode,game?.combatAction,game?.pendingResponse?.action,game?.pendingResponse?.deadline]);
