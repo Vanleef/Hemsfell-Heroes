@@ -413,3 +413,23 @@
 .original-card.is-impacting:after{content:"✦";position:absolute;inset:0;display:grid;place-items:center;color:#fff0ad;font:800 30px Georgia;pointer-events:none;text-shadow:0 0 18px #ffb14a;animation:impact-flare .44s ease-in-out infinite alternate}
 @keyframes card-impact-shake{0%,100%{transform:translate3d(0,0,0) rotate(0)}20%{transform:translate3d(-4px,1px,0) rotate(-1.5deg)}40%{transform:translate3d(4px,-1px,0) rotate(1.5deg)}60%{transform:translate3d(-3px,0,0) rotate(-1deg)}80%{transform:translate3d(3px,1px,0) rotate(1deg)}}
 @keyframes impact-flare{from{opacity:.2;transform:scale(.75)}to{opacity:1;transform:scale(1.2)}}
+
+/* Compact vertical match layout: hand → energy → auxiliary/creatures →
+   response lane → creatures/auxiliary → energy → hand. */
+.screen-game .hs-board{--field-left:clamp(190px,22vw,300px)!important;--field-width:min(650px,calc(100vw - 430px))!important;min-height:1080px!important;height:1080px!important;overflow:hidden!important}
+.screen-game .opponent-hand{left:calc(var(--field-left) + var(--field-width)/2)!important;top:56px!important;z-index:35!important}
+.screen-game .opponent-hand .original-card{width:42px!important}
+.screen-game .field-energy.enemy-energy{left:var(--field-left)!important;top:126px!important;width:var(--field-width)!important}
+.screen-game .paired-field.enemy-field{left:var(--field-left)!important;top:183px!important;width:var(--field-width)!important;height:230px!important}
+.screen-game .enemy-field .field-column{grid-template-rows:76px 132px!important;gap:10px!important}
+.screen-game .enemy-field .auxiliary-slot{grid-row:1!important}.screen-game .enemy-field .creature-slot{grid-row:2!important}
+.screen-game .paired-field.player-field{left:var(--field-left)!important;top:612px!important;width:var(--field-width)!important;height:230px!important}
+.screen-game .player-field .field-column{grid-template-rows:132px 76px!important;gap:10px!important}
+.screen-game .field-energy.player-energy{left:var(--field-left)!important;top:854px!important;width:var(--field-width)!important}
+.screen-game .player-hand{left:var(--field-left)!important;top:914px!important;bottom:auto!important;width:var(--field-width)!important;height:170px!important}
+.screen-game .player-hand .original-card{width:clamp(82px,8vw,112px)!important}
+.screen-game .battle-divider{display:none!important}
+.screen-game .phase-orb{left:calc(var(--field-left) + var(--field-width) + 22px)!important;right:auto!important;top:490px!important;transform:translateY(-50%)!important}
+.screen-game .combat-cinematic,.screen-game .visual-effect,.screen-game .defense-decision,.screen-game .response-dialog,.screen-game .target-banner{z-index:9000!important}
+.screen-game .side-piles{z-index:40!important}
+@media(max-width:900px){.screen-game .hs-board{--field-left:132px!important;--field-width:calc(100vw - 270px)!important}.screen-game .phase-orb{left:auto!important;right:12px!important}.screen-game .player-hand{height:150px!important}.screen-game .paired-field .field-slot{border-radius:6px!important}}
