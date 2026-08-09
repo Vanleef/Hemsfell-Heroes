@@ -6590,3 +6590,24 @@
     inset 0 0 30px #db45465c,
     0 0 15px #c9333c5c;
 }
+
+
+/* Compact interaction/status overlays never cover the hero card or deck picker copy. */
+.deck-picker{display:grid;grid-template-columns:96px minmax(0,1fr);grid-template-rows:auto auto auto;column-gap:12px;align-items:center}
+.deck-picker>span{grid-column:1/-1}
+.deck-picker canvas,.deck-picker img{grid-column:1;grid-row:2/4;width:96px!important;height:128px!important;object-fit:cover}
+.deck-picker select{grid-column:2;grid-row:2;min-width:0;width:100%;align-self:start}
+.deck-picker>b,.deck-picker>small{grid-column:2;min-width:0;overflow-wrap:anywhere;align-self:start}
+.deck-picker>b{grid-row:3;margin-top:2px}
+.deck-picker>small{grid-row:3;margin-top:24px}
+
+.activation-indicator{position:absolute;right:5px;top:5px;z-index:5;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#f6c94f;color:#201705;font-style:normal;font-size:13px;box-shadow:0 0 0 2px #201705,0 0 14px #f6c94f;animation:activation-pulse 1.5s ease-in-out infinite}
+@keyframes activation-pulse{50%{transform:scale(1.1);filter:brightness(1.12)}}
+.hero-status-cues{position:absolute;left:50%;bottom:-25px;z-index:8;transform:translateX(-50%);display:flex;gap:5px;white-space:nowrap}
+.hero-status-cues.cost{bottom:-48px}
+.hero-status-cues span{display:block;border:1px solid var(--deck,#69d5ff);border-radius:999px;padding:3px 7px;background:#07131edb;color:#f5f9ff;font:800 10px/1.1 system-ui;letter-spacing:.04em;box-shadow:0 4px 12px #0008;cursor:help}
+.element-choice-dialog{width:min(420px,92vw);padding:22px;border:1px solid #64c8ff;border-radius:16px;background:#07131f;color:#effaff;box-shadow:0 24px 70px #000}
+.element-choice-dialog header{display:flex;justify-content:space-between;align-items:center;color:#ffd56c;font-weight:800;letter-spacing:.09em}
+.element-choice-dialog h2{margin:12px 0 4px}.element-choice-dialog p{opacity:.8}.element-choice-dialog>div{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}
+.element-choice-dialog button{min-height:42px;border:1px solid #468fc0;border-radius:9px;background:#0f2840;color:#fff;font-weight:800;cursor:pointer}
+.element-choice-dialog button:hover{background:#17466d}
