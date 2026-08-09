@@ -1,4 +1,3 @@
-
 /* Hemsfell playtest board — explicit zones prevent cards and controls from overlapping. */
 .hs-board{height:max(100dvh,960px);min-height:960px;min-width:1180px;overflow:auto;background:radial-gradient(ellipse at 57% 47%,#334b4e 0,#1a2d31 36%,#091317 72%),linear-gradient(90deg,#0c1b20,#263b3d 55%,#0c1b20)}
 .hs-board:after{content:"";position:absolute;inset:66px 24px 18px;border:1px solid #e0c67e25;border-radius:28px;box-shadow:inset 0 0 100px #0009;pointer-events:none}
@@ -73,371 +72,395 @@
 .search-deck-overlay{z-index:155;background:#01040aea;backdrop-filter:blur(8px)}.search-deck-dialog{width:min(1120px,96vw);height:min(880px,94vh);display:grid;grid-template-rows:auto auto 1fr auto;overflow:hidden;border:1px solid #70c99a85;border-radius:15px;background:linear-gradient(150deg,#152a2a,#070d15 68%);color:#f3eddf;box-shadow:0 35px 110px #000}.search-deck-dialog>header{padding:15px 21px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff17;background:#040b0cdd}.search-deck-dialog>header span{color:#79dda5;font:900 8px Arial;letter-spacing:.15em}.search-deck-dialog>header h2{margin:4px 0 0;font-size:23px}.search-deck-dialog>header>b{color:#e5ca7a;font:800 10px Arial}.search-instruction{padding:13px 21px;display:flex;align-items:center;justify-content:space-between;gap:20px;border-bottom:1px solid #ffffff12;background:#0b1718}.search-instruction p{margin:0;color:#dce7e1;font:12px Arial}.search-instruction p strong{color:#86e2ad;font-size:16px}.search-instruction span{color:#90a19e;font:9px Arial;text-align:right}.search-card-grid{padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));align-content:start;gap:18px 10px;overflow:auto}.search-card-grid>div{min-width:0;padding:8px 5px;display:flex;flex-direction:column;align-items:center;gap:5px;border:1px solid transparent;border-radius:8px;text-align:center}.search-card-grid .original-card{width:92px}.search-card-grid>div>b{max-width:100%;overflow:hidden;color:#e6e8e7;font:800 8px Arial;text-overflow:ellipsis;white-space:nowrap}.search-card-grid>div>small{color:#768582;font:7px Arial}.search-card-grid .search-invalid{opacity:.32;filter:grayscale(.7)}.search-card-grid .search-valid{border-color:#56d78a35;background:#4bd9870c}.search-card-grid .search-valid:hover,.search-card-grid .search-selected{border-color:#64e69a;background:#48cc8026;box-shadow:0 0 20px #44d58230}.search-card-grid .original-card.is-selected:after{content:"ESCOLHIDA"}.search-deck-dialog>footer{padding:13px 20px;display:flex;align-items:center;justify-content:flex-end;gap:10px;border-top:1px solid #ffffff14;background:#04090f}.search-deck-dialog>footer span{margin-right:auto;color:#96a6a2;font:10px Arial}.search-deck-dialog>footer button{padding:10px 14px;border:1px solid #ffffff24;background:#121d24;color:#dce5e2;font:800 8px Arial;text-transform:uppercase;letter-spacing:.07em}.search-deck-dialog>footer .confirm-search{border-color:#64d994;background:#1f603c;color:#eafff1}.search-deck-dialog>footer button:disabled{opacity:.35;cursor:not-allowed}.deck-shuffle-effect{position:absolute;right:24px;z-index:145;width:170px;height:104px;padding:13px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;border:1px solid #f0cf77;border-radius:10px;background:#07101bf2;box-shadow:0 0 30px #e6bd50,0 18px 35px #000;pointer-events:none;animation:shuffle-notice 1.5s ease both}.deck-shuffle-effect.owner-1{top:183px}.deck-shuffle-effect.owner-0{top:522px}.deck-shuffle-effect>div{position:absolute;left:50%;top:31px;width:54px;height:50px;transform:translateX(-50%)}.deck-shuffle-effect i{position:absolute;width:33px;height:45px;display:grid;place-items:center;border:1px solid #f0cc6e;border-radius:4px;background:#153654;color:#f0cc6e;font:900 11px Georgia;font-style:normal;box-shadow:0 4px 8px #000;animation:shuffle-fan .55s ease-in-out infinite alternate}.deck-shuffle-effect i:nth-child(2){animation-delay:-.1s}.deck-shuffle-effect i:nth-child(3){animation-delay:-.2s}.deck-shuffle-effect i:nth-child(4){animation-delay:-.3s}.deck-shuffle-effect i:nth-child(5){animation-delay:-.4s}.deck-shuffle-effect>b{color:#f2d37f;font:900 7px Arial;letter-spacing:.12em}.deck-shuffle-effect>span{margin-top:2px;color:#98a6b4;font:7px Arial}
 @keyframes deck-card-shuffle{to{transform:translate(8px,-3px) rotate(7deg)}}@keyframes shuffle-fan{0%{left:0;transform:rotate(-15deg)}100%{left:23px;transform:rotate(15deg)}}@keyframes shuffle-notice{0%{opacity:0;transform:scale(.7)}15%,82%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.05)}}
 
-/* Final tabletop layout: overrides earlier playtest coordinates with two mirrored five-slot fields. */
-@media(min-width:901px){
- .hs-board{height:100dvh!important;min-height:720px!important;min-width:0!important;overflow:hidden!important;background:radial-gradient(ellipse at 50% 48%,#294551 0,#14262e 48%,#070d12 90%)!important}
- .hs-board:after{inset:48px 12px 12px!important;border-radius:12px}
- .hs-board .game-bar{height:46px!important}
- .hs-board .player-hero{left:16px!important;width:220px!important;transform:none!important}.hs-board .player-hero.enemy{top:58px!important}.hs-board .player-hero:not(.enemy){bottom:76px!important}
- .hs-board .hero-abilities{left:16px!important;width:220px!important;transform:none!important}.hs-board .hero-abilities.enemy{top:144px!important}.hs-board .hero-abilities:not(.enemy){bottom:166px!important}
- .hs-board .board-half{position:absolute!important;left:calc(50% - min(36vw,500px))!important;width:min(72vw,1000px)!important;height:214px!important;margin:0!important;padding:8px 12px!important;display:grid!important;grid-template-columns:104px minmax(0,1fr)!important;grid-template-rows:minmax(154px,1fr) auto!important;gap:7px 12px!important;border:1px solid #d2b05a4a!important;background:linear-gradient(90deg,#07121bd9,transparent 16%,transparent 84%,#07121bd9)!important;box-shadow:inset 0 1px #efd27a30,inset 0 -1px #000b!important;z-index:10!important}
- .hs-board .opponent-half{top:166px!important;bottom:auto!important}.hs-board .player-half{top:auto!important;bottom:136px!important}
- .hs-board .terrain-slot{position:static!important;left:auto!important;top:auto!important;transform:none!important;width:auto!important;height:auto!important;grid-column:1!important;grid-row:1 / 3!important;align-self:center!important;justify-self:stretch!important;display:grid!important;place-items:center!important;gap:6px!important;padding:5px!important;border:1px solid #d6b46455!important;border-radius:4px!important;background:#07121ac9!important}
- .hs-board .terrain-slot>em{position:static!important;max-width:none!important;font-size:7px!important}.hs-board .terrain-slot .original-card{width:64px!important;margin:0!important}
- .hs-board .paired-field{position:static!important;left:auto!important;top:auto!important;width:auto!important;height:auto!important;grid-area:1 / 2!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:16px minmax(78px,1fr) 16px 54px!important;gap:5px 9px!important;min-width:0!important;z-index:auto!important}
- .hs-board .paired-field>em{position:static!important;left:auto!important;right:auto!important;display:block!important;align-self:end!important;font:700 8px Arial!important;letter-spacing:.08em!important;text-align:center!important;color:#e6d097b8!important}.hs-board .creature-label{grid-column:1 / -1!important;grid-row:1!important}.hs-board .support-label{grid-column:1 / -1!important;grid-row:3!important}
- .hs-board .field-column{position:static!important;display:grid!important;grid-row:2 / 5!important;grid-template-rows:minmax(78px,1fr) 54px!important;gap:21px!important;min-width:0!important}.hs-board .field-column:nth-of-type(1){grid-column:1!important}.hs-board .field-column:nth-of-type(2){grid-column:2!important}.hs-board .field-column:nth-of-type(3){grid-column:3!important}.hs-board .field-column:nth-of-type(4){grid-column:4!important}.hs-board .field-column:nth-of-type(5){grid-column:5!important}.hs-board .field-slot{position:relative!important;display:grid!important;place-items:center!important;border:1px solid #d3b56538!important;border-radius:4px!important;background:linear-gradient(145deg,#0a1821e8,#02070cbc)!important;box-shadow:inset 0 0 20px #000a!important}.hs-board .creature-slot{grid-row:1!important}.hs-board .auxiliary-slot{grid-row:2!important}.hs-board .field-slot>span{width:auto!important;height:auto!important;border:0!important;border-radius:0!important;color:#c3a76a55!important;font-size:11px!important}.hs-board .creature-slot .original-card.is-small{width:min(100%,82px)!important}.hs-board .auxiliary-slot .original-card.is-small{width:min(100%,60px)!important}
- .hs-board .enemy-field{grid-template-rows:16px 54px 16px minmax(78px,1fr)!important}.hs-board .enemy-field .support-label{grid-row:1!important}.hs-board .enemy-field .creature-label{grid-row:3!important}.hs-board .enemy-field .field-column{grid-template-rows:54px minmax(78px,1fr)!important}.hs-board .enemy-field .auxiliary-slot{grid-row:1!important}.hs-board .enemy-field .creature-slot{grid-row:2!important}
- .hs-board .energy-board{grid-column:2!important;grid-row:2!important;width:100%!important;max-width:none!important;margin:0!important;align-self:end!important;padding:5px 8px!important;border-radius:4px!important}.hs-board .battle-divider{top:50%!important;left:50%!important;width:min(68vw,930px)!important;height:30px!important;transform:translate(-50%,-50%)!important;z-index:20!important}
- .hs-board .side-piles{width:152px!important;right:14px!important;display:grid!important;grid-template-columns:repeat(2,72px)!important;gap:7px!important}.hs-board .enemy-piles{top:74px!important}.hs-board .player-piles{top:auto!important;bottom:16px!important}.hs-board .pile-zone{width:72px!important;height:88px!important;grid-template-rows:50px auto auto!important}.hs-board .opponent-hand{left:50%!important;top:52px!important;transform:translateX(-50%)!important}.hs-board .player-hand{left:50%!important;bottom:-52px!important;width:min(680px,58vw)!important;height:170px!important;transform:translateX(-50%)!important;z-index:30!important}.hs-board .player-hand .original-card{width:126px!important;margin-left:-34px!important}.hs-board .phase-orb{right:174px!important;top:calc(50% - 42px)!important;bottom:auto!important}.hs-board .phase-orb button{width:86px!important;height:86px!important}.hs-board .surrender-button{right:174px!important;bottom:22px!important}
+/* Board geometry v2 — isolated play regions based on the physical Hemsfell mat. */
+.hs-board{
+ --field-left:430px;
+ --field-width:min(720px,calc(100% - 650px));
+ height:max(100dvh,1120px)!important;
+ min-height:1120px!important;
+ min-width:1280px!important;
+ overflow:auto!important;
+ isolation:isolate;
+ background:radial-gradient(ellipse at 57% 46%,#29444b 0,#142b32 43%,#071216 78%)!important;
 }
+.hs-board:after{inset:74px 20px 22px!important;border-radius:16px!important}
+.game-bar{height:64px!important}.game-bar .resource-summary{display:none}.phase-track>div{min-width:96px}
 
-@media(min-width:901px){
- .hs-board .board-half{height:290px!important;box-sizing:border-box!important;grid-template-rows:232px 40px!important}
- .hs-board .opponent-half{top:145px!important}.hs-board .player-half{bottom:80px!important}
- .hs-board .paired-field{height:232px!important;grid-template-rows:16px 114px 16px 86px!important;gap:0 9px!important;align-self:stretch!important}
- .hs-board .field-column{grid-template-rows:114px 86px!important;gap:16px!important;align-items:center!important}
- .hs-board .field-slot{width:82px!important;aspect-ratio:.72!important;height:auto!important;justify-self:center!important;align-self:center!important}
- .hs-board .auxiliary-slot{width:62px!important}
- .hs-board .creature-slot .original-card.is-small{width:72px!important}.hs-board .auxiliary-slot .original-card.is-small{width:54px!important}
- .hs-board .enemy-field{height:232px!important;grid-template-rows:16px 86px 16px 114px!important}
- .hs-board .enemy-field .field-column{grid-template-rows:86px 114px!important}.hs-board .enemy-field .auxiliary-slot{width:62px!important}.hs-board .enemy-field .creature-slot{width:82px!important}
- .hs-board .opponent-half{grid-template-rows:40px 232px!important}.hs-board .opponent-half .energy-board{grid-row:1!important;align-self:start!important}.hs-board .opponent-half .paired-field{grid-row:2!important}.hs-board .opponent-half .terrain-slot{grid-row:1 / 3!important}
- .hs-board .player-hand{bottom:-110px!important}
+/* Hero information occupies its own rail and never enters either card field. */
+.player-hero{left:22px!important;width:284px!important;height:92px!important;padding:10px 64px 10px 72px!important;grid-template-columns:1fr!important;align-content:start;overflow:visible}
+.player-hero.enemy{top:82px!important}.player-hero:not(.enemy){bottom:27px!important}
+.player-hero>img{left:9px!important;top:9px!important;width:53px!important;height:72px!important}
+.player-hero .hero-header b{font-size:12px}.player-hero .hero-stats{display:flex;gap:7px;margin-top:7px}.player-hero .hero-stats>*{padding:3px 5px;border:1px solid #ffffff17;border-radius:4px;background:#05090d88;font:800 8px Arial}.player-hero .hero-life{color:#ff8992}.player-hero .hero-energy{color:#82d1ff}.player-hero .hero-reserve{color:#c8a1f0}.player-hero .hero-progress{position:absolute;right:9px;top:10px;width:49px;padding:5px;border:1px solid #ffffff17;border-radius:5px;text-align:center}.player-hero .hero-progress small{display:block;color:#8794a1;font:6px Arial;text-transform:uppercase}.player-hero .hero-progress b{color:#e9c96f;font:900 9px Arial}.player-hero>button.level-button{right:8px!important;bottom:8px!important;width:80px!important;height:27px!important}.hero-badges{position:absolute;left:72px;right:94px;bottom:7px;display:flex;gap:4px}.hero-badge{padding:3px 5px;border:1px solid #d3a6505e;border-radius:3px;background:#3a2912;color:#efcf7d;font:700 5px Arial;white-space:nowrap}
+.hero-abilities{left:22px!important;width:284px!important;max-height:190px;overflow:auto}.hero-abilities.enemy{top:184px!important}.hero-abilities:not(.enemy){bottom:130px!important}.ability{min-height:39px}.ability>p{font-size:9px!important}.ability>button{min-width:58px}
+
+/* Each player gets a bordered mat: terrain left, five creature/support columns, resources below. */
+.paired-field{left:var(--field-left)!important;width:var(--field-width)!important;height:232px!important;gap:12px!important;padding:8px 10px 10px;border:1px solid #d9be6c53;border-radius:6px;background:linear-gradient(180deg,#16303a9c,#0a1b22b8);box-shadow:inset 0 0 36px #0006;box-sizing:border-box}
+.paired-field.enemy-field{top:136px!important}.paired-field.player-field{top:548px!important}
+.paired-field .field-column{grid-template-rows:134px 72px;gap:10px}.paired-field .creature-label{top:-16px!important}.paired-field .support-label{top:145px!important}.field-slot{min-width:0;border-radius:5px!important;border-color:#d9bd6666!important;background:#061219d9!important}.field-slot>span{border:0!important;color:#bfa85f70!important;font:10px Georgia}.creature-slot .original-card.is-small{width:84px!important}.auxiliary-slot .original-card,.auxiliary-slot .original-card.is-small{width:51px!important}.field-column.linked-pair:before{inset:-4px!important;border-radius:8px!important}.field-column.linked-pair:after{top:130px!important;height:18px!important}
+.terrain-slot{left:326px!important;width:88px!important;height:136px!important;border-radius:5px!important}.terrain-slot.enemy-terrain{top:180px!important}.terrain-slot.player-terrain{top:592px!important}.terrain-slot>em{top:9px;font-size:7px}.terrain-slot .original-card{width:61px!important}
+.field-energy{position:absolute;left:var(--field-left);z-index:16;width:var(--field-width);height:54px;padding:6px 10px;display:grid;grid-template-rows:1fr 1fr;gap:4px;border:1px solid #d5ba6655;border-radius:4px;background:#06131be8;box-sizing:border-box;box-shadow:0 8px 18px #0008}.field-energy.enemy-energy{top:376px}.field-energy.player-energy{top:788px}.field-energy>div{display:grid;grid-template-columns:58px 1fr 38px;align-items:center;gap:8px}.field-energy b{color:#e4c870;font:900 7px Arial;letter-spacing:.06em}.field-energy strong{color:#f4ead4;font:900 8px Arial;text-align:right}.field-energy span{display:grid;grid-template-columns:repeat(10,1fr);gap:3px}.field-energy i{height:7px;border:1px solid #35506a;border-radius:2px;background:#152434;box-shadow:inset 0 1px 2px #000}.field-energy i.filled{border-color:#e2bd55;background:linear-gradient(90deg,#c38a28,#f0ca63);box-shadow:0 0 7px #dcae43}.field-energy i.locked{opacity:.28}.field-energy .reserve-track{grid-template-columns:58px 1fr 38px}.field-energy .reserve-track span{grid-template-columns:repeat(3,1fr);max-width:170px}.field-energy .reserve-track i.filled{border-color:#a57bd7;background:linear-gradient(90deg,#6f44a8,#c294ef);box-shadow:0 0 7px #9b6bd6}
+
+/* The central priority lane and all controls stay in the gap between mats. */
+.battle-divider{left:var(--field-left)!important;top:480px!important;width:var(--field-width)!important;height:42px!important;transform:none!important;box-sizing:border-box}.phase-orb{right:202px!important;top:480px!important;transform:translateY(-50%)!important}.phase-orb button{width:92px!important;height:92px!important}.side-piles{right:22px!important;width:172px!important;grid-template-columns:repeat(2,80px)!important;gap:9px!important}.side-piles.enemy-piles{top:146px!important}.side-piles.player-piles{top:558px!important}.pile-zone{width:80px!important;height:106px!important}.player-hand{left:var(--field-left)!important;bottom:-38px!important;width:var(--field-width)!important;height:235px!important;transform:none!important;z-index:30!important}.player-hand .original-card{width:145px!important;margin-left:-38px!important}.player-hand .original-card:first-child{margin-left:0!important}.player-hand .original-card:hover{transform:translateY(-105px) scale(1.16)!important;margin-right:44px!important}.opponent-hand{left:calc(var(--field-left) + var(--field-width)/2)!important;top:72px!important;z-index:26}
+.surrender-button{right:22px!important;bottom:18px!important}.test-log{z-index:500!important}
+
+/* Tooltips raise their whole zone, use edge-aware directions, and always clear the board chrome. */
+.paired-field:has(.original-card:hover),.player-hand:has(.original-card:hover),.opponent-hand:has(.original-card:hover),.terrain-slot:has(.original-card:hover),.side-piles:has(.original-card:hover){z-index:600!important}
+.original-card:hover{z-index:610!important}.card-tooltip{z-index:1000!important;width:300px!important;max-height:340px;overflow:auto;padding:15px!important;border:1px solid #e1bd61!important;border-radius:8px;background:#03080df8!important;box-shadow:0 20px 55px #000,0 0 18px #d5ad4938!important;pointer-events:auto!important}.paired-field .field-column:nth-child(n+4) .card-tooltip{left:auto!important;right:108%!important}.player-field .card-tooltip{top:auto!important;bottom:2px!important}.player-hand .card-tooltip{left:50%!important;right:auto!important;top:auto!important;bottom:106%!important;transform:translateX(-50%)}.opponent-hand .card-tooltip{left:50%!important;top:106%!important;transform:translateX(-50%)}.terrain-slot .card-tooltip{left:108%!important;right:auto!important}.keyword-term:hover:after,.keyword-term:focus:after,.keyword-badge.known:hover:after{z-index:1100!important}
+
+@media(max-width:1320px){.hs-board{--field-left:410px;--field-width:650px}.player-hero,.hero-abilities{left:16px!important}.terrain-slot{left:306px!important}.phase-orb{right:188px!important}.phase-track>div{min-width:84px}.game-bar{gap:10px}}
+.opponent-hand{left:790px!important}@media(max-width:1320px){.opponent-hand{left:735px!important}}
+
+/* Viewport-fit board: keeps the full player HUD and hand inside a 900px-tall play area. */
+.hs-board{height:max(100dvh,930px)!important;min-height:930px!important}
+.player-hero.enemy{top:70px!important}.player-hero:not(.enemy){bottom:14px!important}
+.hero-abilities.enemy{top:168px!important}.hero-abilities:not(.enemy){bottom:113px!important}
+.paired-field{height:212px!important}
+.paired-field.enemy-field{top:110px!important}.paired-field.player-field{top:474px!important}
+.paired-field .field-column{grid-template-rows:117px 65px!important;gap:10px!important}
+.paired-field .support-label{top:128px!important}
+.field-column.linked-pair:after{top:113px!important;height:18px!important}
+.terrain-slot{height:128px!important}.terrain-slot.enemy-terrain{top:143px!important}.terrain-slot.player-terrain{top:507px!important}
+.field-energy.enemy-energy{top:330px!important}.field-energy.player-energy{top:694px!important}
+.battle-divider,.phase-orb{top:420px!important}
+.side-piles.enemy-piles{top:116px!important}.side-piles.player-piles{top:480px!important}
+.player-hand{bottom:-34px!important;height:204px!important}
+.player-hand .original-card:hover{transform:translateY(-78px) scale(1.13)!important}
+.opponent-hand{top:66px!important}
+
+/* Entry points and readable hero progression / room controls. */
+.landing-actions{display:flex;flex-wrap:wrap;gap:12px!important;margin-top:34px!important}.landing-actions .online-cta{border-color:#68a9d4;background:linear-gradient(135deg,#173d58,#102536);color:#d9f1ff;box-shadow:0 9px 24px #0008}.landing-actions .online-cta:hover{border-color:#9bd9ff;transform:translateY(-2px)}
+.hero-progress em{display:block;margin-top:3px;color:#b9c7d5;font:700 6px/1.2 Arial;font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.hero-progress{cursor:help}.hero-abilities header span{max-width:132px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:help}
+
+/* Evolution and life are first-class hero information. Keep the left rail readable. */
+.player-hero{height:122px!important;padding:10px 10px 9px 72px!important;align-content:start!important}
+.player-hero.enemy{top:70px!important}.player-hero:not(.enemy){bottom:14px!important}
+.player-hero .hero-life{font-size:19px!important;color:#fff1f0!important;border-color:#dc6572!important;background:linear-gradient(135deg,#681f2d,#2a1118)!important;box-shadow:0 0 15px #cf465b66!important;text-shadow:0 1px 6px #ff4455}
+.hero-evolution{position:absolute;left:72px;right:8px;top:59px;padding:6px 7px;border:1px solid color-mix(in srgb,var(--deck) 65%,#e0bf70);border-radius:6px;background:linear-gradient(135deg,#0d1822e8,#050a10f2);box-shadow:inset 0 0 16px #0008;cursor:help}
+.evolution-heading{display:flex;align-items:center;justify-content:space-between;gap:7px;color:#efcf79;font:900 8px Arial;letter-spacing:.12em}.evolution-heading span{color:#dce5ed;font-size:7px;letter-spacing:.08em}
+.hero-evolution>strong{display:block;margin-top:4px;color:#fff7df;font:900 10px Arial;letter-spacing:.06em}.hero-evolution>small{display:block;margin-top:3px;color:#b9c7d5;font:8px/1.2 Arial;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.evolution-track{height:5px;margin-top:5px;border:1px solid #ffffff22;border-radius:999px;background:#111d28;overflow:hidden}.evolution-track i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#a46b2a,#f2d46f);box-shadow:0 0 10px #e8bc55;transition:width .35s ease}
+.hero-abilities.enemy{top:205px!important}.hero-abilities:not(.enemy){bottom:145px!important;max-height:170px!important}
+
+/* Popups, target selection and card tooltips always sit above the board stacking context. */
+.hs-board{z-index:0!important}
+.overlay,.maintenance-overlay,.response-overlay,.image-choice-overlay,.extra-deck-overlay,.search-deck-overlay,.surrender-overlay,.inspector{position:fixed!important;inset:0!important;z-index:10000!important;isolation:isolate!important;overflow:auto!important}
+.overlay>*,.overlay .maintenance,.overlay .response-dialog,.overlay .search-deck-dialog,.overlay .surrender-dialog,.overlay .inspector>div{position:relative;z-index:10001!important}
+.card-tooltip{z-index:3000!important}.keyword-term:hover:after,.keyword-term:focus:after,.keyword-badge.known:hover:after{z-index:3200!important}
+.visual-effect,.combat-cinematic,.target-banner,.defense-decision{z-index:4000!important}
+.deck-shuffle-effect{z-index:4500!important}
+
+/* Reference layout: compact stacked hero rail, framed card slots, generous central mat. */
+.hero-abilities{width:284px!important;left:22px!important;padding:8px!important;border-radius:6px!important;background:linear-gradient(145deg,#10262bfa,#071218f5)!important;box-shadow:0 8px 18px #000b!important}
+.hero-abilities.enemy{top:16px!important;max-height:142px!important}.hero-abilities:not(.enemy){bottom:150px!important;max-height:142px!important}
+.hero-abilities header{padding:2px 4px 7px!important}.hero-abilities header b{font-size:9px!important}.hero-abilities header span{font-size:7px!important;color:#7fe19b!important}
+.ability{min-height:31px!important;padding:4px 2px!important;grid-template-columns:18px 1fr auto!important;gap:6px!important}.ability>i{width:17px!important;height:17px!important;font-size:8px!important}.ability>p{font-size:8px!important;line-height:1.25!important}.ability>small{font-size:7px!important}.ability>button{min-width:55px!important;padding:5px 4px!important;font-size:7px!important}
+.player-hero{height:122px!important;border-radius:6px!important;background:linear-gradient(145deg,#10272bfa,#071218f5)!important;box-shadow:0 8px 18px #000b!important}
+.player-hero.enemy{top:166px!important}.player-hero:not(.enemy){bottom:14px!important}
+.player-hero>img{width:52px!important;height:72px!important;border-radius:4px!important}.player-hero .hero-header b{font-size:12px!important}.player-hero .hero-header span{font-size:7px!important;color:#9fd8b4!important}.player-hero .hero-stats{margin-top:6px!important}.player-hero .hero-stats>*{font-size:8px!important}.player-hero .hero-life{font-size:18px!important}
+.hero-evolution{top:57px!important;left:72px!important;right:8px!important;padding:5px 6px!important;background:#071016ed!important}.evolution-heading b{font-size:8px!important}.hero-evolution>strong{font-size:9px!important}.hero-evolution>small{font-size:7px!important}.evolution-track{height:4px!important;margin-top:4px!important}
+.player-hero>button.level-button{bottom:7px!important;right:8px!important;width:76px!important;height:23px!important;font-size:7px!important}
+.paired-field .field-slot{border:1px solid #73909d!important;border-radius:7px!important;background:linear-gradient(145deg,#102332e8,#07121be8)!important;box-shadow:inset 0 0 0 2px #061019, inset 0 0 18px #0008!important}.paired-field .field-slot>span{width:34px!important;height:34px!important;border:1px solid #4d6977!important;border-radius:6px!important;color:#67818e!important;font-size:11px!important;opacity:.7}.paired-field .field-slot:hover{border-color:#d6b96b!important;box-shadow:0 0 14px #d5ae5944,inset 0 0 0 2px #1c2f38!important}
+.terrain-slot{border:1px solid #c5a75c!important;border-radius:7px!important;background:linear-gradient(145deg,#122531,#071219)!important;box-shadow:inset 0 0 0 2px #071018,0 5px 12px #0008!important}
+/* Keep the phase control beside the central divider, with deck piles grouped at the far edge. */
+.battle-divider{left:var(--field-left)!important;width:var(--field-width)!important;right:auto!important;top:420px!important}
+.phase-orb{left:calc(var(--field-left) + var(--field-width) - 220px)!important;right:auto!important;top:420px!important;z-index:80!important}.phase-orb button{width:86px!important;height:86px!important;border-width:2px!important;box-shadow:0 0 0 5px #d1a84b24,0 10px 28px #000b!important}
+.side-piles{right:24px!important;width:168px!important;grid-template-columns:repeat(2,78px)!important;gap:8px!important;z-index:18!important}.side-piles.enemy-piles{top:116px!important}.side-piles.player-piles{top:480px!important}.pile-zone{width:78px!important;height:104px!important}
+
+/* Board grid: hero rail | playable mat | compact deck rail. */
+.hs-board{--field-left:320px!important;--field-width:min(650px,calc(100% - 540px))!important;min-width:1180px!important}
+.terrain-slot{left:214px!important}
+.paired-field,.field-energy,.battle-divider,.player-hand{left:var(--field-left)!important;width:var(--field-width)!important}
+.battle-divider{top:420px!important}
+.phase-orb{left:calc(var(--field-left) + var(--field-width) + 15px)!important;right:auto!important;top:420px!important;transform:translateY(-50%)!important}
+.side-piles{right:24px!important;width:168px!important;grid-template-columns:repeat(2,78px)!important}
+@media(max-width:1320px){.hs-board{--field-left:320px!important;--field-width:min(650px,calc(100% - 540px))!important}.terrain-slot{left:214px!important}.phase-orb{left:calc(var(--field-left) + var(--field-width) + 15px)!important;right:auto!important}}
+
+/* Hero rail cleanup: one coherent card for the hero and one readable power panel. */
+.player-hero{left:18px!important;width:284px!important;height:122px!important;padding:9px 10px 8px 72px!important;border:1px solid color-mix(in srgb,var(--deck) 62%,#78919a)!important;border-radius:8px!important}
+.player-hero.enemy{top:166px!important}.player-hero:not(.enemy){bottom:14px!important}
+.hero-abilities{left:18px!important;width:284px!important;border-color:color-mix(in srgb,var(--deck) 62%,#78919a)!important;border-radius:8px!important;background:linear-gradient(145deg,#0d2028f5,#071118f7)!important}
+.hero-abilities.enemy{top:16px!important;max-height:142px!important}.hero-abilities:not(.enemy){bottom:150px!important;max-height:142px!important}
+.hero-abilities header{min-height:25px!important;align-items:flex-start!important;gap:8px!important}.hero-abilities header b{color:#f1e5ca!important;font-size:9px!important}.hero-abilities header span{max-width:170px!important;white-space:normal!important;text-align:right!important;line-height:1.25!important;color:#7ed99a!important}
+.hero-evolution{border-color:color-mix(in srgb,var(--deck) 72%,#ebcf75)!important;background:linear-gradient(145deg,#102733f5,#071016fa)!important}.hero-evolution>small{color:#d2dce3!important}.hero-evolution>strong{color:#ffeac0!important}
+.hero-life{font-weight:900!important}
+.side-piles{right:170px!important}
+.powers-evolution{margin:5px 0 6px;padding:5px 6px;border:1px solid color-mix(in srgb,var(--deck) 70%,#e5c96c);border-radius:5px;background:linear-gradient(135deg,#192c36,#071117);box-shadow:inset 0 0 12px #0008}.powers-evolution>div{display:flex;justify-content:space-between;gap:4px;color:#f2d17d;font:800 6px Arial;letter-spacing:.08em}.powers-evolution>div span{color:#d8e4ea}.powers-evolution>strong{display:block;margin-top:3px;color:#fff0cc;font:900 9px Arial}.powers-evolution>small{display:block;margin-top:2px;color:#b7c9d0;font:6px/1.2 Arial;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.powers-evolution>p{display:grid;grid-template-columns:1fr auto 1fr;gap:3px;margin:4px 0 0;padding-top:3px;border-top:1px solid #ffffff18;color:#d5e0e4;font:700 5px Arial}.powers-evolution>p span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.powers-evolution>p i{color:#e9c56a;font-style:normal;font-size:10px}
+.player-hero{left:18px!important;width:120px!important;padding:8px 6px!important;height:122px!important}.player-hero>img{left:7px!important;top:8px!important;width:46px!important;height:62px!important}.player-hero .hero-header{position:absolute;left:58px;top:10px;right:5px}.player-hero .hero-header b{display:block;font-size:10px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.player-hero .hero-header span{display:block;font-size:6px!important}.player-hero .hero-stats{position:absolute;left:6px;right:6px;top:70px;margin:0!important}.player-hero .hero-stats>*{font-size:7px!important;padding:2px 3px!important}.player-hero .hero-evolution{left:6px!important;right:6px!important;top:88px!important;padding:3px!important}.player-hero .hero-evolution>strong{font-size:7px!important}.player-hero .hero-evolution>small{display:none}.player-hero .evolution-criteria-steps{font-size:5px!important}.player-hero>button.level-button{right:5px!important;bottom:4px!important;width:58px!important;height:17px!important;font-size:6px!important}.hero-abilities{left:148px!important;width:158px!important;height:122px!important;max-height:122px!important;overflow:auto!important;padding:6px!important}.hero-abilities.enemy{top:50px!important}.hero-abilities:not(.enemy){bottom:0!important}.hero-abilities header{gap:4px!important}.hero-abilities header b{font-size:7px!important}.hero-abilities header span{font-size:5px!important;max-width:90px!important}.hero-abilities .ability{min-height:29px!important;padding:3px 1px!important}.hero-abilities .ability>p{font-size:6px!important}.hero-abilities .ability>small,.hero-abilities .ability>button{font-size:5px!important;min-width:35px!important;padding:3px!important}
+.evolution-criteria-steps{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:3px;margin-top:4px;padding-top:3px;border-top:1px solid #ffffff18;color:#d7e1e7;font:700 6px/1.15 Arial}.evolution-criteria-steps span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.evolution-criteria-steps b{color:#e7c36e;font-size:10px}.player-hero .hero-evolution{overflow:hidden}
+
+/* Compact viewport layout: both players, resources and hand stay visible together. */
+@media (max-height:800px){
+ .hs-board{height:100dvh!important;min-height:600px!important;overflow:hidden!important}
+ .game-bar{height:46px!important;padding:0 12px!important}.game-bar .phase-track>div{min-width:76px!important}.phase-track i{width:16px!important;height:16px!important}
+ .paired-field{height:170px!important;padding:6px 8px!important}.paired-field.enemy-field{top:68px!important}.paired-field.player-field{top:304px!important}
+ .paired-field .field-column{grid-template-rows:92px 56px!important;gap:7px!important}.paired-field .support-label{top:102px!important}.paired-field .creature-label{top:-13px!important}
+ .field-column.linked-pair:after{top:89px!important;height:10px!important}
+ .terrain-slot{height:104px!important}.terrain-slot.enemy-terrain{top:86px!important}.terrain-slot.player-terrain{top:322px!important}
+ .field-energy{height:43px!important;padding:4px 8px!important;gap:2px!important}.field-energy.enemy-energy{top:244px!important}.field-energy.player-energy{top:500px!important}.field-energy>div{grid-template-columns:52px 1fr 34px!important;gap:5px!important}.field-energy i{height:5px!important}
+ .battle-divider{top:274px!important;height:34px!important}.phase-orb{top:274px!important}.phase-orb button{width:72px!important;height:72px!important}
+ .side-piles.enemy-piles{top:58px!important}.side-piles.player-piles{top:304px!important}.pile-zone{height:86px!important;grid-template-rows:47px auto auto!important;padding:5px!important}.pile-zone b{font-size:7px!important}.pile-zone strong{font-size:11px!important}
+ .opponent-hand{top:48px!important}.player-hand{bottom:-22px!important;height:150px!important}.player-hand .original-card{width:112px!important;margin-left:-30px!important}.player-hand .original-card:hover{transform:translateY(-58px) scale(1.08)!important}
+ .hero-abilities.enemy{top:48px!important;max-height:82px!important}.player-hero.enemy{top:137px!important;height:98px!important}.hero-abilities:not(.enemy){bottom:103px!important;max-height:82px!important}.player-hero:not(.enemy){bottom:0!important;height:98px!important}
+ .player-hero>img{width:42px!important;height:58px!important}.player-hero{padding:7px 7px 6px 58px!important}.player-hero .hero-header b{font-size:10px!important}.player-hero .hero-header span{font-size:6px!important}.player-hero .hero-stats{margin-top:3px!important;gap:3px!important}.player-hero .hero-stats>*{padding:2px 3px!important;font-size:7px!important}.player-hero .hero-life{font-size:15px!important}.hero-evolution{left:58px!important;top:46px!important;padding:4px!important}.hero-evolution>strong{font-size:8px!important}.hero-evolution>small{font-size:6px!important}.evolution-criteria-steps{font-size:5px!important;margin-top:2px!important;padding-top:2px!important}.evolution-track{height:3px!important;margin-top:2px!important}.player-hero>button.level-button{bottom:4px!important;right:5px!important;width:62px!important;height:18px!important;font-size:6px!important}
+ .ability{min-height:24px!important;padding:2px!important;grid-template-columns:15px 1fr auto!important;gap:4px!important}.ability>i{width:14px!important;height:14px!important;font-size:7px!important}.ability>p{font-size:7px!important}.ability>button{min-width:44px!important;padding:3px!important;font-size:6px!important}.hero-abilities header{min-height:17px!important;padding:1px 2px 3px!important}.hero-abilities header b{font-size:7px!important}.hero-abilities header span{font-size:6px!important}
 }
-
-@media(min-width:901px){
- .hs-board .board-half{height:308px!important;grid-template-rows:246px 46px!important}.hs-board .opponent-half{top:80px!important}.hs-board .player-half{bottom:82px!important}
- .hs-board .paired-field,.hs-board .enemy-field{height:246px!important;grid-template-rows:20px 103px 20px 103px!important;row-gap:0!important}.hs-board .enemy-field{grid-template-rows:20px 103px 20px 103px!important}
- .hs-board .field-column,.hs-board .enemy-field .field-column{grid-template-rows:103px 103px!important;gap:20px!important}
- .hs-board .field-slot,.hs-board .auxiliary-slot,.hs-board .enemy-field .creature-slot,.hs-board .enemy-field .auxiliary-slot{width:74px!important;aspect-ratio:.72!important;height:auto!important}
- .hs-board .creature-slot .original-card.is-small,.hs-board .auxiliary-slot .original-card.is-small{width:64px!important}
- .hs-board .energy-board{height:40px!important;box-sizing:border-box!important;border:1px solid #d6b25d73!important;box-shadow:0 5px 16px #000b!important}.hs-board .player-half .energy-board{transform:translateY(10px)!important}.hs-board .opponent-half{grid-template-rows:40px 232px!important}.hs-board .opponent-half .energy-board{transform:translateY(-10px)!important}
- .hs-board .player-hero{width:260px!important;height:124px!important;min-height:124px!important;box-sizing:border-box!important;grid-template-columns:minmax(0,1fr) auto!important;grid-template-rows:auto auto!important;padding:8px 10px 8px 64px!important;overflow:visible!important}.hs-board .hero-progress{grid-column:1 / -1!important;grid-row:2!important;width:100%!important;display:grid!important;grid-template-columns:auto auto minmax(0,1fr)!important;gap:6px!important;align-items:center!important}.hs-board .hero-progress small{font-size:8px!important}.hs-board .hero-progress b{font-size:12px!important;white-space:nowrap!important}.hs-board .hero-progress span{font-size:8px!important;overflow:visible!important;text-overflow:clip!important;white-space:normal!important;line-height:1.2!important}.hs-board .player-hero.enemy{top:58px!important}.hs-board .player-hero:not(.enemy){bottom:76px!important}
+@media (max-height:800px){
+ .player-hero{left:18px!important;width:120px!important;height:112px!important;top:50px!important;padding:7px 6px!important}.player-hero.enemy{top:50px!important}.player-hero:not(.enemy){bottom:0!important;top:auto!important}
+ .player-hero>img{left:6px!important;top:7px!important;width:42px!important;height:55px!important}.player-hero .hero-header{left:54px!important;top:8px!important}.player-hero .hero-stats{top:64px!important}.player-hero .hero-evolution{top:82px!important}.player-hero>button.level-button{bottom:3px!important}
+ .hero-abilities{left:126px!important;width:190px!important;height:150px!important;max-height:150px!important;padding:6px!important}.hero-abilities.enemy{top:32px!important}.hero-abilities:not(.enemy){bottom:0!important}.hero-abilities header{min-height:16px!important}.hero-abilities header span{max-width:120px!important}.powers-evolution{margin:4px 0 5px;padding:4px!important}.powers-evolution>small{font-size:6px!important}.hero-abilities .ability{min-height:25px!important}.hero-abilities .ability>p{font-size:6px!important}
+ .player-hero{left:8px!important;width:112px!important;height:112px!important}.player-hero.enemy{top:32px!important}.player-hero:not(.enemy){bottom:0!important}.player-hero .hero-evolution{display:none!important}
 }
+.room-panel{max-width:980px;margin:28px auto 0;padding:22px;display:grid;gap:14px;border:1px solid #4b8ab26e;border-radius:10px;background:linear-gradient(145deg,#112638,#09121d);box-shadow:0 18px 40px #0007}.room-toolbar,.room-deck-row{display:flex;align-items:center;gap:10px}.room-toolbar input{flex:1;min-width:0;padding:12px;border:1px solid #ffffff25;border-radius:4px;background:#050b12;color:#f5f0e5}.room-link{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:10px;color:#e8c975;font:11px Arial}.room-link input{min-width:0;padding:10px;border:1px solid #d7b75a66;border-radius:4px;background:#050b12;color:#fff}.room-status{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px;border:1px solid #ffffff16;border-radius:5px;background:#050b1280;color:#c4cfdb;font:11px Arial}.room-status b{color:#e8c975}.room-deck-row{align-items:stretch}.room-deck-row .deck-picker{flex:1;min-width:0}.room-deck-row>button{align-self:center;white-space:nowrap}.room-panel .deck-picker img{width:90px}.room-panel .deck-picker{grid-template-columns:90px 1fr;padding:14px}.room-panel .deck-picker>span{grid-column:1/3}
+@media(max-width:760px){.landing-actions{flex-direction:column}.landing-actions button{width:100%}.room-toolbar,.room-deck-row{flex-direction:column;align-items:stretch}.room-status{grid-template-columns:1fr}.room-link{grid-template-columns:1fr}.room-deck-row .deck-picker{width:100%}}
 
-@media(max-width:900px){
- .hs-board{width:100%!important;min-width:0!important;height:100dvh!important;min-height:720px!important;overflow:hidden!important}.hs-board .player-hero,.hs-board .hero-abilities,.hs-board .side-piles,.hs-board .opponent-hand{display:none!important}
- .hs-board .board-half{position:absolute!important;left:12px!important;width:calc(100% - 24px)!important;height:190px!important;margin:0!important;padding:4px!important;box-sizing:border-box!important;display:grid!important;grid-template-columns:52px minmax(0,1fr)!important;grid-template-rows:150px 32px!important;gap:4px!important;border:1px solid #d2b05a4a!important;background:#07121ad9!important}.hs-board .opponent-half{top:90px!important;bottom:auto!important}.hs-board .player-half{top:auto!important;bottom:140px!important}
- .hs-board .terrain-slot{position:static!important;left:auto!important;top:auto!important;transform:none!important;width:auto!important;height:auto!important;grid-column:1!important;grid-row:1 / 3!important;padding:2px!important;border-radius:3px!important}.hs-board .terrain-slot>em{position:static!important;font-size:5px!important}.hs-board .terrain-slot .original-card{width:42px!important;margin:0!important}
- .hs-board .paired-field,.hs-board .enemy-field{position:static!important;left:auto!important;top:auto!important;width:auto!important;height:150px!important;grid-area:1 / 2!important;display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;grid-template-rows:12px 61px 12px 61px!important;gap:0 3px!important;min-width:0!important}.hs-board .paired-field>em{position:static!important;display:block!important;font-size:6px!important;letter-spacing:0!important;text-align:center!important}.hs-board .creature-label{grid-column:1 / -1!important;grid-row:1!important}.hs-board .support-label{grid-column:1 / -1!important;grid-row:3!important}
- .hs-board .field-column,.hs-board .enemy-field .field-column{position:static!important;display:grid!important;grid-row:2 / 5!important;grid-template-rows:61px 61px!important;gap:12px!important;min-width:0!important}.hs-board .field-column:nth-of-type(1){grid-column:1!important}.hs-board .field-column:nth-of-type(2){grid-column:2!important}.hs-board .field-column:nth-of-type(3){grid-column:3!important}.hs-board .field-column:nth-of-type(4){grid-column:4!important}.hs-board .field-column:nth-of-type(5){grid-column:5!important}.hs-board .field-slot,.hs-board .auxiliary-slot,.hs-board .enemy-field .creature-slot,.hs-board .enemy-field .auxiliary-slot{position:relative!important;width:44px!important;aspect-ratio:.72!important;height:auto!important;justify-self:center!important;align-self:center!important;display:grid!important;place-items:center!important;border-radius:3px!important}.hs-board .creature-slot{grid-row:1!important}.hs-board .auxiliary-slot{grid-row:2!important}.hs-board .creature-slot .original-card.is-small,.hs-board .auxiliary-slot .original-card.is-small{width:38px!important}
- .hs-board .enemy-field{grid-template-rows:12px 61px 12px 61px!important}.hs-board .enemy-field .support-label{grid-row:1!important}.hs-board .enemy-field .creature-label{grid-row:3!important}.hs-board .enemy-field .auxiliary-slot{grid-row:1!important}.hs-board .enemy-field .creature-slot{grid-row:2!important}
- .hs-board .energy-board{grid-column:2!important;grid-row:2!important;width:100%!important;height:32px!important;box-sizing:border-box!important;margin:0!important;padding:3px 5px!important;border:1px solid #d6b25d73!important;transform:translateY(5px)!important}.hs-board .energy-board .energy-track,.hs-board .energy-board .reserve-track{grid-template-columns:35px 1fr 24px!important;font-size:6px!important}.hs-board .energy-board i{height:5px!important}.hs-board .opponent-half{grid-template-rows:32px 150px!important}.hs-board .opponent-half .energy-board{grid-row:1!important;transform:translateY(-5px)!important}.hs-board .opponent-half .paired-field{grid-row:2!important}.hs-board .opponent-half .terrain-slot{grid-row:1 / 3!important}
- .hs-board .battle-divider{top:43%!important;width:78vw!important;height:25px!important;font-size:6px!important}.hs-board .player-hand{left:50%!important;bottom:-26px!important;width:100%!important;height:140px!important;transform:translateX(-50%)!important;padding-left:14px!important;overflow:hidden!important}.hs-board .player-hand .original-card{width:78px!important;margin-left:-45px!important}.hs-board .phase-orb{right:8px!important;bottom:135px!important;top:auto!important}.hs-board .phase-orb button{width:62px!important;height:62px!important;font-size:7px!important}.hs-board .surrender-button{right:8px!important;bottom:102px!important;font-size:6px!important;padding:6px!important}
+/* Match layout v4 — one stable three-column composition. This intentionally
+   supersedes the experimental geometry above. */
+.screen-menu .card-tooltip,.screen-setup .card-tooltip,.screen-decks .card-tooltip{display:none!important}
+.screen-game .hs-board{
+ --hud-w:292px!important;--rail-w:176px!important;--gutter:18px!important;
+ --field-left:calc(var(--hud-w) + var(--gutter))!important;
+ --field-width:calc(100% - var(--hud-w) - var(--rail-w) - var(--gutter)*3)!important;
+ width:100%!important;min-width:1120px!important;height:100dvh!important;min-height:720px!important;
+ overflow:hidden!important;background:radial-gradient(ellipse at 56% 47%,#23414a 0,#10272f 48%,#061116 86%)!important;
 }
+.screen-game .hs-board:after{inset:47px 8px 8px!important;border-radius:10px!important}
+.screen-game .game-bar{height:46px!important;padding:0 12px!important;z-index:100!important}.screen-game .phase-track>div{min-width:82px!important}.screen-game .phase-track i{width:16px!important;height:16px!important}
+.screen-game .paired-field{left:var(--field-left)!important;width:var(--field-width)!important;height:176px!important;padding:6px 8px!important;gap:8px!important;border-radius:8px!important}
+.screen-game .paired-field.enemy-field{top:66px!important}.screen-game .paired-field.player-field{top:326px!important}
+.screen-game .paired-field .field-column{grid-template-rows:104px 54px!important;gap:6px!important}.screen-game .paired-field .creature-label{top:-13px!important}.screen-game .paired-field .support-label{top:111px!important}
+.screen-game .field-column.linked-pair:after{top:101px!important;height:9px!important}.screen-game .creature-slot .original-card.is-small{width:73px!important}.screen-game .auxiliary-slot .original-card,.screen-game .auxiliary-slot .original-card.is-small{width:43px!important}
+.screen-game .terrain-slot{left:calc(var(--hud-w) - 83px)!important;width:72px!important;height:105px!important}.screen-game .terrain-slot.enemy-terrain{top:95px!important}.screen-game .terrain-slot.player-terrain{top:355px!important}.screen-game .terrain-slot .original-card{width:49px!important}.screen-game .terrain-slot>em{font-size:6px!important}
+.screen-game .field-energy{left:var(--field-left)!important;width:var(--field-width)!important;height:40px!important;padding:4px 8px!important;gap:2px!important}.screen-game .field-energy.enemy-energy{top:247px!important}.screen-game .field-energy.player-energy{top:507px!important}.screen-game .field-energy>div{grid-template-columns:54px 1fr 32px!important;gap:6px!important}.screen-game .field-energy i{height:5px!important}
+.screen-game .battle-divider{left:var(--field-left)!important;top:292px!important;width:var(--field-width)!important;height:29px!important}.screen-game .battle-divider span{font-size:6px!important}.screen-game .phase-orb{left:calc(var(--field-left) + var(--field-width) - 49px)!important;right:auto!important;top:304px!important;transform:translate(-50%,-50%)!important}.screen-game .phase-orb button{width:70px!important;height:70px!important;font-size:8px!important}
+.screen-game .side-piles{right:14px!important;width:158px!important;grid-template-columns:repeat(2,74px)!important;gap:7px!important}.screen-game .side-piles.enemy-piles{top:61px!important}.screen-game .side-piles.player-piles{top:326px!important}.screen-game .pile-zone{width:74px!important;height:93px!important;grid-template-rows:50px auto auto!important;padding:5px!important}
+.screen-game .opponent-hand{left:calc(var(--field-left) + var(--field-width)/2)!important;top:44px!important}.screen-game .player-hand{left:var(--field-left)!important;bottom:-25px!important;width:var(--field-width)!important;height:185px!important}.screen-game .player-hand .original-card{width:122px!important;margin-left:-30px!important}.screen-game .player-hand .original-card:hover{transform:translateY(-72px) scale(1.09)!important;margin-right:28px!important}
 
-@media(min-width:901px){
- .hs-board .player-hero.enemy{top:34px!important}.hs-board .hero-abilities.enemy{top:188px!important}
- .hs-board .player-hero:not(.enemy){bottom:54px!important}.hs-board .hero-abilities:not(.enemy){bottom:220px!important}
- .hs-board .reserve-track{min-width:150px!important}
+/* Hero HUDs: identity first, powers directly below, no competing panels. */
+.screen-game .player-hero,.screen-game .hero-abilities{left:12px!important;width:280px!important;box-sizing:border-box!important}
+.screen-game .player-hero{height:105px!important;padding:8px 7px 7px 67px!important;border-radius:8px!important;overflow:hidden!important}.screen-game .player-hero.enemy{top:52px!important}.screen-game .player-hero:not(.enemy){bottom:8px!important}
+.screen-game .player-hero>img{left:8px!important;top:8px!important;width:51px!important;height:68px!important}.screen-game .player-hero .hero-header{position:static!important}.screen-game .player-hero .hero-header b{font-size:11px!important}.screen-game .player-hero .hero-stats{position:static!important;margin-top:6px!important}.screen-game .player-hero .hero-life{font-size:17px!important}.screen-game .player-hero .hero-evolution{display:block!important;left:67px!important;right:6px!important;top:57px!important;padding:4px 5px!important}.screen-game .hero-evolution>small{display:block!important;font-size:6px!important}.screen-game .player-hero>button.level-button{right:6px!important;bottom:5px!important;width:62px!important;height:18px!important}
+.screen-game .hero-abilities{height:154px!important;max-height:154px!important;padding:7px!important;overflow:auto!important;border-radius:8px!important}.screen-game .hero-abilities.enemy{top:164px!important}.screen-game .hero-abilities:not(.enemy){bottom:120px!important}.screen-game .hero-abilities header{min-height:22px!important}.screen-game .hero-abilities header b{font-size:8px!important}.screen-game .hero-abilities header span{max-width:168px!important;font-size:6px!important}.screen-game .hero-abilities .powers-evolution{padding:5px!important}.screen-game .hero-abilities .ability{min-height:30px!important}.screen-game .hero-abilities .ability>p{font-size:7px!important;line-height:1.25!important}.screen-game .hero-abilities .ability>button{font-size:6px!important;min-width:46px!important}
+
+/* Context layers. Tooltips exist only inside the match and never lose to the board. */
+.screen-game .card-tooltip{display:block!important;position:absolute!important;z-index:7200!important}.screen-game .paired-field:has(.original-card:hover),.screen-game .player-hand:has(.original-card:hover),.screen-game .opponent-hand:has(.original-card:hover),.screen-game .terrain-slot:has(.original-card:hover){z-index:7100!important}
+.screen-game .visual-effect{position:fixed!important;left:calc(var(--field-left) + var(--field-width)/2)!important;top:44%!important;z-index:8200!important}
+.screen-game .overlay,.screen-game .inspector{z-index:10000!important}
+
+/* Response priority is a compact lateral drawer. It opens after the reveal
+   animation, preserves the full battlefield, and never creates a backdrop. */
+.screen-game .response-overlay{position:fixed!important;inset:58px 14px auto auto!important;width:342px!important;height:auto!important;display:block!important;overflow:visible!important;background:transparent!important;backdrop-filter:none!important;pointer-events:none!important;z-index:9500!important}
+.screen-game .response-dialog{width:342px!important;max-height:calc(100dvh - 76px)!important;overflow:auto!important;border-radius:10px!important;pointer-events:auto!important;box-shadow:0 20px 58px #000c,0 0 0 1px #4ba8df30!important}
+.screen-game .response-dialog>header{padding:11px 13px!important}.screen-game .response-dialog h2{padding:14px 14px 4px!important;font-size:21px!important}.screen-game .response-dialog>p{padding:0 14px 12px!important;font-size:10px!important}.screen-game .response-cards{padding:2px 10px 12px!important;justify-content:flex-start!important;gap:8px!important}.screen-game .response-cards>div{width:94px!important;flex-basis:94px!important;padding:7px!important}.screen-game .response-cards .original-card{width:76px!important}.screen-game .no-response-card{margin:2px 12px 12px!important;padding:12px!important}.screen-game .response-dialog>footer{padding:10px 12px!important}.screen-game .pass-response{min-width:130px!important;padding:8px 12px!important}
+
+@media(max-height:760px){.screen-game .hero-abilities{height:138px!important;max-height:138px!important}.screen-game .hero-abilities.enemy{top:160px!important}.screen-game .hero-abilities:not(.enemy){bottom:115px!important}.screen-game .player-hand{height:170px!important}}
+
+/* Multiplayer lobby — invitation, configuration and pre-match steps are kept
+   separate so a guest never lands inside a half-configured game. */
+.match-setup:has(.room-panel),.match-setup:has(.invite-card){min-height:100dvh;padding-bottom:60px;background:radial-gradient(circle at 50% 20%,#173442 0,#07131d 58%,#03080d 100%)}
+.invite-card{width:min(620px,calc(100% - 32px));margin:34px auto 0;padding:34px;display:grid;justify-items:center;gap:12px;text-align:center;border:1px solid #d4ad5466;border-radius:14px;background:linear-gradient(155deg,#142c38,#08131d 72%);box-shadow:0 28px 70px #000b,inset 0 0 0 1px #fff08}.invite-sigil{display:grid;place-items:center;width:70px;height:70px;border:1px solid #e1bd6a;border-radius:50%;color:#f6d47c;font-size:30px;background:#090e13;box-shadow:0 0 30px #e9b94c2e}.invite-card>p,.room-entry p,.lobby-head p,.coin-stage p{margin:0;color:#e7c566;font:800 10px/1 Arial;letter-spacing:2px}.invite-card h3,.room-entry h3,.lobby-head h3,.coin-stage h3{margin:0;color:#f7f2e8;font:700 28px/1.1 Georgia}.invite-card>span,.room-entry>div>span{max-width:480px;color:#aebdca;font:12px/1.55 Arial}.invite-rules{width:100%;display:grid;grid-template-columns:1.3fr repeat(3,1fr);gap:8px;margin:8px 0;padding:12px;border:1px solid #ffffff14;border-radius:8px;background:#050b1199;color:#c7d2db;font:11px Arial}.invite-rules b{color:#f0d584}.invite-card>div:last-child{display:flex;gap:10px}.invite-card button{min-width:150px;padding:12px 18px}
+.room-panel{max-width:1040px!important;margin:28px auto 0!important;padding:0!important;gap:0!important;overflow:hidden;border-color:#d1ad5755!important;border-radius:12px!important;background:#09151fcc!important}.room-entry{display:grid;grid-template-columns:1.25fr 1fr auto;align-items:center;gap:24px;padding:24px 26px;background:linear-gradient(120deg,#142d3a,#09141e)}.host-settings{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.host-settings label{display:grid;gap:5px;color:#91a7b5;font:800 8px Arial;text-transform:uppercase;letter-spacing:.7px}.host-settings input,.host-settings select{width:100%;height:38px;padding:0 9px;border:1px solid #526a77;border-radius:5px;background:#061018;color:#fff}.create-room{height:44px;white-space:nowrap}.room-divider{height:1px;position:relative;background:#ffffff12}.room-divider span{position:absolute;left:50%;top:50%;padding:0 9px;transform:translate(-50%,-50%);background:#09151f;color:#708390;font:9px Arial;text-transform:uppercase}.room-toolbar{padding:18px 26px!important}.room-toolbar input{height:42px!important}.lobby-head{display:flex;align-items:center;justify-content:space-between;padding:22px 26px;border-bottom:1px solid #ffffff12}.lobby-head h3{margin-top:5px;font-size:24px}.connection{display:flex;align-items:center;gap:8px;color:#8797a2;font:10px Arial}.connection i{width:8px;height:8px;border-radius:50%;background:#815152}.connection.online i{background:#4ccf84;box-shadow:0 0 10px #4ccf84}.room-link{grid-template-columns:auto 1fr auto!important;padding:14px 26px!important;border-bottom:1px solid #ffffff12}.room-link>div{display:grid;gap:2px}.room-link>div span{color:#768996;font:8px Arial}.room-link button{height:38px}.lobby-steps{display:grid;grid-template-columns:repeat(4,1fr);padding:15px 26px;background:#050c12}.lobby-steps>div{position:relative;display:flex;align-items:center;gap:8px;color:#71838e;font:9px Arial}.lobby-steps>div:not(:last-child):after{content:"";position:absolute;left:32px;right:8px;top:11px;height:1px;background:#2b424e}.lobby-steps i{position:relative;z-index:1;display:grid;place-items:center;width:22px;height:22px;border:1px solid #4c626f;border-radius:50%;background:#07121a;font-style:normal}.lobby-steps .done{color:#e4c568}.lobby-steps .done i{border-color:#d2ad55;color:#f1d27c}.room-deck-row{padding:24px 26px!important;display:grid!important;grid-template-columns:minmax(320px,1fr) auto 180px!important;gap:18px!important}.room-deck-row aside{display:grid;align-content:center;gap:5px;padding:14px;border-left:1px solid #ffffff18;color:#8ca0ad;font:10px Arial}.room-deck-row aside b{color:#e8d497}.coin-stage{display:flex;align-items:center;justify-content:center;gap:28px;min-height:250px;padding:28px}.coin-stage .coin{display:grid;place-items:center;width:112px;height:112px;border:4px double #f0ca6e;border-radius:50%;color:#f6d77e;font:700 50px Georgia;background:radial-gradient(circle at 35% 25%,#7d5b23,#1b1409 70%);box-shadow:0 0 0 7px #ac813544,0 18px 36px #0009;animation:coin-arrive .8s cubic-bezier(.2,.8,.2,1)}.coin-stage>div{display:grid;gap:10px}.coin-stage>div>div{display:flex;gap:9px}.coin-stage button{padding:11px 18px}.coin-stage>div>span{color:#98a9b5;font:11px Arial}.lobby-wait,.mulligan-wait{min-height:190px;display:grid;place-items:center;align-content:center;gap:10px;color:#cbd4da;text-align:center}.lobby-wait i,.mulligan-wait i{width:34px;height:34px;border:3px solid #5d7180;border-top-color:#e8c469;border-radius:50%;animation:room-spin .8s linear infinite}.lobby-wait span,.mulligan-wait span{color:#8194a0;font:10px Arial}.room-error{display:block;margin:0 26px 18px;padding:10px;border:1px solid #e2686855;border-radius:5px;background:#571d213d;color:#ffb3b3;font:10px Arial}
+.match-clock{min-width:68px;display:grid;grid-template-columns:auto auto;align-items:center;gap:6px;padding:5px 8px;border:1px solid #4d6370;border-radius:4px;background:#071019}.match-clock span{color:#8296a3;font:700 6px Arial;letter-spacing:1px}.match-clock b{color:#f0d277;font:800 13px monospace}.match-clock.urgent{border-color:#da594f;animation:timer-pulse 1s infinite}.match-clock.urgent b,.response-dialog .urgent{color:#ff766b!important}.response-waiting b{margin-left:5px;color:#f0d078}
+.mulligan-overlay{z-index:12000!important;background:#02070bd9!important;backdrop-filter:blur(7px)}.mulligan-dialog{width:min(900px,calc(100% - 32px));padding:0;border:1px solid #d3ad5866;border-radius:13px;overflow:hidden;background:linear-gradient(160deg,#122a37,#071119 76%);box-shadow:0 30px 80px #000}.mulligan-dialog>header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid #ffffff15}.mulligan-dialog header p{margin:0 0 5px;color:#e5bf60;font:800 9px Arial;letter-spacing:2px}.mulligan-dialog h2{margin:0;color:#fff;font:700 27px Georgia}.mulligan-dialog header>span{color:#9eb0ba;font:10px Arial}.mulligan-help{max-width:650px;margin:16px auto 8px;text-align:center;color:#9eafb9;font:11px/1.5 Arial}.mulligan-cards{display:flex;justify-content:center;gap:12px;padding:18px 22px 24px}.mulligan-cards>div{position:relative;width:132px;padding:7px;border:1px solid #39515e;border-radius:8px;background:#071019;cursor:pointer;transition:.18s ease}.mulligan-cards .original-card{width:116px!important;pointer-events:none}.mulligan-cards>div>span{position:absolute;left:12px;right:12px;bottom:13px;padding:6px;border-radius:3px;background:#071019e8;color:#dbe4e9;font:800 8px Arial;text-align:center}.mulligan-cards>div.selected{transform:translateY(-10px);border-color:#e8b84d;box-shadow:0 0 0 2px #e8b84d44,0 14px 26px #0009}.mulligan-cards>div.selected:after{content:"↻";position:absolute;inset:7px;display:grid;place-items:center;border-radius:5px;background:#260d12a8;color:#ffd46f;font:700 36px Georgia}.mulligan-cards>div.selected>span{z-index:2;background:#7d311ee8;color:#fff}.mulligan-dialog>footer{display:flex;align-items:center;justify-content:space-between;padding:15px 22px;border-top:1px solid #ffffff15;background:#050b11}.mulligan-dialog footer>span{color:#a6b3bc;font:10px Arial}.mulligan-dialog footer button{padding:11px 20px}
+@keyframes coin-arrive{0%{opacity:0;transform:translateY(-40px) rotateY(720deg)}100%{opacity:1;transform:none}}@keyframes room-spin{to{transform:rotate(360deg)}}@keyframes timer-pulse{50%{box-shadow:0 0 15px #da594f66}}
+@media(max-width:760px){.room-entry{grid-template-columns:1fr}.host-settings{grid-template-columns:1fr}.invite-rules{grid-template-columns:1fr 1fr}.room-deck-row{grid-template-columns:1fr!important}.room-link{grid-template-columns:1fr!important}.mulligan-cards{overflow-x:auto;justify-content:flex-start}.mulligan-cards>div{flex:0 0 118px}.mulligan-cards .original-card{width:102px!important}}
+.mulligan-dialog footer>div{display:flex;gap:9px}
+
+/* Match layout v5 — a true game table: compact player rails, uninterrupted
+   center board, and utilities grouped at the right edge. */
+.screen-game .hs-board{
+  --hero-rail:188px!important;
+  --terrain-rail:62px!important;
+  --utility-rail:144px!important;
+  --board-gap:12px!important;
+  --field-left:calc(var(--hero-rail) + var(--terrain-rail) + var(--board-gap) * 2)!important;
+  --field-width:calc(100% - var(--hero-rail) - var(--terrain-rail) - var(--utility-rail) - var(--board-gap) * 4)!important;
+  min-width:1024px!important;
+  min-height:560px!important;
+  height:100dvh!important;
+  overflow:hidden!important;
 }
+.screen-game .game-bar{height:38px!important;padding:0 10px!important;gap:9px!important}.screen-game .game-bar .phase-track>div{min-width:66px!important;font-size:7px!important}.screen-game .game-bar .phase-track i{width:13px!important;height:13px!important;font-size:7px!important}
 
-/* Hero inspector: compact, icon-first power blocks for levels I/II/III. */
-.inspector-hero-kit{margin-top:12px;padding:10px;border:1px solid #d7ae5759;border-radius:8px;background:linear-gradient(145deg,#111c2be8,#050b12)}
-.inspector-hero-kit>header{display:grid;gap:4px;padding-bottom:8px;border-bottom:1px solid #ffffff16}
-.inspector-hero-kit>header b{color:#f1cd7b;font:800 10px Arial;letter-spacing:.12em;text-transform:uppercase}
-.inspector-hero-kit>header span{color:#e3e8ef;font:12px/1.45 Arial}
-.inspector-hero-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.inspector-hero-meta span{padding:3px 7px;border:1px solid #ffffff1f;border-radius:999px;background:#0b1522;color:#bdc8d7;font:800 8px Arial;letter-spacing:.04em}
-.inspector-hero-powers{display:grid;gap:7px;margin-top:8px}
-.inspector-hero-powers article{display:grid;grid-template-columns:24px 1fr;gap:8px;align-items:flex-start;padding:7px;border:1px solid #ffffff14;border-radius:7px;background:#0a131ecf}
-.inspector-hero-powers i{width:24px;height:24px;display:grid;place-items:center;border:1px solid #d7ae57;border-radius:50%;background:#322712;color:#ffe9b6;font:900 8px Arial;font-style:normal;letter-spacing:.04em}
-.inspector-hero-powers p{margin:0;color:#dce4ec;font:11px/1.45 Arial}
-.inspector-hero-kit{border-color:color-mix(in srgb,var(--deck,#d7ae57) 64%,#ffffff2b);background:linear-gradient(145deg,color-mix(in srgb,var(--deck,#d7ae57) 24%,#0b1420),#050b12)}
-.inspector-hero-meta span{border-color:color-mix(in srgb,var(--deck,#d7ae57) 45%,#ffffff2a)}
-.inspector-hero-powers i{border-color:color-mix(in srgb,var(--deck,#d7ae57) 72%,#ffe8bb);background:color-mix(in srgb,var(--deck,#d7ae57) 35%,#2a2010)}
-.inspector-card-kit{margin-top:12px;padding:10px;border:1px solid #ffffff1f;border-radius:8px;background:linear-gradient(145deg,#0f1928d9,#060c13)}
-.inspector-card-kit>header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:8px;border-bottom:1px solid #ffffff14}
-.inspector-card-kit>header b{color:#8fcef6;font:800 10px Arial;letter-spacing:.12em;text-transform:uppercase}
-.inspector-card-kit>header span{color:#b3bfcc;font:800 8px Arial;letter-spacing:.06em;text-transform:uppercase}
-.inspector-card-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
-.inspector-card-meta span{padding:3px 7px;border:1px solid #ffffff1f;border-radius:999px;background:#09101a;color:#d6dde6;font:800 8px Arial;letter-spacing:.04em}
-.inspector-hero-powers article,.inspector-card-kit{animation:inspector-rise .28s ease both}
-.inspector-hero-powers article:nth-child(2){animation-delay:.04s}
-.inspector-hero-powers article:nth-child(3){animation-delay:.08s}
-@keyframes inspector-rise{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+/* Field: equal five-column mats; labels live outside card content. */
+.screen-game .paired-field{left:var(--field-left)!important;width:var(--field-width)!important;height:clamp(134px,24vh,172px)!important;padding:7px 9px!important;gap:8px!important;border:1px solid #b99b5666!important;border-radius:7px!important;background:linear-gradient(180deg,#132a33e8,#07161df0)!important;box-shadow:inset 0 0 0 1px #071017,inset 0 0 30px #0009!important}
+.screen-game .paired-field.enemy-field{top:48px!important}.screen-game .paired-field.player-field{top:calc(50% + 14px)!important}
+.screen-game .paired-field .field-column{grid-template-rows:minmax(82px,1fr) 46px!important;gap:6px!important}.screen-game .paired-field .creature-label{top:-14px!important}.screen-game .paired-field .support-label{top:calc(100% - 47px)!important}.screen-game .field-slot{border-color:#66818e99!important;border-radius:6px!important;background:linear-gradient(145deg,#0c2029,#061018)!important}.screen-game .field-slot>span{width:27px!important;height:27px!important;border-color:#496673!important;color:#72909b!important;font-size:9px!important}.screen-game .creature-slot .original-card.is-small{width:clamp(57px,6.1vw,78px)!important}.screen-game .auxiliary-slot .original-card,.screen-game .auxiliary-slot .original-card.is-small{width:clamp(36px,3.8vw,49px)!important}.screen-game .field-column.linked-pair:after{top:calc(100% - 52px)!important;height:8px!important}
 
-@media(max-width:760px){
- .inspector-hero-meta{gap:5px}
- .inspector-hero-meta span{font-size:7px}
- .inspector-hero-powers article{grid-template-columns:22px 1fr;padding:6px}
- .inspector-hero-powers p{font-size:10px}
- .inspector-card-meta span{font-size:7px}
-}
+/* Terrain is visually related to its owner, but does not steal width from the mat. */
+.screen-game .terrain-slot{left:calc(var(--hero-rail) + var(--board-gap))!important;width:var(--terrain-rail)!important;height:92px!important;border-radius:6px!important}.screen-game .terrain-slot.enemy-terrain{top:72px!important}.screen-game .terrain-slot.player-terrain{top:calc(50% + 38px)!important}.screen-game .terrain-slot>em{top:6px!important;font-size:5px!important;line-height:1.1!important}.screen-game .terrain-slot .original-card{width:42px!important;margin-top:12px!important}
 
-/* Board hero rail now mirrors the inspector structure for powers and criteria. */
-.player-hero{position:absolute;overflow:visible}
-.hero-level-criteria{position:absolute;left:8px;top:68px;max-width:56px;padding:2px 4px;border:1px solid color-mix(in srgb,var(--deck,#d7ae57) 72%,#fff2cd);border-radius:6px;background:color-mix(in srgb,var(--deck,#d7ae57) 22%,#0b1522);color:#f6e3b2;font:800 6px/1.15 Arial;letter-spacing:.04em;text-align:center;box-shadow:0 3px 10px #0008}
-.hero-progress{grid-template-columns:auto auto minmax(0,1fr)!important;grid-template-areas:"label value text" "bar bar bar"!important;align-items:center!important;column-gap:6px!important;row-gap:4px!important}
-.hero-progress small{grid-area:label;color:#9fb0c4;font:800 8px Arial;text-transform:uppercase;letter-spacing:.08em}
-.hero-progress b{grid-area:value;color:#f0d28a;font:800 11px Arial}
-.hero-progress span{grid-area:text;color:#b7c5d6;font:800 8px Arial;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.hero-progress>div{grid-area:bar}
+/* Resources and phase action form the breathing space between the two mats. */
+.screen-game .field-energy{left:var(--field-left)!important;width:var(--field-width)!important;height:34px!important;padding:4px 7px!important;border-radius:5px!important}.screen-game .field-energy.enemy-energy{top:calc(48px + clamp(134px,24vh,172px) + 5px)!important}.screen-game .field-energy.player-energy{top:calc(50% + clamp(134px,24vh,172px) + 19px)!important}.screen-game .field-energy>div{grid-template-columns:46px 1fr 26px!important;gap:5px!important}.screen-game .field-energy b,.screen-game .field-energy strong{font-size:6px!important}.screen-game .field-energy i{height:4px!important}
+.screen-game .battle-divider{left:var(--field-left)!important;top:calc(50% - 13px)!important;width:var(--field-width)!important;height:26px!important;padding:0 11px!important}.screen-game .battle-divider span,.screen-game .battle-divider b{font-size:6px!important}.screen-game .phase-orb{left:calc(var(--field-left) + var(--field-width) - 30px)!important;top:50%!important;z-index:80!important}.screen-game .phase-orb button{width:58px!important;height:58px!important;font-size:7px!important}.screen-game .phase-orb span{font-size:17px!important}
 
-.hero-abilities{padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
-.hero-abilities-kit{padding:10px;border:1px solid color-mix(in srgb,var(--deck,#d7ae57) 64%,#ffffff2b);border-radius:8px;background:linear-gradient(145deg,color-mix(in srgb,var(--deck,#d7ae57) 22%,#0d1826),#050b12);box-shadow:0 10px 24px #0008}
-.hero-abilities-kit>header{display:grid;gap:4px;padding-bottom:8px;border-bottom:1px solid #ffffff16}
-.hero-abilities-kit>header b{color:#f2cf7d;font:800 9px Arial;letter-spacing:.12em;text-transform:uppercase}
-.hero-abilities-kit>header span{color:#e1e8f0;font:11px/1.4 Arial}
-.hero-abilities-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
-.hero-abilities-meta span{padding:3px 6px;border:1px solid color-mix(in srgb,var(--deck,#d7ae57) 45%,#ffffff2b);border-radius:999px;background:#0b1522;color:#c5d1df;font:800 7px Arial;letter-spacing:.04em}
-.hero-abilities-list{display:grid;gap:7px;margin-top:8px}
-.ability-card{min-height:34px;display:grid;grid-template-columns:22px 1fr auto;gap:7px;align-items:center;padding:7px;border:1px solid #ffffff14;border-radius:7px;background:#0a131ecf}
-.ability-card i{width:22px;height:22px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--deck,#d7ae57) 72%,#ffe8bb);border-radius:50%;background:color-mix(in srgb,var(--deck,#d7ae57) 35%,#2a2010);color:#ffe9b6;font:900 8px Arial;font-style:normal}
-.ability-card p{margin:0;color:#dde6ef;font:10px/1.35 Arial}
-.ability-card small{color:#8ea0b5;font:800 7px Arial;text-transform:uppercase}
-.ability-card button{min-width:64px;padding:6px;border:1px solid color-mix(in srgb,var(--deck,#d7ae57) 70%,white);background:color-mix(in srgb,var(--deck,#d7ae57) 28%,#0b1118);color:white;font:800 7px Arial;text-transform:uppercase}
-.ability-card button:disabled,.ability-card.locked{opacity:.45}
+/* Right utility rail is deliberately tight and mirrors between both players. */
+.screen-game .side-piles{right:10px!important;width:var(--utility-rail)!important;grid-template-columns:repeat(2,68px)!important;gap:6px!important}.screen-game .side-piles.enemy-piles{top:48px!important}.screen-game .side-piles.player-piles{top:calc(50% + 14px)!important}.screen-game .pile-zone{width:68px!important;height:76px!important;padding:4px!important;grid-template-rows:39px auto auto!important}.screen-game .pile-zone b{font-size:6px!important}.screen-game .pile-zone strong{font-size:11px!important}.screen-game .pile-zone small{font-size:5px!important}
 
-@media(min-width:901px){
- .hero-level-criteria{left:10px;top:72px;max-width:62px;font-size:7px}
-}
+/* Keep both hands away from occupied zones. */
+.screen-game .opponent-hand{left:calc(var(--field-left) + var(--field-width)/2)!important;top:38px!important;z-index:35!important}.screen-game .opponent-hand .original-card{width:35px!important}.screen-game .player-hand{left:var(--field-left)!important;bottom:-19px!important;width:var(--field-width)!important;height:146px!important;padding-top:7px!important;z-index:60!important}.screen-game .player-hand .original-card{width:clamp(82px,9vw,112px)!important;margin-left:clamp(-28px,-2.5vw,-18px)!important}.screen-game .player-hand .original-card:first-child{margin-left:0!important}.screen-game .player-hand .original-card:hover{transform:translateY(-58px) scale(1.07)!important;margin-right:23px!important}
 
-/* Unified board hero panel: info + abilities together, simpler and cleaner. */
-.player-hero{padding:8px 10px 10px 66px!important;border:1px solid color-mix(in srgb,var(--deck,#d7ae57) 55%,#2e3b49)!important;background:linear-gradient(145deg,#0c1622f2,#050a10f2)!important;box-shadow:0 10px 22px #0008!important}
-.player-hero .hero-header{margin-top:0}
-.player-hero .hero-stats{opacity:.92}
-.player-hero .hero-level-criteria{opacity:.95}
-.player-hero .hero-abilities-kit{margin-top:6px;padding:7px 8px;border-radius:7px}
-.player-hero .hero-abilities-kit>header{padding-bottom:6px}
-.player-hero .hero-abilities-meta{margin-top:6px}
-.player-hero .hero-abilities-list{margin-top:6px;gap:5px}
-.player-hero .ability-card{padding:5px;min-height:29px;grid-template-columns:20px 1fr auto;gap:6px}
-.player-hero .ability-card i{width:20px;height:20px;font-size:7px}
-.player-hero .ability-card p{font-size:9px;line-height:1.28}
-.player-hero .ability-card small{font-size:6px}
-.player-hero .ability-card button{min-width:58px;padding:5px;font-size:6px}
-.player-hero .hero-abilities-kit>header b{font-size:8px;letter-spacing:.09em}
-.player-hero .hero-abilities-meta{display:none}
-.player-hero.enemy .ability-card{grid-template-columns:20px minmax(0,1fr)!important}
+/* Hero rail: each player gets one compact, deliberate stack, never crossing the play area. */
+.screen-game .player-hero,.screen-game .hero-abilities{left:9px!important;width:calc(var(--hero-rail) - 18px)!important;box-sizing:border-box!important}.screen-game .player-hero{height:78px!important;padding:6px 6px 5px 52px!important;border-radius:7px!important;overflow:hidden!important}.screen-game .player-hero.enemy{top:45px!important}.screen-game .player-hero:not(.enemy){bottom:7px!important}.screen-game .player-hero>img{left:6px!important;top:6px!important;width:39px!important;height:52px!important}.screen-game .player-hero .hero-header b{font-size:8px!important}.screen-game .player-hero .hero-header span{font-size:5px!important}.screen-game .player-hero .hero-stats{margin-top:3px!important;gap:3px!important}.screen-game .player-hero .hero-stats>*{padding:2px!important;font-size:5px!important}.screen-game .player-hero .hero-life{font-size:13px!important}.screen-game .player-hero .hero-evolution{left:52px!important;right:4px!important;top:43px!important;padding:3px 4px!important}.screen-game .hero-evolution>strong{font-size:6px!important}.screen-game .hero-evolution>small,.screen-game .evolution-criteria-steps{display:none!important}.screen-game .player-hero>button.level-button{right:4px!important;bottom:3px!important;width:46px!important;height:14px!important;font-size:5px!important}
+.screen-game .hero-abilities{height:102px!important;max-height:102px!important;padding:5px!important;border-radius:7px!important;overflow:auto!important}.screen-game .hero-abilities.enemy{top:128px!important}.screen-game .hero-abilities:not(.enemy){bottom:91px!important}.screen-game .hero-abilities header{min-height:15px!important;padding:1px 2px 3px!important}.screen-game .hero-abilities header b{font-size:6px!important}.screen-game .hero-abilities header span{max-width:92px!important;font-size:5px!important;line-height:1.15!important}.screen-game .hero-abilities .powers-evolution{margin:2px 0 3px!important;padding:3px!important}.screen-game .hero-abilities .powers-evolution>strong{font-size:6px!important}.screen-game .hero-abilities .ability{min-height:22px!important;padding:2px 0!important;grid-template-columns:14px 1fr auto!important;gap:3px!important}.screen-game .hero-abilities .ability>i{width:13px!important;height:13px!important;font-size:6px!important}.screen-game .hero-abilities .ability>p{font-size:5px!important;line-height:1.18!important}.screen-game .hero-abilities .ability>button{min-width:32px!important;padding:3px!important;font-size:5px!important}
 
-.player-hero .hero-stats{gap:5px!important;font-size:9px!important}
-.player-hero .hero-progress small{font-size:7px!important}
-.player-hero .hero-progress b{font-size:10px!important}
-.player-hero .hero-progress span{font-size:7px!important}
+/* A tooltip is a hover-only affordance, never persistent content. */
+.screen-game .card-tooltip{display:none!important;pointer-events:none!important;position:absolute!important;z-index:7200!important}.screen-game .original-card:hover>.card-tooltip,.screen-game .original-card:focus-visible>.card-tooltip{display:flex!important;flex-direction:column!important;gap:5px!important}.screen-game .paired-field:has(.original-card:hover),.screen-game .player-hand:has(.original-card:hover),.screen-game .opponent-hand:has(.original-card:hover),.screen-game .terrain-slot:has(.original-card:hover){z-index:7100!important}
+.screen-game .card-tooltip{width:235px!important;max-height:250px!important;overflow:auto!important;padding:10px!important;font-size:9px!important}.screen-game .card-tooltip b{font-size:11px!important}.screen-game .card-tooltip span{font-size:9px!important}.screen-game .player-hand .card-tooltip{bottom:102%!important}.screen-game .player-field .card-tooltip{bottom:104%!important}.screen-game .enemy-field .card-tooltip{top:104%!important}
 
-@media(min-width:901px){
- .hs-board .player-hero{width:300px!important;height:auto!important;min-height:180px!important;display:grid!important;grid-template-columns:56px minmax(0,1fr) auto!important;grid-template-rows:auto auto auto auto!important;column-gap:8px!important;row-gap:4px!important;align-content:start!important}
- .hs-board .player-hero.enemy{top:26px!important}
- .hs-board .player-hero:not(.enemy){bottom:18px!important}
- .hs-board .phase-orb{left:calc(50% + min(36vw,500px) + 28px)!important;right:auto!important;top:50%!important;bottom:auto!important;transform:translateY(-50%)!important;z-index:32!important}
- .hs-board .phase-orb button{width:92px!important;height:92px!important}
-}
+@media(max-height:640px){.screen-game .hero-abilities{height:84px!important;max-height:84px!important}.screen-game .hero-abilities.enemy{top:124px!important}.screen-game .hero-abilities:not(.enemy){bottom:83px!important}.screen-game .paired-field{height:134px!important}.screen-game .field-energy.enemy-energy{top:187px!important}.screen-game .field-energy.player-energy{top:calc(50% + 153px)!important}.screen-game .player-hand{height:126px!important}.screen-game .player-hand .original-card{width:82px!important}}
 
-@media(max-width:900px){
- .player-hero .hero-abilities-kit{padding:6px}
- .player-hero .ability-card{grid-template-columns:18px 1fr auto}
- .player-hero .ability-card i{width:18px;height:18px}
-}
+/* Hero HUD v6 — the card is the anchor. Evolution floats over it; abilities are contextual. */
+.screen-game .player-hero{width:156px!important;height:166px!important;padding:0!important;overflow:visible!important;border:0!important;background:transparent!important;box-shadow:none!important;isolation:isolate}
+.screen-game .player-hero.enemy{top:42px!important}.screen-game .player-hero:not(.enemy){bottom:10px!important}
+.screen-game .player-hero>img{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;border:1px solid color-mix(in srgb,var(--deck) 74%,#ead58c)!important;border-radius:9px!important;box-shadow:0 10px 22px #000b!important}
+.screen-game .player-hero .hero-life{position:absolute!important;left:8px!important;bottom:8px!important;z-index:4!important;margin:0!important;padding:5px 7px!important;border:1px solid #e96d77!important;border-radius:6px!important;background:linear-gradient(135deg,#7e1f2c,#2b1017)!important;color:#fff3ef!important;font:900 13px Arial!important;text-shadow:0 1px 4px #000!important}
+.screen-game .player-hero .hero-level{position:absolute!important;right:8px!important;bottom:8px!important;z-index:4!important;padding:5px 6px!important;border:1px solid #e4c469!important;border-radius:6px!important;background:#17212ae8!important;color:#f4da85!important;font:900 7px Arial!important;letter-spacing:.08em!important}
+.screen-game .player-hero .hero-evolution{display:block!important;position:absolute!important;left:7px!important;right:7px!important;top:7px!important;z-index:5!important;min-height:53px!important;padding:6px 7px!important;border:1px solid #e0bb5b99!important;border-radius:6px!important;background:linear-gradient(135deg,#10191de8,#071016ed)!important;backdrop-filter:blur(2px)!important}
+.screen-game .hero-evolution .evolution-heading{display:flex!important;justify-content:space-between!important;gap:6px!important}.screen-game .hero-evolution .evolution-heading b,.screen-game .hero-evolution .evolution-heading span{font:900 7px Arial!important;letter-spacing:.07em!important}.screen-game .hero-evolution .evolution-heading b{color:#f0cf72!important}.screen-game .hero-evolution .evolution-heading span{color:#d2e0e5!important}.screen-game .hero-evolution>strong{display:block!important;margin-top:3px!important;color:#fff!important;font:900 8px Arial!important}.screen-game .hero-evolution>small{display:block!important;margin-top:2px!important;color:#c4d3d8!important;font:6px/1.2 Arial!important}.screen-game .hero-evolution .evolution-criteria-steps{display:grid!important;grid-template-columns:1fr auto 1fr!important;gap:3px!important;margin-top:4px!important;padding-top:3px!important;border-top:1px solid #ffffff21!important;color:#b6c6cc!important;font:700 5px/1.15 Arial!important}.screen-game .hero-evolution .evolution-criteria-steps span{overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}.screen-game .hero-evolution .evolution-criteria-steps b{color:#f1c95d!important;font-size:9px!important}.screen-game .hero-evolution .evolution-track{height:3px!important;margin-top:3px!important;background:#15252d!important}.screen-game .player-hero>button.level-button{right:7px!important;bottom:-25px!important;z-index:6!important;width:76px!important;height:21px!important;font-size:6px!important}
 
-/* Final cleanup: single compact hero panel with minimal visual noise. */
-.player-hero{border-radius:8px!important}
-.player-hero .hero-level-criteria{font-size:6px!important;line-height:1.15!important;max-width:52px!important;padding:2px 3px!important}
-.player-hero .hero-header b{font-size:10px!important}
-.player-hero .hero-header span{font-size:8px!important;padding:1px 5px!important}
-.player-hero .hero-stats{gap:4px!important}
-.player-hero .hero-stats span{font-size:9px!important;opacity:.92}
-.player-hero .hero-progress{column-gap:5px!important;row-gap:3px!important}
-.player-hero .hero-progress small{font-size:7px!important;letter-spacing:.05em!important}
-.player-hero .hero-progress b{font-size:9px!important}
-.player-hero .hero-progress span{font-size:7px!important}
-.player-hero .hero-abilities-kit{margin-top:5px!important;padding:5px 6px!important;border-radius:6px!important;background:#0a121be8!important;box-shadow:none!important}
-.player-hero .hero-abilities-kit>header{padding:0 0 4px!important;border-bottom:1px solid #ffffff14!important}
-.player-hero .hero-abilities-kit>header b{font-size:7px!important;letter-spacing:.08em!important;color:#d9e3ef!important}
-.player-hero .hero-abilities-list{margin-top:4px!important;gap:4px!important}
-.player-hero .ability-card{padding:4px!important;min-height:24px!important;grid-template-columns:18px 1fr auto!important;border:1px solid #ffffff12!important;background:#0b1520!important;border-radius:6px!important}
-.player-hero .ability-card i{width:18px!important;height:18px!important;font-size:7px!important;background:#1f2a38!important;border-color:#47637f!important;color:#d7e7fa!important}
-.player-hero .ability-card p{font-size:8px!important;line-height:1.2!important;color:#ced8e3!important}
-.player-hero .ability-card button{min-width:50px!important;padding:4px!important;font-size:6px!important}
+/* The own powers open on hover beside the card; the opponent's open below its card. */
+.screen-game .hero-abilities{z-index:500!important;width:250px!important;height:auto!important;max-height:160px!important;padding:8px!important;overflow:auto!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;transform:translateX(-8px)!important;transition:opacity .16s ease,transform .16s ease,visibility .16s!important}
+.screen-game .player-hero:hover + .hero-abilities,.screen-game .player-hero:focus-within + .hero-abilities,.screen-game .hero-abilities:hover{opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:translateX(0)!important}
+.screen-game .hero-abilities:not(.enemy){left:174px!important;bottom:10px!important}.screen-game .hero-abilities.enemy{left:9px!important;top:216px!important;transform:translateY(-8px)!important}.screen-game .player-hero.enemy:hover + .hero-abilities.enemy,.screen-game .hero-abilities.enemy:hover{transform:translateY(0)!important}
+.screen-game .hero-abilities header{min-height:20px!important;padding:1px 2px 5px!important}.screen-game .hero-abilities header b{font-size:8px!important}.screen-game .hero-abilities header span{font-size:7px!important}.screen-game .hero-abilities .ability{min-height:32px!important;padding:4px 1px!important;grid-template-columns:16px 1fr auto!important;gap:5px!important}.screen-game .hero-abilities .ability>i{width:15px!important;height:15px!important;font-size:7px!important}.screen-game .hero-abilities .ability>p{font-size:7px!important;line-height:1.25!important}.screen-game .hero-abilities .ability>button{min-width:44px!important;padding:4px!important;font-size:6px!important}
 
-@media(min-width:901px){
- .hs-board .player-hero{width:286px!important;min-height:158px!important;padding:7px 9px 8px 64px!important}
- .hs-board .player-hero.enemy{top:24px!important}
- .hs-board .player-hero:not(.enemy){bottom:16px!important}
-}
+/* Every board cell has the same portrait footprint, independent of its card category. */
+.screen-game .paired-field{height:clamp(150px,26vh,188px)!important;align-items:stretch!important}.screen-game .paired-field .field-column{grid-template-rows:repeat(2,minmax(0,1fr))!important;justify-items:center!important;gap:7px!important}.screen-game .paired-field .field-slot{width:auto!important;height:clamp(58px,10.5vh,78px)!important;aspect-ratio:5/7!important;align-self:center!important;border-radius:7px!important;overflow:visible!important}.screen-game .paired-field .field-slot .original-card,.screen-game .paired-field .creature-slot .original-card.is-small,.screen-game .paired-field .auxiliary-slot .original-card,.screen-game .paired-field .auxiliary-slot .original-card.is-small{width:calc(100% - 5px)!important;max-width:none!important}.screen-game .paired-field .support-label{top:calc(100% - 42px)!important}.screen-game .field-column.linked-pair:after{top:calc(100% - 50px)!important;height:12px!important}
 
-/* Basic hero panel mode: only core info, with photo-driven detail interaction. */
-.player-hero{min-height:108px!important;row-gap:3px!important}
-.hero-panel-hint{position:absolute;left:0;bottom:calc(100% + 6px);max-width:300px;padding:4px 6px;border:1px solid #ffffff1f;border-radius:6px;background:#050c14e8;color:#b7c5d7;font:700 7px/1.3 Arial;letter-spacing:.03em;pointer-events:none}
-.hero-photo-hitbox{position:absolute;left:8px;top:7px;width:46px;height:57px;padding:0;border:0;border-radius:4px;background:transparent;cursor:pointer;z-index:3}
-.hero-photo-hitbox:hover{box-shadow:0 0 0 2px #d7ae57 inset,0 0 9px #d7ae57}
-.hero-photo-hitbox:focus-visible{outline:2px solid #d7ae57;outline-offset:2px}
-.player-hero .hero-progress{grid-column:2 / 4!important}
+/* Hero layout hard reset: RemoteCardArt renders a CANVAS, not an img. Keeping this
+   selector explicit prevents older compact-HUD rules from winning over the card view. */
+.screen-game .player-hero{display:block!important;width:142px!important;height:198px!important;padding:0!important;overflow:visible!important;background:transparent!important;border:0!important;box-shadow:none!important}
+.screen-game .player-hero.enemy{top:44px!important}.screen-game .player-hero:not(.enemy){bottom:14px!important}
+.screen-game .player-hero>.remote-card-art{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:block!important;border:1px solid color-mix(in srgb,var(--deck) 76%,#f0d47c)!important;border-radius:9px!important;background:#061017!important;box-shadow:0 10px 24px #000c!important}
+/* Only life, level, and an unobtrusive progress overlay remain on the hero itself. */
+.screen-game .player-hero .hero-life{left:8px!important;bottom:8px!important;z-index:20!important;font-size:14px!important}.screen-game .player-hero .hero-level{right:8px!important;bottom:8px!important;z-index:20!important;font-size:7px!important}
+.screen-game .player-hero .hero-evolution{left:7px!important;right:7px!important;top:7px!important;z-index:21!important;min-height:0!important;padding:6px 7px!important;background:linear-gradient(135deg,#0d171ddc,#071015e8)!important}
+.screen-game .hero-evolution>small{display:block!important;max-height:15px!important;overflow:hidden!important}.screen-game .hero-evolution .evolution-criteria-steps{display:none!important}.screen-game .player-hero>button.level-button{bottom:-26px!important;right:0!important;z-index:22!important}
 
-@media(max-width:900px){
- .hero-panel-hint{display:none}
-}
+/* Powers are a contextual flyout: hidden at rest, beside the local hero and below the rival. */
+.screen-game .hero-abilities{display:none!important;z-index:9000!important;width:238px!important;height:auto!important;max-height:154px!important;padding:9px!important;overflow:auto!important;box-shadow:0 16px 35px #000d!important}
+.screen-game .player-hero:hover + .hero-abilities,.screen-game .player-hero:focus-within + .hero-abilities,.screen-game .hero-abilities:hover{display:block!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+.screen-game .hero-abilities:not(.enemy){left:164px!important;bottom:14px!important;transform:none!important}.screen-game .hero-abilities.enemy{left:12px!important;top:250px!important;transform:none!important}
+.screen-game .hero-abilities header{min-height:22px!important}.screen-game .hero-abilities header b{font-size:8px!important}.screen-game .hero-abilities .ability{min-height:32px!important}.screen-game .hero-abilities .ability>p{font-size:7px!important}
 
-/* ==========================================================================
-   PAINEL DO HERÓI (.player-hero) - AJUSTES DE LAYOUT E INTERAÇÃO
-   ========================================================================== */
+/* A slot is a portrait-shaped card frame in both rows; occupied cards inherit its footprint. */
+.screen-game .paired-field .field-column{grid-template-rows:repeat(2,minmax(0,1fr))!important;justify-items:center!important;gap:7px!important}
+.screen-game .paired-field .field-slot{width:clamp(48px,4.3vw,62px)!important;height:auto!important;aspect-ratio:5/7!important;align-self:center!important}
+.screen-game .paired-field .field-slot .original-card,.screen-game .paired-field .field-slot .original-card.is-small{width:calc(100% - 4px)!important;max-width:none!important}
 
-.hero-photo-hitbox,
-.hero-level-criteria,
-.hero-panel-hint,
-.player-hero .hero-progress small,
-.player-hero .hero-progress span {
-    display: none !important;
-}
+/* Hero information hierarchy — the art stays completely visible. Evolution is a
+   separate card above it, while compact life/level chips sit directly below. */
+.screen-game .player-hero{height:198px!important;overflow:visible!important}
+.screen-game .player-hero.enemy{top:138px!important}.screen-game .player-hero:not(.enemy){bottom:46px!important}
+.screen-game .player-hero .hero-evolution{top:-92px!important;left:0!important;right:0!important;min-height:76px!important;padding:9px 10px!important;border-color:color-mix(in srgb,var(--deck) 78%,#e5c35f)!important;background:linear-gradient(145deg,#10242beF,#081016f5)!important;box-shadow:0 9px 22px #000a!important}
+.screen-game .hero-evolution .evolution-heading b,.screen-game .hero-evolution .evolution-heading span{font-size:9px!important}.screen-game .hero-evolution>strong{margin-top:4px!important;font-size:11px!important}.screen-game .hero-evolution>small{max-height:none!important;margin-top:3px!important;color:#d7e6e8!important;font:8px/1.25 Arial!important}.screen-game .hero-evolution .evolution-track{height:4px!important;margin-top:6px!important}
+.screen-game .player-hero .hero-life{bottom:-30px!important;left:0!important;min-width:60px!important;text-align:center!important;font-size:15px!important}.screen-game .player-hero .hero-level{bottom:-30px!important;right:0!important;min-width:56px!important;text-align:center!important;font-size:8px!important}.screen-game .player-hero>button.level-button{bottom:-57px!important;right:0!important}
 
-/* 2. Container principal unificado com 2 colunas */
-.hs-board .player-hero {
-    position: absolute !important;
-    width: 330px !important;
-    height: auto !important;
-    min-height: 120px !important;
-    padding: 10px 12px !important;
-    box-sizing: border-box !important;
-    display: grid !important;
-    /* Coluna 1: Imagem (82px) | Coluna 2: Conteúdo + Botão (Flexível) */
-    grid-template-columns: 82px minmax(0, 1fr) !important;
-    grid-template-rows: auto auto auto auto !important;
-    gap: 4px 10px !important;
-    align-items: center !important;
-    background: rgba(10, 20, 30, 0.94) !important;
-    border: 1px solid rgba(215, 174, 87, 0.35) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6) !important;
-    overflow: visible !important;
-}
+/* The tooltip is intentionally short: centered title, then only the abilities.
+   It shares an edge with the hero so pointer travel never closes it mid-action. */
+.screen-game .hero-abilities{width:244px!important;max-height:172px!important;padding:8px 9px!important}
+.screen-game .hero-abilities:not(.enemy){left:154px!important;bottom:46px!important}.screen-game .hero-abilities.enemy{left:12px!important;top:346px!important}
+.screen-game .hero-abilities header{display:block!important;min-height:0!important;padding:2px 2px 7px!important;border-bottom:1px solid #ffffff1b!important;text-align:center!important}.screen-game .hero-abilities header b{display:block!important;color:#f1dfb2!important;font-size:9px!important;letter-spacing:.09em!important;text-transform:uppercase!important}.screen-game .hero-abilities header span{display:none!important}.screen-game .hero-abilities .ability{min-height:31px!important;padding:5px 1px!important}.screen-game .hero-abilities .ability>p{font-size:7px!important}
 
-/* 3. Imagem do Herói na Coluna Esquerda + Efeito Hover Interativo */
-.player-hero canvas.remote-card-art {
-    grid-column: 1 !important;
-    grid-row: 1 / span 4 !important; /* Ocupa do topo até a base na esquerda */
-    width: 80px !important;
-    height: 112px !important;
-    border-radius: 8px !important;
-    border: 2px solid rgba(215, 174, 87, 0.4) !important;
-    object-fit: cover !important;
-    cursor: pointer !important;
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease !important;
-    position: relative !important;
-    z-index: 5 !important;
-}
+/* Evolution HUD v2: only label, fraction and track remain permanently visible. */
+.screen-game .player-hero .hero-evolution{top:-67px!important;left:0!important;right:0!important;min-height:48px!important;padding:8px 10px!important;text-align:center!important;overflow:visible!important}
+.screen-game .hero-evolution>small{display:block!important;margin:0!important;max-height:none!important;color:#efd98e!important;font:900 7px/1.2 Arial!important;letter-spacing:.06em!important}.screen-game .hero-evolution>strong{display:block!important;margin:4px 0 0!important;color:#fff!important;font:900 13px/1 Arial!important}.screen-game .hero-evolution .evolution-track{height:5px!important;margin-top:7px!important}
+/* Criteria are explained only on hover/focus, using a clear goal → thresholds layout. */
+.screen-game .evolution-tooltip{position:absolute!important;left:calc(100% + 8px)!important;top:50%!important;z-index:9300!important;width:330px!important;min-height:74px!important;transform:translate(8px,-50%)!important;display:grid!important;grid-template-columns:1fr 28px 1fr!important;align-items:center!important;gap:10px!important;padding:13px 16px!important;border:1px solid color-mix(in srgb,var(--deck) 65%,#e8ce80)!important;border-radius:38px!important;background:#070a0deb!important;color:#f4f4f2!important;box-shadow:0 16px 34px #000d!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important;transition:opacity .16s ease,transform .16s ease,visibility .16s!important}.screen-game .evolution-tooltip p{margin:0!important;font:11px/1.25 Arial!important}.screen-game .evolution-tooltip>b{color:#fff!important;font:900 20px Arial!important;text-align:center!important}.screen-game .evolution-tooltip>div{display:flex!important;flex-direction:column!important;gap:8px!important}.screen-game .evolution-tooltip span{color:#fff!important;font:11px/1.15 Arial!important;white-space:nowrap!important}.screen-game .hero-evolution:hover .evolution-tooltip,.screen-game .hero-evolution:focus-within .evolution-tooltip{opacity:1!important;visibility:visible!important;transform:translate(0,-50%)!important}
+/* Life and level are compact corner badges over the art; the center remains unobstructed. */
+.screen-game .player-hero .hero-life{left:7px!important;top:7px!important;bottom:auto!important;min-width:0!important;padding:5px 7px!important}.screen-game .player-hero .hero-level{right:7px!important;top:7px!important;bottom:auto!important;min-width:0!important;padding:5px 6px!important}
+.screen-game .player-hero>button.level-button{left:50%!important;right:auto!important;bottom:8px!important;width:92px!important;height:25px!important;transform:translateX(-50%)!important;border-color:#ffe184!important;background:linear-gradient(#8b661f,#3f2b0d)!important;color:#fff2b5!important;font-size:7px!important;box-shadow:0 0 18px #e8bd54!important;animation:level-button-ready 1.25s ease-in-out infinite!important}
+/* A complete criterion creates an aura even before the player can pay the energy cost. */
+.screen-game .player-hero.level-ready>.remote-card-art{animation:hero-level-ready 1.6s ease-in-out infinite!important}.screen-game .player-hero.level-ready .hero-evolution{border-color:#ffe176!important;box-shadow:0 0 20px #efc85d88!important}.screen-game .fx-ability{border-color:#ffe382!important;background:radial-gradient(circle at 30% 50%,#ffd45f70,#17100af2 58%,#03070ce8)!important;box-shadow:0 0 60px #ffd75eaa,0 25px 70px #000!important}
+@keyframes hero-level-ready{50%{filter:brightness(1.18) drop-shadow(0 0 13px #ffe069)}}@keyframes level-button-ready{50%{transform:translateX(-50%) scale(1.06);box-shadow:0 0 28px #ffe374}}
 
-/* Contorno brilhante para indicar interatividade ao passar o mouse */
-.player-hero canvas.remote-card-art:hover,
-.player-hero canvas.remote-card-art:focus {
-    border-color: #f0d28a !important;
-    box-shadow: 0 0 16px rgba(240, 210, 138, 0.8), 0 0 0 2px rgba(240, 210, 138, 0.4) !important;
-    transform: scale(1.04) !important;
-}
+/* Board clarity v7: the center contains only playable slots and resource tracks. */
+.screen-game .battle-divider{display:none!important}
+.screen-game .paired-field{padding:0!important;border:0!important;background:transparent!important;box-shadow:none!important}
+.screen-game .paired-field .field-slot{box-shadow:inset 0 0 0 1px #071017,0 4px 12px #0007!important}
+.screen-game .field-energy{box-shadow:0 5px 14px #0008!important}
+.screen-game .phase-orb{left:calc(var(--field-left) + var(--field-width) + 13px)!important;right:auto!important;top:50%!important;transform:translateY(-50%)!important}
 
-/* 4. Coluna Direita: Header (Nome do Herói) */
-.player-hero .hero-header {
-    grid-column: 2 !important;
-    grid-row: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 2px !important;
-    min-width: 0 !important;
-}
+/* The hero art and evolution panel own independent hover zones. */
+.screen-game .hero-power-trigger{position:absolute!important;inset:0!important;z-index:3!important;border-radius:9px!important;outline:0!important}
+.screen-game .hero-power-trigger>.remote-card-art{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;display:block!important;border:1px solid color-mix(in srgb,var(--deck) 76%,#f0d47c)!important;border-radius:9px!important;background:#061017!important;box-shadow:0 10px 24px #000c!important}
+.screen-game .player-hero.level-ready .hero-power-trigger>.remote-card-art{animation:hero-level-ready 1.6s ease-in-out infinite!important}
+.screen-game .player-hero:hover + .hero-abilities,.screen-game .player-hero:focus-within + .hero-abilities{display:none!important;opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+.screen-game .player-hero:has(.hero-power-trigger:hover) + .hero-abilities,.screen-game .player-hero:has(.hero-power-trigger:focus-visible) + .hero-abilities,.screen-game .hero-abilities:hover{display:block!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important}
+.screen-game .hero-abilities:before{content:"";position:absolute;left:-14px;top:0;width:14px;height:100%}
 
-.player-hero .hero-header b {
-    font-size: 13px !important;
-    color: #ffffff !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-}
+/* Dropping a creature over an occupied creature slot performs the rulebook's
+   replacement: the old creature is banished before the new one enters. */
+.screen-game .field-slot.replace-drop{border-color:#b77cff!important;box-shadow:inset 0 0 0 1px #44245f,0 0 16px #9a55df88!important}
+.screen-game .field-slot.replace-drop:after{content:"SUBSTITUIR · BANIR";position:absolute;left:50%;bottom:3px;z-index:30;transform:translateX(-50%);padding:3px 5px;border-radius:4px;background:#35124fd9;color:#f1d9ff;font:900 5px Arial;letter-spacing:.06em;white-space:nowrap;pointer-events:none}
 
-.player-hero .hero-header span {
-    font-size: 9px !important;
-    color: #9daab8 !important;
-    text-transform: uppercase !important;
-}
+/* Utility piles: artwork owns only the first row; names and counters always have
+   reserved space below it, so the card stack cannot cover "Deck" or its count. */
+.screen-game .pile-zone{display:grid!important;grid-template-columns:1fr auto!important;grid-template-rows:40px 12px 10px!important;align-items:center!important;overflow:visible!important}
+.screen-game .pile-zone .pile-card{grid-column:1/3!important;grid-row:1!important;width:100%!important;height:38px!important;min-height:0!important;overflow:hidden!important}
+.screen-game .pile-zone>b{grid-column:1!important;grid-row:2!important;align-self:end!important;line-height:1!important;white-space:nowrap!important}.screen-game .pile-zone>strong{grid-column:2!important;grid-row:2!important;align-self:end!important;line-height:1!important}.screen-game .pile-zone>small{grid-column:1/3!important;grid-row:3!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.screen-game .main-deck .pile-card i{width:25px!important;height:33px!important}.screen-game .main-deck .pile-card i:nth-child(1){transform:translate(-3px,-1px) rotate(-4deg)!important}.screen-game .main-deck .pile-card i:nth-child(3){transform:translate(3px,1px) rotate(4deg)!important}
+.screen-game .pile-zone.grave:not(:disabled){cursor:pointer!important}.screen-game .pile-zone.grave:not(:disabled):after{content:"ABRIR";position:absolute;right:3px;top:3px;z-index:5;padding:2px 3px;border-radius:3px;background:#071016dc;color:#f0cf73;font:900 4px Arial;letter-spacing:.06em}
 
-/* 5. Coluna Direita: Barra de XP (Restrita ao lado direito) */
-.player-hero .hero-progress {
-    grid-column: 2 !important;
-    grid-row: 2 !important;
-    width: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 3px !important;
-    margin: 2px 0 !important;
-}
+/* Targeted effects are shown as a serialized source → target vignette. */
+.screen-game .visual-effect.fx-targeted{width:min(610px,72vw)!important;height:230px!important;grid-template-columns:112px 92px 112px 1fr!important;border-radius:20px!important;padding:24px 28px!important;gap:12px!important}
+.screen-game .visual-effect.fx-targeted>.remote-card-art{width:105px!important;height:147px!important;border:2px solid #ffe08a!important;border-radius:8px!important;box-shadow:0 0 24px #e9c65d!important;animation:fx-card 1.45s ease both!important}
+.effect-link{height:54px;display:flex;align-items:center;justify-content:center;gap:4px}.effect-link i{width:25px;height:2px;background:linear-gradient(90deg,transparent,#ffe076);box-shadow:0 0 9px #ffd75b}.effect-link i:last-child{background:linear-gradient(90deg,#ffe076,transparent)}.effect-link b{color:#ffe287;font:900 24px Arial;text-shadow:0 0 14px #ffd95d;animation:effect-arrow .7s ease-in-out infinite alternate}.visual-effect section small{color:#b9c7d0;font:8px/1.35 Arial}
+@keyframes effect-arrow{to{transform:translateX(7px);filter:brightness(1.4)}}
 
-.player-hero .hero-progress b {
-    display: flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-    color: #f0d28a !important;
-    font: 800 11px Arial, sans-serif !important;
-}
+/* Delayed impact feedback: the card shakes and glows before state mutation. */
+.original-card.is-impacting{animation:card-impact-shake .44s cubic-bezier(.36,.07,.19,.97) infinite;filter:brightness(1.35) saturate(1.35);outline:2px solid #ff6e64;box-shadow:0 0 0 3px #ff6e6438,0 0 22px #ff674b9c,0 0 45px #e8a94455;z-index:8000!important}
+.original-card.is-impacting:after{content:"✦";position:absolute;inset:0;display:grid;place-items:center;color:#fff0ad;font:800 30px Georgia;pointer-events:none;text-shadow:0 0 18px #ffb14a;animation:impact-flare .44s ease-in-out infinite alternate}
+@keyframes card-impact-shake{0%,100%{transform:translate3d(0,0,0) rotate(0)}20%{transform:translate3d(-4px,1px,0) rotate(-1.5deg)}40%{transform:translate3d(4px,-1px,0) rotate(1.5deg)}60%{transform:translate3d(-3px,0,0) rotate(-1deg)}80%{transform:translate3d(3px,1px,0) rotate(1deg)}}
+@keyframes impact-flare{from{opacity:.2;transform:scale(.75)}to{opacity:1;transform:scale(1.2)}}
 
-.player-hero .hero-progress b::before {
-    content: "XP" !important;
-    color: #4dadf7 !important;
-    font-weight: 900 !important;
-}
+/* Compact vertical match layout: hand → energy → auxiliary/creatures →
+   response lane → creatures/auxiliary → energy → hand. */
+.screen-game .hs-board{--field-left:clamp(190px,22vw,300px)!important;--field-width:min(650px,calc(100vw - 430px))!important;min-height:1080px!important;height:1080px!important;overflow:hidden!important}
+.screen-game .opponent-hand{left:calc(var(--field-left) + var(--field-width)/2)!important;top:56px!important;z-index:35!important}
+.screen-game .opponent-hand .original-card{width:42px!important}
+.screen-game .field-energy.enemy-energy{left:var(--field-left)!important;top:126px!important;width:var(--field-width)!important}
+.screen-game .paired-field.enemy-field{left:var(--field-left)!important;top:183px!important;width:var(--field-width)!important;height:230px!important}
+.screen-game .enemy-field .field-column{grid-template-rows:76px 132px!important;gap:10px!important}
+.screen-game .enemy-field .auxiliary-slot{grid-row:1!important}.screen-game .enemy-field .creature-slot{grid-row:2!important}
+.screen-game .paired-field.player-field{left:var(--field-left)!important;top:612px!important;width:var(--field-width)!important;height:230px!important}
+.screen-game .player-field .field-column{grid-template-rows:132px 76px!important;gap:10px!important}
+.screen-game .field-energy.player-energy{left:var(--field-left)!important;top:854px!important;width:var(--field-width)!important}
+.screen-game .player-hand{left:var(--field-left)!important;top:914px!important;bottom:auto!important;width:var(--field-width)!important;height:170px!important}
+.screen-game .player-hand .original-card{width:clamp(82px,8vw,112px)!important}
+.screen-game .battle-divider{display:none!important}
+.screen-game .phase-orb{left:calc(var(--field-left) + var(--field-width) + 22px)!important;right:auto!important;top:490px!important;transform:translateY(-50%)!important}
+.screen-game .combat-cinematic,.screen-game .visual-effect,.screen-game .defense-decision,.screen-game .response-dialog,.screen-game .target-banner{z-index:9000!important}
+.screen-game .side-piles{z-index:40!important}
+@media(max-width:900px){.screen-game .hs-board{--field-left:132px!important;--field-width:calc(100vw - 270px)!important}.screen-game .phase-orb{left:auto!important;right:12px!important}.screen-game .player-hand{height:150px!important}.screen-game .paired-field .field-slot{border-radius:6px!important}}
 
-.player-hero .hero-progress > div {
-    width: 100% !important;
-    height: 14px !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    border-radius: 999px !important;
-    overflow: hidden !important;
-}
+/* Keep the utility piles close to the central play area instead of leaving a
+   dead gap on the right. Their larger portrait footprint improves readability
+   while the dedicated column keeps them out of the interaction lane. */
+.screen-game .side-piles{left:calc(var(--field-left) + var(--field-width) + 18px)!important;right:auto!important;width:210px!important;grid-template-columns:repeat(2,100px)!important;gap:10px!important}
+.screen-game .side-piles.enemy-piles{top:146px!important}.screen-game .side-piles.player-piles{top:558px!important}
+.screen-game .side-piles .pile-zone{width:100px!important;height:122px!important;grid-template-rows:72px auto auto!important;padding:8px!important}
+.screen-game .side-piles .pile-card{height:72px!important}.screen-game .side-piles .pile-zone b{font-size:8px!important}.screen-game .side-piles .pile-zone strong{font-size:15px!important}.screen-game .side-piles .pile-zone small{font-size:7px!important}
+@media(max-width:1080px){.screen-game .side-piles{left:auto!important;right:10px!important;width:184px!important;grid-template-columns:repeat(2,87px)!important}.screen-game .side-piles .pile-zone{width:87px!important}}
 
-/* 6. Coluna Direita: Status de Vida e Energia */
-.player-hero .hero-stats {
-    grid-column: 2 !important;
-    grid-row: 3 !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 8px !important;
-    font-size: 11px !important;
-    font-weight: 700 !important;
-}
+/* Final center tightening: preserve the lateral terrain axis while bringing
+   both Cruel Terrain slots toward the interaction lane. */
+.screen-game .terrain-slot.enemy-terrain{left:305px!important;top:158px!important}
+.screen-game .terrain-slot.player-terrain{left:305px!important;top:512px!important}
+.screen-game .paired-field.player-field{top:548px!important}
+.screen-game .field-energy.player-energy{top:790px!important}
+.screen-game .player-hand{top:850px!important}
 
-/* 7. Coluna Direita: Botão Evoluir (Inserido DENTRO do painel) */
-.player-hero > button.level-button,
-.player-hero button.level-button {
-    position: static !important; /* Anula o posicionamento fora do painel do lab.css */
-    top: auto !important;
-    right: auto !important;
-    bottom: auto !important;
-    grid-column: 2 !important;
-    grid-row: 4 !important;
-    justify-self: end !important;
-    width: 95px !important;
-    height: 26px !important;
-    margin-top: 4px !important;
-    border: 1px solid #d3ae57 !important;
-    background: #3a2d18 !important;
-    color: #f0d995 !important;
-    font: 800 9px Arial !important;
-    border-radius: 4px !important;
-    cursor: pointer !important;
-}
+/* Cruel Terrain gets its own right-side column; it must never share the
+   creature-row footprint. */
+.screen-game .terrain-slot.enemy-terrain,.screen-game .terrain-slot.player-terrain{left:calc(var(--field-left) + var(--field-width) + 12px)!important;z-index:45!important}
+.screen-game .side-piles{left:calc(var(--field-left) + var(--field-width) + 132px)!important}
+@media(max-width:1080px){.screen-game .terrain-slot.enemy-terrain,.screen-game .terrain-slot.player-terrain{left:auto!important;right:204px!important}.screen-game .side-piles{left:auto!important;right:10px!important}}
 
-/* 8. Tooltip de Informações ao Passar o Mouse na Imagem */
-.player-hero .card-tooltip,
-.player-hero .hero-tooltip {
-    position: absolute !important;
-    left: 0 !important;
-    bottom: calc(100% + 8px) !important;
-    width: 280px !important;
-    padding: 12px !important;
-    background: rgba(5, 10, 16, 0.98) !important;
-    border: 1px solid #d9ad55 !important;
-    border-radius: 8px !important;
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.9) !important;
-    opacity: 0 !important;
-    visibility: hidden !important;
-    transition: opacity 0.2s ease, transform 0.2s ease !important;
-    transform: translateY(6px) !important;
-    z-index: 100 !important;
-    pointer-events: none !important;
-}
+/* Correction: terrain sits to the left of the creature grid, with its own
+   reserved column and the same Y alignment as the corresponding field. */
+.screen-game .terrain-slot.enemy-terrain,.screen-game .terrain-slot.player-terrain{left:calc(var(--field-left) - 112px)!important;right:auto!important}
+@media(max-width:1080px){.screen-game .terrain-slot.enemy-terrain,.screen-game .terrain-slot.player-terrain{left:10px!important;right:auto!important}}
 
-.player-hero canvas.remote-card-art:hover ~ .card-tooltip,
-.player-hero canvas.remote-card-art:hover ~ .hero-tooltip {
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: translateY(0) !important;
-}
+/* Deployment guard: terrain is always anchored before the central field. */
+.screen-game .terrain-slot{right:auto!important}

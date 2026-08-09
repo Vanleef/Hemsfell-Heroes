@@ -1,41 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-
-type Room = {
-  id: string;
-  host: { heroId: string | null };
-  guest: { heroId: string | null } | null;
-  status: "waiting" | "started";
-  createdAt: number;
-  game: unknown | null;
-  revision: number;
-};
-
-const ROOMS = (globalThis as any).__HH_ROOMS__ || new Map<string, Room>();
-(globalThis as any).__HH_ROOMS__ = ROOMS;
+import { roomView, type Room, writeRoom } from "./store";
+import { defaultSettings, participant, sanitizeSettings } from "./machine";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const id = `room-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,8)}`;
-    const room: Room = {
-      id,
-      host: { heroId: body?.heroId ?? null },
-      guest: null,
-      status: "waiting",
-      createdAt: Date.now(),
-      game: null,
-      revision: 0,
-    };
-    ROOMS.set(id, room);
+    const id = `room-${Date.now().toString(36)}-${crypto.randomUUID().slice(0,8)}`;
+    const token = crypto.randomUUID();
+    const room: Room = {id,host:participant(token),guest:null,status:"waiting",settings:sanitizeSettings(body?.settings??defaultSettings),createdAt:Date.now(),revision:0,coinWinner:null,startingRole:null,game:null};
+    await writeRoom(room);
     const url = new URL(req.url);
-    return NextResponse.json({ ...room, link: `${url.origin}/?room=${id}` });
+    return NextResponse.json({...roomView(room),token,link:`${url.origin}/?room=${encodeURIComponent(id)}`});
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
-}
-
-export async function GET() {
-  // Return basic info about rooms (for debugging)
-  const out = Array.from(ROOMS.values() as Room[]).map(r => ({ id: r.id, status: r.status, createdAt: r.createdAt }));
-  return NextResponse.json(out);
 }
