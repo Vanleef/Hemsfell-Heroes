@@ -108,7 +108,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 75);
+  assert.equal(explicitRuleIds.length, 77);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -538,11 +538,30 @@ test("controller choices can affect both players without leaking decision owners
   assert.equal(result.players[1].hand[0].id, "enemy-top");
 });
 
+test("Ilusão Dracônica Menor creates a reusable Dragão Filhote image", () => {
+  const game = state();
+  game.players[0].hand.push(compileCard({ id: "p12", page: 12, name: "Ilusão Dracônica Menor", type: "Feitiço", cost: 0, text: "" }));
+  game.players[0].extraDeck = [{ id: "dragon-token", name: "Dragão Filhote", type: "Criatura", atk: 2, hp: 2, tags: ["Voar"], abilities: [] }];
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p12" }).state;
+  assert.equal(result.players[0].board[0].name, "Dragão Filhote");
+  assert.equal(result.players[0].board[0].generatedImage, true);
+  assert.equal(result.players[0].extraDeck.length, 1);
+});
+
+test("Indomável enters ready, must attack and cannot defend", () => {
+  const game = state();
+  game.players[0].hand.push(compileCard({ id: "p115", page: 115, name: "Indomável", type: "Criatura", cost: 0, atk: 3, hp: 1, text: "", tags: [] }));
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p115", slot: 0 }).state;
+  assert.equal(result.players[0].board[0].summoning, false);
+  assert.equal(result.players[0].board[0].cannotDefend, true);
+  assert.ok(result.players[0].board[0].tags.includes("Indomável"));
+});
+
 test("migration coverage is explicit and simple cards use the command engine", async () => {
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 215); assert.equal(pending.length, 93);
+  assert.equal(migrated.length, 217); assert.equal(pending.length, 91);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
