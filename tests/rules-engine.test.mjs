@@ -837,6 +837,20 @@ test("multiplayer API exposes the authoritative command path", async () => {
   assert.match(machine, /shouldAutoPass/);
 });
 
+test("production rooms use durable storage and never masquerade as process-local invites", async () => {
+  const [store, createRoute, roomRoute] = await Promise.all([
+    readFile(new URL("../app/api/rooms/store.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/rooms/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/rooms/[id]/route.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(store, /SUPABASE_SERVICE_ROLE_KEY/);
+  assert.match(store, /multiplayer_rooms\?on_conflict=id/);
+  assert.match(store, /NODE_ENV === "development"/);
+  assert.doesNotMatch(store, /HEMSFELL_ROOM_STORE !== "d1"/);
+  assert.match(createRoute, /force-dynamic/);
+  assert.match(roomRoute, /Cache-Control.*no-store/);
+});
+
 test("game client routes migrated cards through the command engine", async () => {
   const [page, css] = await Promise.all([readFile(new URL("../app/page.tsx", import.meta.url), "utf8"), readFile(new URL("../app/lab.css", import.meta.url), "utf8")]);
   assert.match(page, /canExecuteCard\(snapshot\)/);
