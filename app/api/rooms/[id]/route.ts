@@ -3,14 +3,18 @@ import { preserveOpponentSecrets, readRoom, roleFor, roomView, writeRoom } from 
 import { applyRulesCommand, applyTimeout, bothDecksLocked, canSync, deadline, participant, prepareCoin, sanitizeSettings } from "../machine";
 import { isBoundedGame, isPlainRecord, isRoomId, readSafeJson } from "../validation";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+const noStore = { headers: { "Cache-Control": "no-store, max-age=0" } };
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (!isRoomId(id)) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!isRoomId(id)) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
   const room = await readRoom(id);
-  if (!room) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (!room) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
   if (applyTimeout(room)) { room.revision++; await writeRoom(room); }
   const role = roleFor(room, new URL(req.url).searchParams.get("token"));
-  return NextResponse.json(roomView(room, !!role, role));
+  return NextResponse.json(roomView(room, !!role, role), noStore);
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
