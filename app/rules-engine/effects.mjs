@@ -130,6 +130,8 @@ export const defaultEffectHandlers = Object.freeze({
   snapshotStats(state, effect, context) { const entry = player(state, context.owner); const source = findUnit(state, context.sourceId); const count = entry.board.filter((unit) => unit !== source && (unit.tags || []).includes(effect.attackPerOtherSubtype.subtype)).length; if (source) defaultEffectHandlers.modifyStats(state, { type: "modifyStats", attack: count * effect.attackPerOtherSubtype.amount, duration: "permanent" }, { ...context, targetIds: [source.uid] }); },
   search(state, effect, context) { queueDecision(state, effect, context, "search"); },
   replayAbility(state, effect, context) { queueDecision(state, effect, context, "replay-ability"); },
+  recruitFirstActOnLeave(state, effect, context) { const source = findUnit(state, context.sourceId); if (source) { source.staticModifiers ||= []; source.staticModifiers.push({ type: "recruitFirstActOnLeave" }); } },
+  doubleRecruitFirstAct(state, effect, context) { const source = findUnit(state, context.sourceId); if (source) { source.staticModifiers ||= []; source.staticModifiers.push({ type: "doubleRecruitFirstAct" }); } },
   doubleNextNamedEffect(state, effect, context) { player(state, context.owner).replacementEffects ||= []; player(state, context.owner).replacementEffects.push(effect); },
   copyEventEffect(state, effect, context) { if (context.event?.effect) applyEffect(state, context.event.effect, { ...context, targetIds: [context.sourceId] }); },
   allowSubtypeInZone(state, effect) { state.globalRules ||= []; state.globalRules.push(effect); },
