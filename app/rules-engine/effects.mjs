@@ -8,6 +8,8 @@ const findUnit = (state, id) => allUnits(state).find((unit) => unit.uid === id |
 const heroOwner = (context, id) => id === "enemy-hero" ? 1 - context.owner : id === "ally-hero" || id === "controller-hero" ? context.owner : /^hero-[01]$/.test(id || "") ? Number(id.slice(-1)) : null;
 const markerTotal = (card) => typeof card?.markers === "number" ? card.markers : Object.values(card?.markers || {}).reduce((sum, value) => sum + Number(value || 0), 0);
 const setMarker = (card, marker, amount) => { if (typeof card.markers === "number" && marker === "action") card.markers = amount; else card.markers = { ...(typeof card.markers === "object" ? card.markers : {}), [marker]: amount }; };
+const queueEvent = (state, event) => { state.rulesEvents ||= []; state.rulesEvents.push(event); };
+const selectedIds = (context) => context.targetIds?.length ? context.targetIds : context.targetId ? [context.targetId] : [];
 const queueDecision = (state, effect, context, kind = effect.type) => { if (state.pendingDecision) throw new RulesViolation("decision-pending"); state.pendingDecision = { kind, effect, context, owner: context.owner }; };
 const removeFromZones = (state, id) => {
   for (const entry of state.players) for (const zone of ["board", "support"]) {
@@ -39,12 +41,14 @@ export const defaultEffectHandlers = Object.freeze({
     entry.grave.push(...entry.deck.splice(0, effect.amount ?? 1));
   },
   damage(state, effect, context) {
-    const targetId = context.targetIds?.[context.targetIndex || 0]; const owner = heroOwner(context, targetId);
-    if (owner != null) { player(state, owner).life -= Math.max(0, effect.amount ?? 0); return; }
-    const target = findUnit(state, targetId); if (!target) throw new RulesViolation("target-required");
-    const shield = (target.damageShields || []).find((item) => item.uses > 0); if (shield) { shield.uses--; target.damageShields = target.damageShields.filter((item) => item.uses > 0); return; }
-    const robust = (target.tags || []).some((tag) => /robusto/i.test(tag)) ? 1 : 0;
-    target.damage = (target.damage || 0) + Math.max(0, (effect.amount ?? 0) - robust);
+    const ids = selectedIds(context); if (!ids.length) throw new RulesViolation("target-required");
+    for (const targetId of ids) { const owner = heroOwner(context, targetId);
+      if (owner != null) { const amount = Math.max(0, effect.amount ?? 0); player(state, owner).life -= amount; queueEvent(state, { type: "onPlayerDamaged", owner, sourceOwner: context.owner, sourceId: context.sourceId, amount }); continue; }
+      const target = findUnit(state, targetId); if (!target) throw new RulesViolation("target-required");
+      const shield = (target.damageShields || []).find((item) => item.uses > 0); if (shield) { shield.uses--; target.damageShields = target.damageShields.filter((item) => item.uses > 0); continue; }
+      const robust = [...(target.tags || []), ...(target.grantedKeywords || [])].some((tag) => /robusto/i.test(String(tag))) ? 1 : 0;
+      const amount = Math.max(0, (effect.amount ?? 0) - robust); target.damage = (target.damage || 0) + amount; queueEvent(state, { type: "onDamageTaken", targetId, sourceOwner: context.owner, sourceId: context.sourceId, amount });
+    }
   },
   damageAll(state, effect, context) {
     const targets = allUnits(state).filter((target) => effect.target !== "enemyCreatures" || state.players[1 - context.owner].board.includes(target));
@@ -57,11 +61,11 @@ export const defaultEffectHandlers = Object.freeze({
   },
   heal(state, effect, context) {
     if (["controller", "controllerHero"].includes(effect.target)) { const entry = player(state, context.owner); entry.life = Math.min(entry.maxLife ?? 30, entry.life + (effect.amount ?? 0)); return; }
-    const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); target.damage = Math.max(0, (target.damage || 0) - (effect.amount ?? 0));
+    const ids = selectedIds(context); if (!ids.length) throw new RulesViolation("target-required"); for (const id of ids) { const owner = heroOwner(context, id); if (owner != null) { const entry = player(state, owner); entry.life = Math.min(entry.maxLife ?? 30, entry.life + (effect.amount ?? 0)); continue; } const target = findUnit(state, id); if (!target) throw new RulesViolation("target-required"); target.damage = Math.max(0, (target.damage || 0) - (effect.amount ?? 0)); }
   },
   destroy(state, effect, context) {
     for (const id of effect.target === "all" ? allUnits(state).map((unit) => unit.uid || unit.id) : context.targetIds || []) {
-      const removed = removeFromZones(state, id); if (removed && !removed.card.generatedImage && !removed.card.imageCard) player(state, removed.owner).grave.push({ ...removed.card, lastZone: removed.zone, deathCause: "destroy" });
+      const removed = removeFromZones(state, id); if (removed) { if (!removed.card.generatedImage && !removed.card.imageCard) player(state, removed.owner).grave.push({ ...removed.card, lastZone: removed.zone, deathCause: "destroy" }); queueEvent(state, { type: "onDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id, sourceId: removed.card.uid || removed.card.id, deathCause: "destroy" }); queueEvent(state, { type: "onCreatureDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id }); }
     }
   },
   sacrifice(state, effect, context) {
@@ -76,11 +80,11 @@ export const defaultEffectHandlers = Object.freeze({
   tap(state, effect, context) { const target = findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); target.exhausted = true; },
   ready(state, effect, context) { const target = findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); target.exhausted = false; },
   addMarker(state, effect, context) { const target = effect.target === "hero" ? player(state, context.owner) : findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); const key = effect.marker || "action"; setMarker(target, key, (typeof target.markers === "object" ? target.markers[key] || 0 : target.markers || 0) + (effect.amount ?? 1)); },
-  modifyStats(state, effect, context) { const target = findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); target.modifiers ||= []; target.modifiers.push({ attack: effect.attack || 0, health: effect.health || 0, duration: effect.duration || "permanent" }); },
+  modifyStats(state, effect, context) { const ids = selectedIds(context); const targets = ids.length ? ids.map((id) => findUnit(state, id)) : [findUnit(state, context.sourceId)]; if (targets.some((target) => !target)) throw new RulesViolation("target-required"); for (const target of targets) { target.modifiers ||= []; target.modifiers.push({ attack: effect.attack || 0, health: effect.health || 0, duration: effect.duration || "permanent" }); } },
   gainEnergy(state, effect, context) { const entry = player(state, context.owner); const key = effect.destination === "reserve" ? "reserve" : "energy"; const cap = key === "reserve" ? 3 : entry.maxEnergy; entry[key] = Math.min(cap, entry[key] + (effect.amount ?? 0)); },
-  grantKeyword(state, effect, context) { const target = findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); target.grantedKeywords ||= []; target.grantedKeywords.push(effect.raw); },
+  grantKeyword(state, effect, context) { const ids = selectedIds(context); const targets = ids.length ? ids.map((id) => findUnit(state, id)) : [findUnit(state, context.sourceId)]; if (targets.some((target) => !target)) throw new RulesViolation("target-required"); for (const target of targets) { target.grantedKeywords ||= []; target.grantedKeywords.push(effect.raw); } },
   keyword(state, effect, context) { const target = findUnit(state, context.sourceId); if (target) { target.tags ||= []; if (!target.tags.includes(effect.keyword)) target.tags.push(effect.keyword); } },
-  loseLife(state, effect, context) { const owner = effect.target === "spellControllerHero" ? context.event?.owner ?? context.owner : context.owner; player(state, owner).life -= effect.amount ?? 0; },
+  loseLife(state, effect, context) { const owner = effect.target === "spellControllerHero" ? context.event?.owner ?? context.owner : context.owner; const amount = effect.amount ?? 0; player(state, owner).life -= amount; queueEvent(state, { type: "onLifeLost", owner, sourceOwner: context.owner, sourceId: context.sourceId, amount }); },
   increaseVitality(state, effect, context) { const id = context.targetIds?.[0]; const owner = heroOwner(context, id); if (owner != null) { const entry = player(state, owner); entry.maxLife = (entry.maxLife ?? 30) + (effect.amount ?? 0); entry.life += effect.amount ?? 0; } else defaultEffectHandlers.modifyStats(state, { type: "modifyStats", health: effect.amount, duration: effect.duration }, context); },
   toggleTap(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); target.exhausted = !target.exhausted; },
   grantDamageShield(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); target.damageShields ||= []; target.damageShields.push({ uses: effect.uses ?? 1, sourceId: context.sourceId }); },

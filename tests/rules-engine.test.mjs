@@ -6,7 +6,7 @@ import { explicitCardRules, explicitRuleIds } from "../app/rules-engine/card-rul
 import { defaultEffectHandlers } from "../app/rules-engine/effects.mjs";
 import { hasSubtype, subtypesFor } from "../app/rules-engine/subtypes.mjs";
 import { isValidTarget, targetPolicy, TargetScope } from "../app/rules-engine/targeting.mjs";
-import { executeCommand, RulesLoopError } from "../app/rules-engine/engine.mjs";
+import { canExecuteCard, executeCommand, RulesLoopError } from "../app/rules-engine/engine.mjs";
 import { runHeadlessGames } from "../app/rules-engine/simulator.mjs";
 
 const state = () => ({ active: 0, phase: "principal", round: 1, players: [0, 1].map(() => ({ life: 30, maxLife: 30, energy: 5, maxEnergy: 5, reserve: 0, deck: [], hand: [], board: [], support: [], terrain: null, grave: [], obscuro: [] })) });
@@ -188,6 +188,54 @@ test("sacrifice spell exposes ordered cost and effect target steps", () => {
   ]);
 });
 
+test("spell sacrifice is an on-play cost and is paid atomically", () => {
+  const spell = compileCard({ id: "offering", type: "Feitiço", cost: 2, tags: [], text: "Sacrifique uma criatura aliada. Compre 1 carta." });
+  assert.equal(spell.abilities[0].trigger, "onPlay");
+  assert.equal(spell.abilities[0].costs[0].type, "sacrifice");
+  const invalid = state(); invalid.players[0].hand.push(spell); invalid.players[0].deck.push({ id: "drawn" });
+  assert.throws(() => executeCommand(invalid, { type: "playCard", owner: 0, cardId: "offering" }), /sacrifice-required/);
+  assert.equal(invalid.players[0].energy, 5); assert.equal(invalid.players[0].hand.length, 1);
+  const valid = state(); valid.players[0].hand.push(spell); valid.players[0].deck.push({ id: "drawn" }); valid.players[0].board.push({ uid: "tribute", id: "tribute" });
+  const result = executeCommand(valid, { type: "playCard", owner: 0, cardId: "offering", sacrificeIds: ["tribute"] });
+  assert.equal(result.state.players[0].energy, 3); assert.equal(result.state.players[0].hand[0].id, "drawn");
+});
+
+test("server engine validates target scope and resolves every damage instance", () => {
+  const game = state(); game.players[0].hand.push({ id: "split", type: "Feitiço", cost: 0, tags: [], abilities: [{ id: "split-hit", trigger: "onPlay", effects: [{ type: "damage", amount: 1, target: "anyCreature", selections: 2 }] }] });
+  game.players[0].board.push({ uid: "ally", hp: 3, damage: 0 }); game.players[1].board.push({ uid: "enemy", hp: 3, damage: 0 });
+  assert.throws(() => executeCommand(game, { type: "playCard", owner: 0, cardId: "split", targetIds: ["enemy-hero", "enemy"] }), /invalid-target/);
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "split", targetIds: ["ally", "enemy"] });
+  assert.equal(result.state.players[0].board[0].damage, 1); assert.equal(result.state.players[1].board[0].damage, 1);
+});
+
+test("server engine enforces Magic Barrier", () => {
+  const game = state(); game.players[0].hand.push({ id: "bolt", type: "Feitiço", cost: 0, tags: [], text: "Cause 1 de dano a uma criatura.", abilities: [{ id: "hit", trigger: "onPlay", sourceText: "Cause 1 de dano a uma criatura.", effects: [{ type: "damage", amount: 1, target: "anyCreature", selections: 1 }] }] });
+  game.players[1].board.push({ uid: "warded", hp: 3, damage: 0, tags: ["Barreira Mágica"] });
+  assert.throws(() => executeCommand(game, { type: "playCard", owner: 0, cardId: "bolt", targetIds: ["warded"] }), /magic-barrier/);
+});
+
+test("Last Breath resolves from the destroyed card after it leaves the field", () => {
+  const game = state(); game.players[1].deck.push({ id: "reward" }); game.players[1].board.push({ uid: "victim", id: "victim", hp: 1, damage: 0, tags: ["Último Suspiro"], abilities: [{ id: "last", trigger: "onDestroyed", effects: [{ type: "draw", amount: 1 }] }] });
+  game.players[0].hand.push({ id: "bolt", type: "Feitiço", cost: 0, tags: [], abilities: [{ id: "hit", trigger: "onPlay", effects: [{ type: "damage", amount: 1, target: "anyCreature", selections: 1 }] }] });
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "bolt", targetIds: ["victim"] });
+  assert.equal(result.state.players[1].hand[0].id, "reward");
+});
+
+test("passive spell-cast triggers resolve from modular abilities", () => {
+  const game = state(); game.players[0].board.push({ uid: "listener", slot: 0, abilities: [{ id: "listen", trigger: "onSpellCast", effects: [{ type: "draw", amount: 1 }], usageLimit: { count: 1, period: "turn" } }] });
+  game.players[0].hand.push({ id: "spell", type: "Feitiço", cost: 0, tags: [], abilities: [] }); game.players[0].deck.push({ id: "drawn" });
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "spell" });
+  assert.equal(result.state.players[0].hand[0].id, "drawn");
+});
+
+test("migration coverage is explicit and simple cards use the command engine", async () => {
+  const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
+  const migrated = cards.filter((card) => canExecuteCard(card));
+  const pending = cards.filter((card) => !canExecuteCard(card));
+  assert.equal(migrated.length, 210); assert.equal(pending.length, 98);
+  assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
+});
+
 test("the complete generated catalog has full classified coverage", async () => {
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
   const report = auditCards(cards);
@@ -206,4 +254,11 @@ test("multiplayer API exposes the authoritative command path", async () => {
   assert.match(route, /body\.action === "command"/);
   assert.match(machine, /AUTHORITATIVE_COMMANDS/);
   assert.match(machine, /executeCommand/);
+});
+
+test("game client routes migrated cards through the command engine", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /canExecuteCard\(snapshot\)/);
+  assert.match(page, /roomAction\("command"/);
+  assert.match(page, /executeCommand\(previous,\{\.\.\.command,owner\}\)/);
 });

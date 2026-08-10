@@ -124,6 +124,7 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
   try {
     const result = executeCommand(room.game, { ...rawCommand, owner });
     room.game = result.state;
+    if (room.game.pendingResponse && !room.game.pendingResponse.deadline) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
     room.game.turnDeadline = deadline(room.settings.turnSeconds);
     room.revision++;
     return { ok: true, status: 200, error: "", trace: result.trace };

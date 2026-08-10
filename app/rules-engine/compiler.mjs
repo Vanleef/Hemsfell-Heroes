@@ -1,5 +1,6 @@
 import { abilitiesForLevel, getExplicitCardRule } from "./card-rules.mjs";
 import { withDerivedSubtypes } from "./subtypes.mjs";
+import { targetPolicy } from "./targeting.mjs";
 
 const clean = (value = "") => String(value).replace(/\s+/g, " ").trim();
 const folded = (value = "") => clean(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -69,8 +70,8 @@ export function parseEffects(text = "") {
   if (draw) add("draw", { amount: numberFrom(draw[1]) });
   if (/descarte|descarta/.test(value)) add("discard", { amount: numberFrom(value.match(/descart\w*\s+([^.;]+)/)?.[1], 1) });
   if (mill) add("mill", { amount: numberFrom(mill[1]) });
-  if (damage) add(/todas?\s+(?:as\s+)?criaturas/.test(value) ? "damageAll" : "damage", { amount: Number(damage[1]), target: /inimig/.test(value) ? "enemy" : "anyCreature" });
-  if (heal) add("heal", { amount: Number(heal[1]), target: /criatura/.test(value) ? "creature" : "controller" });
+  if (damage) { const policy = targetPolicy(raw); add(policy.global ? "damageAll" : "damage", { amount: Number(damage[1]), target: policy.scope, selections: policy.selections }); }
+  if (heal) { const policy = targetPolicy(raw); add("heal", { amount: Number(heal[1]), target: policy.scope, selections: policy.selections }); }
   if (/\bdestrua|\bdestruir/.test(value)) add("destroy", { target: /todas?/.test(value) ? "all" : "selected" });
   if (/\bsacrifique\b/.test(value)) add("sacrifice", { amount: numberFrom(value.match(/sacrifique\s+([^.:;]+)/)?.[1], 1), target: "ally" });
   if (/\bbana|\bbanir|\bbane\b/.test(value)) add("banish", { target: "selected" });
@@ -132,7 +133,8 @@ export function compileCard(card) {
     return { ...card, abilities, rules: explicit, diagnostics: { unsupported: 0, source: "explicit", ignored: !!explicit.ignored } };
   }
   const compiled = compileCardText(card?.text || "");
-  return { ...card, abilities: compiled.abilities, diagnostics: { unsupported: compiled.unsupported.length, source: "text" } };
+  const abilities = compiled.abilities.map((ability) => card?.type === "Feitiço" && ability.trigger === Trigger.ACTIVATED ? { ...ability, trigger: Trigger.PLAY } : ability);
+  return { ...card, abilities, diagnostics: { unsupported: compiled.unsupported.length, source: "text" } };
 }
 
 export function auditCards(cards = []) {
@@ -150,7 +152,7 @@ export function auditCards(cards = []) {
     unsupported += result.diagnostics.unsupported;
     if (/her[oó]i alvo/i.test(card?.text || "")) issues.push({ card: card.id, severity: "warning", code: "manual-hero-target-conflict" });
     const manualSections = splitTriggeredSections(card?.text || "").filter((section) => !section.label);
-    if (!result.rules?.ignored && manualSections.some((section) => /sacrifique/i.test(section.text)) && !result.abilities.some((ability) => ability.trigger === Trigger.ACTIVATED && ability.costs.some((cost) => cost.type === "sacrifice"))) issues.push({ card: card.id, severity: "error", code: "unparsed-sacrifice-cost" });
+    if (!result.rules?.ignored && manualSections.some((section) => /sacrifique/i.test(section.text)) && !result.abilities.some((ability) => [Trigger.ACTIVATED, Trigger.PLAY].includes(ability.trigger) && ability.costs.some((cost) => cost.type === "sacrifice"))) issues.push({ card: card.id, severity: "error", code: "unparsed-sacrifice-cost" });
   }
   return { cards: cards.length, abilities, unsupported, coverage: abilities ? (abilities - unsupported) / abilities : 1, issues };
 }
