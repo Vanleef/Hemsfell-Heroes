@@ -1,5 +1,6 @@
 import { ROOM_LIMITS } from "./constants";
 import { executeCommand } from "../../rules-engine/engine.mjs";
+import { shouldAutoPass } from "../../rules-engine/priority.mjs";
 
 export type RoomRole = "host" | "guest";
 export type RoomStatus = "waiting" | "deck-selection" | "coin-choice" | "mulligan" | "started" | "finished";
@@ -76,7 +77,7 @@ export function applyTimeout(room: Room) {
   const now = Date.now();
   if (room.game.pendingResponse?.deadline && room.game.pendingResponse.deadline <= now) {
     const pending = room.game.pendingResponse; const owner = pending.responder;
-    try { const result = executeCommand(room.game, { type: "passPriority", owner }, { priority: true }); room.game = result.state; } catch { room.game.pendingResponse = null; room.game.pendingAction = undefined; }
+    try { const result = executeCommand(room.game, { type: "passPriority", owner, auto: true }, { priority: true }); room.game = result.state; } catch { return false; }
     if (room.game.pendingResponse) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
     room.game.events = (room.game.events ?? 0) + 1;
     room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de resposta terminou; a prioridade foi passada automaticamente.", tone: "response" }, ...(room.game.log ?? [])];
@@ -94,6 +95,17 @@ export function applyTimeout(room: Room) {
     return true;
   }
   return false;
+}
+
+export function applySafeAutoPass(room: Room, role: RoomRole, control: "assisted" | "full-control" = "assisted") {
+  if (!room.game || room.status !== "started") return false;
+  const owner = role === "host" ? 0 : 1;
+  if (!shouldAutoPass(room.game, owner, control)) return false;
+  const result = executeCommand(room.game, { type: "passPriority", owner, auto: true }, { priority: true });
+  room.game = result.state;
+  if (room.game.pendingResponse) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
+  room.revision++;
+  return true;
 }
 
 export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision: unknown) {
