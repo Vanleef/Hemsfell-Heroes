@@ -6,7 +6,7 @@ export class RulesLoopError extends Error {
   constructor(message, trace) { super(message); this.name = "RulesLoopError"; this.trace = trace; }
 }
 
-const INTERACTIVE_EFFECTS = new Set(["investigate", "forceAttack", "replaySelectedAbility", "replayTopGraveAbility", "search", "replayAbility", "additionalTargetCost", "optionalRedirect", "optionalDrawFrom", "removeMarkersFromConstants"]);
+const INTERACTIVE_EFFECTS = new Set(["investigate", "forceAttack", "replayTopGraveAbility", "search", "replayAbility", "additionalTargetCost", "optionalRedirect", "optionalDrawFrom", "removeMarkersFromConstants"]);
 export function canExecuteCard(card, handlers = defaultEffectHandlers) {
   if (!handlers || typeof handlers !== "object") handlers = defaultEffectHandlers;
   const inspect = (effects = []) => effects.every((effect) => !!handlers[effect.type] && effect.type !== "unsupported" && !INTERACTIVE_EFFECTS.has(effect.type) && inspect(effect.effects) && (effect.branches || []).every((branch) => inspect(branch.effects)) && (effect.choices || []).every(inspect));
@@ -114,7 +114,11 @@ function conditionMatches(state, source, owner, condition, event = {}) {
 
 function playConditionMatches(state, owner, condition) {
   if (!condition) return true;
-  if (condition.alliedPermanentHasTrigger) return permanentUnits(state.players[owner]).some((card) => (card.abilities || []).some((ability) => ability.trigger === condition.alliedPermanentHasTrigger));
+  if (condition.alliedPermanentHasTrigger) return permanentUnits(state.players[owner]).some((card) => (card.abilities || []).some((ability) => {
+    if (ability.trigger !== condition.alliedPermanentHasTrigger) return false;
+    const steps = abilityTargetSteps(ability);
+    return !steps.length || canSatisfyTargetSteps(state, owner, steps);
+  }));
   return true;
 }
 function availabilityMatches(state, source, owner, availability) {
@@ -163,6 +167,13 @@ function canSatisfyTargetSteps(state, owner, steps) {
     return choose(index + 1, next);
   });
   return choose(0, new Set());
+}
+function replayAbilityCandidates(state, owner, effect) {
+  return (state.players[owner].board || []).filter((card) => (!effect.selector?.type || card.type === effect.selector.type) && (card.abilities || []).some((ability) => {
+    if (ability.trigger !== effect.trigger) return false;
+    const steps = abilityTargetSteps(ability);
+    return !steps.length || canSatisfyTargetSteps(state, owner, steps);
+  }));
 }
 function validateTargets(state, owner, abilities, command, source) {
   const targetIds = command.targetIds || []; const steps = abilities.flatMap(abilityTargetSteps); if (steps.length !== targetIds.length) { if (steps.length || targetIds.length) throw new RulesViolation("invalid-target-count"); return; }
@@ -226,14 +237,14 @@ export function executeCommand(inputState, command, options = {}) {
         const accelerated = (card.tags || []).some((tag) => /acelerado/i.test(tag)) || /acelerado/i.test(card.text || "");
         if (state.active !== item.command.owner && !(accelerated && item.command.hasPriority)) throw new RulesViolation("not-your-priority");
         if (state.phase !== "principal" && !(accelerated && item.command.hasPriority)) throw new RulesViolation("wrong-phase");
-        const playAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onPlay" && conditionMatches(state, card, item.command.owner, ability.condition, { card })); if (playAbilities.some((ability) => !playConditionMatches(state, item.command.owner, ability.playCondition))) throw new RulesViolation("play-condition-not-met"); const enterAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onEnter" && conditionMatches(state, card, item.command.owner, ability.condition, { card }));
+        const playAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onPlay" && conditionMatches(state, card, item.command.owner, ability.condition, { card })); if (playAbilities.some((ability) => !playConditionMatches(state, item.command.owner, ability.playCondition) || ability.effects.some((effect) => effect.type === "replaySelectedAbility" && !replayAbilityCandidates(state, item.command.owner, effect).length))) throw new RulesViolation("play-condition-not-met"); const enterAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onEnter" && conditionMatches(state, card, item.command.owner, ability.condition, { card }));
         if (card.type !== "Criatura" || (item.command.targetIds || []).length) validateTargets(state, item.command.owner, card.type === "Criatura" ? enterAbilities : playAbilities, item.command, card);
         for (const ability of playAbilities) validateCosts(state, ability, item.command);
         const staticDiscount = permanentUnits(entry).flatMap((source) => source.staticModifiers || []).filter((modifier) => modifier.type === "costModifier" && (!modifier.selector?.type || modifier.selector.type === card.type) && (!modifier.during || modifier.during !== "controllerTurn" || state.active === item.command.owner)).reduce((sum, modifier) => sum + (modifier.amount || 0), 0);
-        const cost = Math.max(0, (card.cost || 0) + (card.costModifier || 0) + staticDiscount); const spell = card.type === "Feitiço";
-        if (entry.energy + (spell ? entry.reserve : 0) < cost) throw new RulesViolation("not-enough-energy");
+        const cost = Math.max(0, (card.cost || 0) + (card.costModifier || 0) + staticDiscount); const spell = card.type === "Feitiço"; const canUseReserve = card.type !== "Criatura";
+        if (entry.energy + (canUseReserve ? entry.reserve : 0) < cost) throw new RulesViolation("not-enough-energy");
         for (const ability of playAbilities) payCosts(state, ability, item.command);
-        const fromReserve = spell ? Math.min(entry.reserve, cost) : 0; entry.reserve -= fromReserve; entry.energy -= cost - fromReserve;
+        const fromEnergy = Math.min(entry.energy, cost); entry.energy -= fromEnergy; const fromReserve = canUseReserve ? cost - fromEnergy : 0; entry.reserve -= fromReserve;
         entry.hand.splice(cardIndex, 1); for (const source of permanentUnits(entry)) if (typeof source.cardsPlayedAfterSelf === "number") source.cardsPlayedAfterSelf++; entry.cardsPlayed = (entry.cardsPlayed || 0) + 1; entry.turnCardsPlayed = (entry.turnCardsPlayed || 0) + 1; if (spell) { entry.spellsPlayed = (entry.spellsPlayed || 0) + 1; entry.turnSpellsPlayed = (entry.turnSpellsPlayed || 0) + 1; } const permanent = card.type !== "Feitiço" || card.abilities?.some((ability) => ability.effects?.some((effect) => effect.type === "remainUntilTurnEnd"));
         if (permanent) {
           state.nextInstanceId = (state.nextInstanceId || 0) + 1;
@@ -309,6 +320,21 @@ export function executeCommand(inputState, command, options = {}) {
         [...ability.effects].reverse().forEach((effect) => stack.push({ kind: "effect", effect, context: item.command }));
       } else if (item.command.type === "resolveDecision") {
         const decision = state.pendingDecision; if (!decision || (decision.owner !== item.command.owner && decision.context?.decisionOwner !== item.command.owner)) throw new RulesViolation("decision-not-owned");
+        if (decision.kind === "replay-ability") {
+          const selected = permanentUnits(state.players[item.command.owner]).find((card) => (card.uid === item.command.selectedCardId || card.id === item.command.selectedCardId) && card.type === (decision.effect.selector?.type || card.type));
+          const ability = selected?.abilities?.find((candidate) => candidate.trigger === decision.effect.trigger);
+          if (!selected || !ability) throw new RulesViolation("card-choice-required");
+          const targetSteps = abilityTargetSteps(ability);
+          if (targetSteps.length && !canSatisfyTargetSteps(state, item.command.owner, targetSteps)) throw new RulesViolation("ability-not-available");
+          state.pendingDecision = null;
+          const context = { ...decision.context, owner: item.command.owner, sourceId: selected.uid || selected.id, effectSource: selected };
+          if (targetSteps.length) {
+            state.pendingDecision = { kind: "targets", owner: item.command.owner, effect: { replayEffects: ability.effects }, context, targetSteps, sourceName: selected.name || "Primeiro Ato" };
+            continue;
+          }
+          for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context });
+          continue;
+        }
         if (decision.kind === "targets") {
           const targetIds = item.command.targetIds || []; const steps = decision.targetSteps || [];
           if (targetIds.length !== steps.length) throw new RulesViolation("invalid-target-count");
@@ -327,12 +353,13 @@ export function executeCommand(inputState, command, options = {}) {
         if (!pending.confirmed.includes(item.command.owner)) pending.confirmed.push(item.command.owner); if (pending.confirmed.length === pending.owners.length) state.pendingReposition = null;
       } else if (item.command.type === "emit") stack.push({ kind: "event", event: item.command.event });
       else if (item.command.type === "advancePhase") {
-        if (state.pendingDecision || state.pendingReposition) throw new RulesViolation("interaction-pending"); const order = ["manutencao", "principal", "combate", "fim"]; const index = order.indexOf(state.phase); if (state.phase === "fim") state.players.forEach((entry) => { for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn"); unit.abilities = (unit.abilities || []).filter((ability) => !ability.temporary); unit.temporaryTags = []; } }); if (state.phase === "combate" && state.players[state.active].board.some((unit) => !unit.exhausted && !unit.attackedThisTurn && !unit.summoning && !unit.stunned && !hasKeyword(unit, /atordoado/i) && attackPermissionMet(unit) && hasKeyword(unit, /indom[aá]vel/i))) throw new RulesViolation("indomitable-must-attack"); state.phase = order[(index + 1) % order.length]; if (state.phase === "fim") stack.push({ kind: "event", event: { type: "onTurnEnd", owner: state.active } }); if (state.phase === "combate") stack.push({ kind: "event", event: { type: "onCombatStart", owner: state.active } }); if (state.phase === "manutencao") { state.active = 1 - state.active; state.round += 1; const entry = state.players[state.active]; entry.abilityUses = {}; entry.subtypesEnteredThisTurn = {}; entry.turnCardsPlayed = 0; entry.turnSpellsPlayed = 0; for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn"); unit.temporaryTags = []; unit.summoning = false; unit.attackedThisTurn = false; unit.defenseUses = 0; const immobilized = unit.immobilized || hasKeyword(unit, /imobilizado/i); if (immobilized) { unit.immobilized = false; unit.tags = (unit.tags || []).filter((tag) => !/imobilizado/i.test(String(tag))); } else unit.exhausted = false; } for (const unit of entry.board || []) unit.damage = 0; stack.push({ kind: "event", event: { type: "onMaintenance", owner: state.active } }); }
+        if (state.pendingDecision || state.pendingReposition) throw new RulesViolation("interaction-pending"); const order = ["manutencao", "principal", "combate", "fim"]; const index = order.indexOf(state.phase); if (state.phase === "fim") state.players.forEach((entry) => { for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn"); unit.abilities = (unit.abilities || []).filter((ability) => !ability.temporary); unit.temporaryTags = []; } }); if (state.phase === "combate" && state.players[state.active].board.some((unit) => !unit.exhausted && !unit.attackedThisTurn && !unit.summoning && !unit.stunned && !hasKeyword(unit, /atordoado/i) && attackPermissionMet(unit) && hasKeyword(unit, /indom[aá]vel/i))) throw new RulesViolation("indomitable-must-attack"); if (state.phase === "combate") state.players.forEach((entry) => entry.board.forEach((unit) => { if ((unit.defenseUses || 0) > 0) unit.exhausted = true; })); state.phase = order[(index + 1) % order.length]; if (state.phase === "fim") stack.push({ kind: "event", event: { type: "onTurnEnd", owner: state.active } }); if (state.phase === "combate") stack.push({ kind: "event", event: { type: "onCombatStart", owner: state.active } }); if (state.phase === "manutencao") { state.active = 1 - state.active; state.round += 1; const entry = state.players[state.active]; entry.abilityUses = {}; entry.subtypesEnteredThisTurn = {}; entry.turnCardsPlayed = 0; entry.turnSpellsPlayed = 0; for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn"); unit.temporaryTags = []; unit.summoning = false; unit.attackedThisTurn = false; unit.defenseUses = 0; const immobilized = unit.immobilized || hasKeyword(unit, /imobilizado/i); if (immobilized) { unit.immobilized = false; unit.tags = (unit.tags || []).filter((tag) => !/imobilizado/i.test(String(tag))); } else unit.exhausted = false; } for (const unit of entry.board || []) unit.damage = 0; stack.push({ kind: "event", event: { type: "onMaintenance", owner: state.active } }); }
       } else throw new RulesViolation("unknown-command");
     } else if (item.kind === "effect") {
       const replacements = state.players[item.context.owner]?.replacementEffects || [];
       const replacementIndex = item.context.replacementApplied ? -1 : replacements.findIndex((entry) => String(item.context.effectSource?.name || "").toLowerCase().includes(String(entry.nameIncludes || "").toLowerCase()));
       if (replacementIndex >= 0) { replacements.splice(replacementIndex, 1); stack.push({ kind: "effect", effect: item.effect, context: { ...item.context, replacementApplied: true } }); }
+      if (item.effect.type === "replaySelectedAbility") item.context.replayCandidateIds = replayAbilityCandidates(state, item.context.owner, item.effect).map((card) => card.uid || card.id);
       applyEffect(state, item.effect, item.context, handlers);
       if (item.context.effectSource?.name && (item.context.targetIds || []).length) stack.push({ kind: "event", event: { type: "onNamedEffectApplied", owner: item.context.owner, sourceId: item.context.sourceId, effectSource: item.context.effectSource, card: item.context.effectSource, effect: item.effect, targetIds: item.context.targetIds } });
       cleanupLethal(state, stack);
