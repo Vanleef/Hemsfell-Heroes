@@ -8,6 +8,7 @@ import { hasSubtype, subtypesFor } from "../app/rules-engine/subtypes.mjs";
 import { isValidTarget, targetPolicy, TargetScope } from "../app/rules-engine/targeting.mjs";
 import { canExecuteCard, executeCommand, RulesLoopError } from "../app/rules-engine/engine.mjs";
 import { runHeadlessGames } from "../app/rules-engine/simulator.mjs";
+import { PriorityState, chooseAIResponse, isAccelerated, legalPriorityResponses, priorityView, shouldAutoPass } from "../app/rules-engine/priority.mjs";
 
 const state = () => ({ active: 0, phase: "principal", round: 1, players: [0, 1].map(() => ({ life: 30, maxLife: 30, energy: 5, maxEnergy: 5, reserve: 0, deck: [], hand: [], board: [], support: [], terrain: null, grave: [], obscuro: [] })) });
 
@@ -595,6 +596,47 @@ test("priority defers the original action until both players pass", () => {
   assert.equal(result.state.pendingAction, undefined);
 });
 
+test("priority API exposes only legal accelerated cards and usable activations", () => {
+  const game = state();
+  game.pendingAction = { type: "playCard", owner: 0, cardId: "original" };
+  game.pendingResponse = { responder: 1, actor: 0, action: "original", passes: 0 };
+  game.players[1].energy = 0; game.players[1].reserve = 2;
+  game.players[1].hand.push(
+    { id: "fast", name: "Resposta", type: "Feitiço", cost: 2, tags: ["Acelerado"], abilities: [] },
+    { id: "slow", name: "Lento", type: "Feitiço", cost: 0, tags: [], abilities: [] },
+    { id: "expensive", name: "Caro", type: "Feitiço", cost: 3, tags: ["Acelerado"], abilities: [] },
+  );
+  game.players[1].board.push({ uid: "ready", name: "Ativável", abilities: [{ id: "answer", trigger: "activated", costs: [], effects: [] }] });
+  const legal = legalPriorityResponses(game, 1);
+  assert.deepEqual(legal.map((command) => command.type), ["playCard", "activate"]);
+  assert.equal(legal[0].cardId, "fast");
+  assert.equal(isAccelerated(game.players[1].hand[1]), false);
+  assert.equal(priorityView(game, 1).state, PriorityState.WAITING_FOR_PLAYER);
+  assert.equal(priorityView(game, 0).state, PriorityState.WAITING_FOR_OPPONENT);
+});
+
+test("assisted control and AI pass immediately when no legal response exists", () => {
+  const game = state();
+  game.pendingAction = { type: "attack", owner: 0 };
+  game.pendingResponse = { responder: 1, actor: 0, action: "attack", passes: 0 };
+  game.players[1].hand.push({ id: "slow", type: "Feitiço", cost: 0, tags: [], abilities: [] });
+  assert.equal(shouldAutoPass(game, 1, "assisted"), true);
+  assert.equal(shouldAutoPass(game, 1, "full-control"), false);
+  assert.deepEqual(chooseAIResponse(game, 1, () => 0), { type: "passPriority", owner: 1, auto: true });
+});
+
+test("AI selects a legal response through the same authoritative command shape", () => {
+  const game = state();
+  game.pendingAction = { type: "playCard", owner: 0, cardId: "original" };
+  game.pendingResponse = { responder: 1, actor: 0, action: "original", passes: 0 };
+  game.players[1].reserve = 3;
+  game.players[1].hand.push(
+    { id: "small", type: "Feitiço", cost: 1, tags: ["Acelerado"], abilities: [] },
+    { id: "large", type: "Feitiço", cost: 3, tags: ["Acelerado"], abilities: [] },
+  );
+  assert.equal(chooseAIResponse(game, 1, () => 0).cardId, "large");
+});
+
 test("multiplayer API exposes the authoritative command path", async () => {
   const [route, machine] = await Promise.all([
     readFile(new URL("../app/api/rooms/[id]/route.ts", import.meta.url), "utf8"),
@@ -603,6 +645,8 @@ test("multiplayer API exposes the authoritative command path", async () => {
   assert.match(route, /body\.action === "command"/);
   assert.match(machine, /AUTHORITATIVE_COMMANDS/);
   assert.match(machine, /executeCommand/);
+  assert.match(machine, /applySafeAutoPass/);
+  assert.match(machine, /shouldAutoPass/);
 });
 
 test("game client routes migrated cards through the command engine", async () => {
@@ -612,4 +656,6 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(page, /executeCommand\(current,\{\.\.\.command,owner\},\{priority:true\}\)/);
   assert.match(page, /role!=="attachment"/);
   assert.match(page, /dragged!\.type!=="Artefato"\|\|!!creature/);
+  assert.match(page, /chooseAIResponse/);
+  assert.match(page, /legalPriorityResponses/);
 });
