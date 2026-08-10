@@ -354,7 +354,12 @@ export function executeCommand(inputState, command, options = {}) {
         const entry = state.players[item.command.owner]; if (state.active !== item.command.owner) throw new RulesViolation("not-your-turn");
         const source = [...entry.board, ...entry.support, ...(entry.terrain ? [entry.terrain] : [])].find((unit) => unit.uid === item.command.sourceId); const ability = source?.abilities?.find((candidate) => candidate.id === item.command.abilityId && candidate.trigger === "activated");
         if (!ability) throw new RulesViolation("ability-not-found"); if (!canExecuteCard(source, handlers)) throw new RulesViolation("card-not-migrated"); if (!availabilityMatches(state, source, item.command.owner, ability.availability)) throw new RulesViolation("ability-not-available"); actionLabel = source.name || source.uid; if (!usageAvailable(state, source, item.command.owner, ability)) throw new RulesViolation("ability-limit-reached"); validateTargets(state, item.command.owner, [ability], item.command, source); validateCosts(state, ability, item.command); payCosts(state, ability, item.command); claimUsage(state, source, item.command.owner, ability);
-        [...ability.effects].reverse().forEach((effect) => stack.push({ kind: "effect", effect, context: item.command }));
+        /* A printed "Vire: Destrua este artefato e depois faça X" is an
+           activated ability. The source remains available while X resolves;
+           only the final self-destruction effect is placed at the end. */
+        const selfDestruction = ability.effects.filter((effect) => effect.type === "destroy" && ["self", "this", "thisArtifact", "thisEnchantment"].includes(effect.target));
+        const otherEffects = ability.effects.filter((effect) => !selfDestruction.includes(effect));
+        [...otherEffects, ...selfDestruction].reverse().forEach((effect) => stack.push({ kind: "effect", effect, context: item.command }));
       } else if (item.command.type === "resolveDecision") {
         const decision = state.pendingDecision; if (!decision || (decision.owner !== item.command.owner && decision.context?.decisionOwner !== item.command.owner)) throw new RulesViolation("decision-not-owned");
         if (decision.kind === "replay-ability") {
