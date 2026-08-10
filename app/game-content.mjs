@@ -1,5 +1,51 @@
 export const CARD_TYPES = new Set(["Criatura", "Feitiço", "Artefato", "Encanto", "Terreno", "Herói"]);
 
+export const slugify = (value = "") => String(value).normalize("NFD")
+  .replace(/[\u0300-\u036f]/g, "").toLowerCase()
+  .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+export const stableCardId = (setId, page, name) =>
+  `${setId}-${String(page).padStart(3, "0")}-${slugify(name)}`;
+
+export function adaptCatalogCard(row, pdfFileId = "1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC") {
+  const page = row.legacy_page ?? row.art_page ?? 0;
+  return {
+    id: row.id,
+    setId: row.set_id,
+    page,
+    name: row.name,
+    type: row.card_type,
+    faction: row.faction ?? undefined,
+    cost: row.cost,
+    atk: row.attack ?? undefined,
+    hp: row.health ?? undefined,
+    text: row.rules_text,
+    tags: Array.isArray(row.tags) ? row.tags : [],
+    effects: Array.isArray(row.effects) ? row.effects : [],
+    image: `drive://${pdfFileId}/page/${String(page || 1).padStart(3, "0")}`,
+    hero: row.card_type === "Herói",
+    imageCard: Boolean(row.is_image_card),
+  };
+}
+
+export function deckEntriesFromPages(entries, cardsByPage) {
+  const errors = [];
+  const byCardId = new Map();
+  for (const entry of entries) {
+    const card = cardsByPage.get(entry.page);
+    if (!card) {
+      errors.push(`unknown card page: ${entry.page}`);
+      continue;
+    }
+    if (!Number.isInteger(entry.quantity) || entry.quantity < 1) {
+      errors.push(`invalid quantity on page: ${entry.page}`);
+      continue;
+    }
+    byCardId.set(card.id, (byCardId.get(card.id) || 0) + entry.quantity);
+  }
+  return { entries: [...byCardId].map(([cardId, quantity]) => ({ cardId, quantity })), errors };
+}
+
 /**
  * Validates the transport shape used by the content database. Effects are data
  * owned by the catalogue; the game engine decides which effect kinds it supports.
