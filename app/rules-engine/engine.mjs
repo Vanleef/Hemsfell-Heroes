@@ -179,7 +179,7 @@ export function executeCommand(inputState, command, options = {}) {
         if ((pending.passes || 0) === 0) state.pendingResponse = { ...pending, responder: pending.actor, passes: 1 };
         else {
           const original = state.pendingAction;
-          state.pendingResponse = null; state.pendingAction = null;
+          state.pendingResponse = null; delete state.pendingAction;
           if (original) stack.push({ kind: "command", command: { ...original, skipPriority: true } });
         }
       } else if (options.priority && ["attack", "activate"].includes(item.command.type) && !item.command.skipPriority && !item.command.hasPriority) {
@@ -215,7 +215,9 @@ export function executeCommand(inputState, command, options = {}) {
           else if (card.type === "Terreno") { if (entry.terrain && !entry.terrain.generatedImage) entry.grave.push(entry.terrain); entry.terrain = unit; }
           else { if (entry.support.length >= 5 || entry.support.some((existing) => existing.slot === unit.slot)) throw new RulesViolation("support-zone-full"); if (card.type === "Artefato") { const attached = entry.board.find((creature) => creature.uid === item.command.attachedTo); if (!attached && card.page !== 304) throw new RulesViolation("artifact-target-required"); if (attached) { if (entry.support.some((artifact) => artifact.attachedTo === attached.uid)) throw new RulesViolation("artifact-target-required"); unit.attachedTo = attached.uid; unit.slot = attached.slot; } } entry.support.push(unit); }
           const enter = (unit.abilities || []).filter((ability) => ability.trigger === "onEnter");
-          for (const ability of enter.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: unit.uid, effectSource: unit } });
+          const hasEnterTargets = (item.command.targetIds || []).length > 0;
+          const enterEffectCanResolve = (effect) => hasEnterTargets || (targetScope(effect.target) === TargetScope.NONE && effect.relation !== "selectedTarget");
+          for (const ability of enter.reverse()) for (const effect of [...ability.effects].filter(enterEffectCanResolve).reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: unit.uid, effectSource: unit } });
           const staticAbilities = (unit.abilities || []).filter((ability) => ability.trigger === "static");
           for (const ability of staticAbilities.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: unit.uid, effectSource: unit } });
         } else entry.grave.push(card);
