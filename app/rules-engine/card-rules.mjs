@@ -64,7 +64,7 @@ export const explicitCardRules = Object.freeze({
   p194: [ability("static", [effect("modifyStats", { attack: 1, health: 1, duration: "permanent" }), effect("keyword", { keyword: "Suporte +1/+1" })])],
   p195: [ability("static", [effect("modifyStats", { attack: 1, health: 4, duration: "permanent" }), effect("keyword", { keyword: "Defensor 2" })])],
   p196: [ability("static", [effect("modifyStats", { attack: 2, health: 2, duration: "permanent" })])],
-  p197: [ability("static", [effect("modifyStats", { attack: -2, health: 0, duration: "permanent" }), effect("keyword", { keyword: "Atropelar" })])],
+  p197: [ability("static", [effect("attachedConditionalStats", { attack: -2, health: 0, excludedNames: ["Recruta Exibido", "Recruta Iludido"], duration: "permanent" }), effect("keyword", { keyword: "Atropelar" })])],
   p198: [ability("activated", [effect("modifyStats", { target: "self", attack: 4, health: 4, duration: "combat" })], [{ type: "energy", amount: 1 }], { uiActivation: true, usageLimit: { count: 1, period: "turn" }, availability: { whileDefending: true } })],
   p202: [ability("onPlay", [effect("heal", { amountPerTurnedCreature: 2, target: "controllerHero" })])],
   p189: [ability("onEnter", [effect("heal", { amount: 2, target: "controllerHero" })])],
