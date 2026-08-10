@@ -6629,3 +6629,17 @@
 .original-card[data-active-effect^="PERDA"]{box-shadow:0 0 0 2px #c75a7e,0 0 22px #6c1837!important}
 .original-card[data-active-effect="RESPOSTA"]{box-shadow:0 0 0 2px #f2d36b,0 0 22px #b9841d!important}
 .original-card[data-active-effect^="CUSTO"]{box-shadow:0 0 0 2px #77df9a,0 0 18px #2a9c55!important}
+
+
+/* Authoritative rules-engine decisions stay above combat, targeting and card tooltips. */
+.engine-decision-backdrop{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;background:rgba(2,9,14,.72);backdrop-filter:blur(5px)}
+.engine-decision-panel{width:min(520px,calc(100vw - 32px));padding:24px;border:1px solid #b88b3c;border-radius:16px;background:linear-gradient(160deg,#10232a,#071318 70%);box-shadow:0 26px 90px #000c;color:#eef8f5}
+.engine-decision-panel small{color:#e7bc61;font-size:.7rem;font-weight:900;letter-spacing:.18em}
+.engine-decision-panel h2{margin:8px 0 4px;font-size:1.55rem}
+.engine-decision-panel p{margin:0 0 18px;color:#9eb4b8}
+.engine-decision-panel>div{display:grid;gap:10px}
+.engine-decision-panel button{display:flex;align-items:center;gap:12px;width:100%;padding:13px 15px;border:1px solid #31545c;border-radius:11px;background:#112b32;color:#f6fbfa;text-align:left;cursor:pointer;transition:.16s ease}
+.engine-decision-panel button:hover{border-color:#e7bc61;background:#193941;transform:translateY(-1px)}
+.engine-decision-panel button b{display:grid;place-items:center;min-width:28px;height:28px;border-radius:50%;background:#d4a646;color:#101719}
+.engine-decision-panel button span{font-size:.96rem;font-weight:750}
+.engine-decision-wait{position:fixed;z-index:11990;left:50%;top:18px;translate:-50% 0;padding:10px 16px;border:1px solid #b88b3c;border-radius:999px;background:#071318ee;color:#e7bc61;font-weight:850;box-shadow:0 10px 35px #0009}
