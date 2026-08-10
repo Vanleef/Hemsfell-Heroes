@@ -75,9 +75,11 @@ export function applyTimeout(room: Room) {
   if (!room.game || room.status !== "started") return false;
   const now = Date.now();
   if (room.game.pendingResponse?.deadline && room.game.pendingResponse.deadline <= now) {
-    room.game.pendingResponse = null;
+    const pending = room.game.pendingResponse; const owner = pending.responder;
+    try { const result = executeCommand(room.game, { type: "passPriority", owner }, { priority: true }); room.game = result.state; } catch { room.game.pendingResponse = null; room.game.pendingAction = undefined; }
+    if (room.game.pendingResponse) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
     room.game.events = (room.game.events ?? 0) + 1;
-    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de resposta terminou; a prioridade voltou ao jogador da vez.", tone: "response" }, ...(room.game.log ?? [])];
+    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de resposta terminou; a prioridade foi passada automaticamente.", tone: "response" }, ...(room.game.log ?? [])];
     return true;
   }
   if (room.game.turnDeadline && room.game.turnDeadline <= now) {
