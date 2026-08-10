@@ -1,0 +1,269 @@
+{
+  "schemaVersion": 1,
+  "heroes": [
+    {
+      "id": "gimble",
+      "heroPage": 2,
+      "deckRange": {
+        "from": 3,
+        "to": 25
+      },
+      "name": "Gimble, Presenteado Sortudo",
+      "faction": "Natureza",
+      "presentation": {
+        "color": "#2d9a58",
+        "style": "Dragões · crescimento",
+        "power": "Desvire um Dragão aliado"
+      },
+      "progression": {
+        "requirement": "2/4 Dragões"
+      },
+      "abilities": [
+        "I · Quando um Dragão deixa o campo, cure 1.",
+        "II · Uma vez por turno, desvire um Dragão aliado.",
+        "III · Na manutenção, seus Dragões recebem +1/+1."
+      ],
+      "isStarter": true
+    },
+    {
+      "id": "goblin",
+      "heroPage": 26,
+      "deckRange": {
+        "from": 27,
+        "to": 49
+      },
+      "name": "Sr. Goblin, o Mercador",
+      "faction": "Caos",
+      "presentation": {
+        "color": "#8d45ce",
+        "style": "Goblin · Fura-Fila",
+        "power": "Compre ao perder um Goblin"
+      },
+      "progression": {
+        "requirement": "3/5 cartas no turno"
+      },
+      "abilities": [
+        "I · Ao perder um Goblin, compre 1 (uma vez/turno).",
+        "II · Compre 1 carta adicional na manutenção.",
+        "III · O primeiro Goblin do turno custa 0."
+      ],
+      "isStarter": true
+    },
+    {
+      "id": "uruk",
+      "heroPage": 54,
+      "deckRange": {
+        "from": 55,
+        "to": 109
+      },
+      "name": "Uruk, a Encantriz",
+      "faction": "Divino",
+      "presentation": {
+        "color": "#378ed0",
+        "style": "Elementos · feitiços",
+        "power": "Ative o último elemento"
+      },
+      "progression": {
+        "requirement": "4/8 feitiços"
+      },
+      "abilities": [
+        "I · Fim do turno: ative o elemento do último feitiço.",
+        "II · Seu primeiro feitiço custa 1 a menos.",
+        "III · Duplique o último feitiço do seu turno."
+      ],
+      "isStarter": true
+    },
+    {
+      "id": "tifon",
+      "heroPage": 110,
+      "deckRange": {
+        "from": 111,
+        "to": 128
+      },
+      "name": "Tifon, a Peste",
+      "faction": "Vazio",
+      "presentation": {
+        "color": "#353943",
+        "style": "Último Suspiro",
+        "power": "Compre quando um aliado morrer"
+      },
+      "progression": {
+        "requirement": "3/7 mortes"
+      },
+      "abilities": [
+        "I · Quando uma criatura sua morrer, compre 1 (máx. 3).",
+        "II · Último Suspiro aliado causa 1 ao herói inimigo.",
+        "III · Seus Últimos Suspiros são ativados duas vezes."
+      ],
+      "isStarter": true
+    },
+    {
+      "id": "saymon",
+      "heroPage": 129,
+      "deckRange": {
+        "from": 130,
+        "to": 151
+      },
+      "name": "Saymon, o Primeiro",
+      "faction": "Neutro",
+      "presentation": {
+        "color": "#777d86",
+        "style": "Vampiros · Roubo de Vida",
+        "power": "Perca 2: cause 1"
+      },
+      "progression": {
+        "requirement": "3/5 perdas de vida"
+      },
+      "abilities": [
+        "I · Pague 2 de vida: cause 1 a um alvo (uma vez/turno).",
+        "II · Pague 2 de vida: dê Roubo de Vida a uma criatura.",
+        "III · Custos de vida não podem reduzir sua vida abaixo de 1."
+      ],
+      "isStarter": true
+    },
+    {
+      "id": "tessalia",
+      "heroPage": 152,
+      "deckRange": {
+        "from": 153,
+        "to": 179
+      },
+      "name": "Tessália, a Mão de Ferro",
+      "faction": "Ordem",
+      "presentation": {
+        "color": "#d54a45",
+        "style": "Comandante · formação",
+        "power": "Fortaleça o centro"
+      },
+      "progression": {
+        "requirement": "3/6 ataques"
+      },
+      "abilities": [
+        "I · A criatura central é Comandante e recebe +2 de Ofensividade.",
+        "II · Seu Comandante tem Atropelar e recebe +3.",
+        "III · Uma vez/turno, outra criatura pode morrer pelo Comandante."
+      ],
+      "isStarter": true
+    },
+    {
+      "id": "quarion",
+      "heroPage": 180,
+      "deckRange": {
+        "from": 181,
+        "to": 210
+      },
+      "name": "Quarion Siannodel",
+      "faction": "Ordem",
+      "presentation": {
+        "color": "#c84642",
+        "style": "Primeiro Ato · valor",
+        "power": "Recupere a primeira criatura"
+      },
+      "progression": {
+        "requirement": "2/4 nomes diferentes"
+      },
+      "abilities": [
+        "I · Ao ativar Primeiro Ato, compre 1 (uma vez/turno).",
+        "II · A primeira criatura que morrer no seu turno volta à mão.",
+        "III · O primeiro Primeiro Ato do turno é ativado novamente."
+      ],
+      "isStarter": true
+    },
+    {
+      "id": "rasmus",
+      "heroPage": 211,
+      "deckRange": {
+        "from": 212,
+        "to": 254
+      },
+      "name": "Rasmus, Barista do Tempo",
+      "faction": "Divino",
+      "presentation": {
+        "color": "#378ed0",
+        "style": "Gatos · Café",
+        "power": "Cure ao causar dano"
+      },
+      "progression": {
+        "requirement": "5/7 Gatos"
+      },
+      "abilities": [
+        "I · Após 10 Cafés, crie um Café Especial.",
+        "II · Quando um Gato causar dano a um jogador, cure 1.",
+        "III · Gatos também podem ocupar espaços de não-criaturas."
+      ],
+      "isStarter": true
+    },
+    {
+      "id": "ngoro",
+      "heroPage": 255,
+      "deckRange": {
+        "from": 256,
+        "to": 272
+      },
+      "name": "Ngoro, o Investigador",
+      "faction": "Caos",
+      "presentation": {
+        "color": "#7949b5",
+        "style": "Investigar · Triturar",
+        "power": "Investigue o deck alvo"
+      },
+      "progression": {
+        "requirement": "5/10 Pistas"
+      },
+      "abilities": [
+        "I · Ao Investigar, ganhe 1 Pista; no início, Investigue 1.",
+        "II · Gaste 2 Pistas: compre 1 ou triture 2.",
+        "III · Gaste 3 Pistas: dê Furtivo a uma criatura aliada."
+      ],
+      "isStarter": true
+    },
+    {
+      "id": "zayan",
+      "heroPage": 273,
+      "deckRange": {
+        "from": 274,
+        "to": 290
+      },
+      "name": "Zayan, a Revolucionária",
+      "faction": "Ordem",
+      "presentation": {
+        "color": "#cf4c45",
+        "style": "Criaturas sem efeito",
+        "power": "Fortaleça uma criatura"
+      },
+      "progression": {
+        "requirement": "3/4 constantes"
+      },
+      "abilities": [
+        "I · No combate, uma criatura sem efeito recebe +1/+1.",
+        "II · Outra criatura pode ser destruída no lugar de uma sem efeito.",
+        "III · Criaturas sem efeito recebem Investida."
+      ],
+      "isStarter": true
+    },
+    {
+      "id": "natureza",
+      "heroPage": 291,
+      "deckRange": {
+        "from": 292,
+        "to": 309
+      },
+      "name": "Campeão de Natureza",
+      "faction": "Natureza",
+      "presentation": {
+        "color": "#289455",
+        "style": "Marcadores de ação",
+        "power": "Distribua marcadores"
+      },
+      "progression": {
+        "requirement": "10/20 marcadores"
+      },
+      "abilities": [
+        "I · Uma vez/turno, dê 2 marcadores a até duas constantes.",
+        "II · Ao colocar marcadores, coloque um adicional.",
+        "III · Remova 4 marcadores: vire uma criatura alvo."
+      ],
+      "isStarter": true
+    }
+  ]
+}
