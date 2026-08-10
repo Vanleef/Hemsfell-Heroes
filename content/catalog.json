@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "sets": [
+    {
+      "id": "hemsfell-core",
+      "name": "Hemsfell Heroes — Coleção principal",
+      "cardsPdfUrl": "https://drive.google.com/file/d/1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/view",
+      "isActive": true
+    }
+  ]
+}
