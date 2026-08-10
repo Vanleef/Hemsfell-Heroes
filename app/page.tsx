@@ -6,6 +6,7 @@ import { RemoteCardArt } from "./remote-card-art";
 import { canActivateCard, hasActivatableEffect } from "./card-activation.mjs";
 import { compileCard } from "./rules-engine/compiler.mjs";
 import { canExecuteCard, executeCommand } from "./rules-engine/engine.mjs";
+import { chooseAIResponse, legalPriorityResponses } from "./rules-engine/priority.mjs";
 import { hasSubtype } from "./rules-engine/subtypes.mjs";
 import { isValidTarget, targetPolicy, TargetScope } from "./rules-engine/targeting.mjs";
 import { applyCloneRetaliation, claimOncePerTurn, earthquakeDamage, elementalChainFrom as ruleElementalChainFrom } from "./game-rules.mjs";
@@ -622,7 +623,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
   return()=>clearTimeout(t);
  },[game,mode,combatAction,responseWindow,aiAttackQueue]);
 
- useEffect(()=>{if(!game||responseWindow?.responder!==1||game.winner!==null)return;const t=setTimeout(()=>{const p=game.players[1],idx=p.hand.findIndex(c=>isFast(c)&&effectiveCost(c,p)<=p.reserve);if(idx<0){update(g=>log(g,"A IA não respondeu à ação.","response"));setResponseWindow(null);return}const c=p.hand[idx],rule=targetRule(c),target=rule==="ally"?p.board[0]?.uid:rule==="enemy"?(game.players[0].board[0]?.uid||"enemy-hero"):rule==="any"?(game.players[0].board[0]?.uid||p.board[0]?.uid):undefined;if(rule!=="none"&&!target){update(g=>log(g,`A IA não encontrou um alvo válido para responder com ${c.name}.`,"response"));setResponseWindow(null);return}playCard(idx,1,target,undefined,undefined,true)},450);return()=>clearTimeout(t)},[game,responseWindow]);
+ useEffect(()=>{if(!game||responseWindow?.responder!==1||game.winner!==null||mode!=="bot")return;const t=setTimeout(()=>{const priorityGame={...game,pendingResponse:responseWindow};const command=chooseAIResponse(priorityGame,1,Math.random);if(command.type==="passPriority"){void runRulesCommand(command,1);update(g=>log(g,"A IA não tinha resposta legal e passou imediatamente.","response"));return}if(command.type==="activate"){void runRulesCommand(command,1);return}const idx=game.players[1].hand.findIndex(c=>c.id===command.cardId),c=game.players[1].hand[idx];if(!c){void runRulesCommand({type:"passPriority",auto:true},1);return}const p=game.players[1],rule=targetRule(c),target=rule==="ally"?p.board[0]?.uid:rule==="enemy"?(game.players[0].board[0]?.uid||"enemy-hero"):rule==="any"?(game.players[0].board[0]?.uid||p.board[0]?.uid):undefined;if(rule!=="none"&&!target){void runRulesCommand({type:"passPriority",auto:true},1);return}playCard(idx,1,target,undefined,undefined,true)},legalPriorityResponses({...game,pendingResponse:responseWindow},1).length?650:50);return()=>clearTimeout(t)},[game,responseWindow,mode]);
 
  const selectedDeck=deckById(mine);const selectedPool=useMemo(()=>poolFor(mine),[mine]);const selectedExtra=useMemo(()=>extraFor(mine),[mine]);
  const myRoomParticipant=isHost?roomInfo?.host:roomInfo?.guest;
