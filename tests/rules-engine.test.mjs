@@ -285,6 +285,19 @@ test("Quarion Recruit terrains are passive and do not request play targets", () 
   }
 });
 
+test("First Act creatures enter even when no target is available", () => {
+  const game = state(); game.players[0].hand.push(compileCard({ id: "p6", page: 6, type: "Criatura", cost: 1, text: "" }));
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p6", slot: 0 });
+  assert.equal(result.state.players[0].board.length, 1);
+});
+
+test("Mask of the Pact is the independent artifact exception", () => {
+  const game = state(); game.players[0].hand.push(compileCard({ id: "p304", page: 304, type: "Artefato", cost: 0, text: "" }));
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p304", slot: 0 });
+  assert.equal(result.state.players[0].support.length, 1);
+  assert.equal(result.state.players[0].support[0].attachedTo, undefined);
+});
+
 test("migration coverage is explicit and simple cards use the command engine", async () => {
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
