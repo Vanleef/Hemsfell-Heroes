@@ -129,6 +129,15 @@ test("destroying a creature also sends its attached artifact to the grave", () =
   assert.deepEqual(game.players[0].grave.map((card) => card.uid).sort(), ["artifact", "unit"]);
 });
 
+test("playing an Artifact binds it to the creature without treating the host as an effect target", () => {
+  const game = state(); game.players[0].board.push({ uid: "host", id: "host", slot: 2, hp: 3, damage: 0 });
+  game.players[0].hand.push({ id: "artifact", name: "Test Artifact", type: "Artefato", cost: 1, tags: [], text: "", abilities: [] });
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "artifact", attachedTo: "host", slot: 2, targetIds: [] });
+  assert.equal(result.state.players[0].hand.length, 0);
+  assert.equal(result.state.players[0].support[0].attachedTo, "host");
+  assert.equal(result.state.players[0].support[0].slot, 2);
+});
+
 test("one-use damage shield cancels the entire next damage instance", () => {
   const game = state(); game.players[0].board.push({ uid: "unit", hp: 2, damage: 0, damageShields: [{ uses: 1 }] });
   defaultEffectHandlers.damage(game, { type: "damage", amount: 99 }, { owner: 1, targetIds: ["unit"] });
@@ -260,5 +269,6 @@ test("game client routes migrated cards through the command engine", async () =>
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /canExecuteCard\(snapshot\)/);
   assert.match(page, /roomAction\("command"/);
-  assert.match(page, /executeCommand\(previous,\{\.\.\.command,owner\}\)/);
+  assert.match(page, /executeCommand\(current,\{\.\.\.command,owner\}\)/);
+  assert.match(page, /role!=="attachment"/);
 });
