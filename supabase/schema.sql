@@ -64,6 +64,18 @@ create table if not exists public.deck_cards (
   primary key (deck_id, card_id, zone)
 );
 
+create or replace function public.touch_updated_at()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $
+begin
+  new.updated_at = now();
+  return new;
+end;
+$;
+
 create table if not exists public.content_revisions (
   id uuid primary key default gen_random_uuid(),
   entity_type text not null,
@@ -72,6 +84,15 @@ create table if not exists public.content_revisions (
   payload jsonb not null,
   created_at timestamptz not null default now()
 );
+
+drop trigger if exists card_sets_touch_updated_at on public.card_sets;
+create trigger card_sets_touch_updated_at before update on public.card_sets for each row execute function public.touch_updated_at();
+drop trigger if exists cards_touch_updated_at on public.cards;
+create trigger cards_touch_updated_at before update on public.cards for each row execute function public.touch_updated_at();
+drop trigger if exists heroes_touch_updated_at on public.heroes;
+create trigger heroes_touch_updated_at before update on public.heroes for each row execute function public.touch_updated_at();
+drop trigger if exists decks_touch_updated_at on public.decks;
+create trigger decks_touch_updated_at before update on public.decks for each row execute function public.touch_updated_at();
 
 alter table public.card_sets enable row level security;
 alter table public.cards enable row level security;
