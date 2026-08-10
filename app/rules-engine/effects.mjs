@@ -47,7 +47,7 @@ export const defaultEffectHandlers = Object.freeze({
       const target = findUnit(state, targetId); if (!target) throw new RulesViolation("target-required");
       const shield = (target.damageShields || []).find((item) => item.uses > 0); if (shield) { shield.uses--; target.damageShields = target.damageShields.filter((item) => item.uses > 0); continue; }
       const robust = [...(target.tags || []), ...(target.grantedKeywords || [])].some((tag) => /robusto/i.test(String(tag))) ? 1 : 0;
-      const amount = Math.max(0, (effect.amount ?? 0) + (effect.additionalIfExhausted && target.exhausted ? effect.additionalIfExhausted : 0) - robust); target.damage = (target.damage || 0) + amount; queueEvent(state, { type: "onDamageTaken", targetId, sourceOwner: context.owner, sourceId: context.sourceId, amount });
+      const amount = Math.max(0, (effect.amount ?? 0) + (effect.additionalIfExhausted && target.exhausted ? effect.additionalIfExhausted : 0) - robust); target.damage = (target.damage || 0) + amount; const source = findUnit(state, context.sourceId); const sourceKeywords = source?.suffocated ? [] : [...(source?.tags || []), ...(source?.grantedKeywords || [])]; if (amount > 0 && sourceKeywords.some((tag) => /toque da morte/i.test(String(tag)))) target.damage = Math.max(target.damage, (target.hp || 1) + (target.modifiers || []).reduce((sum, item) => sum + (item.health || 0), 0)); if (amount > 0 && sourceKeywords.some((tag) => /roubo de vida/i.test(String(tag)))) { const entry = player(state, context.owner); entry.life = Math.min(entry.maxLife ?? 30, entry.life + amount); } queueEvent(state, { type: "onDamageTaken", targetId, sourceOwner: context.owner, sourceId: context.sourceId, amount });
     }
   },
   damageAll(state, effect, context) {
