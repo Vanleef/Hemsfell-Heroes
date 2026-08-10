@@ -1,6 +1,6 @@
-# Catálogo de conteúdo no D1
+# Catálogo de cartas no Supabase
 
-O D1 é a fonte de dados editável pelo navegador: abra **Cloudflare Dashboard → Workers & Pages → D1 → DB → Tables**. Não exponha tokens de administração no cliente.
+O catálogo usa **Supabase Postgres**, no plano gratuito. A gestão é feita no navegador pelo painel do Supabase; o jogo só recebe leituras públicas de cartas publicadas.
 
 ## Modelo
 
@@ -8,21 +8,23 @@ O D1 é a fonte de dados editável pelo navegador: abra **Cloudflare Dashboard �
 - `cards`: dados de jogo e `art_page`; nenhuma carta repete o link do PDF.
 - `heroes`: evolução, habilidades e apresentação.
 - `decks` e `deck_cards`: listas por ID estável, com zona `main` ou `extra`.
-- `content_revisions`: histórico que a futura área administrativa poderá registrar.
+- `content_revisions`: histórico que uma futura área administrativa poderá registrar.
 
-`rules_text` é o texto exibido ao jogador. `effects` contém JSON de regras estruturadas, por exemplo:
+`rules_text` é o texto mostrado ao jogador. `effects` guarda regras estruturadas, por exemplo:
 
 ```json
 [{ "trigger": "onPlay", "kind": "damageAllCreatures", "amount": { "kind": "enemyCreatureCount" } }]
 ```
 
-Assim, uma carta nova normalmente é adicionada no banco sem mudar o motor. Só um novo `kind` de efeito exige código.
+Assim, uma carta nova normalmente é incluída no banco, sem mudança no motor. Somente um novo `kind` de efeito precisa de código.
 
-## Aplicar e preencher
+## Configuração
 
-1. Execute as migrations do D1 com o fluxo de deploy do projeto.
-2. Gere o seed: `node scripts/seed-card-catalog.mjs`.
-3. Importe `drizzle/seeds/hemsfell-core.sql` no console SQL do D1.
-4. Revise `effects`, heróis e decks no dashboard antes de publicar.
+1. Crie um projeto gratuito no Supabase.
+2. No **SQL Editor**, execute `supabase/schema.sql`.
+3. Gere o seed: `npm run catalog:seed:sql`.
+4. Cole e execute `supabase/seed/hemsfell-core.sql` no SQL Editor.
+5. No deploy, defina `SUPABASE_URL` e `SUPABASE_PUBLISHABLE_KEY`.
+6. Consulte `/api/catalog` para verificar a leitura remota. Se as variáveis ainda não existirem, a rota informa que o catálogo local continua ativo.
 
-A importação preserva `legacy_page` para rastrear o PDF atual, mas o jogo deve passar a usar `cards.id` para referências novas.
+As políticas RLS liberam somente leitura de conteúdo publicado para o jogo. Escritas são feitas pelo painel do Supabase ou por um futuro painel autenticado; nunca use a chave `service_role` no navegador.
