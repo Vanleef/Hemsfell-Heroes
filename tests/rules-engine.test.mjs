@@ -359,6 +359,24 @@ test("Saideira pauses for an authoritative target when the repeated First Act ta
   assert.equal(resolved.pendingDecision, null);
 });
 
+test("Saideira skips a targeted First Act when no valid target remains", () => {
+  const game = state();
+  game.players[0].terrain = { uid: "saideira", type: "Terreno", staticModifiers: [{ type: "recruitFirstActOnLeave" }], abilities: [] };
+  const recruit = compileCard({ id: "p183", page: 183, name: "Recruta Apaixonado", type: "Criatura", text: "", tags: ["Primeiro Ato"], subtypes: ["Recruta"] });
+  const result = executeCommand(game, { type: "emit", event: { type: "onPermanentLeaves", owner: 0, sourceId: "recruit", card: { ...recruit, uid: "recruit" } } }).state;
+  assert.equal(result.pendingDecision, undefined);
+  assert.equal(result.players[0].board.length, 0);
+});
+
+test("First Act duplicators skip the extra instance when it has no valid target", () => {
+  const game = state();
+  const recruit = { uid: "recruit", id: "recruit", name: "Recruta de Teste", type: "Criatura", slot: 1, subtypes: ["Recruta"], tags: ["Primeiro Ato"], abilities: [{ id: "enemy-etb", trigger: "onEnter", costs: [], effects: [{ type: "damage", amount: 2, target: "enemyCreature", selections: 1 }] }] };
+  game.players[0].board.push({ uid: "chief", slot: 0, staticModifiers: [{ type: "doubleRecruitFirstAct" }], abilities: [] }, recruit);
+  const result = executeCommand(game, { type: "emit", event: { type: "onCreatureEnter", owner: 0, sourceId: "recruit", card: recruit } }).state;
+  assert.equal(result.pendingDecision, undefined);
+  assert.equal(result.players[1].board.length, 0);
+});
+
 test("Chefe da Guarda adds exactly one First Act instance for entering Recruits", () => {
   const game = state();
   game.players[0].life = 20;
