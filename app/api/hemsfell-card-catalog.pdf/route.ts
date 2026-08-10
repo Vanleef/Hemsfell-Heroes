@@ -1,7 +1,7 @@
 /**
  * Serves the official Hemsfell PDF catalogue to the browser renderer.
- * Google occasionally changes one public download host, so the proxy accepts
- * only PDF responses and retries the canonical Drive download endpoint.
+ * Google occasionally changes the public download host and content type, so
+ * the proxy validates the PDF signature instead of trusting only the header.
  */
 const CATALOG_FILE_ID = "1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC";
 const CATALOG_URLS = [
@@ -10,6 +10,21 @@ const CATALOG_URLS = [
 ];
 
 export const runtime = "nodejs";
+
+async function looksLikePdf(response: Response) {
+  if (!response.body) return false;
+
+  const probe = response.clone();
+  const reader = probe.body?.getReader();
+  if (!reader) return false;
+
+  try {
+    const { value } = await reader.read();
+    return new TextDecoder().decode(value?.slice(0, 5)) === "%PDF-";
+  } finally {
+    await reader.cancel().catch(() => undefined);
+  }
+}
 
 export async function GET(request: Request) {
   const headers = new Headers({ Accept: "application/pdf" });
@@ -21,19 +36,30 @@ export async function GET(request: Request) {
     try {
       const candidate = await fetch(url, { headers, next: { revalidate: 3600 } });
       const contentType = candidate.headers.get("content-type") || "";
-      if (candidate.ok && candidate.body && contentType.includes("application/pdf")) {
+      const acceptedContentType =
+        contentType.includes("application/pdf") ||
+        contentType.includes("application/octet-stream") ||
+        contentType === "";
+
+      if (candidate.ok && acceptedContentType && (await looksLikePdf(candidate))) {
         upstream = candidate;
         break;
       }
     } catch (error) {
-      console.error("[catalogue-pdf] upstream download failed", { url, error: String(error) });
+      console.error("[catalogue-pdf] upstream download failed", {
+        url,
+        error: String(error),
+      });
     }
   }
 
   if (!upstream) {
     return new Response("Catálogo de cartas temporariamente indisponível.", {
       status: 502,
-      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+      headers: {
+        "content-type": "text/plain; charset=utf-8",
+        "cache-control": "no-store",
+      },
     });
   }
 
