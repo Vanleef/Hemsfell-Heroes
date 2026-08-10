@@ -507,11 +507,42 @@ test("play and activation availability conditions are authoritative", () => {
   assert.throws(() => executeCommand(activation, { type: "activate", owner: 0, sourceId: "source", abilityId: "top-last-breath" }), /ability-not-available/);
 });
 
+test("opponent choices pause resolution and apply the selected branch to the correct player", () => {
+  const drawGame = state();
+  drawGame.players[0].hand.push(compileCard({ id: "p265", page: 265, type: "Feitiço", cost: 0, text: "" }));
+  drawGame.players[0].deck.push({ id: "draw-a" }, { id: "draw-b" });
+  drawGame.players[1].deck.push({ id: "mill-a" }, { id: "mill-b" });
+  const pendingDraw = executeCommand(drawGame, { type: "playCard", owner: 0, cardId: "p265" }).state;
+  assert.equal(pendingDraw.pendingDecision.owner, 1);
+  const drew = executeCommand(pendingDraw, { type: "resolveDecision", owner: 1, choiceIndex: 0 }).state;
+  assert.deepEqual(drew.players[0].hand.map((card) => card.id), ["draw-a", "draw-b"]);
+  assert.equal(drew.pendingDecision, null);
+
+  const millGame = state();
+  millGame.players[0].hand.push(compileCard({ id: "p265", page: 265, type: "Feitiço", cost: 0, text: "" }));
+  millGame.players[1].deck.push({ id: "mill-a" }, { id: "mill-b" });
+  const pendingMill = executeCommand(millGame, { type: "playCard", owner: 0, cardId: "p265" }).state;
+  const milled = executeCommand(pendingMill, { type: "resolveDecision", owner: 1, choiceIndex: 1 }).state;
+  assert.deepEqual(milled.players[1].grave.map((card) => card.id), ["mill-a", "mill-b"]);
+});
+
+test("controller choices can affect both players without leaking decision ownership", () => {
+  const game = state();
+  const strategist = compileCard({ id: "p174", page: 174, type: "Criatura", text: "" });
+  game.players[0].board.push({ ...strategist, uid: "strategist", slot: 0 });
+  game.players[0].deck.push({ id: "ally-top" }); game.players[1].deck.push({ id: "enemy-top" });
+  const pending = executeCommand(game, { type: "emit", event: { type: "onCombatStart", owner: 0 } }).state;
+  assert.equal(pending.pendingDecision.owner, 0);
+  const result = executeCommand(pending, { type: "resolveDecision", owner: 0, choiceIndex: 0 }).state;
+  assert.equal(result.players[0].hand[0].id, "ally-top");
+  assert.equal(result.players[1].hand[0].id, "enemy-top");
+});
+
 test("migration coverage is explicit and simple cards use the command engine", async () => {
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 212); assert.equal(pending.length, 96);
+  assert.equal(migrated.length, 215); assert.equal(pending.length, 93);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
