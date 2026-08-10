@@ -69,6 +69,7 @@ export function parseEffects(text = "") {
   if (damage) add(/todas?\s+(?:as\s+)?criaturas/.test(value) ? "damageAll" : "damage", { amount: Number(damage[1]), target: /inimig/.test(value) ? "enemy" : "anyCreature" });
   if (heal) add("heal", { amount: Number(heal[1]), target: /criatura/.test(value) ? "creature" : "controller" });
   if (/\bdestrua|\bdestruir/.test(value)) add("destroy", { target: /todas?/.test(value) ? "all" : "selected" });
+  if (/\bsacrifique\b/.test(value)) add("sacrifice", { amount: numberFrom(value.match(/sacrifique\s+([^.:;]+)/)?.[1], 1), target: "ally" });
   if (/\bbana|\bbanir|\bbane\b/.test(value)) add("banish", { target: "selected" });
   if (/retorne|devolva/.test(value)) add("returnToHand", { target: "selected" });
   if (/procure|busque/.test(value)) add("search", { destination: /campo/.test(value) ? "field" : "hand" });
@@ -80,6 +81,14 @@ export function parseEffects(text = "") {
   if (energy) add("gainEnergy", { amount: Number(energy[1]), destination: /reserva/.test(value) ? "reserve" : "main" });
   if (/custa?\s+\d+\s+a menos|reduz\w*.+custo/.test(value)) add("modifyCost", { amount: -numberFrom(value), duration: /proxim/.test(value) ? "next" : "continuous" });
   if (/recebe\s+(?:voar|robusto|furtivo|investida|indestrutivel|barreira magica|roubo de vida|toque da morte|atropelar)/.test(value)) add("grantKeyword", { raw });
+  if (/\b(voar|barreira magica|atropelar|investida|indomavel|furtivo|veloz|robusto|defensor\s*\d+|roubo de vida|toque da morte|acelerado|congelado|atordoado|sufocado|suporte|imobilizado|indestrutivel)\b/.test(value)) add("keyword", { raw });
+  if (/\binvestigar\b/.test(value)) add("investigate", { amount: numberFrom(value) });
+  if (/\brevel|\barquiv/.test(value)) add("revealOrArchive", { raw });
+  if (/\banule|\bcancele/.test(value)) add("counter", { target: "selected" });
+  if (/\btransforme|se torna/.test(value)) add("transform", { raw });
+  if (/\b(ao inves de|em vez de|seria|nao pode|não pode|previna|permanece com)\b/.test(value)) add("replacement", { raw });
+  if (/\bescolha (?:um|uma|ate|até)|\bopcao|\bopção/.test(value)) add("choice", { raw });
+  if (/\bigual (?:a|ao)|equivalente/.test(value)) add("dynamicValue", { raw });
   if (!effects.length && raw) add("unsupported", { raw });
   return effects;
 }
@@ -103,14 +112,12 @@ function inferTrigger(section, fullText) {
 
 export function compileCardText(text = "") {
   const sections = splitTriggeredSections(text);
-  const abilities = sections.map((section, index) => ({
-    id: `ability-${index + 1}`,
-    trigger: inferTrigger(section, text),
-    condition: section.label === "fura-fila" ? { type: "cardsPlayedAtLeast", amount: 1 } : null,
-    costs: inferTrigger(section, text) === Trigger.ACTIVATED ? parseCosts(section.text) : [],
-    effects: parseEffects(section.text),
-    sourceText: section.text,
-  }));
+  const abilities = sections.map((section, index) => {
+    const trigger = inferTrigger(section, text);
+    const costs = trigger === Trigger.ACTIVATED ? parseCosts(section.text) : [];
+    const effects = parseEffects(section.text).filter((effect) => !(trigger === Trigger.ACTIVATED && effect.type === "sacrifice"));
+    return { id: `ability-${index + 1}`, trigger, condition: section.label === "fura-fila" ? { type: "cardsPlayedAtLeast", amount: 1 } : null, costs, effects, sourceText: section.text };
+  });
   return { abilities, unsupported: abilities.flatMap((ability) => ability.effects.filter((effect) => effect.type === "unsupported")) };
 }
 
@@ -133,7 +140,8 @@ export function auditCards(cards = []) {
     abilities += result.abilities.length;
     unsupported += result.unsupported.length;
     if (/her[oó]i alvo/i.test(card?.text || "")) issues.push({ card: card.id, severity: "warning", code: "manual-hero-target-conflict" });
-    if (/sacrifique/i.test(card?.text || "") && !result.abilities.some((ability) => ability.costs.some((cost) => cost.type === "sacrifice"))) issues.push({ card: card.id, severity: "error", code: "unparsed-sacrifice-cost" });
+    const manualSections = splitTriggeredSections(card?.text || "").filter((section) => !section.label);
+    if (manualSections.some((section) => /sacrifique/i.test(section.text)) && !result.abilities.some((ability) => ability.trigger === Trigger.ACTIVATED && ability.costs.some((cost) => cost.type === "sacrifice"))) issues.push({ card: card.id, severity: "error", code: "unparsed-sacrifice-cost" });
   }
   return { cards: cards.length, abilities, unsupported, coverage: abilities ? (abilities - unsupported) / abilities : 1, issues };
 }
