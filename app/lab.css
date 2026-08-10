@@ -1197,7 +1197,7 @@
   color: #f0d378;
   font: 800 10px Arial;
 }
-.response-dialog h2 {
+.priority-status { margin: 0 24px 18px; padding: 10px 12px; display: flex; justify-content: space-between; gap: 12px; border: 1px solid #69c4ff55; border-radius: 8px; background: #0b2234; color: #d8f1ff; font: 800 11px Arial; } .priority-status span { color: #8fb2c6; font-weight: 500; }\n.response-dialog h2 {
   margin: 0;
   padding: 23px 24px 6px;
   font-size: 30px;
