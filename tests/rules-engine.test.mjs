@@ -768,6 +768,7 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(page, /heroEvolutionProgress\(p\)/);
   assert.match(page, /effectiveCreatureName/);
   assert.match(page, /game\.active!==0/);
+  assert.match(page, /canEvolveThisTurn=\{game\.active===0\}/);
   assert.match(page, /modifier\.duration!=="turn"/);
   assert.match(css, /auxiliary-slot \.card-tooltip/);
   assert.match(css, /z-index:9020!important/);
