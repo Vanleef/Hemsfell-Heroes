@@ -51,7 +51,11 @@ export function RemoteCardArt({ page, name, className = "", style, priority = fa
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || priority) return;
+    if (!canvas) return;
+    if (priority || !("IntersectionObserver" in globalThis)) {
+      setVisible(true);
+      return;
+    }
     const observer = new IntersectionObserver(
       ([entry]) => entry.isIntersecting && setVisible(true),
       { rootMargin: "360px" },
