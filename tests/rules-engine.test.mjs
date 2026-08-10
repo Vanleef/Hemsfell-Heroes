@@ -316,6 +316,14 @@ test("the complete generated catalog has full classified coverage", async () => 
   assert.equal(report.coverage, 1);
 });
 
+test("actions open a two-pass response window", () => {
+  const game = state();
+  game.players[0].hand.push({ id: "spell", type: "Feitiço", cost: 0, tags: [], abilities: [] });
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "spell" });
+  assert.equal(result.state.pendingResponse.passes, 0);
+  assert.equal(result.state.pendingResponse.responder, 1);
+});
+
 test("multiplayer API exposes the authoritative command path", async () => {
   const [route, machine] = await Promise.all([
     readFile(new URL("../app/api/rooms/[id]/route.ts", import.meta.url), "utf8"),
