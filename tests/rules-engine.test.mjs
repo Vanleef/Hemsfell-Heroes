@@ -559,7 +559,7 @@ test("game client routes migrated cards through the command engine", async () =>
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /canExecuteCard\(snapshot\)/);
   assert.match(page, /roomAction\("command"/);
-  assert.match(page, /executeCommand\(current,\{\.\.\.command,owner\}\)/);
+  assert.match(page, /executeCommand\(current,\{\.\.\.command,owner\},\{priority:true\}\)/);
   assert.match(page, /role!=="attachment"/);
   assert.match(page, /dragged!\.type!=="Artefato"\|\|!!creature/);
 });
