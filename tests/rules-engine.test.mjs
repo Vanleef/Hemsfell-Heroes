@@ -658,4 +658,7 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(page, /dragged!\.type!=="Artefato"\|\|!!creature/);
   assert.match(page, /chooseAIResponse/);
   assert.match(page, /legalPriorityResponses/);
+  assert.match(page, /shouldAutoPass/);
+  assert.match(page, /Resposta: Full Control/);
+  assert.match(page, /priority-stack-indicator/);
 });
