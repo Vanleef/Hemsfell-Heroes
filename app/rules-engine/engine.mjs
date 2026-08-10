@@ -6,7 +6,7 @@ export class RulesLoopError extends Error {
   constructor(message, trace) { super(message); this.name = "RulesLoopError"; this.trace = trace; }
 }
 
-const INTERACTIVE_EFFECTS = new Set(["investigate", "opponentChoice", "controllerChoice", "forceAttack", "replaySelectedAbility", "replayTopGraveAbility", "search", "replayAbility", "additionalTargetCost", "optionalRedirect", "optionalDrawFrom", "removeMarkersFromConstants"]);
+const INTERACTIVE_EFFECTS = new Set(["investigate", "forceAttack", "replaySelectedAbility", "replayTopGraveAbility", "search", "replayAbility", "additionalTargetCost", "optionalRedirect", "optionalDrawFrom", "removeMarkersFromConstants"]);
 export function canExecuteCard(card, handlers = defaultEffectHandlers) {
   if (!handlers || typeof handlers !== "object") handlers = defaultEffectHandlers;
   const inspect = (effects = []) => effects.every((effect) => !!handlers[effect.type] && effect.type !== "unsupported" && !INTERACTIVE_EFFECTS.has(effect.type) && inspect(effect.effects) && (effect.branches || []).every((branch) => inspect(branch.effects)) && (effect.choices || []).every(inspect));
