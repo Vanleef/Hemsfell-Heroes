@@ -46,7 +46,7 @@ function payCosts(state, ability, context) {
 }
 
 function modifierApplies(state, owner, modifier) { return modifier.condition !== "controllerTurn" || state.active === owner; }
-function activeKeywords(unit) { return unit?.suffocated ? [] : [...(unit?.tags || []), ...(unit?.grantedKeywords || [])]; }
+function activeKeywords(unit) { return unit?.suffocated ? [] : [...(unit?.tags || []), ...(unit?.temporaryTags || []), ...(unit?.grantedKeywords || [])]; }
 function hasKeyword(unit, pattern) { return activeKeywords(unit).some((tag) => pattern.test(String(tag))); }
 function defenderCapacity(unit) {
   if (unit?.suffocated) return 1;
@@ -54,8 +54,28 @@ function defenderCapacity(unit) {
   const match = rulesText.match(/defensor\s*(\d+)/i);
   return Math.max(1, Number(match?.[1] || 1));
 }
-function effectiveAttack(state, unit, owner) { if (unit?.frozen || hasKeyword(unit, /congelado/i)) return 0; return Math.max(0, (unit?.atk || 0) + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value)).reduce((sum, value) => sum + (value.attack || 0), 0)); }
-function effectiveHealth(state, unit, owner) { return Math.max(1, (unit?.hp || 1) + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value)).reduce((sum, value) => sum + (value.health || 0), 0)); }
+function adjacentSupportBonus(state, unit, owner) {
+  const entry = state.players[owner]; let attack = 0; let health = 0;
+  for (const source of permanentUnits(entry)) {
+    if (source === unit || source.suffocated || Math.abs((source.slot ?? -10) - (unit.slot ?? 10)) !== 1) continue;
+    const rulesText = [...activeKeywords(source), source.text || ""].join(" ");
+    if (!/\bsuporte\b/i.test(rulesText)) continue;
+    const match = rulesText.match(/suporte\s*:?\s*([+-]?\d+)\s*\/\s*([+-]?\d+)/i);
+    if (match) { attack += Number(match[1]); health += Number(match[2]); }
+  }
+  return { attack, health };
+}
+function baseAttack(state, unit, owner) { const support = adjacentSupportBonus(state, unit, owner); return Math.max(0, (unit?.atk || 0) + support.attack + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value)).reduce((sum, value) => sum + (value.attack || 0), 0)); }
+function effectiveAttack(state, unit, owner) {
+  if (unit?.frozen || hasKeyword(unit, /congelado/i)) return 0;
+  if (unit?.dynamicStats?.bothFromAttack) { const strongest = state.players[owner].board.filter((candidate) => candidate !== unit).reduce((best, candidate) => Math.max(best, baseAttack(state, candidate, owner)), 0); return strongest; }
+  return baseAttack(state, unit, owner);
+}
+function effectiveHealth(state, unit, owner) {
+  if (unit?.dynamicStats?.bothFromAttack) { const strongest = state.players[owner].board.filter((candidate) => candidate !== unit).reduce((best, candidate) => Math.max(best, baseAttack(state, candidate, owner)), 0); return Math.max(1, strongest); }
+  const support = adjacentSupportBonus(state, unit, owner);
+  return Math.max(1, (unit?.hp || 1) + support.health + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value)).reduce((sum, value) => sum + (value.health || 0), 0));
+}
 function dealCombatDamage(state, target, targetOwner, source, sourceOwner, amount) {
   const shield = (target.damageShields || []).find((item) => item.uses > 0);
   if (shield) { shield.uses--; target.damageShields = target.damageShields.filter((item) => item.uses > 0); return 0; }
@@ -88,17 +108,17 @@ function claimUsage(state, source, owner, ability) { if (!ability.usageLimit && 
 
 const permanentUnits = (entry) => [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])];
 const unitOwner = (state, id) => state.players.findIndex((entry) => permanentUnits(entry).some((unit) => unit.uid === id || unit.id === id));
-const targetScope = (value) => ({ anyCharacter: TargetScope.ANY_CHARACTER, anyCreature: TargetScope.ANY_CREATURE, allyCreature: TargetScope.ALLY_CREATURE, enemyCreature: TargetScope.ENEMY_CREATURE, enemy: TargetScope.ENEMY_CREATURE, creature: TargetScope.ANY_CREATURE }[value] || TargetScope.NONE);
+const targetScope = (value) => ({ anyCharacter: TargetScope.ANY_CHARACTER, anyCreature: TargetScope.ANY_CREATURE, allyCreature: TargetScope.ALLY_CREATURE, enemyCreature: TargetScope.ENEMY_CREATURE, anyPermanent: TargetScope.ANY_PERMANENT, allyPermanent: TargetScope.ALLY_PERMANENT, enemyPermanent: TargetScope.ENEMY_PERMANENT, anotherAllyPermanent: TargetScope.ALLY_PERMANENT, enemy: TargetScope.ENEMY_CREATURE, creature: TargetScope.ANY_CREATURE }[value] || TargetScope.NONE);
 function abilityTargetSteps(ability) {
   if (ability.sourceText) return (targetPolicy(ability.sourceText).steps || []).filter((step) => step.role !== "sacrifice");
   return (ability.effects || []).flatMap((effect) => { const scope = targetScope(effect.target); return Array.from({ length: effect.selections ?? (scope === TargetScope.NONE ? 0 : 1) }, () => ({ scope, role: "effect" })); }).filter((step) => step.scope !== TargetScope.NONE);
 }
 function validateTargets(state, owner, abilities, command, source) {
   const targetIds = command.targetIds || []; const steps = abilities.flatMap(abilityTargetSteps); if (steps.length !== targetIds.length) { if (steps.length || targetIds.length) throw new RulesViolation("invalid-target-count"); return; }
-  steps.forEach((step, index) => { const id = targetIds[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); if (targetOwner < 0 || !isValidTarget(step, owner, targetOwner, hero ? "hero" : "creature")) throw new RulesViolation("invalid-target"); const target = hero ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const barrier = target && [...(target.tags || []), ...(target.grantedKeywords || [])].some((tag) => /barreira m[aá]gica/i.test(String(tag))); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
+  steps.forEach((step, index) => { const id = targetIds[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (targetOwner < 0 || !target || hero ? !isValidTarget(step, owner, targetOwner, targetKind) : !isValidTarget(step, owner, targetOwner, targetKind)) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
 }
 function cleanupLethal(state, stack) {
-  state.players.forEach((entry, owner) => { for (const unit of [...entry.board]) { const modifiers = (unit.modifiers || []).filter((item) => modifierApplies(state, owner, item)).reduce((sum, item) => sum + (item.health || 0), 0); const indestructible = [...(unit.tags || []), ...(unit.grantedKeywords || [])].some((tag) => /indestrutivel/i.test(String(tag))); if ((unit.damage || 0) < (unit.hp || 1) + modifiers || indestructible) continue; entry.board.splice(entry.board.indexOf(unit), 1); const attachments = entry.support.filter((card) => card.attachedTo === unit.uid); entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid); for (const attachment of attachments) { if (attachment.page === 154) entry.obscuro.push(attachment); else if (!attachment.generatedImage && !attachment.imageCard) entry.grave.push(attachment); } if (!unit.generatedImage && !unit.imageCard) entry.grave.push({ ...unit, deathCause: "effect" }); if (!unit.suppressDeathTrigger && !unit.generatedImage && !unit.imageCard) stack.push({ kind: "event", event: { type: "onDestroyed", owner, sourceId: unit.uid, cardId: unit.uid, card: unit, deathCause: "effect" } }); stack.push({ kind: "event", event: { type: "onCreatureDestroyed", owner, cardId: unit.uid, card: unit } }); } });
+  state.players.forEach((entry, owner) => { for (const unit of [...entry.board]) { const modifiers = (unit.modifiers || []).filter((item) => modifierApplies(state, owner, item)).reduce((sum, item) => sum + (item.health || 0), 0); const indestructible = hasKeyword(unit, /indestrut[ií]vel/i); if ((unit.damage || 0) < (unit.hp || 1) + modifiers || indestructible) continue; entry.board.splice(entry.board.indexOf(unit), 1); const attachments = entry.support.filter((card) => card.attachedTo === unit.uid); entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid); for (const attachment of attachments) { if (attachment.generatedImage || attachment.imageCard) continue; if (attachment.page === 154) entry.obscuro.push(attachment); else entry.grave.push(attachment); } if (!unit.generatedImage && !unit.imageCard) entry.grave.push({ ...unit, deathCause: "effect" }); if (!unit.suppressDeathTrigger && !unit.generatedImage && !unit.imageCard) stack.push({ kind: "event", event: { type: "onDestroyed", owner, sourceId: unit.uid, cardId: unit.uid, card: unit, deathCause: "effect" } }); stack.push({ kind: "event", event: { type: "onCreatureDestroyed", owner, cardId: unit.uid, card: unit } }); } });
 }
 
 function activeAbilities(state, event) {
