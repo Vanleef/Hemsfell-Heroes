@@ -9,6 +9,7 @@ const effect = (type, data = {}) => ({ type, ...data });
 export const explicitCardRules = Object.freeze({
   p6: [ability("onEnter", [effect("damage", { amount: 2, target: "anyCreature", selections: 1 })])],
   p10: [ability("static", [effect("keyword", { keyword: "Atropelar" })]), ability("onDestroyed", [effect("damageAll", { amount: 2, target: "allCreatures" })])],
+  p12: [ability("onPlay", [effect("createImage", { name: "Dragão Filhote", destination: "field" })])],
   p17: [ability("onPlay", [effect("forceAttack", { attacker: { controller: "self", subtype: "Dragão", ready: true }, defender: "anyCreature" })])],
   p22: [ability("onCreatureDestroyed", [effect("createImage", { name: "Dragão Filhote", destination: "field" })], [], { condition: { all: [{ eventCardTypeNot: "Imagem" }, { eventCardSubtype: "Dragão" }] } })],
   p23: [ability("onEnter", [effect("damage", { amount: 1, target: "anyCreature", selections: 1 })])],
@@ -27,6 +28,7 @@ export const explicitCardRules = Object.freeze({
   p99: { ignored: true, reason: "removed-from-game" },
   p101: { ignored: true, reason: "removed-from-game" },
   p116: [ability("onDestroyed", [effect("gainEnergy", { amount: 1, destination: "reserve" })])],
+  p115: [ability("static", [effect("keyword", { keyword: "Investida" }), effect("keyword", { keyword: "Indomável" }), effect("cannotDefend")])],
   p120: [ability("onCombatKill", [effect("resurrect", { zone: "grave", cardType: "Criatura", cost: 1, destination: "field", optional: true })]), ability("onDestroyed", [effect("destroy", { target: "otherAllyCreature", selections: 1, optional: true }), effect("returnSelfToField", { onlyIfPreviousPaid: true })])],
   p127: [ability("activated", [effect("replayTopGraveAbility", { trigger: "onDestroyed", requireType: "Criatura" })], [], { uiActivation: true, usageLimit: { count: 1, period: "turn" }, availability: { topGraveHasTrigger: "onDestroyed" } })],
   p130: [ability("onEnter", [effect("loseLife", { amount: 3, target: "controllerHero" })])],
