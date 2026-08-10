@@ -1,4 +1,5 @@
 import { ROOM_LIMITS } from "./constants";
+import { executeCommand } from "../../rules-engine/engine.mjs";
 
 export type RoomRole = "host" | "guest";
 export type RoomStatus = "waiting" | "deck-selection" | "coin-choice" | "mulligan" | "started" | "finished";
@@ -108,4 +109,26 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
     return { ok: false, status: 403, error: "not your priority" };
   }
   return { ok: true, status: 200, error: "" };
+}
+
+
+const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "attack", "advancePhase"]);
+
+/** Transitional server-authoritative command path. The server owns the player
+ * index, validates the room revision and runs the deterministic rules engine. */
+export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record<string, unknown>, baseRevision: unknown) {
+  if (room.status !== "started" || !room.game) return { ok: false, status: 409, error: "room not started" };
+  if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };
+  if (!AUTHORITATIVE_COMMANDS.has(String(rawCommand.type || ""))) return { ok: false, status: 400, error: "unsupported command" };
+  const owner = role === "host" ? 0 : 1;
+  try {
+    const result = executeCommand(room.game, { ...rawCommand, owner });
+    room.game = result.state;
+    room.game.turnDeadline = deadline(room.settings.turnSeconds);
+    room.revision++;
+    return { ok: true, status: 200, error: "", trace: result.trace };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "invalid command";
+    return { ok: false, status: 400, error: message };
+  }
 }
