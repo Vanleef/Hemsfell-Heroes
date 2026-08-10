@@ -16,7 +16,10 @@
     "lint": "bash scripts/sites-env.sh -- eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate",
     "dev:vinext": "vite",
-    "check:vinext": "vinext check"
+    "check:vinext": "vinext check",
+    "test:rules": "node --test tests/rules-engine.test.mjs",
+    "audit:cards": "node scripts/audit-card-rules.mjs",
+    "simulate:headless": "node scripts/simulate-games.mjs"
   },
   "dependencies": {
     "@vercel/blob": "2.7.0",
