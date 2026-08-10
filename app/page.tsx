@@ -294,6 +294,7 @@ const createRoom = async () => {
     pollRoom(id, data.token, true);
   } catch (error) {
     console.error("Could not create multiplayer room", error);
+    setRoomError(error instanceof Error ? error.message : "Não foi possível criar a sala.");
   }
 };
 
