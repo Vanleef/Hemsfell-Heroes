@@ -227,7 +227,6 @@ export function executeCommand(inputState, command, options = {}) {
         if (!attacker || attacker.exhausted || attacker.attackedThisTurn || attacker.summoning || attacker.stunned || hasKeyword(attacker, /atordoado/i)) throw new RulesViolation("invalid-attacker"); if (attacker.attackPermission?.requiresMarkers) { const requirement = attacker.attackPermission.requiresMarkers; const available = typeof attacker.markers === "number" ? attacker.markers : attacker.markers?.[requirement.marker] || 0; if (available < requirement.minimum) throw new RulesViolation("attack-requirement-not-met"); }
         actionLabel = attacker.name || attacker.uid;
         attacker.attackedThisTurn = true;
-        stack.push({ kind: "event", event: { type: "onAttack", owner: attackerOwner, sourceId: attacker.uid, source: attacker } });
         if (!hasKeyword(attacker, /alerta/i)) attacker.exhausted = true;
         const attack = effectiveAttack(state, attacker, attackerOwner);
         const defender = defenderPlayer.board.find((unit) => unit.uid === item.command.defenderId);
@@ -245,18 +244,23 @@ export function executeCommand(inputState, command, options = {}) {
           const counter = effectiveAttack(state, defender, defenderOwner);
           const attackerFast = hasKeyword(attacker, /veloz/i); const defenderFast = hasKeyword(defender, /veloz/i);
           const defenderRemaining = Math.max(0, effectiveHealth(state, defender, defenderOwner) - (defender.damage || 0));
-          let dealtByAttacker = 0;
+          let dealtByAttacker = 0; let dealtByDefender = 0;
           if (attackerFast && !defenderFast) {
             dealtByAttacker = dealCombatDamage(state, defender, defenderOwner, attacker, attackerOwner, attack); cleanupLethal(state, stack);
-            if (defenderPlayer.board.includes(defender)) { dealCombatDamage(state, attacker, attackerOwner, defender, defenderOwner, counter); cleanupLethal(state, stack); }
+            if (defenderPlayer.board.includes(defender)) { dealtByDefender = dealCombatDamage(state, attacker, attackerOwner, defender, defenderOwner, counter); cleanupLethal(state, stack); }
           } else if (defenderFast && !attackerFast) {
-            dealCombatDamage(state, attacker, attackerOwner, defender, defenderOwner, counter); cleanupLethal(state, stack);
+            dealtByDefender = dealCombatDamage(state, attacker, attackerOwner, defender, defenderOwner, counter); cleanupLethal(state, stack);
             if (attackerPlayer.board.includes(attacker)) { dealtByAttacker = dealCombatDamage(state, defender, defenderOwner, attacker, attackerOwner, attack); cleanupLethal(state, stack); }
           } else {
             dealtByAttacker = dealCombatDamage(state, defender, defenderOwner, attacker, attackerOwner, attack);
             dealCombatDamage(state, attacker, attackerOwner, defender, defenderOwner, counter); cleanupLethal(state, stack);
           }
           damageDealtByAttacker = dealtByAttacker;
+          if (dealtByAttacker > 0) stack.push({ kind: "event", event: { type: "onDamageTaken", owner: defenderOwner, targetId: defender.uid, sourceOwner: attackerOwner, sourceId: attacker.uid, amount: dealtByAttacker } });
+          if (dealtByDefender > 0) {
+            stack.push({ kind: "event", event: { type: "onDamageTaken", owner: attackerOwner, targetId: attacker.uid, sourceOwner: defenderOwner, sourceId: defender.uid, amount: dealtByDefender } });
+            stack.push({ kind: "event", event: { type: "onAttachedCreatureDamage", owner: defenderOwner, sourceId: defender.uid, source: defender, targetIds: [attacker.uid], amount: dealtByDefender } });
+          }
           if (hasKeyword(attacker, /atropelar/i) && dealtByAttacker > defenderRemaining) { const overflow = dealtByAttacker - defenderRemaining; defenderPlayer.life -= overflow; damageDealtByAttacker += overflow; }
         }
         const attackerSurvived = attackerPlayer.board.includes(attacker); const defenderDestroyed = !!defender && !defenderPlayer.board.includes(defender);
@@ -266,6 +270,7 @@ export function executeCommand(inputState, command, options = {}) {
           if (!defender) stack.push({ kind: "event", event: { type: "onPlayerDamaged", owner: defenderOwner, sourceOwner: attackerOwner, sourceId: attacker.uid, source: attacker, amount: damageDealtByAttacker } });
         }
         stack.push({ kind: "event", event: { type: "onCombatDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: defender ? [defender.uid] : [], amount: damageDealtByAttacker } });
+        stack.push({ kind: "event", event: { type: "onAttack", owner: attackerOwner, sourceId: attacker.uid, source: attacker } });
       } else if (item.command.type === "activate") {
         const entry = state.players[item.command.owner]; if (state.active !== item.command.owner) throw new RulesViolation("not-your-turn");
         const source = [...entry.board, ...entry.support, ...(entry.terrain ? [entry.terrain] : [])].find((unit) => unit.uid === item.command.sourceId); const ability = source?.abilities?.find((candidate) => candidate.id === item.command.abilityId && candidate.trigger === "activated");
