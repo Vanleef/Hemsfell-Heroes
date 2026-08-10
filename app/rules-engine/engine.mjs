@@ -45,6 +45,7 @@ function payCosts(state, ability, context) {
   }
 }
 
+function modifierApplies(state, owner, modifier) { return modifier.condition !== "controllerTurn" || state.active === owner; }
 function subtype(card, value) { return hasSubtype(card, value) || (card.tags || []).some((tag) => String(tag).toLowerCase() === String(value).toLowerCase()); }
 function conditionMatches(state, source, owner, condition, event = {}) {
   if (!condition) return true;
@@ -78,7 +79,7 @@ function validateTargets(state, owner, abilities, command, source) {
   steps.forEach((step, index) => { const id = targetIds[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); if (targetOwner < 0 || !isValidTarget(step, owner, targetOwner, hero ? "hero" : "creature")) throw new RulesViolation("invalid-target"); const target = hero ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const barrier = target && [...(target.tags || []), ...(target.grantedKeywords || [])].some((tag) => /barreira m[aá]gica/i.test(String(tag))); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
 }
 function cleanupLethal(state, stack) {
-  state.players.forEach((entry, owner) => { for (const unit of [...entry.board]) { const modifiers = (unit.modifiers || []).reduce((sum, item) => sum + (item.health || 0), 0); const indestructible = [...(unit.tags || []), ...(unit.grantedKeywords || [])].some((tag) => /indestrutivel/i.test(String(tag))); if ((unit.damage || 0) < (unit.hp || 1) + modifiers || indestructible) continue; entry.board.splice(entry.board.indexOf(unit), 1); const attachments = entry.support.filter((card) => card.attachedTo === unit.uid); entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid); for (const attachment of attachments) { if (attachment.page === 154) entry.obscuro.push(attachment); else if (!attachment.generatedImage && !attachment.imageCard) entry.grave.push(attachment); } if (!unit.generatedImage && !unit.imageCard) entry.grave.push({ ...unit, deathCause: "effect" }); if (!unit.suppressDeathTrigger) stack.push({ kind: "event", event: { type: "onDestroyed", owner, sourceId: unit.uid, cardId: unit.uid, card: unit, deathCause: "effect" } }); stack.push({ kind: "event", event: { type: "onCreatureDestroyed", owner, cardId: unit.uid, card: unit } }); } });
+  state.players.forEach((entry, owner) => { for (const unit of [...entry.board]) { const modifiers = (unit.modifiers || []).filter((item) => modifierApplies(state, owner, item)).reduce((sum, item) => sum + (item.health || 0), 0); const indestructible = [...(unit.tags || []), ...(unit.grantedKeywords || [])].some((tag) => /indestrutivel/i.test(String(tag))); if ((unit.damage || 0) < (unit.hp || 1) + modifiers || indestructible) continue; entry.board.splice(entry.board.indexOf(unit), 1); const attachments = entry.support.filter((card) => card.attachedTo === unit.uid); entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid); for (const attachment of attachments) { if (attachment.page === 154) entry.obscuro.push(attachment); else if (!attachment.generatedImage && !attachment.imageCard) entry.grave.push(attachment); } if (!unit.generatedImage && !unit.imageCard) entry.grave.push({ ...unit, deathCause: "effect" }); if (!unit.suppressDeathTrigger) stack.push({ kind: "event", event: { type: "onDestroyed", owner, sourceId: unit.uid, cardId: unit.uid, card: unit, deathCause: "effect" } }); stack.push({ kind: "event", event: { type: "onCreatureDestroyed", owner, cardId: unit.uid, card: unit } }); } });
 }
 
 function activeAbilities(state, event) {
@@ -141,13 +142,13 @@ export function executeCommand(inputState, command, options = {}) {
         if (state.active !== item.command.owner || state.phase !== "combate") throw new RulesViolation("wrong-combat-priority");
         const attackerPlayer = state.players[item.command.owner]; const defenderPlayer = state.players[1 - item.command.owner];
         const attacker = attackerPlayer.board.find((unit) => unit.uid === item.command.attackerId); if (!attacker || attacker.exhausted || attacker.summoning || attacker.stunned) throw new RulesViolation("invalid-attacker"); actionLabel = attacker.name || attacker.uid;
-        const vigilant = [...(attacker.tags || []), ...(attacker.grantedKeywords || [])].some((tag) => /alerta/i.test(String(tag))); if (!vigilant) attacker.exhausted = true; const attack = Math.max(0, (attacker.atk || 0) + (attacker.modifiers || []).reduce((sum, value) => sum + (value.attack || 0), 0));
+        const vigilant = [...(attacker.tags || []), ...(attacker.grantedKeywords || [])].some((tag) => /alerta/i.test(String(tag))); if (!vigilant) attacker.exhausted = true; const attack = Math.max(0, (attacker.atk || 0) + (attacker.modifiers || []).filter((value) => modifierApplies(state, item.command.owner, value)).reduce((sum, value) => sum + (value.attack || 0), 0));
         const defender = defenderPlayer.board.find((unit) => unit.uid === item.command.defenderId);
         if (!defender) defenderPlayer.life -= attack;
         else {
           if (defender.exhausted || defender.stunned || defender.cannotDefend) throw new RulesViolation("invalid-defender");
           const attackerFlying = [...(attacker.tags || []), ...(attacker.grantedKeywords || [])].some((tag) => /voar/i.test(String(tag))); const defenderFlying = [...(defender.tags || []), ...(defender.grantedKeywords || [])].some((tag) => /voar/i.test(String(tag))); if (attackerFlying && !defenderFlying) throw new RulesViolation("flying-blocker-required");
-          const counter = Math.max(0, (defender.atk || 0) + (defender.modifiers || []).reduce((sum, value) => sum + (value.attack || 0), 0));
+          const counter = Math.max(0, (defender.atk || 0) + (defender.modifiers || []).filter((value) => modifierApplies(state, 1 - item.command.owner, value)).reduce((sum, value) => sum + (value.attack || 0), 0));
           defender.damage = (defender.damage || 0) + attack; attacker.damage = (attacker.damage || 0) + counter;
           cleanupLethal(state, stack);
         }
