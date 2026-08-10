@@ -450,6 +450,63 @@ test("generated Image artifacts disappear when their linked creature leaves", ()
   assert.equal(game.players[0].hand[0].uid, "host");
 });
 
+test("damage triggers apply only to the creature that actually survived damage", () => {
+  const game = state();
+  const reactive = compileCard({ id: "p165", page: 165, type: "Criatura", atk: 1, hp: 4, text: "" });
+  game.players[0].board.push({ ...reactive, uid: "hit", damage: 0, exhausted: false, summoning: false, modifiers: [] }, { ...reactive, uid: "untouched", damage: 0, exhausted: false, summoning: false, modifiers: [] });
+  game.players[1].hand.push({ id: "ping", type: "Feitiço", cost: 0, tags: [], abilities: [{ id: "damage", trigger: "onPlay", effects: [{ type: "damage", amount: 1, target: "anyCreature", selections: 1 }] }] });
+  const result = executeCommand(game, { type: "playCard", owner: 1, cardId: "ping", targetIds: ["hit"] }).state;
+  assert.equal(result.players[0].board.find((unit) => unit.uid === "hit").modifiers[0].attack, 1);
+  assert.deepEqual(result.players[0].board.find((unit) => unit.uid === "untouched").modifiers, []);
+});
+
+test("an attached damage trigger observes only damage from its linked creature", () => {
+  const game = state(); game.phase = "combate";
+  game.players[0].board.push({ uid: "host", type: "Criatura", atk: 2, hp: 3, tags: [], exhausted: false, summoning: false, modifiers: [] });
+  game.players[0].support.push({ uid: "dagger", type: "Artefato", attachedTo: "host", abilities: [{ id: "blood-price", trigger: "onAttachedCreatureDamage", effects: [{ type: "loseLife", amount: 1, target: "controllerHero" }] }] });
+  const result = executeCommand(game, { type: "attack", owner: 0, attackerId: "host" }).state;
+  assert.equal(result.players[0].life, 29);
+});
+
+test("attack permissions validate and on-attack costs are resolved", () => {
+  const blocked = state(); blocked.phase = "combate";
+  blocked.players[0].board.push({ uid: "goblin", type: "Criatura", atk: 5, hp: 4, tags: ["Alerta"], markers: { action: 1 }, attackPermission: { requiresMarkers: { marker: "action", minimum: 2 } }, exhausted: false, summoning: false, modifiers: [], abilities: [{ id: "spend", trigger: "onAttack", effects: [{ type: "removeMarker", marker: "action", amount: 2 }] }] });
+  assert.throws(() => executeCommand(blocked, { type: "attack", owner: 0, attackerId: "goblin" }), /attack-requirement-not-met/);
+  blocked.players[0].board[0].markers.action = 2;
+  const result = executeCommand(blocked, { type: "attack", owner: 0, attackerId: "goblin" }).state;
+  assert.equal(result.players[0].board[0].markers.action, 0);
+});
+
+test("combat-kill triggers resolve only when the attacker survives", () => {
+  const game = state(); game.phase = "combate";
+  game.players[0].grave.push({ id: "one-drop", type: "Criatura", cost: 1, atk: 1, hp: 1, tags: [], abilities: [] });
+  game.players[0].board.push({ uid: "primordial", type: "Criatura", atk: 3, hp: 3, tags: [], exhausted: false, summoning: false, modifiers: [], abilities: [{ id: "recover", trigger: "onCombatKill", effects: [{ type: "resurrect", cardType: "Criatura", cost: 1, optional: true }] }] });
+  game.players[1].board.push({ uid: "victim", type: "Criatura", atk: 1, hp: 2, tags: [], exhausted: false, summoning: false, modifiers: [] });
+  const result = executeCommand(game, { type: "attack", owner: 0, attackerId: "primordial", defenderId: "victim" }).state;
+  assert.ok(result.players[0].board.some((unit) => unit.id === "one-drop"));
+});
+
+test("spell-cast listeners trigger only for their controller's spell", () => {
+  const game = state();
+  game.players[0].board.push({ uid: "listener-a", abilities: [{ id: "a", trigger: "onSpellCast", effects: [{ type: "draw", amount: 1 }] }] });
+  game.players[1].board.push({ uid: "listener-b", abilities: [{ id: "b", trigger: "onSpellCast", effects: [{ type: "draw", amount: 1 }] }] });
+  game.players[0].deck.push({ id: "reward-a" }); game.players[1].deck.push({ id: "reward-b" });
+  game.players[0].hand.push({ id: "spell", type: "Feitiço", cost: 0, tags: [], abilities: [] });
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "spell" }).state;
+  assert.equal(result.players[0].hand[0].id, "reward-a");
+  assert.equal(result.players[1].hand.length, 0);
+});
+
+test("play and activation availability conditions are authoritative", () => {
+  const game = state();
+  game.players[0].hand.push({ id: "conditional", type: "Feitiço", cost: 0, tags: [], abilities: [{ id: "conditional-play", trigger: "onPlay", playCondition: { alliedPermanentHasTrigger: "onEnter" }, effects: [{ type: "draw", amount: 0 }] }] });
+  assert.throws(() => executeCommand(game, { type: "playCard", owner: 0, cardId: "conditional" }), /play-condition-not-met/);
+
+  const activation = state();
+  activation.players[0].board.push({ uid: "source", abilities: [{ id: "top-last-breath", trigger: "activated", availability: { topGraveHasTrigger: "onDestroyed" }, costs: [], effects: [{ type: "draw", amount: 0 }] }] });
+  assert.throws(() => executeCommand(activation, { type: "activate", owner: 0, sourceId: "source", abilityId: "top-last-breath" }), /ability-not-available/);
+});
+
 test("migration coverage is explicit and simple cards use the command engine", async () => {
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
