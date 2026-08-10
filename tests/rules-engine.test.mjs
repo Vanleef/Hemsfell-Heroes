@@ -5,7 +5,7 @@ import { auditCards, compileCard, compileCardText } from "../app/rules-engine/co
 import { explicitCardRules, explicitRuleIds } from "../app/rules-engine/card-rules.mjs";
 import { defaultEffectHandlers } from "../app/rules-engine/effects.mjs";
 import { hasSubtype, subtypesFor } from "../app/rules-engine/subtypes.mjs";
-import { isValidTarget, targetPolicy, TargetScope } from "../app/rules-engine/targeting.mjs";
+import { cardPlayTargetPolicy, isValidTarget, targetPolicy, TargetScope } from "../app/rules-engine/targeting.mjs";
 import { canExecuteCard, executeCommand, RulesLoopError } from "../app/rules-engine/engine.mjs";
 import { runHeadlessGames } from "../app/rules-engine/simulator.mjs";
 import { PriorityState, chooseAIResponse, isAccelerated, legalPriorityResponses, priorityView, shouldAutoPass } from "../app/rules-engine/priority.mjs";
@@ -322,6 +322,37 @@ test("Quarion Recruit terrains are passive and do not request play targets", () 
     assert.equal(canExecuteCard(card), true);
     assert.deepEqual(card.abilities.flatMap((ability) => ability.effects).map((effect) => effect.type), [id === "p181" ? "recruitFirstActOnLeave" : "doubleRecruitFirstAct"]);
   }
+});
+
+test("migrated targeting reads executable First Act data instead of passive reminder text", () => {
+  const saideira = compileCard({ id: "p181", page: 181, name: "Saideira dos Recrutas!", type: "Terreno", text: "Os efeitos de Primeiro Ato das criaturas Recruta também são ativados quando deixam o campo.", tags: ["Primeiro Ato"] });
+  const smallgui = compileCard({ id: "p6", page: 6, name: "Smallgui", type: "Criatura", text: "", tags: ["Primeiro Ato"] });
+  const apaixonado = compileCard({ id: "p183", page: 183, name: "Recruta Apaixonado", type: "Criatura", text: "", tags: ["Primeiro Ato"] });
+  assert.equal(cardPlayTargetPolicy(saideira).selections, 0);
+  assert.equal(cardPlayTargetPolicy(smallgui).scope, TargetScope.ANY_CREATURE);
+  assert.equal(cardPlayTargetPolicy(smallgui).selections, 1);
+  assert.equal(cardPlayTargetPolicy(apaixonado).scope, TargetScope.ALLY_CREATURE);
+});
+
+test("Saideira passively replays a Recruit First Act on every leave-field event", () => {
+  for (const eventType of ["onDestroyed", "onPermanentLeaves"]) {
+    const game = state();
+    game.players[0].life = 20;
+    game.players[0].terrain = { uid: "saideira", type: "Terreno", staticModifiers: [{ type: "recruitFirstActOnLeave" }], abilities: [] };
+    const recruit = compileCard({ id: "p189", page: 189, name: "Recruta Pinguço", type: "Criatura", text: "", tags: ["Primeiro Ato"], subtypes: ["Recruta"] });
+    const result = executeCommand(game, { type: "emit", event: { type: eventType, owner: 0, sourceId: "recruit", card: { ...recruit, uid: "recruit" } } }).state;
+    assert.equal(result.players[0].life, 22, eventType);
+    assert.equal(result.pendingDecision, undefined);
+  }
+});
+
+test("Chefe da Guarda adds exactly one First Act instance for entering Recruits", () => {
+  const game = state();
+  game.players[0].life = 20;
+  game.players[0].board.push({ uid: "chief", slot: 0, staticModifiers: [{ type: "doubleRecruitFirstAct" }], abilities: [] });
+  game.players[0].hand.push(compileCard({ id: "p189", page: 189, name: "Recruta Pinguço", type: "Criatura", cost: 0, text: "", tags: ["Primeiro Ato"], subtypes: ["Recruta"] }));
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p189", slot: 1 }).state;
+  assert.equal(result.players[0].life, 24);
 });
 
 test("First Act creatures enter even when no target is available", () => {
@@ -661,4 +692,8 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(page, /shouldAutoPass/);
   assert.match(page, /Resposta: Full Control/);
   assert.match(page, /priority-stack-indicator/);
+  assert.match(page, /cardPlayTargetPolicy/);
+  assert.match(page, /canChooseAllTargets/);
+  assert.match(page, /setResponseWindow\(next\.pendingResponse\?\?null\)/);
+  assert.match(page, /passPriorityWindow/);
 });
