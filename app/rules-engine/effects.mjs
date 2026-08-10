@@ -71,7 +71,7 @@ export const defaultEffectHandlers = Object.freeze({
     for (const owner of owners) { const entry = player(state, owner); let amount = effect.amount ?? 1; while (amount-- > 0) { const card = entry.deck.shift(); if (!card) { entry.deckOut = true; break; } entry.hand.push(card); } }
   },
   discard(state, effect, context) {
-    const entry = player(state, context.owner); const amount = Math.min(effect.amount ?? 1, entry.hand.length);
+    const entry = player(state, effect.target === "enemy" ? 1 - context.owner : context.owner); const amount = Math.min(effect.amount ?? 1, entry.hand.length);
     entry.grave.push(...entry.hand.splice(Math.max(0, entry.hand.length - amount), amount));
   },
   mill(state, effect, context) {
@@ -176,7 +176,7 @@ export const defaultEffectHandlers = Object.freeze({
   returnSelfToHand(state, effect, context) { const removed = removeFromZones(state, context.sourceId); if (removed) player(state, removed.owner).hand.push(removed.card); },
   moveSelf(state, effect, context) { const removed = removeFromZones(state, context.sourceId); if (!removed) return; const entry = player(state, removed.owner); if (effect.destination === "obscuro") entry.obscuro.push(removed.card); else if (effect.destination === "grave" && !removed.card.generatedImage) entry.grave.push(removed.card); },
   moveTopToBottom(state, effect, context) { const owners = effect.target === "bothPlayers" ? [0, 1] : [context.owner]; for (const owner of owners) { const entry = player(state, owner); const card = entry.deck.shift(); if (card) entry.deck.push(card); } },
-  investigate(state, effect, context) { const targetOwner = effect.target === "opponentDeck" ? 1 - context.owner : context.owner; const target = player(state, targetOwner); const viewed = target.deck.splice(0, Math.max(1, effect.amount || 1)); if (!viewed.length) return; const revealed = viewed.shift(); target.deck.unshift(revealed); target.deck.push(...viewed); queueEvent(state, { type: "onInvestigate", owner: context.owner, targetOwner, sourceId: context.sourceId, card: revealed, amount: 1 }); queueEvent(state, { type: "onCardRevealed", owner: context.owner, targetOwner, sourceId: context.sourceId, card: revealed, cardType: revealed.type }); },
+  investigate(state, effect, context) { const targetOwner = effect.target === "opponentDeck" ? 1 - context.owner : context.owner; const target = player(state, targetOwner); const viewed = target.deck.splice(0, Math.max(1, effect.amount || 1)); if (!viewed.length) return; const revealed = viewed.shift(); target.deck.unshift(revealed); const controller = player(state, context.owner); for (const archived of viewed) { if ((controller.archiveToGrave || 0) > 0) { controller.archiveToGrave--; target.grave.push({ ...archived, deathCause: "archived" }); } else target.deck.push(archived); } queueEvent(state, { type: "onInvestigate", owner: context.owner, targetOwner, sourceId: context.sourceId, card: revealed, amount: 1 }); queueEvent(state, { type: "onCardRevealed", owner: context.owner, targetOwner, sourceId: context.sourceId, card: revealed, cardType: revealed.type }); },
   opponentChoice(state, effect, context) { queueDecision(state, effect, { ...context, decisionOwner: 1 - context.owner }, "choice"); },
   controllerChoice(state, effect, context) { queueDecision(state, effect, context, "choice"); },
   openRepositionWindow(state, effect, context) { state.pendingReposition = { owners: [0, 1], confirmed: [], moveAttachments: true, sourceId: context.sourceId }; },
@@ -207,6 +207,7 @@ export const defaultEffectHandlers = Object.freeze({
   scheduleEffect(state, effect, context) { state.delayedEffects ||= []; state.delayedEffects.push({ timing: effect.timing, owner: context.owner, effect: effect.effect, context: { ...context, targetIds: selectedIds(context) } }); },
   createImagesAcrossFields(state, effect, context) { let remaining = effect.amount || 1; for (const owner of [context.owner, 1 - context.owner]) while (remaining > 0 && player(state, owner).board.length < 5) { defaultEffectHandlers.createImage(state, { type: "createImage", name: effect.name, destination: "field" }, { ...context, owner }); remaining--; } },
   levelHero(state, effect, context) { const entry = player(state, context.owner); entry.level = Math.min(effect.maximum || 3, (entry.level || 1) + (effect.amount || 1)); },
+  archiveToGrave(state, effect, context) { player(state, context.owner).archiveToGrave = (player(state, context.owner).archiveToGrave || 0) + (effect.amount || 1); },
   modifySelfCost(state, effect, context) { const entry = player(state, context.owner); const card = entry.hand.find((candidate) => candidate.id === context.sourceId); if (card) card.costModifier = (card.costModifier || 0) + effect.amount; },
   additionalTargetCost(state, effect, context) { queueDecision(state, effect, context, "additional-target-cost"); },
   optionalRedirect(state, effect, context) { queueDecision(state, effect, context, "redirect"); },
