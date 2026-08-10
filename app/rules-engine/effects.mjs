@@ -12,7 +12,7 @@ const markerTotal = (card) => typeof card?.markers === "number" ? card.markers :
 const setMarker = (card, marker, amount) => { if (typeof card.markers === "number" && marker === "action") card.markers = amount; else card.markers = { ...(typeof card.markers === "object" ? card.markers : {}), [marker]: amount }; };
 const queueEvent = (state, event) => { state.rulesEvents ||= []; state.rulesEvents.push(event); };
 const selectedIds = (context) => context.targetIds?.length ? context.targetIds : context.targetId ? [context.targetId] : [];
-const queueDecision = (state, effect, context, kind = effect.type) => { if (state.pendingDecision) throw new RulesViolation("decision-pending"); state.pendingDecision = { kind, effect, context, owner: context.owner }; };
+const queueDecision = (state, effect, context, kind = effect.type) => { if (state.pendingDecision) throw new RulesViolation("decision-pending"); state.pendingDecision = { kind, effect, context, owner: context.decisionOwner ?? context.owner }; };
 const keywordsOf = (card) => card?.suffocated ? [] : [...(card?.tags || []), ...(card?.temporaryTags || []), ...(card?.grantedKeywords || [])];
 const hasKeyword = (card, pattern) => keywordsOf(card).some((tag) => pattern.test(String(tag)));
 const sendDetachedArtifacts = (entry, creature) => {
@@ -48,16 +48,16 @@ const removeFromZones = (state, id) => {
 
 export const defaultEffectHandlers = Object.freeze({
   draw(state, effect, context) {
-    const entry = player(state, context.owner); let amount = effect.amount ?? 1;
-    while (amount-- > 0) { const card = entry.deck.shift(); if (!card) { entry.deckOut = true; break; } entry.hand.push(card); }
+    const owners = effect.target === "bothPlayers" ? [0, 1] : effect.target === "chosenOtherPlayer" ? [1 - (context.decisionOwner ?? context.owner)] : [context.owner];
+    for (const owner of owners) { const entry = player(state, owner); let amount = effect.amount ?? 1; while (amount-- > 0) { const card = entry.deck.shift(); if (!card) { entry.deckOut = true; break; } entry.hand.push(card); } }
   },
   discard(state, effect, context) {
     const entry = player(state, context.owner); const amount = Math.min(effect.amount ?? 1, entry.hand.length);
     entry.grave.push(...entry.hand.splice(Math.max(0, entry.hand.length - amount), amount));
   },
   mill(state, effect, context) {
-    const entry = player(state, effect.target === "enemy" ? 1 - context.owner : context.owner);
-    entry.grave.push(...entry.deck.splice(0, effect.amount ?? 1));
+    const owner = effect.target === "enemy" ? 1 - context.owner : effect.target === "chooser" ? context.decisionOwner ?? context.owner : context.owner;
+    const entry = player(state, owner); entry.grave.push(...entry.deck.splice(0, effect.amount ?? 1));
   },
   damage(state, effect, context) {
     const ids = selectedIds(context); if (!ids.length) throw new RulesViolation("target-required");
