@@ -395,6 +395,61 @@ test("controller-turn discounts do not reduce accelerated responses on the oppon
   assert.throws(() => executeCommand(response, { type: "playCard", owner: 0, cardId: "spell", hasPriority: true }), /not-enough-energy/);
 });
 
+test("permanent targeting includes Terrains but creature targeting excludes support cards", () => {
+  assert.equal(targetPolicy("Destrua uma constante inimiga.").scope, TargetScope.ENEMY_PERMANENT);
+  assert.equal(targetPolicy("Destrua uma criatura inimiga.").scope, TargetScope.ENEMY_CREATURE);
+  assert.equal(isValidTarget(targetPolicy("Destrua uma constante inimiga."), 0, 1, "permanent"), true);
+  assert.equal(isValidTarget(targetPolicy("Destrua uma criatura inimiga."), 0, 1, "permanent"), false);
+
+  const game = state();
+  game.players[0].hand.push({ id: "creature-hit", type: "Feitiço", cost: 0, text: "", tags: [], abilities: [{ id: "hit", trigger: "onPlay", effects: [{ type: "damage", amount: 1, target: "anyCreature", selections: 1 }] }] });
+  game.players[1].support.push({ uid: "artifact", id: "artifact", type: "Artefato", hp: 3, damage: 0 });
+  assert.throws(() => executeCommand(game, { type: "playCard", owner: 0, cardId: "creature-hit", targetIds: ["artifact"] }), /invalid-target/);
+});
+
+test("Terrains can be destroyed and Indestructible permanents resist destruction", () => {
+  const terrainGame = state();
+  terrainGame.players[1].terrain = { uid: "terrain", id: "terrain", type: "Terreno", tags: [] };
+  defaultEffectHandlers.destroy(terrainGame, { type: "destroy" }, { owner: 0, targetIds: ["terrain"] });
+  assert.equal(terrainGame.players[1].terrain, null);
+  assert.equal(terrainGame.players[1].grave[0].uid, "terrain");
+
+  const protectedGame = state();
+  protectedGame.players[1].board.push({ uid: "protected", id: "protected", type: "Criatura", tags: ["Indestrutível"] });
+  defaultEffectHandlers.destroy(protectedGame, { type: "destroy" }, { owner: 0, targetIds: ["protected"] });
+  assert.equal(protectedGame.players[1].board.length, 1);
+  assert.equal(protectedGame.players[1].grave.length, 0);
+});
+
+test("created creature Images enter the creature zone and resolve First Act", () => {
+  const game = state();
+  game.players[0].extraDeck = [{ id: "image", name: "Imagem de Teste", type: "Criatura", atk: 1, hp: 1, tags: ["Primeiro Ato"], abilities: [{ id: "image-etb", trigger: "onEnter", effects: [{ type: "draw", amount: 1 }] }] }];
+  game.players[0].deck.push({ id: "reward" });
+  game.players[0].hand.push({ id: "summon", type: "Feitiço", cost: 0, tags: [], abilities: [{ id: "summon-image", trigger: "onPlay", effects: [{ type: "createImage", name: "Imagem de Teste", destination: "field" }] }] });
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "summon" }).state;
+  assert.equal(result.players[0].board.length, 1);
+  assert.equal(result.players[0].board[0].imageCard, true);
+  assert.equal(result.players[0].hand[0].id, "reward");
+});
+
+test("snapshot subtype bonuses use canonical subtype data instead of loose text tags", () => {
+  const game = state();
+  game.players[0].board.push({ uid: "source", id: "p185", page: 185, type: "Criatura", atk: 1, hp: 1, tags: [], modifiers: [] });
+  game.players[0].board.push({ uid: "recruit", id: "p183", page: 183, type: "Criatura", atk: 1, hp: 1, tags: [], modifiers: [] });
+  defaultEffectHandlers.snapshotStats(game, { type: "snapshotStats", attackPerOtherSubtype: { subtype: "Recruta", amount: 1 } }, { owner: 0, sourceId: "source" });
+  assert.equal(game.players[0].board[0].modifiers[0].attack, 1);
+});
+
+test("generated Image artifacts disappear when their linked creature leaves", () => {
+  const game = state();
+  game.players[0].board.push({ uid: "host", id: "host", type: "Criatura" });
+  game.players[0].support.push({ uid: "image-artifact", id: "image-artifact", type: "Artefato", attachedTo: "host", generatedImage: true, imageCard: true });
+  defaultEffectHandlers.returnToHand(game, { type: "returnToHand" }, { owner: 1, targetIds: ["host"] });
+  assert.equal(game.players[0].support.length, 0);
+  assert.equal(game.players[0].grave.length, 0);
+  assert.equal(game.players[0].hand[0].uid, "host");
+});
+
 test("migration coverage is explicit and simple cards use the command engine", async () => {
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
