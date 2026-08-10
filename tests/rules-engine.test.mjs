@@ -374,6 +374,27 @@ test("tap costs cannot be paid in the same turn a constant entered", () => {
   assert.throws(() => executeCommand(played, { type: "activate", owner: 0, sourceId: relic.uid, abilityId: "tap" }), /cannot-tap/);
 });
 
+test("turn-duration effects expire before the opponent starts maintenance", () => {
+  const game = state(); game.phase = "fim";
+  game.players[0].board.push({ uid: "buffed", modifiers: [{ attack: 2, health: 2, duration: "turn" }], abilities: [{ id: "temporary", temporary: true, trigger: "onSpellCast", effects: [] }] });
+  const result = executeCommand(game, { type: "advancePhase" }).state;
+  assert.equal(result.active, 1);
+  assert.deepEqual(result.players[0].board[0].modifiers, []);
+  assert.deepEqual(result.players[0].board[0].abilities, []);
+});
+
+test("controller-turn discounts do not reduce accelerated responses on the opponent turn", () => {
+  const ownTurn = state(); ownTurn.players[0].energy = 1;
+  ownTurn.players[0].support.push({ uid: "discount", staticModifiers: [{ type: "costModifier", selector: { type: "Feitiço" }, amount: -1, during: "controllerTurn" }] });
+  ownTurn.players[0].hand.push({ id: "spell", type: "Feitiço", cost: 2, tags: ["Acelerado"], abilities: [] });
+  assert.equal(executeCommand(ownTurn, { type: "playCard", owner: 0, cardId: "spell" }).state.players[0].energy, 0);
+
+  const response = state(); response.active = 1; response.players[0].energy = 1;
+  response.players[0].support.push({ uid: "discount", staticModifiers: [{ type: "costModifier", selector: { type: "Feitiço" }, amount: -1, during: "controllerTurn" }] });
+  response.players[0].hand.push({ id: "spell", type: "Feitiço", cost: 2, tags: ["Acelerado"], abilities: [] });
+  assert.throws(() => executeCommand(response, { type: "playCard", owner: 0, cardId: "spell", hasPriority: true }), /not-enough-energy/);
+});
+
 test("migration coverage is explicit and simple cards use the command engine", async () => {
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
