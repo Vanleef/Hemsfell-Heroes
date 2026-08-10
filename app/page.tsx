@@ -24,7 +24,8 @@ type CombatAction={attackerOwner:0|1;attackerUid:string;attackerCard:CardDef;def
 type VisualFx={id:string;kind:"summon"|"spell"|"artifact"|"terrain"|"ability";card?:CardDef;target?:CardDef;label:string;detail:string};
 type SearchRequest={id:string;owner:0|1;sourceName:string;sourcePage:number;text:string;limit:number;filterLabel:string;destination:"hand"|"field";reveal:boolean;optional:boolean;maxCost?:number};
 
-const cards=rawCards as CardDef[];
+const fallbackCards=rawCards as CardDef[];
+let cards:CardDef[]=fallbackCards;
 type CardFaction="Dragão"|"Goblin"|"Gato"|"Vampiro"|"Recruta"|"Fênix";
 const factionPages:Record<CardFaction,ReadonlySet<number>>={
  "Dragão":new Set([3,5,6,7,8,9,10,11,23,24,25,216]),
@@ -222,7 +223,9 @@ function OriginalCard({card,controller,small=false,disabled=false,selected=false
 }
 
 export default function Home(){
- const [screen,setScreen]=useState<Screen>("menu");const[mode,setMode]=useState<"bot"|"online">("bot");const[mine,setMine]=useState<DeckId>("gimble");const[enemy,setEnemy]=useState<DeckId>("goblin");const[difficulty,setDifficulty]=useState("Normal");const[game,setGame]=useState<Game|null>(null);const[maintenanceOpen,setMaintenanceOpen]=useState(false);const[showLog,setShowLog]=useState(false);const[showInspector,setShowInspector]=useState<CardDef|null>(null);const[targeting,setTargeting]=useState<Targeting|null>(null);const[imageChoice,setImageChoice]=useState<ImageChoice|null>(null);const[cafeChoice,setCafeChoice]=useState<number|null>(null);const[responseWindow,setResponseWindow]=useState<PendingResponse|null>(null);const[combatAction,setCombatAction]=useState<CombatAction|null>(null);const[aiAttackQueue,setAiAttackQueue]=useState<string[]>([]);const[visualFx,setVisualFx]=useState<VisualFx|null>(null);const[confirmSurrender,setConfirmSurrender]=useState(false);const[extraView,setExtraView]=useState<{title:string;cards:CardDef[]}|null>(null);const[searchChoice,setSearchChoice]=useState<SearchRequest|null>(null);const[shufflingDeck,setShufflingDeck]=useState<0|1|null>(null);const[dragging,setDragging]=useState<{index:number;type:CardType}|null>(null);
+ const [catalogLoaded,setCatalogLoaded]=useState(false);
+ const [screen,setScreen]=useState<Screen>("menu");
+ useEffect(()=>{let cancelled=false;fetch("/api/catalog",{cache:"no-store"}).then(response=>response.ok?response.json():null).then(payload=>{if(cancelled)return;const remote=Array.isArray(payload?.cards)?payload.cards.filter((card:unknown):card is CardDef=>{const value=card as Partial<CardDef>;return Number.isInteger(value.page)&&typeof value.name==="string"&&typeof value.text==="string"}):[];if(remote.length)cards=remote;setCatalogLoaded(true)}).catch(()=>{if(!cancelled)setCatalogLoaded(true)});return()=>{cancelled=true}},[]);const[mode,setMode]=useState<"bot"|"online">("bot");const[mine,setMine]=useState<DeckId>("gimble");const[enemy,setEnemy]=useState<DeckId>("goblin");const[difficulty,setDifficulty]=useState("Normal");const[game,setGame]=useState<Game|null>(null);const[maintenanceOpen,setMaintenanceOpen]=useState(false);const[showLog,setShowLog]=useState(false);const[showInspector,setShowInspector]=useState<CardDef|null>(null);const[targeting,setTargeting]=useState<Targeting|null>(null);const[imageChoice,setImageChoice]=useState<ImageChoice|null>(null);const[cafeChoice,setCafeChoice]=useState<number|null>(null);const[responseWindow,setResponseWindow]=useState<PendingResponse|null>(null);const[combatAction,setCombatAction]=useState<CombatAction|null>(null);const[aiAttackQueue,setAiAttackQueue]=useState<string[]>([]);const[visualFx,setVisualFx]=useState<VisualFx|null>(null);const[confirmSurrender,setConfirmSurrender]=useState(false);const[extraView,setExtraView]=useState<{title:string;cards:CardDef[]}|null>(null);const[searchChoice,setSearchChoice]=useState<SearchRequest|null>(null);const[shufflingDeck,setShufflingDeck]=useState<0|1|null>(null);const[dragging,setDragging]=useState<{index:number;type:CardType}|null>(null);
 // Online room state
 const [roomId,setRoomId]=useState<string|null>(null);
 const [roomLink,setRoomLink]=useState<string|null>(null);
