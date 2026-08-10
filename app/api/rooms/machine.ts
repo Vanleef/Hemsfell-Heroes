@@ -112,7 +112,7 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
 }
 
 
-const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "attack", "advancePhase"]);
+const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition"]);
 
 /** Transitional server-authoritative command path. The server owns the player
  * index, validates the room revision and runs the deterministic rules engine. */

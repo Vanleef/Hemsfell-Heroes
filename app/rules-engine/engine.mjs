@@ -124,6 +124,14 @@ export function executeCommand(inputState, command, options = {}) {
         const decision = state.pendingDecision; if (!decision || decision.owner !== item.command.owner && decision.context?.decisionOwner !== item.command.owner) throw new RulesViolation("decision-not-owned");
         state.pendingDecision = null; const chosen = decision.effect.choices?.[item.command.choiceIndex] || decision.effect.replayEffects || [];
         for (const effect of [...chosen].reverse()) stack.push({ kind: "effect", effect, context: { ...decision.context, ...item.command } });
+      } else if (item.command.type === "reposition") {
+        const pending = state.pendingReposition; if (!pending || !pending.owners.includes(item.command.owner) || pending.confirmed.includes(item.command.owner)) throw new RulesViolation("reposition-unavailable");
+        const entry = state.players[item.command.owner]; const moves = item.command.moves || []; const slots = moves.map((move) => move.slot);
+        if (slots.some((slot) => !Number.isInteger(slot) || slot < 0 || slot > 4) || new Set(slots).size !== slots.length) throw new RulesViolation("invalid-reposition");
+        for (const move of moves) { const creature = entry.board.find((card) => card.uid === move.sourceId); if (!creature) throw new RulesViolation("invalid-reposition-card"); creature.slot = move.slot; for (const artifact of entry.support.filter((card) => card.attachedTo === creature.uid)) artifact.slot = move.slot; }
+      } else if (item.command.type === "confirmReposition") {
+        const pending = state.pendingReposition; if (!pending || !pending.owners.includes(item.command.owner)) throw new RulesViolation("reposition-unavailable");
+        if (!pending.confirmed.includes(item.command.owner)) pending.confirmed.push(item.command.owner); if (pending.confirmed.length === pending.owners.length) state.pendingReposition = null;
       } else if (item.command.type === "emit") stack.push({ kind: "event", event: item.command.event });
       else if (item.command.type === "advancePhase") {
         if (state.pendingDecision || state.pendingReposition) throw new RulesViolation("interaction-pending"); const order = ["manutencao", "principal", "combate", "fim"]; const index = order.indexOf(state.phase); state.phase = order[(index + 1) % order.length]; if (state.phase === "manutencao") { state.active = 1 - state.active; state.round += 1; const entry = state.players[state.active]; entry.abilityUses = {}; entry.subtypesEnteredThisTurn = {}; }
