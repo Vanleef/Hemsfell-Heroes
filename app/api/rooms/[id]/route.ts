@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { preserveOpponentSecrets, readRoom, roleFor, roomView, writeRoom } from "../store";
-import { applyTimeout, bothDecksLocked, canSync, deadline, participant, prepareCoin, sanitizeSettings } from "../machine";
+import { applyRulesCommand, applyTimeout, bothDecksLocked, canSync, deadline, participant, prepareCoin, sanitizeSettings } from "../machine";
 import { isBoundedGame, isPlainRecord, isRoomId, readSafeJson } from "../validation";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -80,6 +80,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         room.game.turnDeadline = deadline(room.settings.turnSeconds);
       }
       room.revision++;
+    } else if (body.action === "command") {
+      if (!isPlainRecord(body.command)) return NextResponse.json({ error: "invalid command" }, { status: 400 });
+      const resolution = applyRulesCommand(room, role, body.command, body.baseRevision);
+      if (!resolution.ok) return NextResponse.json({ error: resolution.error, ...roomView(room, true, role) }, { status: resolution.status });
     } else if (body.action === "sync") {
       if (room.status !== "started") return NextResponse.json({ error: "room not started" }, { status: 409 });
       if (!isBoundedGame(body.game)) return NextResponse.json({ error: "invalid game state" }, { status: 400 });
