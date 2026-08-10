@@ -154,7 +154,7 @@ function cleanupLethal(state, stack) {
 
 function activeAbilities(state, event) {
   const result = [];
-  if (["onDestroyed", "onCreatureEnter"].includes(event.type) && event.card && subtype(event.card, "Recruta")) state.players.forEach((entry, owner) => {
+  if (["onDestroyed", "onPermanentLeaves", "onCreatureEnter"].includes(event.type) && event.card && subtype(event.card, "Recruta")) state.players.forEach((entry, owner) => {
     for (const source of permanentUnits(entry)) {
       const modifiers = source.staticModifiers || [];
       const active = event.owner === owner && (((event.type === "onDestroyed" || event.type === "onPermanentLeaves") && modifiers.some((modifier) => modifier.type === "recruitFirstActOnLeave")) || (event.type === "onCreatureEnter" && event.sourceId !== source.uid && modifiers.some((modifier) => modifier.type === "doubleRecruitFirstAct")));
