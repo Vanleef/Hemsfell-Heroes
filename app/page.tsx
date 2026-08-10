@@ -25,7 +25,7 @@ type Screen="menu"|"setup"|"decks"|"game";
 type Targeting={kind:"attach"|"spell"|"gimble"|"natureza"|"saymon"|"saymon-life"|"ngoro"|"uruk-fire";source:string;cardIndex?:number;amount?:number;response?:boolean;fieldSlot?:number;required?:number;selected?:string[]};
 type ImageChoice={cardIndex:number;cardName:string;options:string[]};
 type CafeChoice="cats"|"heal"|"draw"|"level";
-type PendingResponse={responder:0|1;actor:0|1;action:string;deadline?:number};
+type PendingResponse={responder:0|1;actor:0|1;action:string;deadline?:number;passes?:number};
 type MatchSettings={startingLife:number;responseSeconds:number;turnSeconds:number};
 type CombatStage="declared"|"priority"|"choosing"|"charging"|"impact"|"resolved";
 type CombatAction={attackerOwner:0|1;attackerUid:string;attackerCard:CardDef;defenderUid?:string;defenderCard?:CardDef;targetHero?:boolean;stage:CombatStage;result?:string;destroyed?:Array<"attacker"|"defender">;winnerText?:string;attackDamage?:number;counterDamage?:number};
@@ -337,7 +337,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
  };
  const update=(fn:(g:Game)=>void)=>setGame(old=>{if(!old)return old;const g=structuredClone(old),before:[number,number]=[g.players[0].life,g.players[1].life];fn(g);resolveLifeLossTriggers(g,before);removeDead(g,(owner,card)=>resolveText(g,owner,card));g.players.forEach((p,i)=>{if(p.life<=0)g.winner=i===0?1:0});queueMicrotask(()=>syncOnlineGame(g));return g});
  const setSharedCombat=(action:CombatAction|null)=>{setCombatAction(action);if(mode==="online")update(g=>{g.combatAction=action})};
- const setSharedResponse=(response:PendingResponse|null)=>{const timed=response?{...response,deadline:response.deadline??Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000}:null;setResponseWindow(timed);if(mode==="online")update(g=>{g.pendingResponse=timed})};
+ const setSharedResponse=(response:PendingResponse|null)=>{const timed=response?{...response,deadline:response.deadline??Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000}:null;setResponseWindow(timed);if(mode==="online")update(g=>{g.pendingResponse=timed?{...timed,passes:timed.passes??0}:null})};
  useEffect(()=>{if(mode!=="online"||!game)return;setCombatAction(game.combatAction??null);const pending=game.pendingResponse??null;if(!pending){setResponseWindow(null);return}if(pending.responder!==0){setResponseWindow(pending);return}/* The responder first sees the opponent's serialized card animation. */const timer=window.setTimeout(()=>setResponseWindow(pending),1450);return()=>window.clearTimeout(timer)},[mode,game?.combatAction,game?.pendingResponse?.action,game?.pendingResponse?.deadline]);
  useEffect(()=>{currentGameRef.current=game;if(mode==="online"&&game?.active===0&&game.phase==="manutencao"&&game.winner===null)setMaintenanceOpen(true)},[game,mode]);
  const me=game?.players[0],foe=game?.players[1];
@@ -493,7 +493,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
      p.spellsPlayed++;resolveSpellCastTriggers(g,owner,c,(label,detail,source,target)=>queueMicrotask(()=>showFx("ability",label,detail,baseCard(source),target)));if(archetype==="uruk")p.heroXP++;if(archetype==="rasmus"&&/café|cafe/i.test(c.name)){p.coffeeSpells++;if(p.coffeeSpells===10)summonImage(g,owner,"Café Especial","hand")}sendToGrave(g,p,c);resolveText(g,owner,c,resolvedTargetUid,selectedImageName,cafeEffect,false,effectTargetIds)
    }
    if(furaActive&&p.board.some(unit=>unit.page===33)){draw(g,p);log(g,"Fuscão, o Agiota comprou 1 carta pelo Fura-Fila ativado.","effect")}
-   if(mode==="online")g.pendingResponse=asResponse?null:{responder:owner===0?1:0,actor:owner,action:c.name,deadline:Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000};
+   if(mode==="online")g.pendingResponse=asResponse?null:{responder:owner===0?1:0,actor:owner,action:c.name,passes:0,deadline:Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000};
   });
   if(mode!=="online"){if(asResponse)setSharedResponse(null);else window.setTimeout(()=>setSharedResponse({responder:owner===0?1:0,actor:owner,action:snapshot.name}),1550)}
  };
@@ -640,7 +640,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
  const allyHeroTarget=targeting?.kind==="spell"&&allowsHeroTarget(targetCard,targeting?.selected?.length||0)&&allyTarget;
  const permanentTarget=!!targetCard&&/(bana|carta alvo|constante alvo|qualquer alvo)/i.test(targetCard.text),allyPermanentTarget=allyTarget&&permanentTarget,enemyPermanentTarget=enemyTarget&&permanentTarget;
  const chooseResponse=(idx:number)=>{if(!game)return;const c=game.players[0].hand[idx],policy=c?playTargetPolicy(c):undefined;if(!c||!isFast(c)||effectiveCost(c,game.players[0])>game.players[0].reserve)return;if(policy&&policy.selections>0){setResponseWindow(null);setTargeting({kind:c.type==="Artefato"?"attach":"spell",source:`Resposta: ${c.name}`,cardIndex:idx,response:true,required:policy.selections,selected:[]});return}playCard(idx,0,undefined,undefined,undefined,true)};
- const declineResponse=()=>{setResponseWindow(null);update(g=>{g.pendingResponse=null;log(g,"Você optou por não responder à ação adversária.","response")})};
+ const declineResponse=()=>{setResponseWindow(null); if(mode==="online"){void roomAction("command",{command:{type:"passPriority"},baseRevision:roomRevisionRef.current});return} update(g=>{const pending=g.pendingResponse;if(!pending)return;if((pending.passes||0)===0)g.pendingResponse={...pending,responder:pending.actor,passes:1,deadline:Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000};else g.pendingResponse=null;log(g,(pending.passes||0)===0?"Prioridade devolvida ao jogador da ação.":"Ambos passaram; a janela foi encerrada.","response")})};
  return <main className={`hh-app screen-${screen}`}>
   {screen!=="game"&&<nav className="shell-nav"><div className="hh-logo"><b>H</b><span>HEMSFELL<small>HEROES</small></span></div><button onClick={()=>setScreen("decks")}>Coleção <em>{cards.length-11} cartas</em></button></nav>}
   {screen==="menu"&&<section className="landing"><div className="landing-copy"><p>AS CRÔNICAS DE HEMSFELL</p><h1>Heróis são escolhidos.<br/><em>Lendas são forjadas.</em></h1><span>Entidades cósmicas convocam campeões, criaturas e magias de um mundo de fantasia em guerra. Construa seu exército, domine o campo e reduza a vida do herói rival a zero.</span><div className="landing-actions"><button className="gold" onClick={()=>{setMode("bot");setScreen("setup")}}>Jogar contra IA</button><button className="online-cta" onClick={()=>{setMode("online");setScreen("setup")}}>Jogar online</button><button onClick={()=>setScreen("decks")}>Conhecer os heróis</button></div></div><div className="hero-fan">{deckDefs.slice(0,5).map((d,i)=><RemoteCardArt key={d.id} page={d.heroPage} name={d.name} priority style={{transform:`translateX(${(i-2)*50}px) rotate(${(i-2)*7}deg)`}}/>)}</div></section>}
