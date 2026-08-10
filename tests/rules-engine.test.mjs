@@ -851,6 +851,13 @@ test("production rooms use durable storage and never masquerade as process-local
   assert.match(roomRoute, /Cache-Control.*no-store/);
 });
 
+test("online priority passes update the local response window from the authoritative room state", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /setResponseWindow\(next\.pendingResponse\?\?null\)/);
+  assert.match(page, /const result=await roomAction\("command"/);
+  assert.match(page, /return !!result/);
+});
+
 test("game client routes migrated cards through the command engine", async () => {
   const [page, css] = await Promise.all([readFile(new URL("../app/page.tsx", import.meta.url), "utf8"), readFile(new URL("../app/lab.css", import.meta.url), "utf8")]);
   assert.match(page, /canExecuteCard\(snapshot\)/);
