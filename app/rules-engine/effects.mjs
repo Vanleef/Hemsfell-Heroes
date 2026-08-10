@@ -104,7 +104,8 @@ export const defaultEffectHandlers = Object.freeze({
     const ids = selectedIds(context); if (!ids.length) throw new RulesViolation("target-required"); for (const id of ids) { const owner = heroOwner(context, id); if (owner != null) { const entry = player(state, owner); entry.life = Math.min(entry.maxLife ?? 30, entry.life + (effect.amount ?? 0)); continue; } const target = findUnit(state, id); if (!target) throw new RulesViolation("target-required"); target.damage = Math.max(0, (target.damage || 0) - (effect.amount ?? 0)); }
   },
   destroy(state, effect, context) {
-    for (const id of effect.target === "all" ? allUnits(state).map((unit) => unit.uid || unit.id) : context.targetIds || []) {
+    const ids = ["self", "this", "thisArtifact", "thisEnchantment"].includes(effect.target) ? [context.sourceId] : effect.target === "all" ? allUnits(state).map((unit) => unit.uid || unit.id) : context.targetIds || [];
+    for (const id of ids) {
       const target = findUnit(state, id);
       if (!target || hasKeyword(target, /indestrut[ií]vel/i)) continue;
       const removed = removeFromZones(state, id);
