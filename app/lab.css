@@ -6590,3 +6590,42 @@
     inset 0 0 30px #db45465c,
     0 0 15px #c9333c5c;
 }
+
+
+/* Compact interaction/status overlays never cover the hero card or deck picker copy. */
+.deck-picker{display:grid;grid-template-columns:96px minmax(0,1fr);grid-template-rows:auto auto auto;column-gap:12px;align-items:center}
+.deck-picker>span{grid-column:1/-1}
+.deck-picker canvas,.deck-picker img{grid-column:1;grid-row:2/4;width:96px!important;height:128px!important;object-fit:cover}
+.deck-picker select{grid-column:2;grid-row:2;min-width:0;width:100%;align-self:start}
+.deck-picker>b,.deck-picker>small{grid-column:2;min-width:0;overflow-wrap:anywhere;align-self:start}
+.deck-picker>b{grid-row:3;margin-top:2px}
+.deck-picker>small{grid-row:3;margin-top:24px}
+
+.card-frame{position:relative;display:inline-flex;isolation:isolate;overflow:visible}.card-frame>.original-card{position:relative;z-index:1}.card-frame-marker,.card-frame-activation{position:absolute;z-index:7;display:grid;place-items:center;border:2px solid #07111a;border-radius:999px;font-style:normal;pointer-events:none}.card-frame-marker{left:-10px;top:-10px;min-width:24px;height:24px;padding:0 5px;background:#d7ae57;color:#151008;font:800 11px/1 Arial;box-shadow:0 2px 10px #000a}.card-frame-activation{right:-12px;top:-12px;width:25px;height:25px;background:#f6c94f;color:#201705;font-size:14px;box-shadow:0 0 0 2px #201705,0 0 14px #f6c94f;animation:activation-pulse 1.5s ease-in-out infinite}
+@keyframes activation-pulse{50%{transform:scale(1.1);filter:brightness(1.12)}}
+.hero-status-cues{position:absolute;left:50%;bottom:-25px;z-index:8;transform:translateX(-50%);display:flex;gap:5px;white-space:nowrap}
+.hero-status-cues.cost{bottom:-48px}
+.hero-status-cues span{display:block;border:1px solid var(--deck,#69d5ff);border-radius:999px;padding:3px 7px;background:#07131edb;color:#f5f9ff;font:800 10px/1.1 system-ui;letter-spacing:.04em;box-shadow:0 4px 12px #0008;cursor:help}
+.element-choice-dialog{width:min(420px,92vw);padding:22px;border:1px solid #64c8ff;border-radius:16px;background:#07131f;color:#effaff;box-shadow:0 24px 70px #000}
+.element-choice-dialog header{display:flex;justify-content:space-between;align-items:center;color:#ffd56c;font-weight:800;letter-spacing:.09em}
+.element-choice-dialog h2{margin:12px 0 4px}.element-choice-dialog p{opacity:.8}.element-choice-dialog>div{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}
+.element-choice-dialog button{min-height:42px;border:1px solid #468fc0;border-radius:9px;background:#0f2840;color:#fff;font-weight:800;cursor:pointer}
+.element-choice-dialog button:hover{background:#17466d}
+
+
+/* Controls float beside the card, never over the illustration. */
+.card-frame-activation{cursor:pointer;pointer-events:auto;transition:filter .18s,transform .18s}
+.card-frame-activation:hover:not(:disabled){transform:scale(1.12);filter:brightness(1.13)}
+.card-frame-activation:disabled{cursor:not-allowed;opacity:.3;filter:grayscale(1);animation:none}
+.card-frame-marker{pointer-events:none}
+.player-hero .hero-status-cues{left:142px;right:auto;top:42px;bottom:auto;transform:none}
+.player-hero .hero-status-cues.cost{top:67px;bottom:auto}
+.player-hero > button.level-button{display:block!important;right:7px!important;bottom:-38px!important;width:142px!important;height:34px!important;font:900 12px/1 Arial!important;letter-spacing:.08em!important}
+.player-hero > button.level-button:disabled{display:block!important;opacity:.45!important;filter:grayscale(.6);cursor:not-allowed}
+
+.original-card[data-active-effect^="CADEIA"]{box-shadow:0 0 0 2px #64cfff,0 0 22px #2d8cff!important}
+.original-card[data-active-effect="FURA-FILA"]{box-shadow:0 0 0 2px #d66cff,0 0 22px #9c44ed!important}
+.original-card[data-active-effect="SACRIFÍCIO"]{box-shadow:0 0 0 2px #e85a5a,0 0 22px #9d1822!important}
+.original-card[data-active-effect^="PERDA"]{box-shadow:0 0 0 2px #c75a7e,0 0 22px #6c1837!important}
+.original-card[data-active-effect="RESPOSTA"]{box-shadow:0 0 0 2px #f2d36b,0 0 22px #b9841d!important}
+.original-card[data-active-effect^="CUSTO"]{box-shadow:0 0 0 2px #77df9a,0 0 18px #2a9c55!important}

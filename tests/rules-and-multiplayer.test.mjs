@@ -230,3 +230,17 @@ test("local multiplayer does not require a production storage binding",()=>{
  assert.match(roomStore,/allowMemoryFallback/);
  assert.match(roomStore,/HEMSFELL_ROOM_STORE !== "d1"/);
 });
+
+
+test("activated costs, flexible damage and Uruk elemental choices stay covered",()=>{
+ assert.match(page,/hasActivatableEffect/);
+ assert.match(page,/activation-indicator/);
+ assert.match(page,/sacrifique\[\^\.\]\*criatura/);
+ assert.match(page,/lifeLoss=Number/);
+ assert.match(page,/target=chosenEnemy\|\|chosenAlly/);
+ assert.match(page,/isEarthquake/);
+ assert.match(page,/orbe cromatico/);
+ assert.match(page,/hero-status-cues/);
+ assert.match(page,/clone de agua/);
+ assert.match(css,/deck-picker\{display:grid/);
+});
