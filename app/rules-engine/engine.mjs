@@ -99,6 +99,7 @@ function conditionMatches(state, source, owner, condition, event = {}) {
   if (condition.all) return condition.all.every((item) => conditionMatches(state, source, owner, item, event));
   const eventCard = event.card || state.players.flatMap((entry) => [...entry.board, ...entry.support, ...entry.grave]).find((card) => card.uid === event.cardId || card.id === event.cardId);
   if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;
+  if (condition.eventCardType && eventCard?.type !== condition.eventCardType) return false;
   if (condition.eventCardTypeNot && (eventCard?.type === condition.eventCardTypeNot || eventCard?.imageCard)) return false;
   if (condition.spellElement && !(event.card?.tags || eventCard?.tags || []).includes(condition.spellElement)) return false;
   if (condition.sourceSubtype && !subtype(event.source || {}, condition.sourceSubtype)) return false;
@@ -146,7 +147,7 @@ function claimUsage(state, source, owner, ability) { if (!ability.usageLimit && 
 
 const permanentUnits = (entry) => [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])];
 const unitOwner = (state, id) => state.players.findIndex((entry) => permanentUnits(entry).some((unit) => unit.uid === id || unit.id === id));
-const targetScope = (value) => ({ anyCharacter: TargetScope.ANY_CHARACTER, anyCreature: TargetScope.ANY_CREATURE, allyCreature: TargetScope.ALLY_CREATURE, enemyCreature: TargetScope.ENEMY_CREATURE, anyPermanent: TargetScope.ANY_PERMANENT, allyPermanent: TargetScope.ALLY_PERMANENT, enemyPermanent: TargetScope.ENEMY_PERMANENT, anotherAllyPermanent: TargetScope.ALLY_PERMANENT, enemy: TargetScope.ENEMY_CREATURE, creature: TargetScope.ANY_CREATURE }[value] || TargetScope.NONE);
+const targetScope = (value) => ({ anyCharacter: TargetScope.ANY_CHARACTER, anyCreature: TargetScope.ANY_CREATURE, allyCreature: TargetScope.ALLY_CREATURE, enemyCreature: TargetScope.ENEMY_CREATURE, anyPermanent: TargetScope.ANY_PERMANENT, allyPermanent: TargetScope.ALLY_PERMANENT, enemyPermanent: TargetScope.ENEMY_PERMANENT, anotherAllyPermanent: TargetScope.ALLY_PERMANENT, creature: TargetScope.ANY_CREATURE }[value] || TargetScope.NONE);
 function abilityTargetSteps(ability) {
   if (ability.sourceText) return (targetPolicy(ability.sourceText).steps || []).filter((step) => step.role !== "sacrifice");
   return (ability.effects || []).flatMap((effect) => { const scope = targetScope(effect.target); return Array.from({ length: effect.selections ?? (scope === TargetScope.NONE ? 0 : 1) }, () => ({ scope, role: "effect" })); }).filter((step) => step.scope !== TargetScope.NONE);
@@ -181,6 +182,35 @@ function replayAbilityCandidates(state, owner, effect) {
 function validateTargets(state, owner, abilities, command, source) {
   const targetIds = command.targetIds || []; const steps = abilities.flatMap(abilityTargetSteps); if (steps.length !== targetIds.length) { if (steps.length || targetIds.length) throw new RulesViolation("invalid-target-count"); return; }
   steps.forEach((step, index) => { const id = targetIds[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, owner, targetOwner, targetKind)) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
+}
+function preflightPlay(state, command, handlers) {
+  const entry = state.players[command.owner];
+  const card = entry?.hand?.find((candidate) => candidate.id === command.cardId);
+  if (!card) throw new RulesViolation("card-not-in-hand");
+  if (!canExecuteCard(card, handlers)) throw new RulesViolation("card-not-migrated");
+  const accelerated = (card.tags || []).some((tag) => /acelerado/i.test(tag)) || /acelerado/i.test(card.text || "");
+  if (state.active !== command.owner && !(accelerated && command.hasPriority)) throw new RulesViolation("not-your-priority");
+  if (state.phase !== "principal" && !(accelerated && command.hasPriority)) throw new RulesViolation("wrong-phase");
+  const playAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onPlay" && conditionMatches(state, card, command.owner, ability.condition, { card }));
+  const enterAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onEnter" && conditionMatches(state, card, command.owner, ability.condition, { card }));
+  if (playAbilities.some((ability) => !playConditionMatches(state, command.owner, ability.playCondition) || ability.effects.some((effect) => effect.type === "replaySelectedAbility" && !replayAbilityCandidates(state, command.owner, effect).length))) throw new RulesViolation("play-condition-not-met");
+  if (card.type !== "Criatura" || (command.targetIds || []).length) validateTargets(state, command.owner, card.type === "Criatura" ? enterAbilities : playAbilities, command, card);
+  for (const ability of playAbilities) validateCosts(state, ability, command);
+  const staticDiscount = permanentUnits(entry).flatMap((source) => source.staticModifiers || []).filter((modifier) => modifier.type === "costModifier" && (!modifier.selector?.type || modifier.selector.type === card.type) && (!modifier.during || modifier.during !== "controllerTurn" || state.active === command.owner)).reduce((sum, modifier) => sum + (modifier.amount || 0), 0);
+  const cost = Math.max(0, (card.cost || 0) + (card.costModifier || 0) + staticDiscount);
+  if (entry.energy + (card.type !== "Criatura" ? entry.reserve : 0) < cost) throw new RulesViolation("not-enough-energy");
+  if (card.type === "Criatura") {
+    if (!Number.isInteger(command.slot) || command.slot < 0 || command.slot > 4) throw new RulesViolation("invalid-creature-slot");
+    const occupied = entry.board.find((unit) => unit.slot === command.slot);
+    if ((occupied && entry.board.length < 5) || (!occupied && entry.board.length >= 5)) throw new RulesViolation("creature-zone-full");
+  } else if (card.type === "Artefato" || card.type === "Encanto") {
+    if (!Number.isInteger(command.slot) || command.slot < 0 || command.slot > 4 || entry.support.some((unit) => unit.slot === command.slot) || entry.support.length >= 5) throw new RulesViolation("support-zone-full");
+    if (card.type === "Artefato" && card.page !== 304) {
+      const host = entry.board.find((unit) => unit.uid === command.attachedTo);
+      if (!host || host.slot !== command.slot || entry.support.some((unit) => unit.attachedTo === host.uid)) throw new RulesViolation("artifact-target-required");
+    }
+  }
+  return { card, playAbilities, enterAbilities, cost };
 }
 function cleanupLethal(state, stack) {
   state.players.forEach((entry, owner) => { for (const unit of [...entry.board]) { const modifiers = (unit.modifiers || []).filter((item) => modifierApplies(state, owner, item)).reduce((sum, item) => sum + (item.health || 0), 0); const indestructible = hasKeyword(unit, /indestrut[ií]vel/i); if ((unit.damage || 0) < (unit.hp || 1) + modifiers || indestructible) continue; entry.board.splice(entry.board.indexOf(unit), 1); const attachments = entry.support.filter((card) => card.attachedTo === unit.uid); entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid); for (const attachment of attachments) { if (attachment.generatedImage || attachment.imageCard) continue; if (attachment.page === 154) entry.obscuro.push(attachment); else entry.grave.push(attachment); } if (!unit.generatedImage && !unit.imageCard) entry.grave.push({ ...unit, deathCause: "effect" }); if (!unit.suppressDeathTrigger && !unit.generatedImage && !unit.imageCard) stack.push({ kind: "event", event: { type: "onDestroyed", owner, sourceId: unit.uid, cardId: unit.uid, card: unit, deathCause: "effect" } }); stack.push({ kind: "event", event: { type: "onCreatureDestroyed", owner, cardId: unit.uid, card: unit } }); } });
@@ -228,6 +258,10 @@ export function executeCommand(inputState, command, options = {}) {
       } else if (item.command.type === "playCard") {
         if (options.priority && !item.command.skipPriority && !item.command.hasPriority) {
           if (state.pendingAction) throw new RulesViolation("priority-window-open");
+          /* A priority window is only created for an already legal intent.
+             Otherwise an invalid card could remain in pendingAction forever
+             after the responder passes. */
+          preflightPlay(state, item.command, handlers);
           state.pendingAction = { ...item.command };
           state.pendingResponse = { responder: 1 - item.command.owner, actor: item.command.owner, action: state.players[item.command.owner].hand.find((card) => card.id === item.command.cardId)?.name || item.command.cardId, passes: 0 };
           continue;
@@ -252,7 +286,7 @@ export function executeCommand(inputState, command, options = {}) {
         if (permanent) {
           state.nextInstanceId = (state.nextInstanceId || 0) + 1;
           const unit = { ...card, uid: item.command.instanceId || `${card.id}-${state.round}-${state.nextInstanceId}`, slot: item.command.slot ?? 0, enteredRound: state.round, attackedThisTurn: false, damage: 0, bonusAtk: 0, bonusHp: 0, exhausted: false, summoning: card.type === "Criatura" && !(card.tags || []).some((tag) => /investida/i.test(String(tag))), frozen: false, stunned: false, suffocated: false, immobilized: false, defenseUses: 0, markers: card.markers ?? 0, modifiers: [] };
-          if (card.type === "Criatura") { if (entry.board.length >= 5 || entry.board.some((existing) => existing.slot === unit.slot)) throw new RulesViolation("creature-zone-full"); entry.board.push(unit); entry.subtypesEnteredThisTurn ||= {}; for (const value of new Set([...(card.subtypes || []), ...(card.tags || [])])) entry.subtypesEnteredThisTurn[value] = (entry.subtypesEnteredThisTurn[value] || 0) + 1; stack.push({ kind: "event", event: { type: "onCreatureEnter", owner: item.command.owner, sourceId: unit.uid, cardId: unit.uid, card: unit } }); }
+          if (card.type === "Criatura") { const replaced = entry.board.find((existing) => existing.slot === unit.slot); if ((replaced && entry.board.length < 5) || (!replaced && entry.board.length >= 5)) throw new RulesViolation("creature-zone-full"); if (replaced) { entry.board = entry.board.filter((existing) => existing !== replaced); const attachments = entry.support.filter((attachment) => attachment.attachedTo === replaced.uid); entry.support = entry.support.filter((attachment) => attachment.attachedTo !== replaced.uid); for (const attachment of attachments) { if (attachment.generatedImage || attachment.imageCard) continue; if (attachment.page === 154) entry.obscuro.push(attachment); else entry.grave.push({ ...attachment, deathCause: "replaced" }); } if (!replaced.generatedImage && !replaced.imageCard) entry.obscuro.push({ ...replaced, lastZone: "board", deathCause: "replaced" }); stack.push({ kind: "event", event: { type: "onPermanentLeaves", owner: item.command.owner, sourceId: replaced.uid, cardId: replaced.uid, card: replaced, zone: "board" } }); } entry.board.push(unit); entry.subtypesEnteredThisTurn ||= {}; for (const value of new Set([...(card.subtypes || []), ...(card.tags || [])])) entry.subtypesEnteredThisTurn[value] = (entry.subtypesEnteredThisTurn[value] || 0) + 1; stack.push({ kind: "event", event: { type: "onCreatureEnter", owner: item.command.owner, sourceId: unit.uid, cardId: unit.uid, card: unit } }); }
           else if (card.type === "Terreno") { if (entry.terrain && !entry.terrain.generatedImage) entry.grave.push(entry.terrain); entry.terrain = unit; }
           else { if (entry.support.length >= 5 || entry.support.some((existing) => existing.slot === unit.slot)) throw new RulesViolation("support-zone-full"); if (card.type === "Artefato") { const attached = entry.board.find((creature) => creature.uid === item.command.attachedTo); if (!attached && card.page !== 304) throw new RulesViolation("artifact-target-required"); if (attached) { if (entry.support.some((artifact) => artifact.attachedTo === attached.uid)) throw new RulesViolation("artifact-target-required"); unit.attachedTo = attached.uid; unit.slot = attached.slot; } } entry.support.push(unit); }
           const enter = (unit.abilities || []).filter((ability) => ability.trigger === "onEnter");
