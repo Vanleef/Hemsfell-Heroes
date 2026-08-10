@@ -48,6 +48,8 @@ function payCosts(state, ability, context) {
 function subtype(card, value) { return hasSubtype(card, value) || (card.tags || []).some((tag) => String(tag).toLowerCase() === String(value).toLowerCase()); }
 function conditionMatches(state, source, owner, condition, event = {}) {
   if (!condition) return true;
+  if (condition.cardsPlayedBeforeThisAtLeast != null && (state.players[owner].turnCardsPlayed || 0) < condition.cardsPlayedBeforeThisAtLeast) return false;
+  if (condition.controllerTurn && state.active !== owner) return false;
   if (condition.all) return condition.all.every((item) => conditionMatches(state, source, owner, item, event));
   const eventCard = event.card || state.players.flatMap((entry) => [...entry.board, ...entry.support, ...entry.grave]).find((card) => card.uid === event.cardId || card.id === event.cardId);
   if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;
@@ -114,7 +116,7 @@ export function executeCommand(inputState, command, options = {}) {
         const accelerated = (card.tags || []).some((tag) => /acelerado/i.test(tag)) || /acelerado/i.test(card.text || "");
         if (state.active !== item.command.owner && !(accelerated && item.command.hasPriority)) throw new RulesViolation("not-your-priority");
         if (state.phase !== "principal" && !(accelerated && item.command.hasPriority)) throw new RulesViolation("wrong-phase");
-        const playAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onPlay"); const enterAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onEnter");
+        const playAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onPlay" && conditionMatches(state, card, item.command.owner, ability.condition, { card })); const enterAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onEnter" && conditionMatches(state, card, item.command.owner, ability.condition, { card }));
         validateTargets(state, item.command.owner, card.type === "Criatura" ? enterAbilities : playAbilities, item.command, card);
         for (const ability of playAbilities) validateCosts(state, ability, item.command);
         const staticDiscount = permanentUnits(entry).flatMap((source) => source.staticModifiers || []).filter((modifier) => modifier.type === "costModifier" && (!modifier.selector?.type || modifier.selector.type === card.type)).reduce((sum, modifier) => sum + (modifier.amount || 0), 0);
@@ -122,7 +124,7 @@ export function executeCommand(inputState, command, options = {}) {
         if (entry.energy + (spell ? entry.reserve : 0) < cost) throw new RulesViolation("not-enough-energy");
         for (const ability of playAbilities) payCosts(state, ability, item.command);
         const fromReserve = spell ? Math.min(entry.reserve, cost) : 0; entry.reserve -= fromReserve; entry.energy -= cost - fromReserve;
-        entry.hand.splice(cardIndex, 1); const permanent = card.type !== "Feitiço" || card.abilities?.some((ability) => ability.effects?.some((effect) => effect.type === "remainUntilTurnEnd"));
+        entry.hand.splice(cardIndex, 1); entry.cardsPlayed = (entry.cardsPlayed || 0) + 1; entry.turnCardsPlayed = (entry.turnCardsPlayed || 0) + 1; if (spell) { entry.spellsPlayed = (entry.spellsPlayed || 0) + 1; entry.turnSpellsPlayed = (entry.turnSpellsPlayed || 0) + 1; } const permanent = card.type !== "Feitiço" || card.abilities?.some((ability) => ability.effects?.some((effect) => effect.type === "remainUntilTurnEnd"));
         if (permanent) {
           const unit = { ...card, uid: item.command.instanceId || `${card.id}-${state.round}-${steps}`, slot: item.command.slot ?? 0, damage: 0, bonusAtk: 0, bonusHp: 0, exhausted: false, summoning: card.type === "Criatura" && !(card.tags || []).some((tag) => /investida/i.test(String(tag))), frozen: false, stunned: false, suffocated: false, immobilized: false, defenseUses: 0, markers: card.markers ?? 0, modifiers: [] };
           if (card.type === "Criatura") { if (entry.board.length >= 5 || entry.board.some((existing) => existing.slot === unit.slot)) throw new RulesViolation("creature-zone-full"); entry.board.push(unit); entry.subtypesEnteredThisTurn ||= {}; for (const value of new Set([...(card.subtypes || []), ...(card.tags || [])])) entry.subtypesEnteredThisTurn[value] = (entry.subtypesEnteredThisTurn[value] || 0) + 1; stack.push({ kind: "event", event: { type: "onCreatureEnter", owner: item.command.owner, sourceId: unit.uid, cardId: unit.uid, card: unit } }); }
@@ -169,7 +171,7 @@ export function executeCommand(inputState, command, options = {}) {
         if (!pending.confirmed.includes(item.command.owner)) pending.confirmed.push(item.command.owner); if (pending.confirmed.length === pending.owners.length) state.pendingReposition = null;
       } else if (item.command.type === "emit") stack.push({ kind: "event", event: item.command.event });
       else if (item.command.type === "advancePhase") {
-        if (state.pendingDecision || state.pendingReposition) throw new RulesViolation("interaction-pending"); const order = ["manutencao", "principal", "combate", "fim"]; const index = order.indexOf(state.phase); state.phase = order[(index + 1) % order.length]; if (state.phase === "manutencao") { state.active = 1 - state.active; state.round += 1; const entry = state.players[state.active]; entry.abilityUses = {}; entry.subtypesEnteredThisTurn = {}; }
+        if (state.pendingDecision || state.pendingReposition) throw new RulesViolation("interaction-pending"); const order = ["manutencao", "principal", "combate", "fim"]; const index = order.indexOf(state.phase); state.phase = order[(index + 1) % order.length]; if (state.phase === "fim") stack.push({ kind: "event", event: { type: "onTurnEnd", owner: state.active } }); if (state.phase === "combate") stack.push({ kind: "event", event: { type: "onCombatStart", owner: state.active } }); if (state.phase === "manutencao") { state.active = 1 - state.active; state.round += 1; const entry = state.players[state.active]; entry.abilityUses = {}; entry.subtypesEnteredThisTurn = {}; entry.turnCardsPlayed = 0; entry.turnSpellsPlayed = 0; stack.push({ kind: "event", event: { type: "onMaintenance", owner: state.active } }); }
       } else throw new RulesViolation("unknown-command");
     } else if (item.kind === "effect") {
       applyEffect(state, item.effect, item.context, handlers);
