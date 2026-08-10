@@ -277,11 +277,19 @@ test("Quarion healing counts turned creatures", () => {
   assert.equal(result.state.players[0].life, 14);
 });
 
+test("Quarion Recruit terrains are passive and do not request play targets", () => {
+  for (const id of ["p181", "p182"]) {
+    const card = compileCard({ id, page: Number(id.slice(1)), type: id === "p181" ? "Terreno" : "Criatura", cost: 1, text: "" });
+    assert.equal(canExecuteCard(card), true);
+    assert.deepEqual(card.abilities.flatMap((ability) => ability.effects).map((effect) => effect.type), [id === "p181" ? "recruitFirstActOnLeave" : "doubleRecruitFirstAct"]);
+  }
+});
+
 test("migration coverage is explicit and simple cards use the command engine", async () => {
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 210); assert.equal(pending.length, 98);
+  assert.equal(migrated.length, 212); assert.equal(pending.length, 96);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
