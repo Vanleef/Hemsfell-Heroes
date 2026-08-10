@@ -271,4 +271,5 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(page, /roomAction\("command"/);
   assert.match(page, /executeCommand\(current,\{\.\.\.command,owner\}\)/);
   assert.match(page, /role!=="attachment"/);
+  assert.match(page, /dragged!\.type!=="Artefato"\|\|!!creature/);
 });
