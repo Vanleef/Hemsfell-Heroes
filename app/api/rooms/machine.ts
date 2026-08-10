@@ -123,7 +123,7 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
   const owner = role === "host" ? 0 : 1;
   if (rawCommand.type === "passPriority") { const pending = room.game.pendingResponse; if (!pending || pending.responder !== owner) return { ok: false, status: 403, error: "not your priority" }; if ((pending.passes || 0) === 0) room.game.pendingResponse = { ...pending, responder: pending.actor, passes: 1, deadline: deadline(room.settings.responseSeconds) }; else room.game.pendingResponse = null; room.game.events = (room.game.events || 0) + 1; room.revision++; return { ok: true, status: 200, error: "", trace: [] }; }
   try {
-    const result = executeCommand(room.game, { ...rawCommand, owner });
+    const result = executeCommand(room.game, { ...rawCommand, owner }, { priority: true });
     room.game = result.state;
     if (room.game.pendingResponse && !room.game.pendingResponse.deadline) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
     room.game.turnDeadline = deadline(room.settings.turnSeconds);
