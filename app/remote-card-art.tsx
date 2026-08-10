@@ -18,6 +18,10 @@ async function loadCatalog() {
         disableRange: true,
         disableStream: true,
       }).promise;
+    }).catch((error) => {
+      catalogPromise = null;
+      pagePromises.clear();
+      throw error;
     });
   }
   return catalogPromise;
@@ -30,6 +34,9 @@ function loadCatalogPage(page: number) {
     pending = loadCatalog().then((catalog) => {
       if (page < 1 || page > catalog.numPages) throw new Error("Card page is outside the catalogue");
       return catalog.getPage(page);
+    }).catch((error) => {
+      pagePromises.delete(page);
+      throw error;
     });
     pagePromises.set(page, pending);
   }
