@@ -1,157 +1,74 @@
 import type { Room, RoomRole } from "./machine";
 export type { Room } from "./machine";
-
 import { get, put } from "@vercel/blob";
 
-const schema = "CREATE TABLE IF NOT EXISTS multiplayer_rooms (id TEXT PRIMARY KEY, payload TEXT NOT NULL, updated_at INTEGER NOT NULL)";
-
-/* Process fallback keeps previews usable when no D1/Blob binding is configured.
-   Set HEMSFELL_ROOM_STORE=d1 to require durable D1 in a production deployment. */
 const memoryRooms = new Map<string, Room>();
-const useMemoryStore = () => process.env.HEMSFELL_ROOM_STORE === "memory" || process.env.NODE_ENV === "development";
-const allowMemoryFallback = () => process.env.HEMSFELL_ROOM_STORE !== "d1";
-const readMemoryRoom = (id: string) => structuredClone(memoryRooms.get(id) ?? null);
-const writeMemoryRoom = (room: Room) => memoryRooms.set(room.id, structuredClone(room));
-
-async function d1() {
-  const { env } = await import("cloudflare:workers");
-  if (!env.DB) throw new Error("Multiplayer database unavailable");
-  await env.DB.prepare(schema).run();
-  return env.DB;
-}
-
+const configuredStore = () => process.env.HEMSFELL_ROOM_STORE;
+const useMemoryStore = () => process.env.NODE_ENV === "development" || configuredStore() === "memory";
+const hasSupabaseStore = () => Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY));
+const hasBlobStore = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+const cloneMemory = (id: string) => structuredClone(memoryRooms.get(id) ?? null);
+const unavailable = () => new Error("Multiplayer storage unavailable. Configure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or BLOB_READ_WRITE_TOKEN).");
 const roomPath = (id: string) => `multiplayer-rooms/${id}.json`;
 
-function usesVercelBlob() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
+function supabaseConfig() {
+  const url = process.env.SUPABASE_URL?.replace(/\/$/, "");
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+  if (!url || !key) throw unavailable();
+  return { url, key };
 }
-
-async function readBlobRoom(id: string): Promise<Room | null> {
+async function supabase(path: string, init: RequestInit = {}) {
+  const { url, key } = supabaseConfig();
+  const response = await fetch(`${url}/rest/v1/${path}`, { ...init, cache: "no-store", headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json", ...(init.headers ?? {}) } });
+  if (!response.ok) throw new Error(`Supabase room store failed (${response.status})`);
+  return response;
+}
+async function readSupabase(id: string) {
+  const response = await supabase(`multiplayer_rooms?id=eq.${encodeURIComponent(id)}&select=payload&limit=1`);
+  const rows = await response.json() as Array<{ payload: string }>;
+  return rows[0] ? JSON.parse(rows[0].payload) as Room : null;
+}
+async function writeSupabase(room: Room) {
+  await supabase("multiplayer_rooms?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ id: room.id, payload: JSON.stringify(room), updated_at: new Date().toISOString() }) });
+}
+async function readBlob(id: string) {
   const result = await get(roomPath(id), { access: "private", useCache: false });
-  if (!result || result.statusCode !== 200) return null;
-  return JSON.parse(await new Response(result.stream).text()) as Room;
+  return result?.statusCode === 200 ? JSON.parse(await new Response(result.stream).text()) as Room : null;
 }
-
-async function writeBlobRoom(room: Room) {
-  await put(roomPath(room.id), JSON.stringify(room), {
-    access: "private",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-    cacheControlMaxAge: 60,
-    contentType: "application/json",
-  });
+async function writeBlob(room: Room) {
+  await put(roomPath(room.id), JSON.stringify(room), { access: "private", addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 0, contentType: "application/json" });
 }
 
 export async function readRoom(id: string): Promise<Room | null> {
-  if (useMemoryStore()) return readMemoryRoom(id);
-  if (usesVercelBlob()) {
-    try {
-      return await readBlobRoom(id);
-    } catch (error) {
-      if (!allowMemoryFallback()) throw error;
-      console.error("[rooms] Blob read failed; using memory fallback", error);
-      return readMemoryRoom(id);
-    }
-  }
-
-  try {
-    const db = await d1();
-    const row = await db.prepare("SELECT payload FROM multiplayer_rooms WHERE id = ?").bind(id).first() as { payload: string } | null;
-    return row ? JSON.parse(row.payload) as Room : null;
-  } catch (error) {
-    if (!allowMemoryFallback()) throw error;
-    console.error("[rooms] D1 read failed; using memory fallback", error);
-    return readMemoryRoom(id);
-  }
+  if (useMemoryStore()) return cloneMemory(id);
+  if (hasSupabaseStore()) return readSupabase(id);
+  if (hasBlobStore()) return readBlob(id);
+  throw unavailable();
 }
-
 export async function writeRoom(room: Room) {
-  if (useMemoryStore()) {
-    writeMemoryRoom(room);
-    return;
-  }
-  if (usesVercelBlob()) {
-    try {
-      await writeBlobRoom(room);
-      return;
-    } catch (error) {
-      if (!allowMemoryFallback()) throw error;
-      console.error("[rooms] Blob write failed; using memory fallback", error);
-      writeMemoryRoom(room);
-      return;
-    }
-  }
-
-  try {
-    const db = await d1();
-    await db.prepare("INSERT INTO multiplayer_rooms (id, payload, updated_at) VALUES (?, ?, ?) ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, updated_at = excluded.updated_at")
-      .bind(room.id, JSON.stringify(room), Date.now()).run();
-  } catch (error) {
-    if (!allowMemoryFallback()) throw error;
-    console.error("[rooms] D1 write failed; using memory fallback", error);
-    writeMemoryRoom(room);
-  }
+  if (useMemoryStore()) { memoryRooms.set(room.id, structuredClone(room)); return; }
+  if (hasSupabaseStore()) return writeSupabase(room);
+  if (hasBlobStore()) return writeBlob(room);
+  throw unavailable();
 }
 
 type SecretZone = "hand" | "deck" | "extraDeck";
-
-const hiddenCard = (index: number) => ({
-  id: `hidden-${index}`,
-  name: "Carta oculta",
-  type: "Feitiço",
-  cost: 0,
-  text: "",
-  tags: [],
-  image: "",
-  hero: false,
-  imageCard: false,
-  revealed: false,
-});
-
+const hiddenCard = (index: number) => ({ id: `hidden-${index}`, name: "Carta oculta", type: "Feitiço", cost: 0, text: "", tags: [], image: "", hero: false, imageCard: false, revealed: false });
 function publicGameView(room: Room, role: RoomRole) {
   if (!room.game) return null;
-  const game = structuredClone(room.game);
-  const privateIndex = role === "host" ? 1 : 0;
-  const opponent = game.players?.[privateIndex];
-  if (opponent) {
-    (["hand", "deck", "extraDeck"] as SecretZone[]).forEach((zone) => {
-      if (Array.isArray(opponent[zone])) opponent[zone] = opponent[zone].map((_: unknown, index: number) => hiddenCard(index));
-    });
-  }
+  const game = structuredClone(room.game); const opponent = game.players?.[role === "host" ? 1 : 0];
+  if (opponent) (["hand", "deck", "extraDeck"] as SecretZone[]).forEach((zone) => { if (Array.isArray(opponent[zone])) opponent[zone] = opponent[zone].map((_: unknown, index: number) => hiddenCard(index)); });
   return game;
 }
-
 export function preserveOpponentSecrets(room: Room, nextGame: any, role: RoomRole) {
   if (!room.game || !nextGame) return nextGame;
-  const privateIndex = role === "host" ? 1 : 0;
-  const current = room.game.players?.[privateIndex];
-  const incoming = nextGame.players?.[privateIndex];
-  if (current && incoming) {
-    (["hand", "deck", "extraDeck"] as SecretZone[]).forEach((zone) => {
-      incoming[zone] = structuredClone(current[zone] ?? []);
-    });
-  }
+  const index = role === "host" ? 1 : 0, current = room.game.players?.[index], incoming = nextGame.players?.[index];
+  if (current && incoming) (["hand", "deck", "extraDeck"] as SecretZone[]).forEach((zone) => { incoming[zone] = structuredClone(current[zone] ?? []); });
   return nextGame;
 }
-
 export function roomView(room: Room, includeGame = false, role?: RoomRole | null) {
-  return {
-    id: room.id,
-    host: { heroId: room.host.heroId, accepted: room.host.accepted, deckLocked: room.host.deckLocked, mulliganDone: room.host.mulliganDone, mulliganCount: room.host.mulliganCount },
-    guest: room.guest ? { heroId: room.guest.heroId, accepted: room.guest.accepted, deckLocked: room.guest.deckLocked, mulliganDone: room.guest.mulliganDone, mulliganCount: room.guest.mulliganCount } : null,
-    status: room.status,
-    settings: room.settings,
-    coinWinner: room.coinWinner,
-    startingRole: room.startingRole,
-    createdAt: room.createdAt,
-    revision: room.revision,
-    ...(includeGame ? { game: role ? publicGameView(room, role) : null } : {}),
-  };
+  return { id: room.id, host: { heroId: room.host.heroId, accepted: room.host.accepted, deckLocked: room.host.deckLocked, mulliganDone: room.host.mulliganDone, mulliganCount: room.host.mulliganCount }, guest: room.guest ? { heroId: room.guest.heroId, accepted: room.guest.accepted, deckLocked: room.guest.deckLocked, mulliganDone: room.guest.mulliganDone, mulliganCount: room.guest.mulliganCount } : null, status: room.status, settings: room.settings, coinWinner: room.coinWinner, startingRole: room.startingRole, createdAt: room.createdAt, revision: room.revision, ...(includeGame ? { game: role ? publicGameView(room, role) : null } : {}) };
 }
-
 export function roleFor(room: Room, token: unknown): "host" | "guest" | null {
-  if (typeof token !== "string") return null;
-  if (token === room.host.token) return "host";
-  if (token === room.guest?.token) return "guest";
-  return null;
+  return typeof token === "string" && token === room.host.token ? "host" : typeof token === "string" && token === room.guest?.token ? "guest" : null;
 }
