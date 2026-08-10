@@ -41,9 +41,14 @@ test("engine rejects activations outside the controller turn", () => {
   assert.throws(() => executeCommand(game, { type: "activate", owner: 1, sourceId: "source", abilityId: "a" }), /not-your-turn/);
 });
 
-test("reserve energy pays spells but never creatures", () => {
-  const spellGame = state(); spellGame.players[0].energy = 0; spellGame.players[0].reserve = 2; spellGame.players[0].hand.push({ id: "spell", type: "Feitiço", cost: 2, tags: [], text: "", abilities: [] });
-  assert.equal(executeCommand(spellGame, { type: "playCard", owner: 0, cardId: "spell" }).state.players[0].reserve, 0);
+test("reserve energy pays every non-creature card but never creatures", () => {
+  for (const type of ["Feitiço", "Artefato", "Encanto", "Terreno"]) {
+    const game = state(); game.players[0].energy = 0; game.players[0].reserve = 2;
+    if (type === "Artefato") game.players[0].board.push({ uid: "host", type: "Criatura", slot: 0, abilities: [] });
+    game.players[0].hand.push({ id: `card-${type}`, type, page: type === "Artefato" ? 304 : 0, cost: 2, tags: [], text: "", abilities: [] });
+    const command = { type: "playCard", owner: 0, cardId: `card-${type}`, slot: 0 };
+    assert.equal(executeCommand(game, command).state.players[0].reserve, 0, type);
+  }
   const creatureGame = state(); creatureGame.players[0].energy = 0; creatureGame.players[0].reserve = 2; creatureGame.players[0].hand.push({ id: "unit", type: "Criatura", cost: 2, atk: 2, hp: 2, tags: [], abilities: [] });
   assert.throws(() => executeCommand(creatureGame, { type: "playCard", owner: 0, cardId: "unit", slot: 0 }), /not-enough-energy/);
 });
@@ -377,6 +382,28 @@ test("First Act duplicators skip the extra instance when it has no valid target"
   assert.equal(result.players[1].board.length, 0);
 });
 
+test("Nada se cria selects a creature and replays its First Act through authoritative decisions", () => {
+  const game = state();
+  const source = compileCard({ id: "p183", page: 183, name: "Recruta Apaixonado", type: "Criatura", text: "", tags: ["Primeiro Ato"], subtypes: ["Recruta"] });
+  game.players[0].board.push({ uid: "invalid-source", name: "Sem alvo inimigo", type: "Criatura", slot: 2, abilities: [{ id: "enemy-only", trigger: "onEnter", effects: [{ type: "damage", amount: 1, target: "enemyCreature" }] }] }, { ...source, uid: "source", slot: 0, modifiers: [] }, { uid: "target", name: "Alvo", type: "Criatura", slot: 1, hp: 2, tags: [], modifiers: [], abilities: [] });
+  game.players[0].hand.push(compileCard({ id: "p151", page: 151, name: "Nada se cria, tudo se copia", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  const chooseSource = executeCommand(game, { type: "playCard", owner: 0, cardId: "p151" }).state;
+  assert.equal(chooseSource.pendingDecision.kind, "replay-ability");
+  assert.equal(chooseSource.pendingDecision.effect.choices.length, 1);
+  assert.match(chooseSource.pendingDecision.effect.choices[0][0].name, /Recruta Apaixonado/);
+  const chooseTarget = executeCommand(chooseSource, { type: "resolveDecision", owner: 0, selectedCardId: "source" }).state;
+  assert.equal(chooseTarget.pendingDecision.kind, "targets");
+  const resolved = executeCommand(chooseTarget, { type: "resolveDecision", owner: 0, targetIds: ["target"] }).state;
+  assert.equal(resolved.players[0].board.find((unit) => unit.uid === "target").modifiers[0].health, 2);
+});
+
+test("Nada se cria rejects play when no First Act can currently resolve", () => {
+  const game = state();
+  game.players[0].board.push({ uid: "source", type: "Criatura", abilities: [{ id: "enemy-only", trigger: "onEnter", effects: [{ type: "damage", amount: 1, target: "enemyCreature" }] }] });
+  game.players[0].hand.push(compileCard({ id: "p151", page: 151, name: "Nada se cria, tudo se copia", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  assert.throws(() => executeCommand(game, { type: "playCard", owner: 0, cardId: "p151" }), /play-condition-not-met/);
+});
+
 test("Chefe da Guarda adds exactly one First Act instance for entering Recruits", () => {
   const game = state();
   game.players[0].life = 20;
@@ -413,6 +440,17 @@ test("Defensor X can block X separate attackers before becoming unavailable", ()
   assert.equal(second.players[1].board[0].defenseUses, 2);
   assert.equal(second.players[1].board[0].exhausted, true);
   assert.throws(() => executeCommand(second, { type: "attack", owner: 0, attackerId: "a3", defenderId: "wall" }), /invalid-defender/);
+});
+
+test("a Defensor X used below its capacity is still turned when combat ends", () => {
+  const game = state(); game.phase = "combate";
+  game.players[0].board.push({ uid: "attacker", atk: 1, hp: 3, tags: [], exhausted: false, summoning: false, modifiers: [] });
+  game.players[1].board.push({ uid: "wall", atk: 0, hp: 5, tags: ["Defensor 3"], exhausted: false, defenseUses: 0, modifiers: [] });
+  const defended = executeCommand(game, { type: "attack", owner: 0, attackerId: "attacker", defenderId: "wall" }).state;
+  assert.equal(defended.players[1].board[0].exhausted, false);
+  const ended = executeCommand(defended, { type: "advancePhase" }).state;
+  assert.equal(ended.phase, "fim");
+  assert.equal(ended.players[1].board[0].exhausted, true);
 });
 
 test("Indomável prevents leaving combat while an eligible creature has not attacked", () => {
@@ -624,7 +662,7 @@ test("migration coverage is explicit and simple cards use the command engine", a
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 217); assert.equal(pending.length, 91);
+  assert.equal(migrated.length, 218); assert.equal(pending.length, 90);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
@@ -712,7 +750,7 @@ test("multiplayer API exposes the authoritative command path", async () => {
 });
 
 test("game client routes migrated cards through the command engine", async () => {
-  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const [page, css] = await Promise.all([readFile(new URL("../app/page.tsx", import.meta.url), "utf8"), readFile(new URL("../app/lab.css", import.meta.url), "utf8")]);
   assert.match(page, /canExecuteCard\(snapshot\)/);
   assert.match(page, /roomAction\("command"/);
   assert.match(page, /executeCommand\(current,\{\.\.\.command,owner\},\{priority:true\}\)/);
@@ -727,4 +765,10 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(page, /canChooseAllTargets/);
   assert.match(page, /setResponseWindow\(next\.pendingResponse\?\?null\)/);
   assert.match(page, /passPriorityWindow/);
+  assert.match(page, /heroEvolutionProgress\(p\)/);
+  assert.match(page, /effectiveCreatureName/);
+  assert.match(page, /game\.active!==0/);
+  assert.match(page, /modifier\.duration!=="turn"/);
+  assert.match(css, /auxiliary-slot \.card-tooltip/);
+  assert.match(css, /z-index:9020!important/);
 });
