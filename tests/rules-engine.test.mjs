@@ -333,6 +333,38 @@ test("Mask of the Pact is the independent artifact exception", () => {
   assert.equal(result.state.players[0].support[0].attachedTo, undefined);
 });
 
+test("Defensor X can block X separate attackers before becoming unavailable", () => {
+  const game = state(); game.phase = "combate";
+  game.players[0].board.push(
+    { uid: "a1", atk: 1, hp: 3, tags: [], exhausted: false, summoning: false, modifiers: [] },
+    { uid: "a2", atk: 1, hp: 3, tags: [], exhausted: false, summoning: false, modifiers: [] },
+    { uid: "a3", atk: 1, hp: 3, tags: [], exhausted: false, summoning: false, modifiers: [] },
+  );
+  game.players[1].board.push({ uid: "wall", atk: 0, hp: 5, tags: ["Defensor 2"], exhausted: false, defenseUses: 0, modifiers: [] });
+  const first = executeCommand(game, { type: "attack", owner: 0, attackerId: "a1", defenderId: "wall" }).state;
+  assert.equal(first.players[1].board[0].exhausted, false);
+  const second = executeCommand(first, { type: "attack", owner: 0, attackerId: "a2", defenderId: "wall" }).state;
+  assert.equal(second.players[1].board[0].defenseUses, 2);
+  assert.equal(second.players[1].board[0].exhausted, true);
+  assert.throws(() => executeCommand(second, { type: "attack", owner: 0, attackerId: "a3", defenderId: "wall" }), /invalid-defender/);
+});
+
+test("Indomável prevents leaving combat while an eligible creature has not attacked", () => {
+  const game = state(); game.phase = "combate";
+  game.players[0].board.push({ uid: "must", atk: 1, hp: 2, tags: ["Indomável"], exhausted: false, summoning: false, modifiers: [] });
+  assert.throws(() => executeCommand(game, { type: "advancePhase" }), /indomitable-must-attack/);
+  const attacked = executeCommand(game, { type: "attack", owner: 0, attackerId: "must" }).state;
+  assert.equal(executeCommand(attacked, { type: "advancePhase" }).state.phase, "fim");
+});
+
+test("tap costs cannot be paid in the same turn a constant entered", () => {
+  const game = state();
+  game.players[0].hand.push({ id: "relic", type: "Encanto", cost: 0, tags: [], abilities: [{ id: "tap", trigger: "activated", usageLimit: { count: 1, period: "turn" }, costs: [{ type: "tap" }], effects: [{ type: "draw", amount: 0 }] }] });
+  const played = executeCommand(game, { type: "playCard", owner: 0, cardId: "relic", slot: 0 }).state;
+  const relic = played.players[0].support[0];
+  assert.throws(() => executeCommand(played, { type: "activate", owner: 0, sourceId: relic.uid, abilityId: "tap" }), /cannot-tap/);
+});
+
 test("migration coverage is explicit and simple cards use the command engine", async () => {
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
