@@ -324,6 +324,18 @@ test("actions open a two-pass response window", () => {
   assert.equal(result.state.pendingResponse.responder, 1);
 });
 
+test("priority defers the original action until both players pass", () => {
+  const game = state(); game.players[0].hand.push({ id: "slow", type: "Feitiço", cost: 0, tags: [], abilities: [] });
+  let result = executeCommand(game, { type: "playCard", owner: 0, cardId: "slow" }, { priority: true });
+  assert.equal(result.state.players[0].hand.length, 1);
+  assert.equal(result.state.pendingAction.type, "playCard");
+  result = executeCommand(result.state, { type: "passPriority", owner: 1 }, { priority: true });
+  assert.equal(result.state.pendingResponse.responder, 0);
+  result = executeCommand(result.state, { type: "passPriority", owner: 0 }, { priority: true });
+  assert.equal(result.state.players[0].hand.length, 0);
+  assert.equal(result.state.pendingAction, undefined);
+});
+
 test("multiplayer API exposes the authoritative command path", async () => {
   const [route, machine] = await Promise.all([
     readFile(new URL("../app/api/rooms/[id]/route.ts", import.meta.url), "utf8"),
