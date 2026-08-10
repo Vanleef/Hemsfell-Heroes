@@ -114,7 +114,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 90);
+  assert.equal(explicitRuleIds.length, 93);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -750,7 +750,7 @@ test("migration coverage is explicit and simple cards use the command engine", a
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 220); assert.equal(pending.length, 88);
+  assert.equal(migrated.length, 224); assert.equal(pending.length, 84);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
@@ -882,4 +882,53 @@ test("Fatiadora Prateada exempts Recruta Exibido or Iludido and still grants Atr
   ordinary.players[0].support.push({ uid: "other-slicer", name: "Fatiadora Prateada", type: "Artefato", page: 197, attachedTo: "other", text: artifactText });
   defaultEffectHandlers.attachedConditionalStats(ordinary, effects[0], { owner: 0, sourceId: "other-slicer" });
   assert.equal(ordinary.players[0].board[0].modifiers[0].attack, -2);
+});
+
+test("Saral lets its controller choose a deck and resolves Investigar without exposing the rest", () => {
+  const game = state();
+  game.players[0].hand.push(compileCard({ id: "p257", page: 257, name: "Saral", type: "Criatura", cost: 1, atk: 1, hp: 1, text: "", tags: [] }));
+  game.players[1].deck.push({ id: "revealed", name: "Topo", type: "Feitiço" }, { id: "archived", name: "Fundo", type: "Criatura" }, { id: "third", name: "Terceira", type: "Criatura" });
+  const entered = executeCommand(game, { type: "playCard", owner: 0, cardId: "p257", slot: 0, skipPriority: true }).state;
+  assert.equal(entered.pendingDecision.kind, "choice");
+  assert.equal(entered.pendingDecision.effect.choices.length, 2);
+  const investigated = executeCommand(entered, { type: "resolveDecision", owner: 0, choiceIndex: 1 }).state;
+  assert.equal(investigated.players[1].deck[0].id, "revealed");
+  assert.equal(investigated.players[1].deck.at(-1).id, "archived");
+  assert.ok(investigated.rulesEvents?.some((event) => event.type === "onCardRevealed") || investigated.events > entered.events);
+});
+
+test("Dança Macabra grants Vampiro only for the turn and prevents combat with Vampiros", () => {
+  const game = state();
+  game.players[0].hand.push(compileCard({ id: "p142", page: 142, name: "Dança Macabra", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  game.players[0].board.push({ uid: "dancer", name: "Dançarino", type: "Criatura", atk: 2, hp: 4, subtypes: [], tags: [], modifiers: [], exhausted: false, summoning: false, attackedThisTurn: false });
+  game.players[1].board.push({ uid: "vampire", name: "Vampiro", type: "Criatura", atk: 1, hp: 4, subtypes: ["Vampiro"], tags: [], modifiers: [], exhausted: false, summoning: false });
+  let result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p142", targetIds: ["dancer"], skipPriority: true }).state;
+  assert.equal(hasSubtype(result.players[0].board[0], "Vampiro"), true);
+  result.phase = "combate";
+  assert.throws(() => executeCommand(result, { type: "attack", owner: 0, attackerId: "dancer", defenderId: "vampire", skipPriority: true }), /invalid-defender/);
+});
+
+test("Frenesi grants a second attack and destroys the selected creature at turn end", () => {
+  const game = state();
+  game.players[0].hand.push(compileCard({ id: "p157", page: 157, name: "Frenesi", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  game.players[0].board.push({ uid: "frenzied", name: "Atacante", type: "Criatura", atk: 1, hp: 5, tags: [], modifiers: [], exhausted: false, summoning: false, attackedThisTurn: false });
+  game.players[1].life = 30;
+  let result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p157", targetIds: ["frenzied"], skipPriority: true }).state;
+  result.phase = "combate";
+  result = executeCommand(result, { type: "attack", owner: 0, attackerId: "frenzied", skipPriority: true }).state;
+  assert.equal(result.players[0].board[0].exhausted, false);
+  result = executeCommand(result, { type: "attack", owner: 0, attackerId: "frenzied", skipPriority: true }).state;
+  assert.equal(result.players[0].board[0].attackedThisTurn, true);
+  result = executeCommand(result, { type: "advancePhase", owner: 0, skipPriority: true }).state;
+  assert.equal(result.players[0].board.some((card) => card.uid === "frenzied"), false);
+});
+
+test("Café Especial exposes four executable choices", () => {
+  const game = state();
+  game.players[0].life = 12;
+  game.players[0].hand.push(compileCard({ id: "p231", page: 231, name: "Café Especial", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  let result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p231", skipPriority: true }).state;
+  assert.equal(result.pendingDecision.effect.choices.length, 4);
+  result = executeCommand(result, { type: "resolveDecision", owner: 0, choiceIndex: 1 }).state;
+  assert.equal(result.players[0].life, 22);
 });
