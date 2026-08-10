@@ -16,6 +16,7 @@ test("triggered costs do not become manually activated abilities", () => {
   const result = compileCardText("Último Suspiro: Sacrifique uma criatura. Compre 1 carta.");
   assert.equal(result.abilities[0].trigger, "onDestroyed");
   assert.equal(result.abilities[0].costs.length, 0);
+  assert.ok(result.abilities[0].effects.some((effect) => effect.type === "sacrifice"));
 });
 
 test("manual tap, marker, sacrifice, energy and life costs are explicit", () => {
