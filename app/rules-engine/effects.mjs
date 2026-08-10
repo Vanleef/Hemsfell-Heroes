@@ -1,3 +1,5 @@
+import { hasSubtype } from "./subtypes.mjs";
+
 export class RulesViolation extends Error {
   constructor(code, message = code) { super(message); this.name = "RulesViolation"; this.code = code; }
 }
@@ -11,17 +13,34 @@ const setMarker = (card, marker, amount) => { if (typeof card.markers === "numbe
 const queueEvent = (state, event) => { state.rulesEvents ||= []; state.rulesEvents.push(event); };
 const selectedIds = (context) => context.targetIds?.length ? context.targetIds : context.targetId ? [context.targetId] : [];
 const queueDecision = (state, effect, context, kind = effect.type) => { if (state.pendingDecision) throw new RulesViolation("decision-pending"); state.pendingDecision = { kind, effect, context, owner: context.owner }; };
+const keywordsOf = (card) => card?.suffocated ? [] : [...(card?.tags || []), ...(card?.temporaryTags || []), ...(card?.grantedKeywords || [])];
+const hasKeyword = (card, pattern) => keywordsOf(card).some((tag) => pattern.test(String(tag)));
+const sendDetachedArtifacts = (entry, creature) => {
+  const attachments = (entry.support || []).filter((item) => item.attachedTo === creature.uid);
+  entry.support = (entry.support || []).filter((item) => item.attachedTo !== creature.uid);
+  for (const attachment of attachments) {
+    if (attachment.generatedImage || attachment.imageCard) continue;
+    const destination = attachment.page === 154 ? entry.obscuro : entry.grave;
+    destination.push({ ...attachment, deathCause: "detached", lastZone: "support" });
+  }
+};
 const removeFromZones = (state, id) => {
-  for (const entry of state.players) for (const zone of ["board", "support"]) {
-    const index = (entry[zone] || []).findIndex((card) => card.uid === id || card.id === id);
-    if (index >= 0) {
+  for (const entry of state.players) {
+    for (const zone of ["board", "support"]) {
+      const index = (entry[zone] || []).findIndex((card) => card.uid === id || card.id === id);
+      if (index < 0) continue;
       const card = entry[zone].splice(index, 1)[0];
-      if (zone === "board") {
-        const attachments = (entry.support || []).filter((item) => item.attachedTo === card.uid);
-        entry.support = (entry.support || []).filter((item) => item.attachedTo !== card.uid);
-        for (const attachment of attachments) entry.grave.push({ ...attachment, deathCause: "detached" });
-      }
-      const owner = state.players.indexOf(entry); queueEvent(state, { type: "onPermanentLeaves", owner, sourceId: card.uid || card.id, card, zone }); return { card, owner, zone };
+      if (zone === "board") sendDetachedArtifacts(entry, card);
+      const owner = state.players.indexOf(entry);
+      queueEvent(state, { type: "onPermanentLeaves", owner, sourceId: card.uid || card.id, card, zone });
+      return { card, owner, zone };
+    }
+    const terrain = entry.terrain;
+    if (terrain && (terrain.uid === id || terrain.id === id)) {
+      entry.terrain = null;
+      const owner = state.players.indexOf(entry);
+      queueEvent(state, { type: "onPermanentLeaves", owner, sourceId: terrain.uid || terrain.id, card: terrain, zone: "terrain" });
+      return { card: terrain, owner, zone: "terrain" };
     }
   }
   return null;
@@ -46,7 +65,7 @@ export const defaultEffectHandlers = Object.freeze({
       if (owner != null) { const amount = Math.max(0, effect.amount ?? 0); player(state, owner).life -= amount; queueEvent(state, { type: "onPlayerDamaged", owner, sourceOwner: context.owner, sourceId: context.sourceId, amount }); continue; }
       const target = findUnit(state, targetId); if (!target) throw new RulesViolation("target-required");
       const shield = (target.damageShields || []).find((item) => item.uses > 0); if (shield) { shield.uses--; target.damageShields = target.damageShields.filter((item) => item.uses > 0); continue; }
-      const robust = [...(target.tags || []), ...(target.grantedKeywords || [])].some((tag) => /robusto/i.test(String(tag))) ? 1 : 0;
+      const robust = hasKeyword(target, /robusto/i) ? 1 : 0;
       const amount = Math.max(0, (effect.amount ?? 0) + (effect.additionalIfExhausted && target.exhausted ? effect.additionalIfExhausted : 0) - robust); target.damage = (target.damage || 0) + amount; const source = findUnit(state, context.sourceId); const sourceKeywords = source?.suffocated ? [] : [...(source?.tags || []), ...(source?.grantedKeywords || [])]; if (amount > 0 && sourceKeywords.some((tag) => /toque da morte/i.test(String(tag)))) target.damage = Math.max(target.damage, (target.hp || 1) + (target.modifiers || []).reduce((sum, item) => sum + (item.health || 0), 0)); if (amount > 0 && sourceKeywords.some((tag) => /roubo de vida/i.test(String(tag)))) { const entry = player(state, context.owner); entry.life = Math.min(entry.maxLife ?? 30, entry.life + amount); } queueEvent(state, { type: "onDamageTaken", targetId, sourceOwner: context.owner, sourceId: context.sourceId, amount });
     }
   },
@@ -67,7 +86,15 @@ export const defaultEffectHandlers = Object.freeze({
   },
   destroy(state, effect, context) {
     for (const id of effect.target === "all" ? allUnits(state).map((unit) => unit.uid || unit.id) : context.targetIds || []) {
-      const removed = removeFromZones(state, id); if (removed) { if (!removed.card.generatedImage && !removed.card.imageCard) { player(state, removed.owner).grave.push({ ...removed.card, lastZone: removed.zone, deathCause: "destroy" }); queueEvent(state, { type: "onDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id, sourceId: removed.card.uid || removed.card.id, deathCause: "destroy" }); } queueEvent(state, { type: "onCreatureDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id }); }
+      const target = findUnit(state, id);
+      if (!target || hasKeyword(target, /indestrut[ií]vel/i)) continue;
+      const removed = removeFromZones(state, id);
+      if (!removed) continue;
+      if (!removed.card.generatedImage && !removed.card.imageCard) {
+        player(state, removed.owner).grave.push({ ...removed.card, lastZone: removed.zone, deathCause: "destroy" });
+        queueEvent(state, { type: "onDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id, sourceId: removed.card.uid || removed.card.id, deathCause: "destroy" });
+      }
+      if (removed.card.type === "Criatura") queueEvent(state, { type: "onCreatureDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id });
     }
   },
   sacrifice(state, effect, context) {
@@ -94,9 +121,38 @@ export const defaultEffectHandlers = Object.freeze({
   doubleMarkers(state) { for (const target of allUnits(state)) { if (typeof target.markers === "number") target.markers *= 2; else for (const key of Object.keys(target.markers || {})) target.markers[key] *= 2; } },
   halveMaxEnergy(state, effect, context) { const entry = player(state, context.owner); entry.maxEnergy = Math.ceil(entry.maxEnergy / 2); entry.energy = Math.min(entry.energy, entry.maxEnergy); },
   retrieve(state, effect, context) { const entry = player(state, context.owner); const zone = entry[effect.zone] || []; const index = zone.findIndex((card) => (!effect.name || card.name === effect.name) && (!context.selectedCardId || card.id === context.selectedCardId)); if (index < 0) { if (!effect.optional) throw new RulesViolation("card-choice-required"); return; } entry[effect.destination].push(zone.splice(index, 1)[0]); },
-  createImage(state, effect, context) { const entry = effect.destination === "activePlayerField" ? player(state, state.active) : player(state, context.owner); const catalog = [...(entry.extraDeck || []), ...(state.cardCatalog || [])]; const base = catalog.find((card) => card.name === effect.name) || { id: `image:${effect.name}`, name: effect.name, type: "Criatura", atk: 1, hp: 1, tags: [] }; const copy = { ...structuredClone(base), uid: `${base.id}-image-${state.round}-${Math.random().toString(36).slice(2)}`, generatedImage: true, imageCard: true, summoning: false, exhausted: false, damage: 0, slot: context.slot ?? entry.board.length, abilities: base.abilities || [] }; if (effect.destination === "hand") entry.hand.push(copy); else if (entry.board.length < 5) entry.board.push(copy); else if (effect.mandatory) queueDecision(state, effect, context, "replace-for-mandatory-image"); else throw new RulesViolation("field-full"); },
-  resurrect(state, effect, context) { const entry = player(state, context.owner); const index = entry.grave.findIndex((card) => card.type === effect.cardType && card.cost === effect.cost && (!context.selectedCardId || card.id === context.selectedCardId)); if (index < 0) { if (!effect.optional) throw new RulesViolation("card-choice-required"); return; } const card = entry.grave.splice(index, 1)[0]; entry.board.push({ ...card, uid: `${card.id}-${state.round}-resurrected`, damage: 0, exhausted: false, summoning: true, slot: context.slot ?? entry.board.length }); },
-  returnSelfToField(state, effect, context) { const entry = player(state, context.owner); const index = entry.grave.findIndex((card) => card.uid === context.sourceId || card.id === context.sourceId); if (index >= 0 && entry.board.length < 5) entry.board.push({ ...entry.grave.splice(index, 1)[0], damage: 0, exhausted: false, summoning: false }); },
+  createImage(state, effect, context) {
+    const owner = effect.destination === "activePlayerField" ? state.active : context.owner;
+    const entry = player(state, owner);
+    const catalog = [...(entry.extraDeck || []), ...(state.cardCatalog || [])];
+    const base = catalog.find((card) => card.name === effect.name) || { id: `image:${effect.name}`, name: effect.name, type: "Criatura", atk: 1, hp: 1, tags: [] };
+    state.nextGeneratedId = (state.nextGeneratedId || 0) + 1;
+    const copy = { ...structuredClone(base), uid: `${base.id}-image-${state.round}-${state.nextGeneratedId}`, generatedImage: true, imageCard: true, enteredRound: state.round, attackedThisTurn: false, summoning: false, exhausted: false, damage: 0, slot: context.slot ?? 0, abilities: base.abilities || [] };
+    if (effect.destination === "hand") { entry.hand.push(copy); return; }
+    if (base.type === "Terreno") {
+      if (entry.terrain && !effect.mandatory) throw new RulesViolation("terrain-zone-full");
+      if (entry.terrain && !entry.terrain.generatedImage && !entry.terrain.imageCard) entry.grave.push({ ...entry.terrain, lastZone: "terrain" });
+      entry.terrain = copy;
+    } else if (base.type === "Criatura") {
+      const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !entry.board.some((unit) => unit.slot === slot));
+      if (openSlot == null) { if (effect.mandatory) { queueDecision(state, effect, { ...context, owner }, "replace-for-mandatory-image"); return; } throw new RulesViolation("field-full"); }
+      copy.slot = context.slot != null && !entry.board.some((unit) => unit.slot === context.slot) ? context.slot : openSlot;
+      entry.board.push(copy);
+    } else {
+      const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !entry.support.some((unit) => unit.slot === slot));
+      if (openSlot == null) throw new RulesViolation("support-zone-full");
+      if (base.type === "Artefato" && base.page !== 304) {
+        const host = entry.board.find((unit) => unit.uid === context.attachedTo);
+        if (!host) throw new RulesViolation("artifact-target-required");
+        copy.attachedTo = host.uid; copy.slot = host.slot;
+      } else copy.slot = context.slot != null && !entry.support.some((unit) => unit.slot === context.slot) ? context.slot : openSlot;
+      entry.support.push(copy);
+    }
+    queueEvent(state, { type: "onEnter", owner, sourceId: copy.uid, cardId: copy.uid, card: copy });
+    if (base.type === "Criatura") queueEvent(state, { type: "onCreatureEnter", owner, sourceId: copy.uid, cardId: copy.uid, card: copy });
+  },
+  resurrect(state, effect, context) { const entry = player(state, context.owner); const index = entry.grave.findIndex((card) => card.type === effect.cardType && card.cost === effect.cost && (!context.selectedCardId || card.id === context.selectedCardId)); if (index < 0) { if (!effect.optional) throw new RulesViolation("card-choice-required"); return; } const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !entry.board.some((unit) => unit.slot === slot)); if (openSlot == null) throw new RulesViolation("creature-zone-full"); const card = entry.grave.splice(index, 1)[0]; const copy = { ...card, uid: `${card.id}-${state.round}-resurrected`, enteredRound: state.round, attackedThisTurn: false, damage: 0, exhausted: false, summoning: true, slot: context.slot != null && !entry.board.some((unit) => unit.slot === context.slot) ? context.slot : openSlot }; entry.board.push(copy); queueEvent(state, { type: "onEnter", owner: context.owner, sourceId: copy.uid, cardId: copy.uid, card: copy }); queueEvent(state, { type: "onCreatureEnter", owner: context.owner, sourceId: copy.uid, cardId: copy.uid, card: copy }); },
+  returnSelfToField(state, effect, context) { const entry = player(state, context.owner); const index = entry.grave.findIndex((card) => card.uid === context.sourceId || card.id === context.sourceId); const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !entry.board.some((unit) => unit.slot === slot)); if (index >= 0 && openSlot != null) { const copy = { ...entry.grave.splice(index, 1)[0], enteredRound: state.round, attackedThisTurn: false, damage: 0, exhausted: false, summoning: false, slot: openSlot }; entry.board.push(copy); queueEvent(state, { type: "onEnter", owner: context.owner, sourceId: copy.uid || copy.id, cardId: copy.uid || copy.id, card: copy }); queueEvent(state, { type: "onCreatureEnter", owner: context.owner, sourceId: copy.uid || copy.id, cardId: copy.uid || copy.id, card: copy }); } },
   returnSelfToHand(state, effect, context) { const removed = removeFromZones(state, context.sourceId); if (removed) player(state, removed.owner).hand.push(removed.card); },
   moveSelf(state, effect, context) { const removed = removeFromZones(state, context.sourceId); if (!removed) return; const entry = player(state, removed.owner); if (effect.destination === "obscuro") entry.obscuro.push(removed.card); else if (effect.destination === "grave" && !removed.card.generatedImage) entry.grave.push(removed.card); },
   moveTopToBottom(state, effect, context) { const owners = effect.target === "bothPlayers" ? [0, 1] : [context.owner]; for (const owner of owners) { const entry = player(state, owner); const card = entry.deck.shift(); if (card) entry.deck.push(card); } },
@@ -127,7 +183,7 @@ export const defaultEffectHandlers = Object.freeze({
   optionalDrawFrom(state, effect, context) { queueDecision(state, effect, context, "draw-position"); },
   peekTop(state, effect, context) { state.peekedCards = [0, 1].map((owner) => player(state, owner).deck[0]?.id || null); },
   copyStrongestAllyStats(state, effect, context) { const entry = player(state, context.owner); const source = findUnit(state, context.sourceId); const strongest = entry.board.filter((unit) => unit !== source).sort((a, b) => (b.atk || 0) - (a.atk || 0))[0]; if (source && strongest) { source.dynamicStats = { sourceId: strongest.uid, bothFromAttack: true }; } },
-  snapshotStats(state, effect, context) { const entry = player(state, context.owner); const source = findUnit(state, context.sourceId); const count = entry.board.filter((unit) => unit !== source && (unit.tags || []).includes(effect.attackPerOtherSubtype.subtype)).length; if (source) defaultEffectHandlers.modifyStats(state, { type: "modifyStats", attack: count * effect.attackPerOtherSubtype.amount, duration: "permanent" }, { ...context, targetIds: [source.uid] }); },
+  snapshotStats(state, effect, context) { const entry = player(state, context.owner); const source = findUnit(state, context.sourceId); const count = entry.board.filter((unit) => unit !== source && hasSubtype(unit, effect.attackPerOtherSubtype.subtype)).length; if (source) defaultEffectHandlers.modifyStats(state, { type: "modifyStats", attack: count * effect.attackPerOtherSubtype.amount, duration: "permanent" }, { ...context, targetIds: [source.uid] }); },
   search(state, effect, context) { queueDecision(state, effect, context, "search"); },
   replayAbility(state, effect, context) { queueDecision(state, effect, context, "replay-ability"); },
   recruitFirstActOnLeave(state, effect, context) { const source = findUnit(state, context.sourceId); if (source) { source.staticModifiers ||= []; source.staticModifiers.push({ type: "recruitFirstActOnLeave" }); } },
