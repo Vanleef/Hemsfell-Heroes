@@ -120,12 +120,12 @@ export function executeCommand(inputState, command, options = {}) {
         }
       } else if (options.priority && ["attack", "activate"].includes(item.command.type) && !item.command.skipPriority && !item.command.hasPriority) {
         if (state.pendingAction) throw new RulesViolation("priority-window-open");
-        state.pendingAction = { ...item.command }; state.pendingResponse = { responder: 1 - item.command.owner, actor: item.command.owner, action: item.command.type, passes: 0 }; continue;
+        state.pendingAction = { ...item.command }; state.pendingResponse = { responder: 1 - item.command.owner, actor: item.command.owner, action: item.command.type === "playCard" ? (state.players[item.command.owner].hand.find((card) => card.id === item.command.cardId)?.name || item.command.cardId) : item.command.type, passes: 0 }; continue;
       } else if (item.command.type === "playCard") {
         if (options.priority && !item.command.skipPriority && !item.command.hasPriority) {
           if (state.pendingAction) throw new RulesViolation("priority-window-open");
           state.pendingAction = { ...item.command };
-          state.pendingResponse = { responder: 1 - item.command.owner, actor: item.command.owner, action: item.command.cardId, passes: 0 };
+          state.pendingResponse = { responder: 1 - item.command.owner, actor: item.command.owner, action: state.players[item.command.owner].hand.find((card) => card.id === item.command.cardId)?.name || item.command.cardId, passes: 0 };
           continue;
         }
         if (state.pendingAction && item.command.owner !== state.pendingResponse?.responder) throw new RulesViolation("not-your-priority");
