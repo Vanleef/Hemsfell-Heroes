@@ -62,12 +62,21 @@ VALUES (${quote(`${hero.id}-starter`)}, ${quote(setId)}, ${quote(hero.id)}, ${qu
 ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, hero_id = EXCLUDED.hero_id, is_starter = EXCLUDED.is_starter, updated_at = now();`
 );
 
-const deckCardRows = heroes.flatMap((hero) => [...deckCounts(hero)].map(([page, quantity]) => {
-  const card = byPage.get(page);
-  return `INSERT INTO public.deck_cards (deck_id, card_id, quantity, zone)
-VALUES (${quote(`${hero.id}-starter`)}, ${quote(cardId(card))}, ${quantity}, 'main')
+const deckCardRows = heroes.flatMap((hero) => {
+  const deckId = `${hero.id}-starter`;
+  const mainRows = [...deckCounts(hero)].map(([page, quantity]) => {
+    const card = byPage.get(page);
+    return `INSERT INTO public.deck_cards (deck_id, card_id, quantity, zone)
+VALUES (${quote(deckId)}, ${quote(cardId(card))}, ${quantity}, 'main')
 ON CONFLICT (deck_id, card_id, zone) DO UPDATE SET quantity = EXCLUDED.quantity;`;
-}));
+  });
+  const extraRows = cards
+    .filter((card) => card.page >= hero.deckRange.from && card.page <= hero.deckRange.to && card.imageCard)
+    .map((card) => `INSERT INTO public.deck_cards (deck_id, card_id, quantity, zone)
+VALUES (${quote(deckId)}, ${quote(cardId(card))}, 1, 'extra')
+ON CONFLICT (deck_id, card_id, zone) DO UPDATE SET quantity = EXCLUDED.quantity;`);
+  return [...mainRows, ...extraRows];
+});
 
 const sql = [
   "-- Generated from content/*.json and app/cards.generated.json. Do not edit this generated file.",
