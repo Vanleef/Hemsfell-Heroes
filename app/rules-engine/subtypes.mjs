@@ -18,7 +18,8 @@ for (const [subtype, pages] of Object.entries(subtypePages)) for (const page of 
 
 export function subtypesFor(card) {
   const explicit = Array.isArray(card?.subtypes) ? card.subtypes : [];
-  return [...new Set([...explicit, ...(pageSubtypes.get(Number(card?.page)) || [])])];
+  const temporary = Array.isArray(card?.temporarySubtypes) ? card.temporarySubtypes : [];
+  return [...new Set([...explicit, ...temporary, ...(pageSubtypes.get(Number(card?.page)) || [])])];
 }
 
 export function hasSubtype(card, subtype) {
