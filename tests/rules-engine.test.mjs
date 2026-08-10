@@ -73,7 +73,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all 65 clarified clauses are represented by 64 explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 64);
+  assert.equal(explicitRuleIds.length, 65);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -108,6 +108,22 @@ test("unrestricted damage can target heroes", () => {
   const game = state(); game.players[0].hand.push({ id: "spell", type: "Feitiço", cost: 0, abilities: [{ id: "hit", trigger: "onPlay", effects: [{ type: "damage", amount: 3, target: "anyCharacter" }] }] });
   const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "spell", targetIds: ["enemy-hero"] });
   assert.equal(result.state.players[1].life, 27);
+});
+
+test("keyword effects register the printed keyword instead of undefined", () => {
+  const game = state(); game.players[0].board.push({ uid: "unit", id: "unit", tags: [], abilities: [] });
+  defaultEffectHandlers.keyword(game, { type: "keyword", raw: "Voar" }, { owner: 0, sourceId: "unit" });
+  assert.deepEqual(game.players[0].board[0].tags, ["Voar"]);
+});
+
+test("Terremoto damages creatures based on enemy creature count and ignores support cards", () => {
+  const earthquake = compileCard({ id: "p58", page: 58, type: "Feitiço", cost: 0, text: "Terremoto" });
+  assert.equal(earthquake.abilities[0].effects[0].amountPerEnemyCreature, 1);
+  const game = state(); game.players[0].hand.push(earthquake); game.players[0].board.push({ uid: "ally", hp: 5, damage: 0 }); game.players[0].support.push({ uid: "support", hp: 5, damage: 0 }); game.players[1].board.push({ uid: "enemy-1", hp: 5, damage: 0 }, { uid: "enemy-2", hp: 5, damage: 0 });
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p58" });
+  assert.equal(result.state.players[0].board[0].damage, 2);
+  assert.equal(result.state.players[1].board[0].damage, 2);
+  assert.equal(result.state.players[0].support[0].damage, 0);
 });
 
 test("Alerta preserves the attacker ready and Voar requires a flying blocker", () => {

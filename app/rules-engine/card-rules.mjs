@@ -18,6 +18,7 @@ export const explicitCardRules = Object.freeze({
   p42: [ability("onPlay", [effect("draw", { amount: 1 }), effect("modifySelfCost", { amount: -1, zone: "hand" })], [], { condition: { cardsPlayedBeforeThisAtLeast: 1 } })],
   p46: [ability("onPlay", [effect("remainUntilTurnEnd"), effect("trackCardsPlayedAfterSelf")]), ability("onTurnEnd", [effect("countedChoice", { counter: "cardsPlayedAfterSelf", branches: [{ min: 1, max: 4, effects: [effect("damageHeroPerCount", { target: "controller", amount: 1 })] }, { min: 5, max: 5, effects: [effect("createImage", { name: "BUCHA DE CANHÃO", destination: "field" })] }, { min: 6, max: 6, effects: [effect("createImage", { name: "TRAMBUCO DE PIPOCO", destination: "field" })] }, { min: 7, effects: [effect("createImage", { name: "CARCAÇA CHUMBADA DE TANQUE", destination: "field" })] }] }), effect("moveSelf", { destination: "grave" })])],
   p59: [ability("static", [effect("costModifier", { selector: { controller: "self", type: "Feitiço", zone: "hand" }, amount: -1, during: "controllerTurn" })])],
+  p58: [ability("onPlay", [effect("damageAll", { amount: 0, amountPerEnemyCreature: 1, target: "allCreatures" })])],
   p71: [ability("onSpellCast", [effect("gainEnergy", { amount: 1, destination: "reserve" })], [], { condition: { firstEachTurn: true, spellElement: "Ar" } })],
   p72: [ability("onSpellCast", [effect("heal", { amount: 3, target: "controllerHero" })], [], { condition: { firstEachTurn: true, spellElement: "Água" } })],
   p84: { ignored: true, reason: "removed-from-game" },

@@ -51,8 +51,9 @@ export const defaultEffectHandlers = Object.freeze({
     }
   },
   damageAll(state, effect, context) {
-    const targets = allUnits(state).filter((target) => effect.target !== "enemyCreatures" || state.players[1 - context.owner].board.includes(target));
-    for (const target of targets) defaultEffectHandlers.damage(state, { ...effect, type: "damage" }, { ...context, targetIds: [target.uid || target.id] });
+    const targets = state.players.flatMap((entry) => entry.board || []).filter((target) => effect.target !== "enemyCreatures" || state.players[1 - context.owner].board.includes(target));
+    const amount = (effect.amount ?? 0) + (effect.amountPerEnemyCreature ?? 0) * (state.players[1 - context.owner].board?.length ?? 0);
+    for (const target of targets) defaultEffectHandlers.damage(state, { ...effect, type: "damage", amount }, { ...context, targetIds: [target.uid || target.id] });
   },
   damageAdjacent(state, effect, context) {
     const selected = findUnit(state, context.targetIds?.[0]); if (!selected) throw new RulesViolation("target-required");
@@ -83,7 +84,7 @@ export const defaultEffectHandlers = Object.freeze({
   modifyStats(state, effect, context) { const ids = selectedIds(context); const targets = ids.length ? ids.map((id) => findUnit(state, id)) : [findUnit(state, context.sourceId)]; if (targets.some((target) => !target)) throw new RulesViolation("target-required"); for (const target of targets) { target.modifiers ||= []; target.modifiers.push({ attack: effect.attack || 0, health: effect.health || 0, duration: effect.duration || "permanent" }); } },
   gainEnergy(state, effect, context) { const entry = player(state, context.owner); const key = effect.destination === "reserve" ? "reserve" : "energy"; const cap = key === "reserve" ? 3 : entry.maxEnergy; entry[key] = Math.min(cap, entry[key] + (effect.amount ?? 0)); },
   grantKeyword(state, effect, context) { const ids = selectedIds(context); const targets = ids.length ? ids.map((id) => findUnit(state, id)) : [findUnit(state, context.sourceId)]; if (targets.some((target) => !target)) throw new RulesViolation("target-required"); for (const target of targets) { target.grantedKeywords ||= []; target.grantedKeywords.push(effect.raw); } },
-  keyword(state, effect, context) { const target = findUnit(state, context.sourceId); if (target) { target.tags ||= []; if (!target.tags.includes(effect.keyword)) target.tags.push(effect.keyword); } },
+  keyword(state, effect, context) { const target = findUnit(state, context.sourceId); const keyword = effect.keyword || effect.raw; if (target && keyword) { target.tags ||= []; if (!target.tags.includes(keyword)) target.tags.push(keyword); } },
   loseLife(state, effect, context) { const owner = effect.target === "spellControllerHero" ? context.event?.owner ?? context.owner : context.owner; const amount = effect.amount ?? 0; player(state, owner).life -= amount; queueEvent(state, { type: "onLifeLost", owner, sourceOwner: context.owner, sourceId: context.sourceId, amount }); },
   increaseVitality(state, effect, context) { const id = context.targetIds?.[0]; const owner = heroOwner(context, id); if (owner != null) { const entry = player(state, owner); entry.maxLife = (entry.maxLife ?? 30) + (effect.amount ?? 0); entry.life += effect.amount ?? 0; } else defaultEffectHandlers.modifyStats(state, { type: "modifyStats", health: effect.amount, duration: effect.duration }, context); },
   toggleTap(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); target.exhausted = !target.exhausted; },
