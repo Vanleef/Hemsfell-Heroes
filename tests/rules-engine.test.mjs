@@ -55,6 +55,41 @@ test("combat damage is simultaneous and turned creatures cannot defend", () => {
   assert.throws(() => executeCommand(invalid, { type: "attack", owner: 0, attackerId: "a", defenderId: "d" }), /invalid-defender/);
 });
 
+test("combat keywords alter actual rule resolution", () => {
+  const fast = state(); fast.phase = "combate";
+  fast.players[0].board.push({ uid: "fast", atk: 2, hp: 1, tags: ["Veloz"], exhausted: false, summoning: false, modifiers: [] });
+  fast.players[1].board.push({ uid: "slow", atk: 5, hp: 2, tags: [], exhausted: false, summoning: false, modifiers: [] });
+  const fastResult = executeCommand(fast, { type: "attack", owner: 0, attackerId: "fast", defenderId: "slow" });
+  assert.equal(fastResult.state.players[0].board.length, 1);
+  assert.equal(fastResult.state.players[1].board.length, 0);
+
+  const trample = state(); trample.phase = "combate";
+  trample.players[0].board.push({ uid: "tram", atk: 5, hp: 5, tags: ["Atropelar"], exhausted: false, summoning: false, modifiers: [] });
+  trample.players[1].board.push({ uid: "block", atk: 0, hp: 2, tags: ["Robusto"], exhausted: false, summoning: false, modifiers: [] });
+  const trampleResult = executeCommand(trample, { type: "attack", owner: 0, attackerId: "tram", defenderId: "block" });
+  assert.equal(trampleResult.state.players[1].life, 28);
+});
+
+test("Furtivo cannot be blocked and Roubo de Vida heals applied damage", () => {
+  const stealth = state(); stealth.phase = "combate";
+  stealth.players[0].life = 10;
+  stealth.players[0].board.push({ uid: "stealth", atk: 3, hp: 3, tags: ["Furtivo", "Roubo de Vida"], exhausted: false, summoning: false, modifiers: [] });
+  stealth.players[1].board.push({ uid: "blocker", atk: 1, hp: 3, tags: [], exhausted: false, summoning: false, modifiers: [] });
+  assert.throws(() => executeCommand(stealth, { type: "attack", owner: 0, attackerId: "stealth", defenderId: "blocker" }), /unblockable-attacker/);
+  const direct = executeCommand(stealth, { type: "attack", owner: 0, attackerId: "stealth" });
+  assert.equal(direct.state.players[0].life, 13);
+  assert.equal(direct.state.players[1].life, 27);
+});
+
+test("Images never trigger Last Breath when destroyed", () => {
+  const game = state(); game.phase = "combate"; game.players[1].deck.push({ id: "forbidden-draw" });
+  game.players[0].board.push({ uid: "attacker", atk: 3, hp: 3, tags: [], exhausted: false, summoning: false, modifiers: [] });
+  game.players[1].board.push({ uid: "image", atk: 0, hp: 1, tags: ["Último Suspiro"], imageCard: true, generatedImage: true, exhausted: false, summoning: false, modifiers: [], abilities: [{ id: "last", trigger: "onDestroyed", effects: [{ type: "draw", amount: 1 }] }] });
+  const result = executeCommand(game, { type: "attack", owner: 0, attackerId: "attacker", defenderId: "image" });
+  assert.equal(result.state.players[1].hand.length, 0);
+  assert.equal(result.state.players[1].grave.length, 0);
+});
+
 test("resolution guard finds infinite trigger loops", () => {
   const game = state(); game.players[0].board.push({ uid: "loop", slot: 0, abilities: [{ id: "again", trigger: "after:draw", effects: [{ type: "draw", amount: 0 }] }] });
   assert.throws(() => executeCommand(game, { type: "emit", event: { type: "after:draw" } }, { maxSteps: 20 }), RulesLoopError);
