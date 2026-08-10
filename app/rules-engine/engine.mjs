@@ -99,6 +99,29 @@ function conditionMatches(state, source, owner, condition, event = {}) {
   if (condition.controllerSubtypeEnteredThisTurn && (state.players[owner].subtypesEnteredThisTurn?.[condition.controllerSubtypeEnteredThisTurn.subtype] || 0) !== condition.controllerSubtypeEnteredThisTurn.count) return false;
   if (condition.activePlayerControlsVanillaCreature && !state.players[state.active].board.some((card) => !(card.text || "").trim())) return false;
   if (condition.wasOnlySubtypeInAllFields && state.players.flatMap((entry) => entry.board).filter((card) => subtype(card, condition.wasOnlySubtypeInAllFields)).length > 0) return false;
+  if (condition.sourceSurvived && !permanentUnits(state.players[owner]).some((card) => card.uid === source.uid || card.id === source.id)) return false;
+  if (condition.spellNameIncludes && !String(event.card?.name || eventCard?.name || "").toLowerCase().includes(String(condition.spellNameIncludes).toLowerCase())) return false;
+  if (condition.nameIncludes && !String(event.card?.name || event.effectSource?.name || "").toLowerCase().includes(String(condition.nameIncludes).toLowerCase())) return false;
+  if (condition.eventTargetType) { const targets = (event.targetIds || []).map((id) => state.players.flatMap((entry) => permanentUnits(entry)).find((card) => card.uid === id || card.id === id)).filter(Boolean); if (!targets.some((target) => target.type === condition.eventTargetType)) return false; }
+  return true;
+}
+
+function playConditionMatches(state, owner, condition) {
+  if (!condition) return true;
+  if (condition.alliedPermanentHasTrigger) return permanentUnits(state.players[owner]).some((card) => (card.abilities || []).some((ability) => ability.trigger === condition.alliedPermanentHasTrigger));
+  return true;
+}
+function availabilityMatches(state, source, owner, availability) {
+  if (!availability) return true;
+  if (availability.topGraveHasTrigger) { const top = state.players[owner].grave.at(-1); return !!top && (top.abilities || []).some((ability) => ability.trigger === availability.topGraveHasTrigger); }
+  return true;
+}
+function eventAppliesToSource(event, source, owner) {
+  const sourceId = source.uid || source.id;
+  if (["onEnter", "onDestroyed", "onDamageTaken", "onAttack", "onCombatKill", "onTargetedBySpell"].includes(event.type)) return sourceId === (event.sourceId || event.targetId) || (event.targetIds || []).includes(sourceId);
+  if (event.type === "onAttachedCreatureDamage" || event.type === "onAttachedCreatureTargeted") return source.attachedTo === event.sourceId || (event.targetIds || []).includes(source.attachedTo);
+  if (event.type === "onOpponentSpellAttempt") return event.owner !== owner;
+  if (event.type === "onSpellCast") return event.owner === owner;
   return true;
 }
 
@@ -134,7 +157,7 @@ function activeAbilities(state, event) {
   state.players.forEach((entry, owner) => {
       for (const source of permanentUnits(entry)) {
       if (source.suffocated) continue;
-      for (const ability of source.abilities || []) if (ability.trigger === event.type && (!["onEnter", "onDestroyed"].includes(event.type) || source.uid === event.sourceId) && conditionMatches(state, source, owner, ability.condition, event) && usageAvailable(state, source, owner, ability)) result.push({ source, owner, ability });
+      for (const ability of source.abilities || []) if (ability.trigger === event.type && eventAppliesToSource(event, source, owner) && conditionMatches(state, source, owner, ability.condition, event) && usageAvailable(state, source, owner, ability)) result.push({ source, owner, ability });
     }
   });
   return result.sort((a, b) => a.owner - b.owner || (a.source.slot ?? 99) - (b.source.slot ?? 99) || String(a.ability.id).localeCompare(String(b.ability.id)));
@@ -175,7 +198,7 @@ export function executeCommand(inputState, command, options = {}) {
         const accelerated = (card.tags || []).some((tag) => /acelerado/i.test(tag)) || /acelerado/i.test(card.text || "");
         if (state.active !== item.command.owner && !(accelerated && item.command.hasPriority)) throw new RulesViolation("not-your-priority");
         if (state.phase !== "principal" && !(accelerated && item.command.hasPriority)) throw new RulesViolation("wrong-phase");
-        const playAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onPlay" && conditionMatches(state, card, item.command.owner, ability.condition, { card })); const enterAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onEnter" && conditionMatches(state, card, item.command.owner, ability.condition, { card }));
+        const playAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onPlay" && conditionMatches(state, card, item.command.owner, ability.condition, { card })); if (playAbilities.some((ability) => !playConditionMatches(state, item.command.owner, ability.playCondition))) throw new RulesViolation("play-condition-not-met"); const enterAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onEnter" && conditionMatches(state, card, item.command.owner, ability.condition, { card }));
         if (card.type !== "Criatura" || (item.command.targetIds || []).length) validateTargets(state, item.command.owner, card.type === "Criatura" ? enterAbilities : playAbilities, item.command, card);
         for (const ability of playAbilities) validateCosts(state, ability, item.command);
         const staticDiscount = permanentUnits(entry).flatMap((source) => source.staticModifiers || []).filter((modifier) => modifier.type === "costModifier" && (!modifier.selector?.type || modifier.selector.type === card.type) && (!modifier.during || modifier.during !== "controllerTurn" || state.active === item.command.owner)).reduce((sum, modifier) => sum + (modifier.amount || 0), 0);
@@ -183,7 +206,7 @@ export function executeCommand(inputState, command, options = {}) {
         if (entry.energy + (spell ? entry.reserve : 0) < cost) throw new RulesViolation("not-enough-energy");
         for (const ability of playAbilities) payCosts(state, ability, item.command);
         const fromReserve = spell ? Math.min(entry.reserve, cost) : 0; entry.reserve -= fromReserve; entry.energy -= cost - fromReserve;
-        entry.hand.splice(cardIndex, 1); entry.cardsPlayed = (entry.cardsPlayed || 0) + 1; entry.turnCardsPlayed = (entry.turnCardsPlayed || 0) + 1; if (spell) { entry.spellsPlayed = (entry.spellsPlayed || 0) + 1; entry.turnSpellsPlayed = (entry.turnSpellsPlayed || 0) + 1; } const permanent = card.type !== "Feitiço" || card.abilities?.some((ability) => ability.effects?.some((effect) => effect.type === "remainUntilTurnEnd"));
+        entry.hand.splice(cardIndex, 1); for (const source of permanentUnits(entry)) if (typeof source.cardsPlayedAfterSelf === "number") source.cardsPlayedAfterSelf++; entry.cardsPlayed = (entry.cardsPlayed || 0) + 1; entry.turnCardsPlayed = (entry.turnCardsPlayed || 0) + 1; if (spell) { entry.spellsPlayed = (entry.spellsPlayed || 0) + 1; entry.turnSpellsPlayed = (entry.turnSpellsPlayed || 0) + 1; } const permanent = card.type !== "Feitiço" || card.abilities?.some((ability) => ability.effects?.some((effect) => effect.type === "remainUntilTurnEnd"));
         if (permanent) {
           const unit = { ...card, uid: item.command.instanceId || `${card.id}-${state.round}-${steps}`, slot: item.command.slot ?? 0, enteredRound: state.round, attackedThisTurn: false, damage: 0, bonusAtk: 0, bonusHp: 0, exhausted: false, summoning: card.type === "Criatura" && !(card.tags || []).some((tag) => /investida/i.test(String(tag))), frozen: false, stunned: false, suffocated: false, immobilized: false, defenseUses: 0, markers: card.markers ?? 0, modifiers: [] };
           if (card.type === "Criatura") { if (entry.board.length >= 5 || entry.board.some((existing) => existing.slot === unit.slot)) throw new RulesViolation("creature-zone-full"); entry.board.push(unit); entry.subtypesEnteredThisTurn ||= {}; for (const value of new Set([...(card.subtypes || []), ...(card.tags || [])])) entry.subtypesEnteredThisTurn[value] = (entry.subtypesEnteredThisTurn[value] || 0) + 1; stack.push({ kind: "event", event: { type: "onCreatureEnter", owner: item.command.owner, sourceId: unit.uid, cardId: unit.uid, card: unit } }); }
@@ -201,9 +224,10 @@ export function executeCommand(inputState, command, options = {}) {
         const attackerOwner = item.command.owner; const defenderOwner = 1 - attackerOwner;
         const attackerPlayer = state.players[attackerOwner]; const defenderPlayer = state.players[defenderOwner];
         const attacker = attackerPlayer.board.find((unit) => unit.uid === item.command.attackerId);
-        if (!attacker || attacker.exhausted || attacker.attackedThisTurn || attacker.summoning || attacker.stunned || hasKeyword(attacker, /atordoado/i)) throw new RulesViolation("invalid-attacker");
+        if (!attacker || attacker.exhausted || attacker.attackedThisTurn || attacker.summoning || attacker.stunned || hasKeyword(attacker, /atordoado/i)) throw new RulesViolation("invalid-attacker"); if (attacker.attackPermission?.requiresMarkers) { const requirement = attacker.attackPermission.requiresMarkers; const available = typeof attacker.markers === "number" ? attacker.markers : attacker.markers?.[requirement.marker] || 0; if (available < requirement.minimum) throw new RulesViolation("attack-requirement-not-met"); }
         actionLabel = attacker.name || attacker.uid;
         attacker.attackedThisTurn = true;
+        stack.push({ kind: "event", event: { type: "onAttack", owner: attackerOwner, sourceId: attacker.uid, source: attacker } });
         if (!hasKeyword(attacker, /alerta/i)) attacker.exhausted = true;
         const attack = effectiveAttack(state, attacker, attackerOwner);
         const defender = defenderPlayer.board.find((unit) => unit.uid === item.command.defenderId);
@@ -232,11 +256,17 @@ export function executeCommand(inputState, command, options = {}) {
           }
           if (hasKeyword(attacker, /atropelar/i) && dealtByAttacker > defenderRemaining) defenderPlayer.life -= dealtByAttacker - defenderRemaining;
         }
+        const attackerSurvived = attackerPlayer.board.includes(attacker); const defenderDestroyed = !!defender && !defenderPlayer.board.includes(defender);
+        if (defenderDestroyed && attackerSurvived) stack.push({ kind: "event", event: { type: "onCombatKill", owner: attackerOwner, sourceId: attacker.uid, source: attacker, card: defender } });
+        if (attack > 0) {
+          stack.push({ kind: "event", event: { type: "onAttachedCreatureDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: defender ? [defender.uid] : ["enemy-hero"], amount: attack } });
+          if (!defender) stack.push({ kind: "event", event: { type: "onPlayerDamaged", owner: defenderOwner, sourceOwner: attackerOwner, sourceId: attacker.uid, source: attacker, amount: attack } });
+        }
         stack.push({ kind: "event", event: { type: "onCombatDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: defender ? [defender.uid] : [], amount: attack } });
       } else if (item.command.type === "activate") {
         const entry = state.players[item.command.owner]; if (state.active !== item.command.owner) throw new RulesViolation("not-your-turn");
         const source = [...entry.board, ...entry.support, ...(entry.terrain ? [entry.terrain] : [])].find((unit) => unit.uid === item.command.sourceId); const ability = source?.abilities?.find((candidate) => candidate.id === item.command.abilityId && candidate.trigger === "activated");
-        if (!ability) throw new RulesViolation("ability-not-found"); if (!canExecuteCard(source, handlers)) throw new RulesViolation("card-not-migrated"); actionLabel = source.name || source.uid; if (!usageAvailable(state, source, item.command.owner, ability)) throw new RulesViolation("ability-limit-reached"); validateTargets(state, item.command.owner, [ability], item.command, source); validateCosts(state, ability, item.command); payCosts(state, ability, item.command); claimUsage(state, source, item.command.owner, ability);
+        if (!ability) throw new RulesViolation("ability-not-found"); if (!canExecuteCard(source, handlers)) throw new RulesViolation("card-not-migrated"); if (!availabilityMatches(state, source, item.command.owner, ability.availability)) throw new RulesViolation("ability-not-available"); actionLabel = source.name || source.uid; if (!usageAvailable(state, source, item.command.owner, ability)) throw new RulesViolation("ability-limit-reached"); validateTargets(state, item.command.owner, [ability], item.command, source); validateCosts(state, ability, item.command); payCosts(state, ability, item.command); claimUsage(state, source, item.command.owner, ability);
         [...ability.effects].reverse().forEach((effect) => stack.push({ kind: "effect", effect, context: item.command }));
       } else if (item.command.type === "resolveDecision") {
         const decision = state.pendingDecision; if (!decision || decision.owner !== item.command.owner && decision.context?.decisionOwner !== item.command.owner) throw new RulesViolation("decision-not-owned");
