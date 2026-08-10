@@ -163,7 +163,10 @@ test("Terremoto damages creatures based on enemy creature count and ignores supp
 
 test("Alerta preserves the attacker ready and Voar requires a flying blocker", () => {
   const alert = state(); alert.phase = "combate"; alert.players[0].board.push({ uid: "a", atk: 2, hp: 2, tags: ["Alerta"], exhausted: false, summoning: false, modifiers: [] });
-  assert.equal(executeCommand(alert, { type: "attack", owner: 0, attackerId: "a" }).state.players[0].board[0].exhausted, false);
+  const alertResult = executeCommand(alert, { type: "attack", owner: 0, attackerId: "a" }).state;
+  assert.equal(alertResult.players[0].board[0].exhausted, false);
+  assert.equal(alertResult.players[0].board[0].attackedThisTurn, true);
+  assert.throws(() => executeCommand(alertResult, { type: "attack", owner: 0, attackerId: "a" }), /invalid-attacker/);
   const flying = state(); flying.phase = "combate"; flying.players[0].board.push({ uid: "a", atk: 2, hp: 2, tags: ["Voar"], exhausted: false, summoning: false, modifiers: [] }); flying.players[1].board.push({ uid: "d", atk: 1, hp: 3, tags: [], exhausted: false, modifiers: [] });
   assert.throws(() => executeCommand(flying, { type: "attack", owner: 0, attackerId: "a", defenderId: "d" }), /flying-blocker-required/);
 });
@@ -355,6 +358,12 @@ test("Indomável prevents leaving combat while an eligible creature has not atta
   assert.throws(() => executeCommand(game, { type: "advancePhase" }), /indomitable-must-attack/);
   const attacked = executeCommand(game, { type: "attack", owner: 0, attackerId: "must" }).state;
   assert.equal(executeCommand(attacked, { type: "advancePhase" }).state.phase, "fim");
+
+  const vigilant = state(); vigilant.phase = "combate";
+  vigilant.players[0].board.push({ uid: "vigilant", atk: 1, hp: 2, tags: ["Indomável", "Alerta"], exhausted: false, summoning: false, modifiers: [] });
+  const vigilantAttack = executeCommand(vigilant, { type: "attack", owner: 0, attackerId: "vigilant" }).state;
+  assert.equal(vigilantAttack.players[0].board[0].exhausted, false);
+  assert.equal(executeCommand(vigilantAttack, { type: "advancePhase" }).state.phase, "fim");
 });
 
 test("tap costs cannot be paid in the same turn a constant entered", () => {
