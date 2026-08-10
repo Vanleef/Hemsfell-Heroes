@@ -118,6 +118,9 @@ export function executeCommand(inputState, command, options = {}) {
           state.pendingResponse = null; state.pendingAction = null;
           if (original) stack.push({ kind: "command", command: { ...original, skipPriority: true } });
         }
+      } else if (options.priority && ["attack", "activate"].includes(item.command.type) && !item.command.skipPriority && !item.command.hasPriority) {
+        if (state.pendingAction) throw new RulesViolation("priority-window-open");
+        state.pendingAction = { ...item.command }; state.pendingResponse = { responder: 1 - item.command.owner, actor: item.command.owner, action: item.command.type, passes: 0 }; continue;
       } else if (item.command.type === "playCard") {
         if (options.priority && !item.command.skipPriority && !item.command.hasPriority) {
           if (state.pendingAction) throw new RulesViolation("priority-window-open");
@@ -200,6 +203,6 @@ export function executeCommand(inputState, command, options = {}) {
     }
   }
   state.events = (state.events || 0) + 1; state.log ||= []; state.log.unshift({ id: `rules-${state.round}-${state.events}`, text: command.type === "playCard" ? `${actionLabel} foi jogada pelo motor de regras.` : command.type === "activate" ? `${actionLabel} ativou sua habilidade.` : `${actionLabel}: ${command.type}.`, tone: "effect" });
-  if (["playCard", "activate"].includes(command.type)) if (state.pendingAction && command.hasPriority) state.pendingResponse = { responder: state.pendingAction.actor, actor: command.owner, action: actionLabel, passes: 0 }; else if (!state.pendingAction) state.pendingResponse = command.hasPriority ? null : { responder: 1 - command.owner, actor: command.owner, action: actionLabel, passes: 0 };
+  if (["playCard", "activate"].includes(command.type)) if (!command.skipPriority && state.pendingAction && command.hasPriority) state.pendingResponse = { responder: state.pendingAction.actor, actor: command.owner, action: actionLabel, passes: 0 }; else if (!command.skipPriority && !state.pendingAction) state.pendingResponse = command.hasPriority ? null : { responder: 1 - command.owner, actor: command.owner, action: actionLabel, passes: 0 };
   return { state, trace, steps };
 }
