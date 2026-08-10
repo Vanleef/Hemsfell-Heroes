@@ -30,8 +30,8 @@ async function readTable<T>(url: string, key: string, table: string, columns: st
 }
 
 export async function GET() {
-  const sourceUrl = process.env.SUPABASE_URL?.replace(/\/$/, "");
-  const key = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const sourceUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL)?.replace(/\/$/, "");
+  const key = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!sourceUrl || !key) {
     return NextResponse.json({ source: "local-fallback", configured: false, cards: fallback, heroes: [], decks: [], deckCards: [], sets: [] });
   }
