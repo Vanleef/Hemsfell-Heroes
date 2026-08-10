@@ -67,7 +67,7 @@ export const defaultEffectHandlers = Object.freeze({
   },
   destroy(state, effect, context) {
     for (const id of effect.target === "all" ? allUnits(state).map((unit) => unit.uid || unit.id) : context.targetIds || []) {
-      const removed = removeFromZones(state, id); if (removed) { if (!removed.card.generatedImage && !removed.card.imageCard) player(state, removed.owner).grave.push({ ...removed.card, lastZone: removed.zone, deathCause: "destroy" }); queueEvent(state, { type: "onDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id, sourceId: removed.card.uid || removed.card.id, deathCause: "destroy" }); queueEvent(state, { type: "onCreatureDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id }); }
+      const removed = removeFromZones(state, id); if (removed) { if (!removed.card.generatedImage && !removed.card.imageCard) { player(state, removed.owner).grave.push({ ...removed.card, lastZone: removed.zone, deathCause: "destroy" }); queueEvent(state, { type: "onDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id, sourceId: removed.card.uid || removed.card.id, deathCause: "destroy" }); } queueEvent(state, { type: "onCreatureDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id }); }
     }
   },
   sacrifice(state, effect, context) {
