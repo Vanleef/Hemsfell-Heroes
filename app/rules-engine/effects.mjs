@@ -25,6 +25,15 @@ const effectTargets = (state, effect, context) => {
 const queueDecision = (state, effect, context, kind = effect.type) => { if (state.pendingDecision) throw new RulesViolation("decision-pending"); state.pendingDecision = { kind, effect, context, owner: context.decisionOwner ?? context.owner }; };
 const keywordsOf = (card) => card?.suffocated ? [] : [...(card?.tags || []), ...(card?.temporaryTags || []), ...(card?.grantedKeywords || [])];
 const hasKeyword = (card, pattern) => keywordsOf(card).some((tag) => pattern.test(String(tag)));
+const normalizedName = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, " ").trim().toLowerCase();
+const effectiveUnitName = (state, unit) => {
+  let name = unit?.name || "";
+  for (const attachment of allUnits(state).filter((card) => card.attachedTo === unit?.uid && !card.suffocated)) {
+    const rename = String(attachment.text || "").match(/se equipad[ao][^“\"]*[“\"]([^”\"]+)[”\"][\s\S]*?(?:agora\s+se\s+chama|passa\s+a\s+se\s+chamar)[^“\"]*[“\"]([^”\"]+)[”\"]/i);
+    if (rename && normalizedName(name) === normalizedName(rename[1])) name = rename[2];
+  }
+  return name;
+};
 const sendDetachedArtifacts = (entry, creature) => {
   const attachments = (entry.support || []).filter((item) => item.attachedTo === creature.uid);
   entry.support = (entry.support || []).filter((item) => item.attachedTo !== creature.uid);
@@ -120,6 +129,7 @@ export const defaultEffectHandlers = Object.freeze({
   ready(state, effect, context) { const target = findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); target.exhausted = false; },
   addMarker(state, effect, context) { const target = effect.target === "hero" ? player(state, context.owner) : findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); const key = effect.marker || "action"; setMarker(target, key, (typeof target.markers === "object" ? target.markers[key] || 0 : target.markers || 0) + (effect.amount ?? 1)); },
   modifyStats(state, effect, context) { const targets = effectTargets(state, effect, context); if (targets.some((target) => !target)) throw new RulesViolation("target-required"); for (const target of targets) { if (effect.subtype && !hasSubtype(target, effect.subtype)) throw new RulesViolation("invalid-target-subtype"); target.modifiers ||= []; target.modifiers.push({ attack: effect.attack || 0, health: effect.health || 0, duration: effect.duration || "permanent" }); } },
+  attachedConditionalStats(state, effect, context) { const source = findUnit(state, context.sourceId); const target = source?.attachedTo ? findUnit(state, source.attachedTo) : null; if (!target) throw new RulesViolation("artifact-target-required"); const excluded = (effect.excludedNames || []).map(normalizedName); if (excluded.includes(normalizedName(effectiveUnitName(state, target)))) return; defaultEffectHandlers.modifyStats(state, { ...effect, type: "modifyStats", target: "attachedCreature" }, context); },
   gainEnergy(state, effect, context) { const entry = player(state, context.owner); const key = effect.destination === "reserve" ? "reserve" : "energy"; const cap = key === "reserve" ? 3 : entry.maxEnergy; entry[key] = Math.min(cap, entry[key] + (effect.amount ?? 0)); },
   grantKeyword(state, effect, context) { const targets = effectTargets(state, effect, context); if (targets.some((target) => !target)) throw new RulesViolation("target-required"); for (const target of targets) { if (effect.subtype && !hasSubtype(target, effect.subtype)) throw new RulesViolation("invalid-target-subtype"); const keyword = effect.keyword || effect.raw; const zone = effect.duration === "turn" ? "temporaryTags" : "grantedKeywords"; target[zone] ||= []; if (keyword && !target[zone].includes(keyword)) target[zone].push(keyword); } },
   keyword(state, effect, context) { const source = findUnit(state, context.sourceId); const target = source?.attachedTo ? findUnit(state, source.attachedTo) : source; const keyword = effect.keyword || effect.raw; if (target && keyword) { const zone = effect.duration === "turn" ? "temporaryTags" : "tags"; target[zone] ||= []; if (!target[zone].includes(keyword)) target[zone].push(keyword); if (/investida/i.test(String(keyword))) target.summoning = false; } },
