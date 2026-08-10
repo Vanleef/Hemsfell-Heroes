@@ -118,7 +118,9 @@ function availabilityMatches(state, source, owner, availability) {
 }
 function eventAppliesToSource(event, source, owner) {
   const sourceId = source.uid || source.id;
-  if (["onEnter", "onDestroyed", "onDamageTaken", "onAttack", "onCombatKill", "onTargetedBySpell"].includes(event.type)) return sourceId === (event.sourceId || event.targetId) || (event.targetIds || []).includes(sourceId);
+  if (["onEnter", "onDestroyed", "onAttack", "onCombatKill"].includes(event.type)) return sourceId === event.sourceId;
+  if (event.type === "onDamageTaken") return sourceId === event.targetId;
+  if (event.type === "onTargetedBySpell") return (event.targetIds || []).includes(sourceId);
   if (event.type === "onAttachedCreatureDamage" || event.type === "onAttachedCreatureTargeted") return source.attachedTo === event.sourceId || (event.targetIds || []).includes(source.attachedTo);
   if (event.type === "onOpponentSpellAttempt") return event.owner !== owner;
   if (event.type === "onSpellCast") return event.owner === owner;
