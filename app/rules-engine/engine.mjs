@@ -144,6 +144,26 @@ function abilityTargetSteps(ability) {
   if (ability.sourceText) return (targetPolicy(ability.sourceText).steps || []).filter((step) => step.role !== "sacrifice");
   return (ability.effects || []).flatMap((effect) => { const scope = targetScope(effect.target); return Array.from({ length: effect.selections ?? (scope === TargetScope.NONE ? 0 : 1) }, () => ({ scope, role: "effect" })); }).filter((step) => step.scope !== TargetScope.NONE);
 }
+function targetCandidates(state, owner, step) {
+  const result = [];
+  state.players.forEach((entry, targetOwner) => {
+    for (const target of permanentUnits(entry)) {
+      const targetKind = entry.board.includes(target) || target.type === "Criatura" ? "creature" : "permanent";
+      if (isValidTarget(step, owner, targetOwner, targetKind)) result.push(target.uid || target.id);
+    }
+    if (isValidTarget(step, owner, targetOwner, "hero")) result.push(targetOwner === owner ? "ally-hero" : "enemy-hero");
+  });
+  return result;
+}
+function canSatisfyTargetSteps(state, owner, steps) {
+  const candidates = steps.map((step) => targetCandidates(state, owner, step));
+  const choose = (index, used) => index >= candidates.length || candidates[index].some((id) => {
+    if (used.has(id)) return false;
+    const next = new Set(used); next.add(id);
+    return choose(index + 1, next);
+  });
+  return choose(0, new Set());
+}
 function validateTargets(state, owner, abilities, command, source) {
   const targetIds = command.targetIds || []; const steps = abilities.flatMap(abilityTargetSteps); if (steps.length !== targetIds.length) { if (steps.length || targetIds.length) throw new RulesViolation("invalid-target-count"); return; }
   steps.forEach((step, index) => { const id = targetIds[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, owner, targetOwner, targetKind)) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
@@ -319,7 +339,7 @@ export function executeCommand(inputState, command, options = {}) {
       for (const event of (state.rulesEvents || []).splice(0).reverse()) stack.push({ kind: "event", event });
       stack.push({ kind: "event", event: { type: `after:${item.effect.type}`, owner: item.context.owner, sourceId: item.context.sourceId } });
     } else if (item.kind === "event") {
-      const triggered = activeAbilities(state, item.event); for (const trigger of triggered.reverse()) { claimUsage(state, trigger.source, trigger.owner, trigger.ability); const targetSteps = abilityTargetSteps(trigger.ability); const context = { owner: trigger.owner, sourceId: trigger.ability.replaySourceId || trigger.source.uid, event: item.event, targetIds: item.event.targetIds || [] }; if (trigger.ability.replaySourceId && targetSteps.length && !context.targetIds.length) { state.pendingDecision = { kind: "targets", owner: trigger.owner, effect: { replayEffects: trigger.ability.effects }, context, targetSteps, sourceName: item.event.card?.name || "Primeiro Ato" }; break; } for (const effect of [...trigger.ability.effects].reverse()) stack.push({ kind: "effect", effect, context }); }
+      const triggered = activeAbilities(state, item.event); for (const trigger of triggered.reverse()) { claimUsage(state, trigger.source, trigger.owner, trigger.ability); const targetSteps = abilityTargetSteps(trigger.ability); const context = { owner: trigger.owner, sourceId: trigger.ability.replaySourceId || trigger.source.uid, event: item.event, targetIds: item.event.targetIds || [] }; if (trigger.ability.replaySourceId && targetSteps.length && !context.targetIds.length) { if (!canSatisfyTargetSteps(state, trigger.owner, targetSteps)) continue; state.pendingDecision = { kind: "targets", owner: trigger.owner, effect: { replayEffects: trigger.ability.effects }, context, targetSteps, sourceName: item.event.card?.name || "Primeiro Ato" }; break; } for (const effect of [...trigger.ability.effects].reverse()) stack.push({ kind: "effect", effect, context }); }
     }
   }
   state.events = (state.events || 0) + 1; state.log ||= []; state.log.unshift({ id: `rules-${state.round}-${state.events}`, text: command.type === "playCard" ? `${actionLabel} foi jogada pelo motor de regras.` : command.type === "activate" ? `${actionLabel} ativou sua habilidade.` : `${actionLabel}: ${command.type}.`, tone: "effect" });
