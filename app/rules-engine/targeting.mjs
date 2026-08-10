@@ -30,6 +30,45 @@ export function targetPolicy(cardOrText) {
   return { scope: TargetScope.NONE, selections: 0, steps: [] };
 }
 
+const effectScope = (target) => ({
+  anyCharacter: TargetScope.ANY_CHARACTER,
+  anyCreature: TargetScope.ANY_CREATURE,
+  allyCreature: TargetScope.ALLY_CREATURE,
+  enemyCreature: TargetScope.ENEMY_CREATURE,
+  anyPermanent: TargetScope.ANY_PERMANENT,
+  allyPermanent: TargetScope.ALLY_PERMANENT,
+  enemyPermanent: TargetScope.ENEMY_PERMANENT,
+  otherAllyCreature: TargetScope.ALLY_CREATURE,
+  creature: TargetScope.ANY_CREATURE,
+}[target] || TargetScope.NONE);
+
+/** Targeting for migrated cards comes from executable ability data, never from
+ * incidental words in reminder/passive text. This prevents cards such as
+ * Saideira dos Recrutas from requesting a target merely because they mention
+ * "Primeiro Ato" and "criaturas". */
+export function cardPlayTargetPolicy(card) {
+  if (card?.diagnostics?.source !== "explicit") return targetPolicy(card);
+  if (card.type === "Artefato") return withSteps({ scope: TargetScope.ALLY_CREATURE, selections: 1, attachment: true, role: "attachment" });
+  const trigger = card.type === "Criatura" ? "onEnter" : "onPlay";
+  const abilities = (card.abilities || []).filter((ability) => ability.trigger === trigger);
+  const sacrificeSteps = abilities.flatMap((ability) => (ability.costs || []).flatMap((cost) => cost.type === "sacrifice"
+    ? Array.from({ length: Number(cost.amount) || 1 }, () => ({ scope: TargetScope.ALLY_CREATURE, role: "sacrifice" }))
+    : []));
+  const effectSteps = abilities.flatMap((ability) => (ability.effects || []).flatMap((effect) => {
+    const scope = effectScope(effect.target);
+    if (scope === TargetScope.NONE || effect.global) return [];
+    return Array.from({ length: Number(effect.selections) || 1 }, () => ({ scope, role: "effect" }));
+  }));
+  const steps = [...sacrificeSteps, ...effectSteps];
+  return {
+    scope: steps[0]?.scope || TargetScope.NONE,
+    selections: steps.length,
+    sacrifice: sacrificeSteps.length > 0,
+    sacrificeCount: sacrificeSteps.length,
+    steps,
+  };
+}
+
 export function isValidTarget(policy, owner, targetOwner, targetKind = "creature") {
   if (policy.scope === TargetScope.NONE) return false;
   if (policy.scope === TargetScope.ANY_CHARACTER) return targetKind === "creature" || targetKind === "hero";
