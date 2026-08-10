@@ -114,7 +114,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 93);
+  assert.equal(explicitRuleIds.length, 98);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -750,7 +750,7 @@ test("migration coverage is explicit and simple cards use the command engine", a
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 224); assert.equal(pending.length, 84);
+  assert.equal(migrated.length, 229); assert.equal(pending.length, 79);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
@@ -931,4 +931,51 @@ test("Café Especial exposes four executable choices", () => {
   assert.equal(result.pendingDecision.effect.choices.length, 4);
   result = executeCommand(result, { type: "resolveDecision", owner: 0, choiceIndex: 1 }).state;
   assert.equal(result.players[0].life, 22);
+});
+
+test("invalid non-creature intents never open a response window", () => {
+  const game = state();
+  game.players[0].hand.push({ id: "needs-target", name: "Sem alvo", type: "Feitiço", cost: 0, tags: [], abilities: [{ trigger: "onPlay", effects: [{ type: "damage", amount: 1, target: "anyCreature", selections: 1 }] }] });
+  assert.throws(() => executeCommand(game, { type: "playCard", owner: 0, cardId: "needs-target" }, { priority: true }), /invalid-target-count/);
+  assert.equal(game.pendingAction, undefined);
+  assert.equal(game.pendingResponse, undefined);
+});
+
+test("a creature replaces an occupied slot only when all five creature slots are full", () => {
+  const game = state();
+  game.players[0].hand.push({ id: "replacement", name: "Substituta", type: "Criatura", cost: 0, atk: 1, hp: 1, tags: [], abilities: [] });
+  game.players[0].board.push({ uid: "occupied", name: "Ocupada", type: "Criatura", slot: 2, hp: 1, atk: 1, tags: [], abilities: [] });
+  assert.throws(() => executeCommand(game, { type: "playCard", owner: 0, cardId: "replacement", slot: 2 }, { priority: true }), /creature-zone-full/);
+  for (const slot of [0, 1, 3, 4]) game.players[0].board.push({ uid: `unit-${slot}`, name: "Preenchimento", type: "Criatura", slot, hp: 1, atk: 1, tags: [], abilities: [] });
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "replacement", slot: 2, skipPriority: true }).state;
+  assert.equal(result.players[0].board.find((unit) => unit.slot === 2).name, "Substituta");
+  assert.ok(result.players[0].obscuro.some((card) => card.uid === "occupied"));
+});
+
+test("legal artifacts stay connected in the support zone after resolution", () => {
+  const game = state();
+  game.players[0].board.push({ uid: "host", name: "Portadora", type: "Criatura", slot: 1, hp: 2, atk: 2, tags: [], abilities: [] });
+  game.players[0].hand.push({ id: "ring", name: "Anel de Teste", type: "Artefato", cost: 0, tags: [], abilities: [] });
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "ring", slot: 1, attachedTo: "host", skipPriority: true }).state;
+  assert.equal(result.players[0].support.length, 1);
+  assert.equal(result.players[0].support[0].attachedTo, "host");
+  assert.equal(result.players[0].support[0].slot, 1);
+});
+
+test("investigation triggers share reveal events and archive replacement", () => {
+  const game = state();
+  game.players[0].board.push(
+    { uid: "spy", id: "p261", name: "Espião Infiltrado", type: "Criatura", slot: 0, atk: 1, hp: 1, tags: [], modifiers: [], abilities: compileCard({ id: "p261", page: 261, name: "Espião Infiltrado", type: "Criatura", cost: 1, text: "", tags: [] }).abilities },
+    { uid: "nmali", id: "p262", name: "Nmali", type: "Criatura", slot: 1, atk: 1, hp: 1, tags: [], modifiers: [], abilities: compileCard({ id: "p262", page: 262, name: "Nmali", type: "Criatura", cost: 1, text: "", tags: [] }).abilities },
+  );
+  game.players[0].deck.push({ id: "creature-top", name: "Criatura", type: "Criatura" }, { id: "archive", name: "Arquivo", type: "Feitiço" });
+  game.players[1].deck.push({ id: "mill", name: "Moinho", type: "Criatura" });
+  let result = executeCommand(game, { type: "emit", owner: 0, event: { type: "onCardRevealed", owner: 0, card: { id: "creature-top", type: "Criatura" } } }).state;
+  assert.equal(result.players[0].board[0].modifiers[0].attack, 1);
+  result = executeCommand(result, { type: "emit", owner: 0, event: { type: "onCardRevealed", owner: 0, card: { id: "spell-top", type: "Feitiço" } } }).state;
+  assert.equal(result.players[1].grave.length, 1);
+  result = executeCommand(result, { type: "emit", owner: 0, event: { type: "onPlay", owner: 0 } }).state;
+  defaultEffectHandlers.archiveToGrave(result, { amount: 1 }, { owner: 0 });
+  defaultEffectHandlers.investigate(result, { amount: 2, target: "controllerDeck" }, { owner: 0, sourceId: "spy" });
+  assert.ok(result.players[0].grave.some((card) => card.id === "archive"));
 });
