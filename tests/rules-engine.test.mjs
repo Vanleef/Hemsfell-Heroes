@@ -856,6 +856,9 @@ test("online priority passes update the local response window from the authorita
   assert.match(page, /setResponseWindow\(next\.pendingResponse\?\?null\)/);
   assert.match(page, /const result=await roomAction\("command"/);
   assert.match(page, /return !!result/);
+  assert.match(page, /currentGameRef\.current=oriented;setResponseWindow\(oriented\.pendingResponse\?\?null\)/);
+  assert.match(page, /game\?\.pendingResponse\?\.responder/);
+  assert.match(page, /game\?\.pendingResponse\?\.passes/);
 });
 
 test("game client routes migrated cards through the command engine", async () => {
