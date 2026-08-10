@@ -6643,9 +6643,26 @@
 .engine-decision-panel button b{display:grid;place-items:center;min-width:28px;height:28px;border-radius:50%;background:#d4a646;color:#101719}
 .engine-decision-panel button span{font-size:.96rem;font-weight:750}
 .engine-decision-wait{position:fixed;z-index:11990;left:50%;top:18px;translate:-50% 0;padding:10px 16px;border:1px solid #b88b3c;border-radius:999px;background:#071318ee;color:#e7bc61;font-weight:850;box-shadow:0 10px 35px #0009}
-
 .priority-control-toggle{position:fixed;right:18px;bottom:76px;z-index:920;border:1px solid #3e9ca5;background:#071a21;color:#c9f7f3;border-radius:999px;padding:8px 13px;font-size:11px;font-weight:800;letter-spacing:.04em;box-shadow:0 7px 20px #0008}
 .priority-control-toggle:hover{border-color:#74e0df;background:#0d2931}
 .priority-stack-indicator{position:fixed;left:50%;top:92px;transform:translateX(-50%);z-index:910;display:flex;align-items:center;gap:7px;border:1px solid #c99a40;background:#120f0be8;color:#f6d98f;border-radius:999px;padding:6px 11px;box-shadow:0 8px 24px #0009;pointer-events:none}
 .priority-stack-indicator span{font-size:9px;font-weight:900;letter-spacing:.16em}
 .priority-stack-indicator b{display:grid;place-items:center;width:20px;height:20px;border-radius:50%;background:#a86c21;color:#fff;font-size:12px}
+
+/* Hovered auxiliary cards and Cruel Terrain must escape the creature-grid
+   stacking context so their information is always the topmost card layer. */
+.screen-game .field-column:has(.auxiliary-slot .original-card:hover),
+.screen-game .terrain-slot:has(.original-card:hover){
+  z-index:9000!important;
+  overflow:visible!important;
+}
+.screen-game .auxiliary-slot:has(.original-card:hover),
+.screen-game .support-card:has(.original-card:hover),
+.screen-game .terrain-slot:has(.original-card:hover){
+  z-index:9010!important;
+  overflow:visible!important;
+}
+.screen-game .auxiliary-slot .card-tooltip,
+.screen-game .terrain-slot .card-tooltip{
+  z-index:9020!important;
+}
