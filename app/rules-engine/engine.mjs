@@ -213,11 +213,11 @@ export function executeCommand(inputState, command, options = {}) {
           else if (card.type === "Terreno") { if (entry.terrain && !entry.terrain.generatedImage) entry.grave.push(entry.terrain); entry.terrain = unit; }
           else { if (entry.support.length >= 5 || entry.support.some((existing) => existing.slot === unit.slot)) throw new RulesViolation("support-zone-full"); if (card.type === "Artefato") { const attached = entry.board.find((creature) => creature.uid === item.command.attachedTo); if (!attached && card.page !== 304) throw new RulesViolation("artifact-target-required"); if (attached) { if (entry.support.some((artifact) => artifact.attachedTo === attached.uid)) throw new RulesViolation("artifact-target-required"); unit.attachedTo = attached.uid; unit.slot = attached.slot; } } entry.support.push(unit); }
           const enter = (unit.abilities || []).filter((ability) => ability.trigger === "onEnter");
-          for (const ability of enter.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: unit.uid } });
+          for (const ability of enter.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: unit.uid, effectSource: unit } });
           const staticAbilities = (unit.abilities || []).filter((ability) => ability.trigger === "static");
-          for (const ability of staticAbilities.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: unit.uid } });
+          for (const ability of staticAbilities.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: unit.uid, effectSource: unit } });
         } else entry.grave.push(card);
-        for (const ability of playAbilities.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: card.id } });
+        for (const ability of playAbilities.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: card.id, effectSource: card } });
         stack.push({ kind: "event", event: { type: spell ? "onSpellCast" : "onCardPlayed", owner: item.command.owner, cardId: card.id, card } });
       } else if (item.command.type === "attack") {
         if (state.active !== item.command.owner || state.phase !== "combate") throw new RulesViolation("wrong-combat-priority");
@@ -231,7 +231,9 @@ export function executeCommand(inputState, command, options = {}) {
         if (!hasKeyword(attacker, /alerta/i)) attacker.exhausted = true;
         const attack = effectiveAttack(state, attacker, attackerOwner);
         const defender = defenderPlayer.board.find((unit) => unit.uid === item.command.defenderId);
+        let damageDealtByAttacker = 0;
         if (!defender) {
+          damageDealtByAttacker = attack;
           defenderPlayer.life -= attack;
           if (attack > 0 && hasKeyword(attacker, /roubo de vida/i)) attackerPlayer.life = Math.min(attackerPlayer.maxLife ?? 30, attackerPlayer.life + attack);
         } else {
@@ -254,15 +256,16 @@ export function executeCommand(inputState, command, options = {}) {
             dealtByAttacker = dealCombatDamage(state, defender, defenderOwner, attacker, attackerOwner, attack);
             dealCombatDamage(state, attacker, attackerOwner, defender, defenderOwner, counter); cleanupLethal(state, stack);
           }
-          if (hasKeyword(attacker, /atropelar/i) && dealtByAttacker > defenderRemaining) defenderPlayer.life -= dealtByAttacker - defenderRemaining;
+          damageDealtByAttacker = dealtByAttacker;
+          if (hasKeyword(attacker, /atropelar/i) && dealtByAttacker > defenderRemaining) { const overflow = dealtByAttacker - defenderRemaining; defenderPlayer.life -= overflow; damageDealtByAttacker += overflow; }
         }
         const attackerSurvived = attackerPlayer.board.includes(attacker); const defenderDestroyed = !!defender && !defenderPlayer.board.includes(defender);
         if (defenderDestroyed && attackerSurvived) stack.push({ kind: "event", event: { type: "onCombatKill", owner: attackerOwner, sourceId: attacker.uid, source: attacker, card: defender } });
-        if (attack > 0) {
-          stack.push({ kind: "event", event: { type: "onAttachedCreatureDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: defender ? [defender.uid] : ["enemy-hero"], amount: attack } });
-          if (!defender) stack.push({ kind: "event", event: { type: "onPlayerDamaged", owner: defenderOwner, sourceOwner: attackerOwner, sourceId: attacker.uid, source: attacker, amount: attack } });
+        if (damageDealtByAttacker > 0) {
+          stack.push({ kind: "event", event: { type: "onAttachedCreatureDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: defender ? [defender.uid] : ["enemy-hero"], amount: damageDealtByAttacker } });
+          if (!defender) stack.push({ kind: "event", event: { type: "onPlayerDamaged", owner: defenderOwner, sourceOwner: attackerOwner, sourceId: attacker.uid, source: attacker, amount: damageDealtByAttacker } });
         }
-        stack.push({ kind: "event", event: { type: "onCombatDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: defender ? [defender.uid] : [], amount: attack } });
+        stack.push({ kind: "event", event: { type: "onCombatDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: defender ? [defender.uid] : [], amount: damageDealtByAttacker } });
       } else if (item.command.type === "activate") {
         const entry = state.players[item.command.owner]; if (state.active !== item.command.owner) throw new RulesViolation("not-your-turn");
         const source = [...entry.board, ...entry.support, ...(entry.terrain ? [entry.terrain] : [])].find((unit) => unit.uid === item.command.sourceId); const ability = source?.abilities?.find((candidate) => candidate.id === item.command.abilityId && candidate.trigger === "activated");
@@ -285,7 +288,11 @@ export function executeCommand(inputState, command, options = {}) {
         if (state.pendingDecision || state.pendingReposition) throw new RulesViolation("interaction-pending"); const order = ["manutencao", "principal", "combate", "fim"]; const index = order.indexOf(state.phase); if (state.phase === "fim") state.players.forEach((entry) => { for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn"); unit.abilities = (unit.abilities || []).filter((ability) => !ability.temporary); unit.temporaryTags = []; } }); if (state.phase === "combate" && state.players[state.active].board.some((unit) => !unit.exhausted && !unit.attackedThisTurn && !unit.summoning && !unit.stunned && !hasKeyword(unit, /atordoado/i) && hasKeyword(unit, /indom[aá]vel/i))) throw new RulesViolation("indomitable-must-attack"); state.phase = order[(index + 1) % order.length]; if (state.phase === "fim") stack.push({ kind: "event", event: { type: "onTurnEnd", owner: state.active } }); if (state.phase === "combate") stack.push({ kind: "event", event: { type: "onCombatStart", owner: state.active } }); if (state.phase === "manutencao") { state.active = 1 - state.active; state.round += 1; const entry = state.players[state.active]; entry.abilityUses = {}; entry.subtypesEnteredThisTurn = {}; entry.turnCardsPlayed = 0; entry.turnSpellsPlayed = 0; for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn"); unit.temporaryTags = []; unit.summoning = false; unit.attackedThisTurn = false; unit.defenseUses = 0; const immobilized = unit.immobilized || hasKeyword(unit, /imobilizado/i); if (immobilized) { unit.immobilized = false; unit.tags = (unit.tags || []).filter((tag) => !/imobilizado/i.test(String(tag))); } else unit.exhausted = false; } for (const unit of entry.board || []) unit.damage = 0; stack.push({ kind: "event", event: { type: "onMaintenance", owner: state.active } }); }
       } else throw new RulesViolation("unknown-command");
     } else if (item.kind === "effect") {
+      const replacements = state.players[item.context.owner]?.replacementEffects || [];
+      const replacementIndex = item.context.replacementApplied ? -1 : replacements.findIndex((entry) => String(item.context.effectSource?.name || "").toLowerCase().includes(String(entry.nameIncludes || "").toLowerCase()));
+      if (replacementIndex >= 0) { replacements.splice(replacementIndex, 1); stack.push({ kind: "effect", effect: item.effect, context: { ...item.context, replacementApplied: true } }); }
       applyEffect(state, item.effect, item.context, handlers);
+      if (item.context.effectSource?.name && (item.context.targetIds || []).length) stack.push({ kind: "event", event: { type: "onNamedEffectApplied", owner: item.context.owner, sourceId: item.context.sourceId, effectSource: item.context.effectSource, card: item.context.effectSource, effect: item.effect, targetIds: item.context.targetIds } });
       cleanupLethal(state, stack);
       for (const event of (state.rulesEvents || []).splice(0).reverse()) stack.push({ kind: "event", event });
       stack.push({ kind: "event", event: { type: `after:${item.effect.type}`, owner: item.context.owner, sourceId: item.context.sourceId } });
