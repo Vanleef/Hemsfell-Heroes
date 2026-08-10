@@ -250,7 +250,7 @@
   font: 700 8px/1.3 Arial;
   letter-spacing: 0.1em;
 }
-.terrain-slot > span {
+.terrain-slot > span:not(.card-frame) {
   color: #d8c28b4d;
   font-size: 33px;
   margin-top: 22px;
@@ -847,7 +847,7 @@
   border-radius: 12px;
   background: #04090d52;
 }
-.field-slot > span {
+.field-slot > span:not(.card-frame) {
   width: 29px;
   height: 29px;
   display: grid;
@@ -2681,7 +2681,7 @@
   border-color: #d9bd6666 !important;
   background: #061219d9 !important;
 }
-.field-slot > span {
+.field-slot > span:not(.card-frame) {
   border: 0 !important;
   color: #bfa85f70 !important;
   font: 10px Georgia;
@@ -3303,7 +3303,7 @@
     inset 0 0 0 2px #061019,
     inset 0 0 18px #0008 !important;
 }
-.paired-field .field-slot > span {
+.paired-field .field-slot > span:not(.card-frame) {
   width: 34px !important;
   height: 34px !important;
   border: 1px solid #4d6977 !important;
@@ -4997,7 +4997,7 @@
   border-radius: 6px !important;
   background: linear-gradient(145deg, #0c2029, #061018) !important;
 }
-.screen-game .field-slot > span {
+.screen-game .field-slot > span:not(.card-frame) {
   width: 27px !important;
   height: 27px !important;
   border-color: #496673 !important;
