@@ -346,6 +346,19 @@ test("Saideira passively replays a Recruit First Act on every leave-field event"
   }
 });
 
+test("Saideira pauses for an authoritative target when the repeated First Act targets", () => {
+  const game = state();
+  game.players[0].terrain = { uid: "saideira", type: "Terreno", staticModifiers: [{ type: "recruitFirstActOnLeave" }], abilities: [] };
+  game.players[0].board.push({ uid: "ally", type: "Criatura", slot: 0, hp: 2, modifiers: [], abilities: [] });
+  const recruit = compileCard({ id: "p183", page: 183, name: "Recruta Apaixonado", type: "Criatura", text: "", tags: ["Primeiro Ato"], subtypes: ["Recruta"] });
+  const pending = executeCommand(game, { type: "emit", event: { type: "onPermanentLeaves", owner: 0, sourceId: "recruit", card: { ...recruit, uid: "recruit" } } }).state;
+  assert.equal(pending.pendingDecision.kind, "targets");
+  assert.equal(pending.pendingDecision.owner, 0);
+  const resolved = executeCommand(pending, { type: "resolveDecision", owner: 0, targetIds: ["ally"] }).state;
+  assert.equal(resolved.players[0].board[0].modifiers[0].health, 2);
+  assert.equal(resolved.pendingDecision, null);
+});
+
 test("Chefe da Guarda adds exactly one First Act instance for entering Recruits", () => {
   const game = state();
   game.players[0].life = 20;
