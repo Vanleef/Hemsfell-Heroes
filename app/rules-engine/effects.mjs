@@ -21,7 +21,7 @@ const removeFromZones = (state, id) => {
         entry.support = (entry.support || []).filter((item) => item.attachedTo !== card.uid);
         for (const attachment of attachments) entry.grave.push({ ...attachment, deathCause: "detached" });
       }
-      return { card, owner: state.players.indexOf(entry), zone };
+      const owner = state.players.indexOf(entry); queueEvent(state, { type: "onPermanentLeaves", owner, sourceId: card.uid || card.id, card, zone }); return { card, owner, zone };
     }
   }
   return null;
