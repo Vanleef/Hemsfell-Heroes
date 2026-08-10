@@ -69,12 +69,12 @@ returns trigger
 language plpgsql
 security invoker
 set search_path = ''
-as $
+as $updated_at$
 begin
   new.updated_at = now();
   return new;
 end;
-$;
+$updated_at$;
 
 create table if not exists public.content_revisions (
   id uuid primary key default gen_random_uuid(),
