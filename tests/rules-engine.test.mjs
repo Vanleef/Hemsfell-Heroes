@@ -114,7 +114,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 77);
+  assert.equal(explicitRuleIds.length, 90);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -484,6 +484,94 @@ test("turn-duration effects expire before the opponent starts maintenance", () =
   assert.deepEqual(result.players[0].board[0].abilities, []);
 });
 
+test("temporary stat and keyword effects across the catalog expire together", () => {
+  const game = state();
+  game.players[0].board.push({ uid: "dragon", type: "Criatura", subtypes: ["Dragão"], modifiers: [], tags: [] });
+  game.players[0].hand.push(compileCard({ id: "p16", page: 16, name: "Escama Protetora", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  const buffed = executeCommand(game, { type: "playCard", owner: 0, cardId: "p16", targetIds: ["dragon"] }).state;
+  assert.deepEqual(buffed.players[0].board[0].modifiers[0], { attack: 0, health: 2, duration: "turn" });
+
+  buffed.players[0].hand.push(compileCard({ id: "p225", page: 225, name: "Café Descafeinado", type: "Feitiço", cost: 0, text: "", tags: ["Acelerado"] }));
+  const silenced = executeCommand(buffed, { type: "playCard", owner: 0, cardId: "p225", targetIds: ["dragon"] }).state;
+  assert.ok(silenced.players[0].board[0].temporaryTags.includes("Sufocado"));
+  silenced.phase = "fim";
+  const expired = executeCommand(silenced, { type: "advancePhase" }).state;
+  assert.deepEqual(expired.players[0].board[0].modifiers, []);
+  assert.deepEqual(expired.players[0].board[0].temporaryTags, []);
+});
+
+test("temporary subtype-restricted effects reject an invalid target", () => {
+  const game = state();
+  game.players[0].board.push({ uid: "human", type: "Criatura", subtypes: ["Humano"], modifiers: [], tags: [] });
+  game.players[0].hand.push(compileCard({ id: "p16", page: 16, type: "Feitiço", cost: 0, text: "", tags: [] }));
+  assert.throws(() => executeCommand(game, { type: "playCard", owner: 0, cardId: "p16", targetIds: ["human"] }), /invalid-target-subtype/);
+});
+
+test("Vingador gains a temporary bonus only when another allied creature dies", () => {
+  const game = state();
+  const avenger = { ...compileCard({ id: "p114", page: 114, name: "Vingador", type: "Criatura", text: "", tags: [] }), uid: "avenger", modifiers: [] };
+  game.players[0].board.push(avenger);
+  const result = executeCommand(game, { type: "emit", event: { type: "onCreatureDestroyed", owner: 0, sourceId: "victim", cardId: "victim", card: { uid: "victim", type: "Criatura" } } }).state;
+  assert.deepEqual(result.players[0].board[0].modifiers[0], { attack: 1, health: 0, duration: "turn" });
+  const self = executeCommand(game, { type: "emit", event: { type: "onCreatureDestroyed", owner: 0, sourceId: "avenger", cardId: "avenger", card: avenger } }).state;
+  assert.equal(self.players[0].board[0].modifiers.length, 0);
+});
+
+test("temporary leave-field listeners remain active only until turn end", () => {
+  const game = state(); game.players[0].energy = 0;
+  game.players[0].hand.push(compileCard({ id: "p47", page: 47, name: "COMBADO NÃO SAI CARO", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  const active = executeCommand(game, { type: "playCard", owner: 0, cardId: "p47", slot: 0 }).state;
+  assert.equal(active.players[0].support.length, 1);
+  const rewarded = executeCommand(active, { type: "emit", event: { type: "onPermanentLeaves", owner: 0, sourceId: "goblin", card: { uid: "goblin", type: "Criatura", subtypes: ["Goblin"] } } }).state;
+  assert.equal(rewarded.players[0].energy, 1);
+  rewarded.phase = "combate";
+  const ended = executeCommand(rewarded, { type: "advancePhase" }).state;
+  assert.equal(ended.players[0].support.length, 0);
+  assert.equal(ended.players[0].grave.at(-1).id, "p47");
+});
+
+test("reserve pays non-creature activated abilities but not creature abilities", () => {
+  const artifactGame = state(); artifactGame.players[0].energy = 0; artifactGame.players[0].reserve = 2;
+  const relic = { uid: "relic", type: "Artefato", abilities: [{ id: "paid-effect", trigger: "activated", costs: [{ type: "energy", amount: 2 }], effects: [{ type: "gainEnergy", amount: 1 }] }] };
+  artifactGame.players[0].support.push(relic);
+  const paid = executeCommand(artifactGame, { type: "activate", owner: 0, sourceId: "relic", abilityId: "paid-effect" }).state;
+  assert.equal(paid.players[0].reserve, 0); assert.equal(paid.players[0].energy, 1);
+
+  const creatureGame = state(); creatureGame.phase = "combate"; creatureGame.players[0].energy = 0; creatureGame.players[0].reserve = 2;
+  const barbarian = { ...compileCard({ id: "p198", page: 198, name: "Bárbaro Cansado", type: "Criatura", text: "", tags: [] }), uid: "barbarian", defenseUses: 1, modifiers: [] };
+  creatureGame.players[0].board.push(barbarian);
+  assert.throws(() => executeCommand(creatureGame, { type: "activate", owner: 0, sourceId: "barbarian", abilityId: barbarian.abilities[0].id }), /not-enough-energy/);
+});
+
+test("combat-duration bonuses expire when the combat phase ends", () => {
+  const game = state(); game.phase = "combate"; game.players[0].energy = 1;
+  const barbarian = { ...compileCard({ id: "p198", page: 198, name: "Bárbaro Cansado", type: "Criatura", text: "", tags: [] }), uid: "barbarian", defenseUses: 1, modifiers: [] };
+  game.players[0].board.push(barbarian);
+  const activated = executeCommand(game, { type: "activate", owner: 0, sourceId: "barbarian", abilityId: barbarian.abilities[0].id }).state;
+  assert.equal(activated.players[0].board[0].modifiers[0].duration, "combat");
+  const ended = executeCommand(activated, { type: "advancePhase" }).state;
+  assert.deepEqual(ended.players[0].board[0].modifiers, []);
+});
+
+test("Café Expresso choices preserve their selected creature target", () => {
+  const game = state(); game.players[0].board.push({ uid: "target", type: "Criatura", modifiers: [], tags: [] });
+  game.players[0].hand.push(compileCard({ id: "p230", page: 230, name: "Café Expresso", type: "Feitiço", cost: 0, text: "", tags: ["Acelerado"] }));
+  const pending = executeCommand(game, { type: "playCard", owner: 0, cardId: "p230", targetIds: ["target"] }).state;
+  assert.equal(pending.pendingDecision.kind, "choice");
+  const result = executeCommand(pending, { type: "resolveDecision", owner: 0, choiceIndex: 1 }).state;
+  assert.deepEqual(result.players[0].board[0].modifiers[0], { attack: 0, health: 1, duration: "turn" });
+});
+
+test("global temporary buffs affect every allied creature and no enemy", () => {
+  const game = state(); game.players[0].life = 10;
+  game.players[0].board.push({ uid: "a", type: "Criatura", modifiers: [], tags: [] }, { uid: "b", type: "Criatura", modifiers: [], tags: [] });
+  game.players[1].board.push({ uid: "enemy", type: "Criatura", modifiers: [], tags: [] });
+  game.players[0].hand.push(compileCard({ id: "p285", page: 285, name: "Medida Desesperada", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p285" }).state;
+  for (const unit of result.players[0].board) { assert.ok(unit.temporaryTags.includes("Atropelar")); assert.equal(unit.modifiers[0].attack, 2); }
+  assert.equal(result.players[1].board[0].temporaryTags, undefined);
+});
+
 test("controller-turn discounts do not reduce accelerated responses on the opponent turn", () => {
   const ownTurn = state(); ownTurn.players[0].energy = 1;
   ownTurn.players[0].support.push({ uid: "discount", staticModifiers: [{ type: "costModifier", selector: { type: "Feitiço" }, amount: -1, during: "controllerTurn" }] });
@@ -662,7 +750,7 @@ test("migration coverage is explicit and simple cards use the command engine", a
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 218); assert.equal(pending.length, 90);
+  assert.equal(migrated.length, 220); assert.equal(pending.length, 88);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
