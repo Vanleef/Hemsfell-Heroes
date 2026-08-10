@@ -14,7 +14,7 @@ export function canExecuteCard(card, handlers = defaultEffectHandlers) {
 }
 
 const clone = (value) => structuredClone(value);
-const fingerprint = (state, stack) => JSON.stringify({ active: state.active, phase: state.phase, round: state.round, players: state.players.map((p) => ({ life: p.life, energy: p.energy, reserve: p.reserve, hand: p.hand.length, deck: p.deck.length, board: p.board.map((u) => [u.uid, u.damage, u.exhausted, u.markers]) })), stack: stack.map((item) => [item.kind, item.effect?.type, item.event?.type]) });
+const fingerprint = (state, stack) => JSON.stringify({ active: state.active, phase: state.phase, round: state.round, pendingAction: state.pendingAction?.type || null, players: state.players.map((p) => ({ life: p.life, energy: p.energy, reserve: p.reserve, hand: p.hand.length, deck: p.deck.length, board: p.board.map((u) => [u.uid, u.damage, u.exhausted, u.markers]) })), stack: stack.map((item) => [item.kind, item.effect?.type, item.event?.type]) });
 
 export function validateCosts(state, ability, context) {
   const entry = state.players[context.owner];
@@ -109,7 +109,23 @@ export function executeCommand(inputState, command, options = {}) {
     const key = fingerprint(state, stack); const count = (repeats.get(key) || 0) + 1; repeats.set(key, count); if (count > maxRepeats) throw new RulesLoopError("Repeated resolution state detected", trace);
     const item = stack.pop(); trace.push({ step: steps, kind: item.kind, type: item.command?.type || item.effect?.type || item.event?.type });
     if (item.kind === "command") {
-      if (item.command.type === "playCard") {
+      if (item.command.type === "passPriority") {
+        const pending = state.pendingResponse;
+        if (!pending || pending.responder !== item.command.owner) throw new RulesViolation("not-your-priority");
+        if ((pending.passes || 0) === 0) state.pendingResponse = { ...pending, responder: pending.actor, passes: 1 };
+        else {
+          const original = state.pendingAction;
+          state.pendingResponse = null; state.pendingAction = null;
+          if (original) stack.push({ kind: "command", command: { ...original, skipPriority: true } });
+        }
+      } else if (item.command.type === "playCard") {
+        if (options.priority && !item.command.skipPriority && !item.command.hasPriority) {
+          if (state.pendingAction) throw new RulesViolation("priority-window-open");
+          state.pendingAction = { ...item.command };
+          state.pendingResponse = { responder: 1 - item.command.owner, actor: item.command.owner, action: item.command.cardId, passes: 0 };
+          continue;
+        }
+        if (state.pendingAction && item.command.owner !== state.pendingResponse?.responder) throw new RulesViolation("not-your-priority");
         const entry = state.players[item.command.owner];
         const cardIndex = entry.hand.findIndex((card) => card.id === item.command.cardId);
         const card = entry.hand[cardIndex]; if (!card) throw new RulesViolation("card-not-in-hand"); actionLabel = card.name || card.id;
@@ -184,6 +200,6 @@ export function executeCommand(inputState, command, options = {}) {
     }
   }
   state.events = (state.events || 0) + 1; state.log ||= []; state.log.unshift({ id: `rules-${state.round}-${state.events}`, text: command.type === "playCard" ? `${actionLabel} foi jogada pelo motor de regras.` : command.type === "activate" ? `${actionLabel} ativou sua habilidade.` : `${actionLabel}: ${command.type}.`, tone: "effect" });
-  if (["playCard", "activate"].includes(command.type)) state.pendingResponse = command.hasPriority ? null : { responder: 1 - command.owner, actor: command.owner, action: actionLabel, passes: 0 };
+  if (["playCard", "activate"].includes(command.type)) if (state.pendingAction && command.hasPriority) state.pendingResponse = { responder: state.pendingAction.actor, actor: command.owner, action: actionLabel, passes: 0 }; else if (!state.pendingAction) state.pendingResponse = command.hasPriority ? null : { responder: 1 - command.owner, actor: command.owner, action: actionLabel, passes: 0 };
   return { state, trace, steps };
 }
