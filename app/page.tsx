@@ -6,7 +6,7 @@ import { RemoteCardArt } from "./remote-card-art";
 import { canActivateCard, hasActivatableEffect } from "./card-activation.mjs";
 import { compileCard } from "./rules-engine/compiler.mjs";
 import { canExecuteCard, executeCommand } from "./rules-engine/engine.mjs";
-import { chooseAIResponse, legalPriorityResponses } from "./rules-engine/priority.mjs";
+import { chooseAIResponse, legalPriorityResponses, shouldAutoPass } from "./rules-engine/priority.mjs";
 import { hasSubtype } from "./rules-engine/subtypes.mjs";
 import { isValidTarget, targetPolicy, TargetScope } from "./rules-engine/targeting.mjs";
 import { applyCloneRetaliation, claimOncePerTurn, earthquakeDamage, elementalChainFrom as ruleElementalChainFrom } from "./game-rules.mjs";
@@ -21,7 +21,7 @@ type Player={heroId:string;level:number;heroXP:number;levelUpsThisTurn:number;li
 type Phase="manutencao"|"principal"|"combate"|"fim";
 /* Heroes are valid targets only for explicit damage or healing effects. */
 const allowsHeroTarget=(card:CardDef|undefined,step=0)=>!!card&&(targetPolicy({...card,text:cardPlayEffectText(card)}).steps?.[step]?.scope??targetPolicy({...card,text:cardPlayEffectText(card)}).scope)===TargetScope.ANY_CHARACTER;
-type Game={players:[Player,Player];active:0|1;phase:Phase;round:number;log:{id:string;text:string;tone?:string}[];winner:number|null;selectedAttackers:string[];events:number;combatAction?:CombatAction|null;pendingResponse?:PendingResponse|null;pendingDecision?:PendingDecision|null;turnDeadline?:number|null};
+type Game={players:[Player,Player];active:0|1;phase:Phase;round:number;log:{id:string;text:string;tone?:string}[];winner:number|null;selectedAttackers:string[];events:number;combatAction?:CombatAction|null;pendingAction?:Record<string,unknown>;pendingResponse?:PendingResponse|null;pendingDecision?:PendingDecision|null;turnDeadline?:number|null};
 type Screen="menu"|"setup"|"decks"|"game";
 type Targeting={kind:"attach"|"spell"|"gimble"|"natureza"|"saymon"|"saymon-life"|"ngoro"|"uruk-fire";source:string;cardIndex?:number;amount?:number;response?:boolean;fieldSlot?:number;required?:number;selected?:string[]};
 type ImageChoice={cardIndex:number;cardName:string;options:string[]};
@@ -231,6 +231,7 @@ function OriginalCard({card,controller,small=false,disabled=false,selected=false
 
 export default function Home(){
  const [screen,setScreen]=useState<Screen>("menu");const[mode,setMode]=useState<"bot"|"online">("bot");const[mine,setMine]=useState<DeckId>("gimble");const[enemy,setEnemy]=useState<DeckId>("goblin");const[difficulty,setDifficulty]=useState("Normal");const[game,setGame]=useState<Game|null>(null);const[maintenanceOpen,setMaintenanceOpen]=useState(false);const[showLog,setShowLog]=useState(false);const[showInspector,setShowInspector]=useState<CardDef|null>(null);const[targeting,setTargeting]=useState<Targeting|null>(null);const[imageChoice,setImageChoice]=useState<ImageChoice|null>(null);const[cafeChoice,setCafeChoice]=useState<number|null>(null);const[responseWindow,setResponseWindow]=useState<PendingResponse|null>(null);const[combatAction,setCombatAction]=useState<CombatAction|null>(null);const[aiAttackQueue,setAiAttackQueue]=useState<string[]>([]);const[visualFx,setVisualFx]=useState<VisualFx|null>(null);const[confirmSurrender,setConfirmSurrender]=useState(false);const[extraView,setExtraView]=useState<{title:string;cards:CardDef[]}|null>(null);const[searchChoice,setSearchChoice]=useState<SearchRequest|null>(null);const[shufflingDeck,setShufflingDeck]=useState<0|1|null>(null);const[dragging,setDragging]=useState<{index:number;type:CardType}|null>(null);
+const [priorityControl,setPriorityControl]=useState<"assisted"|"full-control">("assisted");
 // Online room state
 const [roomId,setRoomId]=useState<string|null>(null);
 const [roomLink,setRoomLink]=useState<string|null>(null);
@@ -624,6 +625,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
  },[game,mode,combatAction,responseWindow,aiAttackQueue]);
 
  useEffect(()=>{if(!game||responseWindow?.responder!==1||game.winner!==null||mode!=="bot")return;const t=setTimeout(()=>{const priorityGame={...game,pendingResponse:responseWindow};const command=chooseAIResponse(priorityGame,1,Math.random);if(command.type==="passPriority"){void runRulesCommand(command,1);update(g=>log(g,"A IA não tinha resposta legal e passou imediatamente.","response"));return}if(command.type==="activate"){void runRulesCommand(command,1);return}const idx=game.players[1].hand.findIndex(c=>c.id===command.cardId),c=game.players[1].hand[idx];if(!c){void runRulesCommand({type:"passPriority",auto:true},1);return}const p=game.players[1],rule=targetRule(c),target=rule==="ally"?p.board[0]?.uid:rule==="enemy"?(game.players[0].board[0]?.uid||"enemy-hero"):rule==="any"?(game.players[0].board[0]?.uid||p.board[0]?.uid):undefined;if(rule!=="none"&&!target){void runRulesCommand({type:"passPriority",auto:true},1);return}playCard(idx,1,target,undefined,undefined,true)},legalPriorityResponses({...game,pendingResponse:responseWindow},1).length?650:50);return()=>clearTimeout(t)},[game,responseWindow,mode]);
+ useEffect(()=>{if(!game||mode!=="bot"||responseWindow?.responder!==0||priorityControl!=="assisted")return;const snapshot={...game,pendingResponse:responseWindow};if(!shouldAutoPass(snapshot,0,"assisted"))return;const t=setTimeout(()=>{void runRulesCommand({type:"passPriority",auto:true},0);update(g=>log(g,"Sem respostas legais — prioridade passada automaticamente.","response"))},120);return()=>clearTimeout(t)},[game,responseWindow,mode,priorityControl]);
 
  const selectedDeck=deckById(mine);const selectedPool=useMemo(()=>poolFor(mine),[mine]);const selectedExtra=useMemo(()=>extraFor(mine),[mine]);
  const myRoomParticipant=isHost?roomInfo?.host:roomInfo?.guest;
@@ -687,6 +689,8 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
    {combatAction&&<CombatAnimation action={combatAction} attackerHero={deckById(game.players[combatAction.attackerOwner].heroId).name} defenderHero={deckById(game.players[combatAction.attackerOwner===0?1:0].heroId).name}/>}
    {defenseChoice&&<div className="defense-decision"><span>Escolha uma criatura destacada para bloquear</span><b>OU</b><button onClick={chooseDirectDefense}>Receber o ataque no herói</button></div>}
    {visualFx&&<VisualEffect fx={visualFx}/>} {shufflingDeck!==null&&<DeckShuffleEffect owner={shufflingDeck}/>}<button className="surrender-button" onClick={()=>setConfirmSurrender(true)}>⚑ Render-se</button>
+   {mode==="bot"&&<button className="priority-control-toggle" title="Assistido passa automaticamente apenas quando não há resposta legal." onClick={()=>setPriorityControl(value=>value==="assisted"?"full-control":"assisted")}>{priorityControl==="assisted"?"Resposta: Assistido":"Resposta: Full Control"}</button>}
+   {game.pendingAction&&<div className="priority-stack-indicator" title="Ação aguardando dois passes consecutivos"><span>PILHA</span><b>1</b></div>}
    {responseWindow?.responder===0&&<ResponseModal action={responseWindow.action} player={me} seconds={responseRemaining} passes={responseWindow.passes??0} onPlay={chooseResponse} onPass={declineResponse}/>} {responseWindow?.responder===1&&<div className="response-waiting"><i></i>{mode==="online"?<>Aguardando resposta do oponente <b>{responseRemaining}s</b></>:"A IA está avaliando uma resposta acelerada…"}</div>}
    {showLog&&<aside className="test-log"><header><div><b>Registro do teste</b><span>{game.events} eventos</span></div><button onClick={()=>setShowLog(false)}>×</button></header><div className="metrics"><span><b>{game.round}</b>turnos</span><span><b>{me.damageDealt}</b>dano</span><span><b>{me.cardsPlayed}</b>cartas</span><span><b>{me.spellsPlayed}</b>feitiços</span></div><div className="events">{game.log.map(x=><p key={x.id} className={x.tone}><i></i>{x.text}</p>)}</div></aside>}
    {maintenanceOpen&&game.active===0&&game.winner===null&&<MaintenanceModal player={me} firstTurn={game.round===1} onChoose={doMaintenance}/>} 
