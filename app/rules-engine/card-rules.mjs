@@ -43,7 +43,7 @@ export const explicitCardRules = Object.freeze({
   p181: [ability("static", [effect("recruitFirstActOnLeave")])],
   p182: [ability("static", [effect("doubleRecruitFirstAct")])],
   p183: [ability("onEnter", [effect("conditionalStats", { target: "allyCreature", health: 2, alternate: { targetName: "Recruta Elegante", health: 3 }, duration: "turn" })])],
-  p184: [ability("onEnter", [effect("tap", { target: "anyCreature" })])],
+  p184: [ability("onEnter", [effect("toggleTap", { target: "anyCreature" })])],
   p185: [ability("onEnter", [effect("snapshotStats", { target: "self", attackPerOtherSubtype: { subtype: "Recruta", amount: 1 } })])],
   p186: [ability("onEnter", [effect("modifyStats", { target: "allyCreature", attack: 2, health: 0, duration: "turn" })])],
   p188: [ability("onEnter", [effect("damage", { amount: 1, additionalIfExhausted: 1, target: "anyCharacter", selections: 1 })])],
