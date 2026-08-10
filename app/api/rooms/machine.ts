@@ -112,7 +112,7 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
 }
 
 
-const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition"]);
+const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
 
 /** Transitional server-authoritative command path. The server owns the player
  * index, validates the room revision and runs the deterministic rules engine. */
@@ -121,6 +121,7 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
   if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };
   if (!AUTHORITATIVE_COMMANDS.has(String(rawCommand.type || ""))) return { ok: false, status: 400, error: "unsupported command" };
   const owner = role === "host" ? 0 : 1;
+  if (rawCommand.type === "passPriority") { const pending = room.game.pendingResponse; if (!pending || pending.responder !== owner) return { ok: false, status: 403, error: "not your priority" }; if ((pending.passes || 0) === 0) room.game.pendingResponse = { ...pending, responder: pending.actor, passes: 1, deadline: deadline(room.settings.responseSeconds) }; else room.game.pendingResponse = null; room.game.events = (room.game.events || 0) + 1; room.revision++; return { ok: true, status: 200, error: "", trace: [] }; }
   try {
     const result = executeCommand(room.game, { ...rawCommand, owner });
     room.game = result.state;
