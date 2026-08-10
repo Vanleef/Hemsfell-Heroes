@@ -598,21 +598,21 @@ test("priority defers the original action until both players pass", () => {
 
 test("priority API exposes only legal accelerated cards and usable activations", () => {
   const game = state();
-  game.pendingAction = { type: "playCard", owner: 0, cardId: "original" };
-  game.pendingResponse = { responder: 1, actor: 0, action: "original", passes: 0 };
-  game.players[1].energy = 0; game.players[1].reserve = 2;
-  game.players[1].hand.push(
+  game.pendingAction = { type: "playCard", owner: 1, cardId: "original" };
+  game.pendingResponse = { responder: 0, actor: 1, action: "original", passes: 0 };
+  game.players[0].energy = 0; game.players[0].reserve = 2;
+  game.players[0].hand.push(
     { id: "fast", name: "Resposta", type: "Feitiço", cost: 2, tags: ["Acelerado"], abilities: [] },
     { id: "slow", name: "Lento", type: "Feitiço", cost: 0, tags: [], abilities: [] },
     { id: "expensive", name: "Caro", type: "Feitiço", cost: 3, tags: ["Acelerado"], abilities: [] },
   );
-  game.players[1].board.push({ uid: "ready", name: "Ativável", abilities: [{ id: "answer", trigger: "activated", costs: [], effects: [] }] });
-  const legal = legalPriorityResponses(game, 1);
+  game.players[0].board.push({ uid: "ready", name: "Ativável", abilities: [{ id: "answer", trigger: "activated", costs: [], effects: [] }] });
+  const legal = legalPriorityResponses(game, 0);
   assert.deepEqual(legal.map((command) => command.type), ["playCard", "activate"]);
   assert.equal(legal[0].cardId, "fast");
-  assert.equal(isAccelerated(game.players[1].hand[1]), false);
-  assert.equal(priorityView(game, 1).state, PriorityState.WAITING_FOR_PLAYER);
-  assert.equal(priorityView(game, 0).state, PriorityState.WAITING_FOR_OPPONENT);
+  assert.equal(isAccelerated(game.players[0].hand[1]), false);
+  assert.equal(priorityView(game, 0).state, PriorityState.WAITING_FOR_PLAYER);
+  assert.equal(priorityView(game, 1).state, PriorityState.WAITING_FOR_OPPONENT);
 });
 
 test("assisted control and AI pass immediately when no legal response exists", () => {
