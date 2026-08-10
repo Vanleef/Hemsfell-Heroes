@@ -67,10 +67,12 @@ const suppliedDeckPages:Partial<Record<DeckId,Array<[number,number]>>>= {
  quarion:[[184,3],[189,3],[186,3],[188,3],[183,3],[190,3],[187,3],[185,3],[182,2],[193,2],[197,2],[194,2],[196,2],[195,2],[192,2],[153,2],[150,2],[151,3],[191,2],[181,2]],
  ngoro:[[256,3],[257,3],[260,3],[259,3],[262,3],[258,3],[261,3],[264,3],[263,3],[266,3],[265,3],[269,3],[267,3],[268,3],[270,3],[271,2],[272,2]],
 };
+/* Cartas complexas ainda não liberadas não entram em nenhum deck jogável. */
+const disabledDeckCardIds=new Set(["p200","p201","p203","p206","p207","p209","p210"]);
 const allFor=(id:string)=>{const d=deckById(id);return cards.filter(c=>c.page>=d.start&&c.page<=d.end&&!c.hero)};
-const poolFor=(id:string)=>{const supplied=suppliedDeckPages[id as DeckId];return supplied?supplied.map(([page])=>cards.find(card=>card.page===page)).filter((card):card is CardDef=>!!card&&!card.imageCard):allFor(id).filter(c=>!c.imageCard)};
-const extraFor=(id:string)=>allFor(id).filter(c=>c.imageCard);
-const buildDeck=(id:string)=>{const supplied=suppliedDeckPages[id as DeckId];if(supplied)return supplied.flatMap(([page,quantity])=>{const card=cards.find(candidate=>candidate.page===page);return card?Array.from({length:quantity},(_,copy)=>({...card,id:`${card.id}-${id}-${copy}-${uid()}`})):[]});const pool=poolFor(id),out:CardDef[]=[];let copy=0;while(out.length<49){for(const c of pool){if(out.length===49)break;out.push({...c,id:`${c.id}-${copy}`})}copy++}return out};
+const poolFor=(id:string)=>{const supplied=suppliedDeckPages[id as DeckId];return supplied?supplied.map(([page])=>cards.find(card=>card.page===page)).filter((card):card is CardDef=>!!card&&!card.imageCard&&!disabledDeckCardIds.has(card.id)):allFor(id).filter(c=>!c.imageCard&&!disabledDeckCardIds.has(c.id))};
+const extraFor=(id:string)=>allFor(id).filter(c=>c.imageCard&&!disabledDeckCardIds.has(c.id));
+const buildDeck=(id:string)=>{const supplied=suppliedDeckPages[id as DeckId];if(supplied)return supplied.flatMap(([page,quantity])=>{const card=cards.find(candidate=>candidate.page===page);return card&&!disabledDeckCardIds.has(card.id)?Array.from({length:quantity},(_,copy)=>({...card,id:`${card.id}-${id}-${copy}-${uid()}`})):[]});const pool=poolFor(id),out:CardDef[]=[];let copy=0;while(out.length<49){for(const c of pool){if(out.length===49)break;out.push({...c,id:`${c.id}-${copy}`})}copy++}return out};
 const shuffle=<T,>(source:T[])=>{const a=[...source];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 let idSequence=0;const uid=()=>globalThis.crypto?.randomUUID?.()??`hh-${Date.now().toString(36)}-${(++idSequence).toString(36)}-${Math.random().toString(36).slice(2,8)}`;
 const log=(g:Game,text:string,tone="")=>{g.log.unshift({id:uid(),text,tone});g.events++};
