@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import rawCards from "./cards.generated.json";
 import { RemoteCardArt } from "./remote-card-art";
-import { canActivateCard, hasActivatableEffectText } from "./card-activation.mjs";
+import { canActivateCard, hasActivatableEffect } from "./card-activation.mjs";
+import { compileCard } from "./rules-engine/compiler.mjs";
 import { applyCloneRetaliation, claimOncePerTurn, earthquakeDamage, elementalChainFrom as ruleElementalChainFrom } from "./game-rules.mjs";
 
 type CardType="Criatura"|"Feitiço"|"Artefato"|"Encanto"|"Terreno"|"Herói";
@@ -26,7 +27,7 @@ type CombatAction={attackerOwner:0|1;attackerUid:string;attackerCard:CardDef;def
 type VisualFx={id:string;kind:"summon"|"spell"|"artifact"|"terrain"|"ability";card?:CardDef;target?:CardDef;label:string;detail:string};
 type SearchRequest={id:string;owner:0|1;sourceName:string;sourcePage:number;text:string;limit:number;filterLabel:string;destination:"hand"|"field";reveal:boolean;optional:boolean;maxCost?:number};
 
-const cards=rawCards as CardDef[];
+const cards=(rawCards as CardDef[]).map(card=>compileCard(card) as CardDef);
 type CardFaction="Dragão"|"Goblin"|"Gato"|"Vampiro"|"Recruta"|"Fênix";
 const factionPages:Record<CardFaction,ReadonlySet<number>>={
  "Dragão":new Set([3,5,6,7,8,9,10,11,23,24,25,216]),
@@ -210,12 +211,12 @@ const keywordEntry=(value:string)=>{const normalized=cleanName(value);const key=
 function RichCardText({text}:{text:string}){const parts=text.split(keywordPattern);return <span className="rich-card-text">{parts.map((part,index)=>{const keyword=keywordEntry(part);return keyword?<span className="keyword-term" data-tip={keyword.description} title={keyword.description} tabIndex={0} key={`${part}-${index}`}><strong>{part}</strong></span>:<span key={`${part}-${index}`}>{part}</span>})}</span>}
 function KeywordBadge({name}:{name:string}){const keyword=keywordEntry(name);return <span className={`keyword-badge ${keyword?"known":""}`} data-tip={keyword?.description} title={keyword?.description}>{name}</span>}
 const activeCardEffect=(card:CardDef,player:Player,owner:0|1,response:PendingResponse|null)=>{const cost=effectiveCost(card,player),lifeLoss=Number(card.text.match(/\bperca\s+(\d+)\s+(?:de\s+)?vida/i)?.[1]||0),needsSacrifice=/sacrifique[^.]*criatura/i.test(card.text);if(cost>playableEnergy(card,player)||(lifeLoss&&player.life<=lifeLoss)||(needsSacrifice&&!player.board.length))return"";if(card.tags.some(tag=>cleanName(tag)==="fura fila")&&player.turnCardsPlayed>0)return"FURA-FILA";const element=cardElement(card);if(element&&player.elementChain?.element===element)return`CADEIA · ${player.elementChain.effect.toUpperCase()}`;if(needsSacrifice)return"SACRIFÍCIO";if(lifeLoss)return`PERDA · ${lifeLoss}`;if(isFast(card)&&response?.responder===owner)return"RESPOSTA";if(cost!==card.cost)return cost<card.cost?"CUSTO ↓":"CUSTO ↑";return""};
- const hasActivatableEffect=(unit:Unit)=>hasActivatableEffectText(unit.text);
- const canActivateUnit=(player:Player,unit:Unit)=>canActivateCard(unit,{energy:player.energy,reserve:player.reserve,hasSacrificeTarget:player.board.some(card=>card.uid!==unit.uid)});
+ const hasActivatableUnitEffect=(unit:Unit)=>hasActivatableUnitEffect(unit);
+ const canActivateUnit=(player:Player,unit:Unit)=>canActivateCard(unit,{energy:player.energy,reserve:player.reserve,life:player.life,topGrave:player.grave.at(-1),constantMarkers:[...player.board,...player.support,...(player.terrain?[player.terrain]:[])].reduce((sum,card)=>sum+(card.markers||0),0),hasSacrificeTarget:player.board.some(card=>card.uid!==unit.uid)});
  const activeUnitEffect=(player:Player,unit:Unit)=>{if(unit.impacting)return"IMPACTO";if(unit.suffocated)return"SUFOCADA";const modifiers=statModifiers(player,unit);if(modifiers.atk||modifiers.hp)return"APRIMORAMENTO ATIVO";if(player.support.some(card=>card.attachedTo===unit.uid))return"ARTEFATO ATIVO";if(unit.frozen||unit.stunned||unit.immobilized)return"EFEITO ATIVO";return""};
 
 function OriginalCard({card,controller,small=false,disabled=false,selected=false,targetClass="",activeEffect="",priority=false,draggable=false,onDragStart,onDragEnd,onClick,onActivate,activationDisabled=false}:{card:CardDef|Unit;controller?:Player;small?:boolean;disabled?:boolean;selected?:boolean;targetClass?:string;activeEffect?:string;priority?:boolean;draggable?:boolean;onDragStart?:(e:React.DragEvent)=>void;onDragEnd?:()=>void;onClick?:()=>void;onActivate?:()=>void;activationDisabled?:boolean}){
- const unit="uid" in card?card:undefined,modifiers=unit?statModifiers(controller,unit):{atk:0,hp:0},liveAttack=unit?currentAtk(unit,controller):0,liveVitality=unit?currentHp(unit,controller):0,shownCost=!unit&&controller?effectiveCost(card,controller):card.cost,costChanged=shownCost!==card.cost,markerCount=unit?.markers||0,activatable=!!unit&&hasActivatableEffect(unit);
+ const unit="uid" in card?card:undefined,modifiers=unit?statModifiers(controller,unit):{atk:0,hp:0},liveAttack=unit?currentAtk(unit,controller):0,liveVitality=unit?currentHp(unit,controller):0,shownCost=!unit&&controller?effectiveCost(card,controller):card.cost,costChanged=shownCost!==card.cost,markerCount=unit?.markers||0,activatable=!!unit&&hasActivatableUnitEffect(unit);
  /* Board cards expose semantic visual states. A turned card preserves its
     orientation and receives the VIRADA status tag; buffs and debuffs use separate classes. */
  const negativeState=unit?.suffocated?"status-suffocated":unit?.stunned?"status-stunned":unit?.frozen?"status-frozen":unit?.immobilized?"status-immobilized":"";

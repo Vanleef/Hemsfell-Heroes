@@ -1,3 +1,5 @@
+import { abilitiesForLevel, getExplicitCardRule } from "./card-rules.mjs";
+
 const clean = (value = "") => String(value).replace(/\s+/g, " ").trim();
 const folded = (value = "") => clean(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
@@ -122,8 +124,13 @@ export function compileCardText(text = "") {
 }
 
 export function compileCard(card) {
+  const explicit = getExplicitCardRule(card);
+  if (explicit) {
+    const abilities = abilitiesForLevel(explicit, card?.level || 1).map((ability, index) => ({ id: ability.id || `${card.id}-ability-${index + 1}`, ...ability }));
+    return { ...card, abilities, rules: explicit, diagnostics: { unsupported: 0, source: "explicit", ignored: !!explicit.ignored } };
+  }
   const compiled = compileCardText(card?.text || "");
-  return { ...card, abilities: compiled.abilities, diagnostics: { unsupported: compiled.unsupported.length } };
+  return { ...card, abilities: compiled.abilities, diagnostics: { unsupported: compiled.unsupported.length, source: "text" } };
 }
 
 export function auditCards(cards = []) {
@@ -136,12 +143,12 @@ export function auditCards(cards = []) {
     seen.add(card?.id);
     if (!Number.isInteger(card?.cost) || card.cost < 0) issues.push({ card: card?.id, severity: "error", code: "invalid-cost" });
     if (card?.type === "Criatura" && (!Number.isFinite(card.atk) || !Number.isFinite(card.hp))) issues.push({ card: card?.id, severity: "error", code: "missing-creature-stats" });
-    const result = compileCardText(card?.text || "");
+    const result = compileCard(card);
     abilities += result.abilities.length;
-    unsupported += result.unsupported.length;
+    unsupported += result.diagnostics.unsupported;
     if (/her[oó]i alvo/i.test(card?.text || "")) issues.push({ card: card.id, severity: "warning", code: "manual-hero-target-conflict" });
     const manualSections = splitTriggeredSections(card?.text || "").filter((section) => !section.label);
-    if (manualSections.some((section) => /sacrifique/i.test(section.text)) && !result.abilities.some((ability) => ability.trigger === Trigger.ACTIVATED && ability.costs.some((cost) => cost.type === "sacrifice"))) issues.push({ card: card.id, severity: "error", code: "unparsed-sacrifice-cost" });
+    if (!result.rules?.ignored && manualSections.some((section) => /sacrifique/i.test(section.text)) && !result.abilities.some((ability) => ability.trigger === Trigger.ACTIVATED && ability.costs.some((cost) => cost.type === "sacrifice"))) issues.push({ card: card.id, severity: "error", code: "unparsed-sacrifice-cost" });
   }
   return { cards: cards.length, abilities, unsupported, coverage: abilities ? (abilities - unsupported) / abilities : 1, issues };
 }

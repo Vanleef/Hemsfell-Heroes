@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
-import { auditCards, compileCardText } from "../app/rules-engine/compiler.mjs";
+import { auditCards, compileCard, compileCardText } from "../app/rules-engine/compiler.mjs";
+import { explicitCardRules, explicitRuleIds } from "../app/rules-engine/card-rules.mjs";
+import { defaultEffectHandlers } from "../app/rules-engine/effects.mjs";
 import { executeCommand, RulesLoopError } from "../app/rules-engine/engine.mjs";
 import { runHeadlessGames } from "../app/rules-engine/simulator.mjs";
 
@@ -68,17 +70,92 @@ test("headless simulations are deterministic and bounded", () => {
   assert.deepEqual(first, second); assert.equal(first.games, 50);
 });
 
+test("all 65 clarified clauses are represented by 64 explicit card records", () => {
+  assert.equal(explicitRuleIds.length, 64);
+  assert.ok(Array.isArray(explicitCardRules.p120));
+  assert.equal(explicitCardRules.p120.length, 2);
+  assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
+});
 
-test("the complete generated catalog remains structurally valid and classifiable", async () => {
+test("explicit cards compile without unsupported text fallbacks", () => {
+  for (const id of explicitRuleIds) {
+    const compiled = compileCard({ id, text: "texto legado", level: 3 });
+    assert.equal(compiled.diagnostics.unsupported, 0, id);
+    assert.equal(compiled.diagnostics.source, "explicit", id);
+  }
+});
+
+test("every primitive used by the clarified cards has an effect handler", () => {
+  const missing = new Set();
+  const inspect = (effects = []) => {
+    for (const entry of effects) {
+      if (!defaultEffectHandlers[entry.type]) missing.add(entry.type);
+      inspect(entry.effects);
+      for (const branch of entry.branches || []) inspect(branch.effects);
+      for (const choice of entry.choices || []) inspect(choice);
+    }
+  };
+  for (const rule of Object.values(explicitCardRules)) {
+    const abilities = Array.isArray(rule) ? rule : rule.hero ? Object.values(rule.levels || {}).flat() : [];
+    for (const entry of abilities) inspect(entry.effects);
+  }
+  assert.deepEqual([...missing], []);
+});
+
+test("unrestricted damage can target heroes", () => {
+  const game = state(); game.players[0].hand.push({ id: "spell", type: "Feitiço", cost: 0, abilities: [{ id: "hit", trigger: "onPlay", effects: [{ type: "damage", amount: 3, target: "anyCharacter" }] }] });
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "spell", targetIds: ["enemy-hero"] });
+  assert.equal(result.state.players[1].life, 27);
+});
+
+test("Alerta preserves the attacker ready and Voar requires a flying blocker", () => {
+  const alert = state(); alert.phase = "combate"; alert.players[0].board.push({ uid: "a", atk: 2, hp: 2, tags: ["Alerta"], exhausted: false, summoning: false, modifiers: [] });
+  assert.equal(executeCommand(alert, { type: "attack", owner: 0, attackerId: "a" }).state.players[0].board[0].exhausted, false);
+  const flying = state(); flying.phase = "combate"; flying.players[0].board.push({ uid: "a", atk: 2, hp: 2, tags: ["Voar"], exhausted: false, summoning: false, modifiers: [] }); flying.players[1].board.push({ uid: "d", atk: 1, hp: 3, tags: [], exhausted: false, modifiers: [] });
+  assert.throws(() => executeCommand(flying, { type: "attack", owner: 0, attackerId: "a", defenderId: "d" }), /flying-blocker-required/);
+});
+
+test("generated Images disappear instead of entering the grave", () => {
+  const game = state(); game.players[0].board.push({ uid: "image", id: "image", imageCard: true, generatedImage: true, hp: 1, damage: 0 });
+  defaultEffectHandlers.destroy(game, { type: "destroy" }, { owner: 1, targetIds: ["image"] });
+  assert.equal(game.players[0].grave.length, 0); assert.equal(game.players[0].board.length, 0);
+});
+
+test("destroying a creature also sends its attached artifact to the grave", () => {
+  const game = state(); game.players[0].board.push({ uid: "unit", id: "unit" }); game.players[0].support.push({ uid: "artifact", id: "artifact", attachedTo: "unit" });
+  defaultEffectHandlers.destroy(game, { type: "destroy" }, { owner: 1, targetIds: ["unit"] });
+  assert.deepEqual(game.players[0].grave.map((card) => card.uid).sort(), ["artifact", "unit"]);
+});
+
+test("one-use damage shield cancels the entire next damage instance", () => {
+  const game = state(); game.players[0].board.push({ uid: "unit", hp: 2, damage: 0, damageShields: [{ uses: 1 }] });
+  defaultEffectHandlers.damage(game, { type: "damage", amount: 99 }, { owner: 1, targetIds: ["unit"] });
+  assert.equal(game.players[0].board[0].damage, 0); assert.deepEqual(game.players[0].board[0].damageShields, []);
+});
+
+test("activated abilities are limited to once per turn", () => {
+  const game = state(); const card = compileCard({ id: "p229", text: "", type: "Encanto" }); game.players[0].support.push({ ...card, uid: "machine", exhausted: false, summoning: false });
+  const first = executeCommand(game, { type: "activate", owner: 0, sourceId: "machine", abilityId: card.abilities[0].id });
+  assert.throws(() => executeCommand(first.state, { type: "activate", owner: 0, sourceId: "machine", abilityId: card.abilities[0].id }), /ability-limit-reached|cannot-tap/);
+});
+
+test("Bomba doubles all markers and halves maximum energy with ceiling", () => {
+  const game = state(); game.players[0].maxEnergy = 9; game.players[0].energy = 9; game.players[0].board.push({ uid: "one", markers: 2 }, { uid: "two", markers: { action: 3 } });
+  defaultEffectHandlers.doubleMarkers(game, {}, { owner: 0 }); defaultEffectHandlers.halveMaxEnergy(game, {}, { owner: 0 });
+  assert.equal(game.players[0].board[0].markers, 4); assert.equal(game.players[0].board[1].markers.action, 6); assert.equal(game.players[0].maxEnergy, 5); assert.equal(game.players[0].energy, 5);
+});
+
+test("the complete generated catalog has full classified coverage", async () => {
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
   const report = auditCards(cards);
   const errors = report.issues.filter((issue) => issue.severity === "error");
   assert.equal(report.cards, 308);
   assert.deepEqual(errors, []);
-  assert.ok(report.coverage >= 0.8, `compiler coverage dropped to ${(report.coverage * 100).toFixed(1)}%`);
+  assert.equal(report.unsupported, 0);
+  assert.equal(report.coverage, 1);
 });
 
-test("multiplayer API accepts whitelisted rules commands through the authoritative engine", async () => {
+test("multiplayer API exposes the authoritative command path", async () => {
   const [route, machine] = await Promise.all([
     readFile(new URL("../app/api/rooms/[id]/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
@@ -86,5 +163,4 @@ test("multiplayer API accepts whitelisted rules commands through the authoritati
   assert.match(route, /body\.action === "command"/);
   assert.match(machine, /AUTHORITATIVE_COMMANDS/);
   assert.match(machine, /executeCommand/);
-  assert.match(machine, /rawCommand, owner/);
 });

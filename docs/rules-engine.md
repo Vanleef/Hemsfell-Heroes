@@ -38,6 +38,12 @@ Uma carta deve armazenar `abilities`, não código próprio. Exemplo:
 
 O parser de texto existe para migrar o catálogo atual. Novas cartas devem ser cadastradas diretamente nessa forma estruturada e validadas pelo banco.
 
+## Regras explícitas
+
+`card-rules.mjs` é a fonte canônica das cartas cujo texto impresso é ambíguo ou exige decisões, substituições e efeitos compostos. O catálogo contém 64 registros explícitos para os 65 trechos esclarecidos pelo autor (Primordial possui dois). Sete cartas removidas do jogo permanecem marcadas como `ignored`, evitando que o texto legado volte a ativá-las por acidente.
+
+Alvos seguem quatro escopos: `anyCharacter` inclui heróis; `anyCreature` inclui criaturas dos dois jogadores; `allyCreature` e `enemyCreature` restringem o controlador. Imagens são cópias do Deck Extra e desaparecem ao sair do campo. Habilidades ativadas usam `usageLimit` e têm disponibilidade e custos validados antes de mostrar o indicador.
+
 ## Testes e simulação
 
 - `npm run test:rules`: primitivas, custos, combate, gatilhos e loop guard.
