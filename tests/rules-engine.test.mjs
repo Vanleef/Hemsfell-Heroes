@@ -976,6 +976,22 @@ test("legal artifacts stay connected in the support zone after resolution", () =
   assert.equal(result.players[0].support[0].slot, 1);
 });
 
+test("activated artifact self-destruction resolves after the remaining effects", () => {
+  const game = state();
+  game.players[0].support.push({
+    uid: "self-destructing-artifact", type: "Artefato", page: 304, name: "Artefato de Teste", slot: 0,
+    attachedTo: "host", tags: [], modifiers: [],
+    abilities: [{ id: "activate", trigger: "activated", costs: [], effects: [
+      { type: "destroy", target: "self" },
+      { type: "modifyStats", target: "self", attack: 2, health: 1 },
+    ] }],
+  });
+  game.players[0].board.push({ uid: "host", type: "Criatura", slot: 0, tags: [], abilities: [] });
+  const result = executeCommand(game, { type: "activate", owner: 0, sourceId: "self-destructing-artifact", abilityId: "activate", skipPriority: true }).state;
+  assert.equal(result.players[0].support.length, 0);
+  assert.equal(result.players[0].board[0].modifiers[0].attack, 2);
+});
+
 test("investigation triggers share reveal events and archive replacement", () => {
   const game = state();
   game.players[0].board.push(
