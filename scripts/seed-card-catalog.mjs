@@ -1,4 +1,5 @@
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname } from "node:path";
 
 const [input = "app/cards.generated.json", output = "drizzle/seeds/hemsfell-core.sql"] = process.argv.slice(2);
 const cards = JSON.parse(readFileSync(input, "utf8"));
@@ -21,5 +22,6 @@ const sql = [
   "",
 ].join("\n");
 
+mkdirSync(dirname(output), { recursive: true });
 writeFileSync(output, sql);
 console.log(`Prepared ${cards.length} cards in ${output}`);
