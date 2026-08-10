@@ -1,4 +1,5 @@
 import { abilitiesForLevel, getExplicitCardRule } from "./card-rules.mjs";
+import { withDerivedSubtypes } from "./subtypes.mjs";
 
 const clean = (value = "") => String(value).replace(/\s+/g, " ").trim();
 const folded = (value = "") => clean(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -124,6 +125,7 @@ export function compileCardText(text = "") {
 }
 
 export function compileCard(card) {
+  card = withDerivedSubtypes(card);
   const explicit = getExplicitCardRule(card);
   if (explicit) {
     const abilities = abilitiesForLevel(explicit, card?.level || 1).map((ability, index) => ({ id: ability.id || `${card.id}-ability-${index + 1}`, ...ability }));

@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 import { auditCards, compileCard, compileCardText } from "../app/rules-engine/compiler.mjs";
 import { explicitCardRules, explicitRuleIds } from "../app/rules-engine/card-rules.mjs";
 import { defaultEffectHandlers } from "../app/rules-engine/effects.mjs";
+import { hasSubtype, subtypesFor } from "../app/rules-engine/subtypes.mjs";
+import { isValidTarget, targetPolicy, TargetScope } from "../app/rules-engine/targeting.mjs";
 import { executeCommand, RulesLoopError } from "../app/rules-engine/engine.mjs";
 import { runHeadlessGames } from "../app/rules-engine/simulator.mjs";
 
@@ -151,6 +153,39 @@ test("repositioning a creature keeps its artifact attached and aligned", () => {
   assert.equal(moved.players[0].board[0].slot, 4); assert.equal(moved.players[0].support[0].slot, 4);
   const hostDone = executeCommand(moved, { type: "confirmReposition", owner: 0 }).state; assert.ok(hostDone.pendingReposition);
   const allDone = executeCommand(hostDone, { type: "confirmReposition", owner: 1 }).state; assert.equal(allDone.pendingReposition, null);
+});
+
+test("subtypes are card data and support cards with more than one subtype", () => {
+  assert.equal(hasSubtype({ page: 24 }, "Dragão"), true);
+  assert.equal(hasSubtype({ page: 216 }, "Dragão"), true);
+  assert.equal(hasSubtype({ page: 216 }, "Gato"), true);
+  assert.deepEqual(subtypesFor({ page: 216 }).sort(), ["Dragão", "Gato"]);
+  assert.equal(hasSubtype({ page: 183 }, "Recruta"), true);
+});
+
+test("target policy follows creature, controller and global delimiters", () => {
+  assert.deepEqual((({ scope, selections }) => ({ scope, selections }))(targetPolicy("Cause 2 de dano a uma criatura.")), { scope: TargetScope.ANY_CREATURE, selections: 1 });
+  assert.deepEqual((({ scope, selections }) => ({ scope, selections }))(targetPolicy("Cause 1 de dano a 2 criaturas.")), { scope: TargetScope.ANY_CREATURE, selections: 2 });
+  assert.deepEqual((({ scope, selections, global }) => ({ scope, selections, global }))(targetPolicy("Cause 2 de dano a todas as criaturas inimigas.")), { scope: TargetScope.NONE, selections: 0, global: true });
+  assert.equal(targetPolicy("Cause 2 de dano a um alvo.").scope, TargetScope.ANY_CHARACTER);
+  assert.equal(targetPolicy("Cure 2 de vida.").scope, TargetScope.ANY_CHARACTER);
+  assert.equal(targetPolicy("Cure 2 de vida de uma criatura aliada.").scope, TargetScope.ALLY_CREATURE);
+});
+
+test("target validation permits heroes only when creature is not required", () => {
+  assert.equal(isValidTarget(targetPolicy("Cause 2 de dano a um alvo."), 0, 1, "hero"), true);
+  assert.equal(isValidTarget(targetPolicy("Cause 2 de dano a uma criatura."), 0, 1, "hero"), false);
+  assert.equal(isValidTarget(targetPolicy("Cause 2 de dano a uma criatura."), 0, 0, "creature"), true);
+  assert.equal(isValidTarget(targetPolicy("Cause 2 de dano a uma criatura inimiga."), 0, 0, "creature"), false);
+});
+
+test("sacrifice spell exposes ordered cost and effect target steps", () => {
+  const policy = targetPolicy({ type: "Feitiço", text: "Sacrifique uma criatura aliada. Cause 2 de dano a uma criatura." });
+  assert.equal(policy.selections, 2);
+  assert.deepEqual(policy.steps.map((step) => [step.role, step.scope]), [
+    ["sacrifice", TargetScope.ALLY_CREATURE],
+    ["effect", TargetScope.ANY_CREATURE],
+  ]);
 });
 
 test("the complete generated catalog has full classified coverage", async () => {
