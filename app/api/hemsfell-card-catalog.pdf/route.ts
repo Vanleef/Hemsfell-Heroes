@@ -1,12 +1,13 @@
 /**
  * Serves the official Hemsfell PDF catalogue to the browser renderer.
- *
- * The same-origin route keeps PDF.js independent from Google Drive CORS and
- * works in both local Next.js development and the production deployment.
+ * Google occasionally changes one public download host, so the proxy accepts
+ * only PDF responses and retries the canonical Drive download endpoint.
  */
 const CATALOG_FILE_ID = "1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC";
-const CATALOG_URL =
-  `https://drive.usercontent.google.com/download?id=${CATALOG_FILE_ID}&export=download&confirm=t`;
+const CATALOG_URLS = [
+  `https://drive.usercontent.google.com/download?id=${CATALOG_FILE_ID}&export=download&confirm=t`,
+  `https://drive.google.com/uc?export=download&id=${CATALOG_FILE_ID}`,
+];
 
 export const runtime = "nodejs";
 
@@ -15,15 +16,24 @@ export async function GET(request: Request) {
   const range = request.headers.get("range");
   if (range) headers.set("range", range);
 
-  const upstream = await fetch(CATALOG_URL, {
-    headers,
-    next: { revalidate: 3600 },
-  });
+  let upstream: Response | undefined;
+  for (const url of CATALOG_URLS) {
+    try {
+      const candidate = await fetch(url, { headers, next: { revalidate: 3600 } });
+      const contentType = candidate.headers.get("content-type") || "";
+      if (candidate.ok && candidate.body && contentType.includes("application/pdf")) {
+        upstream = candidate;
+        break;
+      }
+    } catch (error) {
+      console.error("[catalogue-pdf] upstream download failed", { url, error: String(error) });
+    }
+  }
 
-  if (!upstream.ok || !upstream.body) {
+  if (!upstream) {
     return new Response("Catálogo de cartas temporariamente indisponível.", {
       status: 502,
-      headers: { "content-type": "text/plain; charset=utf-8" },
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
     });
   }
 
