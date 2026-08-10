@@ -451,7 +451,7 @@ test("generated Image artifacts disappear when their linked creature leaves", ()
 });
 
 test("damage triggers apply only to the creature that actually survived damage", () => {
-  const game = state();
+  const game = state(); game.active = 1;
   const reactive = compileCard({ id: "p165", page: 165, type: "Criatura", atk: 1, hp: 4, text: "" });
   game.players[0].board.push({ ...reactive, uid: "hit", damage: 0, exhausted: false, summoning: false, modifiers: [] }, { ...reactive, uid: "untouched", damage: 0, exhausted: false, summoning: false, modifiers: [] });
   game.players[1].hand.push({ id: "ping", type: "Feitiço", cost: 0, tags: [], abilities: [{ id: "damage", trigger: "onPlay", effects: [{ type: "damage", amount: 1, target: "anyCreature", selections: 1 }] }] });
