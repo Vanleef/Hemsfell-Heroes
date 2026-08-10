@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import { auditCards, compileCardText } from "../app/rules-engine/compiler.mjs";
 import { executeCommand, RulesLoopError } from "../app/rules-engine/engine.mjs";
 import { runHeadlessGames } from "../app/rules-engine/simulator.mjs";
@@ -65,4 +66,25 @@ test("headless simulations are deterministic and bounded", () => {
   const first = runHeadlessGames({ games: 50, seed: 42, createGame, chooseCommand, execute: executeCommand });
   const second = runHeadlessGames({ games: 50, seed: 42, createGame, chooseCommand, execute: executeCommand });
   assert.deepEqual(first, second); assert.equal(first.games, 50);
+});
+
+
+test("the complete generated catalog remains structurally valid and classifiable", async () => {
+  const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
+  const report = auditCards(cards);
+  const errors = report.issues.filter((issue) => issue.severity === "error");
+  assert.equal(report.cards, 308);
+  assert.deepEqual(errors, []);
+  assert.ok(report.coverage >= 0.8, `compiler coverage dropped to ${(report.coverage * 100).toFixed(1)}%`);
+});
+
+test("multiplayer API accepts whitelisted rules commands through the authoritative engine", async () => {
+  const [route, machine] = await Promise.all([
+    readFile(new URL("../app/api/rooms/[id]/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(route, /body\.action === "command"/);
+  assert.match(machine, /AUTHORITATIVE_COMMANDS/);
+  assert.match(machine, /executeCommand/);
+  assert.match(machine, /rawCommand, owner/);
 });
