@@ -72,8 +72,8 @@ test("headless simulations are deterministic and bounded", () => {
   assert.deepEqual(first, second); assert.equal(first.games, 50);
 });
 
-test("all 65 clarified clauses are represented by 64 explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 65);
+test("all clarified clauses are represented by explicit card records", () => {
+  assert.equal(explicitRuleIds.length, 75);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -251,6 +251,30 @@ test("passive spell-cast triggers resolve from modular abilities", () => {
   game.players[0].hand.push({ id: "spell", type: "Feitiço", cost: 0, tags: [], abilities: [] }); game.players[0].deck.push({ id: "drawn" });
   const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "spell" });
   assert.equal(result.state.players[0].hand[0].id, "drawn");
+});
+
+test("Quarion simple effects resolve with their card-specific restrictions", () => {
+  const target = { uid: "target", id: "target", name: "Recruta Elegante", hp: 5, damage: 0, exhausted: true, cost: 2, tags: ["Recruta"] };
+  const game = state(); game.players[0].board.push(target); game.players[0].hand.push(compileCard({ id: "p188", page: 188, type: "Criatura", cost: 1, text: "" }));
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p188", targetIds: ["target"] });
+  assert.equal(result.state.players[0].board.find((unit) => unit.uid === "target").damage, 2);
+  const recruit = state(); recruit.players[0].board.push({ ...target, exhausted: false }); recruit.players[0].hand.push(compileCard({ id: "p190", page: 190, type: "Criatura", cost: 1, text: "" }));
+  assert.throws(() => executeCommand(recruit, { type: "playCard", owner: 0, cardId: "p190", targetIds: ["target"] }), /target-must-be-exhausted/);
+});
+
+test("Quarion artifacts modify their connected creature", () => {
+  const game = state(); game.players[0].board.push({ uid: "host", id: "host", hp: 4, damage: 0 });
+  game.players[0].hand.push(compileCard({ id: "p193", page: 193, type: "Artefato", cost: 1, text: "" }));
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p193", attachedTo: "host", slot: 0 });
+  assert.deepEqual(result.state.players[0].board[0].modifiers[0], { attack: 3, health: 2, duration: "permanent" });
+  assert.deepEqual(result.state.players[0].support[0].modifiers, []);
+});
+
+test("Quarion healing counts turned creatures", () => {
+  const game = state(); game.players[0].life = 10; game.players[0].board.push({ uid: "a", exhausted: true }, { uid: "b", exhausted: true }, { uid: "c", exhausted: false });
+  game.players[0].hand.push(compileCard({ id: "p202", page: 202, type: "Feitiço", cost: 1, text: "" }));
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p202" });
+  assert.equal(result.state.players[0].life, 14);
 });
 
 test("migration coverage is explicit and simple cards use the command engine", async () => {
