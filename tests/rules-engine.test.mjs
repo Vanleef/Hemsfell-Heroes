@@ -858,6 +858,28 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(page, /game\.active!==0/);
   assert.match(page, /canEvolveThisTurn=\{game\.active===0\}/);
   assert.match(page, /modifier\.duration!=="turn"/);
+  assert.match(page, /combat-attack-ready/);
+  assert.match(page, /summoning-sickness-badge/);
+  assert.match(page, /displayName=unit&&controller\?effectiveCreatureName/);
+  assert.match(css, /combat-attack-ready-pulse/);
+  assert.match(css, /original-card\.summoning-sick/);
   assert.match(css, /auxiliary-slot \.card-tooltip/);
   assert.match(css, /z-index:9020!important/);
+});
+
+test("Fatiadora Prateada exempts Recruta Exibido or Iludido and still grants Atropelar", () => {
+  const artifactText = 'Se equipada no “Recruta Exibido”, ele agora se chama “Recruta Iludido” e recebe Atropelar.';
+  const special = state();
+  special.players[0].board.push({ uid: "recruit", name: "Recruta Exibido", type: "Criatura", modifiers: [], tags: [] });
+  special.players[0].support.push({ uid: "slicer", name: "Fatiadora Prateada", type: "Artefato", page: 197, attachedTo: "recruit", text: artifactText });
+  const effects = explicitCardRules.p197[0].effects;
+  for (const effect of effects) defaultEffectHandlers[effect.type](special, effect, { owner: 0, sourceId: "slicer" });
+  assert.equal(special.players[0].board[0].modifiers.length, 0);
+  assert.ok(special.players[0].board[0].tags.includes("Atropelar"));
+
+  const ordinary = state();
+  ordinary.players[0].board.push({ uid: "other", name: "Recruta Apaixonado", type: "Criatura", modifiers: [], tags: [] });
+  ordinary.players[0].support.push({ uid: "other-slicer", name: "Fatiadora Prateada", type: "Artefato", page: 197, attachedTo: "other", text: artifactText });
+  defaultEffectHandlers.attachedConditionalStats(ordinary, effects[0], { owner: 0, sourceId: "other-slicer" });
+  assert.equal(ordinary.players[0].board[0].modifiers[0].attack, -2);
 });
