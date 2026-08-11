@@ -7710,3 +7710,22 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   border-color:inherit!important;
   box-shadow:inherit!important;
 }
+
+
+/* Absolutely no hover/focus visual state on the command-bar capsules. */
+.screen-game .hero-command-bar .hero-ability-chip,
+.screen-game .hero-command-bar .hero-ability-chip:hover,
+.screen-game .hero-command-bar .hero-ability-chip:focus-within,
+.screen-game .hero-command-bar .hero-ability-chip>button:hover:not(:disabled),
+.screen-game .hero-command-bar .hero-ability-chip>button:focus-visible{
+  transition:none!important;
+  transform:none!important;
+  filter:none!important;
+  box-shadow:0 4px 12px #0009!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip:hover,
+.screen-game .hero-command-bar .hero-ability-chip:focus-within{
+  background:linear-gradient(90deg,#07131be8,#10232ad9)!important;
+  border-color:color-mix(in srgb,var(--deck) 58%,#dce8e8 18%)!important;
+  border-left-color:var(--deck)!important;
+}
