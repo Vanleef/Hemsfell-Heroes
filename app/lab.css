@@ -6918,6 +6918,44 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
    logo never gets squeezed by the navigation flex row. */
 .hh-logo{flex:0 0 auto!important;overflow:visible!important}.hh-logo img{width:96px!important;height:auto!important;aspect-ratio:426/395!important;object-fit:contain!important;max-width:none!important}
 
+/* Hemsfell identity — a UI palette sampled from the cyan/orange brand lockup. */
+:root{
+  --hh-ink:#02090d;
+  --hh-night:#06151b;
+  --hh-panel:#09242b;
+  --hh-panel-soft:#0d3037;
+  --hh-cyan:#25d3da;
+  --hh-teal:#079aa6;
+  --hh-orange:#ed7028;
+  --hh-gold:#f8b83c;
+  --hh-coral:#df4d34;
+  --hh-paper:#edfafa;
+  --hh-muted:#91b7ba;
+}
+.hh-app{background:radial-gradient(circle at 50% 40%,#0e3b42 0,#071b22 38%,var(--hh-ink) 78%)!important;color:var(--hh-paper)}
+.shell-nav,.game-topbar{background:linear-gradient(90deg,#02090df5,#0b2d34f2 48%,#07161bf5)!important;border-color:#25d3da38!important}
+.landing:before{background:radial-gradient(circle at 72% 40%,#ed702838,transparent 28%),linear-gradient(110deg,#02090df5 12%,#092a30d9 55%,#10272ba8)!important}
+.landing-copy>p,.collection>header p,.match-setup>header p{color:var(--hh-cyan)!important}
+.landing-copy>span,.collection header>span,.deck-rail span{color:var(--hh-muted)!important}
+.gold,.menu-actions button:first-child,.maintenance-choice:not(:disabled){background:linear-gradient(135deg,var(--hh-orange),var(--hh-gold))!important;border-color:#ffd36b!important;color:#071014!important;box-shadow:0 8px 24px #ed70283d!important}
+.menu-actions button:not(:first-child),.collection>header button,.shell-nav button{border-color:#25d3da55!important;color:#dffbfb!important;background:#082229d9!important}
+.screen-decks,.collection,.match-setup,.maintenance-dialog,.inspector,.card-tooltip{background-color:var(--hh-night)!important}
+.deck-rail,.deck-detail,.collection-lists>section,.versus,.deck-picker,.maintenance-dialog{border-color:#25d3da2e!important}
+.deck-detail{grid-template-columns:235px minmax(310px,390px) minmax(0,1fr);gap:18px;background:linear-gradient(145deg,#07171de8,#0a2b31a3)!important}
+.collection-lists>section{background:#05151ad9!important}.collection-lists>section>header{background:#0b2930!important;border-color:#25d3da24!important}.collection-lists>section>header b{color:var(--hh-gold)!important}
+.game-board,.battlefield{background-color:#071a20!important}.field-slot,.side-pile,.terrain-slot{border-color:#1fc6cf42!important;box-shadow:inset 0 0 18px #072b32,0 0 12px #0009!important}.field-energy{border-color:#f8b83c80!important;background:linear-gradient(90deg,#071b21,#0b343a)!important}.phase-orb{background:radial-gradient(circle at 35% 30%,#ffd66e,var(--hh-orange) 72%)!important;color:#071014!important}
+.hh-logo{width:158px!important;height:70px!important;display:flex!important;align-items:center!important}.hh-logo img{width:140px!important;height:62px!important;aspect-ratio:auto!important;object-fit:fill!important;transform:scaleX(1.16);transform-origin:left center;filter:drop-shadow(0 5px 10px #000b)!important}
+
+.hero-guide{min-width:0;align-self:start;border:1px solid color-mix(in srgb,var(--deck) 52%,var(--hh-cyan));border-radius:10px;background:linear-gradient(155deg,color-mix(in srgb,var(--deck) 10%,#0b2c32),#06161b 58%);overflow:hidden;box-shadow:0 16px 38px #0007}
+.hero-guide>header{padding:17px 18px 14px;border-bottom:1px solid #25d3da24;background:linear-gradient(90deg,#0b3037,#081b20)}
+.hero-guide>header>span,.hero-guide-title small{display:block;color:var(--hh-cyan);font:800 8px Arial;letter-spacing:.18em}.hero-guide>header h3{margin:5px 0 3px;font-size:19px;line-height:1.15;color:#fff}.hero-guide>header p{margin:0;color:var(--hh-muted);font:10px Arial}
+.hero-guide-facts{display:grid;grid-template-columns:.75fr 1.25fr;gap:1px;background:#25d3da20;border-bottom:1px solid #25d3da20}.hero-guide-facts>span{padding:11px 13px;background:#071b20}.hero-guide-facts small{display:block;margin-bottom:4px;color:#789da0;font:700 7px Arial;text-transform:uppercase;letter-spacing:.12em}.hero-guide-facts b{display:block;color:#edfafa;font:700 10px/1.35 Arial}
+.hero-evolution-guide,.hero-abilities-guide{padding:15px 16px}.hero-evolution-guide{border-bottom:1px solid #25d3da20}.hero-guide-title{display:flex;align-items:center;gap:10px}.hero-guide-title i{display:grid;place-items:center;width:27px;height:27px;border:1px solid #f8b83c69;border-radius:50%;background:#ed70281c;color:var(--hh-gold);font-style:normal}.hero-guide-title b{display:block;margin-top:2px;color:#fff;font:800 12px Arial}.hero-evolution-guide>p{margin:11px 0;color:#bcd4d5;font:10px/1.5 Arial}
+.hero-evolution-guide ol{display:grid;gap:7px;margin:0;padding:0;list-style:none}.hero-evolution-guide li{display:grid;grid-template-columns:58px 1fr;align-items:center;gap:9px;padding:9px;border-left:2px solid var(--hh-orange);background:#0a272d}.hero-evolution-guide li span{color:var(--hh-gold);font:800 8px Arial;letter-spacing:.08em}.hero-evolution-guide li b{color:#e5f5f5;font:600 9px/1.35 Arial}
+.hero-abilities-guide>div:last-child{display:grid;gap:7px;margin-top:11px}.hero-abilities-guide article{display:grid;grid-template-columns:27px 1fr;gap:9px;padding:9px;background:#061c21;border:1px solid #25d3da18;border-radius:5px}.hero-abilities-guide article>span{display:grid;place-items:center;width:27px;height:27px;border-radius:4px;background:linear-gradient(145deg,var(--hh-teal),#075e67);color:white;font:900 11px Arial}.hero-abilities-guide article header{display:flex;align-items:center;justify-content:space-between}.hero-abilities-guide article header b{color:#fff;font:800 9px Arial;text-transform:uppercase}.hero-abilities-guide article em{padding:2px 5px;border-radius:8px;font:800 7px Arial;text-transform:uppercase;font-style:normal}.hero-abilities-guide article em.active{color:#ffe4bc;background:#ed70282e;border:1px solid #ed702866}.hero-abilities-guide article em.passive{color:#b9f4f4;background:#25d3da20;border:1px solid #25d3da42}.hero-abilities-guide article p{margin:5px 0 3px;color:#dbecec;font:10px/1.4 Arial}.hero-abilities-guide article small{color:#789da0;font:8px/1.35 Arial}
+@media(max-width:1180px){.deck-detail{grid-template-columns:220px minmax(300px,1fr)}.collection-lists{grid-column:1/-1}.collection-lists .card-library{max-height:360px}}
+@media(max-width:720px){.hh-logo{width:120px!important}.hh-logo img{width:106px!important;height:52px!important}.deck-detail{grid-template-columns:1fr}.deck-detail>.hero-guide{display:block}.collection-lists{grid-column:auto}.hero-guide-facts{grid-template-columns:1fr}.hero-evolution-guide li{grid-template-columns:54px 1fr}}
+
 /* Reference-layout pass v10.
    These anchors mirror the composition supplied by the author: portraits sit
    in the outer-left corners, evolution is immediately beside each portrait,
