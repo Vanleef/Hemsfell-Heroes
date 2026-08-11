@@ -104,7 +104,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     } else return NextResponse.json({ error: "unknown action" }, { status: 400 });
     await writeRoom(room);
     return NextResponse.json(roomView(room, true, role));
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === "stale room revision") {
+      const latest = await readRoom(id);
+      return NextResponse.json({ error: "stale revision", ...(latest ? { revision: latest.revision } : {}) }, { status: 409 });
+    }
     return NextResponse.json({ error: "request failed" }, { status: 500 });
   }
 }
