@@ -7037,3 +7037,18 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   .screen-game .player-hero{width:var(--hero-w)!important;height:19%!important}
   .screen-game .hero-command-bar{left:.2%!important;width:var(--power-w)!important}
 }
+
+
+/* Restore the phase orb radial finish on the publication branch. */
+.screen-game .phase-orb{
+  background:radial-gradient(circle at 35% 30%,#d9c36f 0%,#665d3b 34%,#18262b 67%,#06141a 74%,transparent 75%)!important;
+  background-image:radial-gradient(circle at 35% 30%,#d9c36f 0%,#665d3b 34%,#18262b 67%,#06141a 74%,transparent 75%)!important;
+  border:0!important;
+  border-radius:50%!important;
+  box-shadow:none!important;
+}
+.screen-game .phase-orb button{
+  background:radial-gradient(circle at 35% 30%,#f3d777 0%,#c99735 52%,#8a5b20 100%)!important;
+  background-image:radial-gradient(circle at 35% 30%,#f3d777 0%,#c99735 52%,#8a5b20 100%)!important;
+  border-radius:50%!important;
+}
