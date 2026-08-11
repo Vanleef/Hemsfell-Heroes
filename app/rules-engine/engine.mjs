@@ -209,8 +209,9 @@ function preflightPlay(state, command, handlers) {
   for (const ability of playAbilities) validateCosts(state, ability, command);
   const staticDiscount = permanentUnits(entry).filter((source) => !source.suffocated).flatMap((source) => source.staticModifiers || []).filter((modifier) => modifier.type === "costModifier" && (!modifier.selector?.type || modifier.selector.type === card.type) && (!modifier.during || modifier.during !== "controllerTurn" || state.active === command.owner)).reduce((sum, modifier) => sum + (modifier.amount || 0), 0);
   const cost = Math.max(0, (card.cost || 0) + (card.costModifier || 0) + staticDiscount);
-  const available = accelerated && state.active !== command.owner ? entry.reserve : entry.energy + (card.type !== "Criatura" ? entry.reserve : 0);
-  if (available < cost) throw new RulesViolation("not-enough-energy");
+  const paysLife = card.type === "Criatura" && !!entry.nextCreaturePaysLife;
+  const available = accelerated && state.active !== command.owner ? entry.reserve : paysLife ? entry.life - (entry.heroId === "saymon" && (entry.level || 1) >= 3 ? 1 : 0) : entry.energy + (card.type !== "Criatura" ? entry.reserve : 0);
+  if (available < cost) throw new RulesViolation(paysLife ? "not-enough-life" : "not-enough-energy");
   if (card.type === "Criatura") {
     if (!Number.isInteger(command.slot) || command.slot < 0 || command.slot > 4) throw new RulesViolation("invalid-creature-slot");
     const occupied = entry.board.find((unit) => unit.slot === command.slot);
@@ -311,11 +312,12 @@ export function executeCommand(inputState, command, options = {}) {
         if (card.type !== "Criatura" || (item.command.targetIds || []).length) validateTargets(state, item.command.owner, card.type === "Criatura" ? enterAbilities : playAbilities, item.command, card);
         for (const ability of playAbilities) validateCosts(state, ability, item.command);
         const staticDiscount = permanentUnits(entry).filter((source) => !source.suffocated).flatMap((source) => source.staticModifiers || []).filter((modifier) => modifier.type === "costModifier" && (!modifier.selector?.type || modifier.selector.type === card.type) && (!modifier.during || modifier.during !== "controllerTurn" || state.active === item.command.owner)).reduce((sum, modifier) => sum + (modifier.amount || 0), 0);
-        const cost = Math.max(0, (card.cost || 0) + (card.costModifier || 0) + staticDiscount); const spell = card.type === "Feitiço"; const canUseReserve = card.type !== "Criatura";
-        const available = accelerated && state.active !== item.command.owner ? entry.reserve : entry.energy + (canUseReserve ? entry.reserve : 0);
-        if (available < cost) throw new RulesViolation("not-enough-energy");
+        const cost = Math.max(0, (card.cost || 0) + (card.costModifier || 0) + staticDiscount); const spell = card.type === "Feitiço"; const canUseReserve = card.type !== "Criatura"; const paysLife = card.type === "Criatura" && !!entry.nextCreaturePaysLife;
+        const available = accelerated && state.active !== item.command.owner ? entry.reserve : paysLife ? entry.life - (entry.heroId === "saymon" && (entry.level || 1) >= 3 ? 1 : 0) : entry.energy + (canUseReserve ? entry.reserve : 0);
+        if (available < cost) throw new RulesViolation(paysLife ? "not-enough-life" : "not-enough-energy");
         for (const ability of playAbilities) payCosts(state, ability, item.command);
-        if (accelerated) { const fromReserve = Math.min(entry.reserve, cost); entry.reserve -= fromReserve; entry.energy -= cost - fromReserve; }
+        if (paysLife) { entry.life -= cost; entry.nextCreaturePaysLife = false; entry.lifeLostThisTurn = (entry.lifeLostThisTurn || 0) + cost; entry.lifeLossEvents = (entry.lifeLossEvents || 0) + 1; if (entry.heroId === "saymon") entry.heroXP = (entry.heroXP || 0) + 1; state.rulesEvents ||= []; state.rulesEvents.push({ type: "onLifeLost", owner: item.command.owner, sourceOwner: item.command.owner, sourceId: card.id, amount: cost, paidAsCost: true }); }
+        else if (accelerated) { const fromReserve = Math.min(entry.reserve, cost); entry.reserve -= fromReserve; entry.energy -= cost - fromReserve; }
         else { const fromEnergy = Math.min(entry.energy, cost); entry.energy -= fromEnergy; const fromReserve = canUseReserve ? cost - fromEnergy : 0; entry.reserve -= fromReserve; }
         entry.hand.splice(cardIndex, 1); for (const source of permanentUnits(entry)) if (typeof source.cardsPlayedAfterSelf === "number") source.cardsPlayedAfterSelf++; entry.cardsPlayed = (entry.cardsPlayed || 0) + 1; entry.turnCardsPlayed = (entry.turnCardsPlayed || 0) + 1; if (spell) { entry.spellsPlayed = (entry.spellsPlayed || 0) + 1; entry.turnSpellsPlayed = (entry.turnSpellsPlayed || 0) + 1; } const permanent = card.type !== "Feitiço" || card.abilities?.some((ability) => ability.effects?.some((effect) => effect.type === "remainUntilTurnEnd"));
         if (permanent) {
@@ -332,6 +334,7 @@ export function executeCommand(inputState, command, options = {}) {
           for (const ability of staticAbilities.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: unit.uid, effectSource: unit } });
         } else entry.grave.push(card);
         for (const ability of playAbilities.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: card.id, effectSource: card } });
+        if ((item.command.targetIds || []).length) stack.push({ kind: "event", event: { type: "onAttachedCreatureTargeted", owner: item.command.owner, sourceId: card.id, source: card, targetIds: item.command.targetIds } });
         stack.push({ kind: "event", event: { type: spell ? "onSpellCast" : "onCardPlayed", owner: item.command.owner, cardId: card.id, card } });
       } else if (item.command.type === "attack") {
         if (state.active !== item.command.owner || state.phase !== "combate") throw new RulesViolation("wrong-combat-priority");
