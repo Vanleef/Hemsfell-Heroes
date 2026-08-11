@@ -7697,3 +7697,16 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .screen-game .hero-command-bar .hero-ability-chip>button{min-width:0!important;width:auto!important;transform:none!important}
 .screen-game .hero-command-bar .hero-ability-chip,
 .screen-game .hero-command-bar .hero-ability-chip:hover{transform:none!important;scale:none!important}
+
+
+/* Command bar remains visually stable on hover. */
+.screen-game .hero-command-bar:hover,
+.screen-game .hero-command-bar .hero-ability-chip:hover,
+.screen-game .hero-command-bar .hero-ability-chip>button:hover:not(:disabled){
+  transform:none!important;
+  scale:none!important;
+  filter:none!important;
+  background:inherit!important;
+  border-color:inherit!important;
+  box-shadow:inherit!important;
+}
