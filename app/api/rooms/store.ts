@@ -24,12 +24,27 @@ async function supabase(path: string, init: RequestInit = {}) {
   return response;
 }
 async function readSupabase(id: string) {
-  const response = await supabase(`multiplayer_rooms?id=eq.${encodeURIComponent(id)}&select=payload&limit=1`);
-  const rows = await response.json() as Array<{ payload: string }>;
+  const response = await supabase(`multiplayer_rooms?id=eq.${encodeURIComponent(id)}&select=payload,revision&limit=1`);
+  const rows = await response.json() as Array<{ payload: string; revision?: number }>;
+  if (rows[0]?.revision != null) {
+    const parsed = JSON.parse(rows[0].payload) as Room;
+    parsed.revision = Number(rows[0].revision);
+    return parsed;
+  }
   return rows[0] ? JSON.parse(rows[0].payload) as Room : null;
 }
 async function writeSupabase(room: Room) {
-  await supabase("multiplayer_rooms?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" }, body: JSON.stringify({ id: room.id, payload: JSON.stringify(room), updated_at: new Date().toISOString() }) });
+  // Room revisions are compared by PostgREST in the database. This prevents
+  // two serverless requests that read the same revision from silently
+  // overwriting each other (lost-update race).
+  if (room.revision === 0) {
+    await supabase("multiplayer_rooms?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify({ id: room.id, payload: JSON.stringify(room), revision: room.revision, updated_at: new Date().toISOString() }) });
+    return;
+  }
+  const expectedRevision = room.revision - 1;
+  const response = await supabase(`multiplayer_rooms?id=eq.${encodeURIComponent(room.id)}&revision=eq.${expectedRevision}`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ payload: JSON.stringify(room), revision: room.revision, updated_at: new Date().toISOString() }) });
+  const rows = await response.json() as unknown[];
+  if (!rows.length) throw new Error("stale room revision");
 }
 async function readBlob(id: string) {
   const result = await get(roomPath(id), { access: "private", useCache: false });
