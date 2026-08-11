@@ -7437,3 +7437,57 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .search-deck-dialog .card-tooltip{
   z-index:100000!important;
 }
+
+
+/* Popup polish: confirm action anchored in the footer and hover details escape the dialog. */
+.engine-decision-backdrop,
+.engine-decision-panel,
+.engine-decision-panel > div,
+.engine-decision-panel > div > .visual-card-choice-grid,
+.visual-card-choice-grid,
+.visual-card-choice,
+.visual-card-choice .card-frame,
+.visual-card-choice .original-card{
+  overflow:visible!important;
+  contain:none!important;
+}
+.engine-decision-panel{
+  position:relative!important;
+  isolation:isolate!important;
+}
+.engine-decision-panel > div:has(> .visual-card-choice-grid){
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  gap:14px!important;
+}
+.engine-decision-panel > div:has(> .visual-card-choice-grid) > .gold{
+  align-self:center!important;
+  width:max-content!important;
+  min-width:148px!important;
+  margin:4px auto 0!important;
+  justify-content:center!important;
+  text-align:center!important;
+  white-space:nowrap!important;
+}
+/* The label pill follows the actual card name instead of stretching across the tooltip. */
+.card-tooltip > b{
+  align-self:flex-start!important;
+  display:inline-block!important;
+  width:max-content!important;
+  max-width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box!important;
+  text-align:center!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+}
+/* Remove clipping from every popup layer that can contain a hovered card. */
+.engine-decision-backdrop .card-tooltip,
+.engine-decision-panel .card-tooltip,
+.visual-card-choice .card-tooltip{
+  position:absolute!important;
+  z-index:2147483000!important;
+  overflow:visible!important;
+  contain:none!important;
+}
