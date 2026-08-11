@@ -7581,3 +7581,11 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .hero-abilities-guide article header{justify-content:flex-start!important}
 .hero-abilities-guide article header em{margin:0!important}
 .hero-abilities-guide article p{margin-top:7px!important}
+
+
+/* Keep each ability's activation tag and description in one capsule content block. */
+.hero-abilities-guide article>div{min-width:0!important}
+.hero-abilities-guide article>div>p{margin:0!important;color:#f0fbf8!important;font:600 11px/1.55 Arial!important}
+.hero-abilities-guide article>div>p>em{display:inline-block!important;margin:0 6px 2px 0!important;vertical-align:baseline!important}
+.hero-abilities-guide article>div>p>span{display:inline!important;color:inherit!important;font:inherit!important}
+.hero-abilities-guide article header{display:none!important}
