@@ -32,3 +32,4 @@ export function withDerivedSubtypes(card) {
 }
 
 export { subtypePages };
+

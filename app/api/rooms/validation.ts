@@ -56,3 +56,4 @@ export function isBoundedGame(value: unknown): value is JsonRecord {
     );
   });
 }
+

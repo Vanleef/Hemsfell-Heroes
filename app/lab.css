@@ -6838,23 +6838,23 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 /* Inspection is the card surface itself; only the activation glyph keeps its
    own click action. Hover lifts are intentionally restrained. */
 .card-frame-inspect{display:none!important}
-.screen-game .original-card:hover,.screen-game .original-card:focus-visible{transform:translateY(-3px) scale(1.025)!important}
-.screen-game .player-hand .original-card:hover{transform:translateY(-9px) scale(1.03)!important}
-.screen-decks .original-card:hover,.screen-decks .original-card:focus-visible,.collection .original-card:hover{transform:translateY(-3px) scale(1.025)!important}
+.screen-game .original-card:hover,.screen-game .original-card:focus-visible{transform:translateY(-2px) scale(1.015)!important}
+.screen-game .player-hand .original-card:hover{transform:translateY(-7px) scale(1.02)!important}
+.screen-decks .original-card:hover,.screen-decks .original-card:focus-visible,.collection .original-card:hover{transform:translateY(-2px) scale(1.012)!important}
 .card-frame-activation:disabled{pointer-events:none!important;opacity:.2!important;filter:grayscale(1) saturate(0)!important}
 
 /* Collection cards and their tooltips escape every list panel. */
-.collection,.deck-detail,.collection-lists,.collection-lists>section,.card-library,.extra-collection{overflow:visible!important;contain:none!important;isolation:auto!important}
+.screen-decks,.collection,.deck-detail,.collection-lists,.collection-lists>section,.card-library,.extra-collection{overflow:visible!important;contain:none!important;isolation:auto!important}
 .collection-lists>section:has(.original-card:hover),.card-library:has(.original-card:hover),.card-frame:hover{position:relative!important;z-index:17000!important}
 .screen-decks .card-tooltip,.collection .card-tooltip{z-index:18000!important;max-width:280px!important;filter:drop-shadow(0 18px 34px #000)!important}
 .collection-hero-inspect{display:block;width:100%;padding:0;border:0;background:transparent;cursor:zoom-in}
 .collection-hero-inspect>.remote-card-art{width:100%;transition:transform .18s ease,filter .18s ease}
-.collection-hero-inspect:hover>.remote-card-art{transform:scale(1.02);filter:brightness(1.08)}
+.collection-hero-inspect:hover>.remote-card-art{transform:scale(1.01);filter:brightness(1.08)}
 .hero-power-trigger{cursor:zoom-in}
 
 /* Faction/subtype effect grammar: palette, emblem and motion change with the
    source identity instead of reusing one generic enhancement treatment. */
-.screen-game .visual-effect{animation-duration:2.6s!important;--fx:#b9c8cc;--fx-soft:#7f929944!important;overflow:hidden!important}
+.screen-game .visual-effect{animation-duration:3.8s!important;--fx:#b9c8cc;--fx-soft:#7f929944!important;overflow:hidden!important}
 .screen-game .visual-effect.fx-theme-blood{--fx:#ff526f;--fx-soft:#8f153f70!important;border-radius:28px 8px 28px 8px!important}
 .screen-game .visual-effect.fx-theme-dragon{--fx:#74e58f;--fx-soft:#1e8b5266!important;border-radius:50% 16px 50% 16px!important}
 .screen-game .visual-effect.fx-theme-goblin{--fx:#d988ff;--fx-soft:#71309b70!important;border-style:dashed!important}
@@ -6862,13 +6862,17 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .screen-game .visual-effect.fx-theme-divine{--fx:#8ad9ff;--fx-soft:#2c80bf66!important;border-radius:42px!important}
 .screen-game .visual-effect.fx-theme-nature{--fx:#a5dc5e;--fx-soft:#4c7d2c66!important;border-radius:55% 22px 55% 22px!important}
 .screen-game .visual-effect.fx-theme-arcane{--fx:#72c9ff;--fx-soft:#3655c06b!important;clip-path:polygon(4% 0,96% 0,100% 18%,100% 82%,96% 100%,4% 100%,0 82%,0 18%)}
+.screen-game .visual-effect.fx-theme-chaos{--fx:#e879ff;--fx-soft:#72118570!important;border-radius:8px 44px 8px 44px!important;transform:skewX(-1deg)}
+.screen-game .visual-effect.fx-theme-order{--fx:#f0c96b;--fx-soft:#70521f66!important;border-radius:3px!important;border-style:double!important}
 .screen-game .visual-effect.fx-theme-neutral{--fx:#e7c26c;--fx-soft:#7a623d55!important}
-.fx-emblem{position:absolute;right:20px;top:50%;translate:0 -50%;color:var(--fx);font:900 86px/1 Georgia;opacity:.13;text-shadow:0 0 28px var(--fx);animation:fx-emblem-drift 2.6s ease both;pointer-events:none}
-.fx-theme-goblin .fx-emblem{animation:fx-gear-turn 2.6s ease both}.fx-theme-divine .fx-emblem{animation:fx-divine-rise 2.6s ease both}.fx-theme-blood .fx-emblem{animation:fx-blood-pulse 2.6s ease both}
+.fx-emblem{position:absolute;right:20px;top:50%;translate:0 -50%;color:var(--fx);font:900 86px/1 Georgia;opacity:.13;text-shadow:0 0 28px var(--fx);animation:fx-emblem-drift 3.8s ease both;pointer-events:none}
+.fx-theme-goblin .fx-emblem{animation:fx-gear-turn 3.8s ease both}.fx-theme-divine .fx-emblem{animation:fx-divine-rise 3.8s ease both}.fx-theme-blood .fx-emblem{animation:fx-blood-pulse 3.8s ease both}.fx-theme-chaos .fx-emblem{animation:fx-chaos-warp 3.8s ease both}.fx-theme-order .fx-emblem{animation:fx-order-seal 3.8s ease both}
 @keyframes fx-emblem-drift{0%{opacity:0;transform:scale(.5) rotate(-18deg)}35%,72%{opacity:.2;transform:scale(1) rotate(0)}100%{opacity:0;transform:scale(1.3) rotate(10deg)}}
 @keyframes fx-gear-turn{0%{opacity:0;rotate:-90deg}35%,75%{opacity:.22}100%{opacity:0;rotate:130deg}}
 @keyframes fx-divine-rise{0%{opacity:0;translate:0 35px}38%,72%{opacity:.28;translate:0 0}100%{opacity:0;translate:0 -30px}}
 @keyframes fx-blood-pulse{0%,100%{opacity:0;scale:.7}35%,65%{opacity:.28;scale:1.08}50%{scale:.94}}
+@keyframes fx-chaos-warp{0%,100%{opacity:0;transform:rotate(-35deg) scale(.55)}28%,72%{opacity:.3;transform:rotate(18deg) scale(1.12)}52%{transform:rotate(-8deg) scale(.92)}}
+@keyframes fx-order-seal{0%,100%{opacity:0;transform:scale(.72)}30%,78%{opacity:.28;transform:scale(1)}45%,62%{text-shadow:0 0 8px var(--fx),0 0 34px var(--fx)}}
 
 @media(max-width:1050px){
  .screen-game .hs-board{--hero-w:92px!important;--power-w:126px!important;--field-left:232px!important;--right-rail:190px!important}
@@ -6884,3 +6888,32 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
  .screen-game .field-energy.player-energy{top:72%!important}
  .screen-game .player-hand{height:20%!important}
 }
+
+/* Keep both power rails beside their hero. Older enemy-specific declarations
+   used left:12px and could still win the cascade over the shared v9 rail. */
+.screen-game .hero-command-bar.enemy,
+.screen-game .hero-command-bar:not(.enemy){left:122px!important}
+
+/* Resolution-safe stage: keep the same 16:9 composition and letterbox instead
+   of allowing viewport changes to rearrange the board. */
+.screen-game{display:grid!important;place-items:center!important;background:#02070a!important}
+.screen-game .hs-board{position:relative!important;inset:auto!important;width:min(100vw,177.778dvh)!important;height:min(100dvh,56.25vw)!important;min-height:0!important;max-height:none!important;overflow:hidden!important;--field-width:calc(100% - var(--field-left) - var(--right-rail))!important}
+
+/* Hero powers are independent command sigils, not a shared panel. Their rail
+   occupies only the reserved gutter between portrait and battlefield. */
+.screen-game .hero-command-bar{display:grid!important;grid-template-columns:1fr!important;gap:5px!important;width:158px!important;max-height:none!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
+.screen-game .hero-command-bar>header{display:none!important}
+.screen-game .hero-command-bar .hero-ability-chip{height:27px!important;min-height:27px!important;padding:3px 6px!important;border:1px solid color-mix(in srgb,var(--deck) 58%,#dce8e8 18%)!important;border-left:3px solid var(--deck)!important;border-radius:999px!important;background:linear-gradient(90deg,#07131be8,#10232ad9)!important;box-shadow:0 4px 12px #0009!important}
+.screen-game .hero-command-bar .hero-ability-chip>i{width:17px!important;height:17px!important;font-size:7px!important;background:color-mix(in srgb,var(--deck) 22%,#07131b)!important}
+.screen-game .hero-command-bar .hero-ability-chip>span>b{font-size:5px!important}.screen-game .hero-command-bar .hero-ability-chip p{font-size:6px!important;max-width:112px!important}
+
+/* Every authoritative card choice is a visual card browser. */
+.engine-decision-panel{width:min(820px,calc(100vw - 28px))!important;max-height:min(820px,92dvh)!important;overflow:auto!important}
+.visual-card-choice-grid{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(104px,1fr))!important;gap:14px!important;align-items:start!important;max-height:56dvh!important;padding:8px!important;overflow:auto!important}
+.visual-card-choice{display:grid!important;justify-items:center!important;gap:7px!important;min-width:0;padding:8px!important;border:1px solid #31545c!important;border-radius:12px!important;background:#091820!important;cursor:pointer!important}
+.visual-card-choice:hover,.visual-card-choice.selected{border-color:#e7bc61!important;background:#122a31!important;box-shadow:0 0 0 2px #e7bc6133,0 12px 28px #0009!important}
+.visual-card-choice .original-card{width:96px!important}.visual-card-choice>span{color:#dce9e8;font:800 10px/1.2 system-ui;text-align:center}
+
+/* The source image is almost square; reserve its natural ratio so the home
+   logo never gets squeezed by the navigation flex row. */
+.hh-logo{flex:0 0 auto!important;overflow:visible!important}.hh-logo img{width:96px!important;height:auto!important;aspect-ratio:426/395!important;object-fit:contain!important;max-width:none!important}

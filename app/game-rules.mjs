@@ -42,3 +42,4 @@ export function claimOncePerTurn(uses, key) {
   uses[key] = 1;
   return true;
 }
+

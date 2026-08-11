@@ -21,3 +21,4 @@ export function canActivateCard(card, context) {
     return true;
   });
 }
+

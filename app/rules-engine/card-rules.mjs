@@ -82,6 +82,8 @@ export const explicitCardRules = Object.freeze({
   p142: [ability("onPlay", [effect("grantSubtype", { target: "anyCreature", subtype: "Vampiro", duration: "turn" }), effect("combatRestriction", { cannotCombatSubtype: "Vampiro", duration: "turn", relation: "selectedTarget" })])],
   p143: [ability("onPlay", [effect("destroy", { target: "anyCreature", requiredSubtype: "Vampiro", selections: 1 }), effect("heal", { amount: 4, target: "controllerHero" })])],
   p146: [ability("onPlay", [effect("nextCreaturePaysLife", { duration: "turn" })])],
+  p147: [ability("onPlay", [effect("suffocateWhileSourceInField", { target: "anyPermanent", selections: 1 })]), ability("onTurnEnd", [effect("payLifeOrDestroySelf", { amount: 2 })], [], { condition: { eventOwnerIsController: true } }), ability("onPermanentLeaves", [effect("releaseSuffocatedBySource")])],
+  p148: [ability("onLifeLost", [effect("resolveCrimsonCastle")], [], { condition: { eventOwnerIsController: true, controllerTurn: true } })],
   p149: [ability("onEnter", [effect("discard", { amount: 2, target: "controller" })])],
   p150: [ability("onPlay", [effect("linkCreatures", { target: "anyCreature", selections: 1 })]), ability("onPermanentLeaves", [effect("followLinkedDestination")])],
   p151: [ability("onPlay", [effect("replaySelectedAbility", { selector: { controller: "self", type: "Criatura", hasTrigger: "onEnter" }, trigger: "onEnter" })], [], { playCondition: { alliedPermanentHasTrigger: "onEnter" } })],

@@ -97,3 +97,4 @@ const execute = (state, command) => {
 };
 
 console.log(JSON.stringify(runHeadlessGames({ games, maxTurns, seed, createGame, chooseCommand, execute }), null, 2));
+

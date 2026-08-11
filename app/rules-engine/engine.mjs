@@ -376,11 +376,11 @@ export function executeCommand(inputState, command, options = {}) {
           const staticAbilities = (unit.abilities || []).filter((ability) => ability.trigger === "static");
           for (const ability of staticAbilities.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: unit.uid, effectSource: unit } });
         } else entry.grave.push(card);
-        for (const ability of playAbilities.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: card.id, effectSource: card } });
+        for (const ability of playAbilities.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: item.command.instanceId || card.id, effectSource: card } });
         if ((item.command.targetIds || []).length) { stack.push({ kind: "event", event: { type: "onTargetedByOpponent", owner: item.command.owner, sourceId: card.id, source: card, targetIds: item.command.targetIds } }); stack.push({ kind: "event", event: { type: "onAttachedCreatureTargeted", owner: item.command.owner, sourceId: card.id, source: card, targetIds: item.command.targetIds } }); }
         stack.push({ kind: "event", event: { type: spell ? "onSpellCast" : "onCardPlayed", owner: item.command.owner, cardId: card.id, card } });
       } else if (item.command.type === "attack") {
-        if (state.active !== item.command.owner || state.phase !== "combate") throw new RulesViolation("wrong-combat-priority");
+        if (state.active !== item.command.owner || (state.phase !== "combate" && !item.command.forced)) throw new RulesViolation("wrong-combat-priority");
         const attackerOwner = item.command.owner; const defenderOwner = 1 - attackerOwner;
         const attackerPlayer = state.players[attackerOwner]; const defenderPlayer = state.players[defenderOwner];
         const attacker = attackerPlayer.board.find((unit) => unit.uid === item.command.attackerId);
@@ -483,7 +483,7 @@ export function executeCommand(inputState, command, options = {}) {
         if (decision.kind === "forced-attack") {
           const attackerId = item.command.attackerId || item.command.targetIds?.[0], defenderId = item.command.defenderId || item.command.targetIds?.[1], attacker = state.players[item.command.owner].board.find((card) => card.uid === attackerId);
           if (!attacker || !subtype(attacker, decision.effect.attacker?.subtype) || attacker.exhausted || !state.players[1 - item.command.owner].board.some((card) => card.uid === defenderId)) throw new RulesViolation("invalid-forced-attack");
-          state.pendingDecision = null; stack.push(...continuation); stack.push({ kind: "command", command: { type: "attack", owner: item.command.owner, attackerId, defenderId } }); continue;
+          state.pendingDecision = null; stack.push(...continuation); stack.push({ kind: "command", command: { type: "attack", owner: item.command.owner, attackerId, defenderId, forced: true, skipPriority: true } }); continue;
         }
         if (decision.kind === "sacrifice-and-fill") {
           const entry = state.players[item.command.owner], ids = [...new Set(item.command.targetIds || [])];

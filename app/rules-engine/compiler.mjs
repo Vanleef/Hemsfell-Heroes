@@ -161,3 +161,4 @@ export function auditCards(cards = []) {
   }
   return { cards: cards.length, abilities, unsupported, coverage: abilities ? (abilities - unsupported) / abilities : 1, issues };
 }
+

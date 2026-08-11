@@ -26,3 +26,4 @@ export function chooseHeadlessPriorityCommand(state, owner, random = Math.random
   if (shouldAutoPass(state, owner, control)) return { type: "passPriority", owner, auto: true };
   return chooseAIResponse(state, owner, random);
 }
+

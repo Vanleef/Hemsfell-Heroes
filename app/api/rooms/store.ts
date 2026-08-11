@@ -87,3 +87,4 @@ export function roomView(room: Room, includeGame = false, role?: RoomRole | null
 export function roleFor(room: Room, token: unknown): "host" | "guest" | null {
   return typeof token === "string" && token === room.host.token ? "host" : typeof token === "string" && token === room.guest?.token ? "guest" : null;
 }
+

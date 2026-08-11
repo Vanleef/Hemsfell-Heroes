@@ -116,7 +116,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 181);
+  assert.equal(explicitRuleIds.length, 183);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -355,10 +355,36 @@ test("multi-step search decisions resume their authoritative continuation", () =
 });
 
 test("Cobra Dor loses life on maintenance and converts removed markers into healing", () => {
-  const game = state(), card = compileCard({ id: "p134", page: 134, name: "O Cobra Dor", type: "Criatura", text: "" }); game.players[0].board.push({ ...card, uid: "cobra", slot: 0, markers: { action: 2 }, exhausted: false, summoning: false });
-  let result = executeCommand(game, { type: "emit", owner: 0, event: { type: "onMaintenance", owner: 0 } }).state; assert.equal(result.players[0].life, 28); assert.equal(result.players[0].board[0].markers.action, 3);
+  const game = state(), card = compileCard({ id: "p134", page: 134, name: "O Cobra Dor", type: "Criatura", text: "" }); game.players[0].board.push({ ...card, uid: "cobra", slot: 0, markers: { action: 2 }, exhausted: false, summoning: false }, { ...card, uid: "cobra-2", slot: 1, markers: { action: 0 }, exhausted: false, summoning: false });
+  let result = executeCommand(game, { type: "emit", owner: 0, event: { type: "onMaintenance", owner: 0 } }).state; assert.equal(result.players[0].life, 26); assert.equal(result.players[0].board[0].markers.action, 3); assert.equal(result.players[0].board[1].markers.action, 1);
   result.players[0].life = 20; result = executeCommand(result, { type: "activate", owner: 0, sourceId: "cobra", abilityId: card.abilities[1].id, markerAmount: 3, skipPriority: true }).state; assert.equal(result.players[0].life, 23); assert.equal(result.players[0].board[0].markers.action, 0);
+  assert.equal(result.players[0].board[1].markers.action, 1);
   assert.throws(() => executeCommand(result, { type: "activate", owner: 0, sourceId: "cobra", abilityId: card.abilities[1].id, markerAmount: 1, skipPriority: true }), /ability-limit-reached/);
+});
+
+test("Investida Alada resolves its chosen combat in principal phase without another response lock", () => {
+  const game = state(), spell = compileCard({ id: "p17", page: 17, name: "Investida Alada", type: "Feitiço", cost: 0, text: "" });
+  game.players[0].hand.push(spell); game.players[0].board.push({ uid: "dragon", name: "Dragão", type: "Criatura", subtypes: ["Dragão"], atk: 3, hp: 4, damage: 0, exhausted: false, summoning: false, tags: [], modifiers: [] }); game.players[1].board.push({ uid: "target", name: "Alvo", type: "Criatura", atk: 1, hp: 5, damage: 0, exhausted: false, summoning: false, tags: [], modifiers: [] });
+  let result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p17", skipPriority: true }).state; assert.equal(result.pendingDecision.kind, "forced-attack");
+  result = executeCommand(result, { type: "resolveDecision", owner: 0, attackerId: "dragon", defenderId: "target" }, { priority: true }).state;
+  assert.equal(result.pendingDecision, null); assert.equal(result.pendingResponse, undefined); assert.equal(result.pendingAction, undefined); assert.equal(result.players[1].board[0].damage, 3);
+});
+
+test("Silêncio Ensurdecedor suffocates only while its source remains in play", () => {
+  const game = state(), silence = compileCard({ id: "p147", page: 147, name: "Silêncio Ensurdecedor", type: "Encanto", cost: 0, text: "" });
+  game.players[0].hand.push(silence); game.players[1].board.push({ uid: "victim", name: "Alvo", type: "Criatura", atk: 2, hp: 3, damage: 0, exhausted: false, summoning: false, tags: ["Voar"], modifiers: [] });
+  let result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p147", instanceId: "silence", slot: 0, targetIds: ["victim"], skipPriority: true }).state; assert.equal(result.players[1].board[0].suffocated, true);
+  const source = result.players[0].support[0]; result.players[0].support = [];
+  result = executeCommand(result, { type: "emit", owner: 0, event: { type: "onPermanentLeaves", owner: 0, sourceId: source.uid, card: source } }).state; assert.equal(result.players[1].board[0].suffocated, false);
+});
+
+test("Castelo Carmesim enters without a target and reacts to each controller life-loss event", () => {
+  const game = state(), castle = compileCard({ id: "p148", page: 148, name: "Castelo Carmesim", type: "Terreno", cost: 0, text: "" }); game.players[0].hand.push(castle); game.players[0].deck.push({ id: "drawn" });
+  assert.equal(cardPlayTargetPolicy(castle).selections, 0);
+  let result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p148", slot: 0, skipPriority: true }).state; assert.equal(result.players[0].terrain.page, 148);
+  result.players[0].lifeLossEvents = 1; result = executeCommand(result, { type: "emit", owner: 0, event: { type: "onLifeLost", owner: 0, amount: 2 } }).state; assert.equal(result.players[0].hand.at(-1).id, "drawn");
+  result.players[0].lifeLossEvents = 2; result = executeCommand(result, { type: "emit", owner: 0, event: { type: "onLifeLost", owner: 0, amount: 2 } }).state; assert.equal(result.pendingDecision.kind, "targets");
+  result = executeCommand(result, { type: "resolveDecision", owner: 0, targetIds: ["enemy-hero"] }).state; assert.equal(result.players[1].life, 28);
 });
 
 test("Dominus Nox discounts only life lost during the current turn", async () => {

@@ -116,3 +116,4 @@ export function RemoteCardArt({ page, name, className = "", style, priority = fa
     />
   );
 }
+
