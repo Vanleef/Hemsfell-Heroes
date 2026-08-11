@@ -7380,3 +7380,60 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .screen-game .defense-decision{
   animation:fx-readable-hold 4.2s ease both!important;
 }
+
+
+/* Card hover polish: nameplates fit their labels and tooltips may escape popup bounds. */
+.screen-game .card-tooltip > b,
+.screen-decks .card-tooltip > b,
+.screen-setup .card-tooltip > b,
+.card-tooltip > b{
+  align-self:flex-start!important;
+  display:inline-block!important;
+  width:max-content!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+  padding:4px 16px!important;
+  border-radius:999px!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  text-align:center!important;
+}
+.screen-game .card-tooltip,
+.screen-decks .card-tooltip,
+.screen-setup .card-tooltip{
+  position:absolute!important;
+  z-index:99999!important;
+  overflow:visible!important;
+  contain:none!important;
+}
+.screen-game .original-card,
+.screen-game .card-frame,
+.screen-game .paired-field,
+.screen-game .field-column,
+.screen-game .field-slot,
+.screen-game .terrain-slot,
+.screen-game .side-piles{
+  overflow:visible!important;
+  contain:none!important;
+}
+/* Selection/deck popups must not clip a tooltip that intentionally extends beyond them. */
+.image-choice-overlay,
+.image-choice-dialog,
+.image-choice-dialog > *,
+.cafe-choice-overlay,
+.cafe-choice-dialog,
+.extra-deck-overlay,
+.extra-deck-dialog,
+.search-deck-overlay,
+.search-deck-dialog,
+.visual-card-choice-grid,
+.visual-card-choice{
+  overflow:visible!important;
+  contain:none!important;
+}
+.image-choice-dialog .card-tooltip,
+.cafe-choice-dialog .card-tooltip,
+.extra-deck-dialog .card-tooltip,
+.search-deck-dialog .card-tooltip{
+  z-index:100000!important;
+}
