@@ -7205,3 +7205,10 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   translate:none!important;
   transform:none!important;
 }
+
+
+/* The ready-state pulse applies a legacy translate; keep the action aligned. */
+.screen-game .player-hero>.level-button{
+  animation:none!important;
+  transform:translateX(53%)!important;
+}
