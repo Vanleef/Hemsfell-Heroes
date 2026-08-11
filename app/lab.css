@@ -6968,6 +6968,10 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   top:auto!important;
   bottom:26.5%!important;
 }
+.screen-game .hero-command-bar.enemy,
+.screen-game .hero-command-bar:not(.enemy){
+  left:.2%!important;
+}
 .screen-game .terrain-slot.enemy-terrain{
   left:calc(var(--field-left) - 6.35%)!important;
   top:31.8%!important;
