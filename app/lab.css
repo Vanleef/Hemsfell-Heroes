@@ -7660,7 +7660,7 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   left:28%!important;
 }
 .screen-game .hs-board .hero-command-bar{
-  width:28%!important;
+  width:18%!important;
   height:18%!important;
 }
 
