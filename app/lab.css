@@ -7563,3 +7563,15 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 /* High-resolution Hemsfell Heroes logo, kept at natural proportions. */
 .hh-logo{overflow:visible!important}
 .hh-logo img{width:140px!important;height:auto!important;max-width:none!important;aspect-ratio:auto!important;object-fit:contain!important;transform:none!important}
+
+
+/* Concise collection guide: identity, evolution criteria, and the actual power effects. */
+.hero-guide>header>p{color:var(--hh-cyan)!important;font-weight:800!important;text-transform:uppercase!important;letter-spacing:.12em!important}
+.hero-guide-facts{grid-template-columns:1fr!important}
+.hero-guide-facts>span{padding:9px 13px!important}
+.hero-guide-facts>span small{margin-bottom:3px!important}
+.hero-guide-facts>span b{font-size:11px!important}
+.hero-evolution-guide>p{color:#e8f4f2!important;font-size:11px!important;line-height:1.55!important;font-weight:700!important}
+.hero-evolution-guide li b{color:#f0fbf8!important;font-size:10px!important;line-height:1.45!important}
+.hero-abilities-guide article p{margin:8px 0 0!important;color:#f0fbf8!important;font-size:11px!important;line-height:1.55!important;font-weight:600!important}
+.hero-abilities-guide article small{display:none!important}
