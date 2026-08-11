@@ -339,6 +339,18 @@ test("migrated targeting reads executable First Act data instead of passive remi
   assert.equal(cardPlayTargetPolicy(apaixonado).scope, TargetScope.ALLY_CREATURE);
 });
 
+test("Recruta Vigilante enters without asking for a target when every creature is ready", () => {
+  const vigilante = compileCard({ id: "p190", page: 190, name: "Recruta Vigilante", type: "Criatura", cost: 1, atk: 1, hp: 1, text: "Primeiro Ato: Retorne uma criatura virada para mão de seu dono.", tags: ["Primeiro Ato"] });
+  const policy = cardPlayTargetPolicy(vigilante);
+  assert.equal(policy.steps[0].requireExhausted, true);
+  const game = state();
+  game.players[0].hand.push(vigilante);
+  game.players[0].board.push({ uid: "ready", id: "ready", type: "Criatura", slot: 0, exhausted: false, hp: 2, damage: 0, abilities: [] });
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p190", instanceId: "vigilante", slot: 1 }).state;
+  assert.ok(result.players[0].board.some((card) => card.uid === "vigilante"));
+  assert.equal(result.pendingDecision, undefined);
+});
+
 test("Saideira passively replays a Recruit First Act on every leave-field event", () => {
   for (const eventType of ["onDestroyed", "onPermanentLeaves"]) {
     const game = state();
