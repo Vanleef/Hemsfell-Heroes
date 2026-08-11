@@ -114,7 +114,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 98);
+  assert.equal(explicitRuleIds.length, 99);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -1062,4 +1062,25 @@ test("investigation triggers share reveal events and archive replacement", () =>
   defaultEffectHandlers.archiveToGrave(result, { amount: 1 }, { owner: 0 });
   defaultEffectHandlers.investigate(result, { amount: 2, target: "controllerDeck" }, { owner: 0, sourceId: "spy" });
   assert.ok(result.players[0].grave.some((card) => card.id === "archive"));
+});
+
+test("Brutamontes only gains attack for creatures explicitly sacrificed", () => {
+  const game=state(); game.players[0].board.push({uid:"ally",id:"ally",name:"Aliada",type:"Criatura",slot:0,hp:2,tags:[],abilities:[]}); game.players[0].hand.push(compileCard({id:"p117",page:117,name:"Brutamontes",type:"Criatura",cost:0,atk:1,hp:4,text:"",tags:[]}));
+  const pending=executeCommand(game,{type:"playCard",owner:0,cardId:"p117",instanceId:"brute",slot:1}).state; assert.equal(pending.pendingDecision.kind,"optional-sacrifice-buff");
+  const resolved=executeCommand(pending,{type:"resolveDecision",owner:0,targetIds:["ally"]}).state; assert.equal(resolved.players[0].board.find(card=>card.uid==="brute").modifiers[0].attack,2); assert.ok(resolved.players[0].grave.some(card=>card.id==="ally"));
+});
+
+test("Brutamontes may decline every sacrifice and stays at base attack", () => {
+  const game=state(); game.players[0].board.push({uid:"ally",id:"ally",type:"Criatura",slot:0,hp:2,tags:[],abilities:[]}); game.players[0].hand.push(compileCard({id:"p117",page:117,name:"Brutamontes",type:"Criatura",cost:0,atk:1,hp:4,text:"",tags:[]}));
+  const pending=executeCommand(game,{type:"playCard",owner:0,cardId:"p117",instanceId:"brute",slot:1}).state; const resolved=executeCommand(pending,{type:"resolveDecision",owner:0,targetIds:[]}).state; assert.equal(resolved.players[0].board.find(card=>card.uid==="brute").modifiers.length,0);
+});
+
+test("Caneca da Sorte grants one modifier and Magic Barrier to Recruta Pinguço", () => {
+  const game=state(); game.players[0].board.push({uid:"pinguco",id:"p189",page:189,name:"Recruta Pinguço",type:"Criatura",slot:0,atk:2,hp:2,tags:[],modifiers:[],abilities:[]}); game.players[0].hand.push(compileCard({id:"p192",page:192,name:"Caneca da Sorte",type:"Artefato",cost:0,text:"",tags:[]}));
+  const result=executeCommand(game,{type:"playCard",owner:0,cardId:"p192",instanceId:"mug",slot:0,attachedTo:"pinguco"}).state; const host=result.players[0].board[0]; assert.equal(host.modifiers.length,1); assert.deepEqual([host.modifiers[0].attack,host.modifiers[0].health],[2,-1]); assert.ok(host.grantedKeywords.some(value=>/barreira mágica/i.test(value)));
+});
+
+test("zero vitality from a modifier sends a reset card to grave", () => {
+  const game=state(); game.cardCatalog=[{id:"base",page:999,name:"Nome Base",type:"Criatura",cost:1,atk:1,hp:1,text:"",tags:[],abilities:[]}]; game.players[0].board.push({uid:"mutated",id:"instance",page:999,name:"Nome Alterado",type:"Criatura",slot:0,atk:9,hp:1,damage:0,tags:["Virada"],exhausted:true,modifiers:[],abilities:[]}); game.players[0].hand.push(compileCard({id:"p192",page:192,name:"Caneca da Sorte",type:"Artefato",cost:0,text:"",tags:[]}));
+  const result=executeCommand(game,{type:"playCard",owner:0,cardId:"p192",instanceId:"mug",slot:0,attachedTo:"mutated"}).state; const dead=result.players[0].grave.find(card=>card.page===999); assert.equal(result.players[0].board.length,0); assert.equal(dead.name,"Nome Base"); assert.deepEqual(dead.tags,[]); assert.equal(dead.modifiers,undefined);
 });
