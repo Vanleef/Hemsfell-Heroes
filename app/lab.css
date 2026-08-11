@@ -3343,9 +3343,6 @@
   width: 86px !important;
   height: 86px !important;
   border-width: 2px !important;
-  box-shadow:
-    0 0 0 5px #d1a84b24,
-    0 10px 28px #000b !important;
 }
 .side-piles {
   right: 24px !important;
@@ -6647,7 +6644,7 @@
 .engine-decision-panel button b{display:grid;place-items:center;min-width:28px;height:28px;border-radius:50%;background:#d4a646;color:#101719}
 .engine-decision-panel button span{font-size:.96rem;font-weight:750}
 .engine-decision-wait{position:fixed;z-index:11990;left:50%;top:18px;translate:-50% 0;padding:10px 16px;border:1px solid #b88b3c;border-radius:999px;background:#071318ee;color:#e7bc61;font-weight:850;box-shadow:0 10px 35px #0009}
-.priority-control-toggle{position:fixed;right:18px;bottom:76px;z-index:920;border:1px solid #3e9ca5;background:#071a21;color:#c9f7f3;border-radius:999px;padding:8px 13px;font-size:11px;font-weight:800;letter-spacing:.04em;box-shadow:0 7px 20px #0008}
+.priority-control-toggle{position:fixed;right:250px;bottom:76px;z-index:920;border:1px solid #3e9ca5;background:#071a21;color:#c9f7f3;border-radius:999px;padding:8px 13px;font-size:11px;font-weight:800;letter-spacing:.04em;box-shadow:0 7px 20px #0008}
 .priority-control-toggle:hover{border-color:#74e0df;background:#0d2931}
 .priority-stack-indicator{position:fixed;left:50%;top:92px;transform:translateX(-50%);z-index:910;display:flex;align-items:center;gap:7px;border:1px solid #c99a40;background:#120f0be8;color:#f6d98f;border-radius:999px;padding:6px 11px;box-shadow:0 8px 24px #0009;pointer-events:none}
 .priority-stack-indicator span{font-size:9px;font-weight:900;letter-spacing:.16em}
@@ -6714,7 +6711,7 @@
 .screen-game .hero-command-bar>header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 3px;color:#d9edf1}.screen-game .hero-command-bar>header b{font:900 9px/1 system-ui;letter-spacing:.16em;text-transform:uppercase}.screen-game .hero-command-bar>header span{color:var(--deck);font:900 9px/1 system-ui}
 .screen-game .hero-command-bar .hero-ability-chip{position:relative;display:grid!important;grid-template-columns:20px 1fr;align-items:center;gap:4px;min-width:0;height:42px!important;padding:4px!important;border:1px solid #ffffff18!important;border-radius:8px;background:#ffffff08!important;opacity:1!important;overflow:visible}
 .screen-game .hero-command-bar .hero-ability-chip>i{display:grid!important;place-items:center;width:20px;height:20px;border:1px solid var(--deck);border-radius:50%;color:#fff;font:900 9px/1 system-ui}.screen-game .hero-command-bar .hero-ability-chip>span{min-width:0}.screen-game .hero-command-bar .hero-ability-chip>span>b{display:block;color:var(--deck);font:900 6px/1 system-ui;letter-spacing:.12em}.screen-game .hero-command-bar .hero-ability-chip p{display:block!important;margin:3px 0 0!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e9f0f2;font:700 8px/1.1 system-ui!important}
-.screen-game .hero-command-bar .hero-ability-chip>button{position:absolute;inset:0;z-index:2;display:flex!important;align-items:flex-end!important;justify-content:flex-end!important;width:100%!important;height:100%!important;padding:4px!important;border:1px solid #f0c96166!important;border-radius:8px!important;background:transparent!important;color:#ffe08a!important;font-size:12px!important;cursor:pointer}.screen-game .hero-command-bar .hero-ability-chip>button small{display:none}.screen-game .hero-command-bar .hero-ability-chip>button:hover:not(:disabled){background:#d3a13a2c!important;box-shadow:inset 0 0 14px #ffd66533}.screen-game .hero-command-bar .hero-ability-chip>button:disabled{cursor:not-allowed;filter:grayscale(1);opacity:.45}.screen-game .hero-command-bar .hero-ability-chip>em{position:absolute;right:4px;bottom:4px;color:#88a2a8;font:700 6px/1 system-ui;font-style:normal}.screen-game .hero-command-bar .hero-ability-chip.locked{opacity:.42!important}
+.screen-game .hero-command-bar .hero-ability-chip>button{position:absolute;inset:0;z-index:2;display:flex!important;align-items:flex-end!important;justify-content:flex-end!important;width:100%!important;height:100%!important;padding:4px!important;border:1px solid #f0c96166!important;border-radius:8px!important;background:transparent!important;color:#ffe08a!important;font-size:12px!important;cursor:pointer}.screen-game .hero-command-bar .hero-ability-chip>button small{display:none}.screen-game .hero-command-bar .hero-ability-chip>button:hover:not(:disabled){background:#d3a13a2c!important;box-shadow:inset 0 0 14px #ffd66533}.screen-game .hero-command-bar .hero-ability-chip>button:disabled{cursor:not-allowed;filter:grayscale(1);opacity:.45}.screen-game .hero-command-bar .hero-ability-chip>em{position:absolute;right:8px;bottom:8px;color:#88a2a8;font:700 9px/1 system-ui;font-style:bold}.screen-game .hero-command-bar .hero-ability-chip.locked{opacity:.42!important}
 
 /* Effect families use distinct motion, palette and silhouette. */
 .screen-game .visual-effect{--fx:#e8be60;--fx-soft:#e8be6044;border-color:var(--fx)!important;background:radial-gradient(circle at 30% 50%,var(--fx-soft),#07101bf2 58%,#03070ce8)!important;box-shadow:0 0 48px var(--fx-soft),0 25px 70px #000!important}
@@ -6755,7 +6752,7 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .screen-game .hero-command-bar:not(.enemy){bottom:19%!important}
 .screen-game .hero-command-bar .hero-ability-chip{grid-template-columns:1fr!important;height:48px!important;text-align:center!important}
 .screen-game .hero-command-bar .hero-ability-chip>i{margin:auto!important}
-.screen-game .hero-command-bar .hero-ability-chip p{font-size:6px!important}
+.screen-game .hero-command-bar .hero-ability-chip p{font-size:7px!important}
 
 /* Hover layers rise with their card container, including collection pages. */
 .card-frame:hover,.card-frame:focus-within,.original-card:hover,.original-card:focus-within{z-index:15950!important}
@@ -6819,7 +6816,7 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 
 .screen-game .opponent-hand{top:3.4%!important}
 .screen-game .field-energy{left:var(--field-left)!important;width:var(--field-width)!important;height:27px!important;z-index:45!important}
-.screen-game .field-energy.enemy-energy{top:9.2%!important}
+.screen-game .field-energy.enemy-energy{top:11.2%!important}
 .screen-game .field-energy.player-energy{top:75.2%!important}
 .screen-game .paired-field{left:var(--field-left)!important;width:var(--field-width)!important;height:23%!important}
 .screen-game .paired-field.enemy-field{top:14.5%!important}
@@ -6904,8 +6901,8 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .screen-game .hero-command-bar{display:grid!important;grid-template-columns:1fr!important;gap:5px!important;width:158px!important;max-height:none!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:visible!important}
 .screen-game .hero-command-bar>header{display:none!important}
 .screen-game .hero-command-bar .hero-ability-chip{height:27px!important;min-height:27px!important;padding:3px 6px!important;border:1px solid color-mix(in srgb,var(--deck) 58%,#dce8e8 18%)!important;border-left:3px solid var(--deck)!important;border-radius:999px!important;background:linear-gradient(90deg,#07131be8,#10232ad9)!important;box-shadow:0 4px 12px #0009!important}
-.screen-game .hero-command-bar .hero-ability-chip>i{width:17px!important;height:17px!important;font-size:7px!important;background:color-mix(in srgb,var(--deck) 22%,#07131b)!important}
-.screen-game .hero-command-bar .hero-ability-chip>span>b{font-size:5px!important}.screen-game .hero-command-bar .hero-ability-chip p{font-size:6px!important;max-width:112px!important}
+.screen-game .hero-command-bar .hero-ability-chip>i{width:17px!important;height:17px!important;font-size:10px!important;background:color-mix(in srgb,var(--deck) 22%,#07131b)!important}
+.screen-game .hero-command-bar .hero-ability-chip>span>b{font-size:6px!important}.screen-game .hero-command-bar .hero-ability-chip p{font-size:6px!important;max-width:112px!important}
 
 /* Every authoritative card choice is a visual card browser. */
 .engine-decision-panel{width:min(820px,calc(100vw - 28px))!important;max-height:min(820px,92dvh)!important;overflow:auto!important}
@@ -6943,7 +6940,7 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .deck-rail,.deck-detail,.collection-lists>section,.versus,.deck-picker,.maintenance-dialog{border-color:#25d3da2e!important}
 .deck-detail{grid-template-columns:235px minmax(310px,390px) minmax(0,1fr);gap:18px;background:linear-gradient(145deg,#07171de8,#0a2b31a3)!important}
 .collection-lists>section{background:#05151ad9!important}.collection-lists>section>header{background:#0b2930!important;border-color:#25d3da24!important}.collection-lists>section>header b{color:var(--hh-gold)!important}
-.game-board,.battlefield{background-color:#071a20!important}.field-slot,.side-pile,.terrain-slot{border-color:#1fc6cf42!important;box-shadow:inset 0 0 18px #072b32,0 0 12px #0009!important}.field-energy{border-color:#f8b83c80!important;background:linear-gradient(90deg,#071b21,#0b343a)!important}.phase-orb{background:radial-gradient(circle at 35% 30%,#ffd66e,var(--hh-orange) 72%)!important;color:#071014!important}
+.game-board,.battlefield{background-color:#071a20!important}.field-slot,.side-pile,.terrain-slot{border-color:#1fc6cf42!important;box-shadow:inset 0 0 18px #072b32,0 0 12px #0009!important}.field-energy{border-color:#f8b83c80!important;background:linear-gradient(90deg,#071b21,#0b343a)!important}.phase-orb{color:#071014!important}
 .hh-logo{width:158px!important;height:70px!important;display:flex!important;align-items:center!important}.hh-logo img{width:140px!important;height:62px!important;aspect-ratio:auto!important;object-fit:fill!important;transform:scaleX(1.16);transform-origin:left center;filter:drop-shadow(0 5px 10px #000b)!important}
 
 .hero-guide{min-width:0;align-self:start;border:1px solid color-mix(in srgb,var(--deck) 52%,var(--hh-cyan));border-radius:10px;background:linear-gradient(155deg,color-mix(in srgb,var(--deck) 10%,#0b2c32),#06161b 58%);overflow:hidden;box-shadow:0 16px 38px #0007}
