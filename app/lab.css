@@ -7638,8 +7638,8 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 
 /* Actual compact creature/support field: narrow the grid so its five slots sit closer together. */
 .screen-game .hs-board .paired-field{
-  left:24%!important;
-  width:46%!important;
+  left:36%!important;
+  width:38%!important;
   grid-template-columns:repeat(5,minmax(0,1fr))!important;
   column-gap:5px!important;
   row-gap:4px!important;
@@ -7652,13 +7652,14 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 
 /* Final rail alignment against the compact central card field. */
 .screen-game .hs-board .side-piles{
-  left:calc(24% + 46% + 1%)!important;
+  left:calc(36% + 46% + 1%)!important;
   right:auto!important;
 }
 .screen-game .hs-board .terrain-slot.enemy-terrain,
 .screen-game .hs-board .terrain-slot.player-terrain{
-  left:22%!important;
+  left:28%!important;
 }
 .screen-game .hs-board .hero-command-bar{
-  width:18%!important;
+  width:28%!important;
+  height:18%!important;
 }
