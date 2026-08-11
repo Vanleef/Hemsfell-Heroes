@@ -46,7 +46,7 @@ function payCosts(state, ability, context) {
 }
 
 function modifierApplies(state, owner, modifier) { return modifier.condition !== "controllerTurn" || state.active === owner; }
-function activeKeywords(unit) { return unit?.suffocated ? [] : [...(unit?.tags || []), ...(unit?.temporaryTags || []), ...(unit?.grantedKeywords || [])]; }
+function activeKeywords(unit) { return unit?.suffocated ? [] : [...(unit?.tags || []), ...(unit?.temporaryTags || []), ...(unit?.grantedKeywords || []).map((value)=>String(value).replace(/^attachment:[^:]+:/,""))]; }
 function hasKeyword(unit, pattern) { return activeKeywords(unit).some((tag) => pattern.test(String(tag))); }
 function attackPermissionMet(unit) {
   const requirement = unit?.attackPermission?.requiresMarkers;
@@ -213,7 +213,12 @@ function preflightPlay(state, command, handlers) {
   return { card, playAbilities, enterAbilities, cost };
 }
 function cleanupLethal(state, stack) {
-  state.players.forEach((entry, owner) => { for (const unit of [...entry.board]) { const modifiers = (unit.modifiers || []).filter((item) => modifierApplies(state, owner, item)).reduce((sum, item) => sum + (item.health || 0), 0); const indestructible = hasKeyword(unit, /indestrut[ií]vel/i); if ((unit.damage || 0) < (unit.hp || 1) + modifiers || indestructible) continue; entry.board.splice(entry.board.indexOf(unit), 1); const attachments = entry.support.filter((card) => card.attachedTo === unit.uid); entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid); for (const attachment of attachments) { if (attachment.generatedImage || attachment.imageCard) continue; if (attachment.page === 154) entry.obscuro.push(attachment); else entry.grave.push(attachment); } if (!unit.generatedImage && !unit.imageCard) entry.grave.push({ ...unit, deathCause: "effect" }); if (!unit.suppressDeathTrigger && !unit.generatedImage && !unit.imageCard) stack.push({ kind: "event", event: { type: "onDestroyed", owner, sourceId: unit.uid, cardId: unit.uid, card: unit, deathCause: "effect" } }); stack.push({ kind: "event", event: { type: "onCreatureDestroyed", owner, cardId: unit.uid, card: unit } }); } });
+  state.players.forEach((entry, owner) => { for (const unit of [...entry.board]) { const modifiers = (unit.modifiers || []).filter((item) => modifierApplies(state, owner, item)).reduce((sum, item) => sum + (item.health || 0), 0); const indestructible = hasKeyword(unit, /indestrut[ií]vel/i); if ((unit.damage || 0) < (unit.hp || 1) + modifiers || indestructible) continue; entry.board.splice(entry.board.indexOf(unit), 1); const attachments = entry.support.filter((card) => card.attachedTo === unit.uid); entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid); for (const attachment of attachments) { if (attachment.generatedImage || attachment.imageCard) continue; if (attachment.page === 154) entry.obscuro.push(resetCardForZone(state,attachment)); else entry.grave.push(resetCardForZone(state,attachment)); } if (!unit.generatedImage && !unit.imageCard) entry.grave.push(resetCardForZone(state,unit)); if (!unit.suppressDeathTrigger && !unit.generatedImage && !unit.imageCard) stack.push({ kind: "event", event: { type: "onDestroyed", owner, sourceId: unit.uid, cardId: unit.uid, card: unit, deathCause: "effect" } }); stack.push({ kind: "event", event: { type: "onCreatureDestroyed", owner, cardId: unit.uid, card: unit } }); } });
+}
+
+function resetCardForZone(state, card) {
+  const template=(state.cardCatalog||[]).find((item)=>item.page===card.page)||card;
+  return { page:template.page,id:card.id,name:template.name,type:template.type,cost:template.cost,atk:template.atk,hp:template.hp,text:template.text,tags:[...(template.tags||[])],subtypes:[...(template.subtypes||[])],abilities:clone(template.abilities||[]),image:template.image,hero:template.hero,imageCard:template.imageCard,generatedImage:card.generatedImage };
 }
 
 function activeAbilities(state, event) {
@@ -391,6 +396,14 @@ export function executeCommand(inputState, command, options = {}) {
             continue;
           }
           for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context });
+          continue;
+        }
+        if (decision.kind === "optional-sacrifice-buff") {
+          const ids=[...new Set(item.command.targetIds||[])],entry=state.players[item.command.owner],source=entry.board.find((card)=>card.uid===decision.context.sourceId);
+          if(!source||ids.length>(decision.effect.maximum||3)||ids.some((id)=>id===source.uid||!entry.board.some((card)=>card.uid===id)))throw new RulesViolation("invalid-sacrifice-selection");
+          state.pendingDecision=null;
+          for(const id of ids){const target=entry.board.find((card)=>card.uid===id);entry.board=entry.board.filter((card)=>card.uid!==id);if(!target)continue;const attachments=entry.support.filter((card)=>card.attachedTo===id);entry.support=entry.support.filter((card)=>card.attachedTo!==id);for(const artifact of attachments)if(!artifact.generatedImage&&!artifact.imageCard)entry.grave.push(resetCardForZone(state,artifact));if(!target.generatedImage&&!target.imageCard)entry.grave.push(resetCardForZone(state,target));stack.push({kind:"event",event:{type:"onCreatureDestroyed",owner:item.command.owner,sourceId:id,card:target}});}
+          if(ids.length){source.modifiers||=[];source.modifiers.push({attack:ids.length*(decision.effect.attackPerCreature||2),health:0,duration:"permanent",sourceId:source.uid});}
           continue;
         }
         if (decision.kind === "targets") {
