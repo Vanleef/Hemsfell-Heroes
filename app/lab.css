@@ -6618,6 +6618,10 @@
 .card-frame-activation:hover:not(:disabled){transform:scale(1.12);filter:brightness(1.13)}
 .card-frame-activation:disabled{cursor:not-allowed;opacity:.3;filter:grayscale(1);animation:none}
 .card-frame-marker{pointer-events:none}
+.card-frame-last-breath{position:absolute;left:50%;bottom:-14px;z-index:8;display:grid;place-items:center;width:24px;height:24px;translate:-50% 0;border:2px solid #080b0f;border-radius:50%;background:#33233f;color:#f4e9ff;font-style:normal;font-size:14px;box-shadow:0 0 12px #a05bd8;pointer-events:none}
+.original-card.has-magic-barrier{border-color:#83ddff!important;box-shadow:0 0 0 3px #65d9ff88,0 0 22px #39aee8!important;animation:magic-barrier-pulse 1.8s ease-in-out infinite}
+.original-card.has-magic-barrier:after{content:"◇";position:absolute;inset:-7px;display:grid;place-items:center;border:2px solid #8ee6ff;border-radius:12px;color:#bff2ff;font-size:32px;text-shadow:0 0 10px #3bc8ff;pointer-events:none}
+@keyframes magic-barrier-pulse{50%{filter:brightness(1.12);box-shadow:0 0 0 4px #85e6ff99,0 0 30px #3fc9ff!important}}
 .player-hero .hero-status-cues{left:142px;right:auto;top:42px;bottom:auto;transform:none}
 .player-hero .hero-status-cues.cost{top:67px;bottom:auto}
 .player-hero > button.level-button{display:block!important;right:7px!important;bottom:-38px!important;width:142px!important;height:34px!important;font:900 12px/1 Arial!important;letter-spacing:.08em!important}
