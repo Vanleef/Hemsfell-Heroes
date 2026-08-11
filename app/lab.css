@@ -7296,3 +7296,87 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .screen-game .hero-command-bar .hero-ability-chip{
   min-height:min(5vw,8.9dvh)!important;
 }
+
+
+/* Final board polish: no outer orb halo, equal creature clearance, and a
+   deliberate readable hold before any effect fades. */
+.screen-game .phase-orb{
+  background:transparent!important;
+  background-image:none!important;
+  border:0!important;
+  box-shadow:none!important;
+  left:calc(23.5% + 58.5% - 4.2%)!important;
+  top:46.5%!important;
+}
+.screen-game .phase-orb button{
+  background:linear-gradient(145deg,#e4b84e,#9e6422)!important;
+  background-image:none!important;
+  border-radius:50%!important;
+  box-shadow:0 0 0 2px #d1a84b55,0 10px 28px #000b!important;
+}
+.screen-game .hero-command-bar{
+  width:15.5%!important;
+  grid-template-columns:1fr!important;
+  gap:min(.72vw,1.28dvh)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip{
+  min-height:min(5.2vw,9.25dvh)!important;
+  height:auto!important;
+  overflow:visible!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip p{
+  overflow:visible!important;
+  white-space:normal!important;
+  text-overflow:clip!important;
+}
+.screen-game .hs-board .field-energy,
+.screen-game .hs-board .paired-field,
+.screen-game .hs-board .player-hand{
+  left:23.5%!important;
+  width:58.5%!important;
+}
+.screen-game .hs-board .paired-field{
+  height:20.5%!important;
+}
+.screen-game .hs-board .paired-field.enemy-field{top:18%!important}
+.screen-game .hs-board .paired-field.player-field{top:53.2%!important}
+.screen-game .hs-board .paired-field .field-column{gap:2px!important}
+.screen-game .hs-board .phase-orb{top:46.5%!important}
+.screen-game .hs-board .side-piles{
+  left:calc(23.5% + 58.5% + 1.5%)!important;
+}
+.screen-game .visual-effect,
+.screen-game .combat-cinematic,
+.screen-game .defense-decision,
+.screen-game .target-banner{
+  left:1%!important;
+  right:auto!important;
+  top:50%!important;
+  transform:translateY(-50%)!important;
+  width:20%!important;
+  max-width:20%!important;
+}
+.screen-game .defense-decision{
+  left:50%!important;
+  top:47%!important;
+  width:220px!important;
+  max-width:220px!important;
+  transform:translate(-50%,-50%)!important;
+}
+@keyframes fx-readable-hold{
+  0%{opacity:0}
+  16%{opacity:1}
+  82%{opacity:1}
+  100%{opacity:0}
+}
+.screen-game .visual-effect,
+.screen-game .visual-effect>img,
+.screen-game .visual-effect>span,
+.screen-game .visual-effect>section,
+.screen-game .visual-effect .fx-runes{
+  animation:fx-readable-hold 4.2s ease both!important;
+}
+.screen-game .combat-cinematic,
+.screen-game .defense-decision{
+  animation:fx-readable-hold 4.2s ease both!important;
+}
