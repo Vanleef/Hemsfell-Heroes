@@ -7689,3 +7689,11 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .screen-game .hero-command-bar .hero-ability-chip>span>b{
   font-size:min(.62vw,1.1dvh)!important;
 }
+
+
+/* Ability chips: icon-only availability state and stable hover geometry. */
+.screen-game .hero-command-bar .hero-ability-chip>button small,
+.screen-game .hero-command-bar .hero-ability-chip>em{display:none!important}
+.screen-game .hero-command-bar .hero-ability-chip>button{min-width:0!important;width:auto!important;transform:none!important}
+.screen-game .hero-command-bar .hero-ability-chip,
+.screen-game .hero-command-bar .hero-ability-chip:hover{transform:none!important;scale:none!important}
