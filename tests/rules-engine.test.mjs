@@ -212,6 +212,12 @@ test("activated abilities are limited to once per turn", () => {
   assert.throws(() => executeCommand(first.state, { type: "activate", owner: 0, sourceId: "machine", abilityId: card.abilities[0].id }), /ability-limit-reached|cannot-tap/);
 });
 
+test("every activated ability is once per turn even when legacy data omitted usageLimit", () => {
+  const game = state(); game.players[0].board.push({ uid: "legacy", name: "Legado", abilities: [{ id: "active", trigger: "activated", costs: [], effects: [{ type: "draw", amount: 0 }] }] });
+  const first = executeCommand(game, { type: "activate", owner: 0, sourceId: "legacy", abilityId: "active", skipPriority: true }).state;
+  assert.throws(() => executeCommand(first, { type: "activate", owner: 0, sourceId: "legacy", abilityId: "active", skipPriority: true }), /ability-limit-reached/);
+});
+
 test("Bomba doubles all markers and halves maximum energy with ceiling", () => {
   const game = state(); game.players[0].maxEnergy = 9; game.players[0].energy = 9; game.players[0].board.push({ uid: "one", markers: 2 }, { uid: "two", markers: { action: 3 } });
   defaultEffectHandlers.doubleMarkers(game, {}, { owner: 0 }); defaultEffectHandlers.halveMaxEnergy(game, {}, { owner: 0 });
@@ -351,7 +357,14 @@ test("multi-step search decisions resume their authoritative continuation", () =
 test("Cobra Dor loses life on maintenance and converts removed markers into healing", () => {
   const game = state(), card = compileCard({ id: "p134", page: 134, name: "O Cobra Dor", type: "Criatura", text: "" }); game.players[0].board.push({ ...card, uid: "cobra", slot: 0, markers: { action: 2 }, exhausted: false, summoning: false });
   let result = executeCommand(game, { type: "emit", owner: 0, event: { type: "onMaintenance", owner: 0 } }).state; assert.equal(result.players[0].life, 28); assert.equal(result.players[0].board[0].markers.action, 3);
-  result.players[0].life = 20; result = executeCommand(result, { type: "activate", owner: 0, sourceId: "cobra", abilityId: card.abilities[1].id, markerAmount: 3, skipPriority: true }).state; assert.equal(result.players[0].life, 23);
+  result.players[0].life = 20; result = executeCommand(result, { type: "activate", owner: 0, sourceId: "cobra", abilityId: card.abilities[1].id, markerAmount: 3, skipPriority: true }).state; assert.equal(result.players[0].life, 23); assert.equal(result.players[0].board[0].markers.action, 0);
+  assert.throws(() => executeCommand(result, { type: "activate", owner: 0, sourceId: "cobra", abilityId: card.abilities[1].id, markerAmount: 1, skipPriority: true }), /ability-limit-reached/);
+});
+
+test("Dominus Nox discounts only life lost during the current turn", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /c\.page===139\)cost=Math\.max\(1,cost-Math\.max\(0,p\.lifeLostThisTurn\|\|0\)\)/);
+  assert.doesNotMatch(page, /c\.page===139[^;]*30-p\.life/);
 });
 
 test("subtypes are card data and support cards with more than one subtype", () => {
@@ -1063,7 +1076,8 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(css, /original-card\.summoning-sick/);
   assert.match(css, /auxiliary-slot \.card-tooltip/);
   assert.match(css, /z-index:9020!important/);
-  assert.match(page, /card-frame-inspect/);
+  assert.doesNotMatch(page, /className="card-frame-inspect"/);
+  assert.match(page, /requestCardInspection\(card\)/);
   assert.match(page, /hero-command-bar/);
   assert.match(page, /card-focus-layer/);
   assert.match(page, /hemsfell-heroes-logo\.png/);

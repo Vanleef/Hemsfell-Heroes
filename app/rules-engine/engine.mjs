@@ -159,8 +159,9 @@ function eventAppliesToSource(event, source, owner) {
 }
 
 function usageKey(source, ability) { return `${source.uid || source.id}:${ability.id}`; }
-function usageAvailable(state, source, owner, ability) { if (!ability.usageLimit && !ability.condition?.firstEachTurn) return true; return !(state.players[owner].abilityUses || {})[usageKey(source, ability)]; }
-function claimUsage(state, source, owner, ability) { if (!ability.usageLimit && !ability.condition?.firstEachTurn) return; state.players[owner].abilityUses ||= {}; state.players[owner].abilityUses[usageKey(source, ability)] = (state.players[owner].abilityUses[usageKey(source, ability)] || 0) + 1; }
+function isOncePerTurnAbility(ability) { return ability?.trigger === "activated" || !!ability?.usageLimit || !!ability?.condition?.firstEachTurn; }
+function usageAvailable(state, source, owner, ability) { if (!isOncePerTurnAbility(ability)) return true; return !(state.players[owner].abilityUses || {})[usageKey(source, ability)]; }
+function claimUsage(state, source, owner, ability) { if (!isOncePerTurnAbility(ability)) return; state.players[owner].abilityUses ||= {}; state.players[owner].abilityUses[usageKey(source, ability)] = (state.players[owner].abilityUses[usageKey(source, ability)] || 0) + 1; }
 
 const permanentUnits = (entry) => [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])];
 const markerTotalForEngine = (card) => typeof card?.markers === "number" ? card.markers : Object.values(card?.markers || {}).reduce((sum, value) => sum + Number(value || 0), 0);

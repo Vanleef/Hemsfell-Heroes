@@ -21,7 +21,7 @@ function spellCost(state, owner, card) {
 
 function activationAvailable(state, owner, source, ability) {
   if (state.active !== owner || ability.trigger !== "activated" || ability.responseAllowed === false) return false;
-  if (ability.usageLimit && state.players[owner].abilityUses?.[`${source.uid || source.id}:${ability.id}`]) return false;
+  if (state.players[owner].abilityUses?.[`${source.uid || source.id}:${ability.id}`]) return false;
   try { validateCosts(state, ability, { owner, sourceId: source.uid || source.id }); return true; } catch { return false; }
 }
 

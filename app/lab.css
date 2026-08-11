@@ -6785,3 +6785,102 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
  .screen-game .hero-command-bar.enemy{top:20%!important}
  .screen-game .hero-command-bar:not(.enemy){bottom:18%!important}
 }
+
+/* Layout and interaction pass v9 — independent rails for hero, powers, field,
+   resources and piles. This is the final cascade authority for the match HUD. */
+.screen-game .hs-board{
+  --hero-w:110px!important;
+  --power-w:158px!important;
+  --field-left:292px!important;
+  --right-rail:242px!important;
+  --field-width:calc(100vw - var(--field-left) - var(--right-rail))!important;
+  height:100dvh!important;min-height:600px!important;max-height:100dvh!important;
+}
+.screen-game .player-hero{left:8px!important;width:var(--hero-w)!important;height:154px!important;z-index:150!important}
+.screen-game .player-hero.enemy{top:7%!important}
+.screen-game .player-hero:not(.enemy){bottom:3%!important}
+.screen-game .player-hero .hero-evolution{left:4px!important;right:4px!important;top:-37px!important;height:31px!important;min-height:31px!important;padding:5px 7px!important;background:#071016f5!important}
+.screen-game .player-hero .hero-evolution>small{font-size:5px!important;line-height:1!important;margin:0!important}
+.screen-game .player-hero .hero-evolution>strong{font-size:8px!important;margin:2px 0 0!important}
+.screen-game .hero-evolution .evolution-track{margin-top:3px!important}
+.screen-game .player-hero>.level-button{width:110px!important;height:24px!important;bottom:-27px!important;font-size:7px!important}
+.screen-game .hero-command-bar{
+  display:grid!important;left:122px!important;width:var(--power-w)!important;max-height:118px!important;
+  grid-template-columns:1fr!important;gap:3px!important;padding:5px!important;overflow:hidden!important;
+  opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:none!important;z-index:155!important;
+}
+.screen-game .hero-command-bar.enemy{top:7%!important}
+.screen-game .hero-command-bar:not(.enemy){bottom:4%!important}
+.screen-game .hero-command-bar>header{min-height:13px!important;padding:0 2px 2px!important}
+.screen-game .hero-command-bar .hero-ability-chip{grid-template-columns:16px 1fr!important;height:25px!important;min-height:25px!important;padding:2px 4px!important;text-align:left!important}
+.screen-game .hero-command-bar .hero-ability-chip>i{width:14px!important;height:14px!important;margin:0!important;font-size:6px!important}
+.screen-game .hero-command-bar .hero-ability-chip p{font-size:6px!important;white-space:nowrap!important}
+.screen-game .hero-command-bar .hero-ability-chip>button:disabled{pointer-events:none!important;opacity:.26!important}
+
+.screen-game .opponent-hand{top:3.4%!important}
+.screen-game .field-energy{left:var(--field-left)!important;width:var(--field-width)!important;height:27px!important;z-index:45!important}
+.screen-game .field-energy.enemy-energy{top:9.2%!important}
+.screen-game .field-energy.player-energy{top:75.2%!important}
+.screen-game .paired-field{left:var(--field-left)!important;width:var(--field-width)!important;height:23%!important}
+.screen-game .paired-field.enemy-field{top:14.5%!important}
+.screen-game .paired-field.player-field{top:47.7%!important}
+.screen-game .paired-field .field-column{gap:5px!important}
+.screen-game .paired-field .field-slot{height:clamp(54px,9.5vh,72px)!important}
+.screen-game .terrain-slot.enemy-terrain{left:calc(var(--field-left) - 84px)!important;top:15%!important}
+.screen-game .terrain-slot.player-terrain{left:calc(var(--field-left) - 84px)!important;top:50%!important}
+.screen-game .side-piles{left:calc(var(--field-left) + var(--field-width) + 12px)!important;width:200px!important;grid-template-columns:repeat(2,94px)!important;gap:8px!important}
+.screen-game .side-piles.enemy-piles{top:10.5%!important}
+.screen-game .side-piles.player-piles{top:49.5%!important}
+.screen-game .phase-orb{left:calc(var(--field-left) + var(--field-width) + 8px)!important;top:43%!important}
+.screen-game .player-hand{left:var(--field-left)!important;width:var(--field-width)!important;height:18.5%!important;bottom:-2.5%!important}
+.screen-game .player-hand .original-card{margin-left:-22px!important}
+
+/* Inspection is the card surface itself; only the activation glyph keeps its
+   own click action. Hover lifts are intentionally restrained. */
+.card-frame-inspect{display:none!important}
+.screen-game .original-card:hover,.screen-game .original-card:focus-visible{transform:translateY(-3px) scale(1.025)!important}
+.screen-game .player-hand .original-card:hover{transform:translateY(-9px) scale(1.03)!important}
+.screen-decks .original-card:hover,.screen-decks .original-card:focus-visible,.collection .original-card:hover{transform:translateY(-3px) scale(1.025)!important}
+.card-frame-activation:disabled{pointer-events:none!important;opacity:.2!important;filter:grayscale(1) saturate(0)!important}
+
+/* Collection cards and their tooltips escape every list panel. */
+.collection,.deck-detail,.collection-lists,.collection-lists>section,.card-library,.extra-collection{overflow:visible!important;contain:none!important;isolation:auto!important}
+.collection-lists>section:has(.original-card:hover),.card-library:has(.original-card:hover),.card-frame:hover{position:relative!important;z-index:17000!important}
+.screen-decks .card-tooltip,.collection .card-tooltip{z-index:18000!important;max-width:280px!important;filter:drop-shadow(0 18px 34px #000)!important}
+.collection-hero-inspect{display:block;width:100%;padding:0;border:0;background:transparent;cursor:zoom-in}
+.collection-hero-inspect>.remote-card-art{width:100%;transition:transform .18s ease,filter .18s ease}
+.collection-hero-inspect:hover>.remote-card-art{transform:scale(1.02);filter:brightness(1.08)}
+.hero-power-trigger{cursor:zoom-in}
+
+/* Faction/subtype effect grammar: palette, emblem and motion change with the
+   source identity instead of reusing one generic enhancement treatment. */
+.screen-game .visual-effect{animation-duration:2.6s!important;--fx:#b9c8cc;--fx-soft:#7f929944!important;overflow:hidden!important}
+.screen-game .visual-effect.fx-theme-blood{--fx:#ff526f;--fx-soft:#8f153f70!important;border-radius:28px 8px 28px 8px!important}
+.screen-game .visual-effect.fx-theme-dragon{--fx:#74e58f;--fx-soft:#1e8b5266!important;border-radius:50% 16px 50% 16px!important}
+.screen-game .visual-effect.fx-theme-goblin{--fx:#d988ff;--fx-soft:#71309b70!important;border-style:dashed!important}
+.screen-game .visual-effect.fx-theme-recruit{--fx:#ff785f;--fx-soft:#9b302a66!important;border-radius:5px!important}
+.screen-game .visual-effect.fx-theme-divine{--fx:#8ad9ff;--fx-soft:#2c80bf66!important;border-radius:42px!important}
+.screen-game .visual-effect.fx-theme-nature{--fx:#a5dc5e;--fx-soft:#4c7d2c66!important;border-radius:55% 22px 55% 22px!important}
+.screen-game .visual-effect.fx-theme-arcane{--fx:#72c9ff;--fx-soft:#3655c06b!important;clip-path:polygon(4% 0,96% 0,100% 18%,100% 82%,96% 100%,4% 100%,0 82%,0 18%)}
+.screen-game .visual-effect.fx-theme-neutral{--fx:#e7c26c;--fx-soft:#7a623d55!important}
+.fx-emblem{position:absolute;right:20px;top:50%;translate:0 -50%;color:var(--fx);font:900 86px/1 Georgia;opacity:.13;text-shadow:0 0 28px var(--fx);animation:fx-emblem-drift 2.6s ease both;pointer-events:none}
+.fx-theme-goblin .fx-emblem{animation:fx-gear-turn 2.6s ease both}.fx-theme-divine .fx-emblem{animation:fx-divine-rise 2.6s ease both}.fx-theme-blood .fx-emblem{animation:fx-blood-pulse 2.6s ease both}
+@keyframes fx-emblem-drift{0%{opacity:0;transform:scale(.5) rotate(-18deg)}35%,72%{opacity:.2;transform:scale(1) rotate(0)}100%{opacity:0;transform:scale(1.3) rotate(10deg)}}
+@keyframes fx-gear-turn{0%{opacity:0;rotate:-90deg}35%,75%{opacity:.22}100%{opacity:0;rotate:130deg}}
+@keyframes fx-divine-rise{0%{opacity:0;translate:0 35px}38%,72%{opacity:.28;translate:0 0}100%{opacity:0;translate:0 -30px}}
+@keyframes fx-blood-pulse{0%,100%{opacity:0;scale:.7}35%,65%{opacity:.28;scale:1.08}50%{scale:.94}}
+
+@media(max-width:1050px){
+ .screen-game .hs-board{--hero-w:92px!important;--power-w:126px!important;--field-left:232px!important;--right-rail:190px!important}
+ .screen-game .player-hero{width:92px!important;height:129px!important}
+ .screen-game .hero-command-bar{left:106px!important}
+ .screen-game .side-piles{width:174px!important;grid-template-columns:repeat(2,83px)!important}
+}
+@media(max-height:700px){
+ .screen-game .player-hero{height:132px!important}
+ .screen-game .hero-command-bar{max-height:104px!important}
+ .screen-game .hero-command-bar .hero-ability-chip{height:21px!important;min-height:21px!important}
+ .screen-game .paired-field{height:21.5%!important}
+ .screen-game .field-energy.player-energy{top:72%!important}
+ .screen-game .player-hand{height:20%!important}
+}
