@@ -368,8 +368,17 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
   })
  };
  const update=(fn:(g:Game)=>void)=>setGame(old=>{if(!old)return old;const g=structuredClone(old),before:[number,number]=[g.players[0].life,g.players[1].life];fn(g);resolveLifeLossTriggers(g,before);removeDead(g,(owner,card)=>resolveText(g,owner,card));g.players.forEach((p,i)=>{if(p.life<=0)g.winner=i===0?1:0});queueMicrotask(()=>syncOnlineGame(g));return g});
- const setSharedCombat=(action:CombatAction|null)=>{setCombatAction(action);if(mode==="online")update(g=>{g.combatAction=action})};
- const setSharedResponse=(response:PendingResponse|null)=>{const timed=response?{...response,deadline:response.deadline??Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000}:null;setResponseWindow(timed);if(mode==="online")update(g=>{g.pendingResponse=timed?{...timed,passes:timed.passes??0}:null})};
+ const setSharedCombat=(action:CombatAction|null)=>{
+  setCombatAction(action);
+  // Combat animation/progress is local UI state. Persisting every transition
+  // alongside pendingResponse caused queued snapshots to resurrect an already
+  // passed priority window and alternate between defender/response modals.
+ };
+ const setSharedResponse=(response:PendingResponse|null,sharedAction:CombatAction|null=combatAction)=>{
+  const timed=response?{...response,deadline:response.deadline??Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000}:null;
+  setResponseWindow(timed);
+  if(mode==="online")update(g=>{g.pendingResponse=timed?{...timed,passes:timed.passes??0}:null;g.combatAction=sharedAction});
+ };
  useEffect(()=>{if(mode!=="online"||!game)return;setCombatAction(game.combatAction??null);const pending=game.pendingResponse??null;if(!pending){setResponseWindow(null);return}if(pending.responder!==0){setResponseWindow(pending);return}/* The responder first sees the opponent's serialized card animation. */const timer=window.setTimeout(()=>setResponseWindow(pending),1450);return()=>window.clearTimeout(timer)},[mode,game?.combatAction,game?.pendingResponse?.action,game?.pendingResponse?.deadline,game?.pendingResponse?.responder,game?.pendingResponse?.passes]);
  useEffect(()=>{currentGameRef.current=game;if(mode==="online"&&game?.active===0&&game.phase==="manutencao"&&game.winner===null)setMaintenanceOpen(true)},[game,mode]);
  const me=game?.players[0],foe=game?.players[1];
@@ -541,8 +550,8 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
   if(player.heroId==="tessalia"&&attacker.slot===2)update(g=>{g.players[owner].heroXP++;log(g,"O Comandante de Tessália atacou: progresso de evolução +1.","effect")});
   setTargeting(null);setSharedCombat({attackerOwner:owner,attackerUid,attackerCard:baseCard(attacker),stage:"declared"})};
  const chooseAttacker=(uid:string)=>{if(targeting)return;beginAttack(0,uid)};
- const chooseDefender=(uid:string)=>{if(!game||combatAction?.attackerOwner!==1||combatAction.stage!=="choosing")return;const attacker=game.players[1].board.find(x=>x.uid===combatAction.attackerUid),defender=game.players[0].board.find(x=>x.uid===uid);if(!attacker||!defender||!legalDefenders(attacker,game.players[1],game.players[0]).some(x=>x.uid===uid))return;setSharedCombat({...combatAction,targetHero:false,defenderUid:uid,defenderCard:baseCard(defender),stage:"charging"})};
- const chooseDirectDefense=()=>{if(combatAction?.attackerOwner!==1||combatAction.stage!=="choosing")return;setSharedCombat({...combatAction,targetHero:true,defenderUid:undefined,defenderCard:undefined,stage:"charging"})};
+ const chooseDefender=(uid:string)=>{if(!game||combatAction?.attackerOwner!==1||combatAction.stage!=="choosing")return;const attacker=game.players[1].board.find(x=>x.uid===combatAction.attackerUid),defender=game.players[0].board.find(x=>x.uid===uid);if(!attacker||!defender||!legalDefenders(attacker,game.players[1],game.players[0]).some(x=>x.uid===uid))return;const next={...combatAction,targetHero:false,defenderUid:uid,defenderCard:baseCard(defender),stage:"charging" as const};setSharedCombat(next);if(mode==="online")update(g=>{g.combatAction=next})};
+ const chooseDirectDefense=()=>{if(combatAction?.attackerOwner!==1||combatAction.stage!=="choosing")return;const next={...combatAction,targetHero:true,defenderUid:undefined,defenderCard:undefined,stage:"charging" as const};setSharedCombat(next);if(mode==="online")update(g=>{g.combatAction=next})};
  const finishCombat=()=>{if(combatAction||responseWindow||!game)return;const forced=game.players[0].board.find(unit=>!unit.exhausted&&!unit.attackedThisTurn&&!unit.summoning&&(!unit.stunned||unit.suffocated)&&hasKeyword(game.players[0],unit,"Indomável"));if(forced){update(g=>log(g,`${forced.name} é Indomável e precisa atacar antes de encerrar o combate.`,"danger"));return}setTargeting(null);setAiAttackQueue([]);void runRulesCommand({type:"advancePhase"},0)};
  const finishImageEffects=(g:Game,owner:0|1)=>{const p=g.players[owner],foe=g.players[owner===0?1:0];
  /* End-of-turn triggers resolve before temporary images leave. */
@@ -585,7 +594,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
   const delay=action.stage==="declared"?520:action.stage==="priority"?260:action.stage==="charging"?900:action.stage==="impact"?520:1250;
   const t=setTimeout(()=>{
    const attackingPlayer=game.players[action.attackerOwner],defendingPlayer=game.players[defenderOwner],attacker=attackingPlayer.board.find(x=>x.uid===action.attackerUid);
-   if(action.stage==="declared"){setSharedCombat({...action,stage:"priority"});setSharedResponse({responder:defenderOwner,actor:action.attackerOwner,action:`declaração de ataque de ${action.attackerCard.name}`});return}
+   if(action.stage==="declared"){const priorityAction={...action,stage:"priority" as const};setSharedCombat(priorityAction);setSharedResponse({responder:defenderOwner,actor:action.attackerOwner,action:`declaração de ataque de ${action.attackerCard.name}`},priorityAction);return}
    if(action.stage==="priority"){
     if(!attacker){setSharedCombat({...action,stage:"resolved",result:"O atacante deixou o campo durante a resposta.",winnerText:"ATAQUE CANCELADO",destroyed:["attacker"]});return}
     const blockers=legalDefenders(attacker,attackingPlayer,defendingPlayer);if(!blockers.length){setSharedCombat({...action,targetHero:true,stage:"charging"});return}
