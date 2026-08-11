@@ -689,11 +689,8 @@ select {
   width: 115px;
   height: 115px;
   border-radius: 50%;
-  border: 3px solid #e3c476;
+  border: 1px solid #e3c476;
   background: radial-gradient(circle, #e7c469, #9e681f);
-  box-shadow:
-    0 0 0 7px #41270f,
-    0 0 26px #dcae4b66;
   color: #191005;
   text-transform: uppercase;
   font: 800 11px Arial;
