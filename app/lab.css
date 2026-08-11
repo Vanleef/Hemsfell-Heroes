@@ -7613,3 +7613,11 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .inspector-hero-guide .hero-evolution-guide li b{font-size:11px!important}
 .inspector-hero-guide .hero-abilities-guide article>div>p{font-size:12px!important}
 .inspector-hero-guide .hero-guide-title b{font-size:10px!important}
+
+
+/* Uruk elemental passive: compact element badges reuse keyword-style hover explanations. */
+.uruk-element-list{display:inline-flex!important;flex-wrap:wrap;gap:5px;margin:6px 0 0!important}
+.uruk-element-badge{position:relative;display:inline-block!important;padding:3px 7px;border:1px solid #25d3da66;border-radius:999px;background:#0b3037;color:#dffbfb;font:800 9px Arial!important;cursor:help;white-space:nowrap}
+.uruk-element-badge:hover{border-color:#f8b83c;background:#193e42;color:#fff3c4}
+.uruk-element-badge[data-tip]::after{content:attr(data-tip);position:absolute;left:0;bottom:calc(100% + 7px);z-index:99999;width:190px;padding:7px 9px;border:1px solid #f8b83c;border-radius:6px;background:#06151bf5;color:#edfafa;font:10px/1.35 Arial;white-space:normal;opacity:0;pointer-events:none;transform:translateY(3px);transition:opacity .15s ease,transform .15s ease;box-shadow:0 8px 20px #000b}
+.uruk-element-badge[data-tip]:hover::after{opacity:1;transform:translateY(0)}
