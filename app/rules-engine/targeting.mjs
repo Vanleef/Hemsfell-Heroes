@@ -57,7 +57,7 @@ export function cardPlayTargetPolicy(card) {
   const effectSteps = abilities.flatMap((ability) => (ability.effects || []).flatMap((effect) => {
     const scope = effectScope(effect.target);
     if (scope === TargetScope.NONE || effect.global) return [];
-    return Array.from({ length: Number(effect.selections) || 1 }, () => ({ scope, role: "effect", requireExhausted: !!effect.requireExhausted }));
+    return Array.from({ length: Number(effect.selections) || 1 }, () => ({ scope, role: "effect", requireExhausted: !!effect.requireExhausted, requiredSubtype: effect.requiredSubtype }));
   }));
   const steps = [...sacrificeSteps, ...effectSteps];
   return {

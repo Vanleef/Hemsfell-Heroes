@@ -184,14 +184,14 @@ const unitOwner = (state, id) => state.players.findIndex((entry) => permanentUni
 const targetScope = (value) => ({ anyCharacter: TargetScope.ANY_CHARACTER, anyCreature: TargetScope.ANY_CREATURE, allyCreature: TargetScope.ALLY_CREATURE, enemyCreature: TargetScope.ENEMY_CREATURE, anyPermanent: TargetScope.ANY_PERMANENT, allyPermanent: TargetScope.ALLY_PERMANENT, enemyPermanent: TargetScope.ENEMY_PERMANENT, anotherAllyPermanent: TargetScope.ALLY_PERMANENT, creature: TargetScope.ANY_CREATURE }[value] || TargetScope.NONE);
 function abilityTargetSteps(ability) {
   if (ability.sourceText) return (targetPolicy(ability.sourceText).steps || []).filter((step) => step.role !== "sacrifice");
-  return (ability.effects || []).flatMap((effect) => { const scope = targetScope(effect.target); return Array.from({ length: effect.selections ?? (scope === TargetScope.NONE ? 0 : 1) }, () => ({ scope, role: "effect" })); }).filter((step) => step.scope !== TargetScope.NONE);
+  return (ability.effects || []).flatMap((effect) => { const scope = targetScope(effect.target); return Array.from({ length: effect.selections ?? (scope === TargetScope.NONE ? 0 : 1) }, () => ({ scope, role: "effect", requiredSubtype: effect.requiredSubtype })); }).filter((step) => step.scope !== TargetScope.NONE);
 }
 function targetCandidates(state, owner, step) {
   const result = [];
   state.players.forEach((entry, targetOwner) => {
     for (const target of permanentUnits(entry)) {
       const targetKind = entry.board.includes(target) || target.type === "Criatura" ? "creature" : "permanent";
-      if (isValidTarget(step, owner, targetOwner, targetKind)) result.push(target.uid || target.id);
+      if (isValidTarget(step, owner, targetOwner, targetKind) && (!step.requiredSubtype || subtype(target, step.requiredSubtype))) result.push(target.uid || target.id);
     }
     if (isValidTarget(step, owner, targetOwner, "hero")) result.push(targetOwner === owner ? "ally-hero" : "enemy-hero");
   });
@@ -215,7 +215,7 @@ function replayAbilityCandidates(state, owner, effect) {
 }
 function validateTargets(state, owner, abilities, command, source) {
   const targetIds = command.targetIds || []; const steps = abilities.flatMap(abilityTargetSteps); if (steps.length !== targetIds.length) { if (steps.length || targetIds.length) throw new RulesViolation("invalid-target-count"); return; }
-  steps.forEach((step, index) => { const id = targetIds[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, owner, targetOwner, targetKind) || (step.requireExhausted && (!target || !target.exhausted))) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
+  steps.forEach((step, index) => { const id = targetIds[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, owner, targetOwner, targetKind) || (step.requireExhausted && (!target || !target.exhausted)) || (step.requiredSubtype && (!target || !subtype(target, step.requiredSubtype)))) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
 }
 function preflightPlay(state, command, handlers) {
   const entry = state.players[command.owner];
@@ -328,7 +328,7 @@ export function executeCommand(inputState, command, options = {}) {
         const defender = item.command.targetHero ? null : state.players[item.command.owner].board.find((unit) => unit.uid === item.command.defenderId);
         if (!item.command.targetHero && !defender) throw new RulesViolation("invalid-defender");
         state.combatAction = { ...combat, targetHero: !!item.command.targetHero, defenderUid: defender?.uid, defenderCard: defender ? clone(defender) : undefined, stage: "charging" };
-      } else if (options.priority && ["attack", "activate"].includes(item.command.type) && !item.command.skipPriority && !item.command.hasPriority) {
+      } else if (options.priority && ["attack"].includes(item.command.type) && !item.command.skipPriority && !item.command.hasPriority) {
         if (state.pendingAction) throw new RulesViolation("priority-window-open");
         state.pendingAction = { ...item.command }; state.pendingResponse = { responder: 1 - item.command.owner, actor: item.command.owner, action: item.command.type, passes: 0 }; continue;
       } else if (item.command.type === "playCard") {
@@ -449,7 +449,7 @@ export function executeCommand(inputState, command, options = {}) {
         const continuation = decision.continuation || [];
         if (decision.kind === "search") {
           const entry = state.players[item.command.owner], effect = decision.effect, selectedIds = [...new Set(item.command.selectedCardIds || (item.command.selectedCardId ? [item.command.selectedCardId] : []))];
-          const maximum = Math.min(effect.amount || 1, entry.deck.length), eligible = entry.deck.filter((card) => (!effect.types?.length || effect.types.includes(card.type)) && (!effect.subtype || hasSubtype(card, effect.subtype)) && (!effect.nameIncludes || String(card.name || "").toLowerCase().includes(String(effect.nameIncludes).toLowerCase())) && (!effect.vanillaOnly || !String(card.text || "").trim()) && (effect.maxCost == null || (card.cost || 0) <= effect.maxCost) && (!effect.maxCostFromMarkerAmount || (card.cost || 0) <= Number(decision.context.markerAmount || 0)));
+          const maximum = Math.min(effect.amount || 1, entry.deck.length), eligible = entry.deck.filter((card) => (!effect.types?.length || effect.types.includes(card.type)) && (!effect.subtype || hasSubtype(card, effect.subtype)) && (!effect.nameIncludes || String(card.name || "").toLowerCase().includes(String(effect.nameIncludes).toLowerCase())) && (!effect.vanillaOnly || !String(card.text || "").trim()) && (effect.minCost == null || (card.cost || 0) >= effect.minCost) && (effect.maxCost == null || (card.cost || 0) <= effect.maxCost) && (!effect.maxCostFromMarkerAmount || (card.cost || 0) <= Number(decision.context.markerAmount || 0)));
           if (selectedIds.length !== Math.min(maximum, eligible.length) || selectedIds.some((id) => !eligible.some((card) => card.uid === id || card.id === id))) throw new RulesViolation("invalid-search-selection");
           const selected = selectedIds.map((id) => { const index = entry.deck.findIndex((card) => card.uid === id || card.id === id); return entry.deck.splice(index, 1)[0]; });
           if (effect.destination === "hand") entry.hand.push(...selected);
@@ -563,6 +563,6 @@ export function executeCommand(inputState, command, options = {}) {
     const entry = state.players[state.active]; entry.lifeLostThisTurn = 0; entry.lifeLossEvents = 0; if (entry.heroId === "saymon") entry.heroXP = 0;
   }
   state.events = (state.events || 0) + 1; state.log ||= []; state.log.unshift({ id: `rules-${state.round}-${state.events}`, text: command.type === "playCard" ? `${actionLabel} foi jogada pelo motor de regras.` : command.type === "activate" ? `${actionLabel} ativou sua habilidade.` : `${actionLabel}: ${command.type}.`, tone: "effect" });
-  if (["playCard", "activate"].includes(command.type)) if (!command.skipPriority && state.pendingAction && command.hasPriority) state.pendingResponse = { responder: state.pendingAction.actor, actor: command.owner, action: actionLabel, passes: 0 }; else if (!command.skipPriority && !state.pendingAction) state.pendingResponse = command.hasPriority ? null : { responder: 1 - command.owner, actor: command.owner, action: actionLabel, passes: 0 };
+  if (["playCard"].includes(command.type)) if (!command.skipPriority && state.pendingAction && command.hasPriority) state.pendingResponse = { responder: state.pendingAction.actor, actor: command.owner, action: actionLabel, passes: 0 }; else if (!command.skipPriority && !state.pendingAction) state.pendingResponse = command.hasPriority ? null : { responder: 1 - command.owner, actor: command.owner, action: actionLabel, passes: 0 };
   return { state, trace, steps };
 }

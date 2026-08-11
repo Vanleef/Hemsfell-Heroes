@@ -116,7 +116,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 179);
+  assert.equal(explicitRuleIds.length, 181);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -272,6 +272,37 @@ test("Túmulo do Sacrifício makes Saymon pay the next creature cost with life",
   assert.equal(result.players[0].energy, 3);
   assert.equal(result.players[0].heroXP, 1);
   assert.equal(result.players[0].nextCreaturePaysLife, false);
+});
+
+test("Nascer do Sol only targets Vampiro creatures and cannot be cast without one", () => {
+  const noVampire = state(); noVampire.players[0].hand.push(compileCard({ id: "p143", page: 143, name: "Nascer do Sol", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  noVampire.players[1].board.push({ uid: "human", type: "Criatura", subtypes: ["Humano"], hp: 2, damage: 0, modifiers: [], tags: [] });
+  assert.throws(() => executeCommand(noVampire, { type: "playCard", owner: 0, cardId: "p143", targetIds: ["enemy-hero"], skipPriority: true }), /invalid-target/);
+  assert.throws(() => executeCommand(noVampire, { type: "playCard", owner: 0, cardId: "p143", targetIds: ["human"], skipPriority: true }), /invalid-target/);
+  assert.throws(() => executeCommand(noVampire, { type: "playCard", owner: 0, cardId: "p143", skipPriority: true }), /invalid-target-count/);
+  const game = state(); game.players[0].life = 20; game.players[0].hand.push(compileCard({ id: "p143", page: 143, name: "Nascer do Sol", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  game.players[1].board.push({ uid: "vampire", type: "Criatura", subtypes: ["Vampiro"], hp: 2, damage: 0, modifiers: [], tags: [] });
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p143", targetIds: ["vampire"], skipPriority: true }).state;
+  assert.equal(result.players[1].board.length, 0); assert.equal(result.players[0].life, 24);
+});
+
+test("Pacto de Sangue resolves its activation without opening a response lock", () => {
+  const game = state(); game.players[0].life = 10;
+  game.players[0].board.push({ uid: "host", type: "Criatura", atk: 2, hp: 4, tags: [], modifiers: [], abilities: [] });
+  const pact = compileCard({ id: "p141", page: 141, name: "Pacto de Sangue", type: "Artefato", cost: 0, text: "", tags: [] });
+  game.players[0].support.push({ ...pact, uid: "pact", attachedTo: "host", exhausted: false, summoning: false });
+  const result = executeCommand(game, { type: "activate", owner: 0, sourceId: "pact", abilityId: pact.abilities[0].id, skipPriority: true }).state;
+  assert.equal(result.players[0].life, 8); assert.equal(result.players[0].support[0].exhausted, true);
+  assert.equal(result.players[0].board[0].modifiers.at(-1).attack, 2); assert.equal(result.pendingResponse, undefined);
+});
+
+test("Condutor de Rasnóvia replaces its First Act with a bounded Vampiro search", () => {
+  const game = state(); game.players[0].life = 20; game.players[0].deck.push({ id: "drawn" }, { id: "cheap", type: "Criatura", cost: 3, subtypes: ["Vampiro"] }, { id: "valid", type: "Criatura", cost: 4, subtypes: ["Vampiro"] });
+  game.players[0].hand.push(compileCard({ id: "p135", page: 135, name: "Condutor de Rasnóvia", type: "Criatura", cost: 0, atk: 3, hp: 3, text: "", tags: [] }));
+  const entered = executeCommand(game, { type: "playCard", owner: 0, cardId: "p135", slot: 0, skipPriority: true }).state;
+  const source = entered.players[0].board[0]; assert.equal(entered.players[0].life, 16); assert.equal(entered.players[0].hand[0].id, "drawn"); assert.equal(source.firstActReplaced, true);
+  defaultEffectHandlers.search(entered, source.abilities[0].effects[0], { owner: 0, sourceId: source.uid });
+  assert.equal(entered.pendingDecision.effect.minCost, 4); assert.equal(entered.pendingDecision.effect.subtype, "Vampiro"); assert.equal(entered.pendingDecision.effect.amount, 1);
 });
 
 test("Saymon creatures with printed life loss debit life when they enter", () => {

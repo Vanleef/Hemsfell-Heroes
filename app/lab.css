@@ -6729,3 +6729,59 @@
 .hh-logo img{display:block;width:76px;height:58px;object-fit:contain;filter:drop-shadow(0 4px 8px #0008)}
 @media(max-width:720px){.card-focus-layer>div{grid-template-columns:1fr;padding:18px}.card-focus-layer>div>.remote-card-art{max-height:46vh}.screen-game .hero-command-bar{width:270px!important}.card-frame-inspect{opacity:1}}
 @media(prefers-reduced-motion:reduce){.screen-game .visual-effect{animation:none!important}.card-frame-inspect{transition:none}}
+
+/* Viewport and interaction pass v8. The board uses proportional vertical
+   anchors so the complete match remains visible without document scrolling. */
+html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!important}
+.screen-game{height:100dvh!important;min-height:0!important;overflow:hidden!important}
+.screen-game .hs-board{height:100dvh!important;min-height:640px!important;max-height:100dvh!important;overflow:hidden!important}
+.screen-game .opponent-hand{top:5.2%!important}
+.screen-game .field-energy.enemy-energy{top:11.6%!important}
+.screen-game .paired-field.enemy-field{top:17%!important;height:22%!important}
+.screen-game .paired-field.player-field{top:49%!important;height:22%!important}
+.screen-game .field-energy.player-energy{top:73%!important}
+.screen-game .player-hand{top:auto!important;bottom:-3.5%!important;height:20%!important}
+.screen-game .player-hand .original-card{width:var(--hand-card-size,112px)!important;margin-left:-28px!important;transition:width .18s ease,transform .18s ease,margin .18s ease!important}
+.screen-game .phase-orb{top:45%!important}
+.screen-game .side-piles.enemy-piles{top:13%!important}
+.screen-game .side-piles.player-piles{top:52%!important}
+.screen-game .terrain-slot.enemy-terrain{top:14%!important}
+.screen-game .terrain-slot.player-terrain{top:51%!important}
+
+/* Hero abilities are always present as compact command chips. They no longer
+   depend on hover, and their fixed rail does not compete with the hand. */
+.screen-game .hero-command-bar{left:8px!important;width:176px!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;opacity:1!important;visibility:visible!important;pointer-events:auto!important;transform:none!important;overflow:visible!important;z-index:760!important}
+.screen-game .hero-command-bar.enemy{top:21%!important}
+.screen-game .hero-command-bar:not(.enemy){bottom:19%!important}
+.screen-game .hero-command-bar .hero-ability-chip{grid-template-columns:1fr!important;height:48px!important;text-align:center!important}
+.screen-game .hero-command-bar .hero-ability-chip>i{margin:auto!important}
+.screen-game .hero-command-bar .hero-ability-chip p{font-size:6px!important}
+
+/* Hover layers rise with their card container, including collection pages. */
+.card-frame:hover,.card-frame:focus-within,.original-card:hover,.original-card:focus-within{z-index:15950!important}
+.card-library:has(.original-card:hover),.deck-detail:has(.original-card:hover),.collection-lists:has(.original-card:hover){position:relative;z-index:15900!important;overflow:visible!important}
+.screen-game .card-tooltip,.screen-decks .card-tooltip,.screen-setup .card-tooltip{z-index:16000!important}
+
+/* Search presents only legal physical copies in a bounded, readable browser. */
+.search-deck-dialog{height:min(700px,90dvh)!important}
+.search-card-grid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr))!important;max-height:100%!important;overscroll-behavior:contain;scrollbar-gutter:stable}
+.search-empty{grid-column:1/-1!important;min-height:180px!important;display:grid!important;place-content:center!important;gap:8px!important;color:#d8e5df!important}
+.search-empty span{color:#8fa19a;font-size:11px}
+
+/* Official lockup and hero selector: larger branding, wrapping rail, no native
+   horizontal scrollbar or narrow letter-by-letter labels. */
+.hh-logo img{width:104px!important;height:76px!important}
+.shell-nav{min-height:88px!important}
+.deck-rail{display:grid!important;grid-template-columns:repeat(auto-fit,minmax(112px,1fr))!important;gap:8px!important;overflow:visible!important;scrollbar-width:none}
+.deck-rail>button{min-width:0!important;width:auto!important;white-space:normal!important}
+.deck-rail>button b,.deck-rail>button span{word-break:normal!important;overflow-wrap:normal!important;white-space:normal!important}
+.collection>header>span{display:none!important}
+
+@media(max-height:760px){
+ .screen-game .paired-field.enemy-field{top:16%!important;height:21%!important}
+ .screen-game .paired-field.player-field{top:47%!important;height:21%!important}
+ .screen-game .field-energy.player-energy{top:70%!important}
+ .screen-game .hero-command-bar{width:168px!important}
+ .screen-game .hero-command-bar.enemy{top:20%!important}
+ .screen-game .hero-command-bar:not(.enemy){bottom:18%!important}
+}

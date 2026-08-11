@@ -19,7 +19,7 @@
     "cost": 1,
     "atk": 1,
     "hp": 1,
-    "text": "Voar. Ascenção 10: Procure por um \"Valorian, o Dragão Verdadeiro\" em sua mão ou deck e coloque-o campo no lugar de Valorian, o pseudodragão.",
+    "text": "Voar. Ascensão 10: Procure por um \"Valorian, o Dragão Verdadeiro\" em sua mão ou deck e coloque-o em campo no lugar de Valorian, o Pseudodragão.",
     "tags": [
       "Voar"
     ],
@@ -67,7 +67,7 @@
     "cost": 3,
     "atk": 2,
     "hp": 3,
-    "text": "Primeiro Ato: Pode causar 2 de dano a uma criatura a escolha.",
+    "text": "Primeiro Ato: Você pode causar 2 de dano a uma criatura à sua escolha.",
     "tags": [
       "Primeiro Ato"
     ],
@@ -83,7 +83,7 @@
     "cost": 4,
     "atk": 2,
     "hp": 4,
-    "text": "Primeiro Ato: Compre 2 carta se você controlar outra criatura da classe Dragão.",
+    "text": "Primeiro Ato: Compre 2 cartas se você controlar outra criatura da classe Dragão.",
     "tags": [
       "Primeiro Ato"
     ],
@@ -219,7 +219,7 @@
     "name": "Investida Alada",
     "type": "Feitiço",
     "cost": 3,
-    "text": "Um criatura da classe Dragão desvirado pode atacar imediatamente uma criatura alvo a escolha.",
+    "text": "Uma criatura da classe Dragão desvirada pode atacar imediatamente uma criatura-alvo à sua escolha.",
     "tags": [],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/017",
     "hero": false,
@@ -255,7 +255,7 @@
     "name": "Anel de Esmeralda",
     "type": "Artefato",
     "cost": 2,
-    "text": "Vire: Destrua este artefato e depois aumente seu limite de energia maximo em 1.",
+    "text": "Vire: Destrua este Artefato e depois aumente seu limite de energia máxima em 1.",
     "tags": [],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/020",
     "hero": false,
@@ -281,7 +281,7 @@
     "name": "Alpes Dracônicos",
     "type": "Terreno",
     "cost": 4,
-    "text": "Sempre que uma criatura não imagem da classe Dragão morrer, crie uma imagem de Dragão Filhote.",
+    "text": "Sempre que uma criatura da classe Dragão que não seja Imagem morrer, crie uma Imagem de Dragão Filhote.",
     "tags": [],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/022",
     "hero": false,
@@ -1437,7 +1437,7 @@
     "name": "Cemitério Amaldiçoado",
     "type": "Terreno",
     "cost": 5,
-    "text": "Toda vez que uma criatura não imagem sua morrer, crie uma imagem de criatura fantasma 1/1 com \"Voar\".",
+    "text": "Toda vez que uma criatura sua que não seja Imagem morrer, crie uma Imagem de Criatura Fantasma 1/1 com \"Voar\".",
     "tags": [
       "Voar"
     ],
