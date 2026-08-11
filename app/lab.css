@@ -2549,7 +2549,7 @@
   top: 82px !important;
 }
 .player-hero:not(.enemy) {
-  bottom: 27px !important;
+  top: 620px !important;
 }
 .player-hero > img {
   left: 9px !important;
