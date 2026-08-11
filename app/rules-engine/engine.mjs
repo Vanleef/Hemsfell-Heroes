@@ -23,7 +23,10 @@ export function validateCosts(state, ability, context) {
     if (cost.type === "removeMarkers") { const source = [...entry.board, ...entry.support].find((unit) => unit.uid === context.sourceId); const available = typeof source?.markers === "number" ? source.markers : Object.values(source?.markers || {}).reduce((sum, value) => sum + Number(value), 0); if (cost.amount !== "X" && available < cost.amount) throw new RulesViolation("not-enough-markers"); }
     if (cost.type === "sacrifice") { const ids = [...new Set(context.sacrificeIds || [])]; if (ids.length < cost.amount || ids.some((id) => !entry.board.some((unit) => unit.uid === id))) throw new RulesViolation("sacrifice-required"); }
     if (cost.type === "energy") { const source = permanentUnits(entry).find((unit) => unit.uid === context.sourceId); const available = entry.energy + (source?.type !== "Criatura" ? entry.reserve : 0); if (available < cost.amount) throw new RulesViolation("not-enough-energy"); }
-    if (cost.type === "life" && entry.life <= cost.amount) throw new RulesViolation("not-enough-life");
+    if (cost.type === "life") {
+      const minimumLife = entry.heroId === "saymon" && (entry.level || 1) >= 3 ? 1 : 0;
+      if (entry.life - cost.amount < minimumLife) throw new RulesViolation("not-enough-life");
+    }
     if (cost.type === "removeMarkersFromConstants") { const available = [...entry.board, ...entry.support, ...(entry.terrain ? [entry.terrain] : [])].reduce((sum, card) => sum + (typeof card.markers === "number" ? card.markers : Object.values(card.markers || {}).reduce((total, value) => total + Number(value), 0)), 0); if (available < cost.amount) throw new RulesViolation("not-enough-markers"); }
   }
 }
@@ -34,7 +37,14 @@ function payCosts(state, ability, context) {
     if (cost.type === "tap") applyEffect(state, { type: "tap" }, context);
     if (cost.type === "sacrifice") applyEffect(state, { type: "sacrifice" }, context);
     if (cost.type === "energy") { const source = permanentUnits(entry).find((unit) => unit.uid === context.sourceId); const fromEnergy = Math.min(entry.energy, cost.amount); entry.energy -= fromEnergy; const fromReserve = source?.type !== "Criatura" ? cost.amount - fromEnergy : 0; entry.reserve -= fromReserve; }
-    if (cost.type === "life") entry.life -= cost.amount;
+    if (cost.type === "life") {
+      entry.life -= cost.amount;
+      entry.lifeLostThisTurn = (entry.lifeLostThisTurn || 0) + cost.amount;
+      entry.lifeLossEvents = (entry.lifeLossEvents || 0) + 1;
+      if (entry.heroId === "saymon") entry.heroXP = (entry.heroXP || 0) + 1;
+      state.rulesEvents ||= [];
+      state.rulesEvents.push({ type: "onLifeLost", owner: context.owner, sourceOwner: context.owner, sourceId: context.sourceId, amount: cost.amount, paidAsCost: true });
+    }
     if (cost.type === "removeMarkers") {
       const source = [...entry.board, ...entry.support].find((unit) => unit.uid === context.sourceId); let remaining = cost.amount === "X" ? context.markerAmount || 0 : cost.amount;
       if (typeof source.markers === "number") source.markers -= Math.min(source.markers, remaining); else for (const key of Object.keys(source.markers || {})) { const used = Math.min(source.markers[key], remaining); source.markers[key] -= used; remaining -= used; if (!remaining) break; }
