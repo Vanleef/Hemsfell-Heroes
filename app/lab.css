@@ -7274,7 +7274,7 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 /* Final board polish: no outer orb halo, equal creature clearance, and a
    deliberate readable hold before any effect fades. */
 .screen-game .phase-orb{
-  background:transparent!important;
+  background:orange!important;
   background-image:none!important;
   border:0!important;
   box-shadow:none!important;
@@ -7305,7 +7305,7 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .screen-game .hs-board .field-energy,
 .screen-game .hs-board .paired-field,
 .screen-game .hs-board .player-hand{
-  left:23.5%!important;
+  left:21.5%!important;
   width:58.5%!important;
 }
 .screen-game .hs-board .paired-field{
@@ -7314,7 +7314,7 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .screen-game .hs-board .paired-field.enemy-field{top:18%!important}
 .screen-game .hs-board .paired-field.player-field{top:47.2%!important}
 .screen-game .hs-board .paired-field .field-column{gap:2px!important}
-.screen-game .hs-board .phase-orb{top:46.5%!important}
+.screen-game .hs-board .phase-orb{top:48.5%!important}
 .screen-game .hs-board .side-piles{
   left:calc(23.5% + 58.5% + 1.5%)!important;
 }
