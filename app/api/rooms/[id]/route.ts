@@ -6,6 +6,7 @@ import { isBoundedGame, isPlainRecord, isRoomId, readSafeJson } from "../validat
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 const noStore = { headers: { "Cache-Control": "no-store, max-age=0" } };
+const VALID_DECK_IDS = new Set(["gimble", "goblin", "uruk", "tifon", "saymon", "tessalia", "quarion", "rasmus", "ngoro", "zayan", "natureza"]);
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (room.status !== "deck-selection") return NextResponse.json({ error: "deck selection is closed" }, { status: 409 });
       const participant = room[role];
       if (!participant) return NextResponse.json({ error: "player not connected" }, { status: 409 });
-      if (typeof body.heroId !== "string" || !/^[a-z0-9][a-z0-9-]{1,31}$/i.test(body.heroId)) return NextResponse.json({ error: "invalid deck" }, { status: 400 });
+      if (typeof body.heroId !== "string" || !VALID_DECK_IDS.has(body.heroId)) return NextResponse.json({ error: "invalid deck" }, { status: 400 });
       participant.heroId = body.heroId;
       participant.deckLocked = !!body.locked;
       if (bothDecksLocked(room)) prepareCoin(room);
