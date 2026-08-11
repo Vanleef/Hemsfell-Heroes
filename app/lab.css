@@ -7276,3 +7276,23 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   z-index:410!important;
   max-width:29%!important;
 }
+
+
+/* Final specificity pass for the compact central card grid. */
+.screen-game .hs-board .field-energy,
+.screen-game .hs-board .paired-field,
+.screen-game .hs-board .player-hand{
+  left:23.5%!important;
+  width:58.5%!important;
+}
+.screen-game .hs-board .paired-field.enemy-field{top:18%!important}
+.screen-game .hs-board .paired-field.player-field{top:53.2%!important}
+.screen-game .hs-board .side-piles{
+  left:calc(23.5% + 58.5% + 1.5%)!important;
+}
+.screen-game .hs-board .phase-orb{
+  left:calc(23.5% + 58.5% - 5.8%)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip{
+  min-height:min(5vw,8.9dvh)!important;
+}
