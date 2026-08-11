@@ -7768,6 +7768,7 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   gap:clamp(1px,calc(5px - (var(--keyword-count) * .45px)),4px);
   transform:translateX(-50%);
   pointer-events:auto;
+  isolation:isolate;
 }
 .original-card .field-keywords>i{
   width:var(--keyword-icon-size);
