@@ -7755,7 +7755,8 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 
 /* Live keyword strip: compact icons and one unobtrusive field-only tooltip. */
 .original-card .field-keywords{
-  --keyword-icon-size:clamp(9px,calc(19px - (var(--keyword-count) * 1.15px)),16px);
+  --keyword-icon-size:16px;
+  --keyword-gap:4px;
   position:absolute;
   left:50%;
   bottom:2px;
@@ -7763,7 +7764,7 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   display:flex;
   align-items:center;
   justify-content:center;
-  gap:clamp(1px,calc(5px - (var(--keyword-count) * .45px)),4px);
+  gap:var(--keyword-gap);
   transform:translateX(-50%);
   pointer-events:auto;
   isolation:isolate;
