@@ -7811,3 +7811,67 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   visibility:visible;
   transform:translate(-50%,0);
 }
+
+
+/* Final animation pacing: card canvases stay present for the whole queued effect. */
+.screen-game .visual-effect>.remote-card-art,
+.screen-game .visual-effect>canvas.remote-card-art{
+  animation:none!important;
+  opacity:1!important;
+  visibility:visible!important;
+  filter:none!important;
+}
+
+/* Mulligan is a strict vertical stack: header, explanation, cards, actions. */
+.mulligan-dialog{
+  width:min(980px,calc(100% - 28px))!important;
+  max-height:min(92dvh,760px)!important;
+  display:grid!important;
+  grid-template-rows:auto auto minmax(0,1fr) auto!important;
+  overflow:hidden!important;
+}
+.mulligan-dialog>header{
+  position:relative!important;
+  z-index:4!important;
+  background:linear-gradient(160deg,#122a37,#0b1b25)!important;
+}
+.mulligan-help{
+  width:auto!important;
+  max-width:760px!important;
+  margin:14px auto 4px!important;
+  padding:0 18px!important;
+}
+.mulligan-cards{
+  position:relative!important;
+  z-index:1!important;
+  min-height:0!important;
+  display:grid!important;
+  grid-template-columns:repeat(7,minmax(86px,1fr))!important;
+  align-items:start!important;
+  gap:10px!important;
+  padding:14px 18px 18px!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+}
+.mulligan-cards>.mulligan-card-static{
+  width:auto!important;
+  min-width:86px!important;
+  padding:5px!important;
+  box-sizing:border-box!important;
+}
+.mulligan-cards .card-frame,
+.mulligan-cards .original-card{
+  width:100%!important;
+  max-width:116px!important;
+  margin:0 auto!important;
+}
+.mulligan-dialog>footer{
+  position:relative!important;
+  z-index:4!important;
+  min-height:62px!important;
+  background:#050b11!important;
+}
+@media(max-width:760px){
+  .mulligan-dialog{max-height:94dvh!important}
+  .mulligan-cards{grid-template-columns:repeat(7,104px)!important;justify-content:start!important}
+}
