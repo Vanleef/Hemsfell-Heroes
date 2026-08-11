@@ -38,9 +38,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const role = roleFor(room, body?.token);
     if (!role) return NextResponse.json({ error: "invalid participant" }, { status: 403 });
     if (body.action === "select") {
+      if (room.status !== "deck-selection") return NextResponse.json({ error: "deck selection is closed" }, { status: 409 });
       const participant = room[role];
       if (!participant) return NextResponse.json({ error: "player not connected" }, { status: 409 });
-      participant.heroId = typeof body.heroId === "string" ? body.heroId : null;
+      if (typeof body.heroId !== "string" || !/^[a-z0-9][a-z0-9-]{1,31}$/i.test(body.heroId)) return NextResponse.json({ error: "invalid deck" }, { status: 400 });
+      participant.heroId = body.heroId;
       participant.deckLocked = !!body.locked;
       if (bothDecksLocked(room)) prepareCoin(room);
       room.revision++;
