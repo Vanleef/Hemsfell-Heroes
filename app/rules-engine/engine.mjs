@@ -251,7 +251,22 @@ export function executeCommand(inputState, command, options = {}) {
           const original = state.pendingAction;
           state.pendingResponse = null; delete state.pendingAction;
           if (original) stack.push({ kind: "command", command: { ...original, skipPriority: true } });
+          else if (state.combatAction?.stage === "priority") state.combatAction = { ...state.combatAction, stage: "choosing" };
         }
+      } else if (item.command.type === "declareAttack") {
+        if (state.pendingResponse || state.pendingAction || state.combatAction) throw new RulesViolation("combat-action-pending");
+        if (state.active !== item.command.owner || state.phase !== "combate") throw new RulesViolation("wrong-combat-priority");
+        const attacker = state.players[item.command.owner].board.find((unit) => unit.uid === item.command.attackerId);
+        const attacksUsed = attacker?.attacksThisTurn ?? (attacker?.attackedThisTurn ? 1 : 0);
+        if (!attacker || attacker.exhausted || attacksUsed >= (attacker.attackLimit || 1) || attacker.summoning || attacker.stunned || hasKeyword(attacker, /atordoado/i) || !attackPermissionMet(attacker)) throw new RulesViolation("invalid-attacker");
+        state.combatAction = { attackerOwner: item.command.owner, attackerUid: attacker.uid, attackerCard: clone(attacker), stage: "priority" };
+        state.pendingResponse = { responder: 1 - item.command.owner, actor: item.command.owner, action: `declaração de ataque de ${attacker.name || attacker.uid}`, passes: 0 };
+      } else if (item.command.type === "selectDefender") {
+        const combat = state.combatAction;
+        if (!combat || combat.stage !== "choosing" || 1 - combat.attackerOwner !== item.command.owner) throw new RulesViolation("defender-choice-unavailable");
+        const defender = item.command.targetHero ? null : state.players[item.command.owner].board.find((unit) => unit.uid === item.command.defenderId);
+        if (!item.command.targetHero && !defender) throw new RulesViolation("invalid-defender");
+        state.combatAction = { ...combat, targetHero: !!item.command.targetHero, defenderUid: defender?.uid, defenderCard: defender ? clone(defender) : undefined, stage: "charging" };
       } else if (options.priority && ["attack", "activate"].includes(item.command.type) && !item.command.skipPriority && !item.command.hasPriority) {
         if (state.pendingAction) throw new RulesViolation("priority-window-open");
         state.pendingAction = { ...item.command }; state.pendingResponse = { responder: 1 - item.command.owner, actor: item.command.owner, action: item.command.type, passes: 0 }; continue;
@@ -350,6 +365,7 @@ export function executeCommand(inputState, command, options = {}) {
         }
         stack.push({ kind: "event", event: { type: "onCombatDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: defender ? [defender.uid] : [], amount: damageDealtByAttacker } });
         stack.push({ kind: "event", event: { type: "onAttack", owner: attackerOwner, sourceId: attacker.uid, source: attacker } });
+        state.combatAction = null;
       } else if (item.command.type === "activate") {
         const entry = state.players[item.command.owner]; if (state.active !== item.command.owner) throw new RulesViolation("not-your-turn");
         const source = [...entry.board, ...entry.support, ...(entry.terrain ? [entry.terrain] : [])].find((unit) => unit.uid === item.command.sourceId); const ability = source?.abilities?.find((candidate) => candidate.id === item.command.abilityId && candidate.trigger === "activated");
