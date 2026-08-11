@@ -115,7 +115,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 102);
+  assert.equal(explicitRuleIds.length, 179);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -281,6 +281,45 @@ test("Saymon creatures with printed life loss debit life when they enter", () =>
     assert.equal(result.players[0].life, 20 - amount, `p${page}`);
     assert.equal(result.players[0].heroXP, 1, `p${page}`);
   }
+});
+
+test("dangerous generic-parser false positives use explicit authoritative rules", () => {
+  const expected = {
+    p5: ["static", "onCombatDamage"], p20: ["activated"], p49: ["onCardPlayed"], p63: ["onPlay"], p80: ["onSpellCast", "activated"],
+    p107: ["activated"], p134: ["onMaintenance", "activated"], p173: ["onCreatureDestroyed"], p267: ["activated"], p280: ["onEnter"],
+    p289: ["onPlay"], p295: ["onCreatureEnter"], p302: ["onAttachedCreatureTargeted"], p306: ["activated"], p309: ["onTurnEnd", "activated"]
+  };
+  for (const [id, triggers] of Object.entries(expected)) assert.deepEqual(compileCard({ id, page: Number(id.slice(1)), type: "Criatura", text: "" }).abilities.map((ability) => ability.trigger), triggers, id);
+});
+
+test("Anéis de Esmeralda increase maximum energy and destroy only themselves", () => {
+  for (const page of [20, 306]) {
+    const game = state(), card = compileCard({ id: `p${page}`, page, name: "Anel de Esmeralda", type: "Artefato", cost: 0, text: "" }); game.players[0].maxEnergy = 4; game.players[0].energy = 4;
+    game.players[0].support.push({ ...card, uid: `ring-${page}`, slot: 0, exhausted: false, summoning: false });
+    const result = executeCommand(game, { type: "activate", owner: 0, sourceId: `ring-${page}`, abilityId: card.abilities[0].id, skipPriority: true }).state;
+    assert.equal(result.players[0].maxEnergy, 5); assert.equal(result.players[0].support.length, 0); assert.equal(result.players[0].grave[0].page, page);
+  }
+});
+
+test("Nevasca freezes every enemy and damages only creatures already frozen", () => {
+  const game = state(); game.players[1].board.push({ uid: "fresh", hp: 3, damage: 0, tags: [] }, { uid: "frozen", hp: 4, damage: 0, tags: ["Congelado"], frozen: true });
+  game.players[0].hand.push(compileCard({ id: "p63", page: 63, name: "Nevasca", type: "Feitiço", cost: 0, text: "" }));
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p63", skipPriority: true }).state;
+  assert.ok(result.players[1].board.every((card) => card.frozen)); assert.equal(result.players[1].board.find((card) => card.uid === "fresh").damage, 0); assert.equal(result.players[1].board.find((card) => card.uid === "frozen").damage, 2);
+});
+
+test("multi-step search decisions resume their authoritative continuation", () => {
+  const game = state(); game.players[0].hand.push(compileCard({ id: "p289", page: 289, name: "Logística", type: "Feitiço", cost: 0, text: "" }));
+  game.players[0].deck.push({ id: "u1", type: "Criatura", text: "" }, { id: "u2", type: "Criatura", text: "" }, { id: "spell", type: "Feitiço", text: "" });
+  let result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p289", skipPriority: true }).state; assert.equal(result.pendingDecision.kind, "search");
+  result = executeCommand(result, { type: "resolveDecision", owner: 0, selectedCardIds: ["u1", "u2"] }).state; assert.equal(result.pendingDecision.kind, "hand-to-deck-bottom");
+  result = executeCommand(result, { type: "resolveDecision", owner: 0, selectedCardIds: ["u1", "u2"] }).state; assert.equal(result.pendingDecision, null); assert.deepEqual(result.players[0].deck.slice(-2).map((card) => card.id), ["u1", "u2"]);
+});
+
+test("Cobra Dor loses life on maintenance and converts removed markers into healing", () => {
+  const game = state(), card = compileCard({ id: "p134", page: 134, name: "O Cobra Dor", type: "Criatura", text: "" }); game.players[0].board.push({ ...card, uid: "cobra", slot: 0, markers: { action: 2 }, exhausted: false, summoning: false });
+  let result = executeCommand(game, { type: "emit", owner: 0, event: { type: "onMaintenance", owner: 0 } }).state; assert.equal(result.players[0].life, 28); assert.equal(result.players[0].board[0].markers.action, 3);
+  result.players[0].life = 20; result = executeCommand(result, { type: "activate", owner: 0, sourceId: "cobra", abilityId: card.abilities[1].id, markerAmount: 3, skipPriority: true }).state; assert.equal(result.players[0].life, 23);
 });
 
 test("subtypes are card data and support cards with more than one subtype", () => {
@@ -821,7 +860,7 @@ test("migration coverage is explicit and simple cards use the command engine", a
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 241); assert.equal(pending.length, 67);
+  assert.equal(migrated.length, 308); assert.equal(pending.length, 0);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
@@ -1181,4 +1220,60 @@ test("Saymon level 3 life costs can never reduce life below one", () => {
   assert.equal(canActivateCard(card,{life:2,heroId:"saymon",heroLevel:3}),false);
   const compiled=compileCard(card),game=state(); game.players[0].life=2; game.players[0].heroId="saymon"; game.players[0].level=3; game.players[0].board.push({...compiled,uid:"payer",slot:0});
   assert.throws(()=>executeCommand(game,{type:"activate",owner:0,sourceId:"payer",abilityId:compiled.abilities[0].id}),/not-enough-life/);
+});
+
+test("every generated card is executable by the authoritative engine", async () => {
+  const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
+  assert.deepEqual(cards.filter((card) => !canExecuteCard(card)).map((card) => card.id), []);
+});
+
+test("Goblin sacrifice damage uses the sacrificed creature effective attack", () => {
+  const game = state(); game.players[0].energy = 10;
+  const source = compileCard({ id: "p37", page: 37, name: "BUCHA DE CANHÃO", type: "Encanto", cost: 0, text: "", tags: [] });
+  game.players[0].support.push({ ...source, uid: "cannon", slot: 0, summoning: false, exhausted: false });
+  game.players[0].board.push({ uid: "goblin", id: "goblin", type: "Criatura", atk: 3, hp: 2, tags: ["Goblin"], subtypes: ["Goblin"], modifiers: [{ attack: 2, health: 0 }], abilities: [] });
+  game.players[1].board.push({ uid: "target", id: "target", type: "Criatura", atk: 0, hp: 8, damage: 0, tags: [], modifiers: [], abilities: [] });
+  const result = executeCommand(game, { type: "activate", owner: 0, sourceId: "cannon", abilityId: source.abilities[0].id, sacrificeIds: ["goblin"], targetIds: ["target"] }).state;
+  assert.equal(result.players[1].board[0].damage, 5);
+  assert.equal(result.players[0].grave[0].deathCause, "sacrifice");
+});
+
+test("Chave Rara searches a terrain directly onto the authoritative field", () => {
+  const game = state(); game.players[0].energy = 10;
+  const card = compileCard({ id: "p94", page: 94, name: "Chave Rara", type: "Feitiço", cost: 3, text: "", tags: [] });
+  game.players[0].hand.push(card); game.players[0].deck.push({ id: "terrain", page: 204, name: "Círculo", type: "Terreno", cost: 5, text: "", tags: [], abilities: [] });
+  const pending = executeCommand(game, { type: "playCard", owner: 0, cardId: "p94" }).state;
+  assert.equal(pending.pendingDecision.kind, "search");
+  const result = executeCommand(pending, { type: "resolveDecision", owner: 0, selectedCardIds: ["terrain"] }).state;
+  assert.equal(result.players[0].terrain.id, "terrain");
+  assert.equal(result.players[0].deck.length, 0);
+});
+
+test("Desenterrar validates its grave choice and resumes by resurrecting it", () => {
+  const game = state(); game.players[0].energy = 10;
+  const card = compileCard({ id: "p102", page: 102, name: "Desenterrar", type: "Feitiço", cost: 3, text: "", tags: [] });
+  game.players[0].hand.push(card); game.players[0].grave.push({ id: "dead", page: 1, name: "Morto", type: "Criatura", cost: 5, atk: 4, hp: 4, text: "", tags: [], abilities: [] });
+  const pending = executeCommand(game, { type: "playCard", owner: 0, cardId: "p102" }).state;
+  assert.equal(pending.pendingDecision.kind, "zone-card");
+  const result = executeCommand(pending, { type: "resolveDecision", owner: 0, selectedCardId: "dead" }).state;
+  assert.equal(result.players[0].board[0].id, "dead");
+  assert.equal(result.players[0].grave.length, 1); // Desenterrar itself.
+});
+
+test("Café Pingado prevents exactly one point instead of the whole damage instance", () => {
+  const game = state(); game.players[0].energy = 10;
+  const card = compileCard({ id: "p236", page: 236, name: "Café Pingado", type: "Feitiço", cost: 1, text: "", tags: [] });
+  game.players[0].hand.push(card); game.players[0].board.push({ uid: "target", id: "target", type: "Criatura", atk: 1, hp: 5, damage: 0, tags: [], modifiers: [], abilities: [] });
+  const protectedState = executeCommand(game, { type: "playCard", owner: 0, cardId: "p236", targetIds: ["target"] }).state;
+  const damaged = executeCommand(protectedState, { type: "emit", event: { type: "test" } }, { handlers: { testDamage(state) {} } }).state;
+  defaultEffectHandlers.damage(damaged, { type: "damage", amount: 3 }, { owner: 1, sourceId: "spell", targetIds: ["target"] });
+  assert.equal(damaged.players[0].board[0].damage, 2);
+});
+
+test("Prestidigitação lets its controller draw from the bottom", () => {
+  const game = state(); game.players[0].support.push({ uid: "presto", page: 271, type: "Encanto", abilities: [], suffocated: false }); game.players[0].deck.push({ id: "top" }, { id: "bottom" });
+  defaultEffectHandlers.draw(game, { type: "draw", amount: 1 }, { owner: 0, sourceId: "draw" });
+  assert.equal(game.pendingDecision.kind, "draw-position");
+  const result = executeCommand(game, { type: "resolveDecision", owner: 0, choiceIndex: 1 }).state;
+  assert.equal(result.players[0].hand[0].id, "bottom");
 });
