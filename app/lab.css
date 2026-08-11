@@ -7700,7 +7700,6 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .screen-game .hero-command-bar .hero-ability-chip:hover,
 .screen-game .hero-command-bar .hero-ability-chip:focus-within{
   transform:none!important;
-  scale:none!important;
   filter:none!important;
   transition:none!important;
 }
@@ -7748,7 +7747,6 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .mulligan-card-static .original-card:hover{
   pointer-events:none!important;
   transform:none!important;
-  scale:none!important;
   filter:none!important;
   transition:none!important;
   z-index:auto!important;
