@@ -399,6 +399,7 @@ export function executeCommand(inputState, command, options = {}) {
         const selfDestruction = ability.effects.filter((effect) => effect.type === "destroy" && ["self", "this", "thisArtifact", "thisEnchantment"].includes(effect.target));
         const otherEffects = ability.effects.filter((effect) => !selfDestruction.includes(effect));
         [...otherEffects, ...selfDestruction].reverse().forEach((effect) => stack.push({ kind: "effect", effect, context: item.command }));
+        if ((item.command.targetIds || []).length) stack.push({ kind: "event", event: { type: "onAttachedCreatureTargeted", owner: item.command.owner, sourceId: source.uid, source, targetIds: item.command.targetIds } });
       } else if (item.command.type === "resolveDecision") {
         const decision = state.pendingDecision; if (!decision || (decision.owner !== item.command.owner && decision.context?.decisionOwner !== item.command.owner)) throw new RulesViolation("decision-not-owned");
         if (decision.kind === "replay-ability") {
