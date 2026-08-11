@@ -7691,48 +7691,123 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 }
 
 
-/* Ability chips: icon-only availability state and stable hover geometry. */
-.screen-game .hero-command-bar .hero-ability-chip>button small,
-.screen-game .hero-command-bar .hero-ability-chip>em{display:none!important}
-.screen-game .hero-command-bar .hero-ability-chip>button{min-width:0!important;width:auto!important;transform:none!important}
-.screen-game .hero-command-bar .hero-ability-chip,
-.screen-game .hero-command-bar .hero-ability-chip:hover{transform:none!important;scale:none!important}
 
 
-/* Command bar remains visually stable on hover. */
+/* Canonical interaction rules: command capsules never animate on pointer hover. */
+.screen-game .hero-command-bar,
 .screen-game .hero-command-bar:hover,
+.screen-game .hero-command-bar .hero-ability-chip,
 .screen-game .hero-command-bar .hero-ability-chip:hover,
-.screen-game .hero-command-bar .hero-ability-chip>button:hover:not(:disabled){
+.screen-game .hero-command-bar .hero-ability-chip:focus-within{
   transform:none!important;
   scale:none!important;
   filter:none!important;
-  background:inherit!important;
-  border-color:inherit!important;
-  box-shadow:inherit!important;
-}
-
-
-/* Absolutely no hover/focus visual state on the command-bar capsules. */
-.screen-game .hero-command-bar .hero-ability-chip,
-.screen-game .hero-command-bar .hero-ability-chip:hover,
-.screen-game .hero-command-bar .hero-ability-chip:focus-within,
-.screen-game .hero-command-bar .hero-ability-chip>button:hover:not(:disabled),
-.screen-game .hero-command-bar .hero-ability-chip>button:focus-visible{
   transition:none!important;
-  transform:none!important;
-  filter:none!important;
-  box-shadow:0 4px 12px #0009!important;
 }
-.screen-game .hero-command-bar .hero-ability-chip:hover,
-.screen-game .hero-command-bar .hero-ability-chip:focus-within{
+.screen-game .hero-command-bar .hero-ability-chip{
+  pointer-events:none!important;
   background:linear-gradient(90deg,#07131be8,#10232ad9)!important;
   border-color:color-mix(in srgb,var(--deck) 58%,#dce8e8 18%)!important;
   border-left-color:var(--deck)!important;
+  box-shadow:0 4px 12px #0009!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip>button small,
+.screen-game .hero-command-bar .hero-ability-chip>em{display:none!important}
+.screen-game .hero-command-bar .hero-ability-chip>button{
+  pointer-events:auto!important;
+  inset:auto 5px 5px auto!important;
+  min-width:0!important;
+  width:22px!important;
+  height:22px!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  transform:none!important;
+  transition:none!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip>button:hover:not(:disabled),
+.screen-game .hero-command-bar .hero-ability-chip>button:focus-visible{
+  background:transparent!important;
+  box-shadow:none!important;
+  filter:none!important;
+  transform:none!important;
 }
 
+/* Mulligan cards are previews, not hoverable board cards. */
+.mulligan-card-static{
+  cursor:default!important;
+  transform:none!important;
+  transition:none!important;
+}
+.mulligan-card-static .card-frame,
+.mulligan-card-static .original-card,
+.mulligan-card-static .card-frame:hover,
+.mulligan-card-static .original-card:hover{
+  pointer-events:none!important;
+  transform:none!important;
+  scale:none!important;
+  filter:none!important;
+  transition:none!important;
+  z-index:auto!important;
+}
+.mulligan-card-static .card-tooltip{display:none!important}
 
-/* No hover target exists on a power capsule; only the compact active-action icon receives input. */
-.screen-game .hero-command-bar .hero-ability-chip{pointer-events:none!important}
-.screen-game .hero-command-bar .hero-ability-chip>button{pointer-events:auto!important;inset:auto 5px 5px auto!important;width:22px!important;height:22px!important;padding:0!important;display:grid!important;place-items:center!important;border:0!important;background:transparent!important;box-shadow:none!important}
-.screen-game .hero-command-bar .hero-ability-chip>button:hover:not(:disabled),
-.screen-game .hero-command-bar .hero-ability-chip>button:focus-visible{background:transparent!important;box-shadow:none!important;transform:none!important}
+/* Live keyword strip: compact icons and one unobtrusive field-only tooltip. */
+.original-card .field-keywords{
+  --keyword-icon-size:clamp(9px,calc(19px - (var(--keyword-count) * 1.15px)),16px);
+  position:absolute;
+  left:50%;
+  bottom:2px;
+  z-index:18;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:clamp(1px,calc(5px - (var(--keyword-count) * .45px)),4px);
+  transform:translateX(-50%);
+  pointer-events:auto;
+}
+.original-card .field-keywords>i{
+  width:var(--keyword-icon-size);
+  height:var(--keyword-icon-size);
+  display:grid;
+  place-items:center;
+  border:1px solid #f6c85cbb;
+  border-radius:50%;
+  background:#06151eee;
+  color:#ffe19a;
+  box-shadow:0 1px 4px #000b;
+  font:900 calc(var(--keyword-icon-size) * .64)/1 Arial,sans-serif;
+  font-style:normal;
+  text-shadow:0 1px 2px #000;
+}
+.original-card .field-keywords::after{
+  content:attr(data-keywords);
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 5px);
+  width:max-content;
+  max-width:180px;
+  padding:4px 7px;
+  border:1px solid #e6b94f;
+  border-radius:5px;
+  background:#041117f2;
+  color:#f4fbfb;
+  box-shadow:0 5px 14px #000b;
+  font:700 9px/1.25 Arial,sans-serif;
+  white-space:normal;
+  text-align:center;
+  opacity:0;
+  visibility:hidden;
+  transform:translate(-50%,3px);
+  transition:opacity .14s ease,transform .14s ease,visibility .14s;
+  pointer-events:none;
+}
+.original-card .field-keywords:hover::after,
+.original-card .field-keywords:focus-visible::after{
+  opacity:1;
+  visibility:visible;
+  transform:translate(-50%,0);
+}
