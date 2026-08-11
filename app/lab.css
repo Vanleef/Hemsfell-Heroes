@@ -7575,3 +7575,9 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .hero-evolution-guide li b{color:#f0fbf8!important;font-size:10px!important;line-height:1.45!important}
 .hero-abilities-guide article p{margin:8px 0 0!important;color:#f0fbf8!important;font-size:11px!important;line-height:1.55!important;font-weight:600!important}
 .hero-abilities-guide article small{display:none!important}
+
+
+/* Ability capsules lead with the activation tag, followed by the meaningful effect text. */
+.hero-abilities-guide article header{justify-content:flex-start!important}
+.hero-abilities-guide article header em{margin:0!important}
+.hero-abilities-guide article p{margin-top:7px!important}
