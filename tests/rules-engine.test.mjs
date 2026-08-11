@@ -803,6 +803,19 @@ test("online combat advances once from declaration through defender choice", () 
   assert.equal(resolved.players[1].board[0].damage, 3);
 });
 
+test("online defender can accept direct damage and combat closes", () => {
+  const game = state(); game.phase = "combate";
+  game.players[0].board.push({ uid: "attacker", id: "attacker", name: "Atacante", type: "Criatura", slot: 0, atk: 3, hp: 3, damage: 0, exhausted: false, summoning: false, stunned: false, tags: [], abilities: [] });
+  let next = executeCommand(game, { type: "declareAttack", owner: 0, attackerId: "attacker" }, { priority: true }).state;
+  next = executeCommand(next, { type: "passPriority", owner: 1 }, { priority: true }).state;
+  next = executeCommand(next, { type: "passPriority", owner: 0 }, { priority: true }).state;
+  next = executeCommand(next, { type: "selectDefender", owner: 1, attackerId: "attacker", targetHero: true }, { priority: true }).state;
+  const resolved = executeCommand(next, { type: "attack", owner: 0, attackerId: "attacker", skipPriority: true }, { priority: true }).state;
+  assert.equal(resolved.players[1].life, 27);
+  assert.equal(resolved.combatAction, null);
+  assert.equal(resolved.pendingResponse, null);
+});
+
 test("priority defers the original action until both players pass", () => {
   const game = state(); game.players[0].hand.push({ id: "slow", type: "Feitiço", cost: 0, tags: [], abilities: [] });
   let result = executeCommand(game, { type: "playCard", owner: 0, cardId: "slow" }, { priority: true });
