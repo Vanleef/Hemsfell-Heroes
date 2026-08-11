@@ -115,7 +115,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 99);
+  assert.equal(explicitRuleIds.length, 102);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -223,6 +223,64 @@ test("repositioning a creature keeps its artifact attached and aligned", () => {
   assert.equal(moved.players[0].board[0].slot, 4); assert.equal(moved.players[0].support[0].slot, 4);
   const hostDone = executeCommand(moved, { type: "confirmReposition", owner: 0 }).state; assert.ok(hostDone.pendingReposition);
   const allDone = executeCommand(hostDone, { type: "confirmReposition", owner: 1 }).state; assert.equal(allDone.pendingReposition, null);
+});
+
+test("Arte da Guerra opens an authoritative reposition window at combat start", () => {
+  const game = state(); game.players[0].terrain = { ...compileCard({ id: "p163", page: 163, name: "Arte da Guerra", type: "Terreno", cost: 3, text: "" }), uid: "war-art" };
+  const result = executeCommand(game, { type: "advancePhase", owner: 0 }).state;
+  assert.equal(result.phase, "combate");
+  assert.deepEqual(result.pendingReposition?.owners, [0, 1]);
+});
+
+test("Armadura de Ferro Maciço grants Robusto only while attached", () => {
+  const game = state(); game.players[0].board.push({ uid: "host", type: "Criatura", slot: 0, hp: 4, damage: 0, tags: [], grantedKeywords: [], modifiers: [], abilities: [] });
+  game.players[0].hand.push(compileCard({ id: "p156", page: 156, name: "Armadura de Ferro Maciço", type: "Artefato", cost: 0, text: "", tags: [] }));
+  const equipped = executeCommand(game, { type: "playCard", owner: 0, cardId: "p156", attachedTo: "host", slot: 0, skipPriority: true }).state;
+  const damaged = structuredClone(equipped); defaultEffectHandlers.damage(damaged, { type: "damage", amount: 3 }, { owner: 1, targetIds: ["host"] });
+  assert.equal(damaged.players[0].board[0].damage, 2);
+});
+
+test("Correntes Purificadoras never banishes its equipped creature and banishes itself instead of entering grave", () => {
+  const game = state(); game.players[0].board.push({ uid: "host", type: "Criatura", slot: 0, hp: 4, tags: [], modifiers: [], abilities: [] });
+  game.players[0].hand.push(compileCard({ id: "p154", page: 154, name: "Correntes Purificadoras", type: "Artefato", cost: 0, text: "", tags: [] }));
+  const equipped = executeCommand(game, { type: "playCard", owner: 0, cardId: "p154", attachedTo: "host", slot: 0, skipPriority: true }).state;
+  const destroyed = executeCommand(equipped, { type: "emit", owner: 0, event: { type: "test" } }, { handlers: { testDestroy: () => {} } }).state;
+  defaultEffectHandlers.destroy(destroyed, { type: "destroy", target: "selected" }, { owner: 1, targetIds: [destroyed.players[0].support[0].uid] });
+  assert.equal(destroyed.players[0].board[0].uid, "host");
+  assert.equal(destroyed.players[0].grave.length, 0);
+  assert.equal(destroyed.players[0].obscuro[0].page, 154);
+});
+
+test("Correntes Purificadoras draws when its equipped creature is targeted", () => {
+  const game = state(); game.active = 1; game.players[0].board.push({ uid: "host", type: "Criatura", slot: 0, hp: 4, damage: 0, tags: [], modifiers: [], abilities: [] });
+  game.players[0].support.push({ ...compileCard({ id: "p154", page: 154, name: "Correntes Purificadoras", type: "Artefato", cost: 0, text: "", tags: [] }), uid: "chains", slot: 0, attachedTo: "host", graveDestination: "obscuro" });
+  game.players[0].deck.push({ id: "drawn" });
+  game.players[1].hand.push({ id: "targeting-spell", name: "Efeito alvo", type: "Feitiço", cost: 0, tags: [], abilities: [{ id: "hit", trigger: "onPlay", costs: [], effects: [{ type: "damage", amount: 1, target: "anyCreature", selections: 1 }] }] });
+  const result = executeCommand(game, { type: "playCard", owner: 1, cardId: "targeting-spell", targetIds: ["host"], hasPriority: true, skipPriority: true }).state;
+  assert.equal(result.players[0].hand[0].id, "drawn");
+  assert.equal(result.players[0].board[0].uid, "host");
+});
+
+test("Túmulo do Sacrifício makes Saymon pay the next creature cost with life", () => {
+  const game = state(); game.players[0].heroId = "saymon"; game.players[0].level = 2; game.players[0].life = 10; game.players[0].energy = 3;
+  game.players[0].hand.push(compileCard({ id: "p146", page: 146, name: "Túmulo do Sacrifício", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  let result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p146", skipPriority: true }).state;
+  result.players[0].hand.push(compileCard({ id: "blood-unit", name: "Criatura de Sangue", type: "Criatura", cost: 3, atk: 3, hp: 3, text: "", tags: [] }));
+  result = executeCommand(result, { type: "playCard", owner: 0, cardId: "blood-unit", slot: 0, skipPriority: true }).state;
+  assert.equal(result.players[0].life, 7);
+  assert.equal(result.players[0].energy, 3);
+  assert.equal(result.players[0].heroXP, 1);
+  assert.equal(result.players[0].nextCreaturePaysLife, false);
+});
+
+test("Saymon creatures with printed life loss debit life when they enter", () => {
+  for (const [page, amount] of [[130, 3], [133, 4]]) {
+    const game = state(); game.players[0].heroId = "saymon"; game.players[0].life = 20;
+    game.players[0].hand.push(compileCard({ id: `p${page}`, page, name: page === 130 ? "Servo Iniciante" : "O Carniceiro", type: "Criatura", cost: 0, atk: 3, hp: 2, text: "", tags: [] }));
+    const result = executeCommand(game, { type: "playCard", owner: 0, cardId: `p${page}`, slot: 0, skipPriority: true }).state;
+    assert.equal(result.players[0].life, 20 - amount, `p${page}`);
+    assert.equal(result.players[0].heroXP, 1, `p${page}`);
+  }
 });
 
 test("subtypes are card data and support cards with more than one subtype", () => {
@@ -763,7 +821,7 @@ test("migration coverage is explicit and simple cards use the command engine", a
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 239); assert.equal(pending.length, 69);
+  assert.equal(migrated.length, 241); assert.equal(pending.length, 67);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
