@@ -6946,14 +6946,15 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   height:31px!important;
 }
 .screen-game .player-hero>.level-button{
-  left:calc(100% + 4px)!important;
+  left:0!important;
   right:auto!important;
-  top:calc(32% + 34px)!important;
+  top:calc(100% + 6px)!important;
   bottom:auto!important;
   width:100%!important;
+  transform:none!important;
 }
 .screen-game .player-hero>.level-button:disabled{
-  opacity:0!important;
+  opacity:.45!important;
   pointer-events:none!important;
 }
 .screen-game .hero-command-bar{
@@ -6973,16 +6974,19 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   left:.2%!important;
 }
 .screen-game .terrain-slot.enemy-terrain{
-  left:calc(var(--field-left) - 6.35%)!important;
+  left:calc(var(--field-left) - 4%)!important;
   top:31.8%!important;
 }
 .screen-game .terrain-slot.player-terrain{
-  left:calc(var(--field-left) - 6.35%)!important;
+  left:calc(var(--field-left) - 4%)!important;
   top:60.5%!important;
+}
+.screen-game .field-energy.player-energy{
+  top:80%!important;
 }
 .screen-game .phase-orb{
   left:calc(var(--field-left) + var(--field-width) - 4.4%)!important;
-  top:46%!important;
+  top:48.4%!important;
 }
 .screen-game .side-piles{
   left:calc(var(--field-left) + var(--field-width) + .9%)!important;
