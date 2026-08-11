@@ -7339,7 +7339,7 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   height:20.5%!important;
 }
 .screen-game .hs-board .paired-field.enemy-field{top:18%!important}
-.screen-game .hs-board .paired-field.player-field{top:53.2%!important}
+.screen-game .hs-board .paired-field.player-field{top:47.2%!important}
 .screen-game .hs-board .paired-field .field-column{gap:2px!important}
 .screen-game .hs-board .phase-orb{top:46.5%!important}
 .screen-game .hs-board .side-piles{
