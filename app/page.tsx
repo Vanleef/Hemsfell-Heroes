@@ -900,7 +900,7 @@ function HeroAbilities({player,enemy=false,onAbility}:{player:Player;enemy?:bool
    const noResource=d.id==="saymon"&&(slot===0||slot===1)?player.life<=2:d.id==="ngoro"&&slot===2?player.heroXP<3:false;
    const action=d.id==="saymon"?"Pagar 2 de vida":d.id==="ngoro"?"Gastar 3 Pistas":"Ativar";
    const unavailable=locked||used||noResource;
-   return <div className={`ability hero-ability-chip ${locked?"locked":""} ${active?"activated":"passive"}`} key={ability} title={ability}><i>{slot+1}</i><span><b>{active?"ATIVA":"PASSIVA"}</b><p>{ability.replace(/^[IVX]+ · /,"")}</p></span>{active&&!enemy?<button disabled={unavailable} onClick={()=>onAbility?.(slot)} aria-label={`${action}: ${ability}`}>{used?"✓":locked?"🔒":"⚡"}<small>{used?"Usada":locked?"":action}</small></button>:<em>{locked?`}`:""}</em>}</div>
+   return <div className={`ability hero-ability-chip ${locked?"locked":""} ${active?"activated":"passive"}`} key={ability} title={ability}><i>{slot+1}</i><span><b>{active?"ATIVA":"PASSIVA"}</b><p>{ability.replace(/^[IVX]+ · /,"")}</p></span>{active&&!enemy?<button disabled={unavailable} onClick={()=>onAbility?.(slot)} aria-label={`${action}: ${ability}`}>{unavailable?"🔒":"⚡"}</button>:<em>{locked?`}`:""}</em>}</div>
   })}
  </aside>
 }
