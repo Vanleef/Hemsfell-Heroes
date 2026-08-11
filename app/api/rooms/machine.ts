@@ -126,7 +126,7 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
 }
 
 
-const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
+const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "declareAttack", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
 
 /** Transitional server-authoritative command path. The server owns the player
  * index, validates the room revision and runs the deterministic rules engine. */
@@ -136,7 +136,13 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
   if (!AUTHORITATIVE_COMMANDS.has(String(rawCommand.type || ""))) return { ok: false, status: 400, error: "unsupported command" };
   const owner = role === "host" ? 0 : 1;
   try {
-    const result = executeCommand(room.game, { ...rawCommand, owner }, { priority: true });
+    const command = { ...rawCommand, owner };
+    if (command.type === "attack") {
+      const combat = room.game.combatAction;
+      if (!combat || combat.stage !== "charging" || combat.attackerOwner !== owner || combat.attackerUid !== command.attackerId || (!!combat.targetHero !== !command.defenderId) || (combat.defenderUid || undefined) !== (command.defenderId || undefined)) return { ok: false, status: 409, error: "combat state mismatch" };
+      command.skipPriority = true;
+    }
+    const result = executeCommand(room.game, command, { priority: true });
     room.game = result.state;
     if (room.game.pendingResponse && !room.game.pendingResponse.deadline) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
     room.game.turnDeadline = deadline(room.settings.turnSeconds);
