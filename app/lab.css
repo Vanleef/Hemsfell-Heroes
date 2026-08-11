@@ -7079,3 +7079,120 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   object-fit:fill!important;
   transform:scaleX(1.04)!important;
 }
+
+
+/* Dedicated UI branch: readable hero powers and fixed 16:9 composition. */
+.screen-game .hs-board{
+  container-type:size!important;
+  width:min(100vw,177.778dvh)!important;
+  height:min(100dvh,56.25vw)!important;
+  min-width:0!important;
+  min-height:0!important;
+  flex:none!important;
+}
+.screen-game .hero-command-bar{
+  gap:min(.55vw,.98dvh)!important;
+  overflow:visible!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip{
+  grid-template-columns:min(2.2vw,3.91dvh) minmax(0,1fr)!important;
+  align-items:start!important;
+  height:auto!important;
+  min-height:min(4.65vw,8.27dvh)!important;
+  padding:min(.58vw,1.03dvh)!important;
+  border-radius:min(.72vw,1.28dvh)!important;
+  overflow:visible!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip>i{
+  width:min(2.05vw,3.64dvh)!important;
+  height:min(2.05vw,3.64dvh)!important;
+  font-size:min(.83vw,1.48dvh)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip>span{
+  min-width:0!important;
+  padding-right:min(1.45vw,2.58dvh)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip>span>b{
+  font-size:min(.72vw,1.28dvh)!important;
+  line-height:1.05!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip p{
+  display:block!important;
+  max-width:none!important;
+  margin:min(.3vw,.53dvh) 0 0!important;
+  overflow:visible!important;
+  text-overflow:clip!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  font-size:min(.88vw,1.56dvh)!important;
+  line-height:1.22!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip>em{
+  right:min(.45vw,.8dvh)!important;
+  bottom:min(.4vw,.71dvh)!important;
+  font-size:min(.63vw,1.12dvh)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip>button{
+  padding:min(.52vw,.92dvh)!important;
+}
+
+/* The opponent rail starts directly below the portrait; the local rail stays
+   immediately above its portrait, preserving the supplied composition. */
+.screen-game .hero-command-bar.enemy{
+  left:1.05%!important;
+  top:29%!important;
+  bottom:auto!important;
+}
+.screen-game .hero-command-bar:not(.enemy){
+  left:1.05%!important;
+  top:auto!important;
+  bottom:22.5%!important;
+}
+
+/* Level badge -> progress -> evolution action. */
+.screen-game .player-hero .hero-level{
+  left:calc(100% + 4px)!important;
+  right:auto!important;
+  top:7%!important;
+  bottom:auto!important;
+  width:100%!important;
+  min-height:min(2.15vw,3.82dvh)!important;
+  display:grid!important;
+  place-items:center!important;
+  transform:none!important;
+  border:1px solid #e4bc58!important;
+  border-radius:5px!important;
+  background:#352d10f2!important;
+  color:#ffe58c!important;
+  font-size:min(.76vw,1.35dvh)!important;
+  white-space:nowrap!important;
+}
+.screen-game .player-hero .hero-evolution{
+  left:calc(100% + 4px)!important;
+  right:auto!important;
+  top:31%!important;
+  width:100%!important;
+}
+.screen-game .player-hero>.level-button{
+  left:calc(100% + 4px)!important;
+  right:auto!important;
+  top:calc(31% + 37px)!important;
+  bottom:auto!important;
+  width:100%!important;
+  transform:none!important;
+}
+
+/* Prevent breakpoint reflow while zooming: the board is always the same
+   composition and only the complete stage scales uniformly. */
+@media(max-width:1050px), (max-height:700px){
+  .screen-game .player-hero{width:var(--hero-w)!important;height:19%!important}
+  .screen-game .hero-command-bar{width:var(--power-w)!important}
+  .screen-game .hero-command-bar.enemy{left:1.05%!important;top:29%!important}
+  .screen-game .hero-command-bar:not(.enemy){left:1.05%!important;bottom:22.5%!important}
+  .screen-game .hero-command-bar .hero-ability-chip{
+    height:auto!important;
+    min-height:min(4.65vw,8.27dvh)!important;
+  }
+  .screen-game .paired-field{height:22%!important}
+  .screen-game .player-hand{height:18.5%!important}
+}
