@@ -9,6 +9,7 @@ import { cardPlayTargetPolicy, isValidTarget, targetPolicy, TargetScope } from "
 import { canExecuteCard, executeCommand, RulesLoopError } from "../app/rules-engine/engine.mjs";
 import { runHeadlessGames } from "../app/rules-engine/simulator.mjs";
 import { PriorityState, chooseAIResponse, isAccelerated, legalPriorityResponses, priorityView, shouldAutoPass } from "../app/rules-engine/priority.mjs";
+import { canActivateCard } from "../app/card-activation.mjs";
 
 const state = () => ({ active: 0, phase: "principal", round: 1, players: [0, 1].map(() => ({ life: 30, maxLife: 30, energy: 5, maxEnergy: 5, reserve: 0, deck: [], hand: [], board: [], support: [], terrain: null, grave: [], obscuro: [] })) });
 
@@ -1102,4 +1103,24 @@ test("spell keywords apply Lifesteal and Deathtouch to effect damage", () => {
   const game=state(); game.players[0].life=20; game.players[1].board.push({uid:"target",id:"target",type:"Criatura",slot:0,hp:9,damage:0,tags:[],modifiers:[],abilities:[]});
   defaultEffectHandlers.damage(game,{type:"damage",amount:1},{owner:0,sourceId:"spell",effectSource:{id:"spell",type:"Feitiço",tags:["Roubo de Vida","Toque da Morte"]},targetIds:["target"]});
   assert.equal(game.players[0].life,21); assert.equal(game.players[1].board[0].damage,9);
+});
+
+test("paying life is an atomic cost and publishes the life-loss trigger", () => {
+  const game=state(); game.players[0].life=2; game.players[0].heroId="saymon"; game.players[0].level=2; game.players[0].heroXP=0;
+  game.players[0].board.push(
+    {uid:"listener",id:"listener",name:"Discípulo",type:"Criatura",slot:0,atk:1,hp:2,tags:[],modifiers:[],abilities:[{id:"blood",trigger:"onLifeLost",effects:[{type:"modifyStats",target:"self",attack:1,health:0,duration:"turn"}]}]},
+    {uid:"payer",id:"payer",name:"Olhos Sangrentos",type:"Criatura",slot:1,atk:2,hp:2,tags:[],modifiers:[],abilities:[{id:"pay",trigger:"activated",costs:[{type:"life",amount:2}],effects:[{type:"grantKeyword",target:"self",keyword:"Veloz",duration:"turn"}],usageLimit:{count:1,period:"turn"}}]},
+  );
+  const result=executeCommand(game,{type:"activate",owner:0,sourceId:"payer",abilityId:"pay"}).state;
+  assert.equal(result.players[0].life,0); assert.equal(result.players[0].heroXP,1); assert.equal(result.players[0].lifeLostThisTurn,2);
+  assert.equal(result.players[0].board.find(card=>card.uid==="listener").modifiers[0].attack,1);
+  assert.ok(result.players[0].board.find(card=>card.uid==="payer").temporaryTags.includes("Veloz"));
+});
+
+test("Saymon level 3 life costs can never reduce life below one", () => {
+  const card={id:"p138",page:138,name:"Olhos Sangrentos",type:"Criatura",cost:0,text:"",tags:[],abilities:[]};
+  assert.equal(canActivateCard(card,{life:2,heroId:"saymon",heroLevel:2}),true);
+  assert.equal(canActivateCard(card,{life:2,heroId:"saymon",heroLevel:3}),false);
+  const compiled=compileCard(card),game=state(); game.players[0].life=2; game.players[0].heroId="saymon"; game.players[0].level=3; game.players[0].board.push({...compiled,uid:"payer",slot:0});
+  assert.throws(()=>executeCommand(game,{type:"activate",owner:0,sourceId:"payer",abilityId:compiled.abilities[0].id}),/not-enough-life/);
 });
