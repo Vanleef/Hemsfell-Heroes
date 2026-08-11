@@ -762,7 +762,7 @@ test("migration coverage is explicit and simple cards use the command engine", a
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 229); assert.equal(pending.length, 79);
+  assert.equal(migrated.length, 239); assert.equal(pending.length, 69);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
@@ -1083,4 +1083,23 @@ test("Caneca da Sorte grants one modifier and Magic Barrier to Recruta Pinguço"
 test("zero vitality from a modifier sends a reset card to grave", () => {
   const game=state(); game.cardCatalog=[{id:"base",page:999,name:"Nome Base",type:"Criatura",cost:1,atk:1,hp:1,text:"",tags:[],abilities:[]}]; game.players[0].board.push({uid:"mutated",id:"instance",page:999,name:"Nome Alterado",type:"Criatura",slot:0,atk:9,hp:1,damage:0,tags:["Virada"],exhausted:true,modifiers:[],abilities:[]}); game.players[0].hand.push(compileCard({id:"p192",page:192,name:"Caneca da Sorte",type:"Artefato",cost:0,text:"",tags:[]}));
   const result=executeCommand(game,{type:"playCard",owner:0,cardId:"p192",instanceId:"mug",slot:0,attachedTo:"mutated"}).state; const dead=result.players[0].grave.find(card=>card.page===999); assert.equal(result.players[0].board.length,0); assert.equal(dead.name,"Nome Base"); assert.deepEqual(dead.tags,[]); assert.equal(dead.modifiers,undefined);
+});
+
+test("Fura-Fila compiles to the canonical previous-card condition", () => {
+  const compiled = compileCardText("Fura-Fila: Compre 1 carta.");
+  assert.deepEqual(compiled.abilities[0].condition, { cardsPlayedBeforeThisAtLeast: 1 });
+});
+
+test("accelerated spells spend reserve first on own turn and only reserve on opponent turn", () => {
+  const own = state(); own.players[0].energy = 3; own.players[0].reserve = 2; own.players[0].hand.push({ id:"fast", name:"Fast", type:"Feitiço", cost:3, tags:["Acelerado"], abilities:[] });
+  const ownResult = executeCommand(own,{type:"playCard",owner:0,cardId:"fast"}).state;
+  assert.deepEqual([ownResult.players[0].energy,ownResult.players[0].reserve],[2,0]);
+  const response = state(); response.active=0; response.players[1].energy=10; response.players[1].reserve=2; response.players[1].hand.push({ id:"fast", name:"Fast", type:"Feitiço", cost:3, tags:["Acelerado"], abilities:[] });
+  assert.throws(()=>executeCommand(response,{type:"playCard",owner:1,cardId:"fast",hasPriority:true}),/not-enough-energy/);
+});
+
+test("spell keywords apply Lifesteal and Deathtouch to effect damage", () => {
+  const game=state(); game.players[0].life=20; game.players[1].board.push({uid:"target",id:"target",type:"Criatura",slot:0,hp:9,damage:0,tags:[],modifiers:[],abilities:[]});
+  defaultEffectHandlers.damage(game,{type:"damage",amount:1},{owner:0,sourceId:"spell",effectSource:{id:"spell",type:"Feitiço",tags:["Roubo de Vida","Toque da Morte"]},targetIds:["target"]});
+  assert.equal(game.players[0].life,21); assert.equal(game.players[1].board[0].damage,9);
 });
