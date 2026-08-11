@@ -784,6 +784,25 @@ test("actions open a two-pass response window", () => {
   assert.equal(result.state.pendingResponse.responder, 1);
 });
 
+test("online combat advances once from declaration through defender choice", () => {
+  const game = state(); game.phase = "combate";
+  game.players[0].board.push({ uid: "attacker", id: "attacker", name: "Atacante", type: "Criatura", slot: 0, atk: 3, hp: 3, damage: 0, exhausted: false, summoning: false, stunned: false, tags: [], abilities: [] });
+  game.players[1].board.push({ uid: "defender", id: "defender", name: "Defensor", type: "Criatura", slot: 0, atk: 1, hp: 4, damage: 0, exhausted: false, stunned: false, tags: [], abilities: [] });
+  const declared = executeCommand(game, { type: "declareAttack", owner: 0, attackerId: "attacker" }, { priority: true }).state;
+  assert.equal(declared.combatAction.stage, "priority");
+  assert.equal(declared.pendingResponse.responder, 1);
+  const firstPass = executeCommand(declared, { type: "passPriority", owner: 1 }, { priority: true }).state;
+  assert.equal(firstPass.pendingResponse.responder, 0);
+  const choose = executeCommand(firstPass, { type: "passPriority", owner: 0 }, { priority: true }).state;
+  assert.equal(choose.pendingResponse, null);
+  assert.equal(choose.combatAction.stage, "choosing");
+  const charging = executeCommand(choose, { type: "selectDefender", owner: 1, attackerId: "attacker", defenderId: "defender", targetHero: false }, { priority: true }).state;
+  assert.equal(charging.combatAction.stage, "charging");
+  const resolved = executeCommand(charging, { type: "attack", owner: 0, attackerId: "attacker", defenderId: "defender", skipPriority: true }, { priority: true }).state;
+  assert.equal(resolved.combatAction, null);
+  assert.equal(resolved.players[1].board[0].damage, 3);
+});
+
 test("priority defers the original action until both players pass", () => {
   const game = state(); game.players[0].hand.push({ id: "slow", type: "Feitiço", cost: 0, tags: [], abilities: [] });
   let result = executeCommand(game, { type: "playCard", owner: 0, cardId: "slow" }, { priority: true });
