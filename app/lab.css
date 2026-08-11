@@ -7212,3 +7212,67 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   animation:none!important;
   transform:translateX(53%)!important;
 }
+
+
+/* UI pass: keep the visual stage collision-free and serialize all moments. */
+.screen-game .hero-command-bar{
+  width:15.5%!important;
+  grid-template-columns:1fr!important;
+  gap:min(.62vw,1.1dvh)!important;
+}
+.screen-game .hero-command-bar.enemy{left:1.05%!important;top:29%!important}
+.screen-game .hero-command-bar:not(.enemy){left:1.05%!important;bottom:22.5%!important}
+.screen-game .hero-command-bar .hero-ability-chip{
+  width:100%!important;
+  min-height:min(4.8vw,8.54dvh)!important;
+}
+.screen-game .terrain-slot.enemy-terrain,
+.screen-game .terrain-slot.player-terrain{left:17.9%!important}
+.screen-game .field-energy,.screen-game .paired-field,.screen-game .player-hand{
+  left:23.5%!important;
+  width:58.5%!important;
+}
+.screen-game .paired-field{height:20.5%!important}
+.screen-game .paired-field.enemy-field{top:18%!important}
+.screen-game .paired-field.player-field{top:53.2%!important}
+.screen-game .paired-field .field-column{gap:2px!important}
+.screen-game .field-energy.enemy-energy{top:11.25%!important}
+.screen-game .field-energy.player-energy{top:78.6%!important}
+.screen-game .player-hand{bottom:-2.6%!important}
+.screen-game .phase-orb{
+  left:calc(23.5% + 58.5% - 5.8%)!important;
+  top:46.5%!important;
+}
+.screen-game .phase-orb,
+.screen-game .phase-orb button{
+  background:linear-gradient(145deg,#e4b84e,#9e6422)!important;
+  background-image:none!important;
+}
+.screen-game .visual-effect,
+.screen-game .combat-cinematic,
+.screen-game .defense-decision,
+.screen-game .target-banner{
+  left:2%!important;
+  right:auto!important;
+  top:50%!important;
+  transform:translateY(-50%)!important;
+}
+.screen-game .visual-effect{
+  z-index:400!important;
+  max-width:29%!important;
+  max-height:46%!important;
+  overflow:visible!important;
+  animation-duration:3.8s!important;
+}
+.screen-game .visual-effect.fx-summon,
+.screen-game .visual-effect.fx-spell,
+.screen-game .visual-effect.fx-artifact,
+.screen-game .visual-effect.fx-terrain,
+.screen-game .visual-effect.fx-ability,
+.screen-game .visual-effect.fx-damage{
+  animation-duration:3.8s!important;
+}
+.screen-game .combat-cinematic,.screen-game .defense-decision,.screen-game .target-banner{
+  z-index:410!important;
+  max-width:29%!important;
+}
