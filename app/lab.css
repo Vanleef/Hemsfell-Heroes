@@ -7196,3 +7196,12 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   .screen-game .paired-field{height:22%!important}
   .screen-game .player-hand{height:18.5%!important}
 }
+
+
+/* Final evolution alignment: neutralize the legacy translate longhand. */
+.screen-game .player-hero>.level-button{
+  left:auto!important;
+  right:calc(-100% - 4px)!important;
+  translate:none!important;
+  transform:none!important;
+}
