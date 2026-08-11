@@ -7041,41 +7041,110 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   .screen-game .hero-command-bar{left:.2%!important;width:var(--power-w)!important}
 }
 
-/* Reference-layout pass v12 — positions only. Dimensions remain those of v10. */
+/* Reference-layout pass v11 — geometry traced from the 956×542 author mockup. */
+.screen-game .hs-board{
+  --hero-w:7.75%!important;
+  --power-w:10.55%!important;
+  --field-left:21.85%!important;
+  --right-rail:16.55%!important;
+  --field-width:calc(100% - var(--field-left) - var(--right-rail))!important;
+}
 .screen-game .opponent-hand{
   left:calc(var(--field-left) + var(--field-width)/2)!important;
   top:5.3%!important;
 }
-.screen-game .player-hero{left:1.05%!important}
-.screen-game .player-hero.enemy{top:9%!important}
-.screen-game .player-hero:not(.enemy){top:auto!important;bottom:2.5%!important}
+.screen-game .player-hero{
+  left:1.05%!important;
+  width:var(--hero-w)!important;
+}
+.screen-game .player-hero.enemy{
+  top:9%!important;
+  height:18%!important;
+}
+.screen-game .player-hero:not(.enemy){
+  top:auto!important;
+  bottom:2.5%!important;
+  height:22.7%!important;
+}
+.screen-game .player-hero .hero-evolution{
+  left:calc(100% + 4px)!important;
+  top:31%!important;
+}
 .screen-game .hero-command-bar,
 .screen-game .hero-command-bar.enemy,
-.screen-game .hero-command-bar:not(.enemy){left:8.75%!important}
-.screen-game .hero-command-bar.enemy{top:9.4%!important;bottom:auto!important}
-.screen-game .hero-command-bar:not(.enemy){top:auto!important;bottom:6.9%!important}
+.screen-game .hero-command-bar:not(.enemy){
+  left:8.75%!important;
+  width:var(--power-w)!important;
+}
+.screen-game .hero-command-bar.enemy{
+  top:9.4%!important;
+  bottom:auto!important;
+}
+.screen-game .hero-command-bar:not(.enemy){
+  top:auto!important;
+  bottom:6.9%!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip{
+  height:min(2.82vw,5.02dvh)!important;
+  min-height:min(2.82vw,5.02dvh)!important;
+  border-radius:6px!important;
+}
 .screen-game .terrain-slot.enemy-terrain,
-.screen-game .terrain-slot.player-terrain{left:17.9%!important}
+.screen-game .terrain-slot.player-terrain{
+  left:17.9%!important;
+  width:4.3%!important;
+  height:11.2%!important;
+}
 .screen-game .terrain-slot.enemy-terrain{top:32.7%!important}
 .screen-game .terrain-slot.player-terrain{top:61.1%!important}
+.screen-game .field-energy{
+  left:var(--field-left)!important;
+  width:var(--field-width)!important;
+  height:3.35%!important;
+}
 .screen-game .field-energy.enemy-energy{top:11.25%!important}
 .screen-game .field-energy.player-energy{top:80.6%!important}
+.screen-game .paired-field{
+  left:var(--field-left)!important;
+  width:var(--field-width)!important;
+  height:22.2%!important;
+}
 .screen-game .paired-field.enemy-field{top:18.8%!important}
 .screen-game .paired-field.player-field{top:54.9%!important}
-.screen-game .player-hand{top:auto!important;bottom:-2.6%!important}
+.screen-game .player-hand{
+  left:var(--field-left)!important;
+  width:var(--field-width)!important;
+  bottom:-2.6%!important;
+  height:17.4%!important;
+}
 .screen-game .phase-orb{
-  left:calc(var(--field-left) + var(--field-width) - 4.4%)!important;
+  left:calc(var(--field-left) + var(--field-width) - 4.55%)!important;
   top:45.4%!important;
 }
-.screen-game .side-piles{left:calc(var(--field-left) + var(--field-width) + 1.5%)!important}
+.screen-game .side-piles{
+  left:calc(var(--field-left) + var(--field-width) + .85%)!important;
+  width:14.15%!important;
+  grid-template-columns:repeat(2,calc(50% - 4px))!important;
+  gap:8px!important;
+}
 .screen-game .side-piles.enemy-piles{top:11.3%!important}
 .screen-game .side-piles.player-piles{top:50.2%!important}
-
-/* Compact horizontal lockup without the excessive stretch of the previous pass. */
-.hh-logo{width:124px!important;height:70px!important}
-.hh-logo img{
-  width:100px!important;
-  height:66px!important;
-  object-fit:fill!important;
-  transform:scaleX(1.04)!important;
+.screen-game .side-piles .pile-zone{
+  width:100%!important;
+  height:min(12.75vw,22.67dvh)!important;
+}
+@media(max-width:1050px), (max-height:700px){
+  .screen-game .hs-board{
+    --hero-w:7.75%!important;
+    --power-w:10.55%!important;
+    --field-left:21.85%!important;
+    --right-rail:16.55%!important;
+  }
+  .screen-game .player-hero.enemy{height:18%!important}
+  .screen-game .player-hero:not(.enemy){height:22.7%!important;bottom:2.5%!important}
+  .screen-game .hero-command-bar{left:8.75%!important;width:var(--power-w)!important}
+  .screen-game .paired-field{height:22.2%!important}
+  .screen-game .field-energy.player-energy{top:80.6%!important}
+  .screen-game .player-hand{height:17.4%!important}
+  .screen-game .side-piles{width:14.15%!important;grid-template-columns:repeat(2,calc(50% - 4px))!important}
 }
