@@ -275,10 +275,10 @@ const evolutionMilestoneText=(deck:DeckDef,target:number)=>({
 function HeroGuide({deck}:{deck:DeckDef}){
  const targets=(deck.requirement.match(/\d+/g)||[]).map(Number);
  return <section className="hero-guide" style={{"--deck":deck.color} as React.CSSProperties}>
-  <header><span>GUIA DO HERÓI</span><h3>{deck.name}</h3><p>{deck.style}</p></header>
-  <div className="hero-guide-facts"><span><small>Facção</small><b>{deck.faction}</b></span><span><small>Poder característico</small><b>{deck.power}</b></span></div>
+  <header><span>GUIA DO HERÓI</span><h3>{deck.name}</h3><p>{deck.faction}</p></header>
+  <div className="hero-guide-facts"><span><small>Facção</small><b>{deck.faction}</b></span></div>
   <section className="hero-evolution-guide"><div className="hero-guide-title"><i>✦</i><span><small>CONDIÇÃO DE EVOLUÇÃO</small><b>Como subir de nível</b></span></div><p>{evolutionCriterionSummary(deck.id)}</p><ol>{targets.map((target,index)=><li key={target}><span>NÍVEL {index+2}</span><b>{evolutionMilestoneText(deck,target)}</b></li>)}</ol></section>
-  <section className="hero-abilities-guide"><div className="hero-guide-title"><i>◆</i><span><small>HABILIDADES</small><b>Poderes liberados por nível</b></span></div><div>{deck.abilities.map((ability,index)=>{const active=isActiveAbility(deck.id,index);return <article key={ability}><span>{index+1}</span><div><header><b>Nível {index+1}</b><em className={active?"active":"passive"}>{active?"Ativa":"Passiva"}</em></header><p>{ability.replace(/^[IVX]+\s*·\s*/,"")}</p><small>{active?"Requer comando do jogador e respeita o limite descrito.":"É aplicada automaticamente quando a condição acontece."}</small></div></article>})}</div></section>
+  <section className="hero-abilities-guide"><div className="hero-guide-title"><i>◆</i><span><small>HABILIDADES</small><b>Poderes liberados por nível</b></span></div><div>{deck.abilities.map((ability,index)=>{const active=isActiveAbility(deck.id,index);return <article key={ability}><span>{index+1}</span><div><header><b>Nível {index+1}</b><em className={active?"active":"passive"}>{active?"Ativa":"Passiva"}</em></header><p>{ability.replace(/^[IVX]+\s*·\s*/,"")}</p></div></article>})}</div></section>
  </section>
 }
 
