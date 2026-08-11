@@ -7663,3 +7663,29 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   width:28%!important;
   height:18%!important;
 }
+
+
+/* Tighten hero power capsules without sacrificing readable descriptions. */
+.screen-game .hero-command-bar{
+  gap:min(.3vw,.55dvh)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip{
+  min-height:0!important;
+  height:auto!important;
+  padding:min(.32vw,.57dvh) min(.45vw,.8dvh)!important;
+  gap:min(.3vw,.55dvh)!important;
+  border-radius:min(.55vw,.98dvh)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip>i{
+  width:min(1.7vw,3.02dvh)!important;
+  height:min(1.7vw,3.02dvh)!important;
+  font-size:min(.68vw,1.21dvh)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip p{
+  margin:min(.14vw,.25dvh) 0 0!important;
+  font-size:min(.72vw,1.28dvh)!important;
+  line-height:1.15!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip>span>b{
+  font-size:min(.62vw,1.1dvh)!important;
+}
