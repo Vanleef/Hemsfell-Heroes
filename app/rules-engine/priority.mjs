@@ -13,7 +13,7 @@ export const isAccelerated = (card) => (card?.tags || []).some((tag) => /acelera
 
 function spellCost(state, owner, card) {
   const player = state.players[owner];
-  const discount = permanents(player).flatMap((source) => source.staticModifiers || [])
+  const discount = permanents(player).filter((source) => !source.suffocated).flatMap((source) => source.staticModifiers || [])
     .filter((modifier) => modifier.type === "costModifier" && (!modifier.selector?.type || modifier.selector.type === card.type) && (!modifier.during || modifier.during !== "controllerTurn" || state.active === owner))
     .reduce((sum, modifier) => sum + (modifier.amount || 0), 0);
   return Math.max(0, (card.cost || 0) + (card.costModifier || 0) + discount);
@@ -28,7 +28,8 @@ function activationAvailable(state, owner, source, ability) {
 export function legalPriorityResponses(state, owner) {
   if (!state?.pendingResponse || state.pendingResponse.responder !== owner) return [];
   const player = state.players[owner];
-  const cards = player.hand.flatMap((card, handIndex) => isAccelerated(card) && canExecuteCard(card) && player.energy + player.reserve >= spellCost(state, owner, card)
+  const responseEnergy = state.active === owner ? player.energy + player.reserve : player.reserve;
+  const cards = player.hand.flatMap((card, handIndex) => isAccelerated(card) && canExecuteCard(card) && responseEnergy >= spellCost(state, owner, card)
     ? [{ type: "playCard", owner, cardId: card.id, handIndex, hasPriority: true, label: card.name || card.id }]
     : []);
   const abilities = permanents(player).flatMap((source) => (source.abilities || []).flatMap((ability) => activationAvailable(state, owner, source, ability)
