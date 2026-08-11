@@ -258,14 +258,37 @@ const visualFxDedupeRef=useRef<Map<string,number>>(new Map());
 
 /* The local player is always index 0. The server stores host-first state, so the
    guest mirrors ownership while keeping every card/creature uid stable. */
-const mirrorOnlineGame=(source:Game):Game=>({...structuredClone(source),players:[structuredClone(source.players[1]),structuredClone(source.players[0])],active:(source.active===0?1:0),winner:source.winner===null?null:(source.winner===0?1:0),combatAction:source.combatAction?{...structuredClone(source.combatAction),attackerOwner:(source.combatAction.attackerOwner===0?1:0)}:null,pendingResponse:source.pendingResponse?{...source.pendingResponse,responder:(source.pendingResponse.responder===0?1:0),actor:(source.pendingResponse.actor===0?1:0)}:null});
+const mirrorOnlineGame=(source:Game):Game=>{
+ const mirrored=structuredClone(source);
+ mirrored.players=[structuredClone(source.players[1]),structuredClone(source.players[0])];
+ mirrored.active=source.active===0?1:0;
+ mirrored.winner=source.winner===null?null:(source.winner===0?1:0);
+ if(source.combatAction) mirrored.combatAction={...structuredClone(source.combatAction),attackerOwner:(source.combatAction.attackerOwner===0?1:0)};
+ if(source.pendingResponse) mirrored.pendingResponse={...source.pendingResponse,responder:(source.pendingResponse.responder===0?1:0),actor:(source.pendingResponse.actor===0?1:0)};
+ // These structures contain player indexes too. Leaving them canonical makes
+ // the guest render a decision/reposition belonging to the wrong player.
+ if(source.pendingAction) mirrored.pendingAction={...structuredClone(source.pendingAction),owner:typeof source.pendingAction.owner==='number'?(source.pendingAction.owner===0?1:0):source.pendingAction.owner};
+ if(source.pendingDecision){
+   mirrored.pendingDecision={...structuredClone(source.pendingDecision),owner:source.pendingDecision.owner===0?1:0};
+   if(mirrored.pendingDecision.context&&typeof mirrored.pendingDecision.context==='object'){
+     const context={...mirrored.pendingDecision.context};
+     if(typeof context.owner==='number')context.owner=context.owner===0?1:0;
+     if(typeof context.decisionOwner==='number')context.decisionOwner=context.decisionOwner===0?1:0;
+     mirrored.pendingDecision.context=context;
+   }
+ }
+ if(source.pendingReposition){
+   mirrored.pendingReposition={...structuredClone(source.pendingReposition),owners:source.pendingReposition.owners.map(owner=>owner===0?1:0),confirmed:source.pendingReposition.confirmed.map(owner=>owner===0?1:0)};
+ }
+ return mirrored;
+};
 const toCanonicalGame=(source:Game)=>isHost?structuredClone(source):mirrorOnlineGame(source);
 const fromCanonicalGame=(source:Game)=>isHost?structuredClone(source):mirrorOnlineGame(source);
 
 const syncOnlineGame=(next:Game)=>{
  if(mode!=="online"||!roomId||!roomToken)return;
  const canonical=toCanonicalGame(next);
- syncQueueRef.current=syncQueueRef.current.then(async()=>{const baseRevision=roomRevisionRef.current;const res=await fetch(`/api/rooms/${roomId}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"sync",token:roomToken,game:canonical,baseRevision})});const data=await res.json();if(res.ok){roomRevisionRef.current=data.revision??roomRevisionRef.current;setRoomInfo(data)}else if(data?.game){roomRevisionRef.current=data.revision??roomRevisionRef.current;setRoomInfo(data);setGame(fromCanonicalGame(data.game));setRoomError(data.error==="waiting for opponent response"?"Aguardando a resposta do oponente.":"O estado da sala foi atualizado; sua ação não foi aplicada.")}}).catch(()=>setRoomError("Conexão instável. Tentando sincronizar novamente…"));
+ syncQueueRef.current=syncQueueRef.current.then(async()=>{const baseRevision=roomRevisionRef.current;const res=await fetch(`/api/rooms/${roomId}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"sync",token:roomToken,game:canonical,baseRevision})});const data=await res.json();if(res.ok){roomRevisionRef.current=data.revision??roomRevisionRef.current;setRoomInfo(data)}else if(data?.game){const reconciled=fromCanonicalGame(data.game);roomRevisionRef.current=data.revision??roomRevisionRef.current;setRoomInfo(data);currentGameRef.current=reconciled;setGame(reconciled);setResponseWindow(reconciled.pendingResponse??null);setRoomError(data.error==="waiting for opponent response"?"Aguardando a resposta do oponente.":"O estado da sala foi atualizado; sua ação não foi aplicada.")}}).catch(()=>setRoomError("Conexão instável. Tentando sincronizar novamente…"));
 };
 
 const stopPolling = ()=>{if(pollRef.current){window.clearInterval(pollRef.current);pollRef.current=undefined}};
@@ -553,6 +576,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
    setTargeting({kind:"uruk-fire",source:"Uruk I · Fogo: escolha uma criatura inimiga ou o herói inimigo"});
    return
   }
+  if(mode==="online"&&!urukTargetUid){void runRulesCommand({type:"advancePhase"},0);return}
   update(g=>{const owner=g.active;resolveUrukLevelOne(g,owner,urukTargetUid);finishImageEffects(g,owner);const p=g.players[owner];bankRemainingEnergy(p);g.active=g.active===0?1:0;g.phase="manutencao";g.round++;g.turnDeadline=Date.now()+(roomInfo?.settings?.turnSeconds??120)*1000;log(g,`Turno ${g.round}: ${deckById(g.players[g.active].heroId).name}.`,"phase")})
  };
 
