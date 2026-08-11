@@ -7621,3 +7621,16 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .uruk-element-badge:hover{border-color:#f8b83c;background:#193e42;color:#fff3c4}
 .uruk-element-badge[data-tip]::after{content:attr(data-tip);position:absolute;left:0;bottom:calc(100% + 7px);z-index:99999;width:190px;padding:7px 9px;border:1px solid #f8b83c;border-radius:6px;background:#06151bf5;color:#edfafa;font:10px/1.35 Arial;white-space:normal;opacity:0;pointer-events:none;transform:translateY(3px);transition:opacity .15s ease,transform .15s ease;box-shadow:0 8px 20px #000b}
 .uruk-element-badge[data-tip]:hover::after{opacity:1;transform:translateY(0)}
+
+
+/* Compact card-slot spacing across creature and support rows. */
+.screen-game .hs-board .paired-field{
+  column-gap:4px!important;
+  row-gap:4px!important;
+}
+.screen-game .hs-board .paired-field .field-column{
+  gap:4px!important;
+}
+.screen-game .hs-board .paired-field .field-slot{
+  margin:0!important;
+}
