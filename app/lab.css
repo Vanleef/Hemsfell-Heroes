@@ -7729,3 +7729,10 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   border-color:color-mix(in srgb,var(--deck) 58%,#dce8e8 18%)!important;
   border-left-color:var(--deck)!important;
 }
+
+
+/* No hover target exists on a power capsule; only the compact active-action icon receives input. */
+.screen-game .hero-command-bar .hero-ability-chip{pointer-events:none!important}
+.screen-game .hero-command-bar .hero-ability-chip>button{pointer-events:auto!important;inset:auto 5px 5px auto!important;width:22px!important;height:22px!important;padding:0!important;display:grid!important;place-items:center!important;border:0!important;background:transparent!important;box-shadow:none!important}
+.screen-game .hero-command-bar .hero-ability-chip>button:hover:not(:disabled),
+.screen-game .hero-command-bar .hero-ability-chip>button:focus-visible{background:transparent!important;box-shadow:none!important;transform:none!important}
