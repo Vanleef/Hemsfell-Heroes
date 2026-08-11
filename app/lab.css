@@ -7599,3 +7599,17 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .hero-abilities-guide article>span{font-size:13px!important}
 /* Keep the same readable hierarchy in any hero detail popup reusing the guide. */
 .hero-guide .hero-evolution-guide,.hero-guide .hero-abilities-guide{font-size:inherit!important}
+
+
+/* Hero card inspector uses the same structured evolution/power guide as the collection. */
+.inspector aside:has(.inspector-hero-guide)>.inspector-section{display:none!important}
+.inspector-hero-guide{margin-top:12px;max-height:48vh;overflow:auto}
+.inspector-hero-guide .hero-guide{box-shadow:none!important;border-radius:8px!important}
+.inspector-hero-guide .hero-guide>header{padding:10px 12px!important}
+.inspector-hero-guide .hero-guide>header>span{font-size:7px!important}
+.inspector-hero-guide .hero-guide>header h3{font-size:15px!important}
+.inspector-hero-guide .hero-evolution-guide,.inspector-hero-guide .hero-abilities-guide{padding:10px 12px!important}
+.inspector-hero-guide .hero-evolution-guide>p{font-size:12px!important}
+.inspector-hero-guide .hero-evolution-guide li b{font-size:11px!important}
+.inspector-hero-guide .hero-abilities-guide article>div>p{font-size:12px!important}
+.inspector-hero-guide .hero-guide-title b{font-size:10px!important}
