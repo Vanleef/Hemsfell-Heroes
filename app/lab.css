@@ -7530,3 +7530,58 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   background:linear-gradient(145deg,#f1cb69,#c9852c)!important;
   transform:translateY(-1px)!important;
 }
+
+
+/* Compact card-selection popup: fit the card list above a persistent footer action. */
+.engine-decision-panel:has(.visual-card-choice-grid){
+  max-height:calc(100dvh - 24px)!important;
+  box-sizing:border-box!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:visible!important;
+}
+.engine-decision-panel:has(.visual-card-choice-grid)>div:has(> .visual-card-choice-grid){
+  min-height:0!important;
+  flex:1 1 auto!important;
+  display:flex!important;
+  flex-direction:column!important;
+  overflow:visible!important;
+}
+.engine-decision-panel:has(.visual-card-choice-grid)>.engine-decision-panel>div{min-height:0!important}
+.engine-decision-panel:has(.visual-card-choice-grid) .visual-card-choice-grid{
+  flex:1 1 auto!important;
+  min-height:0!important;
+  max-height:calc(100dvh - 220px)!important;
+  grid-template-columns:repeat(auto-fit,minmax(76px,1fr))!important;
+  gap:8px!important;
+  padding:6px!important;
+  overflow:auto!important;
+  align-content:start!important;
+}
+.engine-decision-panel:has(.visual-card-choice-grid) .visual-card-choice{
+  min-width:0!important;
+  padding:5px!important;
+  gap:4px!important;
+  border-radius:9px!important;
+}
+.engine-decision-panel:has(.visual-card-choice-grid) .visual-card-choice .original-card{
+  width:68px!important;
+  max-width:100%!important;
+}
+.engine-decision-panel:has(.visual-card-choice-grid) .visual-card-choice>span{
+  font-size:8px!important;
+  line-height:1.1!important;
+}
+.engine-decision-panel:has(.visual-card-choice-grid)>div:has(> .visual-card-choice-grid)>.gold{
+  flex:0 0 auto!important;
+  margin:10px auto 0!important;
+  position:relative!important;
+  z-index:3!important;
+}
+@media(max-width:600px){
+  .engine-decision-panel:has(.visual-card-choice-grid) .visual-card-choice-grid{
+    grid-template-columns:repeat(auto-fit,minmax(68px,1fr))!important;
+    gap:6px!important;
+  }
+  .engine-decision-panel:has(.visual-card-choice-grid) .visual-card-choice .original-card{width:60px!important}
+}
