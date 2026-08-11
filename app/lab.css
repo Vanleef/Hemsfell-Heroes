@@ -7634,3 +7634,17 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .screen-game .hs-board .paired-field .field-slot{
   margin:0!important;
 }
+
+
+/* Actual compact creature/support field: narrow the grid so its five slots sit closer together. */
+.screen-game .hs-board .paired-field{
+  left:24%!important;
+  width:46%!important;
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  column-gap:5px!important;
+  row-gap:4px!important;
+}
+.screen-game .hs-board .paired-field .field-column{
+  min-width:0!important;
+  gap:4px!important;
+}
