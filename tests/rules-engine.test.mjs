@@ -972,14 +972,14 @@ test("online combat advances once from declaration through defender choice", () 
   assert.equal(resolved.players[1].board[0].damage, 3);
 });
 
-test("online defender can accept direct damage and combat closes", () => {
-  const game = state(); game.phase = "combate";
-  game.players[0].board.push({ uid: "attacker", id: "attacker", name: "Atacante", type: "Criatura", slot: 0, atk: 3, hp: 3, damage: 0, exhausted: false, summoning: false, stunned: false, tags: [], abilities: [] });
-  let next = executeCommand(game, { type: "declareAttack", owner: 0, attackerId: "attacker" }, { priority: true }).state;
+test("Gimble's Valorian can deal direct multiplayer damage without locking combat", () => {
+  const game = state(); game.phase = "combate"; game.players[0].heroId = "gimble";
+  game.players[0].board.push({ uid: "valorian", id: "p3", name: "Valorian, o pseudodragão", type: "Criatura", slot: 0, atk: 3, hp: 3, damage: 0, exhausted: false, summoning: false, stunned: false, tags: ["Voar"], abilities: [] });
+  let next = executeCommand(game, { type: "declareAttack", owner: 0, attackerId: "valorian" }, { priority: true }).state;
   next = executeCommand(next, { type: "passPriority", owner: 1 }, { priority: true }).state;
   next = executeCommand(next, { type: "passPriority", owner: 0 }, { priority: true }).state;
-  next = executeCommand(next, { type: "selectDefender", owner: 1, attackerId: "attacker", targetHero: true }, { priority: true }).state;
-  const resolved = executeCommand(next, { type: "attack", owner: 0, attackerId: "attacker", skipPriority: true }, { priority: true }).state;
+  next = executeCommand(next, { type: "selectDefender", owner: 1, attackerId: "valorian", targetHero: true }, { priority: true }).state;
+  const resolved = executeCommand(next, { type: "attack", owner: 0, attackerId: "valorian", skipPriority: true }, { priority: true }).state;
   assert.equal(resolved.players[1].life, 27);
   assert.equal(resolved.combatAction, null);
   assert.equal(resolved.pendingResponse, null);
