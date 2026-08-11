@@ -7589,3 +7589,13 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .hero-abilities-guide article>div>p>em{display:inline-block!important;margin:0 6px 2px 0!important;vertical-align:baseline!important}
 .hero-abilities-guide article>div>p>span{display:inline!important;color:inherit!important;font:inherit!important}
 .hero-abilities-guide article header{display:none!important}
+
+
+/* Hero detail readability: criteria and ability effects are the primary content. */
+.hero-evolution-guide>p{font-size:13px!important;line-height:1.6!important}
+.hero-evolution-guide li b{font-size:12px!important;line-height:1.5!important}
+.hero-abilities-guide article>div>p{font-size:13px!important;line-height:1.6!important}
+.hero-abilities-guide article>div>p>em{font-size:9px!important;padding:3px 7px!important}
+.hero-abilities-guide article>span{font-size:13px!important}
+/* Keep the same readable hierarchy in any hero detail popup reusing the guide. */
+.hero-guide .hero-evolution-guide,.hero-guide .hero-abilities-guide{font-size:inherit!important}
