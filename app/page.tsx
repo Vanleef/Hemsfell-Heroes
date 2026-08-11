@@ -34,9 +34,9 @@ type CombatStage="declared"|"priority"|"choosing"|"charging"|"impact"|"resolved"
 type CombatAction={attackerOwner:0|1;attackerUid:string;attackerCard:CardDef;defenderUid?:string;defenderCard?:CardDef;targetHero?:boolean;stage:CombatStage;result?:string;destroyed?:Array<"attacker"|"defender">;winnerText?:string;attackDamage?:number;counterDamage?:number};
 type VisualFx={id:string;kind:"summon"|"spell"|"artifact"|"terrain"|"ability"|"damage";theme:"blood"|"dragon"|"goblin"|"recruit"|"divine"|"nature"|"arcane"|"chaos"|"order"|"neutral";card?:CardDef;target?:CardDef;label:string;detail:string};
 const VISUAL_FX_HOLD_MS=4200;
-const COMBAT_STAGE_HOLD_MS=2500;
+const COMBAT_STAGE_DELAY_MS:Record<CombatStage,number>={declared:220,priority:180,choosing:0,charging:320,impact:550,resolved:450};
 const RESPONSE_REVEAL_DELAY_MS=2500;
-const ANIMATION_SAFE_RULE_COMMANDS=new Set(["selectDefender","attack","passPriority"]);
+const ANIMATION_SAFE_RULE_COMMANDS=new Set(["declareAttack","selectDefender","attack","passPriority"]);
 type SearchRequest={id:string;owner:0|1;sourceName:string;sourcePage:number;text:string;limit:number;filterLabel:string;destination:"hand"|"field";reveal:boolean;optional:boolean;maxCost?:number};
 
 const cards=(rawCards as CardDef[]).map(card=>compileCard(card) as CardDef);
@@ -444,7 +444,8 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
   if(mode==="online")update(g=>{g.pendingResponse=timed?{...timed,passes:timed.passes??0}:null;g.combatAction=sharedAction});
  };
  useEffect(()=>{if(mode!=="online"||!game)return;setCombatAction(game.combatAction??null);const pending=game.pendingResponse??null;if(!pending){setResponseWindow(null);return}if(pending.responder!==0){setResponseWindow(pending);return}/* The responder first sees the opponent's serialized card animation. */const timer=window.setTimeout(()=>setResponseWindow(pending),RESPONSE_REVEAL_DELAY_MS);return()=>window.clearTimeout(timer)},[mode,game?.combatAction,game?.pendingResponse?.action,game?.pendingResponse?.deadline,game?.pendingResponse?.responder,game?.pendingResponse?.passes]);
- useEffect(()=>{currentGameRef.current=game;if(mode==="online"&&game?.active===0&&game.phase==="manutencao"&&game.winner===null)setMaintenanceOpen(true)},[game,mode]);
+ useEffect(()=>{currentGameRef.current=game},[game]);
+ useEffect(()=>{if(game?.active!==0||game.phase!=="manutencao"||game.winner!==null)return;setResponseWindow(null);setCombatAction(null);setAiAttackQueue([]);setMaintenanceOpen(true)},[game?.active,game?.phase,game?.winner]);
  const me=game?.players[0],foe=game?.players[1];
  const [visualFxQueue,setVisualFxQueue]=useState<VisualFx[]>([]);const [elementChoice,setElementChoice]=useState<{cardIndex:number;name:string}|null>(null);
  const begin=()=>{setTargeting(null);setImageChoice(null);setCafeChoice(null);setResponseWindow(null);setCombatAction(null);setAiAttackQueue([]);setVisualFx(null);setVisualFxQueue([]);setConfirmSurrender(false);setExtraView(null);setSearchChoice(null);setShufflingDeck(null);setDragging(null);setElementChoice(null);setMaintenanceOpen(true);setGame(start(mine,enemy));setScreen("game")};
@@ -657,7 +658,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
 
  useEffect(()=>{
   if(!combatAction||!game)return;const action=combatAction,defenderOwner=(action.attackerOwner===0?1:0) as 0|1;if(action.stage==="choosing"||action.stage==="priority"&&(responseWindow||targeting?.response))return;const onlineDriver=action.stage==="declared"?action.attackerOwner===0:action.stage==="priority"?action.attackerOwner===1:action.attackerOwner===0;if(mode==="online"&&!onlineDriver)return;
-  const delay=COMBAT_STAGE_HOLD_MS;
+  const delay=COMBAT_STAGE_DELAY_MS[action.stage];
   const t=setTimeout(()=>{
    const attackingPlayer=game.players[action.attackerOwner],defendingPlayer=game.players[defenderOwner],attacker=attackingPlayer.board.find(x=>x.uid===action.attackerUid);
    if(action.stage==="declared"){if(mode==="online"){void runRulesCommand({type:"declareAttack",attackerId:action.attackerUid},action.attackerOwner);return}const priorityAction={...action,stage:"priority" as const};setSharedCombat(priorityAction);setSharedResponse({responder:defenderOwner,actor:action.attackerOwner,action:`declaração de ataque de ${action.attackerCard.name}`},priorityAction);return}
@@ -689,12 +690,11 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
  },[combatAction,game,responseWindow,targeting,difficulty,mode]);
 
  useEffect(()=>{
-  if(!game||game.active!==1||game.winner!==null||mode!=="bot"||responseWindow||combatAction||game.phase==="combate")return;
+  if(!game||game.active!==1||game.winner!==null||mode!=="bot"||responseWindow||combatAction||game.phase==="combate"||visualFx||visualFxQueue.length)return;
   const aiSnapshot=game.players[1],profile=aiDifficultyProfile(difficulty),aiPlayable=game.phase==="principal"?aiSnapshot.hand.map((c,i)=>({c,i})).filter(x=>canAIPlayLifeCost(x.c,aiSnapshot)&&effectiveCost(x.c,aiSnapshot)<=playableEnergy(x.c,aiSnapshot)&&(x.c.type!=="Criatura"||aiSnapshot.board.length<5)&&(x.c.type!=="Artefato"||aiSnapshot.board.some(creature=>!aiSnapshot.support.some(a=>a.attachedTo===creature.uid)))):[];
   const expectedAiCard=aiSnapshot.turnCardsPlayed<profile.cardBudget?chooseAIPlayable(aiPlayable,aiSnapshot,game.players[0],difficulty,Math.random)?.c:undefined;
   const t=setTimeout(async()=>{
-   const returningToPlayer=game.phase==="fim";
-   if(expectedAiCard){const kind:VisualFx["kind"]=expectedAiCard.type==="Criatura"?"summon":expectedAiCard.type==="Feitiço"?"spell":expectedAiCard.type==="Terreno"?"terrain":"artifact";showFx(kind,"AÇÃO DO OPONENTE",expectedAiCard.name,expectedAiCard);await new Promise(resolve=>window.setTimeout(resolve,4000))}
+   if(expectedAiCard){const kind:VisualFx["kind"]=expectedAiCard.type==="Criatura"?"summon":expectedAiCard.type==="Feitiço"?"spell":expectedAiCard.type==="Terreno"?"terrain":"artifact";showFx(kind,"AÇÃO DO OPONENTE",expectedAiCard.name,expectedAiCard);await new Promise(resolve=>window.setTimeout(resolve,VISUAL_FX_HOLD_MS))}
    update(g=>{
     const p=g.players[1];
     if(g.phase==="manutencao"){
@@ -721,11 +721,9 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
      resolveUrukLevelOne(g,1,urukFireTarget);finishImageEffects(g,1);bankRemainingEnergy(p);g.active=0;g.phase="manutencao";g.round++;log(g,`Turno ${g.round}: ${deckById(g.players[0].heroId).name}.`,"phase");
     }
    });
-   if(returningToPlayer)setMaintenanceOpen(true);
-   if(expectedAiCard)window.setTimeout(()=>setResponseWindow({responder:0,actor:1,action:expectedAiCard.name}),1550);
   },difficulty==="Difícil"?500:800);
   return()=>clearTimeout(t);
- },[game,mode,difficulty,responseWindow,combatAction]);
+ },[game,mode,difficulty,responseWindow,combatAction,visualFx,visualFxQueue.length]);
 
  useEffect(()=>{
   if(!game||mode!=="bot"||game.active!==1||game.phase!=="combate"||game.winner!==null||combatAction||responseWindow)return;
@@ -1007,5 +1005,5 @@ function ResponseModal({action,player,seconds,passes=0,onPlay,onPass}:{action:st
 
 function MulliganModal({player,count,waiting,onDecision}:{player:Player;count:number;waiting:boolean;onDecision:(keep:boolean)=>void}){
  const nextSize=Math.max(1,player.hand.length-1);
- return <div className="overlay mulligan-overlay"><section className="mulligan-dialog" role="dialog" aria-modal="true"><header><div><p>MÃO INICIAL · {count?`${count} MULLIGAN${count>1?"S":""}`:"7 CARTAS"}</p><h2>{waiting?"Aguardando o oponente":"Manter ou trocar toda a mão?"}</h2></div><span>Nova mão sempre tem 1 carta a menos</span></header>{waiting?<div className="mulligan-wait"><i></i><b>Sua mão foi mantida</b><span>A partida começa assim que o outro jogador terminar.</span></div>:<><p className="mulligan-help">Se pedir mulligan, todas as {player.hand.length} cartas voltam ao Deck Principal, ele é embaralhado e você compra uma mão nova de {nextSize}. É possível repetir até restar 1 carta.</p><div className="mulligan-cards">{player.hand.map((card,index)=><div className="mulligan-card-static" key={`${card.id}-${index}`}><OriginalCard card={card} small disabled/><span>MÃO ATUAL</span></div>)}</div><footer><span>{player.hand.length} carta(s) na sua mão inicial</span><div><button disabled={player.hand.length<=1} onClick={()=>onDecision(false)}>Mulligan → {nextSize}</button><button className="gold" onClick={()=>onDecision(true)}>Manter {player.hand.length}</button></div></footer></>}</section></div>
+ return <div className="overlay mulligan-overlay"><section className="mulligan-dialog" role="dialog" aria-modal="true"><header><div><p>MÃO INICIAL · {count?`${count} MULLIGAN${count>1?"S":""}`:"7 CARTAS"}</p><h2>{waiting?"Aguardando o oponente":"Manter ou trocar toda a mão?"}</h2></div><span>Nova mão sempre tem 1 carta a menos</span></header>{waiting?<div className="mulligan-wait"><i></i><b>Sua mão foi mantida</b><span>A partida começa assim que o outro jogador terminar.</span></div>:<><p className="mulligan-help">Se pedir mulligan, todas as {player.hand.length} cartas voltam ao Deck Principal, ele é embaralhado e você compra uma mão nova de {nextSize}. É possível repetir até restar 1 carta.</p><div className="mulligan-cards">{player.hand.map((card,index)=><div className="mulligan-card-static" key={`${card.id}-${index}`}><OriginalCard card={card} small disabled/></div>)}</div><footer><span>{player.hand.length} carta(s) na sua mão inicial</span><div><button disabled={player.hand.length<=1} onClick={()=>onDecision(false)}>Mulligan → {nextSize}</button><button className="gold" onClick={()=>onDecision(true)}>Manter {player.hand.length}</button></div></footer></>}</section></div>
 }
