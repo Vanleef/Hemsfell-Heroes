@@ -7648,3 +7648,17 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   min-width:0!important;
   gap:4px!important;
 }
+
+
+/* Final rail alignment against the compact central card field. */
+.screen-game .hs-board .side-piles{
+  left:calc(24% + 46% + 1%)!important;
+  right:auto!important;
+}
+.screen-game .hs-board .terrain-slot.enemy-terrain,
+.screen-game .hs-board .terrain-slot.player-terrain{
+  left:22%!important;
+}
+.screen-game .hs-board .hero-command-bar{
+  width:18%!important;
+}
