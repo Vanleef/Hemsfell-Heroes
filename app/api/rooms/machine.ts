@@ -136,7 +136,7 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
   if (!AUTHORITATIVE_COMMANDS.has(String(rawCommand.type || ""))) return { ok: false, status: 400, error: "unsupported command" };
   const owner = role === "host" ? 0 : 1;
   try {
-    const command = { ...rawCommand, owner };
+    const command: Record<string, any> = { ...rawCommand, owner };
     if (command.type === "attack") {
       const combat = room.game.combatAction;
       if (!combat || combat.stage !== "charging" || combat.attackerOwner !== owner || combat.attackerUid !== command.attackerId || (!!combat.targetHero !== !command.defenderId) || (combat.defenderUid || undefined) !== (command.defenderId || undefined)) return { ok: false, status: 409, error: "combat state mismatch" };
