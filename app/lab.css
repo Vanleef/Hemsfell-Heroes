@@ -7558,3 +7558,8 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   }
   .engine-decision-panel:has(.visual-card-choice-grid) .visual-card-choice .original-card{width:60px!important}
 }
+
+
+/* High-resolution Hemsfell Heroes logo, kept at natural proportions. */
+.hh-logo{overflow:visible!important}
+.hh-logo img{width:140px!important;height:auto!important;max-width:none!important;aspect-ratio:auto!important;object-fit:contain!important;transform:none!important}
