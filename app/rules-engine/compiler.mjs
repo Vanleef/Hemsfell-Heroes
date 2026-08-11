@@ -4,6 +4,8 @@ import { targetPolicy } from "./targeting.mjs";
 
 const clean = (value = "") => String(value).replace(/\s+/g, " ").trim();
 const folded = (value = "") => clean(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const canonicalKeywords = Object.freeze({ "voar":"Voar", "barreira magica":"Barreira Mágica", "atropelar":"Atropelar", "investida":"Investida", "indomavel":"Indomável", "furtivo":"Furtivo", "veloz":"Veloz", "robusto":"Robusto", "roubo de vida":"Roubo de Vida", "toque da morte":"Toque da Morte", "acelerado":"Acelerado", "congelado":"Congelado", "atordoado":"Atordoado", "sufocado":"Sufocado", "imobilizado":"Imobilizado", "indestrutivel":"Indestrutível", "alerta":"Alerta" });
+const keywordMatches = (text = "") => [...new Set(Object.entries(canonicalKeywords).filter(([key]) => new RegExp(`\\b${key.replace(/ /g,"\\s+")}\\b`,"i").test(folded(text))).map(([,value]) => value))];
 
 export const Trigger = Object.freeze({
   PLAY: "onPlay",
@@ -76,7 +78,7 @@ export function parseEffects(text = "") {
   if (/\bsacrifique\b/.test(value)) add("sacrifice", { amount: numberFrom(value.match(/sacrifique\s+([^.:;]+)/)?.[1], 1), target: "ally" });
   if (/\bbana|\bbanir|\bbane\b/.test(value)) add("banish", { target: "selected" });
   if (/retorne|devolva/.test(value)) add("returnToHand", { target: "selected" });
-  if (/procure|busque/.test(value)) add("search", { destination: /campo/.test(value) ? "field" : "hand" });
+  if (/procure|busque/.test(value)) { const amount=numberFrom(value.match(/(?:procure|busque)\s+(\d+|um|uma|dois|duas|tres)/)?.[1],1); const types=["Criatura","Feitiço","Artefato","Encanto","Terreno"].filter(type=>new RegExp(type.toLowerCase()).test(value)); add("search", { zone:"deck", destination: /campo/.test(value) ? "field" : "hand", amount, types, subtype: value.match(/(?:tipo|classe|subtipo)\s+([a-záàâãéêíóôõúç]+)/i)?.[1], nameIncludes: value.match(/(?:com|por)\s+[“\"]([^”\"]+)[”\"]\s+no nome/i)?.[1], maxCost:Number(value.match(/custo (?:maximo|máximo|menor ou igual a)\s+(\d+)/)?.[1]||0)||undefined, shuffle:true }); }
   if (/invoque|coloque.+campo|ressuscite/.test(value)) add("summon", { source: /cemiterio/.test(value) ? "grave" : /imagem/.test(value) ? "extra" : "generated" });
   if (/\bdesvire/.test(value)) add("ready", { target: "selected" });
   if (/\bvire\b/.test(value) && !parseCosts(raw).some((cost) => cost.type === "tap")) add("tap", { target: "selected" });
@@ -84,8 +86,11 @@ export function parseEffects(text = "") {
   if (buff) add("modifyStats", { attack: Number(buff[1]), health: Number(buff[2]), duration: /turno/.test(value) ? "turn" : "permanent" });
   if (energy) add("gainEnergy", { amount: Number(energy[1]), destination: /reserva/.test(value) ? "reserve" : "main" });
   if (/custa?\s+\d+\s+a menos|reduz\w*.+custo/.test(value)) add("modifyCost", { amount: -numberFrom(value), duration: /proxim/.test(value) ? "next" : "continuous" });
-  if (/recebe\s+(?:voar|robusto|furtivo|investida|indestrutivel|barreira magica|roubo de vida|toque da morte|atropelar)/.test(value)) add("grantKeyword", { raw });
-  if (/\b(voar|barreira magica|atropelar|investida|indomavel|furtivo|veloz|robusto|defensor\s*\d+|roubo de vida|toque da morte|acelerado|congelado|atordoado|sufocado|suporte|imobilizado|indestrutivel)\b/.test(value)) add("keyword", { raw });
+  const supportText=value.match(/suporte\s*:\s*([^.]+)/)?.[1];
+  if(supportText&&!/[+-]?\d+\s*\/\s*[+-]?\d+/.test(supportText)) for(const keyword of keywordMatches(supportText)) add("supportAura",{keyword});
+  const defender = value.match(/defensor\s+(\d+)/); if (defender) add("keyword", { keyword: `Defensor ${defender[1]}` });
+  if (/recebe\s+(?:voar|robusto|furtivo|investida|indestrutivel|barreira magica|roubo de vida|toque da morte|atropelar|alerta)/.test(value)) for(const keyword of keywordMatches(raw)) add("grantKeyword", { keyword });
+  for(const keyword of keywordMatches(raw)){if(supportText&&folded(supportText).includes(folded(keyword)))continue;add("keyword", { keyword });}
   if (/\binvestigar\b/.test(value)) add("investigate", { amount: numberFrom(value) });
   if (/\brevel|\barquiv/.test(value)) add("revealOrArchive", { raw });
   if (/\banule|\bcancele/.test(value)) add("counter", { target: "selected" });
@@ -120,7 +125,7 @@ export function compileCardText(text = "") {
     const trigger = inferTrigger(section, text);
     const costs = trigger === Trigger.ACTIVATED ? parseCosts(section.text) : [];
     const effects = parseEffects(section.text).filter((effect) => !(trigger === Trigger.ACTIVATED && effect.type === "sacrifice"));
-    return { id: `ability-${index + 1}`, trigger, condition: section.label === "fura-fila" ? { type: "cardsPlayedAtLeast", amount: 1 } : null, costs, effects, sourceText: section.text };
+    return { id: `ability-${index + 1}`, trigger, condition: section.label === "fura-fila" ? { cardsPlayedBeforeThisAtLeast: 1 } : null, costs, effects, sourceText: section.text };
   });
   return { abilities, unsupported: abilities.flatMap((ability) => ability.effects.filter((effect) => effect.type === "unsupported")) };
 }
