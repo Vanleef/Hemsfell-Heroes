@@ -6917,3 +6917,80 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 /* The source image is almost square; reserve its natural ratio so the home
    logo never gets squeezed by the navigation flex row. */
 .hh-logo{flex:0 0 auto!important;overflow:visible!important}.hh-logo img{width:96px!important;height:auto!important;aspect-ratio:426/395!important;object-fit:contain!important;max-width:none!important}
+
+/* Reference-layout pass v10.
+   These anchors mirror the composition supplied by the author: portraits sit
+   in the outer-left corners, evolution is immediately beside each portrait,
+   powers occupy the free left rail, terrains bridge that rail and the field,
+   and the phase control remains between the battlefield and the piles. Using
+   percentages keeps the authored positions stable inside the 16:9 stage. */
+.screen-game .hs-board{
+  --hero-w:8.1%!important;
+  --power-w:14%!important;
+  --field-left:21.4%!important;
+  --right-rail:16.9%!important;
+  --field-width:calc(100% - var(--field-left) - var(--right-rail))!important;
+}
+.screen-game .player-hero{
+  left:.35%!important;
+  width:var(--hero-w)!important;
+  height:19%!important;
+}
+.screen-game .player-hero.enemy{top:8.1%!important}
+.screen-game .player-hero:not(.enemy){bottom:7%!important}
+.screen-game .player-hero .hero-evolution{
+  left:calc(100% + 4px)!important;
+  right:auto!important;
+  top:32%!important;
+  width:100%!important;
+  height:31px!important;
+}
+.screen-game .player-hero>.level-button{
+  left:calc(100% + 4px)!important;
+  right:auto!important;
+  top:calc(32% + 34px)!important;
+  bottom:auto!important;
+  width:100%!important;
+}
+.screen-game .player-hero>.level-button:disabled{
+  opacity:0!important;
+  pointer-events:none!important;
+}
+.screen-game .hero-command-bar{
+  left:.2%!important;
+  width:var(--power-w)!important;
+}
+.screen-game .hero-command-bar.enemy{
+  top:31.8%!important;
+  bottom:auto!important;
+}
+.screen-game .hero-command-bar:not(.enemy){
+  top:auto!important;
+  bottom:26.5%!important;
+}
+.screen-game .terrain-slot.enemy-terrain{
+  left:calc(var(--field-left) - 6.35%)!important;
+  top:31.8%!important;
+}
+.screen-game .terrain-slot.player-terrain{
+  left:calc(var(--field-left) - 6.35%)!important;
+  top:60.5%!important;
+}
+.screen-game .phase-orb{
+  left:calc(var(--field-left) + var(--field-width) - 4.4%)!important;
+  top:46%!important;
+}
+.screen-game .side-piles{
+  left:calc(var(--field-left) + var(--field-width) + .9%)!important;
+}
+
+@media(max-width:1050px){
+  .screen-game .hs-board{
+    --hero-w:8.1%!important;
+    --power-w:14%!important;
+    --field-left:21.4%!important;
+    --right-rail:16.9%!important;
+  }
+  .screen-game .player-hero{width:var(--hero-w)!important;height:19%!important}
+  .screen-game .hero-command-bar{left:.2%!important;width:var(--power-w)!important}
+}
