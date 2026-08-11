@@ -153,7 +153,6 @@ Nunca commite chaves reais. Use `.env.local` localmente e configure Production, 
 | `SUPABASE_SERVICE_ROLE_KEY` | Produção com Supabase | Chave privada usada apenas no servidor. Nunca exponha no cliente. |
 | `SUPABASE_SECRET_KEY` | Alternativa | Nome alternativo aceito pelo armazenamento. |
 | `BLOB_READ_WRITE_TOKEN` | Produção com Blob | Token do Vercel Blob usado quando Supabase não está configurado. |
-| `HEMSFELL_CARD_CATALOG_URL` | Recomendada | URL pública ou endpoint do PDF universal das cartas. |
 | `NEXT_PUBLIC_SUPABASE_URL` | Somente se necessário no cliente | Não substitui `SUPABASE_URL` no armazenamento de salas. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Somente recursos públicos | Chave anônima; não use como service role. |
 
@@ -478,8 +477,8 @@ Se aparecer apenas o verso da carta com o custo:
 1. abra o console e a aba Network;
 2. verifique `/api/hemsfell-card-catalog.pdf`;
 3. confirme que a resposta é PDF e não HTML/JSON de erro;
-4. verifique `HEMSFELL_CARD_CATALOG_URL`;
-5. confirme se o Google Drive permite acesso ao arquivo;
+4. confirme o ID e as URLs em `app/api/hemsfell-card-catalog.pdf/route.ts`;
+5. confirme se o Google Drive permite acesso público ao arquivo;
 6. teste local e produção separadamente.
 
 ## Testes e simulações
