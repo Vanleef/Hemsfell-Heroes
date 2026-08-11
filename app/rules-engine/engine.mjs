@@ -294,7 +294,7 @@ function activeAbilities(state, event) {
 }
 
 export function executeCommand(inputState, command, options = {}) {
-  const state = clone(inputState); const maxSteps = options.maxSteps ?? 512; const maxRepeats = options.maxRepeats ?? 4; const handlers = { ...defaultEffectHandlers, ...(options.handlers || {}) }; let actionLabel = command.type;
+  const state = clone(inputState); const originalPhase = inputState.phase; const maxSteps = options.maxSteps ?? 512; const maxRepeats = options.maxRepeats ?? 4; const handlers = { ...defaultEffectHandlers, ...(options.handlers || {}) }; let actionLabel = command.type;
   const stack = [{ kind: "command", command }]; const trace = []; const repeats = new Map(); let steps = 0;
   while (stack.length) {
     refreshSupportAuras(state);
@@ -317,7 +317,9 @@ export function executeCommand(inputState, command, options = {}) {
         if (state.active !== item.command.owner || state.phase !== "combate") throw new RulesViolation("wrong-combat-priority");
         const attacker = state.players[item.command.owner].board.find((unit) => unit.uid === item.command.attackerId);
         const attacksUsed = attacker?.attacksThisTurn ?? (attacker?.attackedThisTurn ? 1 : 0);
-        if (!attacker || attacker.cannotAttack || attacker.exhausted || attacksUsed >= (attacker.attackLimit || 1) || attacker.summoning || attacker.stunned || hasKeyword(attacker, /atordoado/i) || !attackPermissionMet(attacker)) throw new RulesViolation("invalid-attacker");
+        const attackingPlayer = state.players[item.command.owner];
+        const tessaliaCommander = attackingPlayer.heroId !== "tessalia" || attackingPlayer.board.some((unit) => unit.slot === 2 && !unit.suffocated);
+        if (!attacker || attacker.cannotAttack || attacker.exhausted || attacksUsed >= (attacker.attackLimit || 1) || attacker.summoning || attacker.stunned || hasKeyword(attacker, /atordoado/i) || !attackPermissionMet(attacker) || (attackingPlayer.heroId === "tessalia" && attacker.slot !== 2 && !tessaliaCommander)) throw new RulesViolation("invalid-attacker");
         state.combatAction = { attackerOwner: item.command.owner, attackerUid: attacker.uid, attackerCard: clone(attacker), stage: "priority" };
         state.pendingResponse = { responder: 1 - item.command.owner, actor: item.command.owner, action: `declaração de ataque de ${attacker.name || attacker.uid}`, passes: 0 };
       } else if (item.command.type === "selectDefender") {
@@ -556,6 +558,9 @@ export function executeCommand(inputState, command, options = {}) {
     } else if (item.kind === "event") {
       const triggered = activeAbilities(state, item.event); for (const trigger of triggered.reverse()) { claimUsage(state, trigger.source, trigger.owner, trigger.ability); const targetSteps = abilityTargetSteps(trigger.ability); const context = { owner: trigger.owner, sourceId: trigger.ability.replaySourceId || trigger.source.uid, event: item.event, targetIds: item.event.targetIds || [] }; if (targetSteps.length && !context.targetIds.length) { if (!canSatisfyTargetSteps(state, trigger.owner, targetSteps)) continue; state.pendingDecision = { kind: "targets", owner: trigger.owner, effect: { replayEffects: trigger.ability.effects }, context, targetSteps, sourceName: trigger.ability.replaySourceId ? item.event.card?.name || "Primeiro Ato" : trigger.source.name || "efeito ativado" }; break; } for (const effect of [...trigger.ability.effects].reverse()) stack.push({ kind: "effect", effect, context }); }
     }
+  }
+  if (command.type === "advancePhase" && originalPhase === "fim" && state.phase === "manutencao") {
+    const entry = state.players[state.active]; entry.lifeLostThisTurn = 0; entry.lifeLossEvents = 0; if (entry.heroId === "saymon") entry.heroXP = 0;
   }
   state.events = (state.events || 0) + 1; state.log ||= []; state.log.unshift({ id: `rules-${state.round}-${state.events}`, text: command.type === "playCard" ? `${actionLabel} foi jogada pelo motor de regras.` : command.type === "activate" ? `${actionLabel} ativou sua habilidade.` : `${actionLabel}: ${command.type}.`, tone: "effect" });
   if (["playCard", "activate"].includes(command.type)) if (!command.skipPriority && state.pendingAction && command.hasPriority) state.pendingResponse = { responder: state.pendingAction.actor, actor: command.owner, action: actionLabel, passes: 0 }; else if (!command.skipPriority && !state.pendingAction) state.pendingResponse = command.hasPriority ? null : { responder: 1 - command.owner, actor: command.owner, action: actionLabel, passes: 0 };

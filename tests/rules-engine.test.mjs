@@ -9,6 +9,7 @@ import { cardPlayTargetPolicy, isValidTarget, targetPolicy, TargetScope } from "
 import { canExecuteCard, executeCommand, RulesLoopError } from "../app/rules-engine/engine.mjs";
 import { runHeadlessGames } from "../app/rules-engine/simulator.mjs";
 import { PriorityState, chooseAIResponse, isAccelerated, legalPriorityResponses, priorityView, shouldAutoPass } from "../app/rules-engine/priority.mjs";
+import { aiDifficultyProfile, canAIPlayLifeCost, legalAIAttackers, orderAIAttackers, preferredAISlot } from "../app/rules-engine/ai.mjs";
 import { canActivateCard } from "../app/card-activation.mjs";
 
 const state = () => ({ active: 0, phase: "principal", round: 1, players: [0, 1].map(() => ({ life: 30, maxLife: 30, energy: 5, maxEnergy: 5, reserve: 0, deck: [], hand: [], board: [], support: [], terrain: null, grave: [], obscuro: [] })) });
@@ -1031,6 +1032,12 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(css, /original-card\.summoning-sick/);
   assert.match(css, /auxiliary-slot \.card-tooltip/);
   assert.match(css, /z-index:9020!important/);
+  assert.match(page, /card-frame-inspect/);
+  assert.match(page, /hero-command-bar/);
+  assert.match(page, /card-focus-layer/);
+  assert.match(page, /hemsfell-heroes-logo\.png/);
+  assert.match(css, /fx-summon-arrive/);
+  assert.match(css, /z-index:30000!important/);
 });
 
 test("Fatiadora Prateada exempts Recruta Exibido or Iludido and still grants Atropelar", () => {
@@ -1276,4 +1283,32 @@ test("Prestidigitação lets its controller draw from the bottom", () => {
   assert.equal(game.pendingDecision.kind, "draw-position");
   const result = executeCommand(game, { type: "resolveDecision", owner: 0, choiceIndex: 1 }).state;
   assert.equal(result.players[0].hand[0].id, "bottom");
+});
+
+test("Tessália AI never queues an illegal non-commander attack", () => {
+  const player = { heroId: "tessalia", board: [{ uid: "wing", slot: 0, atk: 4, exhausted: false, summoning: false, stunned: false, immobilized: false }] };
+  assert.deepEqual(legalAIAttackers(player), []);
+  assert.equal(preferredAISlot(player), 2);
+  player.board.push({ uid: "commander", slot: 2, atk: 2, exhausted: false, summoning: false, stunned: false, immobilized: false });
+  assert.deepEqual(orderAIAttackers(player, "Difícil").map((unit) => unit.uid), ["commander", "wing"]);
+});
+
+test("authoritative combat enforces Tessália commander restriction", () => {
+  const game = state(); game.phase = "combate"; game.players[0].heroId = "tessalia";
+  game.players[0].board.push({ uid: "wing", slot: 0, type: "Criatura", atk: 3, hp: 3, exhausted: false, summoning: false, stunned: false, tags: [], abilities: [] });
+  assert.throws(() => executeCommand(game, { type: "declareAttack", owner: 0, attackerId: "wing" }), /invalid-attacker/);
+  game.players[0].board.push({ uid: "commander", slot: 2, type: "Criatura", atk: 1, hp: 3, exhausted: true, summoning: false, stunned: false, tags: [], abilities: [] });
+  assert.equal(executeCommand(game, { type: "declareAttack", owner: 0, attackerId: "wing" }).state.combatAction.attackerUid, "wing");
+});
+
+test("Saymon evolution markers expire when his next turn starts", () => {
+  const game = state(); game.phase = "fim"; game.active = 0; game.players[1].heroId = "saymon"; game.players[1].heroXP = 5; game.players[1].lifeLossEvents = 5; game.players[1].lifeLostThisTurn = 8;
+  const result = executeCommand(game, { type: "advancePhase", owner: 0 }).state;
+  assert.equal(result.active, 1); assert.equal(result.players[1].heroXP, 0); assert.equal(result.players[1].lifeLossEvents, 0); assert.equal(result.players[1].lifeLostThisTurn, 0);
+});
+
+test("AI difficulty profiles and life-cost safety are explicit", () => {
+  assert.deepEqual([aiDifficultyProfile("Fácil").cardBudget, aiDifficultyProfile("Normal").cardBudget, aiDifficultyProfile("Difícil").cardBudget], [1, 2, 3]);
+  assert.equal(canAIPlayLifeCost({ text: "Perca 3 de vida." }, { life: 2, heroId: "saymon", level: 2 }), false);
+  assert.equal(canAIPlayLifeCost({ text: "Perca 1 de vida." }, { life: 2, heroId: "saymon", level: 3 }), true);
 });
