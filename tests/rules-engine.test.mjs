@@ -1059,6 +1059,8 @@ test("production rooms use durable storage and never masquerade as process-local
   assert.match(store, /SUPABASE_SERVICE_ROLE_KEY/);
   assert.match(store, /multiplayer_rooms\?on_conflict=id/);
   assert.match(store, /NODE_ENV === "development"/);
+  assert.match(store, /Supabase unavailable; reading from Blob fallback/);
+  assert.match(store, /Supabase unavailable; writing to Blob fallback/);
   assert.doesNotMatch(store, /HEMSFELL_ROOM_STORE !== "d1"/);
   assert.match(createRoute, /force-dynamic/);
   assert.match(roomRoute, /Cache-Control.*no-store/);
