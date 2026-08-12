@@ -49,7 +49,6 @@
   line-height: .8 !important;
 }
 
-/* The orb is intentionally empty while the remote player owns the turn. */
 .screen-game .game-stage > .game-content.hs-board > .phase-orb:empty::before {
   content: "Turno do Oponente";
   color: #c8ced0 !important;
@@ -61,7 +60,6 @@
   box-shadow: 0 .35cqh .8cqh #0007 !important;
 }
 
-/* Disabled local actions remain readable without looking like the opponent turn. */
 .screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled {
   filter: brightness(.72) saturate(.6) !important;
   opacity: .72 !important;
@@ -69,19 +67,20 @@
 
 /* -------------------------------------------------------------------------
    RESPONSIVE EFFECT / COMBAT PRESENTATION
-   The right rail is the presentation rail. Effects sit beneath the side piles
-   in stacking order, so the public pile controls always remain usable.
+   Effects sit close to the phase orb, but slightly toward the battlefield.
+   They deliberately render ABOVE the side piles so the animation is never
+   visually buried by the public-zone cards.
    ------------------------------------------------------------------------- */
 .screen-game .game-stage > .game-content.hs-board > .visual-effect,
 .screen-game .game-stage > .game-content.hs-board > .combat-cinematic {
   position: absolute !important;
-  inset: auto clamp(.25rem, 1.05cqw, 1rem) auto auto !important;
-  left: auto !important;
-  right: clamp(.25rem, 1.05cqw, 1rem) !important;
+  inset: auto !important;
+  left: 76% !important;
+  right: auto !important;
   top: 50% !important;
   bottom: auto !important;
   translate: none !important;
-  transform: translateY(-50%) !important;
+  transform: translate(-50%, -50%) !important;
   width: clamp(8.7rem, min(14.2cqw, 27cqh), 15.5rem) !important;
   max-width: min(14.2cqw, 27cqh) !important;
   min-width: 0 !important;
@@ -91,7 +90,7 @@
   gap: clamp(.3rem, min(.58cqw, 1cqh), .65rem) !important;
   border-radius: clamp(.5rem, .8cqw, .9rem) !important;
   overflow: hidden !important;
-  z-index: 62 !important;
+  z-index: 120 !important;
   box-sizing: border-box !important;
 }
 
@@ -138,13 +137,14 @@
   height: clamp(3.6rem, min(6cqw, 11cqh), 6.2rem) !important;
 }
 
-/* Piles must win the right-rail stacking order over presentation effects. */
 .screen-game .game-stage > .game-content.hs-board > .side-piles {
   z-index: 70 !important;
 }
 
 /* -------------------------------------------------------------------------
-   CARD TOOLTIPS — restrained shadows in and out of the match
+   CARD TOOLTIPS
+   While a card is being dragged, every hover tooltip is suppressed. This keeps
+   the drop zones readable and prevents a tooltip from following the pointer.
    ------------------------------------------------------------------------- */
 .card-tooltip,
 .screen-game .card-tooltip,
@@ -157,9 +157,52 @@
   filter: none !important;
 }
 
-/* The focused-card inspector is a modal, not a tooltip, so keep its own depth. */
+.screen-game .game-content.is-dragging-card .card-tooltip,
+.screen-game .game-content.is-dragging-card .keyword-term::after,
+.screen-game .game-content.is-dragging-card .keyword-badge::after {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
 .card-focus-layer .card-tooltip {
   box-shadow: 0 .35rem .8rem #0008 !important;
+}
+
+/* -------------------------------------------------------------------------
+   COMBAT DEFENSE CHOICE
+   This prompt must always be visible when the defender chooses between a
+   blocker and taking the hit on the hero. Keep it above every board layer and
+   anchor it around the same visual center as the phase orb.
+   ------------------------------------------------------------------------- */
+.screen-game .game-stage > .game-content.hs-board > .defense-decision {
+  position: absolute !important;
+  left: 76% !important;
+  right: auto !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 160 !important;
+  width: clamp(12rem, 22cqw, 22rem) !important;
+  max-width: 46cqw !important;
+  display: grid !important;
+  grid-template-columns: 1fr auto 1fr !important;
+  align-items: center !important;
+  gap: clamp(.35rem, .7cqw, .8rem) !important;
+  padding: clamp(.5rem, .8cqw, .9rem) !important;
+  border: 1px solid #d8b85f !important;
+  border-radius: clamp(.45rem, .75cqw, .8rem) !important;
+  background: #061019f5 !important;
+  color: #f5e8c5 !important;
+  box-shadow: 0 1rem 2.4rem #000c !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+.screen-game .defense-decision > button {
+  min-width: 0 !important;
+  white-space: normal !important;
 }
 
 @container hemsfell-board (max-height: 44rem) {
@@ -169,9 +212,14 @@
 
   .screen-game .game-stage > .game-content.hs-board > .visual-effect,
   .screen-game .game-stage > .game-content.hs-board > .combat-cinematic {
+    left: 75% !important;
     width: clamp(7.8rem, min(13.3cqw, 24cqh), 13.5rem) !important;
     max-width: min(13.3cqw, 24cqh) !important;
     max-height: 38cqh !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .defense-decision {
+    left: 75% !important;
   }
 }
 
@@ -188,9 +236,15 @@
 
   .screen-game .game-stage > .game-content.hs-board > .visual-effect,
   .screen-game .game-stage > .game-content.hs-board > .combat-cinematic {
+    left: 74% !important;
     width: min(12.3cqw, 22cqh) !important;
     max-width: min(12.3cqw, 22cqh) !important;
     max-height: 34cqh !important;
     padding: clamp(.3rem, .6cqw, .55rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .defense-decision {
+    left: 74% !important;
+    width: min(22rem, 48cqw) !important;
   }
 }
