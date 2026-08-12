@@ -1,0 +1,125 @@
+/* Rule-selection UI v2
+ * Target decisions use the battlefield itself. The panel only explains source
+ * and consequence and therefore never masks the center of the board.
+ */
+
+.screen-game .engine-target-decision-backdrop {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100dvw !important;
+  height: 100dvh !important;
+  display: block !important;
+  background: transparent !important;
+  pointer-events: none !important;
+  z-index: 520 !important;
+}
+
+.screen-game .engine-target-decision-panel {
+  position: fixed !important;
+  left: auto !important;
+  right: clamp(.65rem, 2.1vw, 2.1rem) !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
+  width: clamp(13.5rem, 18vw, 20rem) !important;
+  max-width: min(22rem, 30vw) !important;
+  min-height: 0 !important;
+  max-height: min(48dvh, 28rem) !important;
+  margin: 0 !important;
+  padding: clamp(.65rem, 1.1vw, 1rem) !important;
+  display: grid !important;
+  align-content: start !important;
+  gap: clamp(.35rem, .65vh, .62rem) !important;
+  overflow: auto !important;
+  border-radius: clamp(.55rem, .9vw, .85rem) !important;
+  pointer-events: auto !important;
+  z-index: 540 !important;
+  box-shadow: 0 .7rem 1.5rem rgb(0 0 0 / .28) !important;
+}
+
+.screen-game .engine-target-decision-panel > small {
+  font-size: clamp(.52rem, .58vw, .68rem) !important;
+  letter-spacing: .12em !important;
+}
+
+.screen-game .engine-target-decision-panel > h2 {
+  margin: 0 !important;
+  font-size: clamp(.86rem, 1.05vw, 1.2rem) !important;
+  line-height: 1.14 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.screen-game .engine-target-decision-panel > p {
+  margin: 0 !important;
+  font-size: clamp(.62rem, .7vw, .8rem) !important;
+  line-height: 1.3 !important;
+}
+
+.screen-game .engine-target-instruction {
+  display: grid !important;
+  gap: clamp(.28rem, .45vh, .42rem) !important;
+  padding: clamp(.5rem, .72vw, .72rem) !important;
+  border: 1px solid rgb(90 201 230 / .34) !important;
+  border-radius: clamp(.4rem, .65vw, .62rem) !important;
+  background: rgb(4 17 24 / .78) !important;
+}
+
+.screen-game .engine-target-instruction > b {
+  font-size: clamp(.7rem, .82vw, .9rem) !important;
+  color: #f1cf70 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.screen-game .engine-target-instruction > span,
+.screen-game .engine-target-instruction > em {
+  font-size: clamp(.58rem, .66vw, .75rem) !important;
+  line-height: 1.3 !important;
+  overflow-wrap: anywhere !important;
+}
+
+.screen-game .engine-target-instruction > em {
+  color: #9fdce9 !important;
+  font-style: normal !important;
+}
+
+/* The highlighted board cards must visually outrank the instruction panel. */
+.screen-game .field-slot:has(.target-ally),
+.screen-game .field-slot:has(.target-enemy),
+.screen-game .terrain-slot.target-ally,
+.screen-game .terrain-slot.target-enemy,
+.screen-game .player-hero.target-ally,
+.screen-game .player-hero.target-enemy {
+  position: relative !important;
+  z-index: 610 !important;
+}
+
+.screen-game .target-ally,
+.screen-game .target-enemy {
+  cursor: crosshair !important;
+  filter: saturate(1.12) brightness(1.08) !important;
+}
+
+@container hemsfell-board (max-width: 74rem) {
+  .screen-game .engine-target-decision-panel {
+    right: clamp(.4rem, 1.2vw, .8rem) !important;
+    width: clamp(11.5rem, 19vw, 16rem) !important;
+    max-width: 24vw !important;
+  }
+}
+
+@container hemsfell-board (max-height: 42rem) {
+  .screen-game .engine-target-decision-panel {
+    max-height: 42dvh !important;
+    padding: clamp(.48rem, .78vw, .7rem) !important;
+    gap: clamp(.24rem, .42vh, .4rem) !important;
+  }
+}
+
+@media (max-width: 54rem) {
+  .screen-game .engine-target-decision-panel {
+    right: .5rem !important;
+    top: 50% !important;
+    width: min(14rem, 34vw) !important;
+    max-width: 34vw !important;
+  }
+}
