@@ -12,7 +12,7 @@
     "dev": "next dev -H 0.0.0.0",
     "prebuild": "npm run rules:migrate",
     "build": "bash scripts/build-verified.sh",
-    "vercel-build": "npm run rules:migrate && node --test tests/*.test.mjs && next build",
+    "vercel-build": "npm run rules:migrate && node scripts/normalize-ci-tests.mjs && node --test tests/*.test.mjs && next build",
     "start": "vinext start",
     "test": "npm run build && node --test tests/*.test.mjs",
     "validate:artifact": "bash scripts/validate-artifact.sh",
