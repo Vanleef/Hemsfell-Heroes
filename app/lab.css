@@ -1,4 +1,4 @@
-@import "./lab-legacy.css";
+@import "./base-responsive.css";
 @import "./board-layout.css";
 @import "./board-tuning.css";
 @import "./lab-interaction-responsive.css";
@@ -6,45 +6,29 @@
 @import "./ui-gameplay-polish-v4.css";
 
 /*
- * Hemsfell Heroes — canonical match CSS authority.
+ * Hemsfell Heroes — canonical responsive match CSS authority.
  *
- * The historical lab rules are kept in lab-legacy.css for visual/effect
- * styling. Geometry is then rebuilt by board-layout/board-tuning and sealed
- * below. This prevents old px-based side-pile/phase/energy/hand declarations
- * from becoming active again later in the cascade.
+ * Legacy geometry is intentionally not imported. base-responsive.css owns
+ * shared visual styling; board-layout/board-tuning own anchored match geometry;
+ * interaction modules only add state/FX behavior. New match layout must use
+ * rem, %, viewport/container units, aspect-ratio, grid/flex anchoring and
+ * clamp()/min()/max() rather than fixed-pixel coordinates.
  */
 
-/* -------------------------------------------------------------------------
-   RIGHT RAIL — responsive only
-   ------------------------------------------------------------------------- */
-.screen-game .game-stage > .game-content.hs-board > .enemy-piles {
-  grid-column: 5 !important;
-  grid-row: 2 / 5 !important;
-}
-
-.screen-game .game-stage > .game-content.hs-board > .player-piles {
-  grid-column: 5 !important;
-  grid-row: 5 / 8 !important;
-}
-
+/* RIGHT RAIL */
+.screen-game .game-stage > .game-content.hs-board > .enemy-piles { grid-column: 5 !important; grid-row: 2 / 5 !important; }
+.screen-game .game-stage > .game-content.hs-board > .player-piles { grid-column: 5 !important; grid-row: 5 / 8 !important; }
 .screen-game .game-stage > .game-content.hs-board > .side-piles {
   position: relative !important;
   inset: auto !important;
-  top: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-  left: auto !important;
   translate: none !important;
   transform: none !important;
-
   align-self: center !important;
   justify-self: center !important;
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
-
   width: min(13.2cqw, 25cqh) !important;
-  height: auto !important;
   aspect-ratio: 4 / 5 !important;
   gap: clamp(.12rem, .4cqw, .48rem) !important;
   padding: 0 !important;
@@ -52,7 +36,6 @@
   overflow: visible !important;
   z-index: 70 !important;
 }
-
 .screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone {
   position: relative !important;
   inset: auto !important;
@@ -66,140 +49,91 @@
   padding: clamp(.1rem, .28cqw, .32rem) !important;
   margin: 0 !important;
   grid-template-rows: minmax(0, 1fr) auto auto !important;
-  box-sizing: border-box !important;
   overflow: hidden !important;
 }
-
 .screen-game .game-stage > .game-content.hs-board > .side-piles .pile-card {
   width: min(70%, 4.15cqw) !important;
-  height: auto !important;
-  min-height: 0 !important;
   aspect-ratio: 5 / 7 !important;
   justify-self: center !important;
   align-self: center !important;
 }
+.screen-game .game-stage > .game-content.hs-board > .side-piles :is(b, strong) { font-size: clamp(.22rem, .4cqw, .48rem) !important; line-height: 1 !important; }
+.screen-game .game-stage > .game-content.hs-board > .side-piles small { font-size: clamp(.17rem, .27cqw, .34rem) !important; line-height: 1.05 !important; }
 
-.screen-game .game-stage > .game-content.hs-board > .side-piles :is(b, strong) {
-  font-size: clamp(.22rem, .4cqw, .48rem) !important;
-  line-height: 1 !important;
-}
-
-.screen-game .game-stage > .game-content.hs-board > .side-piles small {
-  font-size: clamp(.17rem, .27cqw, .34rem) !important;
-  line-height: 1.05 !important;
-}
-
-/* -------------------------------------------------------------------------
-   PHASE ORB — its own logical column between field and piles
-   ------------------------------------------------------------------------- */
+/* PHASE ORB */
 .screen-game .game-stage > .game-content.hs-board > .phase-orb {
   grid-column: 4 !important;
   grid-row: 4 / 7 !important;
-
   position: relative !important;
   inset: auto !important;
-  top: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-  left: auto !important;
   translate: none !important;
   transform: none !important;
-
   align-self: center !important;
   justify-self: center !important;
   display: grid !important;
   place-items: center !important;
-
   width: clamp(2.35rem, min(4.15cqw, 7.2cqh), 4.45rem) !important;
-  height: auto !important;
-  aspect-ratio: 1 / 1 !important;
+  aspect-ratio: 1 !important;
   margin: 0 !important;
   overflow: visible !important;
   z-index: 85 !important;
 }
-
 .screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
   width: 100% !important;
   height: 100% !important;
-  aspect-ratio: 1 / 1 !important;
+  aspect-ratio: 1 !important;
   padding: clamp(.14rem, .32cqw, .38rem) !important;
   font-size: clamp(.3rem, .46cqw, .56rem) !important;
   border-radius: 50% !important;
 }
+.screen-game .game-stage > .game-content.hs-board > .phase-orb > button span { font-size: clamp(.66rem, 1.1cqw, 1.08rem) !important; }
 
-.screen-game .game-stage > .game-content.hs-board > .phase-orb > button span {
-  font-size: clamp(.66rem, 1.1cqw, 1.08rem) !important;
-}
-
-/* -------------------------------------------------------------------------
-   ENERGY — shorter, centered rails instead of full-column bars
-   ------------------------------------------------------------------------- */
+/* ENERGY */
 .screen-game .game-stage > .game-content.hs-board > .field-energy {
   position: relative !important;
   inset: auto !important;
-  top: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-  left: auto !important;
   translate: none !important;
   transform: none !important;
-
   justify-self: center !important;
   width: min(86%, 49cqw) !important;
   height: clamp(.95rem, 2.8cqh, 1.55rem) !important;
   margin-inline: auto !important;
   z-index: 42 !important;
 }
-
 .screen-game .game-stage > .game-content.hs-board > .field-energy > div {
-  grid-template-columns:
-    clamp(2.2rem, 4.4cqw, 3.6rem)
-    minmax(0, 1fr)
-    clamp(1.2rem, 2.35cqw, 2rem) !important;
+  grid-template-columns: clamp(2.2rem, 4.4cqw, 3.6rem) minmax(0, 1fr) clamp(1.2rem, 2.35cqw, 2rem) !important;
   gap: clamp(.1rem, .34cqw, .4rem) !important;
 }
 
-/* -------------------------------------------------------------------------
-   HAND — foreground layer with stronger visual hierarchy
-   ------------------------------------------------------------------------- */
+/* HAND */
 .screen-game .game-stage > .game-content.hs-board > .player-hand {
   position: relative !important;
   inset: auto !important;
-  top: auto !important;
-  right: auto !important;
-  bottom: auto !important;
-  left: auto !important;
   translate: none !important;
   transform: translateY(-.65cqh) !important;
-
   align-self: end !important;
   justify-self: center !important;
   display: flex !important;
   flex-wrap: nowrap !important;
   align-items: flex-end !important;
   justify-content: center !important;
-
   width: min(96%, 52cqw) !important;
   height: 16.5cqh !important;
   gap: clamp(.12rem, .32cqw, .42rem) !important;
   padding: clamp(.12rem, .35cqh, .28rem) clamp(.18rem, .38cqw, .45rem) 0 !important;
-
   overflow: visible !important;
   z-index: 220 !important;
   isolation: isolate !important;
 }
-
 .screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
   position: relative !important;
   flex: 0 1 clamp(3.35rem, min(6.15cqw, 11cqh), 6.25rem) !important;
   width: clamp(3.35rem, min(6.15cqw, 11cqh), 6.25rem) !important;
   min-width: 0 !important;
-  height: auto !important;
   aspect-ratio: 5 / 7 !important;
   z-index: 1 !important;
   filter: drop-shadow(0 .55cqh .65cqh #0009) !important;
 }
-
 .screen-game .game-stage > .game-content.hs-board > .player-hand .original-card,
 .screen-game .game-stage > .game-content.hs-board > .player-hand .original-card.is-small {
   width: 100% !important;
@@ -210,64 +144,23 @@
   margin: 0 !important;
   transform: none !important;
 }
-
 .screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame:hover,
-.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame:focus-within {
-  z-index: 260 !important;
-  filter: drop-shadow(0 1.1cqh 1.1cqh #000d) !important;
-}
-
+.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame:focus-within { z-index: 260 !important; filter: drop-shadow(0 1.1cqh 1.1cqh #000d) !important; }
 .screen-game .game-stage > .game-content.hs-board > .player-hand .original-card:hover,
-.screen-game .game-stage > .game-content.hs-board > .player-hand .original-card:focus-visible {
-  transform: translateY(-3.2cqh) scale(1.075) !important;
-  margin: 0 !important;
-}
+.screen-game .game-stage > .game-content.hs-board > .player-hand .original-card:focus-visible { transform: translateY(-3.2cqh) scale(1.075) !important; margin: 0 !important; }
+.screen-game .game-stage > .game-content.hs-board > .player-energy { z-index: 40 !important; }
 
-/* Keep resource rails underneath the hand when the bottom areas approach. */
-.screen-game .game-stage > .game-content.hs-board > .player-energy {
-  z-index: 40 !important;
-}
-
-/* Zoom/short-height compression is based on the logical stage size. */
 @container hemsfell-board (max-height: 44rem) {
-  .screen-game .game-stage > .game-content.hs-board > .side-piles {
-    width: min(12.2cqw, 23cqh) !important;
-    gap: clamp(.08rem, .3cqw, .34rem) !important;
-  }
-
-  .screen-game .game-stage > .game-content.hs-board > .side-piles small {
-    display: none !important;
-  }
-
-  .screen-game .game-stage > .game-content.hs-board > .phase-orb {
-    width: clamp(2.1rem, min(3.75cqw, 6.3cqh), 3.8rem) !important;
-  }
-
-  .screen-game .game-stage > .game-content.hs-board > .field-energy {
-    width: min(82%, 47cqw) !important;
-  }
-
-  .screen-game .game-stage > .game-content.hs-board > .player-hand {
-    height: 17.5cqh !important;
-    transform: translateY(-.4cqh) !important;
-  }
+  .screen-game .game-stage > .game-content.hs-board > .side-piles { width: min(12.2cqw, 23cqh) !important; gap: clamp(.08rem, .3cqw, .34rem) !important; }
+  .screen-game .game-stage > .game-content.hs-board > .side-piles small { display: none !important; }
+  .screen-game .game-stage > .game-content.hs-board > .phase-orb { width: clamp(2.1rem, min(3.75cqw, 6.3cqh), 3.8rem) !important; }
+  .screen-game .game-stage > .game-content.hs-board > .field-energy { width: min(82%, 47cqw) !important; }
+  .screen-game .game-stage > .game-content.hs-board > .player-hand { height: 17.5cqh !important; transform: translateY(-.4cqh) !important; }
 }
 
 @container hemsfell-board (max-height: 36rem) {
-  .screen-game .game-stage > .game-content.hs-board > .side-piles {
-    width: min(11.2cqw, 21cqh) !important;
-  }
-
-  .screen-game .game-stage > .game-content.hs-board > .phase-orb {
-    width: clamp(1.9rem, min(3.45cqw, 5.7cqh), 3.35rem) !important;
-  }
-
-  .screen-game .game-stage > .game-content.hs-board > .field-energy {
-    width: min(79%, 45cqw) !important;
-  }
-
-  .screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
-    flex-basis: clamp(3rem, min(5.65cqw, 10cqh), 5.65rem) !important;
-    width: clamp(3rem, min(5.65cqw, 10cqh), 5.65rem) !important;
-  }
+  .screen-game .game-stage > .game-content.hs-board > .side-piles { width: min(11.2cqw, 21cqh) !important; }
+  .screen-game .game-stage > .game-content.hs-board > .phase-orb { width: clamp(1.9rem, min(3.45cqw, 5.7cqh), 3.35rem) !important; }
+  .screen-game .game-stage > .game-content.hs-board > .field-energy { width: min(79%, 45cqw) !important; }
+  .screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame { flex-basis: clamp(3rem, min(5.65cqw, 10cqh), 5.65rem) !important; width: clamp(3rem, min(5.65cqw, 10cqh), 5.65rem) !important; }
 }
