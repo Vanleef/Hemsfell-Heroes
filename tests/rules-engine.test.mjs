@@ -1438,25 +1438,28 @@ test("game viewport and stage use the canonical responsive shell", async () => {
   assert.doesNotMatch(page, /--hand-card-size/);
 });
 
-test("board layout is grid-driven, proportional and card-safe", async () => {
+test("board layout preserves the approved 16:9 composition proportionally", async () => {
   const css = await readFile(new URL("../app/lab.css", import.meta.url), "utf8");
-  const responsive = css.slice(css.lastIndexOf("Responsive board architecture"));
+  const responsive = css.slice(css.lastIndexOf("Reference-locked proportional game stage"));
   assert.match(responsive, /\.game-stage>\.game-content\.hs-board\s*\{/);
   assert.match(responsive, /display:grid!important/);
-  assert.match(responsive, /grid-template-columns:/);
-  assert.match(responsive, /container-type:inline-size/);
-  assert.match(responsive, /aspect-ratio:5\s*\/\s*7/);
-  assert.match(responsive, /\.game-content>\.player-hand\s*\{[\s\S]*overflow-x:auto!important/);
-  assert.match(responsive, /width:clamp\(/);
-  assert.match(responsive, /gap:clamp\(/);
+  assert.match(responsive, /aspect-ratio:16\s*\/\s*9/);
+  assert.match(responsive, /width:min\(100vw,calc\(100dvh \* 1\.777778\)\)/);
+  assert.match(responsive, /grid-template-columns:19cqw 2cqw 58cqw 4cqw 17cqw/);
+  assert.match(responsive, /container-type:size/);
+  assert.doesNotMatch(responsive, /\d+px/);
 });
 
-test("responsive board has compact tablet, mobile and zoom-aware fallbacks", async () => {
+test("cards, fields, piles and hand remain proportional without coordinate reflow", async () => {
   const css = await readFile(new URL("../app/lab.css", import.meta.url), "utf8");
-  const responsive = css.slice(css.lastIndexOf("Responsive board architecture"));
-  assert.match(responsive, /@media\s*\(max-width:68rem\)/);
-  assert.match(responsive, /@media\s*\(max-width:48rem\)/);
-  assert.match(responsive, /@media\s*\(max-height:42rem\)\s*and\s*\(orientation:landscape\)/);
+  const responsive = css.slice(css.lastIndexOf("Reference-locked proportional game stage"));
+  assert.match(responsive, /--slot-width:3\.8cqw/);
+  assert.match(responsive, /aspect-ratio:5\s*\/\s*7/);
+  assert.match(responsive, /\.game-content>\.paired-field\{[\s\S]*grid-template-columns:repeat\(5,var\(--slot-width\)\)/);
+  assert.match(responsive, /\.game-content>\.side-piles\{[\s\S]*grid-template-columns:repeat\(2,7cqw\)/);
+  assert.match(responsive, /\.game-content>\.player-hand\{[\s\S]*overflow-x:auto!important/);
+  assert.match(responsive, /@media\s*\(max-width:40rem\)/);
+  assert.match(responsive, /width:48rem!important/);
   assert.match(responsive, /@container\s+hemsfell-board\s*\(max-width:60rem\)/);
-  assert.match(responsive, /scroll-snap-type:x proximity/);
+  assert.doesNotMatch(responsive, /grid-template-columns:minmax\(7\.5rem/);
 });
