@@ -52,7 +52,7 @@ jobs:
           path = Path('scripts/apply-conditional-illusion-fix.mjs')
           text = path.read_text()
           text = text.replace('`Substituir ${effect.oldName}`', r'\`Substituir \${effect.oldName}\`')
-          text = text.replace('`Escolha uma Imagem de ${effect.oldName} que você controla.`', r'\`Escolha uma Imagem de \${effect.oldName} que você controla.\`')
+          text = text.replace('`Escolha uma Imagem de ${effect.oldName} que você controla.`', r'\`Escolha uma Imagem de \${effect.oldName}\` que você controla.')
           path.write_text(text)
           PY
 
@@ -63,6 +63,24 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add app/rules-engine/effects.mjs app/page.tsx app/layout.tsx package.json scripts/export-card-implementation-audit.mjs tests/rules-engine.test.mjs tests/illusion-rules.test.mjs docs/card-implementation-audit.md docs/card-implementation-audit.json
           git commit -m 'fix(rules): make draconic illusion target conditional'
+          git push origin HEAD:ui/fixed-board-composition
+
+      - name: Apply interaction and combat polish once
+        if: github.event_name == 'push' && github.ref == 'refs/heads/ui/fixed-board-composition'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -q 'is-dragging-card' app/page.tsx && grep -q 'source.type === "Artefato"' app/rules-engine/engine.mjs; then
+            echo 'Interaction/combat polish already applied.'
+            exit 0
+          fi
+
+          node scripts/apply-interaction-combat-polish.mjs
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/page.tsx app/rules-engine/engine.mjs
+          git commit -m 'fix(ui): polish dragging artifacts effects and defense prompt'
           git push origin HEAD:ui/fixed-board-composition
 
       - name: Run rules tests
