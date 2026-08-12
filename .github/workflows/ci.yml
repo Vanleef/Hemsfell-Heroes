@@ -51,7 +51,8 @@ jobs:
           from pathlib import Path
           path = Path('scripts/apply-conditional-illusion-fix.mjs')
           text = path.read_text()
-          text = text.replace('${effect.oldName}', r'\${effect.oldName}')
+          text = text.replace('`Substituir ${effect.oldName}`', r'\`Substituir \${effect.oldName}\`')
+          text = text.replace('`Escolha uma Imagem de ${effect.oldName} que você controla.`', r'\`Escolha uma Imagem de \${effect.oldName} que você controla.\`')
           path.write_text(text)
           PY
 
