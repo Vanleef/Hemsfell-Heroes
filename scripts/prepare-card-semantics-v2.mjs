@@ -3,6 +3,8 @@ import { readFile, writeFile } from "node:fs/promises";
 const path = "app/rules-engine/compiler.mjs";
 let source = (await readFile(path, "utf8")).replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
+/* Build the bounded Fura-Fila splitter structurally when the checkout still
+ * contains the legacy splitter. This avoids regex dependence on line endings. */
 if (!source.includes('furaFila: section.label === "fura-fila"')) {
   const splitStart = source.indexOf('export function splitTriggeredSections(text = "") {');
   const costsStart = source.indexOf('export function parseCosts', splitStart);
@@ -41,27 +43,48 @@ if (!source.includes('furaFila: section.label === "fura-fila"')) {
 
 `;
   source = source.slice(0, splitStart) + split + source.slice(costsStart);
+}
 
+/* These upgrades are independent from the splitter so an already-migrated
+ * working tree still receives newer semantics. */
+if (!source.includes('const offense = raw.match(')) {
   source = source.replace(
     '  const buff = raw.match(/([+-]?\\d+)\\s*\\/\\s*([+-]?\\d+)/);',
-    '  const buff = raw.match(/([+-]?\\d+)\\s*\\/\\s*([+-]?\\d+)/);\n  const offense = raw.match(/(?:recebe|ganha|concede|d[êe])\\s*\\+?(\\d+)\\s+(?:de\\s+)?ofensividade/i);\n  const vitality = raw.match(/(?:recebe|ganha|concede|d[êe])\\s*\\+?(\\d+)\\s+(?:de\\s+)?vitalidade/i);\n  const turnLimited = /(?:durante\\s+(?:este|o)\\s+turno|neste\\s+turno|por\\s+(?:1|um)\\s+turno|at[eé]\\s+o\\s+(?:fim|final)\\s+(?:deste|do)\\s+turno)/i.test(raw);'
+    '  const buff = raw.match(/([+-]?\\d+)\\s*\\/\\s*([+-]?\\d+)/);\n  const offense = raw.match(/(?:recebe|ganha|concede|d[êe])\\s*\\+?(\\d+)\\s+(?:de\\s+)?ofensividade/i);\n  const vitality = raw.match(/(?:recebe|ganha|concede|d[êe])\\s*\\+?(\\d+)\\s+(?:de\\s+)?vitalidade/i);'
   );
+}
+if (!source.includes('const turnLimited =')) {
   source = source.replace(
-    '  if (buff) add("modifyStats", { attack: Number(buff[1]), health: Number(buff[2]), duration: /turno/.test(value) ? "turn" : "permanent" });',
+    '  const vitality = raw.match(/(?:recebe|ganha|concede|d[êe])\\s*\\+?(\\d+)\\s+(?:de\\s+)?vitalidade/i);',
+    '  const vitality = raw.match(/(?:recebe|ganha|concede|d[êe])\\s*\\+?(\\d+)\\s+(?:de\\s+)?vitalidade/i);\n  const turnLimited = /(?:durante\\s+(?:este|o)\\s+turno|neste\\s+turno|por\\s+(?:1|um)\\s+turno|at[eé]\\s+o\\s+(?:fim|final)\\s+(?:deste|do)\\s+turno)/i.test(raw);'
+  );
+}
+source = source.replace(
+  '  if (buff) add("modifyStats", { attack: Number(buff[1]), health: Number(buff[2]), duration: /turno/.test(value) ? "turn" : "permanent" });',
+  '  if (buff) add("modifyStats", { attack: Number(buff[1]), health: Number(buff[2]), duration: turnLimited ? "turn" : "permanent" });'
+);
+if (!source.includes('if (!buff && (offense || vitality))')) {
+  source = source.replace(
+    '  if (buff) add("modifyStats", { attack: Number(buff[1]), health: Number(buff[2]), duration: turnLimited ? "turn" : "permanent" });',
     '  if (buff) add("modifyStats", { attack: Number(buff[1]), health: Number(buff[2]), duration: turnLimited ? "turn" : "permanent" });\n  if (!buff && (offense || vitality)) { const policy = targetPolicy(raw); add("modifyStats", { attack: Number(offense?.[1] || 0), health: Number(vitality?.[1] || 0), target: policy.scope === "none" ? "self" : policy.scope, selections: policy.selections, duration: turnLimited ? "turn" : "permanent" }); }'
   );
-  source = source.replace(
-    '  if (/recebe\\s+(?:voar|robusto|furtivo|investida|indestrutivel|barreira magica|roubo de vida|toque da morte|atropelar|alerta)/.test(value)) for(const keyword of keywordMatches(raw)) add("grantKeyword", { keyword });',
-    '  if (/recebe\\s+(?:voar|robusto|furtivo|investida|indestrutivel|barreira magica|roubo de vida|toque da morte|atropelar|alerta)/.test(value)) for(const keyword of keywordMatches(raw)) add("grantKeyword", { keyword, duration: turnLimited ? "turn" : "permanent" });'
-  );
-  source = source.replace(
-    '  for(const keyword of keywordMatches(raw)){if(supportText&&folded(supportText).includes(folded(keyword)))continue;add("keyword", { keyword });}',
-    '  for(const keyword of keywordMatches(raw)){if(supportText&&folded(supportText).includes(folded(keyword)))continue;if(effects.some((effect)=>effect.type==="grantKeyword"&&effect.keyword===keyword))continue;add("keyword", { keyword, duration: turnLimited ? "turn" : "permanent" });}'
-  );
-  source = source.replace(
-    '    return { id: `ability-${index + 1}`, trigger, condition: section.label === "fura-fila" ? { cardsPlayedBeforeThisAtLeast: 1 } : null, costs, effects, sourceText: section.text };',
-    '    const otherSubtype = section.text.match(/se\\s+voc[eê]\\s+controlar\\s+outra\\s+criatura\\s+da\\s+classe\\s+([A-Za-zÀ-ÿ]+)/i)?.[1];\n    const condition = section.label === "fura-fila" ? { cardsPlayedBeforeThisAtLeast: 1 } : otherSubtype ? { controllerControlsOtherSubtype: otherSubtype } : null;\n    const usageLimit = /(?:uma|1)\\s+vez\\s+por\\s+turno/i.test(section.text) ? { count: 1, period: "turn" } : undefined;\n    const conditionalPassive = /\\b(quando|sempre que|toda vez que|se )\\b/i.test(section.text) && ![Trigger.PLAY, Trigger.ENTER, Trigger.DESTROYED, Trigger.ACTIVATED].includes(trigger);\n    return { id: `ability-${index + 1}`, trigger, condition, costs, effects, sourceText: section.text, usageLimit, furaFila: section.label === "fura-fila" ? { requiresCardsPlayedBefore: 1, clause: section.text } : undefined, triggerMeta: { kind: section.label === "fura-fila" ? "conditional-combo" : conditionalPassive ? "conditional-passive" : "direct", scenario: section.text } };'
-  );
+}
+source = source.replace(
+  '  if (/recebe\\s+(?:voar|robusto|furtivo|investida|indestrutivel|barreira magica|roubo de vida|toque da morte|atropelar|alerta)/.test(value)) for(const keyword of keywordMatches(raw)) add("grantKeyword", { keyword });',
+  '  if (/recebe\\s+(?:voar|robusto|furtivo|investida|indestrutivel|barreira magica|roubo de vida|toque da morte|atropelar|alerta)/.test(value)) for(const keyword of keywordMatches(raw)) add("grantKeyword", { keyword, duration: turnLimited ? "turn" : "permanent" });'
+);
+source = source.replace(
+  '  for(const keyword of keywordMatches(raw)){if(supportText&&folded(supportText).includes(folded(keyword)))continue;add("keyword", { keyword });}',
+  '  for(const keyword of keywordMatches(raw)){if(supportText&&folded(supportText).includes(folded(keyword)))continue;if(effects.some((effect)=>effect.type==="grantKeyword"&&effect.keyword===keyword))continue;add("keyword", { keyword, duration: turnLimited ? "turn" : "permanent" });}'
+);
+
+if (!source.includes('controllerControlsOtherSubtype')) {
+  const oldReturn = '    return { id: `ability-${index + 1}`, trigger, condition: section.label === "fura-fila" ? { cardsPlayedBeforeThisAtLeast: 1 } : null, costs, effects, sourceText: section.text, usageLimit, furaFila: section.label === "fura-fila" ? { requiresCardsPlayedBefore: 1, clause: section.text } : undefined, triggerMeta: { kind: section.label === "fura-fila" ? "conditional-combo" : conditionalPassive ? "conditional-passive" : "direct", scenario: section.text } };';
+  const legacyReturn = '    return { id: `ability-${index + 1}`, trigger, condition: section.label === "fura-fila" ? { cardsPlayedBeforeThisAtLeast: 1 } : null, costs, effects, sourceText: section.text };';
+  const replacement = '    const otherSubtype = section.text.match(/se\\s+voc[eê]\\s+controlar\\s+outra\\s+criatura\\s+da\\s+classe\\s+([A-Za-zÀ-ÿ]+)/i)?.[1];\n    const condition = section.label === "fura-fila" ? { cardsPlayedBeforeThisAtLeast: 1 } : otherSubtype ? { controllerControlsOtherSubtype: otherSubtype } : null;\n    const usageLimit = /(?:uma|1)\\s+vez\\s+por\\s+turno/i.test(section.text) ? { count: 1, period: "turn" } : undefined;\n    const conditionalPassive = /\\b(quando|sempre que|toda vez que|se )\\b/i.test(section.text) && ![Trigger.PLAY, Trigger.ENTER, Trigger.DESTROYED, Trigger.ACTIVATED].includes(trigger);\n    return { id: `ability-${index + 1}`, trigger, condition, costs, effects, sourceText: section.text, usageLimit, furaFila: section.label === "fura-fila" ? { requiresCardsPlayedBefore: 1, clause: section.text } : undefined, triggerMeta: { kind: section.label === "fura-fila" ? "conditional-combo" : conditionalPassive ? "conditional-passive" : "direct", scenario: section.text } };';
+  if (source.includes(oldReturn)) source = source.replace(oldReturn, replacement);
+  else if (source.includes(legacyReturn)) source = source.replace(legacyReturn, replacement);
+  else throw new Error("Could not locate compiler ability return for other-subtype condition.");
 }
 
 await writeFile(path, source);
