@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test-and-build:
@@ -36,6 +36,25 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Apply conditional Draconic Image migration once
+        if: github.event_name == 'push' && github.ref == 'refs/heads/ui/fixed-board-composition'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -q 'requiredName: effect.oldName' app/rules-engine/effects.mjs; then
+            echo 'Conditional Image migration already applied.'
+            exit 0
+          fi
+
+          node scripts/apply-conditional-illusion-fix.mjs
+          npm run audit:cards:full
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/rules-engine/effects.mjs app/page.tsx app/layout.tsx package.json scripts/export-card-implementation-audit.mjs tests/rules-engine.test.mjs tests/illusion-rules.test.mjs docs/card-implementation-audit.md docs/card-implementation-audit.json
+          git commit -m 'fix(rules): make draconic illusion target conditional'
+          git push origin HEAD:ui/fixed-board-composition
 
       - name: Run rules tests
         run: npm run test:rules
