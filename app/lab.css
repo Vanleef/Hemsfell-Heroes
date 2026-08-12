@@ -8767,16 +8767,32 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 }
 
 
-/* Exact legacy-selector neutralization.
-   These selectors intentionally mirror the historical rules that assigned
-   relative left offsets. Grid now owns the base position; zero means no
-   second displacement inside the assigned grid cell. */
-.screen-game .hs-board .field-energy,
-.screen-game .hs-board .paired-field,
-.screen-game .hs-board .player-hand,
-.screen-game .hs-board .terrain-slot,
-.screen-game .hs-board .phase-orb,
-.screen-game .hs-board .side-piles{
-  left:0!important;
-  right:auto!important;
+/* Reference composition pass: separate the interaction mat from the resource
+   rail while keeping every region inside the proportional stage. */
+.screen-game .game-stage>.game-content.hs-board>.paired-field{
+  justify-self:start!important;
+  margin-left:15cqw!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.enemy-field{
+  margin-right:0!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-field{
+  margin-right:0!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.field-energy{
+  justify-self:stretch!important;
+  transform:translateX(-7cqw)!important;
+  width:calc(100% + 7cqw)!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-hand{
+  justify-self:stretch!important;
+  transform:translateX(-7cqw)!important;
+  width:calc(100% + 7cqw)!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.terrain-slot{
+  transform:translateX(-5cqw)!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.phase-orb{
+  justify-self:end!important;
+  transform:translateX(-1cqw)!important;
 }
