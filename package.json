@@ -7,7 +7,7 @@
   },
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
-    "rules:migrate": "node scripts/fix-artifact-activation-runtime.mjs && node scripts/apply-card-semantics-v2.mjs && node scripts/apply-card-semantics-v2-followup.mjs",
+    "rules:migrate": "node scripts/fix-artifact-activation-runtime.mjs && node scripts/repair-card-semantics-migration.mjs && node scripts/apply-card-semantics-v2.mjs && node scripts/apply-card-semantics-v2-followup.mjs",
     "predev": "npm run rules:migrate",
     "dev": "next dev -H 0.0.0.0",
     "prebuild": "npm run rules:migrate",
@@ -45,7 +45,7 @@
     "eslint": "9.39.4",
     "eslint-config-next": "16.2.6",
     "react-server-dom-webpack": "19.2.6",
-    "tailwindcss": "4.2.1",
+    "tailwindcss": "4.1.17",
     "typescript": "5.9.3",
     "vinext": "0.0.50",
     "vite": "8.0.13",
