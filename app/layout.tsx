@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import "./board-layout.css";
-import "./board-tuning.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,10 +12,6 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-/*
- * Keep the viewport aligned with the physical device and let the responsive
- * board survive browser zoom instead of disabling the user's zoom controls.
- */
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
