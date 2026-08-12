@@ -18,6 +18,7 @@ export type Participant = {
   deckLocked: boolean;
   mulliganDone: boolean;
   mulliganCount: number;
+  disconnectedAt?: number | null;
 };
 
 export type Room = {
@@ -50,7 +51,7 @@ export function sanitizeSettings(value: Partial<MatchSettings> | Record<string, 
 }
 
 export function participant(token: string, accepted = true): Participant {
-  return { heroId: null, token, accepted, deckLocked: false, mulliganDone: false, mulliganCount: 0 };
+  return { heroId: null, token, accepted, deckLocked: false, mulliganDone: false, mulliganCount: 0, disconnectedAt: null };
 }
 
 export function bothDecksLocked(room: Room) {
@@ -75,6 +76,18 @@ export function deadline(seconds: number) {
 export function applyTimeout(room: Room) {
   if (!room.game || room.status !== "started") return false;
   const now = Date.now();
+  const disconnected = room.host.disconnectedAt ? { role: "host" as RoomRole, at: room.host.disconnectedAt } : room.guest?.disconnectedAt ? { role: "guest" as RoomRole, at: room.guest.disconnectedAt } : null;
+  if (disconnected) {
+    if (disconnected.at + 60_000 > now) return false;
+    const loser = disconnected.role === "host" ? 0 : 1;
+    room.game.winner = loser === 0 ? 1 : 0;
+    room.game.pendingResponse = null;
+    room.game.combatAction = null;
+    room.status = "finished";
+    room.game.events = (room.game.events ?? 0) + 1;
+    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de reconexão terminou. A partida foi encerrada.", tone: "danger" }, ...(room.game.log ?? [])];
+    return true;
+  }
   if (room.game.pendingResponse?.deadline && room.game.pendingResponse.deadline <= now) {
     const pending = room.game.pendingResponse; const owner = pending.responder;
     try { const result = executeCommand(room.game, { type: "passPriority", owner, auto: true }, { priority: true }); room.game = result.state; } catch { return false; }
