@@ -1,0 +1,193 @@
+/* Hemsfell Heroes — responsive UI/gameplay polish v4
+ * Final visual authority for command bars, hero progression, combat decisions,
+ * combat stats, side zones, animations and summoning-sickness presentation.
+ */
+
+/* Hero command bar: denser capsules, larger readable descriptions. */
+.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities,.hero-command-bar) {
+  gap: clamp(.06rem,.22cqh,.16rem) !important;
+}
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities,.hero-command-bar) :is(.ability,.hero-ability-chip) {
+  min-height: 0 !important;
+  padding: clamp(.07rem,.18cqh,.15rem) clamp(.10rem,.22cqw,.22rem) !important;
+  column-gap: clamp(.08rem,.20cqw,.18rem) !important;
+}
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities,.hero-command-bar) :is(.ability,.hero-ability-chip) > i {
+  width: clamp(1rem,1.65cqw,1.55rem) !important;
+  height: clamp(1rem,1.65cqw,1.55rem) !important;
+  flex: 0 0 clamp(1rem,1.65cqw,1.55rem) !important;
+  font-size: clamp(.42rem,min(.64cqw,1.05cqh),.7rem) !important;
+}
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities,.hero-command-bar) :is(.ability,.hero-ability-chip) span {
+  gap: clamp(.015rem,.06cqh,.05rem) !important;
+}
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities,.hero-command-bar) :is(.ability,.hero-ability-chip) p {
+  font-size: clamp(.47rem,min(.73cqw,1.18cqh),.78rem) !important;
+  line-height: 1.14 !important;
+  margin: 0 !important;
+}
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities,.hero-command-bar) :is(.ability,.hero-ability-chip) span > b {
+  font-size: clamp(.29rem,min(.46cqw,.76cqh),.51rem) !important;
+  line-height: 1 !important;
+}
+
+/* Evolution metadata and tooltip must visually outrank cards/hand. */
+.screen-game .game-stage > .game-content.hs-board > .player-hero {
+  overflow: visible !important;
+}
+.screen-game .game-stage > .game-content.hs-board > .player-hero:has(.hero-evolution:hover),
+.screen-game .game-stage > .game-content.hs-board > .player-hero:has(.hero-evolution:focus-within) {
+  z-index: 9200 !important;
+}
+.screen-game .player-hero .hero-evolution {
+  overflow: visible !important;
+  z-index: 9250 !important;
+}
+.screen-game .player-hero .hero-evolution > small {
+  font-size: clamp(.34rem,min(.51cqw,.84cqh),.58rem) !important;
+  letter-spacing: .035em !important;
+}
+.screen-game .player-hero .hero-evolution > strong {
+  font-size: clamp(.45rem,min(.68cqw,1.04cqh),.72rem) !important;
+}
+.screen-game .player-hero .hero-evolution .evolution-tooltip {
+  z-index: 9400 !important;
+  filter: none !important;
+  box-shadow: 0 .35cqh 1.1cqh #0008 !important;
+}
+
+/* Creature live stats: smaller and pinned tightly to the lower corners. */
+.screen-game .field-slot .original-card .live-atk,
+.screen-game .field-slot .original-card .live-hp {
+  width: clamp(.78rem,min(1.15cqw,2.05cqh),1.18rem) !important;
+  height: clamp(.78rem,min(1.15cqw,2.05cqh),1.18rem) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  bottom: clamp(.04rem,.10cqh,.08rem) !important;
+  font-size: clamp(.39rem,min(.61cqw,1.02cqh),.65rem) !important;
+  line-height: 1 !important;
+  z-index: 12 !important;
+}
+.screen-game .field-slot .original-card .live-atk { left: clamp(.03rem,.08cqw,.07rem) !important; right: auto !important; }
+.screen-game .field-slot .original-card .live-hp { right: clamp(.03rem,.08cqw,.07rem) !important; left: auto !important; }
+
+/* Summoning sickness is communicated by a neutral centered icon, not a label. */
+.screen-game .original-card .summoning-sickness-badge,
+.screen-game .original-card .summoning-sickness-icon {
+  position: absolute !important;
+  inset: 50% auto auto 50% !important;
+  transform: translate(-50%,-50%) !important;
+  display: grid !important;
+  place-items: center !important;
+  width: clamp(1.15rem,min(2.1cqw,3.8cqh),2.05rem) !important;
+  height: clamp(1.15rem,min(2.1cqw,3.8cqh),2.05rem) !important;
+  border-radius: 50% !important;
+  border: .08rem solid #9aa3adcc !important;
+  background: #252a31dd !important;
+  color: #d7dce2 !important;
+  font-size: clamp(.62rem,min(1.05cqw,1.85cqh),1rem) !important;
+  font-style: normal !important;
+  line-height: 1 !important;
+  letter-spacing: 0 !important;
+  text-indent: 0 !important;
+  overflow: hidden !important;
+  z-index: 24 !important;
+  box-shadow: 0 .15cqh .45cqh #0008 !important;
+}
+
+/* Defender choice: compact left-center panel in the lane between Cruel Terrain
+ * and the five creature columns. It never occupies the field grid itself. */
+.screen-game .game-stage > .game-content.hs-board > .defense-decision {
+  position: absolute !important;
+  left: 29.1cqw !important;
+  top: 50cqh !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%,-50%) !important;
+  width: clamp(5.8rem,8.4cqw,8.8rem) !important;
+  min-width: 0 !important;
+  padding: clamp(.28rem,.62cqh,.52rem) clamp(.30rem,.52cqw,.52rem) !important;
+  gap: clamp(.15rem,.34cqh,.28rem) !important;
+  border-radius: clamp(.35rem,.55cqw,.6rem) !important;
+  z-index: 760 !important;
+  box-sizing: border-box !important;
+}
+.screen-game .defense-decision > span {
+  font-size: clamp(.35rem,min(.51cqw,.88cqh),.56rem) !important;
+  line-height: 1.16 !important;
+  text-align: center !important;
+}
+.screen-game .defense-decision > b {
+  font-size: clamp(.28rem,min(.4cqw,.7cqh),.45rem) !important;
+}
+.screen-game .defense-decision > button {
+  min-height: 0 !important;
+  padding: clamp(.18rem,.36cqh,.3rem) clamp(.2rem,.4cqw,.38rem) !important;
+  font-size: clamp(.32rem,min(.46cqw,.8cqh),.5rem) !important;
+  line-height: 1.12 !important;
+  white-space: normal !important;
+}
+
+/* The attacking enemy remains unmistakably red while the defender decides. */
+.screen-game .enemy-field .original-card.is-selected {
+  outline: clamp(.10rem,.16cqw,.16rem) solid #ff3d45 !important;
+  outline-offset: clamp(.05rem,.10cqw,.1rem) !important;
+  box-shadow: 0 0 clamp(.55rem,1.15cqw,1.15rem) #ff253cbb, inset 0 0 clamp(.25rem,.55cqw,.55rem) #ff253c55 !important;
+  filter: saturate(1.18) brightness(1.05) !important;
+}
+
+/* Animations: wider foreground surface centered near the phase-orb/right lane. */
+.screen-game .game-stage > .game-content.hs-board > .visual-effect {
+  width: clamp(14rem,min(21.4cqw,38cqh),23rem) !important;
+  max-width: min(21.4cqw,38cqh) !important;
+  z-index: 520 !important;
+}
+.screen-game .game-stage > .game-content.hs-board > .visual-effect.fx-targeted {
+  width: clamp(15rem,min(23.2cqw,41cqh),25rem) !important;
+  max-width: min(23.2cqw,41cqh) !important;
+  z-index: 540 !important;
+}
+.screen-game .game-stage > .game-content.hs-board > .combat-cinematic,
+.screen-game .game-stage > .game-content.hs-board > .combat-animation {
+  width: clamp(15rem,min(22.8cqw,40cqh),24.5rem) !important;
+  max-width: min(22.8cqw,40cqh) !important;
+  z-index: 550 !important;
+}
+
+/* Side-zone text gets another small readability bump. */
+.screen-game .game-stage > .game-content.hs-board > .side-piles :is(b,strong) {
+  font-size: clamp(.31rem,min(.54cqw,.91cqh),.62rem) !important;
+  line-height: 1.04 !important;
+}
+.screen-game .game-stage > .game-content.hs-board > .side-piles small {
+  font-size: clamp(.22rem,min(.37cqw,.62cqh),.43rem) !important;
+  line-height: 1.08 !important;
+}
+
+@container hemsfell-board (max-height: 44rem) {
+  .screen-game .game-stage > .game-content.hs-board :is(.hero-abilities,.hero-command-bar) :is(.ability,.hero-ability-chip) p {
+    font-size: clamp(.42rem,min(.65cqw,1.05cqh),.68rem) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board > .visual-effect {
+    width: clamp(11.5rem,min(19.6cqw,34cqh),19rem) !important;
+    max-width: min(19.6cqw,34cqh) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board > .visual-effect.fx-targeted {
+    width: clamp(12.5rem,min(21cqw,36cqh),21rem) !important;
+    max-width: min(21cqw,36cqh) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board > .defense-decision {
+    width: clamp(5.2rem,7.8cqw,7.8rem) !important;
+  }
+}
+
+@container hemsfell-board (max-height: 36rem) {
+  .screen-game .game-stage > .game-content.hs-board > .defense-decision {
+    left: 28.7cqw !important;
+    width: clamp(4.8rem,7.2cqw,7rem) !important;
+    padding: clamp(.18rem,.42cqh,.34rem) clamp(.22rem,.4cqw,.38rem) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board > .side-piles :is(b,strong) {
+    font-size: clamp(.27rem,min(.47cqw,.8cqh),.52rem) !important;
+  }
+}
