@@ -182,7 +182,7 @@ test("life-loss triggers use one event dispatcher",()=>{
 test("global effects and Tessália's Commander lane stay deterministic",()=>{
  assert.match(page,/Global effects never request a target/);
  assert.match(page,/todas\?\\s\+\(\?:as\?\\s\+\)\?criaturas/);
- assert.match(page,/\[3,5,6,7,8,9,10,11,23,24,25,216\]/);
+ assert.match(page,/const scope=.*\[\.\.\.p\.board,\.\.\.o\.board\]/);
  assert.match(page,/const isCommander=/);
  assert.match(page,/Tessália precisa de um Comandante no espaço central/);
  assert.match(page,/O Comandante de Tessália atacou/);
