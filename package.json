@@ -7,7 +7,7 @@
   },
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
-    "rules:migrate": "node scripts/fix-artifact-activation-runtime.mjs && node scripts/repair-card-semantics-migration.mjs && node scripts/apply-card-semantics-v2.mjs && node scripts/apply-card-semantics-v2-followup.mjs",
+    "rules:migrate": "node scripts/normalize-rules-migration-inputs.mjs && node scripts/fix-artifact-activation-runtime.mjs && node scripts/repair-card-semantics-migration.mjs && node scripts/apply-card-semantics-v2.mjs && node scripts/apply-card-semantics-v2-followup.mjs",
     "predev": "npm run rules:migrate",
     "dev": "next dev -H 0.0.0.0",
     "prebuild": "npm run rules:migrate",
