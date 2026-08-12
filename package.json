@@ -7,11 +7,12 @@
   },
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
-    "predev": "node scripts/fix-artifact-activation-runtime.mjs",
+    "rules:migrate": "node scripts/fix-artifact-activation-runtime.mjs && node scripts/apply-card-semantics-v2.mjs && node scripts/apply-card-semantics-v2-followup.mjs",
+    "predev": "npm run rules:migrate",
     "dev": "next dev -H 0.0.0.0",
-    "prebuild": "node scripts/fix-artifact-activation-runtime.mjs",
+    "prebuild": "npm run rules:migrate",
     "build": "bash scripts/build-verified.sh",
-    "vercel-build": "node scripts/fix-artifact-activation-runtime.mjs && node --test tests/*.test.mjs && next build",
+    "vercel-build": "npm run rules:migrate && node --test tests/*.test.mjs && next build",
     "start": "vinext start",
     "test": "npm run build && node --test tests/*.test.mjs",
     "validate:artifact": "bash scripts/validate-artifact.sh",
@@ -19,9 +20,9 @@
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate",
     "dev:vinext": "vite",
     "check:vinext": "vinext check",
-    "test:rules": "node --test tests/*.test.mjs",
+    "test:rules": "npm run rules:migrate && node --test tests/*.test.mjs",
     "audit:cards": "node scripts/audit-card-rules.mjs",
-    "audit:cards:full": "node scripts/export-card-implementation-audit.mjs",
+    "audit:cards:full": "npm run rules:migrate && node scripts/export-card-implementation-audit.mjs",
     "simulate:headless": "node scripts/simulate-games.mjs"
   },
   "dependencies": {
