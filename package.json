@@ -7,9 +7,11 @@
   },
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
+    "predev": "node scripts/fix-artifact-activation-runtime.mjs",
     "dev": "next dev -H 0.0.0.0",
+    "prebuild": "node scripts/fix-artifact-activation-runtime.mjs",
     "build": "bash scripts/build-verified.sh",
-    "vercel-build": "node --test tests/*.test.mjs && next build",
+    "vercel-build": "node scripts/fix-artifact-activation-runtime.mjs && node --test tests/*.test.mjs && next build",
     "start": "vinext start",
     "test": "npm run build && node --test tests/*.test.mjs",
     "validate:artifact": "bash scripts/validate-artifact.sh",
