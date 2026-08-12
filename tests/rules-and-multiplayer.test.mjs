@@ -224,17 +224,19 @@ test("room creation request stays valid TypeScript without escaped object keys",
 });
 
 
-test("local multiplayer does not require a production storage binding",()=>{
+test("local development uses memory while production requires a durable room store",()=>{
  assert.match(roomStore,/memoryRooms/);
  assert.match(roomStore,/useMemoryStore/);
- assert.match(roomStore,/allowMemoryFallback/);
- assert.match(roomStore,/HEMSFELL_ROOM_STORE !== "d1"/);
+ assert.match(roomStore,/process\.env\.NODE_ENV === "development"/);
+ assert.match(roomStore,/hasSupabaseStore/);
+ assert.match(roomStore,/hasBlobStore/);
+ assert.doesNotMatch(roomStore,/allowMemoryFallback/);
 });
 
 
 test("activated costs, flexible damage and Uruk elemental choices stay covered",()=>{
  assert.match(page,/hasActivatableEffect/);
- assert.match(page,/activation-indicator/);
+ assert.match(page,/card-frame-activation/);
  assert.match(page,/sacrifique\[\^\.\]\*criatura/);
  assert.match(page,/lifeLoss=Number/);
  assert.match(page,/target=chosenEnemy\|\|chosenAlly/);
