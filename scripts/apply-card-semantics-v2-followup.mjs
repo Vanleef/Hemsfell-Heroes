@@ -22,6 +22,18 @@ const replaceRequired = (source, before, after, label) => {
   await write(path, source);
 }
 
+// A bare "recebe +X de Ofensividade/Vitalidade" clause modifies the source
+// card itself. Attachment-specific cards should use explicit structured rules.
+{
+  const path = "app/rules-engine/compiler.mjs";
+  let source = await read(path);
+  source = source.replace(
+    'target: policy.scope === "none" ? "attachedCreature" : policy.scope',
+    'target: policy.scope === "none" ? "self" : policy.scope',
+  );
+  await write(path, source);
+}
+
 // Image Creatures inherit creature sickness for activated effects too; ordinary
 // printed creature abilities keep their existing rules unless their cost taps.
 {
