@@ -110,7 +110,6 @@ function conditionMatches(state, source, owner, condition, event = {}) {
   if (condition.controllerTurn && state.active !== owner) return false;
   if (condition.controllerControlsOtherSubtype) { const preEntry = event.preEntryControlledIds; const candidates = state.players[owner].board.filter((card) => Array.isArray(preEntry) ? preEntry.includes(card.uid || card.id) : (card.uid || card.id) !== (source.uid || source.id)); if (!candidates.some((card) => subtype(card, condition.controllerControlsOtherSubtype))) return false; }
   if (condition.controllerControlsSubtype) { const entry = state.players[owner]; const controlled = [...entry.board, ...entry.support, ...(entry.terrain ? [entry.terrain] : [])]; if (!controlled.some((card) => subtype(card, condition.controllerControlsSubtype))) return false; }
-  if (condition.controllerControlsOtherSubtype) { const preEntry = event.preEntryControlledIds; const candidates = state.players[owner].board.filter((card) => Array.isArray(preEntry) ? preEntry.includes(card.uid || card.id) : (card.uid || card.id) !== (source.uid || source.id)); if (!candidates.some((card) => subtype(card, condition.controllerControlsOtherSubtype))) return false; }
   if (condition.all) return condition.all.every((item) => conditionMatches(state, source, owner, item, event));
   const eventCard = event.card || state.players.flatMap((entry) => [...entry.board, ...entry.support, ...entry.grave]).find((card) => card.uid === event.cardId || card.id === event.cardId);
   if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;
@@ -446,7 +445,7 @@ export function executeCommand(inputState, command, options = {}) {
           stack.push({ kind: "event", event: { type: "onAttachedCreatureDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: defender ? [defender.uid] : ["enemy-hero"], amount: damageDealtByAttacker } });
           if (!defender) stack.push({ kind: "event", event: { type: "onPlayerDamaged", owner: defenderOwner, sourceOwner: attackerOwner, sourceId: attacker.uid, source: attacker, amount: damageDealtByAttacker } });
         }
-        stack.push({ kind: "event", event: { type: "onCombatDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: defender ? [defender.uid] : [], amount: damageDealtByAttacker } });
+        stack.push({ kind: "event", event: { type: "onCombatDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: defender ? [defender.uid] : [], targetSnapshots: defender ? [{ id: defender.uid, owner: defenderOwner, slot: defender.slot }] : [], amount: damageDealtByAttacker } });
         stack.push({ kind: "event", event: { type: "onAttack", owner: attackerOwner, sourceId: attacker.uid, source: attacker } });
         state.combatAction = null;
       } else if (item.command.type === "activate") {
@@ -547,7 +546,7 @@ export function executeCommand(inputState, command, options = {}) {
           if (decision.kind === "activation-targets") { state.pendingDecision = null; stack.push(...continuation); stack.push({ kind: "command", command: { ...decision.command, targetIds } }); continue; }
         }
         state.pendingDecision = null; stack.push(...continuation); if (decision.kind === "repeat-choice" && decision.effect.remaining > 1) stack.push({ kind: "effect", effect: { ...decision.effect, type: "repeatChoiceForCoffeeCount", remaining: decision.effect.remaining - 1 }, context: decision.context }); const chosen = decision.effect.choices?.[item.command.choiceIndex] || decision.effect.replayEffects || [];
-        const decisionContext = { ...decision.context, decisionOwner: item.command.owner, choiceIndex: item.command.choiceIndex, selectedCardId: item.command.selectedCardId, targetIds: item.command.targetIds ?? decision.context?.targetIds };
+        const resolvedTargetIds=item.command.targetIds ?? decision.context?.targetIds ?? [];const targetSnapshots=resolvedTargetIds.map((id)=>{const owner=unitOwner(state,id);if(owner<0)return null;const target=permanentUnits(state.players[owner]).find((card)=>card.uid===id||card.id===id);return target?{id,owner,slot:target.slot}:null}).filter(Boolean);const decisionContext = { ...decision.context, decisionOwner: item.command.owner, choiceIndex: item.command.choiceIndex, selectedCardId: item.command.selectedCardId, targetIds: resolvedTargetIds, targetSnapshots };
         for (const effect of [...chosen].reverse()) stack.push({ kind: "effect", effect, context: decisionContext });
       } else if (item.command.type === "reposition") {
         const pending = state.pendingReposition; if (!pending || !pending.owners.includes(item.command.owner) || pending.confirmed.includes(item.command.owner)) throw new RulesViolation("reposition-unavailable");
