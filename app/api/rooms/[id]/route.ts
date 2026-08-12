@@ -38,6 +38,27 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     const role = roleFor(room, body?.token);
     if (!role) return NextResponse.json({ error: "invalid participant" }, { status: 403 });
+    const activeParticipant = room[role];
+    if (!activeParticipant) return NextResponse.json({ error: "player not connected" }, { status: 409 });
+    if (body.action === "disconnect") {
+      if (!activeParticipant.disconnectedAt) activeParticipant.disconnectedAt = Date.now();
+      room.revision++;
+      await writeRoom(room);
+      return NextResponse.json(roomView(room, true, role), noStore);
+    }
+    if (body.action === "resume") {
+      const awaySince = activeParticipant.disconnectedAt;
+      if (awaySince && room.game && Date.now() < awaySince + 60_000) {
+        const pausedFor = Date.now() - awaySince;
+        if (room.game.turnDeadline) room.game.turnDeadline += pausedFor;
+        if (room.game.pendingResponse?.deadline) room.game.pendingResponse.deadline += pausedFor;
+      }
+      activeParticipant.disconnectedAt = null;
+      room.revision++;
+      await writeRoom(room);
+      return NextResponse.json(roomView(room, true, role), noStore);
+    }
+    activeParticipant.disconnectedAt = null;
     if (body.action === "select") {
       if (room.status !== "deck-selection") return NextResponse.json({ error: "deck selection is closed" }, { status: 409 });
       const participant = room[role];
