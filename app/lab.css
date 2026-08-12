@@ -7875,3 +7875,93 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   .mulligan-dialog{max-height:94dvh!important}
   .mulligan-cards{grid-template-columns:repeat(7,104px)!important;justify-content:start!important}
 }
+
+
+/* Stable mulligan previews: the artwork is absolutely positioned, so its disabled
+   button and frame require an explicit card-sized box. */
+.mulligan-cards>.mulligan-card-static{
+  min-height:164px!important;
+  display:grid!important;
+  place-items:center!important;
+}
+.mulligan-cards .card-frame{
+  display:block!important;
+  width:min(116px,100%)!important;
+  aspect-ratio:5/7!important;
+}
+.mulligan-cards .original-card,
+.mulligan-cards .original-card.is-small{
+  display:block!important;
+  width:100%!important;
+  height:100%!important;
+  min-height:0!important;
+  aspect-ratio:5/7!important;
+}
+
+/* Crisp 2-second effect plateau with fast entry/exit at the right-side pile rail. */
+@keyframes fx-readable-hold{
+  0%{opacity:0;transform:translateY(-50%) translateX(8px)}
+  5.3%{opacity:1;transform:translateY(-50%) translateX(0)}
+  93%{opacity:1;transform:translateY(-50%) translateX(0)}
+  100%{opacity:0;transform:translateY(-50%) translateX(8px)}
+}
+.screen-game .visual-effect{
+  left:auto!important;
+  right:1.2%!important;
+  top:50%!important;
+  width:min(19%,270px)!important;
+  max-width:270px!important;
+  transform:translateY(-50%)!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  animation:fx-readable-hold 2.28s linear both!important;
+}
+.screen-game .visual-effect>img,
+.screen-game .visual-effect>canvas,
+.screen-game .visual-effect>.remote-card-art,
+.screen-game .visual-effect>span,
+.screen-game .visual-effect>section,
+.screen-game .visual-effect .fx-runes{
+  opacity:1!important;
+  visibility:visible!important;
+  filter:none!important;
+  backdrop-filter:none!important;
+  animation:none!important;
+}
+.search-deck-dialog,.image-choice-dialog{
+  width:min(1240px,97vw)!important;
+  max-height:94dvh!important;
+}
+.search-card-grid{
+  grid-template-columns:repeat(auto-fill,minmax(118px,1fr))!important;
+  padding:20px 24px 26px!important;
+}
+.search-card-grid .original-card{width:106px!important}
+
+.match-reconnect-overlay{
+  position:absolute;
+  inset:58px 0 0;
+  z-index:190;
+  display:grid;
+  place-items:center;
+  background:#02090db8;
+  backdrop-filter:blur(2px);
+  pointer-events:auto;
+}
+.match-reconnect-overlay>section{
+  width:min(390px,88vw);
+  display:grid;
+  justify-items:center;
+  gap:8px;
+  padding:22px 28px;
+  border:1px solid #f0bd52;
+  border-radius:12px;
+  background:#06171df2;
+  color:#edfafa;
+  box-shadow:0 20px 60px #000b;
+  text-align:center;
+}
+.match-reconnect-overlay i{color:#25d3da;font:32px/1 Arial;animation:room-spin 1.2s linear infinite}
+.match-reconnect-overlay b{font:700 18px Georgia}
+.match-reconnect-overlay span{color:#a8c5c7;font:11px/1.5 Arial}
+.match-reconnect-overlay strong{color:#f8b83c;font:800 22px/1 monospace}
