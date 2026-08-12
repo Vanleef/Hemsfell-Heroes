@@ -49,6 +49,57 @@ const replaceOnce = (source, before, after, label) => {
   box-shadow: 0 .3cqh .8cqh #0008 !important;
 }
 `;
+
+  if (!source.includes('BOARD TYPOGRAPHY POLISH V4')) source += `
+
+/* -------------------------------------------------------------------------
+   BOARD TYPOGRAPHY POLISH V4
+   Larger readable command-bar / side-zone copy with a slightly smaller evolve
+   control. All values remain tied to the responsive board container.
+   ------------------------------------------------------------------------- */
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities, .hero-command-bar) .hero-ability-chip p,
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities, .hero-command-bar) .ability p {
+  font-size: clamp(.38rem, min(.62cqw, 1.02cqh), .69rem) !important;
+  line-height: 1.2 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities, .hero-command-bar) .hero-ability-chip b,
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities, .hero-command-bar) .ability b {
+  font-size: clamp(.27rem, min(.44cqw, .72cqh), .5rem) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .side-piles :is(b, strong) {
+  font-size: clamp(.28rem, min(.49cqw, .8cqh), .58rem) !important;
+  line-height: 1.05 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .side-piles small {
+  font-size: clamp(.21rem, min(.34cqw, .58cqh), .4rem) !important;
+  line-height: 1.08 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  width: min(6.25cqw, 11cqh) !important;
+  min-width: 3.25rem !important;
+  max-width: 6.2rem !important;
+  height: min(2.45cqh, 1.3rem) !important;
+  min-height: 1rem !important;
+  padding: clamp(.04rem, .12cqh, .1rem) clamp(.08rem, .16cqw, .16rem) !important;
+  font-size: clamp(.25rem, min(.38cqw, .64cqh), .45rem) !important;
+}
+
+@container hemsfell-board (max-height: 58rem) {
+  .screen-game .game-stage > .game-content.hs-board :is(.hero-abilities, .hero-command-bar) .hero-ability-chip p,
+  .screen-game .game-stage > .game-content.hs-board :is(.hero-abilities, .hero-command-bar) .ability p {
+    font-size: clamp(.34rem, min(.56cqw, .92cqh), .61rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .side-piles :is(b, strong) {
+    font-size: clamp(.25rem, min(.43cqw, .72cqh), .5rem) !important;
+  }
+}
+`;
+
   await write(path, source);
 }
 
@@ -82,7 +133,7 @@ const replaceOnce = (source, before, after, label) => {
     const marker = '  gainEnergy(state, effect, context) {';
     const index = source.indexOf(marker);
     if (index < 0) throw new Error("Patch point not found: conditional attached effect");
-    const handler = `  conditionalAttachedBonus(state, effect, context) { const source = findUnit(state, context.sourceId), target = source?.attachedTo ? findUnit(state, source.attachedTo) : null; if (!source || !target) return; if (effect.requiredSubtype && !hasSubtype(target, effect.requiredSubtype)) return; if (effect.attack || effect.health) defaultEffectHandlers.modifyStats(state, { type: "modifyStats", target: "attachedCreature", attack: effect.attack || 0, health: effect.health || 0, duration: "attached" }, context); if (effect.keyword) { target.grantedKeywords ||= []; const value = `attachment:${source.uid || source.id}:${effect.keyword}`; if (!target.grantedKeywords.includes(value)) target.grantedKeywords.push(value); } },
+    const handler = `  conditionalAttachedBonus(state, effect, context) { const source = findUnit(state, context.sourceId), target = source?.attachedTo ? findUnit(state, source.attachedTo) : null; if (!source || !target) return; if (effect.requiredSubtype && !hasSubtype(target, effect.requiredSubtype)) return; if (effect.attack || effect.health) defaultEffectHandlers.modifyStats(state, { type: "modifyStats", target: "attachedCreature", attack: effect.attack || 0, health: effect.health || 0, duration: "attached" }, context); if (effect.keyword) { target.grantedKeywords ||= []; const value = "attachment:" + (source.uid || source.id) + ":" + effect.keyword; if (!target.grantedKeywords.includes(value)) target.grantedKeywords.push(value); } },
 `;
     source = source.slice(0, index) + handler + source.slice(index);
   }
