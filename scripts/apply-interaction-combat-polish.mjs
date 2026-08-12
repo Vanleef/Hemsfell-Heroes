@@ -21,6 +21,11 @@ await patch("app/page.tsx", [
     "dragging board state",
   ],
   [
+    'const canActivateUnit=(player:Player,unit:Unit)=>{const ability=unit.abilities?.find(entry=>entry.trigger==="activated"),used=ability&&player.abilityUses?.[`${unit.uid||unit.id}:${ability.id}`];return !used&&canActivateCard(unit,{energy:player.energy,reserve:player.reserve,life:player.life,heroId:player.heroId,heroLevel:player.level,topGrave:player.grave.at(-1),constantMarkers:[...player.board,...player.support,...(player.terrain?[player.terrain]:[])].reduce((sum,card)=>sum+markerAmount(card),0),hasSacrificeTarget:player.board.some(card=>card.uid!==unit.uid)})};',
+    'const canActivateUnit=(player:Player,unit:Unit)=>{const ability=unit.abilities?.find(entry=>entry.trigger==="activated"),used=ability&&player.abilityUses?.[`${unit.uid||unit.id}:${ability.id}`],artifactSick=unit.type==="Artefato"&&(unit.summoning||unit.enteredRound===game?.round);return !artifactSick&&!used&&canActivateCard(unit,{energy:player.energy,reserve:player.reserve,life:player.life,heroId:player.heroId,heroLevel:player.level,topGrave:player.grave.at(-1),constantMarkers:[...player.board,...player.support,...(player.terrain?[player.terrain]:[])].reduce((sum,card)=>sum+markerAmount(card),0),hasSacrificeTarget:player.board.some(card=>card.uid!==unit.uid)})};',
+    "artifact activation disabled in UI",
+  ],
+  [
     '{unit&&<><span className={`live-atk ${modifiers.atk>0?"is-buffed":modifiers.atk<0||unit.frozen?"is-weakened":""}`}>{liveAttack}</span><span className={`live-hp ${modifiers.hp>0?"is-buffed":modifiers.hp<0?"is-weakened":""}`}>{liveVitality}</span>{unit.summoning&&<i className="summoning-sickness-badge" title="Enjoo de Invocação: não pode atacar neste turno.">ENJOO</i>}',
     '{unit&&<>{unit.type==="Criatura"&&<><span className={`live-atk ${modifiers.atk>0?"is-buffed":modifiers.atk<0||unit.frozen?"is-weakened":""}`}>{liveAttack}</span><span className={`live-hp ${modifiers.hp>0?"is-buffed":modifiers.hp<0?"is-weakened":""}`}>{liveVitality}</span></>}{unit.summoning&&<i className="summoning-sickness-badge" title={unit.type==="Artefato"?"Enjoo: este Artefato não pode ativar efeitos no turno em que entra em campo.":"Enjoo de Invocação: não pode atacar neste turno."}>ENJOO</i>}',
     "creature-only combat stats",
