@@ -1463,3 +1463,18 @@ test("cards, fields, piles and hand remain proportional without coordinate reflo
   assert.match(responsive, /@container\s+hemsfell-board\s*\(max-width:60rem\)/);
   assert.doesNotMatch(responsive, /grid-template-columns:minmax\(7\.5rem/);
 });
+
+
+test("final stage seal outranks legacy fixed-position board rules", async () => {
+  const css = await readFile(new URL("../app/lab.css", import.meta.url), "utf8");
+  const seal = css.slice(css.lastIndexOf("Proportional-stage specificity seal"));
+  assert.match(seal, /\.screen-game \.game-stage>\.game-content\.hs-board>\.paired-field/);
+  assert.match(seal, /left:auto!important/);
+  assert.match(seal, /top:auto!important/);
+  assert.match(seal, /transform:none!important/);
+  assert.match(seal, />\.hero-abilities\{[\s\S]*width:18\.4cqw!important/);
+  assert.match(seal, />\.paired-field\{[\s\S]*width:36cqw!important/);
+  assert.match(seal, /grid-template-columns:repeat\(5,var\(--slot-width\)\)/);
+  assert.match(seal, />\.side-piles\{[\s\S]*grid-template-columns:repeat\(2,7cqw\)/);
+  assert.doesNotMatch(seal, /\d+px/);
+});
