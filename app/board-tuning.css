@@ -1,0 +1,68 @@
+/* Fine-tuning after 1920x1080 / 100% visual validation.
+ * Keep this file limited to proportional geometry corrections.
+ */
+
+/* Right rail was visually too dominant. Shrink it while preserving the 2x2 grid. */
+.screen-game .hs-board > .side-piles {
+  width: min(12.6cqw, 92%) !important;
+  height: min(26cqh, 92%) !important;
+  gap: clamp(.14rem, .4cqw, .48rem) !important;
+}
+
+.screen-game .side-piles > .pile-zone {
+  padding: clamp(.1rem, .26cqw, .3rem) !important;
+}
+
+.screen-game .side-piles .pile-card {
+  width: min(68%, 3.8cqw) !important;
+}
+
+.screen-game .side-piles :is(b, strong) {
+  font-size: clamp(.24rem, .4cqw, .48rem) !important;
+}
+
+.screen-game .side-piles small {
+  font-size: clamp(.18rem, .27cqw, .34rem) !important;
+}
+
+/* Slightly reduce the combat control to better match the reference composition. */
+.screen-game .hs-board > .phase-orb {
+  width: clamp(2.5rem, 4.1cqw, 4.25rem) !important;
+  height: clamp(2.5rem, 4.1cqw, 4.25rem) !important;
+}
+
+/* The hand intentionally sits low, but must never create the ugly vertical scrollbar.
+ * overflow-y: visible cannot coexist with overflow-x:auto without becoming auto by spec.
+ */
+.screen-game .hs-board > .player-hand {
+  overflow-x: auto !important;
+  overflow-y: clip !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+.screen-game .hs-board > .player-hand::-webkit-scrollbar {
+  display: none !important;
+}
+
+/* Keep hand cards proportional and a little less tall at 16:9 desktop sizes. */
+.screen-game .player-hand :is(.card-frame, .original-card) {
+  width: clamp(3.35rem, 6cqw, 6.2rem) !important;
+  aspect-ratio: 5 / 7 !important;
+}
+
+/* Prevent hover from creating vertical overflow inside the hand scroller. */
+.screen-game .player-hand .original-card:hover {
+  transform: translateY(clamp(-2.8rem, -4.6cqh, -1.8rem)) scale(1.07) !important;
+}
+
+/* Keep bottom utility controls clear of the player piles. */
+.screen-game .hs-board > .priority-control-toggle {
+  right: clamp(.45rem, 1cqw, .9rem) !important;
+  bottom: clamp(2.9rem, 7.6cqh, 4.2rem) !important;
+}
+
+.screen-game .hs-board > .surrender-button {
+  right: clamp(.45rem, 1cqw, .9rem) !important;
+  bottom: clamp(.45rem, 1cqh, .8rem) !important;
+}
