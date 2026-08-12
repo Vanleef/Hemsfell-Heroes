@@ -65,24 +65,6 @@ jobs:
           git commit -m 'fix(rules): make draconic illusion target conditional'
           git push origin HEAD:ui/fixed-board-composition
 
-      - name: Apply interaction and combat polish once
-        if: github.event_name == 'push' && github.ref == 'refs/heads/ui/fixed-board-composition'
-        shell: bash
-        run: |
-          set -euo pipefail
-          if grep -q 'is-dragging-card' app/page.tsx && grep -q 'source.type === "Artefato"' app/rules-engine/engine.mjs; then
-            echo 'Interaction/combat polish already applied.'
-            exit 0
-          fi
-
-          node scripts/apply-interaction-combat-polish.mjs
-
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add app/page.tsx app/rules-engine/engine.mjs
-          git commit -m 'fix(ui): polish dragging artifacts effects and defense prompt'
-          git push origin HEAD:ui/fixed-board-composition
-
       - name: Run rules tests
         run: npm run test:rules
 
