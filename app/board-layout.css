@@ -1,0 +1,562 @@
+/*
+ * Hemsfell Heroes — canonical responsive match-board composition.
+ *
+ * This file owns ONLY the geometry of the match screen. Visual styling,
+ * mechanics feedback and card effects remain in game.css / lab.css.
+ * Import this file last so legacy coordinate rules cannot become a second
+ * layout system again.
+ *
+ * Primary regions use CSS Grid + container units. Fixed pixel coordinates are
+ * intentionally avoided for board geometry. Transient UI (maintenance,
+ * responses, logs, inspectors) is explicitly kept out of the board grid.
+ */
+
+.screen-game {
+  width: 100dvw;
+  height: 100dvh;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.screen-game .game-stage {
+  width: 100dvw !important;
+  height: 100dvh !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  overflow: hidden !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board,
+.screen-game .hs-board {
+  --hh-card-ratio: 5 / 7;
+  --hh-edge: clamp(.25rem, .55cqw, .7rem);
+  --hh-gap: clamp(.15rem, .42cqw, .55rem);
+  --hh-card-w: clamp(2.5rem, 4.05cqw, 5rem);
+  --hh-terrain-w: clamp(2.65rem, 4.2cqw, 5.1rem);
+
+  position: relative !important;
+  inset: auto !important;
+
+  display: grid !important;
+  grid-template-columns:
+    minmax(0, 18.5fr)
+    minmax(0, 2.5fr)
+    minmax(0, 57fr)
+    minmax(0, 5fr)
+    minmax(0, 17fr) !important;
+  grid-template-rows:
+    minmax(0, 4.5fr)
+    minmax(0, 5.5fr)
+    minmax(0, 4fr)
+    minmax(0, 30fr)
+    minmax(0, 8fr)
+    minmax(0, 30fr)
+    minmax(0, 4fr)
+    minmax(0, 14fr) !important;
+
+  width: min(100dvw, calc(100dvh * 16 / 9)) !important;
+  height: min(100dvh, calc(100dvw * 9 / 16)) !important;
+  aspect-ratio: 16 / 9 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100dvw !important;
+  max-height: 100dvh !important;
+
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  container-type: size;
+  container-name: hemsfell-board;
+  isolation: isolate;
+}
+
+/* Reset positioning only for real board regions. Never use .hs-board > * here:
+   modals and overlays are siblings too and must not become grid items. */
+.screen-game .hs-board > :is(
+  .game-bar,
+  .opponent-hand,
+  .field-energy,
+  .paired-field,
+  .terrain-slot,
+  .side-piles,
+  .phase-orb,
+  .player-hand,
+  .player-hero,
+  .hero-abilities,
+  .hero-command-bar
+) {
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
+  translate: none !important;
+  transform: none !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  box-sizing: border-box !important;
+}
+
+/* Logical board placement -------------------------------------------------- */
+.screen-game .hs-board > .game-bar {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+}
+
+.screen-game .hs-board > .opponent-hand {
+  grid-column: 3 !important;
+  grid-row: 2 !important;
+}
+
+.screen-game .hs-board > .enemy-energy {
+  grid-column: 3 !important;
+  grid-row: 3 !important;
+}
+
+.screen-game .hs-board > .enemy-field,
+.screen-game .hs-board > .enemy-terrain {
+  grid-column: 3 !important;
+  grid-row: 4 !important;
+}
+
+.screen-game .hs-board > .enemy-piles {
+  grid-column: 5 !important;
+  grid-row: 2 / 5 !important;
+}
+
+.screen-game .hs-board > .phase-orb {
+  grid-column: 4 !important;
+  grid-row: 4 / 7 !important;
+}
+
+.screen-game .hs-board > .player-field,
+.screen-game .hs-board > .player-terrain {
+  grid-column: 3 !important;
+  grid-row: 6 !important;
+}
+
+.screen-game .hs-board > .player-energy {
+  grid-column: 3 !important;
+  grid-row: 7 !important;
+}
+
+.screen-game .hs-board > .player-piles {
+  grid-column: 5 !important;
+  grid-row: 5 / 8 !important;
+}
+
+.screen-game .hs-board > .player-hand {
+  grid-column: 3 !important;
+  grid-row: 8 !important;
+}
+
+.screen-game .hs-board > .player-hero.enemy {
+  grid-column: 1 !important;
+  grid-row: 2 / 5 !important;
+}
+
+.screen-game .hs-board > :is(.hero-abilities.enemy, .hero-command-bar.enemy) {
+  grid-column: 1 !important;
+  grid-row: 4 !important;
+}
+
+.screen-game .hs-board > .player-hero:not(.enemy) {
+  grid-column: 1 !important;
+  grid-row: 6 / 9 !important;
+}
+
+.screen-game .hs-board > :is(.hero-abilities:not(.enemy), .hero-command-bar:not(.enemy)) {
+  grid-column: 1 !important;
+  grid-row: 6 !important;
+}
+
+/* Header ------------------------------------------------------------------ */
+.screen-game .hs-board > .game-bar {
+  width: 100% !important;
+  height: 100% !important;
+  padding-inline: var(--hh-edge) !important;
+  gap: clamp(.18rem, .42cqw, .55rem) !important;
+  font-size: clamp(.4rem, .58cqw, .68rem) !important;
+}
+
+.screen-game .phase-track {
+  gap: clamp(.08rem, .22cqw, .3rem) !important;
+}
+
+.screen-game .phase-track > div {
+  min-width: clamp(3.2rem, 6.1cqw, 6.6rem) !important;
+  gap: clamp(.12rem, .3cqw, .38rem) !important;
+}
+
+.screen-game .phase-track i {
+  width: clamp(.8rem, 1.2cqw, 1.1rem) !important;
+  height: clamp(.8rem, 1.2cqw, 1.1rem) !important;
+  font-size: clamp(.34rem, .46cqw, .5rem) !important;
+}
+
+/* Opponent hand ----------------------------------------------------------- */
+.screen-game .hs-board > .opponent-hand {
+  align-self: center !important;
+  justify-self: center !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: min(38cqw, 100%) !important;
+  height: 100% !important;
+  gap: clamp(.04rem, .14cqw, .18rem) !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.screen-game .opponent-hand > :is(.official-card-back, .card-frame) {
+  flex: 0 0 auto !important;
+  width: clamp(1.15rem, 2.1cqw, 2.2rem) !important;
+  height: auto !important;
+  aspect-ratio: var(--hh-card-ratio) !important;
+}
+
+/* Battlefield: five logical columns, two proportional slots each. ---------- */
+.screen-game .hs-board > .paired-field {
+  align-self: center !important;
+  justify-self: center !important;
+  display: grid !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  align-items: center !important;
+  width: min(39cqw, 96%) !important;
+  height: min(27cqh, 96%) !important;
+  gap: clamp(.2rem, 1.05cqw, 1.1rem) !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.screen-game .hs-board > .paired-field > .field-column {
+  display: grid !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  place-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  gap: clamp(.2rem, 2.1cqh, .9rem) !important;
+  padding: 0 !important;
+}
+
+.screen-game .paired-field .field-slot {
+  width: min(100%, var(--hh-card-w)) !important;
+  height: auto !important;
+  aspect-ratio: var(--hh-card-ratio) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  border-radius: clamp(.2rem, .42cqw, .46rem) !important;
+}
+
+.screen-game .paired-field .field-slot :is(.card-frame, .original-card, .remote-card-art),
+.screen-game .terrain-slot :is(.card-frame, .original-card, .remote-card-art) {
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: var(--hh-card-ratio) !important;
+  object-fit: contain !important;
+}
+
+/* Terrain remains its own rail immediately left of the five-card grid. ----- */
+.screen-game .hs-board > .terrain-slot {
+  justify-self: start !important;
+  align-self: center !important;
+  width: var(--hh-terrain-w) !important;
+  height: auto !important;
+  aspect-ratio: var(--hh-card-ratio) !important;
+  transform: translateX(clamp(-5rem, -5cqw, -2.7rem)) !important;
+  overflow: visible !important;
+  z-index: 45 !important;
+}
+
+/* Resource bars ----------------------------------------------------------- */
+.screen-game .hs-board > .field-energy {
+  align-self: center !important;
+  justify-self: stretch !important;
+  width: 100% !important;
+  height: clamp(1.05rem, 3.1cqh, 1.75rem) !important;
+  transform: none !important;
+}
+
+.screen-game .field-energy > div {
+  grid-template-columns:
+    clamp(2.4rem, 5cqw, 4rem)
+    minmax(0, 1fr)
+    clamp(1.35rem, 2.7cqw, 2.3rem) !important;
+  gap: clamp(.12rem, .4cqw, .45rem) !important;
+}
+
+.screen-game .field-energy :is(b, strong) {
+  font-size: clamp(.32rem, .46cqw, .55rem) !important;
+}
+
+.screen-game .field-energy i {
+  height: clamp(.14rem, .4cqh, .26rem) !important;
+}
+
+/* Right utility rail: always a true 2 x 2 grid. --------------------------- */
+.screen-game .hs-board > .side-piles {
+  align-self: center !important;
+  justify-self: center !important;
+  display: grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  width: min(15cqw, 94%) !important;
+  height: min(31cqh, 94%) !important;
+  gap: clamp(.16rem, .5cqw, .58rem) !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  z-index: 60 !important;
+}
+
+.screen-game .side-piles > .pile-zone {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  aspect-ratio: 4 / 5 !important;
+  padding: clamp(.12rem, .32cqw, .35rem) !important;
+  grid-template-rows: minmax(0, 1fr) auto auto !important;
+}
+
+.screen-game .side-piles .pile-card {
+  width: min(72%, 4.5cqw) !important;
+  height: auto !important;
+  aspect-ratio: var(--hh-card-ratio) !important;
+  justify-self: center !important;
+}
+
+.screen-game .side-piles :is(b, strong) {
+  font-size: clamp(.26rem, .44cqw, .52rem) !important;
+}
+
+.screen-game .side-piles small {
+  font-size: clamp(.2rem, .3cqw, .38rem) !important;
+}
+
+/* Phase control gets its own grid column between field and piles. ---------- */
+.screen-game .hs-board > .phase-orb {
+  align-self: center !important;
+  justify-self: center !important;
+  display: grid !important;
+  place-items: center !important;
+  width: clamp(2.7rem, 4.5cqw, 4.6rem) !important;
+  height: clamp(2.7rem, 4.5cqw, 4.6rem) !important;
+  overflow: visible !important;
+  z-index: 70 !important;
+}
+
+.screen-game .phase-orb button {
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: clamp(.18rem, .38cqw, .42rem) !important;
+  font-size: clamp(.36rem, .5cqw, .6rem) !important;
+}
+
+/* Player hand ------------------------------------------------------------- */
+.screen-game .hs-board > .player-hand {
+  align-self: end !important;
+  justify-self: stretch !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  gap: clamp(.12rem, .34cqw, .44rem) !important;
+  padding: clamp(.12rem, .42cqh, .3rem) clamp(.18rem, .38cqw, .45rem) 0 !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  scrollbar-width: thin;
+}
+
+.screen-game .player-hand :is(.card-frame, .original-card) {
+  flex: 0 0 auto !important;
+  width: clamp(3.6rem, 6.6cqw, 6.9rem) !important;
+  height: auto !important;
+  aspect-ratio: var(--hh-card-ratio) !important;
+  margin-left: 0 !important;
+}
+
+.screen-game .player-hand .original-card:hover {
+  transform: translateY(clamp(-4rem, -6.5cqh, -2.4rem)) scale(1.08) !important;
+  margin-right: 0 !important;
+}
+
+/* Left hero rail ---------------------------------------------------------- */
+.screen-game .hs-board > .player-hero {
+  align-self: center !important;
+  justify-self: start !important;
+  width: min(18cqw, 98%) !important;
+  height: min(20cqh, 98%) !important;
+  overflow: visible !important;
+}
+
+.screen-game .player-hero .hero-power-trigger {
+  width: clamp(3.5rem, 7cqw, 7.15rem) !important;
+  height: auto !important;
+  aspect-ratio: var(--hh-card-ratio) !important;
+}
+
+.screen-game .player-hero .hero-level {
+  width: clamp(3.9rem, 7.3cqw, 7.55rem) !important;
+  height: clamp(1.45rem, 3.5cqh, 1.95rem) !important;
+  font-size: clamp(.4rem, .62cqw, .7rem) !important;
+}
+
+.screen-game .player-hero .hero-evolution {
+  width: clamp(3.9rem, 7.3cqw, 7.55rem) !important;
+  height: clamp(2rem, 4.9cqh, 2.75rem) !important;
+  padding: clamp(.12rem, .32cqh, .28rem) clamp(.16rem, .32cqw, .32rem) !important;
+}
+
+.screen-game .hs-board > :is(.hero-abilities, .hero-command-bar) {
+  align-self: center !important;
+  justify-self: start !important;
+  width: min(18cqw, 98%) !important;
+  gap: clamp(.14rem, .45cqh, .32rem) !important;
+  overflow: visible !important;
+}
+
+.screen-game :is(.hero-abilities, .hero-command-bar) :is(.ability, .hero-ability-chip) {
+  min-height: 0 !important;
+  font-size: clamp(.32rem, .52cqw, .6rem) !important;
+}
+
+/* Floating utility controls are not grid regions. ------------------------ */
+.screen-game .hs-board > .surrender-button,
+.screen-game .hs-board > .priority-control-toggle,
+.screen-game .hs-board > .test-log,
+.screen-game .hs-board > .priority-stack-indicator,
+.screen-game .hs-board > .response-waiting,
+.screen-game .hs-board > .defense-decision,
+.screen-game .hs-board > .target-banner,
+.screen-game .hs-board > .visual-effect,
+.screen-game .hs-board > .combat-cinematic {
+  grid-column: auto !important;
+  grid-row: auto !important;
+}
+
+.screen-game .hs-board > .surrender-button {
+  position: absolute !important;
+  right: clamp(.35rem, .9cqw, .8rem) !important;
+  bottom: clamp(.3rem, .8cqh, .7rem) !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: 150 !important;
+}
+
+.screen-game .hs-board > .priority-control-toggle {
+  position: absolute !important;
+  right: clamp(.35rem, .9cqw, .8rem) !important;
+  bottom: clamp(2.3rem, 6.8cqh, 3.8rem) !important;
+  left: auto !important;
+  top: auto !important;
+  z-index: 150 !important;
+}
+
+.screen-game .hs-board > .test-log {
+  position: absolute !important;
+  top: clamp(2rem, 4.8cqh, 2.8rem) !important;
+  right: clamp(.35rem, .9cqw, .8rem) !important;
+  bottom: clamp(.45rem, .9cqh, .8rem) !important;
+  left: auto !important;
+  width: min(22rem, 31cqw) !important;
+  z-index: 1100 !important;
+}
+
+/* Maintenance and modal overlays ----------------------------------------- */
+.screen-game .maintenance-overlay,
+.screen-game .overlay.maintenance-overlay,
+.screen-game .overlay:has(.maintenance.maintenance-dialog) {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100dvw !important;
+  height: 100dvh !important;
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 !important;
+  padding: clamp(.75rem, 2vmin, 1.5rem) !important;
+  transform: none !important;
+  background: #02050bd9 !important;
+  z-index: 5000 !important;
+}
+
+.screen-game .maintenance.maintenance-dialog {
+  position: relative !important;
+  inset: auto !important;
+  justify-self: center !important;
+  align-self: center !important;
+  width: min(45rem, 94vw) !important;
+  max-height: min(47rem, 90dvh) !important;
+  margin: 0 !important;
+  transform: none !important;
+  overflow: auto !important;
+}
+
+.screen-game .maintenance-dialog h2 {
+  font-size: clamp(1.3rem, 3vw, 2.1rem) !important;
+}
+
+.screen-game .maintenance-dialog > p {
+  font-size: clamp(.7rem, 1.2vw, .9rem) !important;
+}
+
+.screen-game .maintenance-options {
+  gap: clamp(.45rem, 1.1vw, .85rem) !important;
+}
+
+/* Responsive compression -------------------------------------------------- */
+@media (max-aspect-ratio: 4 / 3) {
+  .screen-game .hs-board {
+    grid-template-columns:
+      minmax(0, 18fr)
+      minmax(0, 3fr)
+      minmax(0, 56fr)
+      minmax(0, 5fr)
+      minmax(0, 18fr) !important;
+  }
+
+  .screen-game .hs-board > .side-piles {
+    width: min(16cqw, 96%) !important;
+    gap: clamp(.12rem, .38cqw, .42rem) !important;
+  }
+
+  .screen-game .side-piles small {
+    display: none !important;
+  }
+
+  .screen-game .player-hand :is(.card-frame, .original-card) {
+    width: clamp(3.35rem, 6.1cqw, 6.3rem) !important;
+  }
+}
+
+/* On portrait/mobile, preserve one logical board instead of reflowing every
+   card region independently. The viewport may scroll across the board. */
+@media (orientation: portrait) and (max-width: 60rem) {
+  .screen-game .game-stage {
+    display: block !important;
+    overflow: auto !important;
+    overscroll-behavior: contain;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board,
+  .screen-game .hs-board {
+    width: max(100dvw, calc(100dvh * 16 / 9)) !important;
+    height: max(100dvh, calc(100dvw * 9 / 16)) !important;
+    min-width: 62rem !important;
+    margin-inline: auto !important;
+  }
+
+  .screen-game .player-hand {
+    justify-content: flex-start !important;
+  }
+}
