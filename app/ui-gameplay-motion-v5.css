@@ -1,0 +1,52 @@
+/* Hemsfell Heroes — responsive motion/anchor corrections v5
+ * Loaded after ui-gameplay-polish-v5.css.
+ */
+
+/* hero-level is a child of hero-power-trigger, so anchor it to that card edge. */
+.screen-game .player-hero .hero-power-trigger > .hero-level {
+  left: calc(100% + var(--hero-meta-gap)) !important;
+  right: auto !important;
+  top: clamp(.82rem,1.65cqh,1.15rem) !important;
+  bottom: auto !important;
+  width: clamp(4.5rem,7.15cqw,7.45rem) !important;
+  height: clamp(1.35rem,2.9cqh,1.75rem) !important;
+  transform: none !important;
+}
+
+/* Attack motion is tied to the card itself. Player lunges upward, opponent down. */
+@keyframes hh-player-lunge {
+  0% { transform: translateY(0) scale(1); }
+  42% { transform: translateY(-34%) scale(1.045); }
+  58% { transform: translateY(-29%) scale(1.025); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes hh-enemy-lunge {
+  0% { transform: translateY(0) scale(1); }
+  42% { transform: translateY(34%) scale(1.045); }
+  58% { transform: translateY(29%) scale(1.025); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.screen-game .player-field .original-card.is-selected:not(.is-exhausted) {
+  animation: hh-player-lunge 430ms cubic-bezier(.18,.8,.28,1) 1 !important;
+  z-index: 190 !important;
+}
+.screen-game .enemy-field .original-card.is-selected:not(.is-exhausted) {
+  animation: hh-enemy-lunge 430ms cubic-bezier(.18,.8,.28,1) 1 !important;
+  z-index: 190 !important;
+}
+
+/* While native drag is active, hover lift must not shift the drag hotspot. */
+.screen-game .hs-board.is-dragging-card .player-hand .original-card,
+.screen-game .hs-board.is-dragging-card .player-hand .original-card:hover,
+.screen-game .hs-board.is-dragging-card .player-hand .original-card:focus-visible {
+  transform: none !important;
+  transition: none !important;
+  cursor: grabbing !important;
+}
+
+@container hemsfell-board (max-height: 44rem) {
+  .screen-game .player-hero .hero-power-trigger > .hero-level {
+    top: clamp(.68rem,1.35cqh,.96rem) !important;
+  }
+}
