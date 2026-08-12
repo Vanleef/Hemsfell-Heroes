@@ -15,20 +15,9 @@ const implementationRisks = (card) => {
   const effectTypes = effects.map((effect) => effect.type);
   const text = fold(card.text);
 
-  if (card.page === 13) {
-    risks.push({
-      severity: "confirmed",
-      code: "conditional-image-target-not-selected",
-      detail: "Ilusão Dracônica reduz corretamente o custo quando existe Dragão Filhote, mas a regra explícita replaceImage escolhe automaticamente a primeira imagem compatível. O alvo deveria ser escolhido somente quando houver Dragão Filhote; sem Filhote, deve criar Dragão Jovem normalmente e sem alvo.",
-    });
-  }
-  if (card.page === 14) {
-    risks.push({
-      severity: "review",
-      code: "conditional-image-target-not-selected",
-      detail: "Ilusão Dracônica Maior usa a mesma estratégia automática de replaceImage. Se houver mais de um Dragão Jovem, revisar se o jogador deve escolher qual será substituído.",
-    });
-  }
+  // Conditional Draconic Image upgrades are implemented by replaceImage: the
+  // engine creates the larger Image normally when no eligible smaller Image
+  // exists, and opens an authoritative target decision when one does.
 
   if (card.diagnostics?.source === "text" && card.diagnostics?.unsupported > 0) {
     risks.push({ severity: "high", code: "unsupported-parser-effect", detail: `${card.diagnostics.unsupported} efeito(s) não suportado(s) pelo compilador textual.` });

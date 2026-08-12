@@ -152,7 +152,42 @@ export const defaultEffectHandlers = Object.freeze({
   damageFromSacrificedAttack(state, effect, context) { defaultEffectHandlers.damage(state, { ...effect, type: "damage", amount: context.paidSacrificeAttack || 0 }, context); },
   configureResurrected(state, effect, context) { const target = findUnit(state, context.resurrectedId); if (!target) return; if (effect.grantKeywordIfCombo && (player(state, context.owner).turnCardsPlayed || 0) > 0) { target.temporaryTags ||= []; target.temporaryTags.push(effect.grantKeywordIfCombo); target.summoning = false; } if (effect.destroyAtTurnEnd) { state.delayedEffects ||= []; state.delayedEffects.push({ timing: "turnEnd", owner: context.owner, effect: { type: "destroy", target: "selected" }, context: { ...context, targetIds: [target.uid || target.id] } }); } },
   protectAlliedDragonsOncePerTurn(state, effect, context) { const source = findUnit(state, context.sourceId); if (source) { source.staticModifiers ||= []; if (!source.staticModifiers.some((item) => item.type === "protectAlliedDragonsOncePerTurn")) source.staticModifiers.push({ type: "protectAlliedDragonsOncePerTurn" }); } },
-  replaceImage(state, effect, context) { const entry = player(state, context.owner); const old = entry.board.find((card) => card.generatedImage && normalizedName(card.name) === normalizedName(effect.oldName)); const slot = old?.slot; if (old) removeFromZones(state, old.uid || old.id); defaultEffectHandlers.createImage(state, { type: "createImage", name: effect.newName, destination: "field" }, { ...context, slot }); },
+  replaceImage(state, effect, context) {
+    const entry = player(state, context.owner);
+    const candidates = (entry.board || []).filter((card) =>
+      (card.generatedImage || card.imageCard) && normalizedName(card.name) === normalizedName(effect.oldName)
+    );
+    const chosenId = selectedIds(context)[0];
+
+    // The printed condition is optional: without the smaller Image, the spell
+    // still resolves at its normal cost and simply creates the upgraded Image.
+    if (!candidates.length) {
+      defaultEffectHandlers.createImage(state, { type: "createImage", name: effect.newName, destination: "field" }, context);
+      return;
+    }
+
+    // When one or more eligible Images exist, the controller must decide which
+    // physical Image is replaced. This is authoritative and therefore mirrors
+    // correctly in multiplayer instead of letting the client silently pick one.
+    if (!chosenId) {
+      if (state.pendingDecision) throw new RulesViolation("decision-pending");
+      state.pendingDecision = {
+        kind: "targets",
+        owner: context.owner,
+        effect: { replayEffects: [{ ...effect }] },
+        context: { ...context, targetIds: [] },
+        targetSteps: [{ scope: "allyCreature", role: "effect", requiredName: effect.oldName, imageOnly: true }],
+        sourceName: context.effectSource?.name || `Substituir ${effect.oldName}`,
+      };
+      return;
+    }
+
+    const old = candidates.find((card) => (card.uid || card.id) === chosenId);
+    if (!old) throw new RulesViolation("invalid-target", `Escolha uma Imagem de ${effect.oldName} que você controla.`);
+    const slot = old.slot;
+    removeFromZones(state, old.uid || old.id);
+    defaultEffectHandlers.createImage(state, { type: "createImage", name: effect.newName, destination: "field" }, { ...context, slot, targetIds: [] });
+  },
   transformFromHandOrDeck(state, effect, context) { const entry = player(state, context.owner); let card = entry.hand.find((candidate) => normalizedName(candidate.name) === normalizedName(effect.name)); if (card) entry.hand.splice(entry.hand.indexOf(card), 1); else { const index = entry.deck.findIndex((candidate) => normalizedName(candidate.name) === normalizedName(effect.name)); if (index >= 0) card = entry.deck.splice(index, 1)[0]; } if (!card) throw new RulesViolation("card-choice-required"); const source = findUnit(state, context.sourceId), slot = source?.slot; if (source && effect.replaceSelf) removeFromZones(state, source.uid || source.id); const unit = { ...structuredClone(card), uid: `${card.id}-${state.round}-ascended`, slot: slot ?? 0, enteredRound: state.round, attackedThisTurn: false, summoning: true, exhausted: false, damage: 0, modifiers: [], abilities: card.abilities || [] }; entry.board.push(unit); if (effect.shuffle && entry.deck.length > 1) entry.deck.push(entry.deck.shift()); queueEvent(state, { type: "onEnter", owner: context.owner, sourceId: unit.uid, cardId: unit.uid, card: unit }); },
   snapshotStatsFromHand(state, effect, context) { const source = findUnit(state, context.sourceId); const count = player(state, context.owner).hand.length; if (source) defaultEffectHandlers.modifyStats(state, { type: "modifyStats", attack: count * (effect.attackPerCard || 0), health: count * (effect.healthPerCard || 0), duration: "permanent" }, { ...context, targetIds: [source.uid || source.id] }); },
   snapshotHealthFromFactionConstants(state, effect, context) { const entry = player(state, context.owner), source = findUnit(state, context.sourceId); const count = allUnits(state).filter((card) => allUnits(state).includes(card) && (card.tags || []).some((tag) => normalizedName(tag) === normalizedName(effect.faction))).length; if (source) { source.hp = Math.max(1, count); source.damage = 0; } },

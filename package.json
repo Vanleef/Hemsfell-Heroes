@@ -17,7 +17,7 @@
     "db:generate": "bash scripts/sites-env.sh -- drizzle-kit generate",
     "dev:vinext": "vite",
     "check:vinext": "vinext check",
-    "test:rules": "node --test tests/rules-engine.test.mjs",
+    "test:rules": "node --test tests/*.test.mjs",
     "audit:cards": "node scripts/audit-card-rules.mjs",
     "audit:cards:full": "node scripts/export-card-implementation-audit.mjs",
     "simulate:headless": "node scripts/simulate-games.mjs"

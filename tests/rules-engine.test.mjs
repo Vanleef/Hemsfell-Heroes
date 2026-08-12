@@ -1077,7 +1077,15 @@ test("online priority passes update the local response window from the authorita
 });
 
 test("game client routes migrated cards through the command engine", async () => {
-  const [page, css] = await Promise.all([readFile(new URL("../app/page.tsx", import.meta.url), "utf8"), readFile(new URL("../app/lab.css", import.meta.url), "utf8")]);
+  const [page, lab, legacy, board, tuning, interaction] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/lab.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/lab-legacy.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/board-layout.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/board-tuning.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/lab-interaction-responsive.css", import.meta.url), "utf8"),
+  ]);
+  const css = [lab, legacy, board, tuning, interaction].join("\n");
   assert.match(page, /canExecuteCard\(snapshot\)/);
   assert.match(page, /roomAction\("command"/);
   assert.match(page, /executeCommand\(current,\{\.\.\.command,owner\},\{priority:true\}\)/);
@@ -1405,7 +1413,7 @@ test("online actions share one serialized request queue and reconcile stale revi
 
 test("field keyword icons render outside the card button at its lower edge", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
-  const css = await readFile(new URL("../app/lab.css", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/lab-legacy.css", import.meta.url), "utf8");
   const buttonClose = page.indexOf("</button>", page.indexOf("function OriginalCard"));
   const keywordStrip = page.indexOf('className="field-keywords"', page.indexOf("function OriginalCard"));
   assert.ok(keywordStrip > buttonClose);
@@ -1432,6 +1440,7 @@ test("game viewport and stage use the canonical responsive shell", async () => {
   assert.match(layout, /export const viewport:\s*Viewport/);
   assert.match(layout, /width:\s*"device-width"/);
   assert.match(layout, /initialScale:\s*1/);
+  assert.match(layout, /maximumScale:\s*1/);
   assert.match(layout, /userScalable:\s*false/);
   assert.match(page, /className="game-stage"/);
   assert.match(page, /className="hs-board game-content"/);
@@ -1439,42 +1448,45 @@ test("game viewport and stage use the canonical responsive shell", async () => {
 });
 
 test("board layout preserves the approved 16:9 composition proportionally", async () => {
-  const css = await readFile(new URL("../app/lab.css", import.meta.url), "utf8");
-  const responsive = css.slice(css.lastIndexOf("Reference-locked proportional game stage"));
-  assert.match(responsive, /\.game-stage>\.game-content\.hs-board\s*\{/);
-  assert.match(responsive, /display:grid!important/);
-  assert.match(responsive, /aspect-ratio:16\s*\/\s*9/);
-  assert.match(responsive, /width:min\(100vw,calc\(100dvh \* 1\.777778\)\)/);
-  assert.match(responsive, /grid-template-columns:19cqw 2cqw 58cqw 4cqw 17cqw/);
-  assert.match(responsive, /container-type:size/);
-  assert.doesNotMatch(responsive, /\d+px/);
+  const css = await readFile(new URL("../app/board-layout.css", import.meta.url), "utf8");
+  assert.match(css, /\.screen-game \.game-stage > \.game-content\.hs-board/);
+  assert.match(css, /display:\s*grid\s*!important/);
+  assert.match(css, /aspect-ratio:\s*16\s*\/\s*9\s*!important/);
+  assert.match(css, /width:\s*min\(100dvw,\s*calc\(100dvh \* 16 \/ 9\)\)\s*!important/);
+  assert.match(css, /grid-template-columns:[\s\S]*minmax\(0, 58fr\)/);
+  assert.match(css, /container-type:\s*size/);
+  assert.doesNotMatch(css, /\d+px/);
 });
 
 test("cards, fields, piles and hand remain proportional without coordinate reflow", async () => {
-  const css = await readFile(new URL("../app/lab.css", import.meta.url), "utf8");
-  const responsive = css.slice(css.lastIndexOf("Reference-locked proportional game stage"));
-  assert.match(responsive, /--slot-width:3\.8cqw/);
-  assert.match(responsive, /aspect-ratio:5\s*\/\s*7/);
-  assert.match(responsive, /\.game-content>\.paired-field\{[\s\S]*grid-template-columns:repeat\(5,var\(--slot-width\)\)/);
-  assert.match(responsive, /\.game-content>\.side-piles\{[\s\S]*grid-template-columns:repeat\(2,7cqw\)/);
-  assert.match(responsive, /\.game-content>\.player-hand\{[\s\S]*overflow-x:auto!important/);
-  assert.match(responsive, /@media\s*\(max-width:40rem\)/);
-  assert.match(responsive, /width:48rem!important/);
-  assert.match(responsive, /@container\s+hemsfell-board\s*\(max-width:60rem\)/);
-  assert.doesNotMatch(responsive, /grid-template-columns:minmax\(7\.5rem/);
+  const [board, lab] = await Promise.all([
+    readFile(new URL("../app/board-layout.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/lab.css", import.meta.url), "utf8"),
+  ]);
+  const css = board + "\n" + lab;
+  assert.match(css, /--hh-slot-w:\s*clamp\([^;]*4cqw/);
+  assert.match(css, /--hh-card-ratio:\s*5\s*\/\s*7/);
+  assert.match(css, /\.hs-board > \.paired-field\s*\{[\s\S]*grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\)/);
+  assert.match(css, /\.hs-board > \.side-piles\s*\{[\s\S]*grid-template-columns:\s*repeat\(2, minmax\(0,1fr\)\)/);
+  assert.match(css, /\.hs-board > \.player-hand\s*\{[\s\S]*overflow-x:\s*auto\s*!important/);
+  assert.match(css, /@container hemsfell-board \(max-height: 44rem\)/);
+  assert.doesNotMatch(board, /grid-template-columns:minmax\(7\.5rem/);
 });
-
 
 test("final stage seal outranks legacy fixed-position board rules", async () => {
-  const css = await readFile(new URL("../app/lab.css", import.meta.url), "utf8");
-  const seal = css.slice(css.lastIndexOf("Proportional-stage specificity seal"));
-  assert.match(seal, /\.screen-game \.game-stage>\.game-content\.hs-board>\.paired-field/);
-  assert.match(seal, /left:auto!important/);
-  assert.match(seal, /top:auto!important/);
-  assert.match(seal, /transform:none!important/);
-  assert.match(seal, />\.hero-abilities\{[\s\S]*width:18\.4cqw!important/);
-  assert.match(seal, />\.paired-field\{[\s\S]*width:36cqw!important/);
-  assert.match(seal, /grid-template-columns:repeat\(5,var\(--slot-width\)\)/);
-  assert.match(seal, />\.side-piles\{[\s\S]*grid-template-columns:repeat\(2,7cqw\)/);
-  assert.doesNotMatch(seal, /\d+px/);
+  const [lab, board, interaction] = await Promise.all([
+    readFile(new URL("../app/lab.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/board-layout.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/lab-interaction-responsive.css", import.meta.url), "utf8"),
+  ]);
+  assert.match(lab, /@import "\.\/board-layout\.css"/);
+  assert.match(lab, /@import "\.\/board-tuning\.css"/);
+  assert.match(lab, /@import "\.\/lab-interaction-responsive\.css"/);
+  assert.match(lab, /\.screen-game \.game-stage > \.game-content\.hs-board > \.side-piles\s*\{[\s\S]*position:\s*relative\s*!important/);
+  assert.match(lab, /left:\s*auto\s*!important/);
+  assert.match(lab, /transform:\s*none\s*!important/);
+  assert.match(board, /\.screen-game \.hs-board > \.paired-field/);
+  assert.match(interaction, /\.visual-effect[\s\S]*z-index:\s*62\s*!important/);
+  assert.doesNotMatch(board, /\d+px/);
 });
+
