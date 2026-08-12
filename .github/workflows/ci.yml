@@ -47,6 +47,14 @@ jobs:
             exit 0
           fi
 
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply-conditional-illusion-fix.mjs')
+          text = path.read_text()
+          text = text.replace('${effect.oldName}', r'\${effect.oldName}')
+          path.write_text(text)
+          PY
+
           node scripts/apply-conditional-illusion-fix.mjs
           npm run audit:cards:full
 
