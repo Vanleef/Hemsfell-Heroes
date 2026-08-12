@@ -1383,3 +1383,42 @@ test("AI difficulty profiles and life-cost safety are explicit", () => {
   assert.equal(canAIPlayLifeCost({ text: "Perca 3 de vida." }, { life: 2, heroId: "saymon", level: 2 }), false);
   assert.equal(canAIPlayLifeCost({ text: "Perca 1 de vida." }, { life: 2, heroId: "saymon", level: 3 }), true);
 });
+
+
+test("UI animation is presentation-only and cannot hide an unresolved ability response", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.doesNotMatch(page, /Aguarde a animação atual terminar/);
+  assert.doesNotMatch(page, /responseWindow\?\.action\.startsWith\("habilidade de "\).*setResponseWindow\(null\)/);
+  assert.doesNotMatch(page, /window\.setTimeout\(\(\)=>update\(next=>/);
+  assert.match(page, /Rules resolve atomically/);
+});
+
+test("online actions share one serialized request queue and reconcile stale revisions", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /syncQueueRef\.current\.then\(\(\)=>execute\(\)\)/);
+  assert.match(page, /res\.status===409&&data\?\.game/);
+  assert.match(page, /if\(retry&&action==="command"\)return execute\(false\)/);
+  assert.match(page, /incomingRevision<=roomRevisionRef\.current/);
+});
+
+test("field keyword icons render outside the card button at its lower edge", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/lab.css", import.meta.url), "utf8");
+  const buttonClose = page.indexOf("</button>", page.indexOf("function OriginalCard"));
+  const keywordStrip = page.indexOf('className="field-keywords"', page.indexOf("function OriginalCard"));
+  assert.ok(keywordStrip > buttonClose);
+  assert.match(css, /\.card-frame>\.field-keywords\{[\s\S]*bottom:-18px!important/);
+});
+
+test("a full priority combat exchange always reaches a terminal combat state", () => {
+  const game = state(); game.phase = "combate";
+  game.players[0].board.push({ uid: "a", type: "Criatura", slot: 0, atk: 2, hp: 3, damage: 0, exhausted: false, summoning: false, stunned: false, tags: [], abilities: [] });
+  game.players[1].board.push({ uid: "d", type: "Criatura", slot: 0, atk: 1, hp: 3, damage: 0, exhausted: false, summoning: false, stunned: false, tags: [], abilities: [] });
+  let next = executeCommand(game, { type: "declareAttack", owner: 0, attackerId: "a" }, { priority: true }).state;
+  for (const owner of [1, 0]) next = executeCommand(next, { type: "passPriority", owner }, { priority: true }).state;
+  next = executeCommand(next, { type: "selectDefender", owner: 1, attackerId: "a", defenderId: "d", targetHero: false }, { priority: true }).state;
+  next = executeCommand(next, { type: "attack", owner: 0, attackerId: "a", defenderId: "d", skipPriority: true }, { priority: true }).state;
+  assert.equal(next.combatAction, null);
+  assert.equal(next.pendingResponse, null);
+  assert.equal(next.pendingAction, undefined);
+});
