@@ -1424,3 +1424,39 @@ test("a full priority combat exchange always reaches a terminal combat state", (
   assert.equal(next.pendingResponse, null);
   assert.equal(next.pendingAction, undefined);
 });
+
+
+test("game viewport and stage use the canonical responsive shell", async () => {
+  const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(layout, /export const viewport:\s*Viewport/);
+  assert.match(layout, /width:\s*"device-width"/);
+  assert.match(layout, /initialScale:\s*1/);
+  assert.match(layout, /userScalable:\s*false/);
+  assert.match(page, /className="game-stage"/);
+  assert.match(page, /className="hs-board game-content"/);
+  assert.doesNotMatch(page, /--hand-card-size/);
+});
+
+test("board layout is grid-driven, proportional and card-safe", async () => {
+  const css = await readFile(new URL("../app/lab.css", import.meta.url), "utf8");
+  const responsive = css.slice(css.lastIndexOf("Responsive board architecture"));
+  assert.match(responsive, /\.game-stage>\.game-content\.hs-board\s*\{/);
+  assert.match(responsive, /display:grid!important/);
+  assert.match(responsive, /grid-template-columns:/);
+  assert.match(responsive, /container-type:inline-size/);
+  assert.match(responsive, /aspect-ratio:5\s*\/\s*7/);
+  assert.match(responsive, /\.game-content>\.player-hand\s*\{[\s\S]*overflow-x:auto!important/);
+  assert.match(responsive, /width:clamp\(/);
+  assert.match(responsive, /gap:clamp\(/);
+});
+
+test("responsive board has compact tablet, mobile and zoom-aware fallbacks", async () => {
+  const css = await readFile(new URL("../app/lab.css", import.meta.url), "utf8");
+  const responsive = css.slice(css.lastIndexOf("Responsive board architecture"));
+  assert.match(responsive, /@media\s*\(max-width:68rem\)/);
+  assert.match(responsive, /@media\s*\(max-width:48rem\)/);
+  assert.match(responsive, /@media\s*\(max-height:42rem\)\s*and\s*\(orientation:landscape\)/);
+  assert.match(responsive, /@container\s+hemsfell-board\s*\(max-width:60rem\)/);
+  assert.match(responsive, /scroll-snap-type:x proximity/);
+});
