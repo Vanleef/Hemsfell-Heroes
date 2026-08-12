@@ -8028,3 +8028,5 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 }
 .card-frame>.original-card .field-keywords{display:none!important}
 .field-slot,.creature-slot,.paired-field,.field-column{overflow:visible!important}
+
+/* flow-audit checkpoint: 2026-08-11 */
