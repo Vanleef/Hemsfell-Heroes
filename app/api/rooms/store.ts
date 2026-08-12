@@ -3,7 +3,6 @@ export type { Room } from "./machine";
 import { get, put } from "@vercel/blob";
 
 const memoryRooms = new Map<string, Room>();
-const configuredStore = () => process.env.HEMSFELL_ROOM_STORE;
 const useMemoryStore = () => process.env.NODE_ENV === "development";
 const hasSupabaseStore = () => Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY));
 const hasBlobStore = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
@@ -56,13 +55,25 @@ async function writeBlob(room: Room) {
 
 export async function readRoom(id: string): Promise<Room | null> {
   if (useMemoryStore()) return cloneMemory(id);
-  if (hasSupabaseStore()) return readSupabase(id);
+  if (hasSupabaseStore()) {
+    try { return await readSupabase(id); }
+    catch (error) {
+      if (!hasBlobStore()) throw error;
+      console.warn("[rooms] Supabase unavailable; reading from Blob fallback.", error);
+    }
+  }
   if (hasBlobStore()) return readBlob(id);
   throw unavailable();
 }
 export async function writeRoom(room: Room) {
   if (useMemoryStore()) { memoryRooms.set(room.id, structuredClone(room)); return; }
-  if (hasSupabaseStore()) return writeSupabase(room);
+  if (hasSupabaseStore()) {
+    try { return await writeSupabase(room); }
+    catch (error) {
+      if (!hasBlobStore()) throw error;
+      console.warn("[rooms] Supabase unavailable; writing to Blob fallback.", error);
+    }
+  }
   if (hasBlobStore()) return writeBlob(room);
   throw unavailable();
 }
