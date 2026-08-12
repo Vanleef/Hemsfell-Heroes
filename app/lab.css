@@ -8523,3 +8523,245 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   .game-content .pile-zone small{display:none!important}
   .game-content .phase-track span{display:none!important}
 }
+
+
+/* ==========================================================================
+   Proportional-stage specificity seal
+   Legacy board rules use !important and three-class selectors. This final
+   boundary deliberately outranks them so grid placement is the sole layout
+   authority for primary board regions.
+   ========================================================================== */
+.screen-game .game-stage>.game-content.hs-board>.game-bar{
+  grid-column:1/-1!important;
+  grid-row:1!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.opponent-hand{
+  grid-column:3!important;
+  grid-row:2!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.enemy-energy{
+  grid-column:3!important;
+  grid-row:3!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.enemy-field{
+  grid-column:3!important;
+  grid-row:4!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.enemy-terrain{
+  grid-column:3!important;
+  grid-row:4!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.enemy-piles{
+  grid-column:5!important;
+  grid-row:2/5!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.phase-orb{
+  grid-column:3!important;
+  grid-row:5!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-field{
+  grid-column:3!important;
+  grid-row:6!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-terrain{
+  grid-column:3!important;
+  grid-row:6!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-energy{
+  grid-column:3!important;
+  grid-row:6!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-piles{
+  grid-column:5!important;
+  grid-row:5/8!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-hand{
+  grid-column:3!important;
+  grid-row:7/9!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-hero.enemy{
+  grid-column:1!important;
+  grid-row:2/5!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.hero-abilities.enemy{
+  grid-column:1!important;
+  grid-row:4!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-hero:not(.enemy){
+  grid-column:1!important;
+  grid-row:6/9!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.hero-abilities:not(.enemy){
+  grid-column:1!important;
+  grid-row:6!important;
+}
+
+.screen-game .game-stage>.game-content.hs-board>.player-hero,
+.screen-game .game-stage>.game-content.hs-board>.hero-abilities,
+.screen-game .game-stage>.game-content.hs-board>.opponent-hand,
+.screen-game .game-stage>.game-content.hs-board>.terrain-slot,
+.screen-game .game-stage>.game-content.hs-board>.paired-field,
+.screen-game .game-stage>.game-content.hs-board>.field-energy,
+.screen-game .game-stage>.game-content.hs-board>.side-piles,
+.screen-game .game-stage>.game-content.hs-board>.phase-orb,
+.screen-game .game-stage>.game-content.hs-board>.player-hand{
+  position:relative!important;
+  inset:auto!important;
+  top:auto!important;
+  right:auto!important;
+  bottom:auto!important;
+  left:auto!important;
+  translate:none!important;
+  transform:none!important;
+  margin:0!important;
+  min-width:0!important;
+  min-height:0!important;
+  max-width:none!important;
+  max-height:none!important;
+  box-sizing:border-box!important;
+}
+
+.screen-game .game-stage>.game-content.hs-board>.player-hero{
+  width:18.4cqw!important;
+  height:20cqh!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-hero.enemy{
+  align-self:start!important;
+  justify-self:start!important;
+  margin-top:2cqh!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-hero:not(.enemy){
+  align-self:end!important;
+  justify-self:start!important;
+  margin-bottom:2cqh!important;
+}
+
+.screen-game .game-stage>.game-content.hs-board>.hero-abilities{
+  display:grid!important;
+  justify-self:start!important;
+  grid-template-rows:repeat(3,minmax(0,1fr))!important;
+  width:18.4cqw!important;
+  height:18cqh!important;
+  max-height:none!important;
+  gap:.55cqh!important;
+  padding:0 .4cqw!important;
+  overflow:visible!important;
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.hero-abilities.enemy{
+  align-self:end!important;
+  margin-bottom:-2cqh!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.hero-abilities:not(.enemy){
+  align-self:center!important;
+}
+
+.screen-game .game-stage>.game-content.hs-board>.opponent-hand{
+  position:relative!important;
+  align-self:center!important;
+  justify-self:center!important;
+  width:36cqw!important;
+  height:5.2cqh!important;
+}
+
+.screen-game .game-stage>.game-content.hs-board>.terrain-slot{
+  justify-self:start!important;
+  width:4.35cqw!important;
+  height:auto!important;
+  aspect-ratio:5/7!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.enemy-terrain{
+  align-self:end!important;
+  margin:0 0 1.5cqh 6.5cqw!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-terrain{
+  align-self:start!important;
+  margin:8cqh 0 0 6.5cqw!important;
+}
+
+.screen-game .game-stage>.game-content.hs-board>.paired-field{
+  align-self:start!important;
+  justify-self:end!important;
+  display:grid!important;
+  grid-template-columns:repeat(5,var(--slot-width))!important;
+  justify-content:space-between!important;
+  align-content:start!important;
+  width:36cqw!important;
+  height:22cqh!important;
+  padding:0!important;
+  gap:0!important;
+  overflow:visible!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.enemy-field{
+  align-self:end!important;
+  margin:0 7cqw 1.5cqh 0!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-field{
+  align-self:start!important;
+  margin:1cqh 7cqw 0 0!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.paired-field>.field-column{
+  position:relative!important;
+  inset:auto!important;
+  display:grid!important;
+  grid-template-rows:repeat(2,auto)!important;
+  align-content:start!important;
+  width:var(--slot-width)!important;
+  height:auto!important;
+  min-width:0!important;
+  gap:3.5cqh!important;
+  padding:0!important;
+}
+
+.screen-game .game-stage>.game-content.hs-board>.field-energy{
+  justify-self:stretch!important;
+  width:100%!important;
+  height:3.2cqh!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.enemy-energy{
+  align-self:center!important;
+}
+.screen-game .game-stage>.game-content.hs-board>.player-energy{
+  align-self:end!important;
+  margin-bottom:1cqh!important;
+}
+
+.screen-game .game-stage>.game-content.hs-board>.side-piles{
+  justify-self:center!important;
+  align-self:center!important;
+  display:grid!important;
+  grid-template-columns:repeat(2,7cqw)!important;
+  grid-template-rows:repeat(2,14.8cqh)!important;
+  place-content:center!important;
+  width:15.2cqw!important;
+  height:31cqh!important;
+  gap:.7cqh .55cqw!important;
+  padding:0!important;
+  overflow:visible!important;
+}
+
+.screen-game .game-stage>.game-content.hs-board>.phase-orb{
+  align-self:center!important;
+  justify-self:end!important;
+  display:grid!important;
+  place-items:center!important;
+  width:4.55cqw!important;
+  height:4.55cqw!important;
+  overflow:visible!important;
+}
+
+.screen-game .game-stage>.game-content.hs-board>.player-hand{
+  align-self:end!important;
+  justify-self:stretch!important;
+  display:flex!important;
+  align-items:flex-end!important;
+  justify-content:center!important;
+  width:100%!important;
+  height:16cqh!important;
+  gap:var(--card-gap)!important;
+  padding:.45cqh .35cqw 0!important;
+  overflow-x:auto!important;
+  overflow-y:visible!important;
+}
