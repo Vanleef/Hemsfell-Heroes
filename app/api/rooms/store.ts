@@ -4,7 +4,7 @@ import { get, put } from "@vercel/blob";
 
 const memoryRooms = new Map<string, Room>();
 const configuredStore = () => process.env.HEMSFELL_ROOM_STORE;
-const useMemoryStore = () => process.env.NODE_ENV === "development" || configuredStore() === "memory";
+const useMemoryStore = () => process.env.NODE_ENV === "development";
 const hasSupabaseStore = () => Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY));
 const hasBlobStore = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 const cloneMemory = (id: string) => structuredClone(memoryRooms.get(id) ?? null);
