@@ -54,10 +54,19 @@ const sendDetachedArtifacts = (state, entry, creature) => {
     destination.push({ ...attachment, deathCause: "detached", lastZone: "support" });
   }
 };
+const cleanCardForHiddenZone = (card, metadata = {}) => {
+  const copy = { ...card, ...metadata };
+  for (const key of [
+    "exhausted", "summoning", "attackedThisTurn", "attacksThisTurn", "defenseUses",
+    "frozen", "stunned", "suffocated", "immobilized", "impacting", "activatedThisTurn",
+    "temporaryAtk", "temporaryHp", "temporaryTags", "targetClass", "selected"
+  ]) delete copy[key];
+  return copy;
+};
 const sendToPrintedGraveDestination = (entry, card, metadata = {}) => {
   if (card.generatedImage || card.imageCard) return;
   const destination = card.graveDestination === "obscuro" || card.page === 154 ? entry.obscuro : entry.grave;
-  destination.push({ ...card, ...metadata });
+  destination.push(cleanCardForHiddenZone(card, metadata));
 };
 const removeFromZones = (state, id) => {
   for (const entry of state.players) {
@@ -136,10 +145,10 @@ export const defaultEffectHandlers = Object.freeze({
     for (const id of context.sacrificeIds || []) { const removed = removeFromZones(state, id); if (removed) sendToPrintedGraveDestination(player(state, removed.owner), removed.card, { lastZone: removed.zone, deathCause: "sacrifice", suppressDeathTrigger: true }); }
   },
   banish(state, effect, context) {
-    for (const id of context.targetIds || []) { const removed = removeFromZones(state, id); if (removed) player(state, removed.owner).obscuro.push(removed.card); }
+    for (const id of context.targetIds || []) { const removed = removeFromZones(state, id); if (removed) player(state, removed.owner).obscuro.push(cleanCardForHiddenZone(removed.card)); }
   },
   returnToHand(state, effect, context) {
-    for (const id of context.targetIds || []) { const target = findUnit(state, id); if (!target) throw new RulesViolation("target-required"); if (effect.requireExhausted && !target.exhausted) throw new RulesViolation("target-must-be-exhausted"); if (effect.maxCost != null && (target.cost ?? 0) > effect.maxCost) throw new RulesViolation("target-cost-too-high"); const removed = removeFromZones(state, id); if (removed) player(state, removed.owner).hand.push(removed.card); }
+    for (const id of context.targetIds || []) { const target = findUnit(state, id); if (!target) throw new RulesViolation("target-required"); if (effect.requireExhausted && !target.exhausted) throw new RulesViolation("target-must-be-exhausted"); if (effect.maxCost != null && (target.cost ?? 0) > effect.maxCost) throw new RulesViolation("target-cost-too-high"); const removed = removeFromZones(state, id); if (removed) player(state, removed.owner).hand.push(cleanCardForHiddenZone(removed.card)); }
   },
   tap(state, effect, context) { const target = findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); target.exhausted = true; },
   ready(state, effect, context) { const target = findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); target.exhausted = false; },
@@ -165,8 +174,9 @@ export const defaultEffectHandlers = Object.freeze({
   },
   optionalReequipArtifact(state, effect, context) { const entry = player(state, context.owner), source = findUnit(state, context.sourceId); if (!source || entry.energy < (effect.energyCost || 0)) return; const eligible = (entry.board || []).filter((card) => (!effect.subtype || hasSubtype(card, effect.subtype)) && card.uid !== source.attachedTo); if (!eligible.length) return; queueDecision(state, { type: "optionalReequipArtifact", choices: [[], [{ type: "reattachArtifact", target: "allyCreature", requiredSubtype: effect.subtype, selections: 1, subtype: effect.subtype, energyCost: effect.energyCost, attack: effect.attack, keyword: effect.keyword }]] }, context, "choice"); },
   conditionalAttachedBonus(state, effect, context) { const source = findUnit(state, context.sourceId), target = source?.attachedTo ? findUnit(state, source.attachedTo) : null; if (!source || !target) return; if (effect.requiredSubtype && !hasSubtype(target, effect.requiredSubtype)) return; if (effect.attack || effect.health) defaultEffectHandlers.modifyStats(state, { type: "modifyStats", target: "attachedCreature", attack: effect.attack || 0, health: effect.health || 0, duration: "attached" }, context); if (effect.keyword) { target.grantedKeywords ||= []; const value = "attachment:" + (source.uid || source.id) + ":" + effect.keyword; if (!target.grantedKeywords.includes(value)) target.grantedKeywords.push(value); } },
+  conditionalDrawByControlledSubtype(state, effect, context) { const entry = player(state, context.owner); const controlled = [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])]; const amount = controlled.some((card) => !effect.subtype || hasSubtype(card, effect.subtype)) ? (effect.ifTrue ?? 0) : (effect.ifFalse ?? 0); if (amount > 0) defaultEffectHandlers.draw(state, { type: "draw", amount }, context); },
   gainEnergy(state, effect, context) { const entry = player(state, context.owner); const key = effect.destination === "reserve" ? "reserve" : "energy"; const cap = key === "reserve" ? 3 : entry.maxEnergy; entry[key] = Math.min(cap, entry[key] + (effect.amount ?? 0)); },
-  gainMaxEnergy(state, effect, context) { const entry = player(state, context.owner); entry.maxEnergy = Math.min(10, (entry.maxEnergy || 0) + (effect.amount || 1)); entry.energy = Math.min(10, (entry.energy || 0) + (effect.amount || 1)); },
+  gainMaxEnergy(state, effect, context) { const entry = player(state, context.owner); entry.maxEnergy = Math.min(10, (entry.maxEnergy || 0) + (effect.amount || 1)); },
   grantTeamReserveTapAbility(state, effect, context) { for (const target of player(state, context.owner).board || []) { target.abilities ||= []; if (!target.abilities.some((ability) => ability.id === `stabilize:${context.sourceId}`)) target.abilities.push({ id: `stabilize:${context.sourceId}`, trigger: "activated", costs: [{ type: "tap", amount: 1 }], effects: [{ type: "gainEnergy", amount: 1, destination: "reserve" }], temporary: true }); } },
   freezeEnemyBoard(state, effect, context) { for (const target of player(state, 1 - context.owner).board || []) { const alreadyFrozen = target.frozen || hasKeyword(target, /congelado/i); if (alreadyFrozen && effect.damageAlreadyFrozen) defaultEffectHandlers.damage(state, { type: "damage", amount: effect.damageAlreadyFrozen }, { ...context, targetIds: [target.uid] }); target.frozen = true; target.tags ||= []; if (!target.tags.some((tag) => /congelado/i.test(String(tag)))) target.tags.push("Congelado"); } },
   applyGoblinThresholds(state, effect, context) { const entry = player(state, context.owner); const count = entry.turnCardsPlayed || 0; for (const target of entry.board.filter((card) => hasSubtype(card, "Goblin"))) { target.temporaryTags ||= []; target.temporaryTags = target.temporaryTags.filter((tag) => !String(tag).startsWith("parque:")); if (count >= 4) target.temporaryTags.push("parque:Atropelar"); if (count >= 5) { target.temporaryTags.push("parque:Investida"); target.summoning = false; } if (count >= 6) target.temporaryTags.push("parque:Último Suspiro"); if (count >= 7) target.temporaryTags.push("parque:Toque da Morte"); } },

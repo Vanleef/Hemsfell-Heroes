@@ -27,7 +27,8 @@
   margin: 0 !important;
 }
 .screen-game .game-stage > .game-content.hs-board :is(.hero-abilities,.hero-command-bar) :is(.ability,.hero-ability-chip) span > b {
-  font-size: clamp(.29rem,min(.46cqw,.76cqh),.51rem) !important;
+  font-size: clamp(.40rem,min(.46cqw,.76cqh),.51rem) !important;
+  margin: 0.15cqw 0.4cqw 0 !important;
   line-height: 1 !important;
 }
 
@@ -150,7 +151,7 @@
 .screen-game .game-stage > .game-content.hs-board > .combat-cinematic,
 .screen-game .game-stage > .game-content.hs-board > .combat-animation {
   width: clamp(15rem,min(22.8cqw,40cqh),24.5rem) !important;
-  max-width: min(22.8cqw,40cqh) !important;
+  max-width: min(22.8cqw,60cqh) !important;
   z-index: 550 !important;
 }
 
@@ -166,7 +167,8 @@
 
 @container hemsfell-board (max-height: 44rem) {
   .screen-game .game-stage > .game-content.hs-board :is(.hero-abilities,.hero-command-bar) :is(.ability,.hero-ability-chip) p {
-    font-size: clamp(.42rem,min(.65cqw,1.05cqh),.68rem) !important;
+    margin: 0.4cqw 0.4cqw 0 !important;
+    font-size: clamp(.60rem,min(.65cqw,1.05cqh),.68rem) !important;
   }
   .screen-game .game-stage > .game-content.hs-board > .visual-effect {
     width: clamp(11.5rem,min(19.6cqw,34cqh),19rem) !important;

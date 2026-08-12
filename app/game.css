@@ -297,13 +297,12 @@ select {
   filter: drop-shadow(0 0 12px #f9d469);
 }
 .original-card.is-selected:after {
-  content: "ATACANTE";
+  content: "";
   position: absolute;
   bottom: -17px;
   left: 5px;
   right: 5px;
-  padding: 4px;
-  background: #c78623;
+  background: #c7852300;
   color: #111;
   font: 800 7px Arial;
   letter-spacing: 0.08em;
