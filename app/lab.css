@@ -7966,3 +7966,65 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 .match-reconnect-overlay span{color:#a8c5c7;font:11px/1.5 Arial}
 .match-reconnect-overlay strong{color:#f8b83c;font:800 22px/1 monospace}
 
+
+
+/* Field keyword badges sit outside the artwork, tangent to its lower edge. */
+.card-frame>.field-keywords{
+  --keyword-icon-size:16px;
+  --keyword-gap:3px;
+  position:absolute!important;
+  left:50%!important;
+  bottom:-18px!important;
+  z-index:24!important;
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:var(--keyword-gap)!important;
+  transform:translateX(-50%)!important;
+  overflow:visible!important;
+  pointer-events:auto!important;
+  isolation:isolate;
+}
+.card-frame>.field-keywords>i{
+  width:var(--keyword-icon-size);
+  height:var(--keyword-icon-size);
+  display:grid;
+  place-items:center;
+  border:1px solid #f6c85cbb;
+  border-radius:50%;
+  background:#06151ef2;
+  color:#ffe19a;
+  box-shadow:0 2px 5px #000c;
+  font:900 max(6px,calc(var(--keyword-icon-size) - 5px))/1 Arial,sans-serif;
+  font-style:normal;
+}
+.card-frame>.field-keywords::after{
+  content:attr(data-keywords);
+  position:absolute;
+  left:50%;
+  bottom:calc(100% + 5px);
+  width:max-content;
+  max-width:180px;
+  padding:4px 7px;
+  border:1px solid #e6b94f;
+  border-radius:5px;
+  background:#041117f5;
+  color:#f4fbfb;
+  box-shadow:0 5px 14px #000b;
+  font:700 9px/1.25 Arial,sans-serif;
+  white-space:normal;
+  text-align:center;
+  opacity:0;
+  visibility:hidden;
+  transform:translate(-50%,3px);
+  transition:opacity .12s ease,transform .12s ease;
+  pointer-events:none;
+}
+.card-frame>.field-keywords:hover::after,
+.card-frame>.field-keywords:focus-within::after{
+  opacity:1;
+  visibility:visible;
+  transform:translate(-50%,0);
+}
+.card-frame>.original-card .field-keywords{display:none!important}
+.field-slot,.creature-slot,.paired-field,.field-column{overflow:visible!important}
