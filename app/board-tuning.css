@@ -1,26 +1,23 @@
 /*
  * Responsive fine-tuning for the canonical board layout.
- * This layer intentionally contains only proportional corrections for:
- * - side piles;
- * - phase control;
- * - hero level / evolution progress;
- * - hand overflow and bottom utility controls.
+ * Validated against 90%, 100%, 110% and 120% browser zoom.
  *
- * No primary geometry below uses fixed screen coordinates.
+ * The important part here is that zoom reduces the board's logical CSS height.
+ * Width-only breakpoints therefore are not enough: height-based container
+ * queries progressively compact the right rail, phase control and hero meta.
  */
 
 /* -------------------------------------------------------------------------
    SIDE PILES
-   Keep the four utility zones as a compact 2x2 unit that scales with its
-   container. Width drives the whole component; height follows its ratio.
    ------------------------------------------------------------------------- */
 .screen-game .hs-board > .side-piles {
-  width: min(92%, 12.8cqw) !important;
+  width: min(90%, 12.2cqw) !important;
   height: auto !important;
-  aspect-ratio: 1 / 1.28 !important;
+  max-height: 28cqh !important;
+  aspect-ratio: 1 / 1.22 !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
-  gap: clamp(.12rem, .38cqw, .46rem) !important;
+  gap: clamp(.1rem, .32cqw, .4rem) !important;
   align-self: center !important;
   justify-self: center !important;
 }
@@ -31,12 +28,12 @@
   min-width: 0 !important;
   min-height: 0 !important;
   aspect-ratio: 4 / 5 !important;
-  padding: clamp(.08rem, .24cqw, .28rem) !important;
+  padding: clamp(.07rem, .21cqw, .25rem) !important;
   grid-template-rows: minmax(0, 1fr) auto auto !important;
 }
 
 .screen-game .side-piles .pile-card {
-  width: min(70%, 3.75cqw) !important;
+  width: min(68%, 3.45cqw) !important;
   height: auto !important;
   aspect-ratio: 5 / 7 !important;
   justify-self: center !important;
@@ -44,22 +41,22 @@
 }
 
 .screen-game .side-piles :is(b, strong) {
-  font-size: clamp(.23rem, .38cqw, .47rem) !important;
+  font-size: clamp(.2rem, .34cqw, .43rem) !important;
   line-height: 1 !important;
 }
 
 .screen-game .side-piles small {
-  font-size: clamp(.18rem, .25cqw, .32rem) !important;
+  font-size: clamp(.16rem, .22cqw, .29rem) !important;
   line-height: 1.05 !important;
 }
 
 /* -------------------------------------------------------------------------
    PHASE ORB
-   Size responds to both board width and height so ultrawide/short windows do
-   not make the control disproportionately large.
    ------------------------------------------------------------------------- */
 .screen-game .hs-board > .phase-orb {
-  width: clamp(2.3rem, min(4cqw, 7.2cqh), 4.15rem) !important;
+  width: min(3.85cqw, 6.5cqh) !important;
+  min-width: 2.15rem !important;
+  max-width: 3.95rem !important;
   height: auto !important;
   aspect-ratio: 1 / 1 !important;
   align-self: center !important;
@@ -70,77 +67,81 @@
   width: 100% !important;
   height: 100% !important;
   aspect-ratio: 1 / 1 !important;
-  padding: clamp(.14rem, .32cqw, .38rem) !important;
-  font-size: clamp(.32rem, .46cqw, .56rem) !important;
+  padding: clamp(.12rem, .28cqw, .34rem) !important;
+  font-size: clamp(.29rem, .42cqw, .52rem) !important;
   line-height: 1.05 !important;
 }
 
 .screen-game .phase-orb button span {
-  font-size: clamp(.7rem, 1.25cqw, 1.2rem) !important;
+  font-size: clamp(.62rem, 1.05cqw, 1.05rem) !important;
 }
 
 /* -------------------------------------------------------------------------
    HERO LEVEL + EVOLUTION PROGRESS
-   These elements are anchored to the hero card itself, not to viewport
-   coordinates. The hero card width becomes the reference measurement.
    ------------------------------------------------------------------------- */
 .screen-game .player-hero {
-  --hero-card-w: clamp(3.55rem, 7cqw, 7.05rem);
-  --hero-meta-gap: clamp(.28rem, .55cqw, .58rem);
-  --hero-meta-w: clamp(4.3rem, 7.35cqw, 7.6rem);
+  --hero-card-w: min(6.85cqw, 12.2cqh);
+  --hero-meta-gap: clamp(.18rem, .42cqw, .44rem);
+  --hero-meta-w: min(7.1cqw, 12.6cqh);
 }
 
 .screen-game .player-hero .hero-power-trigger {
   width: var(--hero-card-w) !important;
+  min-width: 3rem !important;
+  max-width: 6.85rem !important;
   height: auto !important;
   aspect-ratio: 5 / 7 !important;
 }
 
-/* Level sits beside the upper portion of the portrait. */
 .screen-game .player-hero .hero-level {
   position: absolute !important;
-  top: clamp(.18rem, .55cqh, .4rem) !important;
+  top: clamp(.14rem, .46cqh, .34rem) !important;
   left: calc(100% + var(--hero-meta-gap)) !important;
   right: auto !important;
   width: var(--hero-meta-w) !important;
-  height: clamp(1.45rem, 3.45cqh, 1.95rem) !important;
-  padding-inline: clamp(.18rem, .34cqw, .34rem) !important;
+  min-width: 3.7rem !important;
+  max-width: 7.25rem !important;
+  height: min(3.25cqh, 1.75rem) !important;
+  min-height: 1.2rem !important;
+  padding-inline: clamp(.14rem, .28cqw, .28rem) !important;
   display: grid !important;
   place-items: center !important;
-  font-size: clamp(.4rem, .6cqw, .68rem) !important;
+  font-size: clamp(.34rem, .53cqw, .62rem) !important;
   line-height: 1 !important;
   white-space: nowrap !important;
 }
 
-/* Progress panel uses the same width and follows the level block. */
 .screen-game .player-hero .hero-evolution {
   position: absolute !important;
-  top: clamp(2.65rem, 5.35cqh, 3.15rem) !important;
+  top: min(5cqh, 2.75rem) !important;
   left: calc(var(--hero-card-w) + var(--hero-meta-gap)) !important;
   right: auto !important;
   width: var(--hero-meta-w) !important;
-  height: clamp(2.15rem, 4.85cqh, 2.75rem) !important;
-  padding: clamp(.1rem, .28cqh, .24rem) clamp(.14rem, .28cqw, .28rem) !important;
+  min-width: 3.7rem !important;
+  max-width: 7.25rem !important;
+  height: min(4.55cqh, 2.45rem) !important;
+  min-height: 1.85rem !important;
+  padding: clamp(.08rem, .22cqh, .18rem) clamp(.12rem, .24cqw, .24rem) !important;
   display: grid !important;
   align-content: center !important;
-  gap: clamp(.08rem, .18cqh, .16rem) !important;
+  gap: clamp(.06rem, .14cqh, .12rem) !important;
 }
 
 .screen-game .player-hero .hero-evolution > small {
-  font-size: clamp(.26rem, .38cqw, .45rem) !important;
+  font-size: clamp(.22rem, .33cqw, .4rem) !important;
   line-height: 1 !important;
   white-space: nowrap !important;
 }
 
 .screen-game .player-hero .hero-evolution > strong {
-  font-size: clamp(.38rem, .55cqw, .62rem) !important;
+  font-size: clamp(.33rem, .48cqw, .56rem) !important;
   line-height: 1 !important;
 }
 
 .screen-game .player-hero .evolution-track {
   width: 100% !important;
-  height: clamp(.16rem, .36cqh, .25rem) !important;
-  margin-top: clamp(.06rem, .15cqh, .12rem) !important;
+  height: clamp(.12rem, .3cqh, .21rem) !important;
+  margin-top: clamp(.04rem, .11cqh, .09rem) !important;
 }
 
 .screen-game .player-hero .evolution-track > i {
@@ -148,16 +149,18 @@
   max-width: 100% !important;
 }
 
-/* Evolution action follows the same responsive meta column. */
 .screen-game .player-hero > .level-button {
   position: absolute !important;
-  top: clamp(5.25rem, 10.7cqh, 6.15rem) !important;
+  top: min(10.1cqh, 5.6rem) !important;
   left: calc(var(--hero-card-w) + var(--hero-meta-gap)) !important;
   right: auto !important;
   width: var(--hero-meta-w) !important;
-  height: clamp(1.35rem, 3.15cqh, 1.8rem) !important;
-  padding: clamp(.08rem, .2cqh, .18rem) clamp(.12rem, .26cqw, .26rem) !important;
-  font-size: clamp(.31rem, .47cqw, .54rem) !important;
+  min-width: 3.7rem !important;
+  max-width: 7.25rem !important;
+  height: min(2.9cqh, 1.55rem) !important;
+  min-height: 1.15rem !important;
+  padding: clamp(.06rem, .16cqh, .14rem) clamp(.1rem, .2cqw, .2rem) !important;
+  font-size: clamp(.27rem, .41cqw, .49rem) !important;
   line-height: 1 !important;
 }
 
@@ -192,50 +195,90 @@
 }
 
 /* -------------------------------------------------------------------------
-   CONTAINER-BASED COMPRESSION
-   React to the actual logical board size, not only physical screen width.
-   This is important under browser zoom.
+   ZOOM-AWARE CONTAINER COMPRESSION
+   Browser zoom reduces the logical height of the board. These rules compact
+   the affected widgets before they collide with neighboring grid rows.
    ------------------------------------------------------------------------- */
-@container hemsfell-board (max-width: 72rem) {
+@container hemsfell-board (max-height: 64rem) {
   .screen-game .hs-board > .side-piles {
-    width: min(94%, 13.4cqw) !important;
-    gap: clamp(.1rem, .32cqw, .36rem) !important;
+    width: min(86%, 10.9cqw) !important;
+    max-height: 24.5cqh !important;
+    gap: clamp(.08rem, .27cqw, .32rem) !important;
+  }
+
+  .screen-game .side-piles .pile-card {
+    width: min(65%, 3.05cqw) !important;
   }
 
   .screen-game .side-piles small {
     display: none !important;
   }
 
-  .screen-game .player-hero {
-    --hero-card-w: clamp(3.2rem, 6.7cqw, 6.65rem);
-    --hero-meta-gap: clamp(.2rem, .42cqw, .44rem);
-    --hero-meta-w: clamp(3.9rem, 7cqw, 7.1rem);
-  }
-}
-
-@container hemsfell-board (max-width: 58rem) {
-  .screen-game .hs-board > .side-piles {
-    width: min(96%, 14cqw) !important;
-  }
-
-  .screen-game .side-piles :is(b, strong) {
-    font-size: clamp(.21rem, .37cqw, .42rem) !important;
-  }
-
   .screen-game .hs-board > .phase-orb {
-    width: clamp(2.15rem, min(4.3cqw, 6.8cqh), 3.55rem) !important;
+    width: min(3.45cqw, 5.85cqh) !important;
+    min-width: 1.95rem !important;
   }
 
   .screen-game .player-hero {
-    --hero-card-w: clamp(3rem, 6.45cqw, 6.1rem);
-    --hero-meta-w: clamp(3.55rem, 6.8cqw, 6.7rem);
+    --hero-card-w: min(6.35cqw, 11.2cqh);
+    --hero-meta-gap: clamp(.14rem, .34cqw, .36rem);
+    --hero-meta-w: min(6.65cqw, 11.6cqh);
   }
 
   .screen-game .player-hero .hero-level {
-    font-size: clamp(.36rem, .56cqw, .6rem) !important;
+    height: min(3cqh, 1.55rem) !important;
+    font-size: clamp(.31rem, .48cqw, .56rem) !important;
+  }
+
+  .screen-game .player-hero .hero-evolution {
+    top: min(4.65cqh, 2.45rem) !important;
+    height: min(4.25cqh, 2.2rem) !important;
+  }
+
+  .screen-game .player-hero > .level-button {
+    top: min(9.45cqh, 5rem) !important;
+  }
+}
+
+@container hemsfell-board (max-height: 58rem) {
+  .screen-game .hs-board > .side-piles {
+    width: min(82%, 9.8cqw) !important;
+    max-height: 22cqh !important;
+  }
+
+  .screen-game .side-piles :is(b, strong) {
+    font-size: clamp(.18rem, .3cqw, .36rem) !important;
+  }
+
+  .screen-game .hs-board > .phase-orb {
+    width: min(3.15cqw, 5.2cqh) !important;
+    min-width: 1.8rem !important;
+  }
+
+  .screen-game .player-hero {
+    --hero-card-w: min(5.95cqw, 10.4cqh);
+    --hero-meta-w: min(6.15cqw, 10.8cqh);
+  }
+
+  .screen-game .player-hero .hero-level {
+    min-width: 3.35rem !important;
+    height: min(2.8cqh, 1.4rem) !important;
+    font-size: clamp(.28rem, .44cqw, .51rem) !important;
+  }
+
+  .screen-game .player-hero .hero-evolution {
+    min-width: 3.35rem !important;
+    top: min(4.35cqh, 2.2rem) !important;
+    height: min(3.95cqh, 1.95rem) !important;
   }
 
   .screen-game .player-hero .hero-evolution > small {
-    font-size: clamp(.23rem, .35cqw, .38rem) !important;
+    font-size: clamp(.2rem, .29cqw, .34rem) !important;
+  }
+
+  .screen-game .player-hero > .level-button {
+    min-width: 3.35rem !important;
+    top: min(8.85cqh, 4.55rem) !important;
+    height: min(2.65cqh, 1.35rem) !important;
   }
 }
