@@ -6639,7 +6639,7 @@
 .engine-decision-panel h2{margin:8px 0 4px;font-size:1.55rem}
 .engine-decision-panel p{margin:0 0 18px;color:#9eb4b8}
 .engine-decision-panel>div{display:grid;gap:10px}
-.engine-decision-panel button{display:flex;align-items:center;gap:12px;width:100%;padding:13px 15px;border:1px solid #31545c;border-radius:11px;background:#112b32;color:#f6fbfa;text-align:left;cursor:pointer;transition:.16s ease}
+.engine-decision-panel button{display:flex;align-items:center;gap:12px;width:100%;padding:1px 1px;border:1px solid #31545c;border-radius:11px;background:#112b32;color:#f6fbfa;text-align:left;cursor:pointer;transition:.16s ease}
 .engine-decision-panel button:hover{border-color:#e7bc61;background:#193941;transform:translateY(-1px)}
 .engine-decision-panel button b{display:grid;place-items:center;min-width:28px;height:28px;border-radius:50%;background:#d4a646;color:#101719}
 .engine-decision-panel button span{font-size:.96rem;font-weight:750}
@@ -8216,7 +8216,7 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
   transform:none!important;
 }
 .game-content>.player-hero .hero-evolution>small{
-  font-size:clamp(.28rem,.43cqw,.5rem)!important;
+  font-size:clamp(.38rem,.49cqw,.45rem)!important;
   line-height:1!important;
 }
 .game-content>.player-hero .hero-evolution>strong{
@@ -8722,10 +8722,11 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 }
 .screen-game .game-stage>.game-content.hs-board>.enemy-energy{
   align-self:center!important;
+  margin-top: 6cqh !important;
 }
 .screen-game .game-stage>.game-content.hs-board>.player-energy{
   align-self:end!important;
-  margin-bottom:1cqh!important;
+  margin-bottom:-3cqh!important;
 }
 
 .screen-game .game-stage>.game-content.hs-board>.side-piles{

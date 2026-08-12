@@ -34,12 +34,21 @@ const effectiveUnitName = (state, unit) => {
   }
   return name;
 };
-const sendDetachedArtifacts = (entry, creature) => {
+const sendDetachedArtifacts = (state, entry, creature) => {
+  const owner = state.players.indexOf(entry);
   const attachments = (entry.support || []).filter((item) => item.attachedTo === creature.uid);
   entry.support = (entry.support || []).filter((item) => item.attachedTo !== creature.uid);
   for (const attachment of attachments) {
     creature.modifiers = (creature.modifiers || []).filter((modifier) => modifier.sourceId !== (attachment.uid || attachment.id));
-    creature.grantedKeywords = (creature.grantedKeywords || []).filter((keyword) => !String(keyword).startsWith(`attachment:${attachment.uid || attachment.id}:`));
+    creature.grantedKeywords = (creature.grantedKeywords || []).filter((keyword) => !String(keyword).startsWith("attachment:" + (attachment.uid || attachment.id) + ":"));
+    const survivesHost = (attachment.abilities || []).some((ability) => ability.trigger === "onAttachedHostDestroyed");
+    if (survivesHost) {
+      attachment.attachedTo = undefined;
+      attachment.slot = creature.slot;
+      entry.support.push(attachment);
+      queueEvent(state, { type: "onAttachedHostDestroyed", owner, sourceId: attachment.uid || attachment.id, card: attachment, host: creature });
+      continue;
+    }
     if (attachment.generatedImage || attachment.imageCard) continue;
     const destination = attachment.page === 154 ? entry.obscuro : entry.grave;
     destination.push({ ...attachment, deathCause: "detached", lastZone: "support" });
@@ -56,7 +65,7 @@ const removeFromZones = (state, id) => {
       const index = (entry[zone] || []).findIndex((card) => card.uid === id || card.id === id);
       if (index < 0) continue;
       const card = entry[zone].splice(index, 1)[0];
-      if (zone === "board") sendDetachedArtifacts(entry, card);
+      if (zone === "board") sendDetachedArtifacts(state, entry, card);
       const owner = state.players.indexOf(entry);
       queueEvent(state, { type: "onPermanentLeaves", owner, sourceId: card.uid || card.id, card, zone });
       return { card, owner, zone };
@@ -118,10 +127,8 @@ export const defaultEffectHandlers = Object.freeze({
       if (!target || hasKeyword(target, /indestrut[ií]vel/i)) continue;
       const removed = removeFromZones(state, id);
       if (!removed) continue;
-      if (!removed.card.generatedImage && !removed.card.imageCard) {
-        sendToPrintedGraveDestination(player(state, removed.owner), removed.card, { lastZone: removed.zone, deathCause: "destroy" });
-        queueEvent(state, { type: "onDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id, sourceId: removed.card.uid || removed.card.id, deathCause: "destroy" });
-      }
+      if (!removed.card.generatedImage && !removed.card.imageCard) sendToPrintedGraveDestination(player(state, removed.owner), removed.card, { lastZone: removed.zone, deathCause: "destroy" });
+      if (!removed.card.suppressDeathTrigger) queueEvent(state, { type: "onDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id, sourceId: removed.card.uid || removed.card.id, deathCause: "destroy" });
       if (removed.card.type === "Criatura") queueEvent(state, { type: "onCreatureDestroyed", owner: removed.owner, card: removed.card, cardId: removed.card.uid || removed.card.id });
     }
   },
@@ -141,6 +148,23 @@ export const defaultEffectHandlers = Object.freeze({
   attachedConditionalKeyword(state, effect, context) { const source=findUnit(state,context.sourceId); const target=source?.attachedTo?findUnit(state,source.attachedTo):null; if(!target||normalizedName(effectiveUnitName(state,target))!==normalizedName(effect.attachedName))return; target.grantedKeywords ||= []; const value=`attachment:${source.uid || source.id}:${effect.keyword}`; if(!target.grantedKeywords.includes(value))target.grantedKeywords.push(value); },
   optionalSacrificeBuff(state, effect, context) { const source=findUnit(state,context.sourceId); const choices=(player(state,context.owner).board||[]).filter((card)=>card.uid!==source?.uid).map((card)=>card.uid); if(!source||!choices.length)return; queueDecision(state,{...effect,choices},context,"optional-sacrifice-buff"); },
   attachedConditionalStats(state, effect, context) { const source = findUnit(state, context.sourceId); const target = source?.attachedTo ? findUnit(state, source.attachedTo) : null; if (!target) throw new RulesViolation("artifact-target-required"); const excluded = (effect.excludedNames || []).map(normalizedName); if (excluded.includes(normalizedName(effectiveUnitName(state, target)))) return; defaultEffectHandlers.modifyStats(state, { ...effect, type: "modifyStats", target: "attachedCreature" }, context); },
+  validateAttachedSubtype(state, effect, context) { const source = findUnit(state, context.sourceId), target = source?.attachedTo ? findUnit(state, source.attachedTo) : null; if (!source || !target || (effect.subtype && !hasSubtype(target, effect.subtype))) throw new RulesViolation("invalid-attachment-target"); },
+  attachedStats(state, effect, context) { defaultEffectHandlers.modifyStats(state, { type: "modifyStats", target: "attachedCreature", attack: effect.attack || 0, health: effect.health || 0, duration: "attached" }, context); },
+  attachedKeyword(state, effect, context) { const source = findUnit(state, context.sourceId), target = source?.attachedTo ? findUnit(state, source.attachedTo) : null; if (!source || !target) throw new RulesViolation("artifact-target-required"); target.grantedKeywords ||= []; const value = `attachment:${source.uid || source.id}:${effect.keyword}`; if (effect.keyword && !target.grantedKeywords.includes(value)) target.grantedKeywords.push(value); },
+  reattachArtifact(state, effect, context) {
+    const entry = player(state, context.owner), source = findUnit(state, context.sourceId), chosenId = selectedIds(context)[0];
+    if (!source) throw new RulesViolation("artifact-not-found");
+    const eligible = (entry.board || []).filter((card) => (!effect.subtype || hasSubtype(card, effect.subtype)) && card.uid !== source.attachedTo);
+    if (!chosenId) { if (!eligible.length) return; if (state.pendingDecision) throw new RulesViolation("decision-pending"); state.pendingDecision = { kind: "targets", owner: context.owner, effect: { replayEffects: [{ ...effect }] }, context: { ...context, targetIds: [] }, targetSteps: [{ scope: "allyCreature", role: "effect", requiredSubtype: effect.subtype, excludeIds: source.attachedTo ? [source.attachedTo] : [] }], sourceName: source.name || "Artefato" }; return; }
+    const target = eligible.find((card) => card.uid === chosenId || card.id === chosenId); if (!target) throw new RulesViolation("invalid-target");
+    if ((effect.energyCost || 0) > 0) { if (entry.energy < effect.energyCost) throw new RulesViolation("not-enough-energy"); entry.energy -= effect.energyCost; }
+    const previous = source.attachedTo ? findUnit(state, source.attachedTo) : null; if (previous) { previous.modifiers = (previous.modifiers || []).filter((modifier) => modifier.sourceId !== (source.uid || source.id)); previous.grantedKeywords = (previous.grantedKeywords || []).filter((keyword) => !String(keyword).startsWith(`attachment:${source.uid || source.id}:`)); }
+    source.attachedTo = target.uid; source.slot = target.slot;
+    if (effect.attack || effect.health) defaultEffectHandlers.attachedStats(state, effect, context);
+    if (effect.keyword) defaultEffectHandlers.attachedKeyword(state, effect, context);
+  },
+  optionalReequipArtifact(state, effect, context) { const entry = player(state, context.owner), source = findUnit(state, context.sourceId); if (!source || entry.energy < (effect.energyCost || 0)) return; const eligible = (entry.board || []).filter((card) => (!effect.subtype || hasSubtype(card, effect.subtype)) && card.uid !== source.attachedTo); if (!eligible.length) return; queueDecision(state, { type: "optionalReequipArtifact", choices: [[], [{ type: "reattachArtifact", target: "allyCreature", requiredSubtype: effect.subtype, selections: 1, subtype: effect.subtype, energyCost: effect.energyCost, attack: effect.attack, keyword: effect.keyword }]] }, context, "choice"); },
+  conditionalAttachedBonus(state, effect, context) { const source = findUnit(state, context.sourceId), target = source?.attachedTo ? findUnit(state, source.attachedTo) : null; if (!source || !target) return; if (effect.requiredSubtype && !hasSubtype(target, effect.requiredSubtype)) return; if (effect.attack || effect.health) defaultEffectHandlers.modifyStats(state, { type: "modifyStats", target: "attachedCreature", attack: effect.attack || 0, health: effect.health || 0, duration: "attached" }, context); if (effect.keyword) { target.grantedKeywords ||= []; const value = "attachment:" + (source.uid || source.id) + ":" + effect.keyword; if (!target.grantedKeywords.includes(value)) target.grantedKeywords.push(value); } },
   gainEnergy(state, effect, context) { const entry = player(state, context.owner); const key = effect.destination === "reserve" ? "reserve" : "energy"; const cap = key === "reserve" ? 3 : entry.maxEnergy; entry[key] = Math.min(cap, entry[key] + (effect.amount ?? 0)); },
   gainMaxEnergy(state, effect, context) { const entry = player(state, context.owner); entry.maxEnergy = Math.min(10, (entry.maxEnergy || 0) + (effect.amount || 1)); entry.energy = Math.min(10, (entry.energy || 0) + (effect.amount || 1)); },
   grantTeamReserveTapAbility(state, effect, context) { for (const target of player(state, context.owner).board || []) { target.abilities ||= []; if (!target.abilities.some((ability) => ability.id === `stabilize:${context.sourceId}`)) target.abilities.push({ id: `stabilize:${context.sourceId}`, trigger: "activated", costs: [{ type: "tap", amount: 1 }], effects: [{ type: "gainEnergy", amount: 1, destination: "reserve" }], temporary: true }); } },
@@ -259,7 +283,7 @@ export const defaultEffectHandlers = Object.freeze({
   graveReplacement(state, effect, context) { const source = findUnit(state, context.sourceId); if (source) source.graveDestination = effect.destination || "obscuro"; },
   increaseVitality(state, effect, context) { const id = context.targetIds?.[0]; const owner = heroOwner(context, id); if (owner != null) { const entry = player(state, owner); entry.maxLife = (entry.maxLife ?? 30) + (effect.amount ?? 0); entry.life += effect.amount ?? 0; } else defaultEffectHandlers.modifyStats(state, { type: "modifyStats", health: effect.amount, duration: effect.duration }, context); },
   toggleTap(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); target.exhausted = !target.exhausted; },
-  grantDamageShield(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); target.damageShields ||= []; target.damageShields.push({ uses: effect.uses ?? 1, sourceId: context.sourceId }); },
+  grantDamageShield(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); target.damageShields ||= []; target.damageShields.push({ uses: effect.uses ?? 1, sourceId: context.sourceId, expires: effect.duration }); },
   removeMarker(state, effect, context) { const target = findUnit(state, context.sourceId); if (!target || markerTotal(target) < effect.amount) throw new RulesViolation("not-enough-markers"); const current = typeof target.markers === "object" ? target.markers[effect.marker] || 0 : target.markers; setMarker(target, effect.marker || "action", current - effect.amount); },
   doubleMarkers(state) { for (const target of allUnits(state)) { if (typeof target.markers === "number") target.markers *= 2; else for (const key of Object.keys(target.markers || {})) target.markers[key] *= 2; } },
   halveMaxEnergy(state, effect, context) { const entry = player(state, context.owner); entry.maxEnergy = Math.ceil(entry.maxEnergy / 2); entry.energy = Math.min(entry.energy, entry.maxEnergy); },
@@ -270,7 +294,7 @@ export const defaultEffectHandlers = Object.freeze({
     const catalog = [...(entry.extraDeck || []), ...(state.cardCatalog || [])];
     const base = catalog.find((card) => card.name === effect.name) || { id: `image:${effect.name}`, name: effect.name, type: "Criatura", atk: 1, hp: 1, tags: [] };
     state.nextGeneratedId = (state.nextGeneratedId || 0) + 1;
-    const copy = { ...structuredClone(base), uid: `${base.id}-image-${state.round}-${state.nextGeneratedId}`, generatedImage: true, imageCard: true, enteredRound: state.round, attackedThisTurn: false, summoning: false, exhausted: false, damage: 0, slot: context.slot ?? 0, abilities: base.abilities || [] };
+    const copy = { ...structuredClone(base), uid: `${base.id}-image-${state.round}-${state.nextGeneratedId}`, generatedImage: true, imageCard: true, enteredRound: state.round, attackedThisTurn: false, summoning: base.type === "Artefato" || (base.type === "Criatura" && !(base.tags || []).some((tag) => /investida/i.test(String(tag)))), exhausted: false, damage: 0, slot: context.slot ?? 0, abilities: base.abilities || [] };
     if (effect.destination === "hand") { entry.hand.push(copy); return; }
     if (base.type === "Terreno") {
       if (entry.terrain && !effect.mandatory) throw new RulesViolation("terrain-zone-full");

@@ -112,7 +112,7 @@ export function parseCosts`, "bounded Fura-Fila sections");
   entry.support = (entry.support || []).filter((item) => item.attachedTo !== creature.uid);
   for (const attachment of attachments) {
     creature.modifiers = (creature.modifiers || []).filter((modifier) => modifier.sourceId !== (attachment.uid || attachment.id));
-    creature.grantedKeywords = (creature.grantedKeywords || []).filter((keyword) => !String(keyword).startsWith(`attachment:${attachment.uid || attachment.id}:`));
+    creature.grantedKeywords = (creature.grantedKeywords || []).filter((keyword) => !String(keyword).startsWith("attachment:" + (attachment.uid || attachment.id) + ":"));
     const survivesHost = (attachment.abilities || []).some((ability) => ability.trigger === "onAttachedHostDestroyed");
     if (survivesHost) {
       attachment.attachedTo = undefined;

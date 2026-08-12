@@ -81,8 +81,8 @@
   bottom: auto !important;
   translate: none !important;
   transform: translate(-50%, -50%) !important;
-  width: clamp(8.7rem, min(14.2cqw, 27cqh), 15.5rem) !important;
-  max-width: min(14.2cqw, 27cqh) !important;
+  width: clamp(11rem, min(17.4cqw, 31cqh), 18.8rem) !important;
+  max-width: min(17.4cqw, 31cqh) !important;
   min-width: 0 !important;
   height: auto !important;
   max-height: 42cqh !important;
@@ -95,8 +95,8 @@
 }
 
 .screen-game .game-stage > .game-content.hs-board > .visual-effect.fx-targeted {
-  width: clamp(10rem, min(15.5cqw, 29cqh), 16.5rem) !important;
-  max-width: min(15.5cqw, 29cqh) !important;
+  width: clamp(12rem, min(18.6cqw, 33cqh), 20rem) !important;
+  max-width: min(18.6cqw, 33cqh) !important;
   grid-template-columns: minmax(0, .9fr) auto minmax(0, .9fr) !important;
   grid-template-rows: auto auto !important;
 }
@@ -213,8 +213,8 @@
   .screen-game .game-stage > .game-content.hs-board > .visual-effect,
   .screen-game .game-stage > .game-content.hs-board > .combat-cinematic {
     left: 75% !important;
-    width: clamp(7.8rem, min(13.3cqw, 24cqh), 13.5rem) !important;
-    max-width: min(13.3cqw, 24cqh) !important;
+    width: clamp(10rem, min(16.4cqw, 28cqh), 16.8rem) !important;
+    max-width: min(16.4cqw, 28cqh) !important;
     max-height: 38cqh !important;
   }
 
@@ -237,8 +237,8 @@
   .screen-game .game-stage > .game-content.hs-board > .visual-effect,
   .screen-game .game-stage > .game-content.hs-board > .combat-cinematic {
     left: 74% !important;
-    width: min(12.3cqw, 22cqh) !important;
-    max-width: min(12.3cqw, 22cqh) !important;
+    width: min(15.2cqw, 25cqh) !important;
+    max-width: min(15.2cqw, 25cqh) !important;
     max-height: 34cqh !important;
     padding: clamp(.3rem, .6cqw, .55rem) !important;
   }
@@ -246,5 +246,76 @@
   .screen-game .game-stage > .game-content.hs-board > .defense-decision {
     left: 74% !important;
     width: min(22rem, 48cqw) !important;
+  }
+}
+
+
+/* Mandatory attack feedback stays attached to the responsive phase control. */
+.screen-game .game-stage > .game-content.hs-board > .phase-orb > .phase-orb-warning {
+  position: absolute !important;
+  top: calc(100% + clamp(.18rem, .42cqh, .36rem)) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  width: clamp(7.5rem, 12cqw, 12rem) !important;
+  padding: clamp(.2rem, .36cqh, .34rem) clamp(.28rem, .48cqw, .46rem) !important;
+  border: 1px solid #e2b14a99 !important;
+  border-radius: clamp(.28rem, .45cqw, .5rem) !important;
+  background: #160d05ee !important;
+  color: #ffd87a !important;
+  font-size: clamp(.27rem, min(.43cqw, .72cqh), .5rem) !important;
+  line-height: 1.15 !important;
+  text-align: center !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  pointer-events: none !important;
+  z-index: 190 !important;
+  box-shadow: 0 .3cqh .8cqh #0008 !important;
+}
+
+
+/* -------------------------------------------------------------------------
+   BOARD TYPOGRAPHY POLISH V4
+   Larger readable command-bar / side-zone copy with a slightly smaller evolve
+   control. All values remain tied to the responsive board container.
+   ------------------------------------------------------------------------- */
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities, .hero-command-bar) .hero-ability-chip p,
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities, .hero-command-bar) .ability p {
+  font-size: clamp(.38rem, min(.62cqw, 1.02cqh), .69rem) !important;
+  line-height: 1.2 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities, .hero-command-bar) .hero-ability-chip b,
+.screen-game .game-stage > .game-content.hs-board :is(.hero-abilities, .hero-command-bar) .ability b {
+  font-size: clamp(.27rem, min(.44cqw, .72cqh), .5rem) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .side-piles :is(b, strong) {
+  font-size: clamp(.28rem, min(.49cqw, .8cqh), .58rem) !important;
+  line-height: 1.05 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .side-piles small {
+  font-size: clamp(.21rem, min(.34cqw, .58cqh), .4rem) !important;
+  line-height: 1.08 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  width: min(7.25cqw, 11cqh) !important;
+  min-width: 3.25rem !important;
+  max-width: 4.2rem !important;
+  height: min(2.45cqh, 1.3rem) !important;
+  min-height: 1rem !important;
+  padding: clamp(.04rem, .12cqh, .1rem) clamp(.08rem, .16cqw, .16rem) !important;
+  font-size: clamp(.35rem, min(.48cqw, .64cqh), .45rem) !important;
+}
+
+@container hemsfell-board (max-height: 58rem) {
+  .screen-game .game-stage > .game-content.hs-board :is(.hero-abilities, .hero-command-bar) .hero-ability-chip p,
+  .screen-game .game-stage > .game-content.hs-board :is(.hero-abilities, .hero-command-bar) .ability p {
+    font-size: clamp(.34rem, min(.56cqw, .92cqh), .61rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .side-piles :is(b, strong) {
+    font-size: clamp(.25rem, min(.43cqw, .72cqh), .5rem) !important;
   }
 }

@@ -34,11 +34,28 @@ export function splitTriggeredSections(text = "") {
   const matches = [...source.matchAll(marker)];
   if (!matches.length) return [{ label: "", text: source }];
   const sections = [];
-  if (matches[0].index > 0) sections.push({ label: "", text: clean(source.slice(0, matches[0].index)) });
+  let cursor = 0;
   for (let index = 0; index < matches.length; index += 1) {
     const current = matches[index];
-    const end = matches[index + 1]?.index ?? source.length;
-    sections.push({ label: folded(current[1]), text: clean(source.slice(current.index + current[0].length, end)) });
+    const markerStart = current.index ?? 0;
+    if (markerStart > cursor) {
+      const independent = clean(source.slice(cursor, markerStart));
+      if (independent) sections.push({ label: "", text: independent });
+    }
+    const bodyStart = markerStart + current[0].length;
+    const nextMarker = matches[index + 1]?.index ?? source.length;
+    let bodyEnd = nextMarker;
+    if (folded(current[1]) === "fura-fila") {
+      const period = source.indexOf(".", bodyStart);
+      if (period >= 0 && period < bodyEnd) bodyEnd = period + 1;
+    }
+    const body = clean(source.slice(bodyStart, bodyEnd));
+    if (body) sections.push({ label: folded(current[1]), text: body });
+    cursor = bodyEnd;
+  }
+  if (cursor < source.length) {
+    const independent = clean(source.slice(cursor));
+    if (independent) sections.push({ label: "", text: independent });
   }
   return sections.filter((section) => section.text);
 }
@@ -68,6 +85,9 @@ export function parseEffects(text = "") {
   const mill = value.match(/triture\s+(\d+|um|uma|dois|duas|tres)/);
   const marker = value.match(/(?:coloque|recebe?)\s+(\d+|um|uma|dois|duas|tres)?\s*marcador/);
   const buff = raw.match(/([+-]?\d+)\s*\/\s*([+-]?\d+)/);
+  const offense = raw.match(/(?:recebe|ganha|concede|d[êe])\s*\+?(\d+)\s+(?:de\s+)?ofensividade/i);
+  const vitality = raw.match(/(?:recebe|ganha|concede|d[êe])\s*\+?(\d+)\s+(?:de\s+)?vitalidade/i);
+  const turnLimited = /(?:durante\s+(?:este|o)\s+turno|neste\s+turno|por\s+(?:1|um)\s+turno|at[eé]\s+o\s+(?:fim|final)\s+(?:deste|do)\s+turno)/i.test(raw);
   const energy = value.match(/(?:receba|recupere|adicione)\s+(\d+)\s+(?:de\s+)?energia/);
   if (draw) add("draw", { amount: numberFrom(draw[1]) });
   if (/descarte|descarta/.test(value)) add("discard", { amount: numberFrom(value.match(/descart\w*\s+([^.;]+)/)?.[1], 1) });
@@ -83,14 +103,15 @@ export function parseEffects(text = "") {
   if (/\bdesvire/.test(value)) add("ready", { target: "selected" });
   if (/\bvire\b/.test(value) && !parseCosts(raw).some((cost) => cost.type === "tap")) add("tap", { target: "selected" });
   if (marker) add("addMarker", { amount: numberFrom(marker[1], 1), marker: /\+1\/+1/.test(value) ? "+1/+1" : "action" });
-  if (buff) add("modifyStats", { attack: Number(buff[1]), health: Number(buff[2]), duration: /turno/.test(value) ? "turn" : "permanent" });
+  if (buff) add("modifyStats", { attack: Number(buff[1]), health: Number(buff[2]), duration: turnLimited ? "turn" : "permanent" });
+  if (!buff && (offense || vitality)) { const policy = targetPolicy(raw); add("modifyStats", { attack: Number(offense?.[1] || 0), health: Number(vitality?.[1] || 0), target: policy.scope === "none" ? "self" : policy.scope, selections: policy.selections, duration: /turno/.test(value) ? "turn" : "permanent" }); }
   if (energy) add("gainEnergy", { amount: Number(energy[1]), destination: /reserva/.test(value) ? "reserve" : "main" });
   if (/custa?\s+\d+\s+a menos|reduz\w*.+custo/.test(value)) add("modifyCost", { amount: -numberFrom(value), duration: /proxim/.test(value) ? "next" : "continuous" });
   const supportText=value.match(/suporte\s*:\s*([^.]+)/)?.[1];
   if(supportText&&!/[+-]?\d+\s*\/\s*[+-]?\d+/.test(supportText)) for(const keyword of keywordMatches(supportText)) add("supportAura",{keyword});
   const defender = value.match(/defensor\s+(\d+)/); if (defender) add("keyword", { keyword: `Defensor ${defender[1]}` });
-  if (/recebe\s+(?:voar|robusto|furtivo|investida|indestrutivel|barreira magica|roubo de vida|toque da morte|atropelar|alerta)/.test(value)) for(const keyword of keywordMatches(raw)) add("grantKeyword", { keyword });
-  for(const keyword of keywordMatches(raw)){if(supportText&&folded(supportText).includes(folded(keyword)))continue;add("keyword", { keyword });}
+  if (/recebe\s+(?:voar|robusto|furtivo|investida|indestrutivel|barreira magica|roubo de vida|toque da morte|atropelar|alerta)/.test(value)) for(const keyword of keywordMatches(raw)) add("grantKeyword", { keyword, duration: turnLimited ? "turn" : "permanent" });
+  for(const keyword of keywordMatches(raw)){if(supportText&&folded(supportText).includes(folded(keyword)))continue;if(effects.some((effect)=>effect.type==="grantKeyword"&&effect.keyword===keyword))continue;add("keyword", { keyword, duration: turnLimited ? "turn" : "permanent" });}
   if (/\binvestigar\b/.test(value)) add("investigate", { amount: numberFrom(value) });
   if (/\brevel|\barquiv/.test(value)) add("revealOrArchive", { raw });
   if (/\banule|\bcancele/.test(value)) add("counter", { target: "selected" });
@@ -125,7 +146,37 @@ export function compileCardText(text = "") {
     const trigger = inferTrigger(section, text);
     const costs = trigger === Trigger.ACTIVATED ? parseCosts(section.text) : [];
     const effects = parseEffects(section.text).filter((effect) => !(trigger === Trigger.ACTIVATED && effect.type === "sacrifice"));
-    return { id: `ability-${index + 1}`, trigger, condition: section.label === "fura-fila" ? { cardsPlayedBeforeThisAtLeast: 1 } : null, costs, effects, sourceText: section.text };
+    const otherSubtype = section.text.match(/se\s+voc[eê]\s+controlar\s+outra\s+criatura\s+da\s+classe\s+([A-Za-zÀ-ÿ]+)/i)?.[1];
+    const condition = section.label === "fura-fila"
+      ? { cardsPlayedBeforeThisAtLeast: 1 }
+      : otherSubtype
+        ? { controllerControlsOtherSubtype: otherSubtype }
+        : null;
+    const usageLimit = /(?:uma|1)\s+vez\s+por\s+turno/i.test(section.text)
+      ? { count: 1, period: "turn" }
+      : undefined;
+    const conditionalPassive = /\b(quando|sempre que|toda vez que|se )\b/i.test(section.text)
+      && ![Trigger.PLAY, Trigger.ENTER, Trigger.DESTROYED, Trigger.ACTIVATED].includes(trigger);
+    return {
+      id: `ability-${index + 1}`,
+      trigger,
+      condition,
+      costs,
+      effects,
+      sourceText: section.text,
+      usageLimit,
+      furaFila: section.label === "fura-fila"
+        ? { requiresCardsPlayedBefore: 1, clause: section.text }
+        : undefined,
+      triggerMeta: {
+        kind: section.label === "fura-fila"
+          ? "conditional-combo"
+          : conditionalPassive
+            ? "conditional-passive"
+            : "direct",
+        scenario: section.text,
+      },
+    };
   });
   return { abilities, unsupported: abilities.flatMap((ability) => ability.effects.filter((effect) => effect.type === "unsupported")) };
 }
