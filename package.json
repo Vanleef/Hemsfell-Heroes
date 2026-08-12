@@ -19,6 +19,7 @@
     "check:vinext": "vinext check",
     "test:rules": "node --test tests/rules-engine.test.mjs",
     "audit:cards": "node scripts/audit-card-rules.mjs",
+    "audit:cards:full": "node scripts/export-card-implementation-audit.mjs",
     "simulate:headless": "node scripts/simulate-games.mjs"
   },
   "dependencies": {
@@ -33,7 +34,7 @@
     "@cloudflare/vite-plugin": "1.37.1",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
-    "@types/react": "19.2.14",
+    "@types/react": "19.2.6",
     "@types/react-dom": "19.2.3",
     "@vitejs/plugin-react": "6.0.2",
     "@vitejs/plugin-rsc": "0.5.26",
@@ -50,4 +51,3 @@
   "type": "module",
   "displayName": "Hemsfell Heroes"
 }
-
