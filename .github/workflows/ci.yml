@@ -6,6 +6,7 @@ on:
       - main
       - fix/cards_mechanics
       - codex/optimization-cleanup
+      - ui/fixed-board-composition
   pull_request:
     branches:
       - main
@@ -19,7 +20,7 @@ permissions:
 
 jobs:
   test-and-build:
-    name: Rules and Next.js build
+    name: Rules, card audit and Next.js build
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -38,6 +39,9 @@ jobs:
 
       - name: Run rules tests
         run: npm run test:rules
+
+      - name: Export full card implementation audit
+        run: npm run audit:cards:full
 
       - name: Build Next.js application
         run: npm run vercel-build
