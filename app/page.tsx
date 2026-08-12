@@ -33,7 +33,7 @@ type MatchSettings={startingLife:number;responseSeconds:number;turnSeconds:numbe
 type CombatStage="declared"|"priority"|"choosing"|"charging"|"impact"|"resolved";
 type CombatAction={attackerOwner:0|1;attackerUid:string;attackerCard:CardDef;defenderUid?:string;defenderCard?:CardDef;targetHero?:boolean;stage:CombatStage;result?:string;destroyed?:Array<"attacker"|"defender">;winnerText?:string;attackDamage?:number;counterDamage?:number};
 type VisualFx={id:string;kind:"summon"|"spell"|"artifact"|"terrain"|"ability"|"damage";theme:"blood"|"dragon"|"goblin"|"recruit"|"divine"|"nature"|"arcane"|"chaos"|"order"|"neutral";card?:CardDef;target?:CardDef;label:string;detail:string};
-const VISUAL_FX_HOLD_MS=4200;
+const VISUAL_FX_HOLD_MS=2280;
 const COMBAT_STAGE_DELAY_MS:Record<CombatStage,number>={declared:220,priority:180,choosing:0,charging:320,impact:550,resolved:450};
 const RESPONSE_REVEAL_DELAY_MS=2500;
 const ANIMATION_SAFE_RULE_COMMANDS=new Set(["declareAttack","selectDefender","attack","passPriority"]);
@@ -416,9 +416,20 @@ const pollRoom = (id:string,token:string,hostRole:boolean)=>{
 };
 
 useEffect(()=>{
-    try{const params=new URLSearchParams(location.search);const r=params.get('room');if(r){setMode("online");setScreen("setup");const saved=localStorage.getItem(`hemsfell-room-${r}`);if(saved){const session=JSON.parse(saved);setRoomId(r);setRoomToken(session.token);setIsHost(!!session.isHost);setRoomLink(`${location.origin}/?room=${r}`);pollRoom(r,session.token,!!session.isHost)}else{setInviteRoomId(r);fetch(`/api/rooms/${r}`).then(res=>res.json()).then(data=>{if(data.error)throw new Error(data.error);setInvitePreview(data);setSettings(data.settings??settings)}).catch(()=>setRoomError("Este convite expirou ou a sala não existe."))}}}catch(e){}
+    try{const params=new URLSearchParams(location.search);const r=params.get('room');if(r){setMode("online");setScreen("setup");const saved=localStorage.getItem(`hemsfell-room-${r}`);if(saved){const session=JSON.parse(saved);setRoomId(r);setRoomToken(session.token);setIsHost(!!session.isHost);setRoomLink(`${location.origin}/?room=${r}`);fetch(`/api/rooms/${r}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"resume",token:session.token})}).finally(()=>pollRoom(r,session.token,!!session.isHost))}else{setInviteRoomId(r);fetch(`/api/rooms/${r}`).then(res=>res.json()).then(data=>{if(data.error)throw new Error(data.error);setInvitePreview(data);setSettings(data.settings??settings)}).catch(()=>setRoomError("Este convite expirou ou a sala não existe."))}}}catch(e){}
     return ()=>stopPolling();
 },[]);
+useEffect(()=>{
+ if(mode!=="online"||!roomId||!roomToken)return;
+ const notifyDisconnect=()=>{
+  const body=JSON.stringify({action:"disconnect",token:roomToken});
+  if(!navigator.sendBeacon?.(`/api/rooms/${roomId}`,new Blob([body],{type:"application/json"}))){
+   void fetch(`/api/rooms/${roomId}`,{method:"POST",headers:{"content-type":"application/json"},body,keepalive:true});
+  }
+ };
+ window.addEventListener("pagehide",notifyDisconnect);
+ return()=>window.removeEventListener("pagehide",notifyDisconnect);
+},[mode,roomId,roomToken]);
 useEffect(()=>{const id=window.setInterval(()=>setClockNow(Date.now()),250);return()=>window.clearInterval(id)},[]);
 useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadline=game.pendingResponse?.deadline??game.turnDeadline;if(!deadline||deadline>clockNow)return;const key=`${game.round}-${game.pendingResponse?.action??"turn"}-${deadline}`;if(timeoutSentRef.current===key)return;timeoutSentRef.current=key;roomAction("timeout")},[clockNow,mode,roomId,roomToken,game?.pendingResponse?.deadline,game?.turnDeadline]);
  /* One centralized life-loss dispatcher keeps damage/payment triggers consistent across cards and heroes. */
@@ -743,7 +754,11 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
 
  const selectedDeck=deckById(mine);const selectedPool=useMemo(()=>poolFor(mine),[mine]);const selectedExtra=useMemo(()=>extraFor(mine),[mine]);
  const myRoomParticipant=isHost?roomInfo?.host:roomInfo?.guest;
- const priorityLocked=mode==="online"&&game?.pendingResponse?.actor===0;
+ const opponentRoomParticipant=isHost?roomInfo?.guest:roomInfo?.host;
+ const reconnectDeadline=(opponentRoomParticipant?.disconnectedAt??0)+60000;
+ const reconnectRemaining=Math.max(0,Math.ceil((reconnectDeadline-clockNow)/1000));
+ const opponentReconnecting=mode==="online"&&roomInfo?.status==="started"&&!!opponentRoomParticipant?.disconnectedAt&&reconnectRemaining>0;
+ const priorityLocked=(mode==="online"&&game?.pendingResponse?.actor===0)||opponentReconnecting;
  const responseRemaining=Math.max(0,Math.ceil(((game?.pendingResponse?.deadline??clockNow)-clockNow)/1000));
  const turnRemaining=Math.max(0,Math.ceil(((game?.turnDeadline??clockNow)-clockNow)/1000));
  const formatClock=(seconds:number)=>`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")}`;
@@ -834,6 +849,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
     </section>}
   {screen==="game"&&game&&me&&foe&&<section className="hs-board">
    <div className="game-bar"><button onClick={()=>setScreen("menu")}>☰</button><div className="turn-owner"><span>Turno {game.round}</span><b>{game.active===0?"Seu turno":`Turno de ${deckById(foe.heroId).name}`}</b></div><ResourceSummary me={me} foe={foe} active={game.active}/><div className="phase-track">{(["manutencao","principal","combate","fim"] as Phase[]).map((phase,i)=><div key={phase} className={`${game.phase===phase?"active":""} ${(["manutencao","principal","combate","fim"] as Phase[]).indexOf(game.phase)>i?"done":""}`}><i>{i+1}</i><span>{phaseNames[phase]}</span></div>)}</div>{mode==="online"&&<div className={`match-clock ${turnRemaining<=15?"urgent":""}`}><span>TURNO</span><b>{formatClock(turnRemaining)}</b></div>}<button onClick={()=>setShowLog(!showLog)}>Registro {showLog?"×":"☷"}</button></div>
+   {opponentReconnecting&&<div className="match-reconnect-overlay" role="status"><section><i>↻</i><b>Aguardando o outro jogador retornar</b><span>A partida e os relógios estão pausados por até 1 minuto.</span><strong>{formatClock(reconnectRemaining)}</strong></section></div>}
    <PlayerHero player={foe} enemy targetClass={enemyHeroTarget?"target-enemy":""} onTarget={enemyHeroTarget?()=>applyTarget("enemy-hero"):undefined} onInspect={()=>setShowInspector(cards.find(card=>card.page===deckById(foe.heroId).heroPage)||null)}/><HeroAbilities player={foe} enemy/><div className="opponent-hand">{foe.hand.map((card,i)=>card.revealed?<OriginalCard key={card.id} card={card} small onClick={()=>setShowInspector(card)}/>:<i className="official-card-back" key={card.id||i} aria-label="Carta oculta do oponente"/>)}</div>
    <TerrainSlot card={foe.terrain} enemy targetClass={enemyPermanentTarget?"target-enemy":""} onTarget={enemyPermanentTarget&&foe.terrain?()=>applyTarget(foe.terrain!.uid):undefined}/><BattlefieldRows player={foe} enemy enemyTarget={enemyTarget} supportTargetClass={enemyPermanentTarget?"target-enemy":""} onCreature={enemyTarget?applyTarget:undefined} onSupportTarget={enemyPermanentTarget?applyTarget:undefined}/><EnergyPanel player={foe} enemy/><div className="side-piles enemy-piles"><MainDeckZone count={foe.deck.length} shuffling={shufflingDeck===1}/><ExtraDeckZone cards={foe.extraDeck} onOpen={()=>setExtraView({title:`Deck Extra de ${deckById(foe.heroId).name}`,cards:foe.extraDeck})}/><PileZone title="Cemitério" kind="grave" cards={foe.grave} onOpen={()=>setExtraView({title:`Cemitério de ${heroDisplayName(foe.heroId)}`,cards:foe.grave})}/><PileZone title="Obscuro" kind="obscuro" cards={foe.obscuro}/></div>
    <TerrainSlot card={me.terrain} drop={game.active===0&&game.phase==="principal"&&dragging?.type==="Terreno"} dragIndex={dragging?.index} onDrop={idx=>requestPlay(idx,"terrain")} targetClass={allyPermanentTarget?"target-ally":""} onTarget={allyPermanentTarget&&me.terrain?()=>applyTarget(me.terrain!.uid):undefined}/><BattlefieldRows player={me} drop={game.active===0&&game.phase==="principal"} activationEnabled={game.active===0&&game.phase==="principal"&&!priorityLocked} combatActive={game.active===0&&game.phase==="combate"&&!priorityLocked} dragged={dragging} allyTarget={allyTarget||defenseChoice} targetableCreatureIds={defenseTargets} supportTargetClass={allyPermanentTarget?"target-ally":""} selectedAttacker={combatAction?.attackerOwner===0?combatAction.attackerUid:undefined} onCreature={defenseChoice?chooseDefender:allyTarget?applyTarget:chooseAttacker} onCreatureDrop={(idx,slot)=>requestPlay(idx,"creature",slot)} onSupportDrop={(idx,slot)=>requestPlay(idx,"support",slot)} onActivateSupport={activateSupport} onActivateCreature={activateSupport} onSupportTarget={allyPermanentTarget?applyTarget:undefined}/><EnergyPanel player={me}/><div className="side-piles player-piles"><MainDeckZone count={me.deck.length} shuffling={shufflingDeck===0}/><ExtraDeckZone cards={me.extraDeck} onOpen={()=>setExtraView({title:"Seu Deck Extra",cards:me.extraDeck})}/><PileZone title="Cemitério" kind="grave" cards={me.grave} onOpen={()=>setExtraView({title:"Seu Cemitério",cards:me.grave})}/><PileZone title="Obscuro" kind="obscuro" cards={me.obscuro}/></div><PlayerHero player={me} onLevel={levelUp} canEvolveThisTurn={game.active===0} targetClass={allyHeroTarget?"target-ally":""} onTarget={allyHeroTarget?()=>applyTarget("ally-hero"):undefined} onInspect={()=>setShowInspector(cards.find(card=>card.page===deckById(me.heroId).heroPage)||null)}/><HeroAbilities player={me} onAbility={activateAbility}/>
