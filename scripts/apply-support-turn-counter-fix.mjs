@@ -65,8 +65,17 @@ const replaceOnce = (source, from, to, label) => {
     r = replaceOnce(r, anchor, `${anchor}\n  p30: [ability("onPlay", [effect("modifyStatsFromTurnCardsPlayed", { target: "self", attackPerCard: 1, healthPerCard: 1, duration: "turn" })], [], { condition: { cardsPlayedBeforeThisAtLeast: 1 } })],`, "Biriba shared counter");
   }
   if (!/\bp32:\s*\[/.test(r)) throw new Error("ZOIUDO explicit rule missing");
+
+  // A creature without Primeiro Ato must not resolve its conditional damage
+  // merely because it entered. BOMBARDEIRO GENTE BOA listens for a later
+  // allied Goblin summon and explicitly excludes its own entry event.
+  const selfTriggeringBombardeiro = `condition: { eventOwnerIsController: true, eventCardSubtype: "Goblin" }, triggerMeta: { kind: "conditional-passive", scenario: "Sempre que você invocar um Goblin." }`;
+  const delayedBombardeiro = `condition: { eventOwnerIsController: true, eventCardSubtype: "Goblin", otherThanSource: true }, triggerMeta: { kind: "conditional-passive", scenario: "Sempre que você invocar um Goblin." }`;
+  if (r.includes(selfTriggeringBombardeiro)) r = r.replace(selfTriggeringBombardeiro, delayedBombardeiro);
+  if (!r.includes(delayedBombardeiro)) throw new Error("BOMBARDEIRO GENTE BOA delayed trigger missing");
+
   if (!r.includes('effect("trackCardsPlayedAfterSelf")') || !r.includes('counter: "cardsPlayedAfterSelf"')) throw new Error("TRANQUEIRA private counter was replaced");
   await writeFile(rulesFile, r);
 }
 
-console.log("Support semantics and card counters normalized; TRANQUEIRA keeps its private post-entry counter.");
+console.log("Support semantics, shared turn counters, delayed creature triggers and TRANQUEIRA private counter normalized.");
