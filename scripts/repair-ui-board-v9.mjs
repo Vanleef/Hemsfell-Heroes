@@ -4,10 +4,6 @@ const normalize = (value) => value.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 const read = async (path) => normalize(await readFile(path, "utf8"));
 const write = async (path, value) => writeFile(path, normalize(value));
 
-// ---------------------------------------------------------------------------
-// Load v9 AFTER lab.css so it can be the final responsive authority instead of
-// competing with historical !important declarations inside lab.css.
-// ---------------------------------------------------------------------------
 {
   const path = "app/globals.css";
   let source = await read(path);
@@ -20,17 +16,13 @@ const write = async (path, value) => writeFile(path, normalize(value));
   }
 }
 
-// ---------------------------------------------------------------------------
-// Card inspection: normal clicks open the detailed inspector. When a card is
-// currently an actual interaction target (targeting/combat), its gameplay click
-// keeps precedence. This restores card details without breaking combat/targets.
-// ---------------------------------------------------------------------------
 {
   const path = "app/page.tsx";
   let source = await read(path);
   const legacy = 'onClick={onClick||(()=>requestCardInspection(card))} aria-label={displayName}';
   const repaired = 'onClick={event=>{event.stopPropagation();const interactionClick=!!onClick&&!!targetClass.trim();if(interactionClick){onClick?.();return}requestCardInspection(card)}} aria-label={displayName}';
-  if (!source.includes(repaired)) {
+  const semanticInspector = source.includes('event.stopPropagation()') && source.includes('requestCardInspection(card)') && source.includes('aria-label={displayName}');
+  if (!source.includes(repaired) && !semanticInspector) {
     if (!source.includes(legacy)) throw new Error("Could not locate OriginalCard click behavior.");
     source = source.replace(legacy, repaired);
     await write(path, source);
