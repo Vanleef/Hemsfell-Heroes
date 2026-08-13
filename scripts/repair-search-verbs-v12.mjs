@@ -11,9 +11,9 @@ const SEARCH_VERBS_PATTERN = "(?:procure|procurar|busque|buscar|busca)";
 
 await patchFile("app/rules-engine/compiler.mjs", (source) => {
   const legacy = '  if (/procure|busque/.test(value)) { const amount=numberFrom(value.match(/(?:procure|busque)\\s+(\\d+|um|uma|dois|duas|tres)/)?.[1],1);';
-  const canonical = `  if (/\\b${SEARCH_VERBS_PATTERN}\\b/.test(value)) { const amount=numberFrom(value.match(/${SEARCH_VERBS_PATTERN}\\s+(\\d+|um|uma|dois|duas|tres)/)?.[1],1);`;
+  const canonical = `  if (/\\b${SEARCH_VERBS_PATTERN}\\b/.test(value)) { const amount=numberFrom(value.match(/${SEARCH_VERBS_PATTERN}(?:\\s+por)?\\s+(\\d+|um|uma|dois|duas|tres)/)?.[1],1);`;
   if (source.includes(legacy)) source = source.replace(legacy, canonical);
-  else if (!source.includes(`/${SEARCH_VERBS_PATTERN}\\s+`)) {
+  else if (!source.includes(`/${SEARCH_VERBS_PATTERN}(?:\\s+por)?\\s+`)) {
     throw new Error("Deck-search parser patch point was not found in compiler.mjs");
   }
   return source;
