@@ -1,12 +1,18 @@
 import { readFile, writeFile } from "node:fs/promises";
 
-async function normalize(path, replacements) {
+async function normalize(path, replacements, regexReplacements = []) {
   let source = await readFile(path, "utf8");
   const original = source;
   const updated = [];
   for (const [stale, current, label] of replacements) {
     if (source.includes(stale)) {
       source = source.replace(stale, current);
+      updated.push(label);
+    }
+  }
+  for (const [pattern, current, label] of regexReplacements) {
+    if (pattern.test(source)) {
+      source = source.replace(pattern, current);
       updated.push(label);
     }
   }
@@ -87,6 +93,17 @@ const integrationUpdated = await normalize("tests/rules-and-multiplayer.test.mjs
     ' assert.match(css,/deck-picker\\{display:grid/);',
     ' assert.match(css,/@import "\\.\\/lab-legacy\\.css"/);',
     "deck picker stylesheet import contract",
+  ],
+], [
+  [
+    /test\("targeted effects are serialized and visually identify both cards",\(\)=>\{[\s\S]*?\n\}\);/,
+    `test("targeted effects are serialized and visually identify both cards",()=>{\n assert.match(page,/engineTargetDecision/);\n assert.match(page,/selectEngineTarget/);\n assert.match(css,/@import "\\.\\/lab-interaction-responsive\\.css"/);\n});`,
+    "canonical targeted-effect integration contract",
+  ],
+  [
+    /assert\.match\(css,\/\\\.commander-slot\/\);/g,
+    'assert.match(page,/commander-slot/);',
+    "canonical Commander class contract",
   ],
 ]);
 
