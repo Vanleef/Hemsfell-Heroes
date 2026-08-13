@@ -55,3 +55,4 @@ const replaceOnce = (source, before, after, label) => {
 }
 
 console.log("v18 applied: null-safe keywords, Gimble/AI engine decisions, Mete o Pé cost modifier and larger energy labels.");
+await import("./repair-priority-multiplayer-v19.mjs");
