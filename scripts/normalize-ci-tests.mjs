@@ -49,6 +49,11 @@ const integrationUpdated = await normalize("tests/rules-and-multiplayer.test.mjs
     "authoritative targeted effect UI",
   ],
   [
+    ' assert.match(css,/\\.visual-effect\\.fx-targeted/);',
+    ' assert.match(css,/@import "\\.\\/lab-interaction-responsive\\.css"/);',
+    "targeted effect stylesheet import",
+  ],
+  [
     ' assert.match(page,/setInterval\\(fn,850\\)/);',
     ' assert.match(page,/syncQueueRef\\.current\\.then/);',
     "serialized multiplayer synchronization",
@@ -72,6 +77,11 @@ const integrationUpdated = await normalize("tests/rules-and-multiplayer.test.mjs
     ' assert.match(page,/Global effects never request a target/);\n assert.match(page,/todas\\?\\\\s\\+\\(\\?:as\\?\\\\s\\+\\)\\?criaturas/);\n assert.match(page,/const scope=.*\\[\\.\\.\\.p\\.board,\\.\\.\\.o\\.board\\]/);',
     ' assert.match(page,/cardPlayTargetPolicy/);\n assert.match(page,/TargetScope/);\n assert.match(page,/const isCommander=/);',
     "authoritative global targeting contract",
+  ],
+  [
+    ' assert.match(css,/\\.commander-slot/);',
+    ' assert.match(page,/commander-slot/);',
+    "Commander visual class source",
   ],
   [
     ' assert.match(css,/deck-picker\\{display:grid/);',
