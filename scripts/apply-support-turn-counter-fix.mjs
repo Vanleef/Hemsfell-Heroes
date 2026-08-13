@@ -6,58 +6,55 @@ const replaceRequired = (text, from, to, label) => {
   return text.replace(from, to);
 };
 
+const compilerUrl = new URL("../app/rules-engine/compiler.mjs", import.meta.url);
+let compiler = await readFile(compilerUrl, "utf8");
+compiler = replaceRequired(
+  compiler,
+  `  const buff = raw.match(/([+-]?\\d+)\\s*\\/\\s*([+-]?\\d+)/);\n  const offense = raw.match(/(?:recebe|ganha|concede|d[êe])\\s*\\+?(\\d+)\\s+(?:de\\s+)?ofensividade/i);\n  const vitality = raw.match(/(?:recebe|ganha|concede|d[êe])\\s*\\+?(\\d+)\\s+(?:de\\s+)?vitalidade/i);`,
+  `  const supportClauseRaw = raw.match(/suporte\\s*:\\s*([^.]+)/i)?.[1] || "";\n  const nonSupportRaw = clean(raw.replace(/suporte\\s*:\\s*[^.]+/ig, ""));\n  const buff = nonSupportRaw.match(/([+-]?\\d+)\\s*\\/\\s*([+-]?\\d+)/);\n  const offense = nonSupportRaw.match(/(?:recebe|ganha|concede|d[êe])\\s*\\+?(\\d+)\\s+(?:de\\s+)?ofensividade/i);\n  const vitality = nonSupportRaw.match(/(?:recebe|ganha|concede|d[êe])\\s*\\+?(\\d+)\\s+(?:de\\s+)?vitalidade/i);`,
+  "Support clause excluded from self stats"
+);
+compiler = replaceRequired(
+  compiler,
+  `  const supportText=value.match(/suporte\\s*:\\s*([^.]+)/)?.[1];\n  if(supportText&&!/[+-]?\\d+\\s*\\/\\s*[+-]?\\d+/.test(supportText)) for(const keyword of keywordMatches(supportText)) add("supportAura",{keyword});`,
+  `  const supportText = folded(supportClauseRaw);\n  const supportStats = supportClauseRaw.match(/([+-]?\\d+)\\s*\\/\\s*([+-]?\\d+)/);\n  if (supportStats) add("supportAura", { attack: Number(supportStats[1]), health: Number(supportStats[2]) });\n  if (supportText) for (const keyword of keywordMatches(supportText)) add("supportAura", { keyword });`,
+  "Compile Support numeric/keyword aura"
+);
+compiler = replaceRequired(
+  compiler,
+  `  for(const keyword of keywordMatches(raw)){if(supportText&&folded(supportText).includes(folded(keyword)))continue;if(effects.some((effect)=>effect.type==="grantKeyword"&&effect.keyword===keyword))continue;add("keyword", { keyword, duration: turnLimited ? "turn" : "permanent" });}`,
+  `  for (const keyword of keywordMatches(nonSupportRaw)) { if (effects.some((effect) => effect.type === "grantKeyword" && effect.keyword === keyword)) continue; add("keyword", { keyword, duration: turnLimited ? "turn" : "permanent" }); }`,
+  "Support keyword never grants itself"
+);
+await writeFile(compilerUrl, compiler);
+
 const engineUrl = new URL("../app/rules-engine/engine.mjs", import.meta.url);
 let engine = await readFile(engineUrl, "utf8");
-
-engine = replaceRequired(
-  engine,
-  `function adjacentSupportBonus(state, unit, owner) {\n  const entry = state.players[owner]; let attack = 0; let health = 0;\n  for (const source of permanentUnits(entry)) {\n    if (source === unit || source.suffocated || Math.abs((source.slot ?? -10) - (unit.slot ?? 10)) !== 1) continue;\n    const rulesText = [...activeKeywords(source), source.text || ""].join(" ");\n    if (!/\\bsuporte\\b/i.test(rulesText)) continue;\n    const match = rulesText.match(/suporte\\s*:?\\s*([+-]?\\d+)\\s*\\/\\s*([+-]?\\d+)/i);\n    if (match) { attack += Number(match[1]); health += Number(match[2]); }\n  }\n  return { attack, health };\n}`,
-  `function adjacentSupportBonus(state, unit, owner) {\n  const entry = state.players[owner]; let attack = 0; let health = 0;\n  // Canonical supportAura modifiers are materialized by refreshSupportAuras.\n  // Only fall back to parsing printed Support text for legacy cards that do not\n  // expose a compiled supportAura, otherwise the same bonus is counted twice.\n  for (const source of entry.board || []) {\n    if (source === unit || source.suffocated || Math.abs((source.slot ?? -10) - (unit.slot ?? 10)) !== 1) continue;\n    if ((source.staticModifiers || []).some((modifier) => modifier.type === "supportAura")) continue;\n    const rulesText = [...activeKeywords(source), source.text || ""].join(" ");\n    if (!/\\bsuporte\\b/i.test(rulesText)) continue;\n    const match = rulesText.match(/suporte\\s*:?\\s*([+-]?\\d+)\\s*\\/\\s*([+-]?\\d+)/i);\n    if (match) { attack += Number(match[1]); health += Number(match[2]); }\n  }\n  return { attack, health };\n}`,
-  "Support numeric fallback"
-);
-
 engine = replaceRequired(
   engine,
   `function refreshSupportAuras(state){for(const entry of state.players)for(const unit of entry.board||[]){unit.grantedKeywords=(unit.grantedKeywords||[]).filter(value=>!String(value).startsWith("support:"));unit.modifiers=(unit.modifiers||[]).filter(value=>value.duration!=="support");}state.players.forEach((entry)=>{for(const source of permanentUnits(entry)){if(source.suffocated)continue;for(const aura of (source.staticModifiers||[]).filter(value=>value.type==="supportAura")){for(const target of entry.board.filter(unit=>!unit.suffocated&&unit.uid!==source.uid&&Math.abs((unit.slot??-10)-(source.slot??10))===1)){if(aura.keyword){target.grantedKeywords||=[];target.grantedKeywords.push(\`support:\${source.uid}:\${aura.keyword}\`);}if(aura.attack||aura.health){target.modifiers||=[];target.modifiers.push({attack:aura.attack||0,health:aura.health||0,duration:"support",sourceId:source.uid});}}}}});}`,
   `function refreshSupportAuras(state){for(const entry of state.players)for(const unit of entry.board||[]){unit.grantedKeywords=(unit.grantedKeywords||[]).filter(value=>!String(value).startsWith("support:"));unit.modifiers=(unit.modifiers||[]).filter(value=>value.duration!=="support");}state.players.forEach((entry)=>{for(const source of entry.board||[]){if(source.suffocated)continue;const sourceId=source.uid||source.id;for(const aura of (source.staticModifiers||[]).filter(value=>value.type==="supportAura")){for(const target of entry.board.filter(unit=>!unit.suffocated&&(unit.uid||unit.id)!==sourceId&&Math.abs((unit.slot??-10)-(source.slot??10))===1)){if(aura.keyword){target.grantedKeywords||=[];target.grantedKeywords.push(\`support:\${sourceId}:\${aura.keyword}\`);}if(aura.attack||aura.health){target.modifiers||=[];target.modifiers.push({attack:aura.attack||0,health:aura.health||0,duration:"support",sourceId});}}}}});}`,
-  "Support adjacency/self exclusion"
+  "Support source restricted to board and self excluded"
 );
-
-engine = replaceRequired(
-  engine,
-  `if (condition.cardsPlayedBeforeThisAtLeast != null && (state.players[owner].turnCardsPlayed || 0) < condition.cardsPlayedBeforeThisAtLeast) return false;\n  if (condition.cardsPlayedBeforeThisAtMost != null && (state.players[owner].turnCardsPlayed || 0) > condition.cardsPlayedBeforeThisAtMost) return false;`,
-  `const cardsPlayedBeforeThis = Math.max(0, (state.players[owner].turnCardsPlayed || 0) - (event.type === "onPlay" && event.owner === owner ? 1 : 0));\n  if (condition.cardsPlayedBeforeThisAtLeast != null && cardsPlayedBeforeThis < condition.cardsPlayedBeforeThisAtLeast) return false;\n  if (condition.cardsPlayedBeforeThisAtMost != null && cardsPlayedBeforeThis > condition.cardsPlayedBeforeThisAtMost) return false;`,
-  "Fura-Fila prior-card semantics"
-);
-
 engine = replaceRequired(
   engine,
   `return Array.from({ length: effect.selections ?? (scope === TargetScope.NONE ? 0 : 1) }, () => ({ scope, role: "effect", requiredSubtype: effect.requiredSubtype || effect.subtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: effect.excludeIds || [] }));`,
-  `return Array.from({ length: effect.selections ?? (scope === TargetScope.NONE ? 0 : 1) }, () => ({ scope, role: "effect", requiredSubtype: effect.requiredSubtype || effect.subtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, maxCostFromTurnCardsPlayed: !!effect.maxCostFromTurnCardsPlayed, excludeIds: effect.excludeIds || [] }));`,
+  `return Array.from({ length: effect.selections ?? (scope === TargetScope.NONE ? 0 : 1) }, () => ({ scope, role: "effect", requiredSubtype: effect.requiredSubtype || effect.subtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, maxCostCounter: effect.maxCostCounter, includeCurrentCardInCounter: effect.includeCurrentCardInCounter, excludeIds: effect.excludeIds || [] }));`,
   "Dynamic target max cost metadata"
 );
-
 engine = replaceRequired(
   engine,
   `function targetMatchesStep(target, id, step) {\n  if ((step.excludeIds || []).includes(id)) return false;\n  if (step.requiredSubtype && !subtype(target, step.requiredSubtype)) return false;\n  if (step.requiredName && String(target?.name || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase() !== String(step.requiredName).normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase()) return false;\n  if (step.imageOnly && !(target?.generatedImage || target?.imageCard)) return false;\n  if (step.maxCost != null && (target?.cost || 0) > step.maxCost) return false;\n  return true;\n}`,
-  `function targetMatchesStep(state, owner, target, id, step) {\n  if ((step.excludeIds || []).includes(id)) return false;\n  if (step.requiredSubtype && !subtype(target, step.requiredSubtype)) return false;\n  if (step.requiredName && String(target?.name || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase() !== String(step.requiredName).normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase()) return false;\n  if (step.imageOnly && !(target?.generatedImage || target?.imageCard)) return false;\n  if (step.maxCost != null && (target?.cost || 0) > step.maxCost) return false;\n  if (step.maxCostFromTurnCardsPlayed && (target?.cost || 0) > (state.players[owner].turnCardsPlayed || 0)) return false;\n  return true;\n}`,
-  "Dynamic target validation"
+  `function targetMatchesStep(state, owner, target, id, step) {\n  if ((step.excludeIds || []).includes(id)) return false;\n  if (step.requiredSubtype && !subtype(target, step.requiredSubtype)) return false;\n  if (step.requiredName && String(target?.name || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase() !== String(step.requiredName).normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase()) return false;\n  if (step.imageOnly && !(target?.generatedImage || target?.imageCard)) return false;\n  const dynamicMaxCost = step.maxCostCounter ? (state.players[owner]?.[step.maxCostCounter] || 0) + (step.includeCurrentCardInCounter ? 1 : 0) : step.maxCost;\n  if (dynamicMaxCost != null && (target?.cost || 0) > dynamicMaxCost) return false;\n  return true;\n}`,
+  "Dynamic target max cost validation"
 );
-
+engine = replaceRequired(engine, `if (isValidTarget(step, owner, targetOwner, targetKind) && targetMatchesStep(target, id, step)) result.push(id);`, `if (isValidTarget(step, owner, targetOwner, targetKind) && targetMatchesStep(state, owner, target, id, step)) result.push(id);`, "Dynamic candidate validation");
 engine = replaceRequired(
   engine,
-  `if (isValidTarget(step, owner, targetOwner, targetKind) && targetMatchesStep(target, id, step)) result.push(id);`,
-  `if (isValidTarget(step, owner, targetOwner, targetKind) && targetMatchesStep(state, owner, target, id, step)) result.push(id);`,
-  "Dynamic target candidate filtering"
+  `|| (step.requiredSubtype && (!target || !subtype(target, step.requiredSubtype)))) throw new RulesViolation("invalid-target");`,
+  `|| (!hero && !targetMatchesStep(state, owner, target, id, step))) throw new RulesViolation("invalid-target");`,
+  "Selected target uses complete predicate"
 );
-
-engine = replaceRequired(
-  engine,
-  `(!hero && !targetMatchesStep(target, id, step))`,
-  `(!hero && !targetMatchesStep(state, decision.owner, target, id, step))`,
-  "Dynamic target decision validation"
-);
-
 await writeFile(engineUrl, engine);
 
 const effectsUrl = new URL("../app/rules-engine/effects.mjs", import.meta.url);
@@ -65,8 +62,14 @@ let effects = await readFile(effectsUrl, "utf8");
 effects = replaceRequired(
   effects,
   `  damageFromCardsPlayedThisTurn(state, effect, context) { defaultEffectHandlers.damage(state, { ...effect, type: "damage", amount: player(state, context.owner).turnCardsPlayed || 0 }, context); },`,
-  `  damageFromCardsPlayedThisTurn(state, effect, context) { defaultEffectHandlers.damage(state, { ...effect, type: "damage", amount: player(state, context.owner).turnCardsPlayed || 0 }, context); },\n  destroyByCardsPlayedThisTurnCost(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); const count = player(state, context.owner).turnCardsPlayed || 0; if (!target || target.type !== "Criatura" || (target.cost || 0) > count) throw new RulesViolation("invalid-target"); defaultEffectHandlers.destroy(state, { type: "destroy", target: "selected" }, context); },`,
-  "Zoiudo turn-card-count effect"
+  `  damageFromCardsPlayedThisTurn(state, effect, context) { defaultEffectHandlers.damage(state, { ...effect, type: "damage", amount: player(state, context.owner).turnCardsPlayed || 0 }, context); },\n  modifyStatsFromTurnCardsPlayed(state, effect, context) { const count = player(state, context.owner).turnCardsPlayed || 0; defaultEffectHandlers.modifyStats(state, { ...effect, type: "modifyStats", attack: count * (effect.attackPerCard || 0), health: count * (effect.healthPerCard || 0) }, context); },`,
+  "Turn-card stat scaler"
+);
+effects = replaceRequired(
+  effects,
+  `  countedChoice(state, effect, context) { const source = findUnit(state, context.sourceId); const count = source?.[effect.counter] || 0; const branch = effect.branches.find((candidate) => count >= candidate.min && (candidate.max == null || count <= candidate.max)); for (const nested of branch?.effects || []) applyEffect(state, nested, { ...context, count }); },`,
+  `  countedChoice(state, effect, context) { const source = findUnit(state, context.sourceId); const counterSource = effect.counterScope === "player" ? player(state, context.owner) : source; const count = counterSource?.[effect.counter] || 0; const branch = effect.branches.find((candidate) => count >= candidate.min && (candidate.max == null || count <= candidate.max)); for (const nested of branch?.effects || []) applyEffect(state, nested, { ...context, count }); },`,
+  "Counted choice canonical player counter"
 );
 await writeFile(effectsUrl, effects);
 
@@ -74,10 +77,16 @@ const rulesUrl = new URL("../app/rules-engine/card-rules.mjs", import.meta.url);
 let rules = await readFile(rulesUrl, "utf8");
 rules = replaceRequired(
   rules,
-  `  p37: [ability("activated", [effect("damageFromSacrificedAttack", { target: "anyCharacter", selections: 1 })], [{ type: "sacrifice", amount: 1, subtype: "Goblin" }], { uiActivation: true, usageLimit: { count: 1, period: "turn" } })],`,
-  `  p32: [ability("onPlay", [effect("destroyByCardsPlayedThisTurnCost", { target: "anyCreature", selections: 1, maxCostFromTurnCardsPlayed: true })], [], { condition: { cardsPlayedBeforeThisAtLeast: 1 } })],\n  p37: [ability("activated", [effect("damageFromSacrificedAttack", { target: "anyCharacter", selections: 1 })], [{ type: "sacrifice", amount: 1, subtype: "Goblin" }], { uiActivation: true, usageLimit: { count: 1, period: "turn" } })],`,
-  "Explicit Zoiudo rule"
+  `  p27: [ability("onEnter", [effect("grantNextCardDiscount", { amount: 1, duration: "turn" })])],`,
+  `  p27: [ability("onEnter", [effect("grantNextCardDiscount", { amount: 1, duration: "turn" })])],\n  p30: [ability("onPlay", [effect("modifyStatsFromTurnCardsPlayed", { target: "self", attackPerCard: 1, healthPerCard: 1, duration: "turn" })], [], { condition: { cardsPlayedBeforeThisAtLeast: 1 } })],\n  p32: [ability("static", [effect("keyword", { keyword: "Veloz" })]), ability("onPlay", [effect("destroy", { target: "anyCreature", selections: 1, maxCostCounter: "turnCardsPlayed", includeCurrentCardInCounter: true })], [], { condition: { cardsPlayedBeforeThisAtLeast: 1 } })],`,
+  "Explicit Biriba and Zoiudo turn-count rules"
+);
+rules = replaceRequired(
+  rules,
+  `  p46: [ability("onPlay", [effect("remainUntilTurnEnd"), effect("trackCardsPlayedAfterSelf")]), ability("onTurnEnd", [effect("countedChoice", { counter: "cardsPlayedAfterSelf", branches:`,
+  `  p46: [ability("onPlay", [effect("remainUntilTurnEnd")]), ability("onTurnEnd", [effect("countedChoice", { counter: "turnCardsPlayed", counterScope: "player", branches:`,
+  "Tranqueira uses canonical turn counter"
 );
 await writeFile(rulesUrl, rules);
 
-console.log("Applied Support adjacency, canonical turn counter, Zoiudo, and post-self Tranqueira rules.");
+console.log("Applied Support semantics and canonical turn-card counter rules.");
