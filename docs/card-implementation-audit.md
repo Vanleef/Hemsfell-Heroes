@@ -6,11 +6,11 @@
 
 - Total de cartas: **308**
 - Ativas: **301**
-- Regras explícitas: **182**
-- Regras derivadas do texto: **119**
+- Regras explícitas: **183**
+- Regras derivadas do texto: **118**
 - Executáveis pelo motor canônico: **301**
 - Com efeito textual não suportado: **0**
-- Marcadas para revisão: **66**
+- Marcadas para revisão: **65**
 
 ## Achados confirmados / revisão prioritária
 
@@ -67,13 +67,6 @@ Implementação: **text** · Executável: **sim** · Gatilhos: static · Efeitos
 Implementação: **text** · Executável: **sim** · Gatilhos: onEnter · Efeitos: damage
 
 - **REVIEW · text-parser-conditional:** Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso.
-
-### 35. BOMBARDEIRO GENTE BOA
-
-Implementação: **text** · Executável: **sim** · Gatilhos: static · Efeitos: damage
-
-- **REVIEW · text-parser-conditional:** Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso.
-- **REVIEW · text-parser-targeting:** Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos.
 
 ### 40. SUPER MEGATANQUE CHUMBO 3000
 
@@ -459,7 +452,7 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos
 | 32 | ZOIUDO, O LARÁPIO | Criatura | explicit | ✓ | static, onPlay | keyword, destroyByCardsPlayedThisTurn |
 | 33 | FUSCÃO, O AGIOTA | Criatura | text | ✓ | static | draw |
 | 34 | BAFO DE FUMAÇA | Criatura | text | ✓ | onEnter | damage |
-| 35 | BOMBARDEIRO GENTE BOA | Criatura | text | ✓ | static | damage |
+| 35 | BOMBARDEIRO GENTE BOA | Criatura | explicit | ✓ | onCreatureEnter | damage |
 | 36 | CHAMINÉ, O MAFIOSO | Criatura | explicit | ✓ | onEnter, onPlay | retrieve, grantUntilTurnEnd |
 | 37 | BUCHA DE CANHÃO | Encanto | explicit | ✓ | activated | damageFromSacrificedAttack |
 | 38 | TRAMBUCO DO PIPOCO | Artefato | explicit | ✓ | onEnter, activated, onAttachedHostDestroyed | validateAttachedSubtype, attachedStats, attachedKeyword, reattachArtifact, optionalReequipArtifact |
@@ -470,7 +463,7 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos
 | 43 | HOJE É POR CONTA DA CASA! | Feitiço | explicit | ✓ | onPlay | grantNextCardDiscount |
 | 44 | SUBORNO | Feitiço | text | ✓ | onPlay | gainEnergy |
 | 45 | BICUDA NA FUÇA! | Feitiço | explicit | ✓ | onPlay | damageFromCardsPlayedThisTurn |
-| 46 | TRANQUEIRA-MÁTICA ELETROSTÁTICA | Feitiço | explicit | ✓ | onPlay, onTurnEnd | remainUntilTurnEnd, countedChoice, moveSelf |
+| 46 | TRANQUEIRA-MÁTICA ELETROSTÁTICA | Feitiço | explicit | ✓ | onPlay, onTurnEnd | remainUntilTurnEnd, trackCardsPlayedAfterSelf, countedChoice, moveSelf |
 | 47 | COMBADO NÃO SAI CARO | Feitiço | explicit | ✓ | onPlay, onPermanentLeaves, onTurnEnd | remainUntilTurnEnd, gainEnergy, moveSelf |
 | 48 | PINGA QUE LEVANTA ATÉ DEFUNTO | Feitiço | explicit | ✓ | onPlay | resurrect, configureResurrected |
 | 49 | PARQUE DOS GURI CAÇA-BOBOS | Terreno | explicit | ✓ | onCardPlayed | applyGoblinThresholds |

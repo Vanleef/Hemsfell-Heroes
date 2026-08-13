@@ -72,8 +72,9 @@ function defenderCapacity(unit) {
 }
 function adjacentSupportBonus(state, unit, owner) {
   const entry = state.players[owner]; let attack = 0; let health = 0;
-  for (const source of permanentUnits(entry)) {
+  for (const source of entry.board || []) {
     if (source === unit || source.suffocated || Math.abs((source.slot ?? -10) - (unit.slot ?? 10)) !== 1) continue;
+    if ((source.staticModifiers || []).some((modifier) => modifier.type === "supportAura" && (modifier.attack || modifier.health))) continue;
     const rulesText = [...activeKeywords(source), source.text || ""].join(" ");
     if (!/\bsuporte\b/i.test(rulesText)) continue;
     const match = rulesText.match(/suporte\s*:?\s*([+-]?\d+)\s*\/\s*([+-]?\d+)/i);

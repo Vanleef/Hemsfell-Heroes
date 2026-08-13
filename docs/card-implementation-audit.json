@@ -1,14 +1,14 @@
 {
   "summary": {
-    "generatedAt": "2026-08-13T14:12:43.301Z",
+    "generatedAt": "2026-08-13T15:30:40.846Z",
     "totalCards": 308,
     "activeCards": 301,
     "ignoredCards": 7,
-    "explicitCards": 182,
-    "textParsedCards": 119,
+    "explicitCards": 183,
+    "textParsedCards": 118,
     "executableCards": 301,
     "unsupportedCards": 0,
-    "cardsWithRisks": 66,
+    "cardsWithRisks": 65,
     "confirmedFindings": []
   },
   "cards": [
@@ -954,12 +954,12 @@
       "cost": 1,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "static"
+        "onCreatureEnter"
       ],
       "effectTypes": [
         "damage"
@@ -974,18 +974,7 @@
         }
       ],
       "printedText": "Sempre que você invocar um Goblin, ative o seguinte efeito: Cause 1 de dano a um alvo.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        },
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 36,
@@ -1310,6 +1299,7 @@
       ],
       "effectTypes": [
         "remainUntilTurnEnd",
+        "trackCardsPlayedAfterSelf",
         "countedChoice",
         "moveSelf"
       ],
