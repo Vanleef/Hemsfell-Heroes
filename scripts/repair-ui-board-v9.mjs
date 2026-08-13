@@ -21,8 +21,8 @@ const write = async (path, value) => writeFile(path, normalize(value));
   let source = await read(path);
   const legacy = 'onClick={onClick||(()=>requestCardInspection(card))} aria-label={displayName}';
   const repaired = 'onClick={event=>{event.stopPropagation();const interactionClick=!!onClick&&!!targetClass.trim();if(interactionClick){onClick?.();return}requestCardInspection(card)}} aria-label={displayName}';
-  const semanticInspector = source.includes('event.stopPropagation()') && source.includes('requestCardInspection(card)') && source.includes('aria-label={displayName}');
-  if (!source.includes(repaired) && !semanticInspector) {
+  const laterRepaired = 'onClick={event=>{event.stopPropagation();const interactionClick=!!onClick&&(!inspectable||!!targetClass.trim());if(interactionClick){onClick?.();return}if(inspectable)requestCardInspection(card)}} aria-label={displayName}';
+  if (!source.includes(repaired) && !source.includes(laterRepaired)) {
     if (!source.includes(legacy)) throw new Error("Could not locate OriginalCard click behavior.");
     source = source.replace(legacy, repaired);
     await write(path, source);
