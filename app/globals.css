@@ -1,10 +1,18 @@
 @import "tailwindcss";
 @import "./lab.css";
+@import "./ui-gameplay-polish-v5.css";
+@import "./ui-gameplay-motion-v5.css";
+@import "./ui-gameplay-polish-v6.css";
+@import "./ui-board-polish-v8.css";
+@import "./ui-board-polish-v9.css";
+@import "./ui-board-polish-v10.css";
+@import "./ui-board-polish-v11.css";
 @import "./card-back.css";
 @import "./remote-card-art.css";
 
-/* Global reset only. Component and match styling belongs to the responsive
- * modules imported by lab.css so there is a single cascade authority. */
+/* Global reset only. Component and match styling lives in the responsive
+ * modules above so there is a single, explicit cascade instead of a legacy
+ * stylesheet followed by layers of corrective overrides. */
 :root {
   --ink: #f5ecd8;
   --gold: #d9ad55;
@@ -27,10 +35,10 @@ body {
 }
 
 body {
+  min-height: 100dvh;
   background: radial-gradient(circle at 50% 30%, #1b2941 0, #0b1220 42%, #050812 100%);
   color: var(--ink);
   font-family: Georgia, "Times New Roman", serif;
-  min-height: 100dvh;
 }
 
 .app {
