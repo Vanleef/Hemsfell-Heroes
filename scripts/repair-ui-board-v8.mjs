@@ -4,16 +4,29 @@ const normalize = (value) => value.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 const read = async (path) => normalize(await readFile(path, "utf8"));
 const write = async (path, value) => writeFile(path, normalize(value));
 
+const functionStart = (source, name) => {
+  const match = new RegExp(`(?:^|\\n)\\s*function\\s+${name}\\s*\\(`, "m").exec(source);
+  if (!match) return -1;
+  const newlineOffset = match[0].startsWith("\n") ? 1 : 0;
+  return match.index + newlineOffset + match[0].slice(newlineOffset).search(/function\s+/);
+};
+
 // ---------------------------------------------------------------------------
 // Hero command bar: the capsule itself is the interaction surface.
 // No nested activation/use icon button remains.
+//
+// IMPORTANT: this migration must be idempotent. Later migrations (notably v10)
+// extend HeroAbilities' parameter list, so never locate it by an exact old
+// signature. Use the surrounding function declarations as stable boundaries.
 // ---------------------------------------------------------------------------
 {
   const path = "app/page.tsx";
   let source = await read(path);
-  const start = source.indexOf("function HeroAbilities({player,enemy=false,onAbility}");
-  const end = source.indexOf("\nfunction ResourceSummary", start);
-  if (start < 0 || end < 0) throw new Error("Could not locate HeroAbilities boundaries.");
+  const start = functionStart(source, "HeroAbilities");
+  const end = functionStart(source, "ResourceSummary");
+  if (start < 0 || end < 0 || end <= start) {
+    throw new Error("Could not locate HeroAbilities boundaries.");
+  }
 
   const replacement = `function HeroAbilities({player,enemy=false,onAbility}:{player:Player;enemy?:boolean;onAbility?:(slot:number)=>void}){
  const d=deckById(player.heroId);
