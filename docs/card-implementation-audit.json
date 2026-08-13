@@ -1,14 +1,14 @@
 {
   "summary": {
-    "generatedAt": "2026-08-12T04:05:55.443Z",
+    "generatedAt": "2026-08-13T14:12:43.301Z",
     "totalCards": 308,
     "activeCards": 301,
     "ignoredCards": 7,
-    "explicitCards": 176,
-    "textParsedCards": 125,
+    "explicitCards": 182,
+    "textParsedCards": 119,
     "executableCards": 301,
     "unsupportedCards": 0,
-    "cardsWithRisks": 70,
+    "cardsWithRisks": 66,
     "confirmedFindings": []
   },
   "cards": [
@@ -191,7 +191,7 @@
         "onPlay"
       ],
       "effectTypes": [
-        "modifyStats",
+        "supportAura",
         "keyword"
       ],
       "costTypes": [],
@@ -368,7 +368,7 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -376,18 +376,12 @@
         "onPlay"
       ],
       "effectTypes": [
-        "draw"
+        "conditionalDrawByControlledSubtype"
       ],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Se você controlar uma carta da classe Dragão, compre 2 cartas. Caso contrário, compre 1.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 16,
@@ -413,7 +407,7 @@
           "type": "modifyStats",
           "target": "anyCreature",
           "selections": null,
-          "requiredSubtype": null
+          "requiredSubtype": "Dragão"
         }
       ],
       "printedText": "Uma criatura da classe Dragão recebe +0/+2 durante este turno.",
@@ -486,26 +480,21 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onPlay"
+        "static"
       ],
       "effectTypes": [
-        "modifyStats"
+        "attachedStats",
+        "conditionalAttachedBonus"
       ],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "A criatura vinculada recebe +0/+2 e caso seja da classe Dragão, recebe também Defensor.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 20,
@@ -548,28 +537,21 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onPlay"
+        "static"
       ],
       "effectTypes": [
-        "modifyStats",
-        "grantKeyword",
-        "keyword"
+        "attachedKeyword",
+        "conditionalAttachedBonus"
       ],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "A criatura vinculada recebe Voar, e caso seja da classe Dragão, recebe +2/+0.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 22,
@@ -649,7 +631,7 @@
       "targetEffects": [
         {
           "type": "damage",
-          "target": "enemyCreature",
+          "target": "anyCreature",
           "selections": 1,
           "requiredSubtype": null
         }
@@ -682,7 +664,7 @@
       "targetEffects": [
         {
           "type": "damage",
-          "target": "enemyCreature",
+          "target": "anyCreature",
           "selections": 1,
           "requiredSubtype": null
         }
@@ -794,8 +776,7 @@
         "onPlay"
       ],
       "effectTypes": [
-        "grantKeyword",
-        "keyword"
+        "grantKeyword"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -810,7 +791,7 @@
       "cost": 4,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -818,10 +799,17 @@
         "onPlay"
       ],
       "effectTypes": [
-        "modifyStats"
+        "modifyStatsFromTurnCardsPlayed"
       ],
       "costTypes": [],
-      "targetEffects": [],
+      "targetEffects": [
+        {
+          "type": "modifyStatsFromTurnCardsPlayed",
+          "target": "self",
+          "selections": null,
+          "requiredSubtype": null
+        }
+      ],
       "printedText": "Fura-fila: Recebe +1/+1 para cada carta que você jogou neste turno.",
       "risks": []
     },
@@ -869,23 +857,24 @@
       "cost": 4,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
+        "static",
         "onPlay"
       ],
       "effectTypes": [
         "keyword",
-        "destroy"
+        "destroyByCardsPlayedThisTurn"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "destroy",
-          "target": "selected",
-          "selections": null,
+          "type": "destroyByCardsPlayedThisTurn",
+          "target": "anyCreature",
+          "selections": 1,
           "requiredSubtype": null
         }
       ],
@@ -1063,31 +1052,33 @@
       "cost": 0,
       "hero": false,
       "imageCard": true,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onPlay"
+        "onEnter",
+        "activated",
+        "onAttachedHostDestroyed"
       ],
       "effectTypes": [
-        "keyword"
+        "validateAttachedSubtype",
+        "attachedStats",
+        "attachedKeyword",
+        "reattachArtifact",
+        "optionalReequipArtifact"
       ],
       "costTypes": [],
-      "targetEffects": [],
-      "printedText": "No seu turno, você pode equipar este artefato em qualquer Goblin à sua escolha. Ele recebe Veloz e +2 de Ofensividade. Se o Goblin equipado for destruído, você pode pagar 2 de energia para equipar este artefato em outro Goblin.",
-      "risks": [
+      "targetEffects": [
         {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        },
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
+          "type": "reattachArtifact",
+          "target": "allyCreature",
+          "selections": 1,
+          "requiredSubtype": "Goblin"
         }
-      ]
+      ],
+      "printedText": "No seu turno, você pode equipar este artefato em qualquer Goblin à sua escolha. Ele recebe Veloz e +2 de Ofensividade. Se o Goblin equipado for destruído, você pode pagar 2 de energia para equipar este artefato em outro Goblin.",
+      "risks": []
     },
     {
       "page": 39,
@@ -1319,7 +1310,6 @@
       ],
       "effectTypes": [
         "remainUntilTurnEnd",
-        "trackCardsPlayedAfterSelf",
         "countedChoice",
         "moveSelf"
       ],
@@ -3542,7 +3532,7 @@
           "type": "grantKeyword",
           "target": "anyCreature",
           "selections": null,
-          "requiredSubtype": null
+          "requiredSubtype": "Malorga"
         }
       ],
       "printedText": "Forneça Toque da Morte a uma criatura Malorga neste turno.",
@@ -4046,7 +4036,8 @@
         "onPlay"
       ],
       "effectTypes": [
-        "supportAura"
+        "supportAura",
+        "keyword"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -4751,7 +4742,7 @@
         "onPlay"
       ],
       "effectTypes": [
-        "modifyStats"
+        "supportAura"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -6253,7 +6244,8 @@
         "onPlay"
       ],
       "effectTypes": [
-        "supportAura"
+        "supportAura",
+        "keyword"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -7473,10 +7465,18 @@
         "onPlay"
       ],
       "effectTypes": [
+        "modifyStats",
         "keyword"
       ],
       "costTypes": [],
-      "targetEffects": [],
+      "targetEffects": [
+        {
+          "type": "modifyStats",
+          "target": "self",
+          "selections": 0,
+          "requiredSubtype": null
+        }
+      ],
       "printedText": "Veloz Ganha +1 de Ofensividade para cada carta triturada no turno.",
       "risks": []
     },
@@ -7750,8 +7750,7 @@
         "onPlay"
       ],
       "effectTypes": [
-        "grantKeyword",
-        "keyword"
+        "grantKeyword"
       ],
       "costTypes": [],
       "targetEffects": [],

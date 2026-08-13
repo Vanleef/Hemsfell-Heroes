@@ -105,8 +105,9 @@ function dealCombatDamage(state, target, targetOwner, source, sourceOwner, amoun
 function subtype(card, value) { return hasSubtype(card, value) || (card.tags || []).some((tag) => String(tag).toLowerCase() === String(value).toLowerCase()); }
 function conditionMatches(state, source, owner, condition, event = {}) {
   if (!condition) return true;
-  if (condition.cardsPlayedBeforeThisAtLeast != null && (state.players[owner].turnCardsPlayed || 0) < condition.cardsPlayedBeforeThisAtLeast) return false;
-  if (condition.cardsPlayedBeforeThisAtMost != null && (state.players[owner].turnCardsPlayed || 0) > condition.cardsPlayedBeforeThisAtMost) return false;
+  const cardsPlayedBeforeThis = Math.max(0, (state.players[owner].turnCardsPlayed || 0) - (event.type === "onPlay" && event.owner === owner ? 1 : 0));
+  if (condition.cardsPlayedBeforeThisAtLeast != null && cardsPlayedBeforeThis < condition.cardsPlayedBeforeThisAtLeast) return false;
+  if (condition.cardsPlayedBeforeThisAtMost != null && cardsPlayedBeforeThis > condition.cardsPlayedBeforeThisAtMost) return false;
   if (condition.controllerTurn && state.active !== owner) return false;
   if (condition.controllerControlsOtherSubtype) { const preEntry = event.preEntryControlledIds; const candidates = state.players[owner].board.filter((card) => Array.isArray(preEntry) ? preEntry.includes(card.uid || card.id) : (card.uid || card.id) !== (source.uid || source.id)); if (!candidates.some((card) => subtype(card, condition.controllerControlsOtherSubtype))) return false; }
   if (condition.controllerControlsSubtype) { const entry = state.players[owner]; const controlled = [...entry.board, ...entry.support, ...(entry.terrain ? [entry.terrain] : [])]; if (!controlled.some((card) => subtype(card, condition.controllerControlsSubtype))) return false; }
@@ -182,14 +183,14 @@ function intrinsicCost(state, entry, card) {
   return 0;
 }
 function targetSurcharge(state, owner, card, targetIds = []) { if (card.type !== "Feitiço") return 0; return targetIds.reduce((sum, id) => { const targetOwner = unitOwner(state, id); const target = targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); return sum + (target?.suffocated ? 0 : target?.spellTargetSurcharge || 0); }, 0); }
-function refreshSupportAuras(state){for(const entry of state.players)for(const unit of entry.board||[]){unit.grantedKeywords=(unit.grantedKeywords||[]).filter(value=>!String(value).startsWith("support:"));unit.modifiers=(unit.modifiers||[]).filter(value=>value.duration!=="support");}state.players.forEach((entry)=>{for(const source of permanentUnits(entry)){if(source.suffocated)continue;for(const aura of (source.staticModifiers||[]).filter(value=>value.type==="supportAura")){for(const target of entry.board.filter(unit=>!unit.suffocated&&unit.uid!==source.uid&&Math.abs((unit.slot??-10)-(source.slot??10))===1)){if(aura.keyword){target.grantedKeywords||=[];target.grantedKeywords.push(`support:${source.uid}:${aura.keyword}`);}if(aura.attack||aura.health){target.modifiers||=[];target.modifiers.push({attack:aura.attack||0,health:aura.health||0,duration:"support",sourceId:source.uid});}}}}});}
+function refreshSupportAuras(state){for(const entry of state.players)for(const unit of entry.board||[]){unit.grantedKeywords=(unit.grantedKeywords||[]).filter(value=>!String(value).startsWith("support:"));unit.modifiers=(unit.modifiers||[]).filter(value=>value.duration!=="support");}state.players.forEach((entry)=>{for(const source of entry.board||[]){if(source.suffocated)continue;const sourceId=source.uid||source.id;for(const aura of (source.staticModifiers||[]).filter(value=>value.type==="supportAura")){for(const target of entry.board.filter(unit=>!unit.suffocated&&(unit.uid||unit.id)!==sourceId&&Math.abs((unit.slot??-10)-(source.slot??10))===1)){if(aura.keyword){target.grantedKeywords||=[];target.grantedKeywords.push(`support:${sourceId}:${aura.keyword}`);}if(aura.attack||aura.health){target.modifiers||=[];target.modifiers.push({attack:aura.attack||0,health:aura.health||0,duration:"support",sourceId});}}}}});}
 const unitOwner = (state, id) => state.players.findIndex((entry) => permanentUnits(entry).some((unit) => unit.uid === id || unit.id === id));
 const targetScope = (value) => ({ anyCharacter: TargetScope.ANY_CHARACTER, anyCreature: TargetScope.ANY_CREATURE, allyCreature: TargetScope.ALLY_CREATURE, enemyCreature: TargetScope.ENEMY_CREATURE, anyPermanent: TargetScope.ANY_PERMANENT, allyPermanent: TargetScope.ALLY_PERMANENT, enemyPermanent: TargetScope.ENEMY_PERMANENT, anotherAllyPermanent: TargetScope.ALLY_PERMANENT, creature: TargetScope.ANY_CREATURE }[value] || TargetScope.NONE);
 function abilityTargetSteps(ability) {
   if (ability.sourceText) return (targetPolicy(ability.sourceText).steps || []).filter((step) => step.role !== "sacrifice");
   return (ability.effects || []).flatMap((effect) => {
     const scope = targetScope(effect.target);
-    return Array.from({ length: effect.selections ?? (scope === TargetScope.NONE ? 0 : 1) }, () => ({ scope, role: "effect", requiredSubtype: effect.requiredSubtype || effect.subtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: effect.excludeIds || [] }));
+    return Array.from({ length: effect.selections ?? (scope === TargetScope.NONE ? 0 : 1) }, () => ({ scope, role: "effect", requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: effect.excludeIds || [] }));
   }).filter((step) => step.scope !== TargetScope.NONE);
 }
 function targetMatchesStep(target, id, step) {
@@ -278,7 +279,7 @@ function cleanupLethal(state, stack) {
       entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid);
       for (const attachment of attachments) { const survivesHost = (attachment.abilities || []).some((ability) => ability.trigger === "onAttachedHostDestroyed"); if (survivesHost) { attachment.attachedTo = undefined; attachment.slot = unit.slot; entry.support.push(attachment); stack.push({ kind: "event", event: { type: "onAttachedHostDestroyed", owner, sourceId: attachment.uid || attachment.id, card: attachment, host: unit } }); continue; } if (attachment.generatedImage || attachment.imageCard) continue; if (attachment.page === 154) entry.obscuro.push(resetCardForZone(state, attachment)); else entry.grave.push(resetCardForZone(state, attachment)); }
       if (!unit.generatedImage && !unit.imageCard) entry.grave.push(resetCardForZone(state, unit));
-      if (!unit.suppressDeathTrigger) stack.push({ kind: "event", event: { type: "onDestroyed", owner, sourceId: unit.uid, cardId: unit.uid, card: unit, deathCause: "effect" } });
+      if (!unit.suppressDeathTrigger && !unit.generatedImage && !unit.imageCard) stack.push({ kind: "event", event: { type: "onDestroyed", owner, sourceId: unit.uid, cardId: unit.uid, card: unit, deathCause: "effect" } });
       stack.push({ kind: "event", event: { type: "onCreatureDestroyed", owner, cardId: unit.uid, card: unit } });
     }
   });
@@ -495,9 +496,68 @@ export function executeCommand(inputState, command, options = {}) {
           removeMarkersForEngine(source, (card.cost || 0) * 2); state.pendingDecision = null; stack.push(...continuation); stack.push({ kind: "effect", effect: { type: "resurrect", cardType: "Criatura", destination: "field" }, context: { ...decision.context, selectedCardId: id } }); continue;
         }
         if (decision.kind === "forced-attack") {
-          const attackerId = item.command.attackerId || item.command.targetIds?.[0], defenderId = item.command.defenderId || item.command.targetIds?.[1], attacker = state.players[item.command.owner].board.find((card) => card.uid === attackerId);
-          if (!attacker || !subtype(attacker, decision.effect.attacker?.subtype) || attacker.exhausted || !state.players[1 - item.command.owner].board.some((card) => card.uid === defenderId)) throw new RulesViolation("invalid-forced-attack");
-          state.pendingDecision = null; stack.push(...continuation); stack.push({ kind: "command", command: { type: "attack", owner: item.command.owner, attackerId, defenderId, forced: true, skipPriority: true } }); continue;
+          /* forced-attack-v7: direct one-shot creature combat; never requeues a normal attack command. */
+          const attackerOwner = decision.context?.owner ?? decision.owner ?? item.command.owner;
+          const defenderOwner = 1 - attackerOwner;
+          const attackerId = item.command.attackerId || item.command.targetIds?.[0];
+          const defenderId = item.command.defenderId || item.command.targetIds?.[1];
+          const attackerPlayer = state.players[attackerOwner];
+          const defenderPlayer = state.players[defenderOwner];
+          const attacker = attackerPlayer.board.find((card) => card.uid === attackerId || card.id === attackerId);
+          const defender = defenderPlayer.board.find((card) => card.uid === defenderId || card.id === defenderId);
+          const attacksUsed = attacker?.attacksThisTurn ?? (attacker?.attackedThisTurn ? 1 : 0);
+          const requiresReady = decision.effect.attacker?.ready !== false;
+
+          if (
+            !attacker || !defender
+            || (decision.effect.attacker?.subtype && !subtype(attacker, decision.effect.attacker.subtype))
+            || (requiresReady && attacker.exhausted)
+            || attacker.cannotAttack
+            || attacker.summoning
+            || attacker.stunned
+            || hasKeyword(attacker, /atordoado/i)
+            || attacksUsed >= (attacker.attackLimit || 1)
+            || !attackPermissionMet(attacker)
+          ) throw new RulesViolation("invalid-forced-attack");
+
+          const attack = effectiveAttack(state, attacker, attackerOwner);
+          const counter = effectiveAttack(state, defender, defenderOwner);
+          const defenderRemaining = Math.max(0, effectiveHealth(state, defender, defenderOwner) - (defender.damage || 0));
+
+          attacker.attacksThisTurn = attacksUsed + 1;
+          attacker.attackedThisTurn = attacker.attacksThisTurn >= (attacker.attackLimit || 1);
+          attacker.participatedInCombatThisTurn = true;
+          defender.participatedInCombatThisTurn = true;
+          if (!hasKeyword(attacker, /alerta/i) && attacker.attackedThisTurn) attacker.exhausted = true;
+
+          const dealtByAttacker = dealCombatDamage(state, defender, defenderOwner, attacker, attackerOwner, attack);
+          const dealtByDefender = dealCombatDamage(state, attacker, attackerOwner, defender, defenderOwner, counter);
+
+          state.pendingDecision = null;
+          state.combatAction = null;
+          stack.push(...continuation);
+          cleanupLethal(state, stack);
+
+          const attackerSurvived = attackerPlayer.board.includes(attacker);
+          const defenderDestroyed = !defenderPlayer.board.includes(defender);
+
+          if (hasKeyword(attacker, /atropelar/i) && dealtByAttacker > defenderRemaining) {
+            const overflow = dealtByAttacker - defenderRemaining;
+            defenderPlayer.life -= overflow;
+            if (overflow > 0) stack.push({ kind: "event", event: { type: "onPlayerDamaged", owner: defenderOwner, sourceOwner: attackerOwner, sourceId: attacker.uid, source: attacker, amount: overflow } });
+          }
+          if (defenderDestroyed && attackerSurvived) stack.push({ kind: "event", event: { type: "onCombatKill", owner: attackerOwner, sourceId: attacker.uid, source: attacker, card: defender } });
+          if (dealtByAttacker > 0) {
+            stack.push({ kind: "event", event: { type: "onDamageTaken", owner: defenderOwner, targetId: defender.uid, sourceOwner: attackerOwner, sourceId: attacker.uid, amount: dealtByAttacker } });
+            stack.push({ kind: "event", event: { type: "onAttachedCreatureDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: [defender.uid], amount: dealtByAttacker } });
+          }
+          if (dealtByDefender > 0) {
+            stack.push({ kind: "event", event: { type: "onDamageTaken", owner: attackerOwner, targetId: attacker.uid, sourceOwner: defenderOwner, sourceId: defender.uid, amount: dealtByDefender } });
+            stack.push({ kind: "event", event: { type: "onAttachedCreatureDamage", owner: defenderOwner, sourceId: defender.uid, source: defender, targetIds: [attacker.uid], amount: dealtByDefender } });
+          }
+          stack.push({ kind: "event", event: { type: "onCombatDamage", owner: attackerOwner, sourceId: attacker.uid, source: attacker, targetIds: [defender.uid], targetSnapshots: [{ id: defender.uid, owner: defenderOwner, slot: defender.slot }], amount: dealtByAttacker } });
+          stack.push({ kind: "event", event: { type: "onAttack", owner: attackerOwner, sourceId: attacker.uid, source: attacker, forced: true } });
+          continue;
         }
         if (decision.kind === "sacrifice-and-fill") {
           const entry = state.players[item.command.owner], ids = [...new Set(item.command.targetIds || [])];
@@ -536,7 +596,7 @@ export function executeCommand(inputState, command, options = {}) {
           if(!source||ids.length>(decision.effect.maximum||3)||ids.some((id)=>id===source.uid||!entry.board.some((card)=>card.uid===id)))throw new RulesViolation("invalid-sacrifice-selection");
           state.pendingDecision=null;
           for(const id of ids){const target=entry.board.find((card)=>card.uid===id);entry.board=entry.board.filter((card)=>card.uid!==id);if(!target)continue;const attachments=entry.support.filter((card)=>card.attachedTo===id);entry.support=entry.support.filter((card)=>card.attachedTo!==id);for(const artifact of attachments)if(!artifact.generatedImage&&!artifact.imageCard)entry.grave.push(resetCardForZone(state,artifact));if(!target.generatedImage&&!target.imageCard)entry.grave.push(resetCardForZone(state,target));stack.push({kind:"event",event:{type:"onCreatureDestroyed",owner:item.command.owner,sourceId:id,card:target}});}
-          if(ids.length){source.modifiers||=[];source.modifiers.push({attack:ids.length*(decision.effect.attackPerCreature||2),health:0,duration:"permanent",sourceId:source.uid});}
+          if(ids.length){source.modifiers||=[];source.modifiers.push({attack:ids.length*(decision.effect.attackPerCreature||2),health:0,duration:"permanent",sourceId});}
           continue;
         }
         if (decision.kind === "targets" || decision.kind === "activation-targets") {

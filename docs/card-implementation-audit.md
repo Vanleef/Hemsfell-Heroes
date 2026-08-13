@@ -6,11 +6,11 @@
 
 - Total de cartas: **308**
 - Ativas: **301**
-- Regras explícitas: **176**
-- Regras derivadas do texto: **125**
+- Regras explícitas: **182**
+- Regras derivadas do texto: **119**
 - Executáveis pelo motor canônico: **301**
 - Com efeito textual não suportado: **0**
-- Marcadas para revisão: **70**
+- Marcadas para revisão: **66**
 
 ## Achados confirmados / revisão prioritária
 
@@ -32,29 +32,11 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onCreatureEnter �
 
 - **REVIEW · text-parser-conditional:** Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso.
 
-### 15. Sabedoria Ancestral
-
-Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos: draw
-
-- **REVIEW · text-parser-conditional:** Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso.
-
 ### 18. Bater as Asas
 
 Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos: returnToHand
 
 - **REVIEW · text-parser-targeting:** Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos.
-
-### 19. Coração de Rubi
-
-Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos: modifyStats
-
-- **REVIEW · text-parser-conditional:** Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso.
-
-### 21. Garras do Leviatã
-
-Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos: modifyStats, grantKeyword, keyword
-
-- **REVIEW · text-parser-conditional:** Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso.
 
 ### 26. Sr. Goblin, o Mercador de Bugigangas
 
@@ -89,13 +71,6 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onEnter · Efeito
 ### 35. BOMBARDEIRO GENTE BOA
 
 Implementação: **text** · Executável: **sim** · Gatilhos: static · Efeitos: damage
-
-- **REVIEW · text-parser-conditional:** Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso.
-- **REVIEW · text-parser-targeting:** Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos.
-
-### 38. TRAMBUCO DO PIPOCO
-
-Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos: keyword
 
 - **REVIEW · text-parser-conditional:** Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso.
 - **REVIEW · text-parser-targeting:** Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos.
@@ -457,20 +432,20 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos
 | 5 | Wyvern | Criatura | explicit | ✓ | static, onCombatDamage | keyword, damageAdjacent |
 | 6 | Smallgui | Criatura | explicit | ✓ | onEnter | damage |
 | 7 | Xarqiroth | Criatura | text | ✓ | onEnter | draw |
-| 8 | Breathker | Criatura | text | ✓ | onPlay | modifyStats, keyword |
+| 8 | Breathker | Criatura | text | ✓ | onPlay | supportAura, keyword |
 | 9 | Dancadon | Criatura | explicit | ✓ | static | protectAlliedDragonsOncePerTurn |
 | 10 | Dragão de Limo | Criatura | explicit | ✓ | static, onDestroyed | keyword, damageAll |
 | 11 | Valorian, o Dragão Verdadeiro | Criatura | text | ✓ | onCreatureEnter | damage, keyword |
 | 12 | Ilusão Dracônica Menor | Feitiço | explicit | ✓ | onPlay | createImage |
 | 13 | Ilusão Dracônica | Feitiço | explicit | ✓ | onPlay | replaceImage |
 | 14 | Ilusão Dracônica Maior | Feitiço | explicit | ✓ | onPlay | replaceImage |
-| 15 | Sabedoria Ancestral | Feitiço | text | ✓ | onPlay | draw |
+| 15 | Sabedoria Ancestral | Feitiço | explicit | ✓ | onPlay | conditionalDrawByControlledSubtype |
 | 16 | Escama Protetora | Feitiço | explicit | ✓ | onPlay | modifyStats |
 | 17 | Investida Alada | Feitiço | explicit | ✓ | onPlay | forceAttack |
 | 18 | Bater as Asas | Feitiço | text | ✓ | onPlay | returnToHand |
-| 19 | Coração de Rubi | Artefato | text | ✓ | onPlay | modifyStats |
+| 19 | Coração de Rubi | Artefato | explicit | ✓ | static | attachedStats, conditionalAttachedBonus |
 | 20 | Anel de Esmeralda | Artefato | explicit | ✓ | activated | gainMaxEnergy, destroy |
-| 21 | Garras do Leviatã | Artefato | text | ✓ | onPlay | modifyStats, grantKeyword, keyword |
+| 21 | Garras do Leviatã | Artefato | explicit | ✓ | static | attachedKeyword, conditionalAttachedBonus |
 | 22 | Alpes Dracônicos | Terreno | explicit | ✓ | onCreatureDestroyed | createImage |
 | 23 | Dragão Filhote | Criatura | explicit | ✓ | onEnter | damage |
 | 24 | Dragão Jovem | Criatura | explicit | ✓ | static, onEnter | keyword, damage, damageAdjacent |
@@ -478,16 +453,16 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos
 | 26 | Sr. Goblin, o Mercador de Bugigangas | Herói | text | ✓ | static | draw |
 | 27 | BURRO DE CARGA | Criatura | explicit | ✓ | onEnter | grantNextCardDiscount |
 | 28 | TIRA DENTES | Criatura | text | ✓ | onEnter | returnToHand |
-| 29 | CARRETA FURACÃO | Criatura | text | ✓ | onPlay | grantKeyword, keyword |
-| 30 | BIRIBA, O FOLGADO | Criatura | text | ✓ | onPlay | modifyStats |
+| 29 | CARRETA FURACÃO | Criatura | text | ✓ | onPlay | grantKeyword |
+| 30 | BIRIBA, O FOLGADO | Criatura | explicit | ✓ | onPlay | modifyStatsFromTurnCardsPlayed |
 | 31 | BOMBARDEIRO MALUCO | Criatura | text | ✓ | onPlay | damage |
-| 32 | ZOIUDO, O LARÁPIO | Criatura | text | ✓ | onPlay | keyword, destroy |
+| 32 | ZOIUDO, O LARÁPIO | Criatura | explicit | ✓ | static, onPlay | keyword, destroyByCardsPlayedThisTurn |
 | 33 | FUSCÃO, O AGIOTA | Criatura | text | ✓ | static | draw |
 | 34 | BAFO DE FUMAÇA | Criatura | text | ✓ | onEnter | damage |
 | 35 | BOMBARDEIRO GENTE BOA | Criatura | text | ✓ | static | damage |
 | 36 | CHAMINÉ, O MAFIOSO | Criatura | explicit | ✓ | onEnter, onPlay | retrieve, grantUntilTurnEnd |
 | 37 | BUCHA DE CANHÃO | Encanto | explicit | ✓ | activated | damageFromSacrificedAttack |
-| 38 | TRAMBUCO DO PIPOCO | Artefato | text | ✓ | onPlay | keyword |
+| 38 | TRAMBUCO DO PIPOCO | Artefato | explicit | ✓ | onEnter, activated, onAttachedHostDestroyed | validateAttachedSubtype, attachedStats, attachedKeyword, reattachArtifact, optionalReequipArtifact |
 | 39 | CARCAÇA CHUMBADA DE TANQUE | Encanto | explicit | ✓ | onPermanentLeaves, activated | addMarker, createImage |
 | 40 | SUPER MEGATANQUE CHUMBO 3000 | Criatura | text | ✓ | onTurnEnd | keyword |
 | 41 | METE O PÉ!!! | Feitiço | explicit | ✓ | onPlay | returnToHand, discountReturnedCard |
@@ -495,7 +470,7 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos
 | 43 | HOJE É POR CONTA DA CASA! | Feitiço | explicit | ✓ | onPlay | grantNextCardDiscount |
 | 44 | SUBORNO | Feitiço | text | ✓ | onPlay | gainEnergy |
 | 45 | BICUDA NA FUÇA! | Feitiço | explicit | ✓ | onPlay | damageFromCardsPlayedThisTurn |
-| 46 | TRANQUEIRA-MÁTICA ELETROSTÁTICA | Feitiço | explicit | ✓ | onPlay, onTurnEnd | remainUntilTurnEnd, trackCardsPlayedAfterSelf, countedChoice, moveSelf |
+| 46 | TRANQUEIRA-MÁTICA ELETROSTÁTICA | Feitiço | explicit | ✓ | onPlay, onTurnEnd | remainUntilTurnEnd, countedChoice, moveSelf |
 | 47 | COMBADO NÃO SAI CARO | Feitiço | explicit | ✓ | onPlay, onPermanentLeaves, onTurnEnd | remainUntilTurnEnd, gainEnergy, moveSelf |
 | 48 | PINGA QUE LEVANTA ATÉ DEFUNTO | Feitiço | explicit | ✓ | onPlay | resurrect, configureResurrected |
 | 49 | PARQUE DOS GURI CAÇA-BOBOS | Terreno | explicit | ✓ | onCardPlayed | applyGoblinThresholds |
@@ -589,7 +564,7 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos
 | 137 | Viúva Negra | Criatura | explicit | ✓ | onDestroyed, activated | heal, grantKeyword |
 | 138 | Olhos Sangrentos | Criatura | explicit | ✓ | activated | grantKeyword |
 | 139 | Dominus Nox | Criatura | explicit | ✓ | onEnter | heal |
-| 140 | Lorde de Sangue | Criatura | text | ✓ | onPlay | supportAura |
+| 140 | Lorde de Sangue | Criatura | text | ✓ | onPlay | supportAura, keyword |
 | 141 | Pacto de Sangue | Artefato | explicit | ✓ | activated | modifyStats |
 | 142 | Dança Macabra | Feitiço | explicit | ✓ | onPlay | grantSubtype, combatRestriction |
 | 143 | Nascer do Sol | Feitiço | explicit | ✓ | onPlay | destroy, heal |
@@ -613,7 +588,7 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos
 | 161 | Condenar | Feitiço | explicit | ✓ | onPlay | destroyAtTurnEndUnlessCombat |
 | 162 | Castigo | Feitiço | text | ✓ | onPlay | destroy, keyword |
 | 163 | Arte da Guerra | Terreno | explicit | ✓ | onCombatStart | openRepositionWindow |
-| 164 | Sentinela da Ordem | Criatura | text | ✓ | onPlay | modifyStats |
+| 164 | Sentinela da Ordem | Criatura | text | ✓ | onPlay | supportAura |
 | 165 | Escudeiro Cruel | Criatura | explicit | ✓ | onDamageTaken | modifyStats |
 | 166 | Especialista Anti-magia | Criatura | explicit | ✓ | static | spellTargetSurcharge |
 | 167 | O Combatente | Criatura | explicit | ✓ | static | conditionalStats |
@@ -669,7 +644,7 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos
 | 217 | Gato de Rua | Criatura | explicit | ✓ | onDestroyed | returnSelfToField |
 | 218 | Gato de Batalha | Criatura | text | ✓ | static | modifyStats |
 | 219 | Gato de Fazenda | Criatura | explicit | ✓ | static | costModifier |
-| 220 | Gato Aprendiz de Bruxa | Criatura | text | ✓ | onPlay | supportAura |
+| 220 | Gato Aprendiz de Bruxa | Criatura | text | ✓ | onPlay | supportAura, keyword |
 | 221 | Gato Afeiçoado | Criatura | explicit | ✓ | onEnter, onPermanentLeaves | linkDestroyCreatures, destroyLinkedCreature |
 | 222 | Erva de Gato | Feitiço | text | ✓ | onPlay | search |
 | 223 | Promoção de Café | Feitiço | text | ✓ | onPlay | draw |
@@ -709,7 +684,7 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos
 | 257 | Saral | Criatura | explicit | ✓ | onEnter | controllerChoice |
 | 258 | Contrabandista | Criatura | text | ✓ | onEnter | search |
 | 259 | Allen Burn | Criatura | text | ✓ | onDamage | keyword |
-| 260 | Nburnu | Criatura | text | ✓ | onPlay | keyword |
+| 260 | Nburnu | Criatura | text | ✓ | onPlay | modifyStats, keyword |
 | 261 | Espião Infiltrado | Criatura | explicit | ✓ | onCardRevealed | modifyStats |
 | 262 | Nmali | Criatura | explicit | ✓ | onCardRevealed | mill |
 | 263 | Liaz | Criatura | explicit | ✓ | onCardRevealed | damage, grantKeyword |
@@ -719,7 +694,7 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onPlay · Efeitos
 | 267 | Anel de Ametista | Artefato | explicit | ✓ | activated | gainEnergy |
 | 268 | Luvas do larapio | Artefato | explicit | ✓ | static, onAttachedCreatureDamage | keyword, millFromDirectDamage |
 | 269 | Adaga de Ametista de Sangue | Artefato | explicit | ✓ | static, onAttachedCreatureDamage | attachedStats, loseLife |
-| 270 | Manto da Invisibilidade | Artefato | text | ✓ | onPlay | grantKeyword, keyword |
+| 270 | Manto da Invisibilidade | Artefato | text | ✓ | onPlay | grantKeyword |
 | 271 | Prestidigitação | Encanto | explicit | ✓ | beforeDraw | optionalDrawFrom |
 | 272 | Base de Investigação | Terreno | explicit | ✓ | onCardRevealed | mill, damage, gainEnergy, draw, discard |
 | 273 | Zayan, a Líder Revolucionária | Herói | explicit | ✓ | onCombatStart | modifyStats |
