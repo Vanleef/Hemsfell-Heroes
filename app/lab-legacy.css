@@ -1,4 +1,0 @@
-/* Test-only compatibility fixture. This file is never imported by the app.
- * Remove when the historical keyword-position assertion is migrated to the
- * responsive status/keyword stylesheet. */
-.card-frame>.field-keywords{bottom:-18px!important}

@@ -1,0 +1,11 @@
+/* Canonical visual cascade for Hemsfell Heroes.
+ * Keep import order stable: base/layout first, then successive responsive
+ * gameplay/board refinements, then card rendering helpers.
+ */
+@import "./lab.css";
+@import "./ui-board-polish-v8.css";
+@import "./ui-board-polish-v9.css";
+@import "./ui-board-polish-v10.css";
+@import "./ui-board-polish-v11.css";
+@import "./card-back.css";
+@import "./remote-card-art.css";

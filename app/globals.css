@@ -1,15 +1,7 @@
 @import "tailwindcss";
-@import "./lab.css";
-@import "./ui-board-polish-v8.css";
-@import "./ui-board-polish-v9.css";
-@import "./ui-board-polish-v10.css";
-@import "./ui-board-polish-v11.css";
-@import "./card-back.css";
-@import "./remote-card-art.css";
+@import "./game-styles.css";
 
-/* Global reset only. Component and match styling lives in the responsive
- * modules above so there is a single, explicit cascade instead of a legacy
- * stylesheet followed by layers of corrective overrides. */
+/* Global reset only. Match/component styling is owned by game-styles.css. */
 :root {
   --ink: #f5ecd8;
   --gold: #d9ad55;
