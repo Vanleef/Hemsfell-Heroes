@@ -87,3 +87,4 @@ const replaceOnce = (source, before, after, label) => {
 }
 
 console.log("v17 applied: Pinga/Biriba, Mete o Pé, Zoiudo, field tooltips, hero controls and damage feedback.");
+await import("./repair-runtime-ai-cost-v18.mjs");
