@@ -5,7 +5,7 @@ import { parseEffects } from "../app/rules-engine/compiler.mjs";
 
 const searchEffect = (text) => parseEffects(text).find((effect) => effect.type === "search");
 
-test("Procure/Procurar/Busque/Buscar/Busca compile to the same deck-search effect", () => {
+test("deck-search verb aliases compile to the same effect", () => {
   const cases = [
     ["Procure 2 criaturas no seu deck e coloque-as na mão.", 2],
     ["Procurar 2 criaturas no seu deck e coloque-as na mão.", 2],
@@ -25,11 +25,16 @@ test("Procure/Procurar/Busque/Buscar/Busca compile to the same deck-search effec
   }
 });
 
-test("Buscar uma carta and Busque por 3 preserve the same selection semantics", () => {
+test("buscar uma and busque por amount keep selection semantics", async () => {
   const singular = searchEffect("Buscar uma carta do tipo Artefato no seu deck e coloque-a na mão.");
   assert.ok(singular);
   assert.equal(singular.amount, 1);
   assert.deepEqual(singular.types, ["Artefato"]);
+
+  const plural = searchEffect("Busque por 3 cartas de criatura no seu deck e coloque-as na mão.");
+  assert.ok(plural);
+  assert.equal(plural.amount, 3);
+  assert.deepEqual(plural.types, ["Criatura"]);
 
   const source = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(source, /procure\|procurar\|busque\|buscar\|busca/);
