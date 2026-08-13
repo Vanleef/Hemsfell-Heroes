@@ -1,5 +1,5 @@
 /* Hemsfell Heroes — resource readability v18 */
-.screen-game .field-energy>div>b{font-size:clamp(.48rem,.72cqw,.74rem)!important;line-height:1!important;letter-spacing:.055em!important;font-weight:900!important}
-.screen-game .field-energy>div>strong{font-size:clamp(.48rem,.74cqw,.74rem)!important;line-height:1!important;font-weight:900!important}
-.screen-game .field-energy .reserve-track>b{font-size:clamp(.48rem,.72cqw,.74rem)!important; color: mediumpurple;}
-@container hemsfell-board (max-height:44rem){.screen-game .field-energy>div>b{font-size:clamp(.48rem,.72cqw,.74rem)!important}.screen-game .field-energy>div>strong{font-size:clamp(.6rem,.78cqw,.8rem)!important}}
+.screen-game .field-energy>div>b{font-size:clamp(.46rem,.68cqw,.7rem)!important;line-height:1!important;letter-spacing:.055em!important;font-weight:900!important}
+.screen-game .field-energy>div>strong{font-size:clamp(.46rem,.68cqw,.7rem)!important;line-height:1!important;font-weight:900!important}
+.screen-game .field-energy .reserve-track>b{font-size:clamp(.46rem,.68cqw,.7rem)!important}
+@container hemsfell-board (max-height:44rem){.screen-game .field-energy>div>b{font-size:clamp(.42rem,.62cqw,.64rem)!important}.screen-game .field-energy>div>strong{font-size:clamp(.6rem,.78cqw,.8rem)!important}}

@@ -121,6 +121,10 @@ function conditionMatches(state, source, owner, condition, event = {}) {
   if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
   if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
   if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
   if (condition.eventCardType && eventCard?.type !== condition.eventCardType) return false;
   if (condition.eventCardTypeNot && (eventCard?.type === condition.eventCardTypeNot || eventCard?.imageCard)) return false;
   if (condition.spellElement && !(event.card?.tags || eventCard?.tags || []).includes(condition.spellElement)) return false;
@@ -186,6 +190,10 @@ function intrinsicCost(state, entry, card) {
   if (card.page === 14 && entry.board.some((unit) => unit.page === 24)) return -3;
   if (card.page === 88) return Math.max(0, entry.hand.length - 1) - (card.cost || 0);
   if (card.page === 139) return Math.max(1, (card.cost || 0) - (entry.lifeLostThisTurn || 0)) - (card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
   if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
   if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
   if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
