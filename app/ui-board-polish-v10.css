@@ -1,0 +1,144 @@
+/* Hemsfell Heroes — responsive board polish v10
+ * Final authority for hero progression anchoring and animation geometry.
+ * All measurements are board/container-relative.
+ */
+
+/* -------------------------------------------------------------------------
+   HERO PROGRESSION STACK
+   hero-level lives inside hero-power-trigger, while evolution/button are direct
+   player-hero children. Give each the correct containing-block coordinates.
+   ------------------------------------------------------------------------- */
+.screen-game .game-stage > .game-content.hs-board > .player-hero {
+  --hero-stack-gap: clamp(.08rem,.18cqw,.18rem);
+  --hero-stack-width: clamp(4.9rem,7.55cqw,7.85rem);
+}
+
+/* Level is positioned relative to the hero card itself. */
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-power-trigger > .hero-level {
+  position: absolute !important;
+  left: calc(100% + var(--hero-stack-gap)) !important;
+  right: auto !important;
+  top: clamp(.72rem,1.65cqh,1.08rem) !important;
+  bottom: auto !important;
+  width: var(--hero-stack-width) !important;
+  min-width: var(--hero-stack-width) !important;
+  max-width: var(--hero-stack-width) !important;
+  height: clamp(1.1rem,2.25cqh,1.42rem) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+/* Progress and button are positioned relative to player-hero. */
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution,
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  position: absolute !important;
+  left: calc(var(--hero-card-left) + var(--hero-card-width) + var(--hero-stack-gap)) !important;
+  right: auto !important;
+  width: var(--hero-stack-width) !important;
+  min-width: var(--hero-stack-width) !important;
+  max-width: var(--hero-stack-width) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+  top: calc(var(--hero-card-top) + clamp(1.95rem,4.05cqh,2.45rem)) !important;
+  bottom: auto !important;
+  height: clamp(1.95rem,4.05cqh,2.42rem) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  top: calc(var(--hero-card-top) + clamp(3.98rem,8.3cqh,4.96rem)) !important;
+  bottom: auto !important;
+  height: clamp(.86rem,1.75cqh,1.04rem) !important;
+  min-height: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: clamp(.05rem,.11cqh,.09rem) clamp(.12rem,.2cqw,.2rem) !important;
+  border-radius: clamp(.24rem,.36cqw,.38rem) !important;
+}
+
+/* -------------------------------------------------------------------------
+   ANIMATIONS
+   Start just after the creature lane and extend all the way across the right
+   presentation rail, stopping at the inner edge of the board frame. This makes
+   the animation visually close to the decks without crossing the board edge.
+   ------------------------------------------------------------------------- */
+.screen-game .game-stage > .game-content.hs-board {
+  --hh-fx-v10-left: 73.1cqw;
+  --hh-fx-v10-right: 1.75cqw;
+}
+
+.screen-game .game-stage > .game-content.hs-board > :is(.visual-effect,.combat-cinematic) {
+  position: absolute !important;
+  left: var(--hh-fx-v10-left) !important;
+  right: var(--hh-fx-v10-right) !important;
+  top: 50% !important;
+  bottom: auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  transform: translateY(-50%) !important;
+  box-sizing: border-box !important;
+  z-index: 560 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .visual-effect.fx-targeted {
+  left: var(--hh-fx-v10-left) !important;
+  right: var(--hh-fx-v10-right) !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.screen-game .visual-effect:not(.fx-targeted) {
+  grid-template-columns: minmax(3.1rem,5.1cqw) minmax(0,1fr) !important;
+}
+.screen-game .visual-effect.fx-targeted {
+  grid-template-columns: minmax(2.8rem,4.6cqw) minmax(1.2rem,2.2cqw) minmax(2.8rem,4.6cqw) minmax(0,1fr) !important;
+}
+.screen-game .visual-effect > section {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.screen-game .visual-effect > :is(.remote-card-art,canvas.remote-card-art,img) {
+  width: min(5.1cqw,9.8cqh) !important;
+  max-width: 100% !important;
+}
+
+/* Gimble's valid untap targets get a stronger affordance. */
+.screen-game .player-field .original-card.target-ally.hero-ability-target {
+  outline-color: #e9c35d !important;
+  box-shadow: 0 0 clamp(.55rem,1cqw,1rem) #e9c35dbb !important;
+}
+
+@container hemsfell-board (max-height: 44rem) {
+  .screen-game .game-stage > .game-content.hs-board > .player-hero {
+    --hero-stack-width: clamp(4.35rem,7cqw,7.1rem);
+  }
+  .screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-power-trigger > .hero-level {
+    top: clamp(.62rem,1.38cqh,.92rem) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+    top: calc(var(--hero-card-top) + clamp(1.7rem,3.55cqh,2.12rem)) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+    top: calc(var(--hero-card-top) + clamp(3.5rem,7.3cqh,4.35rem)) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-fx-v10-left: 73.4cqw;
+    --hh-fx-v10-right: 1.65cqw;
+  }
+}
+
+@container hemsfell-board (max-height: 36rem) {
+  .screen-game .game-stage > .game-content.hs-board > .player-hero {
+    --hero-stack-width: clamp(4rem,6.55cqw,6.55rem);
+  }
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-fx-v10-left: 73.8cqw;
+    --hh-fx-v10-right: 1.55cqw;
+  }
+}
