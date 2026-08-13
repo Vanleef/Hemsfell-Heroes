@@ -24,9 +24,12 @@ await edit("app/rules-engine/effects.mjs", (s) => s.replace(
   '  countedChoice(state, effect, context) { const source = findUnit(state, context.sourceId); const counterSource = effect.counterScope === "player" ? player(state, context.owner) : source; const count = counterSource?.[effect.counter] || 0;'
 ));
 
-await edit("app/rules-engine/card-rules.mjs", (s) => s.replace(
-  'p46: [ability("onPlay", [effect("remainUntilTurnEnd"), effect("trackCardsPlayedAfterSelf")]), ability("onTurnEnd", [effect("countedChoice", { counter: "cardsPlayedAfterSelf", branches:',
-  'p46: [ability("onPlay", [effect("remainUntilTurnEnd")]), ability("onTurnEnd", [effect("countedChoice", { counter: "turnCardsPlayed", counterScope: "player", branches:'
-));
+await edit("app/rules-engine/card-rules.mjs", (s) => {
+  const shared = 'p46: [ability("onPlay", [effect("remainUntilTurnEnd")]), ability("onTurnEnd", [effect("countedChoice", { counter: "turnCardsPlayed", counterScope: "player", branches:';
+  const privateCounter = 'p46: [ability("onPlay", [effect("remainUntilTurnEnd"), effect("trackCardsPlayedAfterSelf")]), ability("onTurnEnd", [effect("countedChoice", { counter: "cardsPlayedAfterSelf", branches:';
+  if (s.includes(shared)) s = s.replace(shared, privateCounter);
+  if (!s.includes('effect("trackCardsPlayedAfterSelf")') || !s.includes('counter: "cardsPlayedAfterSelf"')) throw new Error("TRANQUEIRA private counter missing after finalization");
+  return s;
+});
 
-console.log("Finalized Support aura parsing and shared turnCardsPlayed usage.");
+console.log("Finalized Support aura parsing while preserving TRANQUEIRA's private post-entry counter.");
