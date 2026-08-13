@@ -24,6 +24,10 @@
 .screen-game .game-stage > .game-content.hs-board > .side-piles {
   position: relative !important;
   inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
   translate: none !important;
   transform: none !important;
   align-self: center !important;
