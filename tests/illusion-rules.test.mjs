@@ -37,18 +37,14 @@ test("Ilusão Dracônica without Dragão Filhote costs four and creates Dragão 
   assert.equal(result.players[0].board.filter((card) => card.name === "Dragão Jovem").length, 1);
 });
 
-test("Ilusão Dracônica with Dragão Filhote costs two and waits for the controller to choose it", () => {
+test("Ilusão Dracônica with one Dragão Filhote costs two and auto-replaces it", () => {
   const game = baseState();
   game.players[0].energy = 4;
   game.players[0].board.push(image(23, "Dragão Filhote", 3, "hatchling"));
   game.players[0].hand.push(spell(13, "Ilusão Dracônica", 4));
   game.players[0].extraDeck.push(extra(24, "Dragão Jovem"));
-  const pending = executeCommand(game, { type: "playCard", owner: 0, cardId: "p13", skipPriority: true }).state;
-  assert.equal(pending.players[0].energy, 2);
-  assert.equal(pending.pendingDecision?.kind, "targets");
-  assert.equal(pending.pendingDecision?.targetSteps?.[0]?.requiredName, "Dragão Filhote");
-  assert.equal(pending.players[0].board.some((card) => card.uid === "hatchling"), true);
-  const result = executeCommand(pending, { type: "resolveDecision", owner: 0, targetIds: ["hatchling"] }).state;
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p13", skipPriority: true }).state;
+  assert.equal(result.players[0].energy, 2);
   assert.equal(result.pendingDecision ?? null, null);
   assert.equal(result.players[0].board.some((card) => card.uid === "hatchling"), false);
   assert.equal(result.players[0].board.find((card) => card.name === "Dragão Jovem")?.slot, 3);
@@ -61,32 +57,38 @@ test("Ilusão Dracônica replaces exactly the chosen Dragão Filhote when severa
   game.players[0].hand.push(spell(13, "Ilusão Dracônica", 4));
   game.players[0].extraDeck.push(extra(24, "Dragão Jovem"));
   const pending = executeCommand(game, { type: "playCard", owner: 0, cardId: "p13", skipPriority: true }).state;
+  assert.equal(pending.pendingDecision?.kind, "targets");
+  assert.equal(pending.pendingDecision?.targetSteps?.[0]?.requiredName, "Dragão Filhote");
   const result = executeCommand(pending, { type: "resolveDecision", owner: 0, targetIds: ["chosen"] }).state;
   assert.equal(result.players[0].board.some((card) => card.uid === "first"), true);
   assert.equal(result.players[0].board.some((card) => card.uid === "chosen"), false);
   assert.equal(result.players[0].board.find((card) => card.name === "Dragão Jovem")?.slot, 4);
 });
 
-test("conditional Image decision rejects an unrelated allied creature", () => {
+test("conditional Image decision rejects an unrelated allied creature when several valid Images require a choice", () => {
   const game = baseState();
   game.players[0].energy = 4;
-  game.players[0].board.push(image(23, "Dragão Filhote", 0, "hatchling"), { uid: "other", name: "Outra Criatura", type: "Criatura", slot: 2, atk: 1, hp: 1, tags: [], abilities: [], exhausted: false, summoning: false, modifiers: [] });
+  game.players[0].board.push(
+    image(23, "Dragão Filhote", 0, "first"),
+    image(23, "Dragão Filhote", 1, "second"),
+    { uid: "other", name: "Outra Criatura", type: "Criatura", slot: 2, atk: 1, hp: 1, tags: [], abilities: [], exhausted: false, summoning: false, modifiers: [] },
+  );
   game.players[0].hand.push(spell(13, "Ilusão Dracônica", 4));
   game.players[0].extraDeck.push(extra(24, "Dragão Jovem"));
   const pending = executeCommand(game, { type: "playCard", owner: 0, cardId: "p13", skipPriority: true }).state;
-  assert.throws(() => executeCommand(pending, { type: "resolveDecision", owner: 0, targetIds: ["other"] }), /invalid-target/);
   assert.equal(pending.pendingDecision?.kind, "targets");
+  assert.throws(() => executeCommand(pending, { type: "resolveDecision", owner: 0, targetIds: ["other"] }), /invalid-target/);
 });
 
-test("Ilusão Dracônica Maior follows the same conditional-choice rule for Dragão Jovem", () => {
+test("Ilusão Dracônica Maior auto-replaces a single Dragão Jovem", () => {
   const game = baseState();
   game.players[0].energy = 6;
   game.players[0].board.push(image(24, "Dragão Jovem", 2, "young"));
   game.players[0].hand.push(spell(14, "Ilusão Dracônica Maior", 6));
   game.players[0].extraDeck.push(extra(25, "Dragão Ancião"));
-  const pending = executeCommand(game, { type: "playCard", owner: 0, cardId: "p14", skipPriority: true }).state;
-  assert.equal(pending.players[0].energy, 3);
-  assert.equal(pending.pendingDecision?.targetSteps?.[0]?.requiredName, "Dragão Jovem");
-  const result = executeCommand(pending, { type: "resolveDecision", owner: 0, targetIds: ["young"] }).state;
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p14", skipPriority: true }).state;
+  assert.equal(result.players[0].energy, 3);
+  assert.equal(result.pendingDecision ?? null, null);
+  assert.equal(result.players[0].board.some((card) => card.uid === "young"), false);
   assert.equal(result.players[0].board.find((card) => card.name === "Dragão Ancião")?.slot, 2);
 });
