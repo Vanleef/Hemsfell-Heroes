@@ -7,6 +7,7 @@ on:
     paths:
       - scripts/apply-support-turn-counter-fix.mjs
       - scripts/finalize-support-turn-counter-fix.mjs
+      - scripts/fix-support-double-count.mjs
       - package.json
       - .github/workflows/apply-support-turn-counter-fix.yml
 
@@ -26,6 +27,8 @@ jobs:
       - run: npm ci
       - name: Apply canonical rules migration
         run: npm run rules:migrate
+      - name: Prevent duplicate Support stat application
+        run: node scripts/fix-support-double-count.mjs
       - name: Refresh card implementation audit
         run: node scripts/export-card-implementation-audit.mjs
       - name: Persist generated rule changes
