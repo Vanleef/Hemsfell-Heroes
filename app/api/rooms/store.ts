@@ -9,6 +9,8 @@ const hasBlobStore = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 const cloneMemory = (id: string) => structuredClone(memoryRooms.get(id) ?? null);
 const unavailable = () => new Error("Multiplayer storage unavailable. Configure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or BLOB_READ_WRITE_TOKEN).");
 const roomPath = (id: string) => `multiplayer-rooms/${id}.json`;
+const SUPABASE_ROOM_BUCKET = "hemsfell-multiplayer-rooms";
+const supabaseRoomObjectPath = (id: string) => `rooms/${id}.json`;
 
 function supabaseConfig() {
   const url = process.env.SUPABASE_URL?.replace(/\/$/, "");
@@ -16,9 +18,13 @@ function supabaseConfig() {
   if (!url || !key) throw unavailable();
   return { url, key };
 }
+function supabaseHeaders(extra: HeadersInit = {}) {
+  const { key } = supabaseConfig();
+  return { apikey: key, Authorization: `Bearer ${key}`, ...extra };
+}
 async function supabase(path: string, init: RequestInit = {}) {
-  const { url, key } = supabaseConfig();
-  const response = await fetch(`${url}/rest/v1/${path}`, { ...init, cache: "no-store", headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json", ...(init.headers ?? {}) } });
+  const { url } = supabaseConfig();
+  const response = await fetch(`${url}/rest/v1/${path}`, { ...init, cache: "no-store", headers: { ...supabaseHeaders({ "content-type": "application/json" }), ...(init.headers ?? {}) } });
   if (!response.ok) throw new Error(`Supabase room store failed (${response.status})`);
   return response;
 }
@@ -45,6 +51,54 @@ async function writeSupabase(room: Room) {
   const rows = await response.json() as unknown[];
   if (!rows.length) throw new Error("stale room revision");
 }
+
+async function supabaseStorage(path: string, init: RequestInit = {}) {
+  const { url } = supabaseConfig();
+  return fetch(`${url}/storage/v1/${path}`, { ...init, cache: "no-store", headers: { ...supabaseHeaders(), ...(init.headers ?? {}) } });
+}
+
+let bucketReady: Promise<void> | null = null;
+async function ensureSupabaseRoomBucket() {
+  if (bucketReady) return bucketReady;
+  bucketReady = (async () => {
+    const existing = await supabaseStorage(`bucket/${encodeURIComponent(SUPABASE_ROOM_BUCKET)}`);
+    if (existing.ok) return;
+    if (existing.status !== 404) throw new Error(`Supabase Storage bucket lookup failed (${existing.status})`);
+    const created = await supabaseStorage("bucket", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: SUPABASE_ROOM_BUCKET, name: SUPABASE_ROOM_BUCKET, public: false }),
+    });
+    if (!created.ok && created.status !== 409) throw new Error(`Supabase Storage bucket creation failed (${created.status})`);
+  })().catch((error) => { bucketReady = null; throw error; });
+  return bucketReady;
+}
+
+async function readSupabaseStorageRoom(id: string): Promise<Room | null> {
+  await ensureSupabaseRoomBucket();
+  const objectPath = supabaseRoomObjectPath(id).split("/").map(encodeURIComponent).join("/");
+  const response = await supabaseStorage(`object/authenticated/${encodeURIComponent(SUPABASE_ROOM_BUCKET)}/${objectPath}`);
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`Supabase Storage room read failed (${response.status})`);
+  return JSON.parse(await response.text()) as Room;
+}
+
+async function writeSupabaseStorageRoom(room: Room) {
+  await ensureSupabaseRoomBucket();
+  if (room.revision > 0) {
+    const current = await readSupabaseStorageRoom(room.id);
+    const expectedRevision = room.revision - 1;
+    if (!current || Number(current.revision) !== expectedRevision) throw new Error("stale room revision");
+  }
+  const objectPath = supabaseRoomObjectPath(room.id).split("/").map(encodeURIComponent).join("/");
+  const response = await supabaseStorage(`object/${encodeURIComponent(SUPABASE_ROOM_BUCKET)}/${objectPath}`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-upsert": "true" },
+    body: JSON.stringify(room),
+  });
+  if (!response.ok) throw new Error(`Supabase Storage room write failed (${response.status})`);
+}
+
 async function readBlob(id: string) {
   const result = await get(roomPath(id), { access: "private", useCache: false });
   return result?.statusCode === 200 ? JSON.parse(await new Response(result.stream).text()) as Room : null;
@@ -58,8 +112,12 @@ export async function readRoom(id: string): Promise<Room | null> {
   if (hasSupabaseStore()) {
     try { return await readSupabase(id); }
     catch (error) {
-      if (!hasBlobStore()) throw error;
-      console.warn("[rooms] Supabase unavailable; reading from Blob fallback.", error);
+      console.warn("[rooms] Supabase table unavailable; trying Supabase Storage fallback.", error);
+      try { return await readSupabaseStorageRoom(id); }
+      catch (storageError) {
+        if (!hasBlobStore()) throw storageError;
+        console.warn("[rooms] Supabase Storage unavailable; reading from Blob fallback.", storageError);
+      }
     }
   }
   if (hasBlobStore()) return readBlob(id);
@@ -70,8 +128,12 @@ export async function writeRoom(room: Room) {
   if (hasSupabaseStore()) {
     try { return await writeSupabase(room); }
     catch (error) {
-      if (!hasBlobStore()) throw error;
-      console.warn("[rooms] Supabase unavailable; writing to Blob fallback.", error);
+      console.warn("[rooms] Supabase table unavailable; trying Supabase Storage fallback.", error);
+      try { return await writeSupabaseStorageRoom(room); }
+      catch (storageError) {
+        if (!hasBlobStore()) throw storageError;
+        console.warn("[rooms] Supabase Storage unavailable; writing to Blob fallback.", storageError);
+      }
     }
   }
   if (hasBlobStore()) return writeBlob(room);
@@ -98,4 +160,3 @@ export function roomView(room: Room, includeGame = false, role?: RoomRole | null
 export function roleFor(room: Room, token: unknown): "host" | "guest" | null {
   return typeof token === "string" && token === room.host.token ? "host" : typeof token === "string" && token === room.guest?.token ? "guest" : null;
 }
-
