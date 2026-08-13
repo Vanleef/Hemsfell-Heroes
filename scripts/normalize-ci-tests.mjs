@@ -41,6 +41,11 @@ const rulesUpdated = await normalize("tests/rules-engine.test.mjs", [
     '/invalid-target(?:-subtype)?/',
     "canonical invalid target error",
   ],
+  [
+    '  assert.match(store, /Supabase unavailable; reading from Blob fallback/);\n  assert.match(store, /Supabase unavailable; writing to Blob fallback/);',
+    '  assert.match(store, /Supabase table unavailable; trying Supabase Storage fallback/);\n  assert.match(store, /SUPABASE_ROOM_BUCKET/);\n  assert.match(store, /object\\/authenticated/);\n  assert.match(store, /x-upsert/);',
+    "Supabase Storage durable room fallback",
+  ],
 ]);
 
 const integrationUpdated = await normalize("tests/rules-and-multiplayer.test.mjs", [
