@@ -4,27 +4,89 @@ import { get, put } from "@vercel/blob";
 
 const memoryRooms = new Map<string, Room>();
 const useMemoryStore = () => process.env.NODE_ENV === "development";
-const hasSupabaseStore = () => Boolean(process.env.SUPABASE_URL && (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY));
+const privateSupabaseKey = () => process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || "";
+const normalizeSupabaseBaseUrl = (value?: string) => {
+  if (!value) return "";
+  const trimmed = value.trim().replace(/\/$/, "");
+  return trimmed
+    .replace(/\/(?:rest|storage|auth|functions)\/v1(?:\/.*)?$/i, "")
+    .replace(/\/$/, "");
+};
+const jwtProjectRef = (key: string) => {
+  try {
+    const parts = key.split(".");
+    if (parts.length !== 3) return "";
+    const json = Buffer.from(parts[1].replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8");
+    const ref = JSON.parse(json)?.ref;
+    return typeof ref === "string" && /^[a-z0-9-]+$/i.test(ref) ? ref : "";
+  } catch { return ""; }
+};
+const supabaseUrlCandidates = () => {
+  const key = privateSupabaseKey();
+  const candidates = [
+    normalizeSupabaseBaseUrl(process.env.SUPABASE_URL),
+    normalizeSupabaseBaseUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
+  ];
+  const ref = jwtProjectRef(key);
+  if (ref) candidates.push(`https://${ref}.supabase.co`);
+  return [...new Set(candidates.filter(Boolean))];
+};
+const hasSupabaseStore = () => Boolean(privateSupabaseKey() && supabaseUrlCandidates().length);
 const hasBlobStore = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 const cloneMemory = (id: string) => structuredClone(memoryRooms.get(id) ?? null);
-const unavailable = () => new Error("Multiplayer storage unavailable. Configure SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or BLOB_READ_WRITE_TOKEN).");
+const unavailable = () => new Error("Multiplayer storage unavailable. Configure a valid Supabase project URL plus SUPABASE_SERVICE_ROLE_KEY/SUPABASE_SECRET_KEY, or a working BLOB_READ_WRITE_TOKEN.");
 const roomPath = (id: string) => `multiplayer-rooms/${id}.json`;
 const SUPABASE_ROOM_BUCKET = "hemsfell-multiplayer-rooms";
 const supabaseRoomObjectPath = (id: string) => `rooms/${id}.json`;
 
-function supabaseConfig() {
-  const url = process.env.SUPABASE_URL?.replace(/\/$/, "");
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
-  if (!url || !key) throw unavailable();
-  return { url, key };
+type SupabaseConfig = { url: string; key: string };
+let resolvedSupabaseConfig: Promise<SupabaseConfig> | null = null;
+
+function authHeaders(key: string, extra: HeadersInit = {}) {
+  const base: Record<string, string> = { apikey: key };
+  // Legacy service_role keys are JWTs and can be used as bearer tokens. New
+  // sb_secret_* keys authenticate through the apikey header and must not be
+  // forced into an invalid Bearer token.
+  if (key.split(".").length === 3) base.Authorization = `Bearer ${key}`;
+  return { ...base, ...extra };
 }
-function supabaseHeaders(extra: HeadersInit = {}) {
-  const { key } = supabaseConfig();
-  return { apikey: key, Authorization: `Bearer ${key}`, ...extra };
+
+async function resolveSupabaseConfig(): Promise<SupabaseConfig> {
+  if (resolvedSupabaseConfig) return resolvedSupabaseConfig;
+  resolvedSupabaseConfig = (async () => {
+    const key = privateSupabaseKey();
+    if (!key) throw unavailable();
+    const candidates = supabaseUrlCandidates();
+    if (!candidates.length) throw unavailable();
+    const failures: string[] = [];
+    for (const url of candidates) {
+      try {
+        // PostgREST root is a cheap project-health probe. A valid project/key
+        // combination responds here even if multiplayer_rooms is not created
+        // yet; that lets us distinguish a bad project URL from a missing table.
+        const response = await fetch(`${url}/rest/v1/`, {
+          method: "GET",
+          cache: "no-store",
+          headers: authHeaders(key, { Accept: "application/openapi+json, application/json" }),
+        });
+        if (response.ok) return { url, key };
+        failures.push(`${new URL(url).hostname}:${response.status}`);
+      } catch (error) {
+        failures.push(`${url}:${error instanceof Error ? error.message : "network error"}`);
+      }
+    }
+    throw new Error(`Supabase project endpoint unavailable (${failures.join(", ") || "no candidates"})`);
+  })().catch((error) => { resolvedSupabaseConfig = null; throw error; });
+  return resolvedSupabaseConfig;
 }
+
 async function supabase(path: string, init: RequestInit = {}) {
-  const { url } = supabaseConfig();
-  const response = await fetch(`${url}/rest/v1/${path}`, { ...init, cache: "no-store", headers: { ...supabaseHeaders({ "content-type": "application/json" }), ...(init.headers ?? {}) } });
+  const { url, key } = await resolveSupabaseConfig();
+  const response = await fetch(`${url}/rest/v1/${path}`, {
+    ...init,
+    cache: "no-store",
+    headers: { ...authHeaders(key, { "content-type": "application/json" }), ...(init.headers ?? {}) },
+  });
   if (!response.ok) throw new Error(`Supabase room store failed (${response.status})`);
   return response;
 }
@@ -53,8 +115,8 @@ async function writeSupabase(room: Room) {
 }
 
 async function supabaseStorage(path: string, init: RequestInit = {}) {
-  const { url } = supabaseConfig();
-  return fetch(`${url}/storage/v1/${path}`, { ...init, cache: "no-store", headers: { ...supabaseHeaders(), ...(init.headers ?? {}) } });
+  const { url, key } = await resolveSupabaseConfig();
+  return fetch(`${url}/storage/v1/${path}`, { ...init, cache: "no-store", headers: { ...authHeaders(key), ...(init.headers ?? {}) } });
 }
 
 let bucketReady: Promise<void> | null = null;
