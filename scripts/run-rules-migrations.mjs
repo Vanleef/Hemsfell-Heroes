@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 const steps = [
   "normalize-rules-migration-inputs.mjs",
@@ -20,7 +21,8 @@ const steps = [
 ];
 
 for (const step of steps) {
-  const result = spawnSync(process.execPath, [new URL(step, import.meta.url)], {
+  const scriptPath = fileURLToPath(new URL(step, import.meta.url));
+  const result = spawnSync(process.execPath, [scriptPath], {
     stdio: "inherit",
     shell: false,
   });
