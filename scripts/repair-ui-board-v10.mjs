@@ -4,9 +4,6 @@ const normalize = (value) => value.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 const read = async (path) => normalize(await readFile(path, "utf8"));
 const write = async (path, value) => writeFile(path, normalize(value));
 
-// ---------------------------------------------------------------------------
-// Load v10 after v9.
-// ---------------------------------------------------------------------------
 {
   const path = "app/globals.css";
   let source = await read(path);
@@ -19,19 +16,10 @@ const write = async (path, value) => writeFile(path, normalize(value));
   }
 }
 
-// ---------------------------------------------------------------------------
-// Page behavior:
-// 1) card inspector only in collection, battlefield and the local hand;
-// 2) selection/list panels keep their click action and never open inspector;
-// 3) active hero capsules are authoritative and Gimble II highlights only valid
-//    exhausted allied Dragons.
-// ---------------------------------------------------------------------------
 {
   const path = "app/page.tsx";
   let source = await read(path);
 
-  // OriginalCard inspectability flag. v9 runs before v10 and produces the
-  // repaired click expression below.
   if (!source.includes('inspectable=true')) {
     source = source.replace(
       'function OriginalCard({card,controller,small=false,disabled=false,selected=false,targetClass="",activeEffect="",priority=false,draggable=false,onDragStart,onDragEnd,onClick,onActivate,activationDisabled=false}:{card:CardDef|Unit;controller?:Player;small?:boolean;disabled?:boolean;selected?:boolean;targetClass?:string;activeEffect?:string;priority?:boolean;draggable?:boolean;onDragStart?:(e:React.DragEvent)=>void;onDragEnd?:()=>void;onClick?:()=>void;onActivate?:()=>void;activationDisabled?:boolean}){',
@@ -41,12 +29,12 @@ const write = async (path, value) => writeFile(path, normalize(value));
 
   const v9Click = 'onClick={event=>{event.stopPropagation();const interactionClick=!!onClick&&!!targetClass.trim();if(interactionClick){onClick?.();return}requestCardInspection(card)}} aria-label={displayName}';
   const v10Click = 'onClick={event=>{event.stopPropagation();const interactionClick=!!onClick&&(!inspectable||!!targetClass.trim());if(interactionClick){onClick?.();return}if(inspectable)requestCardInspection(card)}} aria-label={displayName}';
-  if (!source.includes(v10Click)) {
+  const semanticV10Click = source.includes('!inspectable||!!targetClass.trim()') && source.includes('if(inspectable)requestCardInspection(card)');
+  if (!source.includes(v10Click) && !semanticV10Click) {
     if (!source.includes(v9Click)) throw new Error("Could not locate v9 OriginalCard click behavior.");
     source = source.replace(v9Click, v10Click);
   }
 
-  // All card-option panels are selection surfaces, not inspection surfaces.
   source = source
     .replace(/<OriginalCard card=\{card\} small selected=\{engineTargetSelection\.includes\(id\)\} onClick=/g, '<OriginalCard card={card} small inspectable={false} selected={engineTargetSelection.includes(id)} onClick=')
     .replace(/<OriginalCard card=\{card\} small onClick=\{\(\)=>selectForcedAttack/g, '<OriginalCard card={card} small inspectable={false} onClick={()=>selectForcedAttack')
@@ -58,14 +46,11 @@ const write = async (path, value) => writeFile(path, normalize(value));
     .replace(/<OriginalCard card=\{card\} small activeEffect="RESPOSTA ACELERADA"/g, '<OriginalCard card={card} small inspectable={false} activeEffect="RESPOSTA ACELERADA"')
     .replace(/<OriginalCard card=\{card\} small disabled\/?>/g, '<OriginalCard card={card} small inspectable={false} disabled/>');
 
-  // Revealed opponent hand is visible information but not one of the allowed
-  // detailed-inspection contexts requested by the UI contract.
   source = source.replace(
     '<OriginalCard key={card.id} card={card} small onClick={()=>setShowInspector(card)}/>',
     '<OriginalCard key={card.id} card={card} small inspectable={false}/>'
   );
 
-  // ExtraDeckModal no longer advertises an inspector callback.
   source = source.replace(
     'function ExtraDeckModal({title,cards,onClose,onInspect}:{title:string;cards:CardDef[];onClose:()=>void;onInspect:(card:CardDef)=>void}){',
     'function ExtraDeckModal({title,cards,onClose}:{title:string;cards:CardDef[];onClose:()=>void}){'
@@ -75,11 +60,10 @@ const write = async (path, value) => writeFile(path, normalize(value));
     '<ExtraDeckModal title={extraView.title} cards={extraView.cards} onClose={()=>setExtraView(null)}/>'
   );
 
-  // Rebuild HeroAbilities after v8 with explicit availability classes and the
-  // whole capsule as the actual button.
   {
-    const start = source.indexOf('function HeroAbilities({player,enemy=false,onAbility}');
-    const end = source.indexOf('\nfunction ResourceSummary', start);
+    const marker = 'function HeroAbilities';
+    const start = source.indexOf(marker);
+    const end = start >= 0 ? source.indexOf('\nfunction ResourceSummary', start) : -1;
     if (start < 0 || end < 0) throw new Error("Could not locate HeroAbilities boundaries for v10.");
     const replacement = `function HeroAbilities({player,enemy=false,onAbility,interactionEnabled=true}:{player:Player;enemy?:boolean;onAbility?:(slot:number)=>void;interactionEnabled?:boolean}){
  const d=deckById(player.heroId);
@@ -102,15 +86,11 @@ const write = async (path, value) => writeFile(path, normalize(value));
     source = source.slice(0, start) + replacement + source.slice(end);
   }
 
-  // Local active ability capsules are enabled only when the local player can
-  // actually start an interaction.
   source = source.replace(
     '<HeroAbilities player={me} onAbility={activateAbility}/>',
     '<HeroAbilities player={me} onAbility={activateAbility} interactionEnabled={game.active===0&&!priorityLocked&&!combatAction&&!responseWindow&&!game.pendingDecision}/>'
   );
 
-  // Gimble II can only target exhausted allied Dragons. Use the same predicate
-  // for button availability, visual targeting and final resolution.
   if (!source.includes('const heroAbilityTargetIds=')) {
     source = source.replace(
       'const defenseTargets=defenseChoice&&game?legalDefenders(game.players[1].board.find(unit=>unit.uid===combatAction!.attackerUid)!,game.players[1],game.players[0]).map(unit=>unit.uid):undefined;',
