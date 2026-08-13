@@ -157,6 +157,31 @@
 .screen-game .game-stage > .game-content.hs-board > .player-hand .original-card:focus-visible { transform: translateY(-3.2cqh) scale(1.075) !important; margin: 0 !important; }
 .screen-game .game-stage > .game-content.hs-board > .player-energy { z-index: 40 !important; }
 
+/* LIVE CARD STATES / FX
+ * These are the non-geometric interaction rules that used to live in the
+ * monolithic legacy sheet. They remain responsive and are kept next to the
+ * canonical board seal instead of pulling the legacy file back into runtime. */
+.screen-game .original-card.combat-attack-ready {
+  animation: combat-attack-ready-pulse 1.25s ease-in-out infinite;
+  box-shadow: 0 0 0 .12rem #ffcc61, 0 0 clamp(.65rem,1.25cqw,1.15rem) #ff5a36, 0 0 clamp(1rem,2cqw,2rem) #ff3c2288 !important;
+}
+@keyframes combat-attack-ready-pulse {
+  50% { filter: brightness(1.16) saturate(1.18); box-shadow: 0 0 0 .16rem #fff0a0, 0 0 clamp(.8rem,1.6cqw,1.6rem) #ff6b36, 0 0 clamp(1.2rem,2.5cqw,2.6rem) #ff3c22aa !important; }
+}
+.screen-game .original-card.summoning-sick {
+  filter: saturate(.55) brightness(.78);
+  box-shadow: 0 0 0 .12rem #7fb4c8, 0 0 clamp(.65rem,1.2cqw,1.25rem) #3a7088aa, inset 0 0 clamp(.55rem,1cqw,1.1rem) #244d61aa !important;
+}
+.screen-game .auxiliary-slot .card-tooltip,
+.screen-game .terrain-slot .card-tooltip { z-index:9020!important; }
+.screen-game .visual-effect.fx-summon { animation: fx-summon-arrive 1.45s ease both !important; }
+@keyframes fx-summon-arrive {
+  0% { opacity:0; scale:.3; rotate:-18deg; filter:blur(.7rem); }
+  45% { opacity:1; scale:1.08; rotate:2deg; }
+  100% { opacity:0; scale:1; rotate:0; }
+}
+.card-focus-layer { z-index:30000!important; }
+
 @container hemsfell-board (max-height: 44rem) {
   .screen-game .game-stage > .game-content.hs-board > .side-piles { width: min(12.2cqw, 23cqh) !important; gap: clamp(.08rem, .3cqw, .34rem) !important; }
   .screen-game .game-stage > .game-content.hs-board > .side-piles small { display: none !important; }
