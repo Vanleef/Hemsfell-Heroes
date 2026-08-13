@@ -115,6 +115,12 @@ function conditionMatches(state, source, owner, condition, event = {}) {
   if (condition.all) return condition.all.every((item) => conditionMatches(state, source, owner, item, event));
   const eventCard = event.card || state.players.flatMap((entry) => [...entry.board, ...entry.support, ...entry.grave]).find((card) => card.uid === event.cardId || card.id === event.cardId);
   if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
   if (condition.eventCardType && eventCard?.type !== condition.eventCardType) return false;
   if (condition.eventCardTypeNot && (eventCard?.type === condition.eventCardTypeNot || eventCard?.imageCard)) return false;
   if (condition.spellElement && !(event.card?.tags || eventCard?.tags || []).includes(condition.spellElement)) return false;
@@ -136,6 +142,7 @@ function conditionMatches(state, source, owner, condition, event = {}) {
 
 function playConditionMatches(state, owner, condition) {
   if (!condition) return true;
+  if (condition.controllerGraveHasSubtype && !state.players[owner].grave.some((card) => subtype(card, condition.controllerGraveHasSubtype))) return false;
   if (condition.alliedPermanentHasTrigger) return permanentUnits(state.players[owner]).some((card) => (card.abilities || []).some((ability) => {
     if (ability.trigger !== condition.alliedPermanentHasTrigger) return false;
     const steps = abilityTargetSteps(ability);
@@ -179,6 +186,12 @@ function intrinsicCost(state, entry, card) {
   if (card.page === 14 && entry.board.some((unit) => unit.page === 24)) return -3;
   if (card.page === 88) return Math.max(0, entry.hand.length - 1) - (card.cost || 0);
   if (card.page === 139) return Math.max(1, (card.cost || 0) - (entry.lifeLostThisTurn || 0)) - (card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
   if (card.page === 149) return -entry.board.filter((unit) => subtype(unit, "Vampiro")).length;
   if (card.page === 203) return -2 * entry.board.length;
   return 0;
@@ -307,6 +320,17 @@ function activeAbilities(state, event) {
       for (const ability of source.abilities || []) if (ability.trigger === event.type && eventAppliesToSource(event, source, owner) && conditionMatches(state, source, owner, ability.condition, event) && usageAvailable(state, source, owner, ability)) result.push({ source, owner, ability });
     }
   });
+  state.players.forEach((entry, owner) => {
+    if (entry.heroId !== "goblin") return;
+    const heroSource = { uid: `goblin-hero-${owner}`, id: `goblin-hero-${owner}`, name: "Sr. Goblin, o Mercador de Bugigangas", slot: -1 };
+    if ((entry.level || 1) >= 1 && event.type === "onPermanentLeaves" && event.owner === owner && subtype(event.card || {}, "Goblin")) {
+      const ability = { id: "goblin-hero-level-1", trigger: "onPermanentLeaves", effects: [{ type: "draw", amount: 1 }], usageLimit: { count: 1, period: "turn" } };
+      if (usageAvailable(state, heroSource, owner, ability)) result.push({ source: heroSource, owner, ability });
+    }
+    if ((entry.level || 1) >= 2 && event.type === "onMaintenance" && event.owner === owner) {
+      result.push({ source: heroSource, owner, ability: { id: "goblin-hero-level-2", trigger: "onMaintenance", effects: [{ type: "draw", amount: 1 }] } });
+    }
+  });
   return result.sort((a, b) => a.owner - b.owner || (a.source.slot ?? 99) - (b.source.slot ?? 99) || String(a.ability.id).localeCompare(String(b.ability.id)));
 }
 
@@ -377,11 +401,11 @@ export function executeCommand(inputState, command, options = {}) {
         for (const ability of playAbilities) payCosts(state, ability, item.command);
         if (paysLife) { entry.life -= cost; entry.nextCreaturePaysLife = false; entry.lifeLostThisTurn = (entry.lifeLostThisTurn || 0) + cost; entry.lifeLossEvents = (entry.lifeLossEvents || 0) + 1; if (entry.heroId === "saymon") entry.heroXP = (entry.heroXP || 0) + 1; state.rulesEvents ||= []; state.rulesEvents.push({ type: "onLifeLost", owner: item.command.owner, sourceOwner: item.command.owner, sourceId: card.id, amount: cost, paidAsCost: true }); }
         else if (accelerated) { const fromReserve = Math.min(entry.reserve, cost); entry.reserve -= fromReserve; entry.energy -= cost - fromReserve; }
-        else { const fromEnergy = Math.min(entry.energy, cost); entry.energy -= fromEnergy; const fromReserve = canUseReserve ? cost - fromEnergy : 0; entry.reserve -= fromReserve; }
+        else if (canUseReserve) { const fromReserve = Math.min(entry.reserve, cost); entry.reserve -= fromReserve; entry.energy -= cost - fromReserve; } else { entry.energy -= cost; }
         if (queuedDiscount) entry.nextCardDiscounts = (entry.nextCardDiscounts || []).filter((rule) => rule !== queuedDiscount); entry.hand.splice(cardIndex, 1); for (const source of permanentUnits(entry)) if (typeof source.cardsPlayedAfterSelf === "number") source.cardsPlayedAfterSelf++; entry.cardsPlayed = (entry.cardsPlayed || 0) + 1; if (state.active === item.command.owner) entry.turnCardsPlayed = (entry.turnCardsPlayed || 0) + 1; if (state.active === item.command.owner && entry.heroId === "goblin") entry.goblinTurnCardsPlayed = (entry.goblinTurnCardsPlayed || 0) + 1; if (spell) { entry.spellsPlayed = (entry.spellsPlayed || 0) + 1; entry.turnSpellsPlayed = (entry.turnSpellsPlayed || 0) + 1; } const permanent = card.type !== "Feitiço" || card.abilities?.some((ability) => ability.effects?.some((effect) => effect.type === "remainUntilTurnEnd"));
         if (permanent) {
           state.nextInstanceId = (state.nextInstanceId || 0) + 1;
-          const unit = { ...card, uid: item.command.instanceId || `${card.id}-${state.round}-${state.nextInstanceId}`, slot: item.command.slot ?? 0, enteredRound: state.round, attackedThisTurn: false, damage: 0, bonusAtk: 0, bonusHp: 0, exhausted: false, summoning: card.type === "Artefato" || (card.type === "Criatura" && !(card.tags || []).some((tag) => /investida/i.test(String(tag)))), frozen: false, stunned: false, suffocated: false, immobilized: false, defenseUses: 0, markers: card.markers ?? 0, modifiers: [] };
+          const unit = { ...card, _printedState: card._printedState ? structuredClone(card._printedState) : { name: card.name, type: card.type, cost: card.cost, atk: card.atk, hp: card.hp, text: card.text, tags: structuredClone(card.tags || []), subtypes: structuredClone(card.subtypes || []), abilities: structuredClone(card.abilities || []), page: card.page, id: card.id, image: card.image, hero: card.hero, imageCard: card.imageCard, generatedImage: card.generatedImage }, uid: item.command.instanceId || `${card.id}-${state.round}-${state.nextInstanceId}`, slot: item.command.slot ?? 0, enteredRound: state.round, attackedThisTurn: false, damage: 0, bonusAtk: 0, bonusHp: 0, exhausted: false, summoning: card.type === "Artefato" || (card.type === "Criatura" && !((card.tags || []).some((tag) => /investida/i.test(String(tag))) && !(card.page === 29 && Math.max(0, (entry.turnCardsPlayed || 0) - 1) < 1))), frozen: false, stunned: false, suffocated: false, immobilized: false, defenseUses: 0, markers: card.markers ?? 0, modifiers: [] };
           if (card.type === "Criatura") { const replaced = entry.board.find((existing) => existing.slot === unit.slot); if ((replaced && entry.board.length < 5) || (!replaced && entry.board.length >= 5)) throw new RulesViolation("creature-zone-full"); if (replaced) { entry.board = entry.board.filter((existing) => existing !== replaced); const attachments = entry.support.filter((attachment) => attachment.attachedTo === replaced.uid); entry.support = entry.support.filter((attachment) => attachment.attachedTo !== replaced.uid); for (const attachment of attachments) { if (attachment.generatedImage || attachment.imageCard) continue; if (attachment.page === 154) entry.obscuro.push(attachment); else entry.grave.push({ ...attachment, deathCause: "replaced" }); } if (!replaced.generatedImage && !replaced.imageCard) entry.obscuro.push({ ...replaced, lastZone: "board", deathCause: "replaced" }); stack.push({ kind: "event", event: { type: "onPermanentLeaves", owner: item.command.owner, sourceId: replaced.uid, cardId: replaced.uid, card: replaced, zone: "board" } }); } const preEntryControlledIds = entry.board.map((card) => card.uid || card.id); entry.board.push(unit); entry.subtypesEnteredThisTurn ||= {}; for (const value of new Set([...(card.subtypes || []), ...(card.tags || [])])) entry.subtypesEnteredThisTurn[value] = (entry.subtypesEnteredThisTurn[value] || 0) + 1; stack.push({ kind: "event", event: { type: "onCreatureEnter", owner: item.command.owner, sourceId: unit.uid, cardId: unit.uid, card: unit, preEntryControlledIds } }); }
           else if (card.type === "Terreno") { if (entry.terrain && !entry.terrain.generatedImage) entry.grave.push(entry.terrain); entry.terrain = unit; }
           else { if (entry.support.length >= 5 || entry.support.some((existing) => existing.slot === unit.slot)) throw new RulesViolation("support-zone-full"); if (card.type === "Artefato") { const attached = entry.board.find((creature) => creature.uid === item.command.attachedTo); if (!attached && card.page !== 304) throw new RulesViolation("artifact-target-required"); if (attached) { if (entry.support.some((artifact) => artifact.attachedTo === attached.uid)) throw new RulesViolation("artifact-target-required"); unit.attachedTo = attached.uid; unit.slot = attached.slot; } } entry.support.push(unit); }
@@ -394,7 +418,7 @@ export function executeCommand(inputState, command, options = {}) {
         } else entry.grave.push(card);
         for (const ability of playAbilities.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: item.command.instanceId || card.id, effectSource: card } });
         if ((item.command.targetIds || []).length) { stack.push({ kind: "event", event: { type: "onTargetedByOpponent", owner: item.command.owner, sourceId: card.id, source: card, targetIds: item.command.targetIds } }); stack.push({ kind: "event", event: { type: "onAttachedCreatureTargeted", owner: item.command.owner, sourceId: card.id, source: card, targetIds: item.command.targetIds } }); }
-        stack.push({ kind: "event", event: { type: spell ? "onSpellCast" : "onCardPlayed", owner: item.command.owner, cardId: card.id, card } });
+        stack.push({ kind: "event", event: { type: "onCardPlayed", owner: item.command.owner, cardId: card.id, card } }); if (spell) stack.push({ kind: "event", event: { type: "onSpellCast", owner: item.command.owner, cardId: card.id, card } });
       } else if (item.command.type === "attack") {
         if (state.active !== item.command.owner || (state.phase !== "combate" && !item.command.forced)) throw new RulesViolation("wrong-combat-priority");
         const attackerOwner = item.command.owner; const defenderOwner = 1 - attackerOwner;

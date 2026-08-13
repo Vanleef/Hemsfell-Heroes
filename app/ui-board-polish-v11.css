@@ -110,7 +110,7 @@
   grid-area: message !important;
   margin: 0 !important;
   min-width: 0 !important;
-  font-size: clamp(.35rem,min(.51cqw,.84cqh),.55rem) !important;
+  font-size: clamp(.31rem,min(.51cqw,.99cqh),.55rem) !important;
   line-height: 1.15 !important;
   text-align: left !important;
   white-space: normal !important;

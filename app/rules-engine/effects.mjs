@@ -55,11 +55,15 @@ const sendDetachedArtifacts = (state, entry, creature) => {
   }
 };
 const cleanCardForHiddenZone = (card, metadata = {}) => {
-  const copy = { ...card, ...metadata };
+  const printed = card?._printedState ? structuredClone(card._printedState) : null;
+  const copy = { ...card, ...(printed || {}), ...metadata };
   for (const key of [
-    "exhausted", "summoning", "attackedThisTurn", "attacksThisTurn", "defenseUses",
-    "frozen", "stunned", "suffocated", "immobilized", "impacting", "activatedThisTurn",
-    "temporaryAtk", "temporaryHp", "temporaryTags", "targetClass", "selected"
+    "uid", "slot", "enteredRound", "exhausted", "summoning", "attackedThisTurn", "attacksThisTurn", "defenseUses",
+    "damage", "bonusAtk", "bonusHp", "frozen", "stunned", "suffocated", "suffocatedUntilTurnEnd", "suffocatedBySources",
+    "immobilized", "impacting", "activatedThisTurn", "markers", "modifiers", "grantedKeywords", "staticModifiers",
+    "temporaryAtk", "temporaryHp", "temporaryTags", "temporarySubtypes", "combatRestrictions", "damageShields",
+    "attachedTo", "linkedCreatures", "lastDamagedBy", "damagedOwnersThisTurn", "killedByRepeatSourceId",
+    "costModifier", "costModifierExpires", "costModifierExpiresRound", "cardsPlayedAfterSelf", "targetClass", "selected"
   ]) delete copy[key];
   return copy;
 };
@@ -180,6 +184,12 @@ export const defaultEffectHandlers = Object.freeze({
   },
   optionalReequipArtifact(state, effect, context) { const entry = player(state, context.owner), source = findUnit(state, context.sourceId); if (!source || entry.energy < (effect.energyCost || 0)) return; const eligible = (entry.board || []).filter((card) => (!effect.subtype || hasSubtype(card, effect.subtype)) && card.uid !== source.attachedTo); if (!eligible.length) return; queueDecision(state, { type: "optionalReequipArtifact", choices: [[], [{ type: "reattachArtifact", target: "allyCreature", requiredSubtype: effect.subtype, selections: 1, subtype: effect.subtype, energyCost: effect.energyCost, attack: effect.attack, keyword: effect.keyword }]] }, context, "choice"); },
   conditionalAttachedBonus(state, effect, context) { const source = findUnit(state, context.sourceId), target = source?.attachedTo ? findUnit(state, source.attachedTo) : null; if (!source || !target) return; if (effect.requiredSubtype && !hasSubtype(target, effect.requiredSubtype)) return; if (effect.attack || effect.health) defaultEffectHandlers.modifyStats(state, { type: "modifyStats", target: "attachedCreature", attack: effect.attack || 0, health: effect.health || 0, duration: "attached" }, context); if (effect.keyword) { target.grantedKeywords ||= []; const value = "attachment:" + (source.uid || source.id) + ":" + effect.keyword; if (!target.grantedKeywords.includes(value)) target.grantedKeywords.push(value); } },
+  returnNamedFromGraveToHand(state, effect, context) {
+    const entry = player(state, context.owner);
+    const index = entry.grave.findIndex((card) => normalizedName(card.name) === normalizedName(effect.name));
+    if (index < 0) return;
+    entry.hand.push(entry.grave.splice(index, 1)[0]);
+  },
   conditionalDrawByControlledSubtype(state, effect, context) { const entry = player(state, context.owner); const controlled = [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])]; const amount = controlled.some((card) => !effect.subtype || hasSubtype(card, effect.subtype)) ? (effect.ifTrue ?? 0) : (effect.ifFalse ?? 0); if (amount > 0) defaultEffectHandlers.draw(state, { type: "draw", amount }, context); },
   gainEnergy(state, effect, context) { const entry = player(state, context.owner); const key = effect.destination === "reserve" ? "reserve" : "energy"; const cap = key === "reserve" ? 3 : entry.maxEnergy; entry[key] = Math.min(cap, entry[key] + (effect.amount ?? 0)); },
   gainMaxEnergy(state, effect, context) { const entry = player(state, context.owner); entry.maxEnergy = Math.min(10, (entry.maxEnergy || 0) + (effect.amount || 1)); },
@@ -187,12 +197,51 @@ export const defaultEffectHandlers = Object.freeze({
   freezeEnemyBoard(state, effect, context) { for (const target of player(state, 1 - context.owner).board || []) { const alreadyFrozen = target.frozen || hasKeyword(target, /congelado/i); if (alreadyFrozen && effect.damageAlreadyFrozen) defaultEffectHandlers.damage(state, { type: "damage", amount: effect.damageAlreadyFrozen }, { ...context, targetIds: [target.uid] }); target.frozen = true; target.tags ||= []; if (!target.tags.some((tag) => /congelado/i.test(String(tag)))) target.tags.push("Congelado"); } },
   applyGoblinThresholds(state, effect, context) { const entry = player(state, context.owner); const count = entry.turnCardsPlayed || 0; for (const target of entry.board.filter((card) => hasSubtype(card, "Goblin"))) { target.temporaryTags ||= []; target.temporaryTags = target.temporaryTags.filter((tag) => !String(tag).startsWith("parque:")); if (count >= 4) target.temporaryTags.push("parque:Atropelar"); if (count >= 5) { target.temporaryTags.push("parque:Investida"); target.summoning = false; } if (count >= 6) target.temporaryTags.push("parque:Último Suspiro"); if (count >= 7) target.temporaryTags.push("parque:Toque da Morte"); } },
   grantNextCardDiscount(state, effect, context) { const entry = player(state, context.owner); entry.nextCardDiscounts ||= []; entry.nextCardDiscounts.push({ amount: effect.amount || 0, type: effect.typeOnly, typeNot: effect.typeNot, expires: effect.duration || "turn", expiresRound: (state.round || 0) + 1 }); },
+  returnAllyToHandWithComboDiscount(state, effect, context) {
+    const entry = player(state, context.owner);
+    const id = context.targetIds?.[0];
+    const target = entry.board.find((card) => (card.uid || card.id) === id);
+    if (!target) throw new RulesViolation("target-required");
+    const removed = removeFromZones(state, id);
+    if (!removed || removed.owner !== context.owner) throw new RulesViolation("invalid-target");
+    const card = cleanCardForHiddenZone(removed.card);
+    const combo = Math.max(0, Number(entry.turnCardsPlayed || 0) - 1) >= 1;
+    if (combo) {
+      card.costModifier = (card.costModifier || 0) - (effect.amount || 0);
+      card.costModifierExpires = effect.duration || "turn";
+      card.costModifierExpiresRound = (state.round || 0) + 1;
+    }
+    entry.hand.push(card);
+  },
+  destroyCreatureUpToTurnCardsPlayed(state, effect, context) {
+    const limit = Math.max(0, Number(player(state, context.owner).turnCardsPlayed || 0));
+    const eligible = state.players.flatMap((entry) => entry.board || []).filter((card) => Number(card.cost || 0) <= limit);
+    const chosenId = context.targetIds?.[0];
+    if (!chosenId) {
+      if (!eligible.length) return;
+      if (state.pendingDecision) throw new RulesViolation("decision-pending");
+      state.pendingDecision = { kind: "targets", owner: context.owner, effect: { replayEffects: [{ ...effect }] }, context: { ...context, targetIds: [] }, targetSteps: [{ scope: "anyCreature", role: "effect", maxCost: limit }], sourceName: context.effectSource?.name || "Zoiudo" };
+      return;
+    }
+    const target = eligible.find((card) => (card.uid || card.id) === chosenId);
+    if (!target) throw new RulesViolation("target-cost-too-high");
+    defaultEffectHandlers.destroy(state, { type: "destroy", target: "selected" }, { ...context, targetIds: [chosenId] });
+  },
   discountReturnedCard(state, effect, context) { const id = context.targetIds?.[0]; const card = player(state, context.owner).hand.find((candidate) => candidate.uid === id || candidate.id === id); if (card) { card.costModifier = (card.costModifier || 0) - (effect.amount || 0); card.costModifierExpires = effect.duration || "turn"; card.costModifierExpiresRound = (state.round || 0) + 1; } },
   destroyByCardsPlayedThisTurn(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); const limit = Math.max(0, player(state, context.owner).turnCardsPlayed || 0); if ((target.cost || 0) > limit) throw new RulesViolation("target-cost-too-high"); defaultEffectHandlers.destroy(state, { type: "destroy", target: "selected" }, context); },
+  damageAndMarkRepeat(state, effect, context) {
+    const target = findUnit(state, context.targetIds?.[0]);
+    if (!target) throw new RulesViolation("target-required");
+    defaultEffectHandlers.damage(state, { ...effect, type: "damage" }, context);
+    const owner = state.players.findIndex((entry) => (entry.board || []).includes(target));
+    const healthBonus = (target.modifiers || []).reduce((sum, item) => sum + (item.health || 0), 0);
+    if (owner >= 0 && (target.damage || 0) >= (target.hp || 1) + healthBonus) target.killedByRepeatSourceId = context.sourceId;
+  },
+  disableReserveStorage(state, effect, context) { player(state, context.owner).noReserveStorageThisTurn = true; },
   damageFromCardsPlayedThisTurn(state, effect, context) { defaultEffectHandlers.damage(state, { ...effect, type: "damage", amount: player(state, context.owner).turnCardsPlayed || 0 }, context); },
   modifyStatsFromTurnCardsPlayed(state, effect, context) { const count = player(state, context.owner).turnCardsPlayed || 0; defaultEffectHandlers.modifyStats(state, { ...effect, type: "modifyStats", attack: count * (effect.attackPerCard || 0), health: count * (effect.healthPerCard || 0) }, context); },
   damageFromSacrificedAttack(state, effect, context) { defaultEffectHandlers.damage(state, { ...effect, type: "damage", amount: context.paidSacrificeAttack || 0 }, context); },
-  configureResurrected(state, effect, context) { const target = findUnit(state, context.resurrectedId); if (!target) return; if (effect.grantKeywordIfCombo && (player(state, context.owner).turnCardsPlayed || 0) > 0) { target.temporaryTags ||= []; target.temporaryTags.push(effect.grantKeywordIfCombo); target.summoning = false; } if (effect.destroyAtTurnEnd) { state.delayedEffects ||= []; state.delayedEffects.push({ timing: "turnEnd", owner: context.owner, effect: { type: "destroy", target: "selected" }, context: { ...context, targetIds: [target.uid || target.id] } }); } },
+  configureResurrected(state, effect, context) { const target = findUnit(state, context.resurrectedId); if (!target) return; const cardsPlayedBeforeThis = Math.max(0, (player(state, context.owner).turnCardsPlayed || 0) - 1); if (effect.grantKeywordIfCombo && cardsPlayedBeforeThis > 0) { target.temporaryTags ||= []; if (!target.temporaryTags.includes(effect.grantKeywordIfCombo)) target.temporaryTags.push(effect.grantKeywordIfCombo); target.summoning = false; } if (effect.destroyAtTurnEnd) { state.delayedEffects ||= []; state.delayedEffects.push({ timing: "turnEnd", owner: context.owner, effect: { type: "destroy", target: "selected" }, context: { ...context, targetIds: [target.uid || target.id] } }); } },
   protectAlliedDragonsOncePerTurn(state, effect, context) { const source = findUnit(state, context.sourceId); if (source) { source.staticModifiers ||= []; if (!source.staticModifiers.some((item) => item.type === "protectAlliedDragonsOncePerTurn")) source.staticModifiers.push({ type: "protectAlliedDragonsOncePerTurn" }); } },
   replaceImage(state, effect, context) {
     const entry = player(state, context.owner);

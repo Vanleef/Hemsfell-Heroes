@@ -154,8 +154,8 @@
   min-height: 0 !important;
   padding: clamp(.15rem,.28cqh,.24rem) clamp(.32rem,.52cqw,.5rem) !important;
   margin: clamp(.03rem,.08cqh,.06rem) 0 0 !important;
-  font-size: clamp(.31rem,min(.45cqw,.74cqh),.49rem) !important;
-  line-height: 1.05 !important;
+  font-size: clamp(.35rem,min(.50cqw,.79cqh),.54rem) !important;
+  line-height: 1.15 !important;
 }
 
 /* -------------------------------------------------------------------------
