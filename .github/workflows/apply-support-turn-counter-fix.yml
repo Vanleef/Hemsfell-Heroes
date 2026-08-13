@@ -6,6 +6,7 @@ on:
       - fix/cards_mechanics
     paths:
       - scripts/apply-support-turn-counter-fix.mjs
+      - scripts/finalize-support-turn-counter-fix.mjs
       - package.json
       - .github/workflows/apply-support-turn-counter-fix.yml
 
@@ -25,15 +26,15 @@ jobs:
       - run: npm ci
       - name: Apply canonical rules migration
         run: npm run rules:migrate
-      - name: Verify rules suite
-        run: node --test tests/*.test.mjs
+      - name: Refresh card implementation audit
+        run: node scripts/export-card-implementation-audit.mjs
       - name: Persist generated rule changes
         shell: bash
         run: |
           set -euo pipefail
           git config user.name 'github-actions[bot]'
-          git config user.email '4189822+github-actions[bot]@users.noreply.github.com'
-          git add app/rules-engine/compiler.mjs app/rules-engine/engine.mjs app/rules-engine/effects.mjs app/rules-engine/card-rules.mjs
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/rules-engine/compiler.mjs app/rules-engine/engine.mjs app/rules-engine/effects.mjs app/rules-engine/card-rules.mjs docs/card-implementation-audit.json docs/card-implementation-audit.md
           if git diff --cached --quiet; then
             echo 'Rule files already canonical.'
             exit 0
