@@ -71,5 +71,12 @@ jobs:
       - name: Export full card implementation audit
         run: npm run audit:cards:full
 
+      - name: Upload card implementation audit JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: card-implementation-audit
+          path: docs/card-implementation-audit.json
+          if-no-files-found: error
+
       - name: Build Next.js application
         run: npm run vercel-build
