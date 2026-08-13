@@ -1490,3 +1490,32 @@ test("final stage seal outranks legacy fixed-position board rules", async () => 
   assert.doesNotMatch(board, /\d+px/);
 });
 
+
+
+test("single eligible Draconic Illusion replacement auto-selects", () => {
+  const game = state(); game.round = 3;
+  const young = { uid: "young", id: "young", name: "Dragão Jovem", type: "Criatura", slot: 2, generatedImage: true, imageCard: true, summoning: false, exhausted: false, damage: 0, tags: [], abilities: [] };
+  game.players[0].board.push(young);
+  game.players[0].extraDeck = [compileCard({ id: "p25", page: 25, name: "Dragão Ancião", type: "Criatura", cost: 0, text: "" })];
+  defaultEffectHandlers.replaceImage(game, { type: "replaceImage", oldName: "Dragão Jovem", newName: "Dragão Ancião" }, { owner: 0, sourceId: "illusion" });
+  assert.equal(game.pendingDecision, undefined);
+  assert.equal(game.players[0].board.some((card) => card.name === "Dragão Jovem"), false);
+  assert.equal(game.players[0].board.some((card) => card.name === "Dragão Ancião"), true);
+});
+
+test("Dragão Ancião First Act applies primary and adjacent damage after target selection", () => {
+  const game = state();
+  const ancient = { ...compileCard({ id: "p25", page: 25, name: "Dragão Ancião", type: "Criatura", cost: 0, text: "" }), uid: "ancient", slot: 0, generatedImage: true, imageCard: true, summoning: true, exhausted: false, damage: 0 };
+  game.players[0].board.push(ancient);
+  game.players[1].board.push(
+    { uid: "left", id: "left", type: "Criatura", name: "Left", slot: 1, atk: 1, hp: 6, damage: 0, tags: [], abilities: [], exhausted: false, summoning: false },
+    { uid: "center", id: "center", type: "Criatura", name: "Center", slot: 2, atk: 1, hp: 5, damage: 0, tags: [], abilities: [], exhausted: false, summoning: false },
+    { uid: "right", id: "right", type: "Criatura", name: "Right", slot: 3, atk: 1, hp: 6, damage: 0, tags: [], abilities: [], exhausted: false, summoning: false }
+  );
+  const pending = executeCommand(game, { type: "emit", event: { type: "onEnter", owner: 0, sourceId: "ancient", cardId: "ancient", card: ancient } }).state;
+  assert.equal(pending.pendingDecision?.sourceName, "Dragão Ancião");
+  const resolved = executeCommand(pending, { type: "resolveDecision", owner: 0, targetIds: ["center"] }).state;
+  assert.equal(resolved.players[1].board.some((card) => card.uid === "center"), false);
+  assert.equal(resolved.players[1].board.find((card) => card.uid === "left")?.damage, 2);
+  assert.equal(resolved.players[1].board.find((card) => card.uid === "right")?.damage, 2);
+});

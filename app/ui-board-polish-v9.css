@@ -1,0 +1,193 @@
+/* Hemsfell Heroes — responsive board polish v9
+ * Loaded after lab.css from globals.css, making this the final match-layout
+ * authority for the three fixes below. Everything is anchored to the logical
+ * board container with cqw/cqh/clamp rather than viewport pixel coordinates.
+ */
+
+/* -------------------------------------------------------------------------
+   RIGHT-LANE ANIMATIONS
+   Fill the usable corridor immediately left of the public side zones. The
+   animation's right edge is anchored to the side-zone rail; its left edge is
+   constrained so it never spills back over the creature-column boundary.
+   ------------------------------------------------------------------------- */
+.screen-game .game-stage > .game-content.hs-board {
+  --hh-side-zone-left: 84.7cqw;
+  --hh-fx-left: 67.6cqw;
+  --hh-fx-gap: clamp(.22rem,.42cqw,.46rem);
+}
+
+.screen-game .game-stage > .game-content.hs-board > :is(.visual-effect,.combat-cinematic) {
+  position: absolute !important;
+  left: var(--hh-fx-left) !important;
+  right: calc(100cqw - var(--hh-side-zone-left) + var(--hh-fx-gap)) !important;
+  top: 50% !important;
+  bottom: auto !important;
+  width: auto !important;
+  min-width: clamp(12rem,15.5cqw,17rem) !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  transform: translateY(-50%) !important;
+  box-sizing: border-box !important;
+  z-index: 540 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .visual-effect.fx-targeted {
+  left: max(66.7cqw, calc(var(--hh-fx-left) - .9cqw)) !important;
+  width: auto !important;
+  min-width: clamp(12.8rem,16.4cqw,18rem) !important;
+  max-width: none !important;
+}
+
+/* Content stretches with the new tray instead of staying visually narrow. */
+.screen-game .visual-effect > section {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+.screen-game .visual-effect:not(.fx-targeted) {
+  grid-template-columns: minmax(3rem,4.8cqw) minmax(0,1fr) !important;
+}
+.screen-game .visual-effect.fx-targeted {
+  grid-template-columns: minmax(2.8rem,4.3cqw) auto minmax(2.8rem,4.3cqw) !important;
+}
+.screen-game .visual-effect > :is(.remote-card-art,canvas.remote-card-art,img) {
+  width: min(4.75cqw,9.1cqh) !important;
+  max-width: 100% !important;
+}
+
+/* -------------------------------------------------------------------------
+   HERO EVOLUTION STACK
+   Nível, progresso e Evoluir are exactly the same responsive width and share
+   the same horizontal anchor. This deliberately outranks older level-button
+   max-width rules in lab-interaction-responsive.css.
+   ------------------------------------------------------------------------- */
+.screen-game .game-stage > .game-content.hs-board > .player-hero {
+  --hero-side-stack-width: clamp(4.85rem,7.5cqw,7.8rem);
+  --hero-side-stack-gap: clamp(.055rem,.13cqh,.12rem);
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-power-trigger > .hero-level,
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution,
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  left: var(--hero-side-stack-left) !important;
+  right: auto !important;
+  width: var(--hero-side-stack-width) !important;
+  min-width: var(--hero-side-stack-width) !important;
+  max-width: var(--hero-side-stack-width) !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  display: grid !important;
+  place-items: center !important;
+  justify-self: start !important;
+  padding-inline: clamp(.12rem,.2cqw,.2rem) !important;
+  border-radius: clamp(.24rem,.38cqw,.4rem) !important;
+}
+
+/* Slightly tighten the stack so it reads as one attached progression module. */
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+  margin-top: 0 !important;
+}
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  top: calc(var(--hero-card-top) + clamp(4rem,8.28cqh,4.94rem)) !important;
+}
+
+/* -------------------------------------------------------------------------
+   CARD INSPECTOR
+   Explicit responsive authority ensures the detailed view cannot be hidden by
+   the board, decisions, hand, side zones or animation layers.
+   ------------------------------------------------------------------------- */
+.card-focus-layer.overlay.inspector {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100dvw !important;
+  height: 100dvh !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: clamp(.7rem,2vmin,1.4rem) !important;
+  overflow: auto !important;
+  z-index: 40000 !important;
+  pointer-events: auto !important;
+  background: rgb(1 5 9 / .9) !important;
+  backdrop-filter: blur(clamp(.12rem,.35vmin,.3rem)) saturate(.82) !important;
+}
+
+.card-focus-layer.overlay.inspector > div {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(9rem, min(32vw,20rem)) minmax(15rem,1fr) !important;
+  align-items: center !important;
+  gap: clamp(.8rem,2vw,1.8rem) !important;
+  width: min(92vw,52rem) !important;
+  max-height: min(92dvh,44rem) !important;
+  padding: clamp(.75rem,1.8vw,1.5rem) !important;
+  overflow: auto !important;
+  border-radius: clamp(.55rem,1vw,1rem) !important;
+  pointer-events: auto !important;
+}
+
+.card-focus-layer.overlay.inspector > div > .remote-card-art {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 78dvh !important;
+  object-fit: contain !important;
+}
+
+.card-focus-layer.overlay.inspector aside {
+  min-width: 0 !important;
+  max-height: 78dvh !important;
+  overflow-y: auto !important;
+  padding-right: clamp(.15rem,.35vw,.3rem) !important;
+}
+
+.card-focus-layer.overlay.inspector .inspector-close {
+  width: clamp(1.8rem,3vw,2.4rem) !important;
+  height: clamp(1.8rem,3vw,2.4rem) !important;
+  right: clamp(.35rem,.7vw,.7rem) !important;
+  top: clamp(.35rem,.7vw,.7rem) !important;
+  font-size: clamp(1rem,1.7vw,1.45rem) !important;
+}
+
+@container hemsfell-board (max-height: 44rem) {
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-side-zone-left: 84.9cqw;
+    --hh-fx-left: 68cqw;
+  }
+  .screen-game .game-stage > .game-content.hs-board > :is(.visual-effect,.combat-cinematic) {
+    min-width: clamp(10.6rem,14.8cqw,14.5rem) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board > .player-hero {
+    --hero-side-stack-width: clamp(4.35rem,7cqw,7.05rem);
+  }
+}
+
+@container hemsfell-board (max-height: 36rem) {
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-side-zone-left: 85.1cqw;
+    --hh-fx-left: 68.6cqw;
+  }
+  .screen-game .game-stage > .game-content.hs-board > :is(.visual-effect,.combat-cinematic) {
+    min-width: clamp(9.2rem,13.9cqw,12.6rem) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board > .player-hero {
+    --hero-side-stack-width: clamp(4rem,6.6cqw,6.45rem);
+  }
+}
+
+@media (max-width: 48rem), (orientation: portrait) {
+  .card-focus-layer.overlay.inspector > div {
+    grid-template-columns: 1fr !important;
+    width: min(94vw,32rem) !important;
+    max-height: 94dvh !important;
+  }
+  .card-focus-layer.overlay.inspector > div > .remote-card-art {
+    width: min(48vw,13rem) !important;
+    justify-self: center !important;
+    max-height: 42dvh !important;
+  }
+  .card-focus-layer.overlay.inspector aside {
+    max-height: 43dvh !important;
+  }
+}

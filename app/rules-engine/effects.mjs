@@ -120,9 +120,15 @@ export const defaultEffectHandlers = Object.freeze({
     for (const target of targets) defaultEffectHandlers.damage(state, { ...effect, type: "damage", amount }, { ...context, targetIds: [target.uid || target.id] });
   },
   damageAdjacent(state, effect, context) {
-    const selected = findUnit(state, context.targetIds?.[0]); if (!selected) throw new RulesViolation("target-required");
-    const entry = state.players.find((candidate) => candidate.board.includes(selected));
-    for (const target of entry?.board.filter((unit) => Math.abs((unit.slot ?? entry.board.indexOf(unit)) - (selected.slot ?? entry.board.indexOf(selected))) === 1) || []) defaultEffectHandlers.damage(state, { type: "damage", amount: effect.amount }, { ...context, targetIds: [target.uid] });
+    const selectedId = context.targetIds?.[0];
+    const selected = findUnit(state, selectedId);
+    const snapshots = [...(context.targetSnapshots || []), ...(context.event?.targetSnapshots || [])];
+    const snapshot = snapshots.find((entry) => entry?.id === selectedId);
+    const owner = selected ? state.players.findIndex((entry) => entry.board.includes(selected)) : snapshot?.owner;
+    const board = owner != null && owner >= 0 ? player(state, owner).board : null;
+    const slot = selected ? (selected.slot ?? board?.indexOf(selected)) : snapshot?.slot;
+    if (!board || slot == null) return;
+    for (const target of board.filter((unit) => Math.abs((unit.slot ?? board.indexOf(unit)) - slot) === 1)) defaultEffectHandlers.damage(state, { type: "damage", amount: effect.amount }, { ...context, targetIds: [target.uid || target.id] });
   },
   heal(state, effect, context) {
     if (effect.amountPerTurnedCreature) { const entry = player(state, context.owner); const amount = state.players.flatMap((candidate) => candidate.board || []).filter((unit) => unit.exhausted).length * effect.amountPerTurnedCreature; entry.life = Math.min(entry.maxLife ?? 30, entry.life + amount); return; }
@@ -191,7 +197,7 @@ export const defaultEffectHandlers = Object.freeze({
     const candidates = (entry.board || []).filter((card) =>
       (card.generatedImage || card.imageCard) && normalizedName(card.name) === normalizedName(effect.oldName)
     );
-    const chosenId = selectedIds(context)[0];
+    const chosenId = selectedIds(context)[0] || (candidates.length === 1 ? (candidates[0].uid || candidates[0].id) : null);
 
     // The printed condition is optional: without the smaller Image, the spell
     // still resolves at its normal cost and simply creates the upgraded Image.
@@ -330,7 +336,7 @@ export const defaultEffectHandlers = Object.freeze({
   },
   resurrect(state, effect, context) { const entry = player(state, context.owner); if (effect.choose && !context.selectedCardId) { const choices = entry.grave.filter((card) => card.type === effect.cardType && (effect.maxCost == null || card.cost <= effect.maxCost) && (!effect.subtype || hasSubtype(card, effect.subtype))).map((card) => card.uid || card.id); if (!choices.length) throw new RulesViolation("card-choice-required"); queueDecision(state, { ...effect, choices }, context, "zone-card"); return; } const index = entry.grave.findIndex((card) => card.type === effect.cardType && (effect.cost == null || card.cost === effect.cost) && (effect.maxCost == null || card.cost <= effect.maxCost) && (!effect.subtype || hasSubtype(card, effect.subtype)) && (!context.selectedCardId || card.id === context.selectedCardId || card.uid === context.selectedCardId)); if (index < 0) { if (!effect.optional) throw new RulesViolation("card-choice-required"); return; } const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !entry.board.some((unit) => unit.slot === slot)); if (openSlot == null) throw new RulesViolation("creature-zone-full"); const card = entry.grave.splice(index, 1)[0]; const copy = { ...card, uid: `${card.id}-${state.round}-resurrected`, enteredRound: state.round, attackedThisTurn: false, damage: 0, exhausted: false, summoning: true, slot: context.slot != null && !entry.board.some((unit) => unit.slot === context.slot) ? context.slot : openSlot }; context.resurrectedId = copy.uid; entry.board.push(copy); queueEvent(state, { type: "onEnter", owner: context.owner, sourceId: copy.uid, cardId: copy.uid, card: copy }); queueEvent(state, { type: "onCreatureEnter", owner: context.owner, sourceId: copy.uid, cardId: copy.uid, card: copy }); },
   returnSelfToField(state, effect, context) { const entry = player(state, context.owner); const index = entry.grave.findIndex((card) => card.uid === context.sourceId || card.id === context.sourceId); const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !entry.board.some((unit) => unit.slot === slot)); if (index >= 0 && openSlot != null) { const copy = { ...entry.grave.splice(index, 1)[0], enteredRound: state.round, attackedThisTurn: false, damage: 0, exhausted: false, summoning: false, slot: openSlot }; entry.board.push(copy); queueEvent(state, { type: "onEnter", owner: context.owner, sourceId: copy.uid || copy.id, cardId: copy.uid || copy.id, card: copy }); queueEvent(state, { type: "onCreatureEnter", owner: context.owner, sourceId: copy.uid || copy.id, cardId: copy.uid || copy.id, card: copy }); } },
-  returnSelfToHand(state, effect, context) { const removed = removeFromZones(state, context.sourceId); if (removed) player(state, removed.owner).hand.push(removed.card); },
+  returnSelfToHand(state, effect, context) { const removed = removeFromZones(state, context.sourceId); if (removed) player(state, removed.owner).hand.push(cleanCardForHiddenZone(removed.card)); },
   moveSelf(state, effect, context) { const removed = removeFromZones(state, context.sourceId); if (!removed) return; const entry = player(state, removed.owner); if (effect.destination === "obscuro") entry.obscuro.push(removed.card); else if (effect.destination === "grave") sendToPrintedGraveDestination(entry, removed.card); },
   moveTopToBottom(state, effect, context) { const owners = effect.target === "bothPlayers" ? [0, 1] : [context.owner]; for (const owner of owners) { const entry = player(state, owner); const card = entry.deck.shift(); if (card) entry.deck.push(card); } },
   investigate(state, effect, context) { const targetOwner = effect.target === "opponentDeck" ? 1 - context.owner : context.owner; const target = player(state, targetOwner); const viewed = target.deck.splice(0, Math.max(1, effect.amount || 1)); if (!viewed.length) return; const revealed = viewed.shift(); target.deck.unshift(revealed); const controller = player(state, context.owner); for (const archived of viewed) { if ((controller.archiveToGrave || 0) > 0) { controller.archiveToGrave--; target.grave.push({ ...archived, deathCause: "archived" }); } else target.deck.push(archived); } queueEvent(state, { type: "onInvestigate", owner: context.owner, targetOwner, sourceId: context.sourceId, card: revealed, amount: 1 }); queueEvent(state, { type: "onCardRevealed", owner: context.owner, targetOwner, sourceId: context.sourceId, card: revealed, cardType: revealed.type }); },
