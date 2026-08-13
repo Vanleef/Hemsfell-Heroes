@@ -1,0 +1,29 @@
+name: Deep card implementation audit
+
+on:
+  push:
+    branches:
+      - audit/full-card-implementations-20260813
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - run: npm ci
+      - name: Export complete compiled card implementations
+        run: node scripts/export-card-implementation-deep-audit.mjs
+      - name: Upload JSON
+        uses: actions/upload-artifact@v4
+        with:
+          name: card-implementation-deep-audit
+          path: docs/card-implementation-deep-audit.json
+          if-no-files-found: error
