@@ -11,7 +11,7 @@ const replacements = [
     "responsive animation z-index",
   ],
   [
-    'assert.match(page, /className=\\"hs-board game-content\\"/);',
+    'assert.match(page, /className="hs-board game-content"/);',
     'assert.match(page, /hs-board game-content/);',
     "dynamic game-stage class",
   ],
