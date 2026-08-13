@@ -2,12 +2,10 @@
   "name": "hemsfell-heroes",
   "version": "0.1.0",
   "private": true,
-  "engines": {
-    "node": ">=22.13.0"
-  },
+  "engines": {"node": ">=22.13.0"},
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
-    "rules:migrate": "node scripts/normalize-rules-migration-inputs.mjs && node scripts/fix-artifact-activation-runtime.mjs && node scripts/repair-card-semantics-migration.mjs && node scripts/prepare-card-semantics-v2.mjs && node scripts/apply-card-semantics-v2.mjs && node scripts/apply-card-semantics-v2-followup.mjs && node scripts/fix-fura-variable-definitions.mjs && node scripts/apply-gameplay-polish-v3.mjs && node scripts/apply-ui-rules-polish-v4.mjs && node scripts/apply-ui-interaction-polish-v5.mjs && node scripts/repair-authoritative-rules-v6.mjs && node scripts/repair-force-attack-ui-v7.mjs && node scripts/repair-ui-board-v8.mjs && node scripts/repair-ui-board-v9.mjs && node scripts/repair-ui-board-v10.mjs && node scripts/repair-ui-board-v11.mjs && node scripts/repair-search-verbs-v12.mjs && node scripts/apply-support-turn-counter-fix.mjs && node scripts/finalize-support-turn-counter-fix.mjs && node scripts/repair-goblin-deck-v13.mjs && node scripts/repair-grave-cost-v14.mjs && node scripts/repair-grave-default-v15.mjs && node scripts/repair-chamine-reserve-v16.mjs && node scripts/repair-pinga-biriba-v17.mjs && node scripts/repair-tessalia-cards-v21.mjs && node scripts/repair-sourceid-v22.mjs",
+    "rules:migrate": "node scripts/normalize-rules-migration-inputs.mjs && node scripts/fix-artifact-activation-runtime.mjs && node scripts/repair-card-semantics-migration.mjs && node scripts/prepare-card-semantics-v2.mjs && node scripts/apply-card-semantics-v2.mjs && node scripts/apply-card-semantics-v2-followup.mjs && node scripts/fix-fura-variable-definitions.mjs && node scripts/apply-gameplay-polish-v3.mjs && node scripts/apply-ui-rules-polish-v4.mjs && node scripts/apply-ui-interaction-polish-v5.mjs && node scripts/repair-authoritative-rules-v6.mjs && node scripts/repair-force-attack-ui-v7.mjs && node scripts/repair-ui-board-v8.mjs && node scripts/repair-ui-board-v9.mjs && node scripts/repair-ui-board-v10.mjs && node scripts/repair-ui-board-v11.mjs && node scripts/repair-search-verbs-v12.mjs && node scripts/apply-support-turn-counter-fix.mjs && node scripts/finalize-support-turn-counter-fix.mjs && node scripts/repair-goblin-deck-v13.mjs && node scripts/repair-grave-cost-v14.mjs && node scripts/repair-grave-default-v15.mjs && node scripts/repair-chamine-reserve-v16.mjs && node scripts/repair-pinga-biriba-v17.mjs && node scripts/repair-tessalia-cards-v21.mjs && node scripts/repair-sourceid-v22.mjs && node scripts/repair-arte-da-guerra-v24.mjs",
     "predev": "npm run rules:migrate",
     "dev": "next dev -H 0.0.0.0",
     "prebuild": "npm run rules:migrate",
@@ -25,30 +23,8 @@
     "audit:cards:full": "npm run rules:migrate && node scripts/export-card-implementation-audit.mjs",
     "simulate:headless": "node scripts/simulate-games.mjs"
   },
-  "dependencies": {
-    "@vercel/blob": "2.7.0",
-    "drizzle-orm": "0.45.2",
-    "next": "16.2.6",
-    "pdfjs-dist": "6.2.108",
-    "react": "19.2.6",
-    "react-dom": "19.2.6"
-  },
-  "devDependencies": {
-    "@cloudflare/vite-plugin": "1.37.1",
-    "@tailwindcss/postcss": "4.2.1",
-    "@types/node": "22.19.19",
-    "@types/react": "19.2.14",
-    "@types/react-dom": "19.2.3",
-    "@vitejs/plugin-react": "6.0.2",
-    "@vitejs/plugin-rsc": "0.5.26",
-    "drizzle-kit": "0.31.10",
-    "eslint": "9.39.4",
-    "eslint-config-next": "16.2.6",
-    "typescript": "5.9.3",
-    "vinext": "0.0.50",
-    "vite": "8.0.13",
-    "wrangler": "4.92.0"
-  },
+  "dependencies": {"@vercel/blob":"2.7.0","drizzle-orm":"0.45.2","next":"16.2.6","pdfjs-dist":"6.2.108","react":"19.2.6","react-dom":"19.2.6"},
+  "devDependencies": {"@cloudflare/vite-plugin":"1.37.1","@tailwindcss/postcss":"4.2.1","@types/node":"22.19.19","@types/react":"19.2.14","@types/react-dom":"19.2.3","@vitejs/plugin-react":"6.0.2","@vitejs/plugin-rsc":"0.5.26","drizzle-kit":"0.31.10","eslint":"9.39.4","eslint-config-next":"16.2.6","typescript":"5.9.3","vinext":"0.0.50","vite":"8.0.13","wrangler":"4.92.0"},
   "type": "module",
   "displayName": "Hemsfell Heroes"
 }
