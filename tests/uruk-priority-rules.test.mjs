@@ -99,6 +99,17 @@ test("Feiticeira Espectral consome X marcadores e busca um feitiço de custo at�
   result = executeCommand(result, { type: "resolveDecision", owner: 0, selectedCardIds: [cheap.id] }).state;
   assert.equal(result.players[0].hand.at(-1).id, cheap.id);
   assert.ok(result.players[0].deck.some((card) => card.id === expensive.id));
+
+  const stale = state(), canonical = printed(80), staleWitch = { ...canonical, uid: "stale-witch", slot: 0, markers: 1, summoning: false, exhausted: false, abilities: canonical.abilities.filter((entry) => entry.trigger !== "activated") };
+  stale.players[0].board.push(staleWitch); stale.players[0].deck.push({ ...spell("cost-one", "Ar"), cost: 1 }, { ...spell("cost-two", "Terra"), cost: 2 });
+  const activatedId = canonical.abilities.find((entry) => entry.trigger === "activated").id;
+  const recovered = executeCommand(stale, { type: "activate", owner: 0, sourceId: staleWitch.uid, abilityId: activatedId, markerAmount: 1 }).state;
+  assert.equal(recovered.players[0].board[0].markers, 0, "uma sala antiga também consome o marcador");
+  assert.equal(recovered.pendingDecision.context.markerAmount, 1, "um marcador limita a busca a custo 1 ou 0");
+  assert.equal(recovered.pendingDecision.effect.maxCostFromMarkerAmount, true);
+  const recoveredSearch = executeCommand(recovered, { type: "resolveDecision", owner: 0, selectedCardIds: ["cost-one"] }).state;
+  assert.equal(recoveredSearch.players[0].hand.at(-1).id, "cost-one");
+  assert.ok(recoveredSearch.players[0].deck.some((card) => card.id === "cost-two"));
 });
 
 test("Tufão devolve todas as criaturas aos donos e dissipa Imagens", () => {
