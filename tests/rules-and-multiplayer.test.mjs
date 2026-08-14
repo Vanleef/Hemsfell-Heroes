@@ -32,6 +32,13 @@ test("command bar copy is density-aware and cannot overflow its panel",()=>{
  assert.match(uiOverrides,/overflow-wrap:anywhere/);
 });
 
+test("response window remains a compact responsive drawer",()=>{
+ assert.match(uiOverrides,/\.response-overlay\{[\s\S]*?width:min\(18rem,calc\(100vw - \.8rem\)\)/);
+ assert.match(uiOverrides,/\.response-dialog\{[\s\S]*?width:100%[\s\S]*?max-height:min\(68dvh,29rem\)/);
+ assert.match(uiOverrides,/@media\(max-width:36rem\)[\s\S]*?bottom:\.4rem/);
+ assert.doesNotMatch(uiOverrides,/\.response-dialog\{width:min\(34rem/);
+});
+
 test("mulligan has a server-authoritative 30 second deadline and visible card inspection",()=>{
  assert.match(roomApi,/const mulliganDeadline = deadline\(30\)/);
  assert.match(page,/Se o tempo acabar, sua mão atual será mantida/);

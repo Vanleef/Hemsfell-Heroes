@@ -846,15 +846,23 @@
 .screen-game .hero-command-bar .hero-ability-chip.copy-dense p{font-size:clamp(.245rem,3.25cqi,.4rem)!important;line-height:1.02!important;-webkit-line-clamp:4}
 
 /* Compact priority window, stronger pile labels, and unclipped mulligan inspection. */
-.screen-game .response-dialog{width:min(34rem,calc(100vw - 1rem))!important;max-height:min(76dvh,34rem)!important;padding:0!important}
-.screen-game .response-dialog>header{padding:.55rem .8rem!important}
-.screen-game .response-dialog h2{margin:.65rem .9rem .35rem!important;font-size:clamp(1.05rem,2.2vw,1.45rem)!important}
-.screen-game .response-dialog>.priority-status{margin:0 .9rem .55rem!important;padding:.42rem .55rem!important}
-.screen-game .response-dialog>p{margin:.45rem .9rem .6rem!important;font-size:.66rem!important;line-height:1.3!important}
-.screen-game .response-cards{gap:.45rem!important;padding:.4rem .75rem .65rem!important;max-height:13.5rem!important;overflow-y:auto!important}
-.screen-game .response-cards>div{width:clamp(5.2rem,14vw,6.6rem)!important;padding:.28rem!important}
-.screen-game .response-cards .original-card{width:100%!important;max-width:5.8rem!important}
-.screen-game .response-dialog>footer{padding:.55rem .8rem!important}
+.screen-game .response-overlay{inset:clamp(.4rem,1.4dvh,.8rem) clamp(.4rem,1vw,.8rem) auto auto!important;width:min(18rem,calc(100vw - .8rem))!important;max-width:calc(100vw - .8rem)!important}
+.screen-game .response-dialog{box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;max-height:min(68dvh,29rem)!important;padding:0!important;overflow-x:hidden!important;overflow-y:auto!important;container-type:inline-size}
+.screen-game .response-dialog>header{box-sizing:border-box!important;min-height:0!important;height:auto!important;padding:clamp(.38rem,1.2dvh,.52rem) clamp(.5rem,3.5cqi,.68rem)!important;gap:.4rem!important}
+.screen-game .response-dialog>header span,.screen-game .response-dialog>header b{font-size:clamp(.47rem,2.8cqi,.6rem)!important;white-space:nowrap!important}
+.screen-game .response-dialog h2{margin:0!important;padding:clamp(.48rem,1.5dvh,.68rem) clamp(.58rem,4cqi,.78rem) .22rem!important;font-size:clamp(.92rem,6.3cqi,1.14rem)!important;line-height:1.05!important}
+.screen-game .response-dialog>.priority-status{box-sizing:border-box!important;margin:.18rem clamp(.5rem,3.6cqi,.7rem) .38rem!important;padding:.3rem .42rem!important;gap:.35rem!important;font-size:clamp(.48rem,3cqi,.6rem)!important;line-height:1.12!important;overflow:hidden!important}
+.screen-game .response-dialog>.priority-status span{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
+.screen-game .response-dialog>p{margin:0!important;padding:.12rem clamp(.58rem,4cqi,.78rem) .48rem!important;font-size:clamp(.52rem,3.2cqi,.62rem)!important;line-height:1.24!important;overflow-wrap:anywhere!important}
+.screen-game .response-cards{box-sizing:border-box!important;display:flex!important;justify-content:flex-start!important;gap:clamp(.3rem,2.2cqi,.42rem)!important;padding:.2rem clamp(.48rem,3.4cqi,.68rem) .5rem!important;max-height:min(12rem,31dvh)!important;overflow-x:auto!important;overflow-y:auto!important;scrollbar-width:thin}
+.screen-game .response-cards>div{box-sizing:border-box!important;width:clamp(4.35rem,27cqi,4.9rem)!important;flex:0 0 clamp(4.35rem,27cqi,4.9rem)!important;padding:.22rem!important;gap:.2rem!important}
+.screen-game .response-cards .original-card{width:100%!important;max-width:4.3rem!important}
+.screen-game .response-cards b{font-size:clamp(.43rem,2.8cqi,.53rem)!important;line-height:1.12!important}
+.screen-game .response-cards small{font-size:clamp(.38rem,2.45cqi,.47rem)!important;line-height:1.14!important}
+.screen-game .response-dialog>footer{box-sizing:border-box!important;padding:.42rem clamp(.5rem,3.5cqi,.68rem)!important}
+.screen-game .response-dialog .pass-response{min-width:0!important;width:auto!important;padding:.4rem .65rem!important;font-size:clamp(.45rem,2.8cqi,.56rem)!important}
+@media(max-width:36rem){.screen-game .response-overlay{top:auto!important;bottom:.4rem!important;left:.4rem!important;right:.4rem!important;width:auto!important}.screen-game .response-dialog{max-height:56dvh!important}.screen-game .response-cards{max-height:24dvh!important}}
+@media(max-height:34rem) and (min-width:36.01rem){.screen-game .response-dialog{max-height:78dvh!important}.screen-game .response-dialog h2{padding-block:.36rem .14rem!important}.screen-game .response-cards{max-height:25dvh!important}}
 .screen-game .pile-zone>b{font-size:clamp(.48rem,.68cqw,.72rem)!important;line-height:1.05!important;letter-spacing:.06em!important}
 .screen-game .pile-zone>strong{font-size:clamp(.66rem,.9cqw,.94rem)!important;line-height:1!important}
 .screen-game .mulligan-overlay,.screen-game .mulligan-dialog,.screen-game .mulligan-cards,.screen-game .mulligan-card-static{overflow:visible!important}
