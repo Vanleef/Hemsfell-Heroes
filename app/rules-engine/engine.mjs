@@ -125,6 +125,30 @@ function conditionMatches(state, source, owner, condition, event = {}) {
   if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
   if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
   if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
+  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
   if (condition.eventCardType && eventCard?.type !== condition.eventCardType) return false;
   if (condition.eventCardTypeNot && (eventCard?.type === condition.eventCardTypeNot || eventCard?.imageCard)) return false;
   if (condition.spellElement && !(event.card?.tags || eventCard?.tags || []).includes(condition.spellElement)) return false;
@@ -200,6 +224,30 @@ function intrinsicCost(state, entry, card) {
   if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
   if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
   if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
   if (card.page === 149) return -entry.board.filter((unit) => subtype(unit, "Vampiro")).length;
   if (card.page === 203) return -2 * entry.board.length;
   return 0;
@@ -260,7 +308,7 @@ function preflightPlay(state, command, handlers) {
   const card = entry?.hand?.find((candidate) => candidate.id === command.cardId);
   if (!card) throw new RulesViolation("card-not-in-hand");
   if (!canExecuteCard(card, handlers)) throw new RulesViolation("card-not-migrated");
-  const accelerated = (card.tags || []).some((tag) => /acelerado/i.test(tag)) || /acelerado/i.test(card.text || "");
+  const accelerated = card.type === "Feitiço" && ((card.tags || []).some((tag) => /acelerado/i.test(tag)) || /^\s*acelerado\b/i.test(card.text || ""));
   if (state.active !== command.owner && !(accelerated && command.hasPriority)) throw new RulesViolation("not-your-priority");
   if (state.phase !== "principal" && !(accelerated && command.hasPriority)) throw new RulesViolation("wrong-phase");
   const playAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onPlay" && conditionMatches(state, card, command.owner, ability.condition, { card }));
@@ -325,7 +373,7 @@ function activeAbilities(state, event) {
   state.players.forEach((entry, owner) => {
       for (const source of permanentUnits(entry)) {
       if (source.suffocated) continue;
-      for (const ability of source.abilities || []) if (ability.trigger === event.type && eventAppliesToSource(event, source, owner) && conditionMatches(state, source, owner, ability.condition, event) && usageAvailable(state, source, owner, ability)) result.push({ source, owner, ability });
+      for (const ability of source.abilities || []) if (!(source.page === 165 && event.type === "onDamageTaken" && ability.trigger === "onDamageTaken") && ability.trigger === event.type && eventAppliesToSource(event, source, owner) && conditionMatches(state, source, owner, ability.condition, event) && usageAvailable(state, source, owner, ability)) result.push({ source, owner, ability });
     }
   });
   state.players.forEach((entry, owner) => {
@@ -396,7 +444,7 @@ export function executeCommand(inputState, command, options = {}) {
         const cardIndex = entry.hand.findIndex((card) => card.id === item.command.cardId);
         const card = entry.hand[cardIndex]; if (!card) throw new RulesViolation("card-not-in-hand"); actionLabel = card.name || card.id;
         if (!canExecuteCard(card, handlers)) throw new RulesViolation("card-not-migrated");
-        const accelerated = (card.tags || []).some((tag) => /acelerado/i.test(tag)) || /acelerado/i.test(card.text || "");
+        const accelerated = card.type === "Feitiço" && ((card.tags || []).some((tag) => /acelerado/i.test(tag)) || /^\s*acelerado\b/i.test(card.text || ""));
         if (state.active !== item.command.owner && !(accelerated && item.command.hasPriority)) throw new RulesViolation("not-your-priority");
         if (state.phase !== "principal" && !(accelerated && item.command.hasPriority)) throw new RulesViolation("wrong-phase");
         const playAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onPlay" && conditionMatches(state, card, item.command.owner, ability.condition, { card })); if (playAbilities.some((ability) => !playConditionMatches(state, item.command.owner, ability.playCondition) || ability.effects.some((effect) => effect.type === "replaySelectedAbility" && !replayAbilityCandidates(state, item.command.owner, effect).length))) throw new RulesViolation("play-condition-not-met"); const enterAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onEnter" && conditionMatches(state, card, item.command.owner, ability.condition, { card }));
@@ -629,7 +677,7 @@ export function executeCommand(inputState, command, options = {}) {
           if(!source||ids.length>(decision.effect.maximum||3)||ids.some((id)=>id===source.uid||!entry.board.some((card)=>card.uid===id)))throw new RulesViolation("invalid-sacrifice-selection");
           state.pendingDecision=null;
           for(const id of ids){const target=entry.board.find((card)=>card.uid===id);entry.board=entry.board.filter((card)=>card.uid!==id);if(!target)continue;const attachments=entry.support.filter((card)=>card.attachedTo===id);entry.support=entry.support.filter((card)=>card.attachedTo!==id);for(const artifact of attachments)if(!artifact.generatedImage&&!artifact.imageCard)entry.grave.push(resetCardForZone(state,artifact));if(!target.generatedImage&&!target.imageCard)entry.grave.push(resetCardForZone(state,target));stack.push({kind:"event",event:{type:"onCreatureDestroyed",owner:item.command.owner,sourceId:id,card:target}});}
-          if(ids.length){source.modifiers||=[];source.modifiers.push({attack:ids.length*(decision.effect.attackPerCreature||2),health:0,duration:"permanent",sourceId});}
+          if(ids.length){source.modifiers||=[];source.modifiers.push({attack:ids.length*(decision.effect.attackPerCreature||2),health:0,duration:"permanent",sourceId:source.uid||source.id});}
           continue;
         }
         if (decision.kind === "targets" || decision.kind === "activation-targets") {
@@ -642,13 +690,35 @@ export function executeCommand(inputState, command, options = {}) {
         const resolvedTargetIds=item.command.targetIds ?? decision.context?.targetIds ?? [];const targetSnapshots=resolvedTargetIds.map((id)=>{const owner=unitOwner(state,id);if(owner<0)return null;const target=permanentUnits(state.players[owner]).find((card)=>card.uid===id||card.id===id);return target?{id,owner,slot:target.slot}:null}).filter(Boolean);const decisionContext = { ...decision.context, decisionOwner: item.command.owner, choiceIndex: item.command.choiceIndex, selectedCardId: item.command.selectedCardId, targetIds: resolvedTargetIds, targetSnapshots };
         for (const effect of [...chosen].reverse()) stack.push({ kind: "effect", effect, context: decisionContext });
       } else if (item.command.type === "reposition") {
-        const pending = state.pendingReposition; if (!pending || !pending.owners.includes(item.command.owner) || pending.confirmed.includes(item.command.owner)) throw new RulesViolation("reposition-unavailable");
-        const entry = state.players[item.command.owner]; const moves = item.command.moves || []; const slots = moves.map((move) => move.slot);
-        if (slots.some((slot) => !Number.isInteger(slot) || slot < 0 || slot > 4) || new Set(slots).size !== slots.length) throw new RulesViolation("invalid-reposition");
-        for (const move of moves) { const creature = entry.board.find((card) => card.uid === move.sourceId); if (!creature) throw new RulesViolation("invalid-reposition-card"); creature.slot = move.slot; for (const artifact of entry.support.filter((card) => card.attachedTo === creature.uid)) artifact.slot = move.slot; }
+        const pending = state.pendingReposition;
+        if (!pending || pending.activeOwner !== item.command.owner || pending.confirmed.includes(item.command.owner)) throw new RulesViolation("reposition-unavailable");
+        const entry = state.players[item.command.owner];
+        for (const move of item.command.moves || []) {
+          const destination = move.slot;
+          if (!Number.isInteger(destination) || destination < 0 || destination > 4) throw new RulesViolation("invalid-reposition");
+          const creature = entry.board.find((card) => card.uid === move.sourceId);
+          if (!creature) throw new RulesViolation("invalid-reposition-card");
+          const origin = creature.slot;
+          if (origin === destination) continue;
+          const occupant = entry.board.find((card) => card.uid !== creature.uid && card.slot === destination);
+          const originSupport = entry.support.find((card) => card.slot === origin);
+          const destinationSupport = entry.support.find((card) => card.slot === destination);
+          const movingArtifact = entry.support.find((card) => card.attachedTo === creature.uid);
+          const occupantArtifact = occupant ? entry.support.find((card) => card.attachedTo === occupant.uid) : null;
+          if (occupant) occupant.slot = origin;
+          creature.slot = destination;
+          if (movingArtifact || occupantArtifact) {
+            if (originSupport) originSupport.slot = destination;
+            if (destinationSupport) destinationSupport.slot = origin;
+          }
+        }
       } else if (item.command.type === "confirmReposition") {
-        const pending = state.pendingReposition; if (!pending || !pending.owners.includes(item.command.owner)) throw new RulesViolation("reposition-unavailable");
-        if (!pending.confirmed.includes(item.command.owner)) pending.confirmed.push(item.command.owner); if (pending.confirmed.length === pending.owners.length) state.pendingReposition = null;
+        const pending = state.pendingReposition;
+        if (!pending || pending.activeOwner !== item.command.owner || pending.confirmed.includes(item.command.owner)) throw new RulesViolation("reposition-unavailable");
+        pending.confirmed.push(item.command.owner);
+        const next = pending.owners.find((owner) => !pending.confirmed.includes(owner));
+        if (next == null) state.pendingReposition = null;
+        else { pending.activeOwner = next; pending.deadline = Date.now() + 30000; }
       } else if (item.command.type === "emit") stack.push({ kind: "event", event: item.command.event });
       else if (item.command.type === "advancePhase") {
         if (state.pendingDecision || state.pendingReposition) throw new RulesViolation("interaction-pending"); const order = ["manutencao", "principal", "combate", "fim"]; const index = order.indexOf(state.phase); if (state.phase === "fim") state.players.forEach((entry) => { for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn"); unit.abilities = (unit.abilities || []).filter((ability) => !ability.temporary); unit.temporaryTags = []; unit.temporarySubtypes = []; unit.combatRestrictions = (unit.combatRestrictions || []).filter((rule) => rule.duration !== "turn"); unit.attackLimit = 1; unit.damageShields = (unit.damageShields || []).filter((shield) => shield.expires !== "turn" && shield.duration !== "turn"); } entry.nextElementEffects = (entry.nextElementEffects || []).filter((effect) => effect.expires !== "turn"); }); if (state.phase === "combate" && state.players[state.active].board.some((unit) => !unit.exhausted && !unit.attackedThisTurn && !unit.summoning && !unit.stunned && !hasKeyword(unit, /atordoado/i) && attackPermissionMet(unit) && hasKeyword(unit, /indom[aá]vel/i))) throw new RulesViolation("indomitable-must-attack"); if (state.phase === "combate") state.players.forEach((entry) => entry.board.forEach((unit) => { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "combat"); if ((unit.defenseUses || 0) > 0) unit.exhausted = true; })); state.phase = order[(index + 1) % order.length]; if (state.phase === "fim") { stack.push({ kind: "event", event: { type: "onTurnEnd", owner: state.active } }); const due = (state.delayedEffects || []).filter((entry) => entry.timing === "turnEnd" && entry.owner === state.active); state.delayedEffects = (state.delayedEffects || []).filter((entry) => !due.includes(entry)); for (const delayed of due.reverse()) stack.push({ kind: "effect", effect: delayed.effect, context: delayed.context }); } if (state.phase === "combate") stack.push({ kind: "event", event: { type: "onCombatStart", owner: state.active } }); if (state.phase === "manutencao") { const previousActive = 1 - state.active; state.players[previousActive].goblinTurnCardsPlayed = 0; state.active = 1 - state.active; state.round += 1; const entry = state.players[state.active]; entry.abilityUses = {}; entry.subtypesEnteredThisTurn = {}; entry.turnCardsPlayed = 0; entry.turnSpellsPlayed = 0; for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn" && modifier.duration !== "combat"); unit.temporaryTags = []; unit.temporarySubtypes = []; unit.combatRestrictions = (unit.combatRestrictions || []).filter((rule) => rule.duration !== "turn"); unit.attackLimit = 1; unit.summoning = false; unit.attackedThisTurn = false; unit.attacksThisTurn = 0; unit.defenseUses = 0; const immobilized = unit.immobilized || hasKeyword(unit, /imobilizado/i); if (immobilized) { unit.immobilized = false; unit.tags = (unit.tags || []).filter((tag) => !/imobilizado/i.test(String(tag))); } else unit.exhausted = false; } for (const unit of entry.board || []) unit.damage = 0; stack.push({ kind: "event", event: { type: "onMaintenance", owner: state.active } }); }
@@ -665,6 +735,14 @@ export function executeCommand(inputState, command, options = {}) {
       for (const event of (state.rulesEvents || []).splice(0).reverse()) stack.push({ kind: "event", event });
       stack.push({ kind: "event", event: { type: `after:${item.effect.type}`, owner: item.context.owner, sourceId: item.context.sourceId } });
     } else if (item.kind === "event") {
+      if (item.event.type === "onDamageTaken" && item.event.amount > 0) {
+        const targetOwner = unitOwner(state, item.event.targetId);
+        const target = targetOwner >= 0 ? state.players[targetOwner].board.find((card) => (card.uid || card.id) === item.event.targetId) : null;
+        if (target?.page === 165) {
+          target.modifiers ||= [];
+          target.modifiers.push({ attack: 1, health: 0, duration: "permanent", sourceId: target.uid || target.id });
+        }
+      }
       const triggered = activeAbilities(state, item.event); for (const trigger of triggered.reverse()) { claimUsage(state, trigger.source, trigger.owner, trigger.ability); const baseTargetSteps = abilityTargetSteps(trigger.ability); const imageEntering = item.event.type === "onEnter" && (item.event.card?.generatedImage || item.event.card?.imageCard); const targetSteps = imageEntering ? baseTargetSteps.map((step) => ({ ...step, excludeIds: [...new Set([...(step.excludeIds || []), item.event.sourceId].filter(Boolean))] })) : baseTargetSteps; const context = { owner: trigger.owner, sourceId: trigger.ability.replaySourceId || trigger.source.uid, event: item.event, targetIds: item.event.targetIds || [] }; if (targetSteps.length && !context.targetIds.length) { if (!canSatisfyTargetSteps(state, trigger.owner, targetSteps)) continue; state.pendingDecision = { kind: "targets", owner: trigger.owner, effect: { replayEffects: trigger.ability.effects }, context, targetSteps, sourceName: trigger.ability.replaySourceId ? item.event.card?.name || "Primeiro Ato" : trigger.source.name || "efeito ativado" }; break; } for (const effect of [...trigger.ability.effects].reverse()) stack.push({ kind: "effect", effect, context }); }
     }
   }

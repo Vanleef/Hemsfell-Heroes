@@ -2088,10 +2088,8 @@
     "name": "Correntes Purificadoras",
     "type": "Artefato",
     "cost": 2,
-    "text": "Toda vez que a criatura equipada for alvo de um efeito, feitiço ou feitiço acelerado, você compra uma carta. Se essa carta seria enviada ao cemitério, bana-a.",
-    "tags": [
-      "Acelerado"
-    ],
+    "text": "Toda vez que a criatura equipada for alvo de um efeito de outra criatura, Feitiço ou Feitiço Acelerado, você compra uma carta. Se Correntes Purificadoras seria enviada ao Cemitério, bana-a.",
+    "tags": [],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/154",
     "hero": false,
     "imageCard": false

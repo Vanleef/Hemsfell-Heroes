@@ -1,16 +1,10 @@
 /* Hemsfell Heroes — board visual polish v20 */
-
-/* Active effects remain visual/iconographic; the old text plaque is intentionally hidden. */
 .screen-game .active-effect-label{display:none!important}
-
-/* Tessalia Commander: unique crimson command frame and animated red tactical lines. */
 .screen-game .card-frame.tessalia-commander-frame{isolation:isolate;filter:drop-shadow(0 0 clamp(.18rem,.42cqw,.5rem) rgba(226,48,48,.72))}
 .screen-game .card-frame.tessalia-commander-frame::before{content:"";position:absolute;inset:clamp(-.28rem,-.34cqw,-.16rem);z-index:5;pointer-events:none;border:clamp(2px,.16cqw,3px) solid rgba(255,76,67,.96);border-radius:clamp(.5rem,.8cqw,.85rem);box-shadow:0 0 0 1px rgba(255,196,108,.58),0 0 clamp(.55rem,1.05cqw,1.1rem) rgba(221,34,34,.58),inset 0 0 clamp(.35rem,.65cqw,.7rem) rgba(176,22,22,.2);clip-path:polygon(0 0,31% 0,35% 4%,65% 4%,69% 0,100% 0,100% 29%,96% 34%,96% 66%,100% 71%,100% 100%,69% 100%,65% 96%,35% 96%,31% 100%,0 100%,0 71%,4% 66%,4% 34%,0 29%)}
 .screen-game .card-frame.tessalia-commander-frame .original-card{box-shadow:inset 0 0 0 1px rgba(255,80,70,.72),0 0 clamp(.35rem,.7cqw,.75rem) rgba(218,38,38,.44)!important}
 .screen-game .card-frame.tessalia-commander-frame .original-card::after{content:"";position:absolute;inset:2%;pointer-events:none;border-radius:inherit;background:linear-gradient(90deg,transparent 0 12%,rgba(255,50,50,.95) 19%,transparent 29% 71%,rgba(255,50,50,.95) 81%,transparent 88%),linear-gradient(0deg,transparent 0 10%,rgba(255,76,60,.9) 19%,transparent 29% 71%,rgba(255,76,60,.9) 81%,transparent 90%);background-size:210% 100%,100% 210%;mix-blend-mode:screen;opacity:.88;animation:tessaliaCommandLines 9s linear infinite}
 @keyframes tessaliaCommandLines{0%{background-position:20% 40%,60% 80%}50%{background-position:80% 60%,40% 20%}100%{background-position:20% 40%,60% 80%}}
-
-/* Pile-zone labels and counts scale up without overflowing compact boards. */
 .screen-game .pile-zone>span,.screen-game .pile-zone .pile-title,.screen-game .pile-zone b:first-of-type{font-size:clamp(.62rem,.78cqw,.88rem)!important;line-height:1.05!important;font-weight:900!important;letter-spacing:.055em!important}
 .screen-game .pile-zone>small,.screen-game .pile-zone .pile-count,.screen-game .pile-zone strong{font-size:clamp(.64rem,.82cqw,.94rem)!important;line-height:1!important;font-weight:900!important}
 @container hemsfell-board (max-height:44rem){.screen-game .pile-zone>span,.screen-game .pile-zone .pile-title,.screen-game .pile-zone b:first-of-type{font-size:clamp(.56rem,.68cqw,.76rem)!important}.screen-game .pile-zone>small,.screen-game .pile-zone .pile-count,.screen-game .pile-zone strong{font-size:clamp(.58rem,.72cqw,.82rem)!important}}
