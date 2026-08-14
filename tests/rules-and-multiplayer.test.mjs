@@ -39,6 +39,12 @@ test("response window remains a compact responsive drawer",()=>{
  assert.doesNotMatch(uiOverrides,/\.response-dialog\{width:min\(34rem/);
 });
 
+test("multiplayer response polling and resource display stay fast and authoritative",()=>{
+ assert.match(page,/window\.setInterval\(fn,600\)/);
+ assert.match(page,/const responseBudget=\(state:Game,owner:0\|1\)=>state\.active===owner\?state\.players\[owner\]\.energy\+state\.players\[owner\]\.reserve/);
+ assert.match(page,/cost>budget\?"unavailable"/);
+});
+
 test("mulligan has a server-authoritative 30 second deadline and visible card inspection",()=>{
  assert.match(roomApi,/const mulliganDeadline = deadline\(30\)/);
  assert.match(page,/Se o tempo acabar, sua mão atual será mantida/);
@@ -83,7 +89,7 @@ test("multiplayer uses durable shared state and authenticated room participants"
  assert.match(roomApi,/action === "sync"/);
  assert.match(roomApi,/invalid participant/);
  assert.match(page,/mirrorOnlineGame/);
- assert.match(page,/setInterval\(fn,1200\)/);
+ assert.match(page,/setInterval\(fn,600\)/);
 });
 
 test("multiplayer lobby runs invitation, coin choice and one mulligan before play",()=>{

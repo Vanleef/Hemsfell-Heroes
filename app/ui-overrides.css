@@ -845,6 +845,10 @@
 .screen-game .hero-command-bar .hero-ability-chip.copy-compact p{font-size:clamp(.265rem,3.65cqi,.45rem)!important;line-height:1.05!important}
 .screen-game .hero-command-bar .hero-ability-chip.copy-dense p{font-size:clamp(.245rem,3.25cqi,.4rem)!important;line-height:1.02!important;-webkit-line-clamp:4}
 
+/* Modified costs remain legible without covering the printed card cost. */
+.screen-game .original-card .effective-cost{box-sizing:border-box!important;width:clamp(1rem,18%,1.25rem)!important;height:clamp(1rem,18%,1.25rem)!important;top:clamp(.08rem,1.2%,.16rem)!important;left:clamp(.08rem,1.2%,.16rem)!important;border-width:1px!important;font-size:clamp(.52rem,8.5cqi,.68rem)!important;line-height:1!important;box-shadow:0 0 clamp(.25rem,4cqi,.45rem) rgba(83,255,166,.72)!important}
+.screen-game .original-card .effective-cost.modified{box-shadow:0 0 clamp(.25rem,4cqi,.45rem) rgba(255,178,72,.7)!important}
+
 /* Compact priority window, stronger pile labels, and unclipped mulligan inspection. */
 .screen-game .response-overlay{inset:clamp(.4rem,1.4dvh,.8rem) clamp(.4rem,1vw,.8rem) auto auto!important;width:min(18rem,calc(100vw - .8rem))!important;max-width:calc(100vw - .8rem)!important}
 .screen-game .response-dialog{box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;max-height:min(68dvh,29rem)!important;padding:0!important;overflow-x:hidden!important;overflow-y:auto!important;container-type:inline-size}

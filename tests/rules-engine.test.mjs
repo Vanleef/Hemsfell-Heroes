@@ -817,7 +817,27 @@ test("generated Image artifacts disappear when their linked creature leaves", ()
   defaultEffectHandlers.returnToHand(game, { type: "returnToHand" }, { owner: 1, targetIds: ["host"] });
   assert.equal(game.players[0].support.length, 0);
   assert.equal(game.players[0].grave.length, 0);
-  assert.equal(game.players[0].hand[0].uid, "host");
+  assert.equal(game.players[0].hand[0].uid, undefined);
+});
+
+test("a creature returned to hand is restored to its printed card state", () => {
+  const game = state();
+  game.players[0].board.push({ uid:"changed", id:"base", _printedState:{ id:"base", name:"Impressa", type:"Criatura", cost:2, atk:3, hp:4, text:"", tags:[], abilities:[] }, name:"Alterada", type:"Criatura", cost:0, atk:9, hp:9, damage:7, exhausted:true, modifiers:[{attack:5,health:5,duration:"turn"}], tags:["Congelado"], abilities:[] });
+  defaultEffectHandlers.returnToHand(game,{type:"returnToHand"},{owner:1,targetIds:["changed"]});
+  const returned=game.players[0].hand[0];
+  assert.deepEqual({uid:returned.uid,name:returned.name,cost:returned.cost,atk:returned.atk,hp:returned.hp,damage:returned.damage,modifiers:returned.modifiers},{uid:undefined,name:"Impressa",cost:2,atk:3,hp:4,damage:undefined,modifiers:undefined});
+});
+
+test("combat damage remains authoritative across creature and hero targets", () => {
+  const creatureCombat=state(); creatureCombat.phase="combate";
+  creatureCombat.players[0].board.push({uid:"attacker",type:"Criatura",atk:4,hp:5,damage:0,tags:[],modifiers:[],abilities:[]});
+  creatureCombat.players[1].board.push({uid:"defender",type:"Criatura",atk:2,hp:6,damage:1,tags:[],modifiers:[],abilities:[]});
+  const exchanged=executeCommand(creatureCombat,{type:"attack",owner:0,attackerId:"attacker",defenderId:"defender",skipPriority:true},{priority:true}).state;
+  assert.equal(exchanged.players[0].board[0].damage,2);
+  assert.equal(exchanged.players[1].board[0].damage,5);
+  const heroCombat=state(); heroCombat.phase="combate"; heroCombat.players[0].board.push({uid:"direct",type:"Criatura",atk:4,hp:3,damage:0,tags:[],modifiers:[],abilities:[]});
+  const direct=executeCommand(heroCombat,{type:"attack",owner:0,attackerId:"direct",skipPriority:true},{priority:true}).state;
+  assert.equal(direct.players[1].life,26);
 });
 
 test("damage triggers apply only to the creature that actually survived damage", () => {
