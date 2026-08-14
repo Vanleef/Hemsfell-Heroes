@@ -1,0 +1,24 @@
+/* Tessalia Commander v28 */
+.screen-game .field-slot.creature-slot.commander-slot,
+.hs-board .field-slot.creature-slot.commander-slot{
+  border-color:#ff3e49!important;
+  background:radial-gradient(circle at 50% 40%,rgba(190,25,38,.55),rgba(82,5,13,.82) 68%,rgba(34,3,8,.92))!important;
+  box-shadow:inset 0 0 30px rgba(255,46,61,.42),0 0 14px rgba(220,28,43,.42)!important;
+}
+.screen-game .field-slot.creature-slot.commander-slot::before,
+.hs-board .field-slot.creature-slot.commander-slot::before{
+  content:none!important;
+  display:none!important;
+}
+.screen-game .field-slot.creature-slot.commander-slot:has(.original-card),
+.hs-board .field-slot.creature-slot.commander-slot:has(.original-card){
+  border-color:#ff6068!important;
+  box-shadow:inset 0 0 34px rgba(255,54,68,.48),0 0 18px rgba(225,31,47,.52)!important;
+}
+.field-negative-statuses i[data-status="Comandante"]{
+  border-color:#ff6b72!important;
+  background:radial-gradient(circle,#b32331,#4b0710)!important;
+  color:#ffd9dc!important;
+  box-shadow:0 0 8px rgba(255,48,62,.62)!important;
+  cursor:help;
+}

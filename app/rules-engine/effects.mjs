@@ -23,7 +23,7 @@ const effectTargets = (state, effect, context) => {
   return [effect.target === "attachedCreature" ? attached : attached || source];
 };
 const queueDecision = (state, effect, context, kind = effect.type) => { if (state.pendingDecision) throw new RulesViolation("decision-pending"); state.pendingDecision = { kind, effect, context, owner: context.decisionOwner ?? context.owner }; };
-const keywordsOf = (card) => card?.suffocated ? [] : [...(card?.tags || []), ...(card?.temporaryTags || []), ...(card?.grantedKeywords || []).map((value) => String(value).replace(/^(?:attachment|support):[^:]+:/, ""))];
+const keywordsOf = (card) => card?.suffocated ? [] : [...(card?.tags || []), ...(card?.temporaryTags || []), ...(card?.grantedKeywords || []).map((value) => String(value).replace(/^(?:attachment|support|duelist):[^:]+:/, ""))];
 const hasKeyword = (card, pattern) => keywordsOf(card).some((tag) => pattern.test(String(tag)));
 const normalizedName = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, " ").trim().toLowerCase();
 const effectiveUnitName = (state, unit) => {
@@ -122,6 +122,25 @@ export const defaultEffectHandlers = Object.freeze({
     const targets = state.players.flatMap((entry) => entry.board || []).filter((target) => effect.target !== "enemyCreatures" || state.players[1 - context.owner].board.includes(target));
     const amount = (effect.amount ?? 0) + (effect.amountPerEnemyCreature ?? 0) * (state.players[1 - context.owner].board?.length ?? 0);
     for (const target of targets) defaultEffectHandlers.damage(state, { ...effect, type: "damage", amount }, { ...context, targetIds: [target.uid || target.id] });
+  },
+  reduceEnemyAttackUntilControllerMaintenance(state, effect, context) {
+    const amount = Math.max(0, Number(effect.amount || 0));
+    for (const target of player(state, 1 - context.owner).board || []) {
+      target.modifiers ||= [];
+      target.modifiers.push({ attack: -amount, health: 0, duration: "untilControllerMaintenance", sourceId: context.sourceId, expiresOnMaintenanceOwner: context.owner });
+    }
+  },
+  damageByAdjacentCount(state, effect, context) {
+    const targetId = selectedIds(context)[0];
+    const target = findUnit(state, targetId);
+    if (!target) throw new RulesViolation("target-required");
+    const owner = state.players.findIndex((entry) => (entry.board || []).includes(target));
+    if (owner < 0) throw new RulesViolation("target-required");
+    const board = player(state, owner).board || [];
+    const slot = target.slot ?? board.indexOf(target);
+    const adjacent = board.filter((unit) => unit !== target && Math.abs((unit.slot ?? board.indexOf(unit)) - slot) === 1).length;
+    const amount = Math.max(0, Number(effect.baseAmount || 0) + adjacent * Number(effect.perAdjacent || 0));
+    defaultEffectHandlers.damage(state, { type: "damage", amount }, { ...context, targetIds: [targetId] });
   },
   damageAdjacent(state, effect, context) {
     const selectedId = context.targetIds?.[0];

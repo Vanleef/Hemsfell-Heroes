@@ -1,0 +1,6 @@
+/* Hero status cues v29 */
+.screen-game .player-hero:not(.enemy) .hero-status-cues{left:auto!important;right:7px!important;top:auto!important;bottom:-80px!important;transform:none!important;z-index:42!important;gap:6px!important;animation:heroStatusCuePulse 1.65s ease-in-out infinite}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.cost{top:auto!important;bottom:-196px!important}
+.screen-game .player-hero:not(.enemy) .hero-status-cues span{min-width:142px!important;padding:7px 12px!important;border:2px solid color-mix(in srgb,var(--deck,#69d5ff) 78%,white)!important;border-radius:9px!important;background:linear-gradient(135deg,color-mix(in srgb,var(--deck,#69d5ff) 34%,#07131e),#07131ef5)!important;color:#fff!important;text-align:center!important;font:900 11px/1.15 system-ui!important;letter-spacing:.075em!important;text-transform:uppercase!important;box-shadow:0 0 0 1px #ffffff24,0 0 18px color-mix(in srgb,var(--deck,#69d5ff) 64%,transparent),0 7px 18px #000b!important;text-shadow:0 1px 4px #000!important}
+.screen-game .player-hero:not(.enemy) .hero-status-cues span::before{content:"✦ ";color:#fff4a6}
+@keyframes heroStatusCuePulse{0%,100%{filter:brightness(1);transform:translateY(0)}50%{filter:brightness(1.24);transform:translateY(-2px)}}
