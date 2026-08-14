@@ -3,7 +3,10 @@ import {readFile} from "node:fs/promises";
 import test from "node:test";
 
 const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
-const css=await readFile(new URL("../app/lab.css",import.meta.url),"utf8");
+const css=(await Promise.all([
+ readFile(new URL("../app/lab.css",import.meta.url),"utf8"),
+ readFile(new URL("../app/lab-legacy.css",import.meta.url),"utf8"),
+])).join("\n");
 const roomApi=await readFile(new URL("../app/api/rooms/[id]/route.ts",import.meta.url),"utf8");
 const roomMachine=await readFile(new URL("../app/api/rooms/machine.ts",import.meta.url),"utf8");
 const roomStore=await readFile(new URL("../app/api/rooms/store.ts",import.meta.url),"utf8");
