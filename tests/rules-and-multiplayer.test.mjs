@@ -123,7 +123,7 @@ test("Uruk I resolves only the latest elemental spell at end of turn",()=>{
 test("visual effects coalesce accidental duplicates but explicit copies may repeat",()=>{
  assert.match(page,/visualFxDedupeRef/);
  assert.match(page,/allowRepeat=false/);
- assert.match(page,/now-previous<1450/);
+ assert.match(page,/now-previous<3600/);
  assert.match(page,/allowVisualRepeat=false/);
  assert.match(page,/activation>0/);
 });
