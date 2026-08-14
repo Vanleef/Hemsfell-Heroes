@@ -87,6 +87,90 @@ test("Orbe Cromático simula o elemento escolhido e ainda causa 1 de dano", () =
   assert.throws(() => executeCommand(empty, { type: "playCard", owner: 0, cardId: "p55", chosenElement: "Fogo", targetIds: [] }), /play-condition-not-met|invalid-target-count/);
 });
 
+test("Feiticeira Espectral consome X marcadores e busca um feitiço de custo até X", () => {
+  const game = state(), witch = { ...printed(80), uid: "witch", slot: 0, markers: 2, summoning: false, exhausted: false };
+  const cheap = spell("cheap", "Água"), expensive = { ...spell("expensive", "Fogo"), cost: 3 };
+  cheap.cost = 2; game.players[0].board.push(witch); game.players[0].deck.push(cheap, expensive);
+  const ability = witch.abilities.find((entry) => entry.trigger === "activated");
+  let result = executeCommand(game, { type: "activate", owner: 0, sourceId: witch.uid, abilityId: ability.id, markerAmount: 2 }).state;
+  assert.equal(result.players[0].board[0].markers, 0);
+  assert.equal(result.pendingDecision.kind, "search");
+  assert.equal(result.pendingDecision.context.markerAmount, 2);
+  result = executeCommand(result, { type: "resolveDecision", owner: 0, selectedCardIds: [cheap.id] }).state;
+  assert.equal(result.players[0].hand.at(-1).id, cheap.id);
+  assert.ok(result.players[0].deck.some((card) => card.id === expensive.id));
+});
+
+test("Tufão devolve todas as criaturas aos donos e dissipa Imagens", () => {
+  const game = state();
+  game.players[0].board.push(unit("ally"), unit("ally-image", 0, { imageCard: true, generatedImage: true }));
+  game.players[1].board.push(unit("enemy", 1));
+  const result = cast(game, printed(66, { cost: 0 }));
+  assert.equal(result.players[0].board.length + result.players[1].board.length, 0);
+  assert.ok(result.players[0].hand.some((card) => card.id === "ally"));
+  assert.ok(result.players[1].hand.some((card) => card.id === "enemy"));
+  assert.ok(!result.players[0].hand.some((card) => card.id === "ally-image"));
+});
+
+test("Levantar Maré em resposta permite escolher o Clone de Água como defensor", () => {
+  const game = state(); game.phase = "combate"; game.players[0].board.push(unit("attacker"));
+  game.players[1].reserve = 3; game.players[1].hand.push(printed(61, { cost: 0 })); game.players[1].extraDeck.push(printed(81));
+  let result = executeCommand(game, { type: "declareAttack", owner: 0, attackerId: "attacker" }, { priority: true }).state;
+  result = executeCommand(result, { type: "playCard", owner: 1, cardId: "p61", hasPriority: true }, { priority: true }).state;
+  result = executeCommand(result, { type: "passPriority", owner: 0 }, { priority: true }).state;
+  result = executeCommand(result, { type: "passPriority", owner: 1 }, { priority: true }).state;
+  const clone = result.players[1].board.find((card) => /clone de água/i.test(card.name));
+  assert.ok(clone);
+  result = executeCommand(result, { type: "passPriority", owner: 1 }, { priority: true }).state;
+  result = executeCommand(result, { type: "passPriority", owner: 0 }, { priority: true }).state;
+  assert.equal(result.combatAction.stage, "choosing");
+  result = executeCommand(result, { type: "selectDefender", owner: 1, defenderId: clone.uid }).state;
+  assert.equal(result.combatAction.defenderUid, clone.uid);
+});
+
+test("Uruk III repete no fim do turno o último feitiço usado naquele turno", () => {
+  let game = state(); game.players[0].heroId = "uruk"; game.players[0].level = 3; game.players[1].board.push(unit("uruk-target", 1, { hp: 5 }));
+  game = cast(game, spell("last-spell", "Fogo", [{ type: "damage", amount: 1, target: "anyCreature", selections: 1 }]), ["uruk-target"]);
+  assert.equal(game.players[1].board[0].damage, 1);
+  game.phase = "combate";
+  game = executeCommand(game, { type: "advancePhase", owner: 0 }).state;
+  assert.equal(game.phase, "fim");
+  assert.equal(game.pendingDecision.kind, "targets");
+  game = executeCommand(game, { type: "resolveDecision", owner: 0, targetIds: ["enemy-hero"] }).state;
+  assert.equal(game.players[1].board[0].damage, 2);
+});
+
+test("retornos dos demais decks reutilizam a regra de Imagens e bônus de subtipo", () => {
+  let gelado = state(); gelado.players[1].board.push(unit("cat", 1, { cost: 4, subtypes: ["Gato"] }));
+  gelado = cast(gelado, printed(224, { cost: 0 }), ["cat"]);
+  assert.equal(gelado.players[1].hand[0].costModifier, -4);
+  assert.equal(gelado.players[1].hand[0].costModifierExpiresRound, 2);
+
+  let latte = state(); latte.players[1].board.push(unit("cat-latte", 1, { subtypes: ["Gato"] }));
+  latte = cast(latte, printed(240, { cost: 0 }), ["cat-latte"]);
+  assert.ok(latte.players[1].hand[0].tags.includes("Investida"));
+
+  let image = state(); image.players[1].board.push(unit("cat-image", 1, { imageCard: true, generatedImage: true, subtypes: ["Gato"] }));
+  image = cast(image, printed(224, { cost: 0 }), ["cat-image"]);
+  assert.equal(image.players[1].hand.length, 0);
+});
+
+test("Contramedida e ativáveis de marcadores preservam quantidade e alvo", () => {
+  let counter = state(); counter.players[0].board.push(unit("one")); counter.players[1].board.push(unit("two", 1));
+  counter = cast(counter, printed(288, { cost: 0 }), ["one", "two"]);
+  assert.equal(counter.players[0].board.length + counter.players[1].board.length, 0);
+
+  let marker = state(), source = { ...printed(292), uid: "marker-source", slot: 0, summoning: false, exhausted: false, enteredRound: 0 }, target = unit("marker-target", 1, { markers: 0 });
+  marker.players[0].board.push(source); marker.players[1].board.push(target);
+  marker = executeCommand(marker, { type: "activate", owner: 0, sourceId: source.uid, abilityId: source.abilities[0].id, targetIds: [target.uid] }).state;
+  assert.equal(marker.players[1].board[0].markers, 1);
+
+  let ready = state(), readySource = { ...printed(294), uid: "ready-source", slot: 0, markers: 2, summoning: false, exhausted: false }, turned = unit("turned", 1, { exhausted: true });
+  ready.players[0].board.push(readySource); ready.players[1].board.push(turned);
+  ready = executeCommand(ready, { type: "activate", owner: 0, sourceId: readySource.uid, abilityId: readySource.abilities[0].id, targetIds: [turned.uid] }).state;
+  assert.equal(ready.players[1].board[0].exhausted, false);
+});
+
 test("Bolha protege o próximo dano do herói sem alvo base", () => {
   let game = state(); game = cast(game, printed(62, { cost: 0 })); assert.equal(game.players[0].damageShields.length, 1);
   game = cast(game, spell("self-hit", "Terra", [{ type: "damage", amount: 5, target: "anyCharacter", selections: 1 }]), ["ally-hero"]);

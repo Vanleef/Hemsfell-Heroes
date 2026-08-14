@@ -190,15 +190,34 @@ export const defaultEffectHandlers = Object.freeze({
     for (const id of context.targetIds || []) { const removed = removeFromZones(state, id); if (removed) player(state, removed.owner).obscuro.push(cleanCardForHiddenZone(removed.card)); }
   },
   returnToHand(state, effect, context) {
-    for (const id of context.targetIds || []) { const target = findUnit(state, id); if (!target) throw new RulesViolation("target-required"); if (effect.requireExhausted && !target.exhausted) throw new RulesViolation("target-must-be-exhausted"); if (effect.maxCost != null && (target.cost ?? 0) > effect.maxCost) throw new RulesViolation("target-cost-too-high"); const removed = removeFromZones(state, id); if (removed) player(state, removed.owner).hand.push(cleanCardForHiddenZone(removed.card)); }
+    for (const id of context.targetIds || []) { const target = findUnit(state, id); if (!target) throw new RulesViolation("target-required"); if (effect.requireExhausted && !target.exhausted) throw new RulesViolation("target-must-be-exhausted"); if (effect.maxCost != null && (target.cost ?? 0) > effect.maxCost) throw new RulesViolation("target-cost-too-high"); const removed = removeFromZones(state, id); if (removed && !removed.card.generatedImage && !removed.card.imageCard) player(state, removed.owner).hand.push(cleanCardForHiddenZone(removed.card)); }
+  },
+  returnAllCreaturesToOwnersHands(state) {
+    const creatureIds = state.players.flatMap((entry) => (entry.board || []).map((card) => card.uid || card.id));
+    for (const id of creatureIds) {
+      const removed = removeFromZones(state, id);
+      if (removed && !removed.card.generatedImage && !removed.card.imageCard) player(state, removed.owner).hand.push(cleanCardForHiddenZone(removed.card));
+    }
+  },
+  returnToHandWithSubtypeBonus(state, effect, context) {
+    const id = context.targetIds?.[0], target = findUnit(state, id);
+    if (!target) throw new RulesViolation("target-required");
+    const qualifies = !effect.subtype || hasSubtype(target, effect.subtype), removed = removeFromZones(state, id);
+    if (!removed || removed.card.generatedImage || removed.card.imageCard) return;
+    const returned = cleanCardForHiddenZone(removed.card);
+    if (qualifies && effect.freeThisTurn) { returned.costModifier = -(returned.cost || 0); returned.costModifierExpiresRound = (state.round || 0) + 1; }
+    if (qualifies && effect.keywordOnNextPlay && !(returned.tags || []).some((tag) => normalizedName(tag) === normalizedName(effect.keywordOnNextPlay))) returned.tags = [...(returned.tags || []), effect.keywordOnNextPlay];
+    player(state, removed.owner).hand.push(returned);
   },
   returnToHandAndTaxNextCreature(state, effect, context) {
     const id = context.targetIds?.[0], target = findUnit(state, id); if (!target) throw new RulesViolation("target-required");
     const removed = removeFromZones(state, id); if (!removed) throw new RulesViolation("target-required");
     const enhanced = (player(state, context.owner).nextElementEffects || []).some((promise) => normalizedName(promise.element) === normalizedName("Ar"));
-    const returned = cleanCardForHiddenZone(removed.card);
-    if (enhanced) returned.attackZeroUntilOwnerMaintenance = context.owner;
-    player(state, removed.owner).hand.push(returned);
+    if (!removed.card.generatedImage && !removed.card.imageCard) {
+      const returned = cleanCardForHiddenZone(removed.card);
+      if (enhanced) returned.attackZeroUntilOwnerMaintenance = context.owner;
+      player(state, removed.owner).hand.push(returned);
+    }
     const taxed = player(state, removed.owner); taxed.nextCreatureTaxes ||= []; taxed.nextCreatureTaxes.push({ amount: effect.tax || 1, createdRound: state.round, sourceId: context.sourceId });
   },
   tap(state, effect, context) { const target = findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); target.exhausted = true; },
@@ -381,8 +400,17 @@ export const defaultEffectHandlers = Object.freeze({
   reduceStatFloor(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); const base = effect.stat === "attack" ? target.atk || 0 : target.hp || 1, existing = (target.modifiers || []).reduce((sum, item) => sum + (effect.stat === "attack" ? item.attack || 0 : item.health || 0), 0), reduction = Math.min(effect.amount || 0, Math.max(0, base + existing - (effect.minimum || 1))); defaultEffectHandlers.modifyStats(state, { type: "modifyStats", attack: effect.stat === "attack" ? -reduction : 0, health: effect.stat === "health" ? -reduction : 0, duration: "permanent" }, context); },
   empowerSpellDamage(state, effect, context) { if (!context.event?.card) return; context.event.card.spellDamageBonus = (context.event.card.spellDamageBonus || 0) + (effect.additionalDamage || 0); context.event.card.spellDamageTrample = !!effect.trample; },
   grantRobustIfSpellPlayedThisTurn(state, effect, context) { if (!(player(state, context.owner).turnSpellsPlayed || 0)) return; const source = findUnit(state, context.sourceId); if (source) { source.grantedKeywords ||= []; if (!source.grantedKeywords.includes("Robusto")) source.grantedKeywords.push("Robusto"); } },
-  resolveLastSpellElement(state, effect, context) { const entry = player(state, context.owner), element = entry.lastSpellElement; if (element === "Terra") defaultEffectHandlers.draw(state, { type: "draw", amount: 1 }, context); else if (element === "Água") defaultEffectHandlers.heal(state, { type: "heal", amount: 1, target: "controllerHero" }, context); else if (element === "Ar") defaultEffectHandlers.gainEnergy(state, { type: "gainEnergy", amount: 1, destination: "main" }, context); else if (element === "Fogo") queueDecision(state, { choices: [], target: "anyCharacter", selections: 1, amount: 1 }, context, "element-damage-target"); },
-  repeatLastSpell(state, effect, context) { const entry = player(state, context.owner); if (entry.lastSpellEffects) for (const nested of entry.lastSpellEffects) applyEffect(state, nested, context); },
+  resolveLastSpellElement(state, effect, context) { const entry = player(state, context.owner), element = entry.lastSpellElement; if (element === "Terra") defaultEffectHandlers.draw(state, { type: "draw", amount: 1 }, context); else if (element === "Água") defaultEffectHandlers.heal(state, { type: "heal", amount: 1, target: "controllerHero" }, context); else if (element === "Ar") defaultEffectHandlers.gainEnergy(state, { type: "gainEnergy", amount: 1, destination: "main" }, context); else if (element === "Fogo") { if (state.pendingDecision) throw new RulesViolation("decision-pending"); state.pendingDecision = { kind: "targets", owner: context.owner, effect: { replayEffects: [{ type: "damage", target: "anyCharacter", selections: 1, amount: 1 }] }, context, targetSteps: [{ scope: "anyCharacter", role: "effect" }], sourceName: "Uruk I · Fogo" }; } },
+  repeatLastSpell(state, effect, context) {
+    const entry = player(state, context.owner), replay = entry.lastSpellReplay;
+    delete entry.lastSpellReplay;
+    if (!replay?.effects?.length) return;
+    const replayContext = { ...context, sourceId: replay.sourceId, effectSource: replay.card, targetIds: replay.targetIds || [], targetId: replay.targetIds?.[0], chosenElement: replay.chosenElement, selectedImageName: replay.selectedImageName, cafeEffect: replay.cafeEffect, elementalTargetId: replay.elementalTargetId };
+    for (const nested of replay.effects) {
+      try { applyEffect(state, nested, replayContext); }
+      catch (error) { if (!(error instanceof RulesViolation) || !["target-required", "invalid-target", "invalid-target-subtype"].includes(error.code)) throw error; }
+    }
+  },
   damageHeroFromTurnDeaths(state, effect, context) { const amount = player(state, context.owner).turnDeaths || 0; defaultEffectHandlers.damage(state, { type: "damage", amount }, { ...context, targetIds: ["enemy-hero"] }); },
   resurrectByDoubleMarkerCost(state, effect, context) { const source = findUnit(state, context.sourceId), entry = player(state, context.owner); const eligible = entry.grave.filter((card) => card.type === effect.cardType && (card.cost || 0) * 2 <= markerTotal(source)); if (!eligible.length) throw new RulesViolation("ability-not-available"); queueDecision(state, { ...effect, choices: eligible.map((card) => card.uid || card.id) }, context, "grave-resurrect"); },
   healFromMarkersRemoved(state, effect, context) { const entry = player(state, context.owner); entry.life = Math.min(entry.maxLife ?? 30, entry.life + (context.markerAmount || 0)); },

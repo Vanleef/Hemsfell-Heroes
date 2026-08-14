@@ -37,9 +37,12 @@ const consumeElementalPromise = (before, after, command) => {
   if (!card || card.type !== "Feitiço") return;
   const stillInHand = after.players?.[command.owner]?.hand?.some((candidate) => candidate.id === command.cardId || candidate.uid === command.cardId);
   if (stillInHand) return;
+  const afterEntry = after.players[command.owner];
+  const replayEffects = (card.abilities || []).filter((ability) => ability.trigger === "onPlay").flatMap((ability) => ability.effects || []);
+  afterEntry.lastSpellReplay = { sourceId: card.id, card: clone(card), effects: clone(replayEffects), targetIds: clone(command.targetIds || []), chosenElement: command.chosenElement, selectedImageName: command.selectedImageName, cafeEffect: command.cafeEffect, elementalTargetId: command.elementalTargetId };
   const element = spellElement(card, command);
   if (!element) return;
-  const beforeEntry = before.players[command.owner], afterEntry = after.players[command.owner];
+  const beforeEntry = before.players[command.owner];
   const pendingBefore = clone(beforeEntry.nextElementEffects || []);
   const consumed = pendingBefore.filter((effect) => fold(effect.element) === fold(element));
   const next = [...(afterEntry.nextElementEffects || [])];
@@ -60,6 +63,7 @@ const expireElementalPromises = (before, after, command) => {
   if (command.type === "advancePhase" && before.phase === "fim") {
     const owner = before.active;
     if (after.players?.[owner]) { after.players[owner].nextElementEffects = []; after.players[owner].elementChain = undefined; }
+    if (after.players?.[after.active]) delete after.players[after.active].lastSpellReplay;
   }
 };
 const markDamagedOwner = (state, sourceId, owner) => {

@@ -360,6 +360,12 @@ function activeAbilities(state, event) {
       result.push({ source: heroSource, owner, ability: { id: "goblin-hero-level-2", trigger: "onMaintenance", effects: [{ type: "draw", amount: 1 }] } });
     }
   });
+  state.players.forEach((entry, owner) => {
+    if (entry.heroId !== "uruk" || event.type !== "onTurnEnd" || event.owner !== owner) return;
+    const heroSource = { uid: `uruk-hero-${owner}`, id: `uruk-hero-${owner}`, name: "Uruk, a Encantriz", slot: -1 };
+    if ((entry.level || 1) >= 1) result.push({ source: heroSource, owner, ability: { id: "uruk-hero-level-1", trigger: "onTurnEnd", effects: [{ type: "resolveLastSpellElement" }] } });
+    if ((entry.level || 1) >= 3) result.push({ source: heroSource, owner, ability: { id: "uruk-hero-level-3", trigger: "onTurnEnd", effects: [{ type: "repeatLastSpell" }] } });
+  });
   return result.sort((a, b) => a.owner - b.owner || (a.source.slot ?? 99) - (b.source.slot ?? 99) || String(a.ability.id).localeCompare(String(b.ability.id)));
 }
 

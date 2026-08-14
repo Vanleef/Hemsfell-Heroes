@@ -818,3 +818,20 @@
 .target-banner span{max-width:30rem;overflow:hidden;color:#d9ad55;font:700 .68rem/1.2 system-ui;text-overflow:ellipsis;white-space:nowrap}
 .target-banner button{flex:0 0 auto;border:1px solid #a94d68;background:#24111b;color:#fff;padding:.42rem .65rem;font:700 .62rem system-ui;text-transform:uppercase}
 @media(max-width:40rem){.target-banner{top:.35rem;width:calc(100vw - .7rem);flex-wrap:wrap}.target-banner>div{flex-basis:100%}.target-banner span{white-space:normal}}
+
+/* Compact match typography and explicit drag affordances. */
+.screen-game .hero-command-bar .hero-ability-chip p{font-size:clamp(.28rem,.46cqw,.5rem)!important;line-height:1.12!important}
+.screen-game .hero-command-bar .hero-ability-chip>span>b{font-size:clamp(.26rem,.38cqw,.42rem)!important}
+.screen-game .field-energy>div>b,.screen-game .field-energy>div>strong,.screen-game .field-energy .reserve-track>b{font-size:clamp(.38rem,.56cqw,.58rem)!important}
+.screen-game .field-energy i{height:clamp(.1rem,.26cqh,.19rem)!important;border-width:1px!important}
+.screen-game .target-banner b{font-size:.6rem!important;letter-spacing:.115em!important}
+.screen-game .target-banner span{font-size:.58rem!important}
+.screen-game .target-banner button{font-size:.55rem!important;padding:.36rem .58rem!important}
+.screen-game .hs-board[data-card-dragging="true"] .card-tooltip{display:none!important}
+.screen-game .original-card.is-image-card{border-color:#e9c85a!important;box-shadow:0 0 0 1px #ffe88dcc,0 0 clamp(.4rem,.8cqw,.85rem) #e8c6548f!important}
+.screen-game .image-badge{display:none!important}
+.screen-game .terrain-slot{min-width:0!important;overflow:visible!important}
+.screen-game .terrain-slot>em{max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere!important;text-align:center!important;line-height:1.08!important}
+.screen-game .terrain-slot.can-drop{border-color:#ffe16f!important;background:radial-gradient(circle,#d8b34838,#0c2227e8 72%)!important;box-shadow:0 0 0 2px #ffe16f99,0 0 clamp(.85rem,1.5cqw,1.6rem) #ffc93eaa,inset 0 0 clamp(.55rem,1cqw,1rem) #ffd76038!important;animation:terrainDropPulse 1s ease-in-out infinite alternate!important}
+.screen-game .terrain-slot.can-drop>em{color:#fff1a9!important;text-shadow:0 0 .55rem #ffd85f!important}
+@keyframes terrainDropPulse{to{filter:brightness(1.16);transform:scale(1.035)}}
