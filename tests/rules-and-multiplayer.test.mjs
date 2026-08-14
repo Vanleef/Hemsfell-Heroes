@@ -73,8 +73,9 @@ test("online priority and authoritative deadlines prevent simultaneous actions",
 
 
 test("deferred elemental text never forces an immediate target",()=>{
- assert.match(page,/const immediateEffectText=.*split\(\/neste turno/);
- assert.match(page,/const targetRule=.*immediateEffectText\(c\)/);
+ assert.match(page,/const immediateCardEffectText=.*split\(\/neste turno/);
+ assert.match(page,/const cardPlayEffectText=.*immediateCardEffectText\(card\)/);
+ assert.match(page,/const targetRule=.*targetScopeAt\(c,step\)/);
  assert.doesNotMatch(page,/const targetRule=.*test\(c\.text\).*atordoad/);
 });
 
