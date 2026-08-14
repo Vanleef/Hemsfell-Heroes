@@ -12,6 +12,7 @@ const replaceOnce = (source, before, after, label) => {
   let source = await read(path);
 
   source = replaceOnce(
+    source,
     'elementChain?:{element:ElementName;effect:"Sufocado"|"Atordoado"|"Congelado"|"Imobilizado"};lastElement?:ElementName;',
     'elementChain?:{element:ElementName;effect:"Sufocado"|"Atordoado"|"Congelado"|"Imobilizado"};nextElementEffects?:Array<{element:ElementName;keyword:string;expires?:string}>;lastElement?:ElementName;',
     "Player authoritative elemental status type"
