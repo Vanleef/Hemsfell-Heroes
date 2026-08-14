@@ -1,0 +1,74 @@
+name: Canonical response hotfix retry
+
+on:
+  push:
+    branches:
+      - fix/response-uruk-priority-rules
+    paths:
+      - .github/workflows/page-hotfix-retry.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/response-uruk-priority-rules
+          fetch-depth: 0
+      - name: Patch canonical page
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          path=Path('app/page.tsx')
+          text=path.read_text()
+          def rep(old,new,count=1):
+              global text
+              found=text.count(old)
+              if found<1: raise SystemExit(f'patch point missing: {old[:150]!r}')
+              text=text.replace(old,new,count)
+          rep('staticModifiers?:any[];lastDamagedBy?:string;activatedThisTurn?:boolean;','staticModifiers?:any[];lastDamagedBy?:string;damagedOwnersThisTurn?:number[];activatedThisTurn?:boolean;')
+          rep('pendingAction?:Record<string,unknown>;pendingResponse?:PendingResponse|null;','pendingAction?:Record<string,unknown>;priorityStack?:Array<{kind?:string;actor?:0|1;label?:string;command?:Record<string,unknown>}>;pendingResponse?:PendingResponse|null;')
+          rep('targetSteps?:Array<{scope:string;role?:string;requiredSubtype?:string;requiredName?:string;imageOnly?:boolean;excludeIds?:string[];maxCost?:number}>;','targetSteps?:Array<{scope:string;role?:string;requiredSubtype?:string;requiredName?:string;imageOnly?:boolean;excludeIds?:string[];maxCost?:number;requireExhausted?:boolean;requiresDamagedOwnerThisTurn?:boolean}>;')
+          rep('const currentAtk=(u:Unit,p?:Player)=>{const modifier=statModifiers(p,u);return u.frozen?0:(u.atk||0)+modifier.atk};','const currentAtk=(u:Unit,p?:Player)=>{const modifier=statModifiers(p,u);return u.frozen?0:Math.max(0,(u.atk||0)+modifier.atk)};\nconst markCreatureDamage=(source:CardDef|Unit,damagedOwner:0|1)=>{if(!(\"uid\" in source))return;source.damagedOwnersThisTurn||=[];if(!source.damagedOwnersThisTurn.includes(damagedOwner))source.damagedOwnersThisTurn.push(damagedOwner)};')
+          rep('p.elementChain=undefined;p.lastElement=undefined;p.lastElementSource=undefined;','p.elementChain=undefined;p.nextElementEffects=[];p.lastElement=undefined;p.lastElementSource=undefined;')
+          rep(" if(source.pendingAction) mirrored.pendingAction={...structuredClone(source.pendingAction),owner:typeof source.pendingAction.owner==='number'?(source.pendingAction.owner===0?1:0):source.pendingAction.owner};", " if(source.pendingAction) mirrored.pendingAction={...structuredClone(source.pendingAction),owner:typeof source.pendingAction.owner==='number'?(source.pendingAction.owner===0?1:0):source.pendingAction.owner};\n if(source.priorityStack) mirrored.priorityStack=source.priorityStack.map(frame=>({...structuredClone(frame),actor:typeof frame.actor===\"number\"?(frame.actor===0?1:0):frame.actor,command:frame.command?{...structuredClone(frame.command),owner:typeof frame.command.owner===\"number\"?(frame.command.owner===0?1:0):frame.command.owner}:frame.command}));")
+          rep('const canChooseAllTargets=(c:CardDef,steps:Array<{scope:string;role?:string;requireExhausted?:boolean}>)=>','const canChooseAllTargets=(c:CardDef,steps:Array<{scope:string;role?:string;requireExhausted?:boolean;requiresDamagedOwnerThisTurn?:boolean}>)=>')
+          rep('if(isValidTarget(step as any,0,targetOwner,"creature")&&(!step.requireExhausted||unit.exhausted)&&(!(step.role==="effect"&&subtype)||hasSubtype(unit,subtype)))ids.push(unit.uid)','if(isValidTarget(step as any,0,targetOwner,"creature")&&(!step.requireExhausted||unit.exhausted)&&(!step.requiresDamagedOwnerThisTurn||(unit.damagedOwnersThisTurn||[]).includes(0))&&(!(step.role==="effect"&&subtype)||hasSubtype(unit,subtype)))ids.push(unit.uid)')
+          rep('if(cost>resource||asResponse&&(!isFast(snapshot)||game.active===owner))return;','if(cost>resource||asResponse&&!isFast(snapshot))return;')
+          rep('if (g.active === owner || !isFast(c) || paidCost > playableEnergy(c,p,true)) return;','if (!isFast(c) || paidCost > playableEnergy(c,p,true)) return;')
+          rep('step=policy.steps?.[stepIndex]||{scope:policy.scope,role:"effect"},targetOwner=','step:any=policy.steps?.[stepIndex]||{scope:policy.scope,role:"effect"},targetOwner=')
+          rep('if(!isValidTarget(step,0,targetOwner,targetKind)){update(g=>log(g,"Esse alvo não atende ao delimitador do efeito.","danger"));return}const subtype=','if(!isValidTarget(step,0,targetOwner,targetKind)){update(g=>log(g,"Esse alvo não atende ao delimitador do efeito.","danger"));return}if(step.requiresDamagedOwnerThisTurn&&targetUnit&&!(targetUnit.damagedOwnersThisTurn||[]).includes(0)){update(g=>log(g,`${targetUnit.name} não causou dano a você ou a uma criatura sua neste turno.`,"danger"));return}const subtype=')
+          rep('const localTargetableCreatureIds=defenseChoice?defenseTargets:heroAbilityTargetIds;','const baseLocalTargetableCreatureIds=defenseChoice?defenseTargets:heroAbilityTargetIds;')
+          rep('const targetCard=targeting?.kind==="spell"&&game?game.players[0].hand[targeting.cardIndex!]:undefined;','const targetCard=targeting?.kind==="spell"&&game?game.players[0].hand[targeting.cardIndex!]:undefined;\n const targetPolicyStep:any=targetCard?playTargetPolicy(targetCard).steps?.[targeting?.selected?.length||0]:undefined;\n const conditionalSpellTargetIds=targetPolicyStep?.requiresDamagedOwnerThisTurn&&game?game.players.flatMap(player=>player.board.filter(unit=>(unit.damagedOwnersThisTurn||[]).includes(0)).map(unit=>unit.uid)):undefined;\n const localTargetableCreatureIds=baseLocalTargetableCreatureIds??conditionalSpellTargetIds;')
+          rep('enemyTarget={enemyTarget} supportTargetClass={enemyPermanentTarget?"target-enemy":""}','enemyTarget={enemyTarget} targetableCreatureIds={conditionalSpellTargetIds} supportTargetClass={enemyPermanentTarget?"target-enemy":""}')
+          rep('allyTarget&&(!targetableCreatureIds||targetableCreatureIds.includes(creature.uid))?"target-ally":enemyTarget?"target-enemy":""','allyTarget&&(!targetableCreatureIds||targetableCreatureIds.includes(creature.uid))?"target-ally":enemyTarget&&(!targetableCreatureIds||targetableCreatureIds.includes(creature.uid))?"target-enemy":""')
+          rep('onClick={repositionActive?undefined:creatureRuleTarget&&onRuleTarget?()=>onRuleTarget(creature.uid):onCreature?()=>onCreature(creature.uid):undefined}','onClick={repositionActive?undefined:creatureRuleTarget&&onRuleTarget?()=>onRuleTarget(creature.uid):onCreature&&(!targetableCreatureIds||targetableCreatureIds.includes(creature.uid))?()=>onCreature(creature.uid):undefined}')
+          rep(' if(player.elementChain)heroCueItems.push({key:`legacy-element-${player.elementChain.element}`,label:`${player.elementChain.element} + ${player.elementChain.effect}`,title:`O próximo Feitiço de ${player.elementChain.element} aplica ${player.elementChain.effect} adicional.`,tone:"element"});\n for(const effect of player.nextElementEffects||[])heroCueItems.push({key:`element-${effect.element}-${effect.keyword}`,label:`${effect.element} + ${effect.keyword}`,title:`O próximo Feitiço de ${effect.element} aplica ${effect.keyword} adicional.`,tone:"element"});',' const authoritativeElementCues=player.nextElementEffects||[];\n if(authoritativeElementCues.length){for(const effect of authoritativeElementCues)heroCueItems.push({key:`element-${effect.element}-${effect.keyword}`,label:`Próx. ${effect.element}: ${effect.keyword}`,title:`O próximo Feitiço de ${effect.element} aplica ${effect.keyword} adicional.`,tone:"element"})}\n else if(player.elementChain)heroCueItems.push({key:`legacy-element-${player.elementChain.element}`,label:`Próx. ${player.elementChain.element}: ${player.elementChain.effect}`,title:`O próximo Feitiço de ${player.elementChain.element} aplica ${player.elementChain.effect} adicional.`,tone:"element"});')
+          rep('finishImageEffects(g,owner);const p=g.players[owner];p.goblinTurnCardsPlayed=0;bankRemainingEnergy(p);','finishImageEffects(g,owner);const p=g.players[owner];p.nextElementEffects=[];p.elementChain=undefined;p.goblinTurnCardsPlayed=0;bankRemainingEnergy(p);')
+          rep('resolveUrukLevelOne(g,1,urukFireTarget);finishImageEffects(g,1);p.goblinTurnCardsPlayed=0;bankRemainingEnergy(p);','resolveUrukLevelOne(g,1,urukFireTarget);finishImageEffects(g,1);p.nextElementEffects=[];p.elementChain=undefined;p.goblinTurnCardsPlayed=0;bankRemainingEnergy(p);')
+          rep('dP.life-=damage;aP.damageDealt+=damage;if(hasKeyword(aP,live,"Roubo de Vida"))','dP.life-=damage;aP.damageDealt+=damage;if(damage>0)markCreatureDamage(live,defenderOwner);if(hasKeyword(aP,live,"Roubo de Vida"))')
+          rep('if(attackHits){liveDefender.damage+=resolvedAttackDamage;liveDefender.lastDamagedBy=liveAttacker.uid}','if(attackHits){liveDefender.damage+=resolvedAttackDamage;liveDefender.lastDamagedBy=liveAttacker.uid;if(resolvedAttackDamage>0)markCreatureDamage(liveAttacker,defenderOwner)}')
+          rep('if(counterHits){liveAttacker.damage+=counterDamage;liveAttacker.lastDamagedBy=liveDefender.uid;','if(counterHits){liveAttacker.damage+=counterDamage;liveAttacker.lastDamagedBy=liveDefender.uid;if(counterDamage>0)markCreatureDamage(liveDefender,action.attackerOwner);')
+          rep('live.damage+=reduced;if(c.tags.some(tag=>cleanName(tag)==="roubo de vida"))','live.damage+=reduced;if(reduced>0)markCreatureDamage(c,targetOwner);if(c.tags.some(tag=>cleanName(tag)==="roubo de vida"))')
+          rep('if(id==="enemy-hero"){o.life-=n;p.damageDealt+=n;if(c.tags.some(tag=>cleanName(tag)==="roubo de vida"))','if(id==="enemy-hero"){o.life-=n;p.damageDealt+=n;if(n>0)markCreatureDamage(c,owner===0?1:0);if(c.tags.some(tag=>cleanName(tag)==="roubo de vida"))')
+          rep('else if(id==="ally-hero"){p.life-=n;log(g,`${c.name} causou ${n} de dano ao próprio herói.`,"damage")}','else if(id==="ally-hero"){p.life-=n;if(n>0)markCreatureDamage(c,owner);log(g,`${c.name} causou ${n} de dano ao próprio herói.`,"damage")}')
+          rep('if(hasFaction(entering,"Dragão"))p.board.filter(unit=>unit.page===11&&!unit.suffocated).forEach(unit=>{foe.life-=2;p.damageDealt+=2;','if(hasFaction(entering,"Dragão"))p.board.filter(unit=>unit.page===11&&!unit.suffocated).forEach(unit=>{foe.life-=2;p.damageDealt+=2;markCreatureDamage(unit,owner===0?1:0);')
+          rep('if(hasFaction(entering,"Goblin"))p.board.filter(unit=>unit.page===35&&!unit.suffocated).forEach(unit=>{foe.life-=1;p.damageDealt+=1;','if(hasFaction(entering,"Goblin"))p.board.filter(unit=>unit.page===35&&!unit.suffocated).forEach(unit=>{foe.life-=1;p.damageDealt+=1;markCreatureDamage(unit,owner===0?1:0);')
+          rep('{game.pendingAction&&<div className="priority-stack-indicator" title="Ação aguardando dois passes consecutivos"><span>PILHA</span><b>1</b></div>}','{(game.pendingAction||game.priorityStack?.length)&&<div className="priority-stack-indicator" title="Ações aguardando resolução por prioridade"><span>PILHA</span><b>{Math.max(1,game.priorityStack?.length||0)}</b></div>}')
+          path.write_text(text)
+          PY
+      - name: Run focused rule tests
+        run: node --test tests/response-elemental-rules.test.mjs
+      - name: Commit canonical fixes and clean temporary workflows
+        shell: bash
+        run: |
+          git config user.name "Eduardo Santos"
+          git config user.email "94094011+Vanleef@users.noreply.github.com"
+          git rm .github/workflows/page-hotfix.yml .github/workflows/page-hotfix-retry.yml
+          git add app/page.tsx
+          git commit -m "fix: align response targeting and elemental status UI"
+          git push origin HEAD:fix/response-uruk-priority-rules
