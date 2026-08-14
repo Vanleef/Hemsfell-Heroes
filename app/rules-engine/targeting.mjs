@@ -4,6 +4,9 @@ const number = (value, fallback = 1) => ({ uma: 1, um: 1, duas: 2, dois: 2, tres
 export const TargetScope = Object.freeze({ NONE: "none", ANY_CHARACTER: "anyCharacter", ANY_CREATURE: "anyCreature", ALLY_CREATURE: "allyCreature", ENEMY_CREATURE: "enemyCreature", ANY_PERMANENT: "anyPermanent", ALLY_PERMANENT: "allyPermanent", ENEMY_PERMANENT: "enemyPermanent" });
 
 const withSteps = (policy) => ({ ...policy, steps: policy.selections > 0 ? Array.from({ length: policy.selections }, () => ({ scope: policy.scope, role: policy.role || "effect" })) : [] });
+const withoutSelfDestruction = (text) => text
+  .replace(/\bdestrua\s+(?:este|esta|esse|essa)\s+(?:artefato|encanto|carta|constante|permanente)\b[^.]*\.?/g, " ")
+  .replace(/\bdestrua-se\b[^.]*\.?/g, " ");
 
 export function targetPolicy(cardOrText) {
   const card = typeof cardOrText === "string" ? { text: cardOrText } : cardOrText || {};
@@ -18,15 +21,16 @@ export function targetPolicy(cardOrText) {
     const sacrificeSteps = Array.from({ length: sacrificeCount }, () => ({ scope: TargetScope.ALLY_CREATURE, role: "sacrifice" }));
     return { scope: TargetScope.ALLY_CREATURE, selections: sacrificeCount + followUp.selections, sacrifice: true, sacrificeCount, steps: [...sacrificeSteps, ...(followUp.steps || [])] };
   }
-  const creatureMention = /\bcriaturas?\b/.test(text);
-  const permanentMention = /\b(constantes?|permanentes?)\b/.test(text);
-  const amount = number(text.match(/(?:a|em)\s+(\d+|uma?|duas?|dois|tres)\s+(?:criaturas?|constantes?|permanentes?)/)?.[1], 1);
-  const enemy = /(?:criaturas?|constantes?|permanentes?)\s+(?:do\s+)?(?:campo\s+)?(?:inimig|adversari)|(?:criaturas?|constantes?|permanentes?)\s+do\s+oponente/.test(text);
-  const ally = /(?:criaturas?|constantes?|permanentes?)\s+(?:do\s+)?(?:seu\s+campo|aliad)|sua\s+(?:criatura|constante|permanente)/.test(text);
+  const targetingText = withoutSelfDestruction(text);
+  const creatureMention = /\bcriaturas?\b/.test(targetingText);
+  const permanentMention = /\b(constantes?|permanentes?)\b/.test(targetingText);
+  const amount = number(targetingText.match(/(?:a|em)\s+(\d+|uma?|duas?|dois|tres)\s+(?:criaturas?|constantes?|permanentes?)/)?.[1], 1);
+  const enemy = /(?:criaturas?|constantes?|permanentes?)\s+(?:do\s+)?(?:campo\s+)?(?:inimig|adversari)|(?:criaturas?|constantes?|permanentes?)\s+do\s+oponente/.test(targetingText);
+  const ally = /(?:criaturas?|constantes?|permanentes?)\s+(?:do\s+)?(?:seu\s+campo|aliad)|sua\s+(?:criatura|constante|permanente)/.test(targetingText);
   if (creatureMention) return withSteps({ scope: enemy ? TargetScope.ENEMY_CREATURE : ally ? TargetScope.ALLY_CREATURE : TargetScope.ANY_CREATURE, selections: amount });
   if (permanentMention) return withSteps({ scope: enemy ? TargetScope.ENEMY_PERMANENT : ally ? TargetScope.ALLY_PERMANENT : TargetScope.ANY_PERMANENT, selections: amount });
-  if (/\b(cause|causar|cure|restaure|recupere|aumente|alvo)\b/.test(text)) return withSteps({ scope: TargetScope.ANY_CHARACTER, selections: amount });
-  if (/\b(destrua|elimine|derrote|bana|banir|sufoc|congel|atordoad|imobiliz|retorne|devolva)\b/.test(text)) return withSteps({ scope: TargetScope.ANY_PERMANENT, selections: amount });
+  if (/\b(cause|causar|cure|restaure|recupere|aumente|alvo)\b/.test(targetingText)) return withSteps({ scope: TargetScope.ANY_CHARACTER, selections: amount });
+  if (/\b(destrua|elimine|derrote|bana|banir|sufoc|congel|atordoad|imobiliz|retorne|devolva)\b/.test(targetingText)) return withSteps({ scope: TargetScope.ANY_PERMANENT, selections: amount });
   return { scope: TargetScope.NONE, selections: 0, steps: [] };
 }
 
@@ -57,7 +61,13 @@ export function cardPlayTargetPolicy(card) {
   const effectSteps = abilities.flatMap((ability) => (ability.effects || []).flatMap((effect) => {
     const scope = effectScope(effect.target);
     if (scope === TargetScope.NONE || effect.global) return [];
-    return Array.from({ length: Number(effect.selections) || 1 }, () => ({ scope, role: "effect", requireExhausted: !!effect.requireExhausted, requiredSubtype: effect.requiredSubtype }));
+    return Array.from({ length: Number(effect.selections) || 1 }, () => ({
+      scope,
+      role: "effect",
+      requireExhausted: !!effect.requireExhausted,
+      requiredSubtype: effect.requiredSubtype,
+      requiresDamagedOwnerThisTurn: effect.type === "destroyIfDamagedControllerThisTurn" || !!effect.requiresDamagedOwnerThisTurn,
+    }));
   }));
   const steps = [...sacrificeSteps, ...effectSteps];
   return {
