@@ -37,12 +37,20 @@ test("response window remains a compact responsive drawer",()=>{
  assert.match(uiOverrides,/\.response-dialog\{[\s\S]*?width:100%[\s\S]*?max-height:min\(68dvh,29rem\)/);
  assert.match(uiOverrides,/@media\(max-width:36rem\)[\s\S]*?bottom:\.4rem/);
  assert.doesNotMatch(uiOverrides,/\.response-dialog\{width:min\(34rem/);
+ assert.match(uiOverrides,/\.response-cards\{[\s\S]*?flex-wrap:nowrap[\s\S]*?overflow-x:auto[\s\S]*?overflow-y:hidden/);
 });
 
 test("multiplayer response polling and resource display stay fast and authoritative",()=>{
  assert.match(page,/window\.setInterval\(fn,600\)/);
  assert.match(page,/const responseBudget=\(state:Game,owner:0\|1\)=>state\.active===owner\?state\.players\[owner\]\.energy\+state\.players\[owner\]\.reserve/);
- assert.match(page,/cost>budget\?"unavailable"/);
+ assert.match(page,/const usableAcceleratedResponses=[\s\S]*?!isFast\(card\)\|\|cost>budget[\s\S]*?canChooseAllTargets/);
+ assert.doesNotMatch(page,/cost>budget\?"unavailable"/);
+});
+
+test("Spectral Sorceress activation survives stale serialized card instances",()=>{
+ assert.match(page,/const activatedUnitAbility=[\s\S]*?canonicalUnit\(unit\)\.abilities/);
+ assert.match(page,/markerGatedActivation=unit\?\.page===80\|\|unit\?\.page===134/);
+ assert.match(page,/const structured=activatedUnitAbility\(card\)/);
 });
 
 test("mulligan has a server-authoritative 30 second deadline and visible card inspection",()=>{
