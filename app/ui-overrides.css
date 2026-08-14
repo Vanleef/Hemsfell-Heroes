@@ -881,6 +881,8 @@
 .screen-game .mulligan-dialog>header .urgent{color:#ff766b!important}
 
 /* Target confirmation stays compact and shifts right on roomier boards. */
-.screen-game .target-banner{left:54%!important;max-width:min(38rem,calc(100vw - 1rem))!important;padding:clamp(.38rem,.8vw,.5rem) clamp(.48rem,1vw,.64rem)!important;gap:clamp(.36rem,.75vw,.55rem)!important}
+.screen-game .target-banner{left:10%!important;max-width:min(38rem,calc(100vw - 1rem))!important;padding:clamp(.38rem,.8vw,.5rem) clamp(.48rem,1vw,.64rem)!important;gap:clamp(.36rem,.2vw,.55rem)!important; font-size:clamp(.22rem,.32vw,.29rem)!important;line-height:1.05!important;}
+.screen-game .target-banner b{font-size:clamp(.42rem,.52vw,.39rem)!important; line-height:1.05!important;letter-spacing:.015em!important; margin-top: 0.5rem!important;}
+.screen-game .target-banner span{opacity:0;font-size:clamp(.42rem,.52vw,.39rem)!important;line-height:1.05!important;letter-spacing:.02em!important}
 .screen-game .target-banner button{font-size:clamp(.42rem,.52vw,.49rem)!important;line-height:1.05!important;letter-spacing:.025em!important;padding:clamp(.29rem,.5vw,.34rem) clamp(.42rem,.75vw,.54rem)!important;white-space:nowrap!important}
 @media(max-width:40rem){.screen-game .target-banner{left:50%!important;width:calc(100vw - .7rem)!important;max-width:calc(100vw - .7rem)!important}.screen-game .target-banner button{font-size:clamp(.4rem,2.5vw,.47rem)!important}}
