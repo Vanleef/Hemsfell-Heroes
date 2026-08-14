@@ -27,7 +27,7 @@ test("rulebook resource and turn invariants stay automated",()=>{
 
 test("combat excludes turned defenders and preserves simultaneous resolution",()=>{
  assert.match(page,/defenderPlayer\.board\.filter\(defender=>!defender\.exhausted/);
- assert.match(page,/liveDefender\.damage\+=attackDamage/);
+ assert.match(page,/liveDefender\.damage\+=resolvedAttackDamage/);
  assert.match(page,/liveAttacker\.damage\+=counterDamage/);
 });
 
@@ -38,7 +38,7 @@ test("graveyards expose their complete public card list",()=>{
 });
 
 test("targeted effects are serialized and visually identify both cards",()=>{
- assert.match(page,/showTargetEffect\("EFEITO DE DANO",target\)/);
+ assert.match(page,/deferUnitImpact\(target,targetOwner,"EFEITO DE DANO"/);
  assert.match(page,/fx\.card\?\.name\|\|"Efeito"} afeta/);
  assert.match(css,/\.visual-effect\.fx-targeted/);
 });
@@ -48,7 +48,7 @@ test("multiplayer uses durable shared state and authenticated room participants"
  assert.match(roomApi,/action === "sync"/);
  assert.match(roomApi,/invalid participant/);
  assert.match(page,/mirrorOnlineGame/);
- assert.match(page,/setInterval\(fn,850\)/);
+ assert.match(page,/setInterval\(fn,1200\)/);
 });
 
 test("multiplayer lobby runs invitation, coin choice and one mulligan before play",()=>{
