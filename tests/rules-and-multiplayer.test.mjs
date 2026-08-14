@@ -91,7 +91,7 @@ test("turned, positive and negative card states have distinct visuals",()=>{
  assert.match(page,/status-stunned/);
  assert.match(page,/status-suffocated/);
  assert.match(page,/status-immobilized/);
- assert.match(css,/\.original-card\.is-exhausted\{[^}]*rotate\(90deg\)/s);
+ assert.match(css,/\.original-card\.is-exhausted[^\{]*\{[^}]*rotate\(90deg\)/s);
  assert.match(css,/positive-card-bloom/);
  assert.match(css,/elemental-ready/);
  assert.match(css,/frozen-card-pulse/);
