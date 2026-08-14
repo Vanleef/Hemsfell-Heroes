@@ -7,7 +7,7 @@ import { canActivateCard, hasActivatableEffect } from "./card-activation.mjs";
 import { compileCard } from "./rules-engine/compiler.mjs";
 import { canExecuteCard, executeCommand } from "./rules-engine/engine.mjs";
 import { chooseAIResponse, legalPriorityResponses, shouldAutoPass } from "./rules-engine/priority.mjs";
-import { aiDifficultyProfile, canAIPlayLifeCost, chooseAIPlayable, orderAIAttackers, preferredAISlot } from "./rules-engine/ai.mjs";
+import { aiDifficultyProfile, buildAIActionCandidates, chooseAIDecision, chooseAIHeroAbility, completeAIPlayCommand, orderAIAttackers } from "./rules-engine/ai.mjs";
 import { hasSubtype } from "./rules-engine/subtypes.mjs";
 import { cardPlayTargetPolicy, isValidTarget, targetPolicy, TargetScope } from "./rules-engine/targeting.mjs";
 import { applyCloneRetaliation, claimOncePerTurn, earthquakeDamage, elementalChainFrom as ruleElementalChainFrom } from "./game-rules.mjs";
@@ -720,52 +720,27 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
  },[combatAction,game,responseWindow,targeting,difficulty,mode]);
 
  useEffect(()=>{
-  /* BOT_ENGINE_DECISION_V18: resolve engine-owned choices before the normal AI loop. */
-  const decision=game?.pendingDecision;if(!game||mode!=="bot"||!decision||decision.owner!==1)return;
-  const timer=window.setTimeout(()=>{
-   const current=game.pendingDecision;if(!current||current.owner!==1)return;
-   const allOptions=(step:any,selected:string[]=[])=>game.players.flatMap((entry,targetOwner)=>[...entry.board.map(unit=>({id:unit.uid,kind:"creature",card:unit,targetOwner})),...entry.support.map(unit=>({id:unit.uid,kind:"permanent",card:unit,targetOwner})),...(entry.terrain?[{id:entry.terrain.uid,kind:"permanent",card:entry.terrain,targetOwner}]:[])].filter(option=>isValidTarget(step,1,targetOwner,option.kind)&&(!step?.requiredSubtype||hasSubtype(option.card,step.requiredSubtype))&&(!step?.requiredName||cleanName(option.card.name)===cleanName(step.requiredName))&&(!step?.imageOnly||!!option.card.generatedImage||!!option.card.imageCard)&&(step?.maxCost==null||option.card.cost<=step.maxCost)&&!(step?.excludeIds||[]).includes(option.id)&&!selected.includes(option.id)));
-   if(["targets","activation-targets"].includes(current.kind)){const picked:string[]=[];for(const step of current.targetSteps||[]){const options=allOptions(step,picked);const preferred=options.find(option=>option.targetOwner===0)||options[0];if(!preferred)return;picked.push(preferred.id)}if(picked.length)void runRulesCommand({type:"resolveDecision",targetIds:picked},1);return}
-   if(current.kind==="choice-target"){const step=current.targetSteps?.[0]||{scope:"anyCreature"};const options=allOptions(step);const preferred=options.find(option=>option.targetOwner===0)||options[0];if(preferred)void runRulesCommand({type:"resolveDecision",choiceIndex:0,targetIds:[preferred.id]},1);else void runRulesCommand({type:"resolveDecision",choiceIndex:1},1);return}
-   if((current.effect?.choices||[]).length){void runRulesCommand({type:"resolveDecision",choiceIndex:0},1);return}
-   if(current.kind==="draw-position"||current.kind==="redirect"){void runRulesCommand({type:"resolveDecision",choiceIndex:0},1);return}
-  },360);return()=>window.clearTimeout(timer)
- },[game,mode]);
+  const decision=game?.pendingDecision;if(!game||mode!=="bot"||!decision||(decision.owner!==1&&decision.context?.decisionOwner!==1))return;
+  const timer=window.setTimeout(()=>{const command=chooseAIDecision(game,1,difficulty);if(command)void runRulesCommand(command,1)},260);
+  return()=>window.clearTimeout(timer)
+ },[game,mode,difficulty]);
 
  useEffect(()=>{
-  if(!game||game.active!==1||game.winner!==null||mode!=="bot"||responseWindow||combatAction||game.phase==="combate"||visualFx||visualFxQueue.length)return;
-  const aiSnapshot=game.players[1],profile=aiDifficultyProfile(difficulty),aiPlayable=game.phase==="principal"?aiSnapshot.hand.map((c,i)=>({c,i})).filter(x=>canAIPlayLifeCost(x.c,aiSnapshot)&&effectiveCost(x.c,aiSnapshot)<=playableEnergy(x.c,aiSnapshot)&&(x.c.type!=="Criatura"||aiSnapshot.board.length<5)&&(x.c.type!=="Artefato"||aiSnapshot.board.some(creature=>!aiSnapshot.support.some(a=>a.attachedTo===creature.uid)))):[];
-  const expectedAiCard=aiSnapshot.turnCardsPlayed<profile.cardBudget?chooseAIPlayable(aiPlayable,aiSnapshot,game.players[0],difficulty,Math.random)?.c:undefined;
-  const t=setTimeout(()=>{
-   if(expectedAiCard){const kind:VisualFx["kind"]=expectedAiCard.type==="Criatura"?"summon":expectedAiCard.type==="Feitiço"?"spell":expectedAiCard.type==="Terreno"?"terrain":"artifact";showFx(kind,"AÇÃO DO OPONENTE",expectedAiCard.name,expectedAiCard)}
-   update(g=>{
-    const p=g.players[1];
-    if(g.phase==="manutencao"){
-     if(!p.deck.length){p.life=0;log(g,`${deckById(p.heroId).name} iniciou a Manutenção com o Deck vazio e perdeu a partida.`,"danger");return}
-     p.board.forEach(u=>{u.damage=0;u.summoning=false;u.activatedThisTurn=false;u.attackedThisTurn=false;u.attacksThisTurn=0;u.defenseUses=0;if(u.immobilized){u.exhausted=true;u.immobilized=false}else u.exhausted=false;u.stunned=false;u.frozen=false;u.suffocated=false});p.support.forEach(u=>{u.exhausted=false;u.summoning=false;u.activatedThisTurn=false});
-    resetTurnState(p);p.maxEnergy=Math.min(10,p.maxEnergy+1);draw(g,p);p.energy=p.maxEnergy;resolveMaintenanceTriggers(g,1);if(p.terrain?.page===212)summonImage(g,1,"Gato Multidimensional");g.phase="principal";
-     log(g,"A IA concluiu a manutenção.","phase");
-    }else if(g.phase==="principal"){
-    const targets=levelTargets(p),need=targets[p.level-1]??999,evolutionCost=p.level===1?2:3;if(p.level<3&&p.levelUpsThisTurn===0&&heroEvolutionProgress(p)>=need&&p.energy+p.reserve>=evolutionCost){const fromEnergy=Math.min(p.energy,evolutionCost);p.energy-=fromEnergy;p.reserve-=evolutionCost-fromEnergy;p.level++;p.levelUpsThisTurn++;log(g,`A IA evoluiu ${deckById(p.heroId).name} para o nível ${p.level}.`,"effect");return}
-    const playable=p.hand.map((c,i)=>({c,i})).filter(x=>{const rule=targetRule(x.c),target=rule==="ally"?p.board[0]?.uid:rule==="enemy"?(g.players[0].board[0]?.uid||"enemy-hero"):undefined,antiMagicTarget=x.c.type==="Feitiço"&&g.players.some(player=>player.board.some(unit=>unit.uid===target&&unit.page===166));return canAIPlayLifeCost(x.c,p)&&effectiveCost(x.c,p)+(antiMagicTarget?1:0)<=playableEnergy(x.c,p)&&(x.c.type!=="Criatura"||p.board.length<5)&&(x.c.type!=="Artefato"||p.board.some(creature=>!p.support.some(a=>a.attachedTo===creature.uid))) });
-     const pick=chooseAIPlayable(playable,p,g.players[0],difficulty,Math.random);
-     if(pick&&p.turnCardsPlayed<profile.cardBudget){
-    const c=p.hand[pick.i],selectedImage=imageChoices[c.page]?.find(name=>p.extraDeck.some(x=>cleanName(x.name)===cleanName(name))),cafeEffect:CafeChoice|undefined=c.page===231?(["cats","heal","draw","level"] as CafeChoice[])[Math.floor(Math.random()*4)]:undefined,furaActive=c.tags.some(tag=>cleanName(tag)==="fura fila")&&p.turnCardsPlayed>0,rule=targetRule(c),target=rule==="ally"?p.board[0]?.uid:rule==="enemy"?(g.players[0].board[0]?.uid||"enemy-hero"):undefined,antiMagicTarget=c.type==="Feitiço"&&g.players.some(player=>player.board.some(unit=>unit.uid===target&&unit.page===166)),lifeLoss=Number(c.text.match(/\bperca\s+(\d+)\s+(?:de\s+)?vida/i)?.[1]||0),sacrifice=/sacrifique[^.]*criatura/i.test(c.text)?p.board.find(unit=>unit.uid===target):undefined;if(/sacrifique[^.]*criatura/i.test(c.text)&&!sacrifice){g.phase="combate";return}if(sacrifice){sacrifice.damage=999;log(g,`${sacrifice.name} foi sacrificada para jogar ${c.name}.`,"danger")}if(lifeLoss){p.life=Math.max(p.heroId==="saymon"&&p.level>=3?1:0,p.life-lifeLoss);if(p.heroId==="saymon")p.heroXP++;log(g,`${c.name} fez a IA perder ${lifeLoss} de vida.`,"damage")}spendCardEnergy(p,c,effectiveCost(c,p)+(antiMagicTarget?1:0));p.hand.splice(pick.i,1);p.cardsPlayed++;p.turnCardsPlayed++;if(p.heroId==="goblin")p.goblinTurnCardsPlayed=(p.goblinTurnCardsPlayed||0)+1;if(c.type==="Feitiço")p.turnSpellsPlayed++;if(p.nextCardDiscount>0)p.nextCardDiscount=0;if(c.type!=="Criatura"&&p.nextNonCreatureDiscount>0)p.nextNonCreatureDiscount=0;if(c.type==="Feitiço"&&p.nextSpellDiscount>0)p.nextSpellDiscount=0;log(g,`IA jogou ${c.name}.`,"play");
-      if(c.type==="Criatura"){const slot=preferredAISlot(p);if(slot!==undefined){const unit=asUnit(c,slot);p.board.push(unit);resolveCreatureEntryTriggers(g,1,unit);if(furaActive&&/recebe\s+Investida/i.test(c.text))unit.summoning=false;if(hasKeyword(p,unit,"Primeiro Ato")){const target=targetRule(c)==="enemy"?g.players[0].board[0]?.uid:undefined;resolveText(g,1,unit,target,selectedImage)}}}
-      else if(c.type==="Artefato"||c.type==="Encanto"){
-       const host=c.type==="Artefato"?p.board.find(creature=>!p.support.some(a=>a.attachedTo===creature.uid)):undefined,slot=host?.slot??firstFreeSlot(p.support);if(slot!==undefined)p.support.push({...asUnit(c,slot),attachedTo:host?.uid});else p.grave.push(c);
-       resolveText(g,1,c,host?.uid,selectedImage);
-      }else if(c.type==="Terreno"){
-       if(p.terrain)sendToGrave(g,p,p.terrain);p.terrain=asUnit(c,0);resolveText(g,1,c,undefined,selectedImage);
-    }else{p.spellsPlayed++;resolveSpellCastTriggers(g,1,c,(label,detail,source,target)=>queueMicrotask(()=>showFx("ability",label,detail,baseCard(source),target)));if(p.heroId==="rasmus"&&/café|cafe/i.test(c.name)){p.coffeeSpells++;if(p.coffeeSpells===10)summonImage(g,1,"Café Especial","hand")}sendToGrave(g,p,c);resolveText(g,1,c,target,selectedImage,cafeEffect)}
-     }else g.phase="combate";
-    }else{
-     const urukFireTarget=p.lastElement==="Fogo"?(g.players[0].board[0]?.uid||"enemy-hero"):undefined;
-     resolveUrukLevelOne(g,1,urukFireTarget);finishImageEffects(g,1);p.nextElementEffects=[];p.elementChain=undefined;p.goblinTurnCardsPlayed=0;bankRemainingEnergy(p);g.active=0;g.phase="manutencao";g.round++;log(g,`Turno ${g.round}: ${deckById(g.players[0].heroId).name}.`,"phase");
-    }
-   });
-  },difficulty==="Difícil"?500:800);
-  return()=>clearTimeout(t);
+  if(!game||game.active!==1||game.winner!==null||mode!=="bot"||responseWindow||combatAction||game.pendingDecision||game.pendingReposition||game.phase==="combate"||visualFx||visualFxQueue.length)return;
+  const timer=window.setTimeout(()=>{
+   if(game.phase==="manutencao"){
+    update(g=>{const p=g.players[1];if(!p.deck.length){p.life=0;log(g,`${deckById(p.heroId).name} iniciou a Manutenção com o Deck vazio e perdeu a partida.`,"danger");return}p.board.forEach(u=>{u.damage=0;u.summoning=false;u.activatedThisTurn=false;u.attackedThisTurn=false;u.attacksThisTurn=0;u.defenseUses=0;if(u.immobilized){u.exhausted=true;u.immobilized=false}else u.exhausted=false;u.stunned=false;u.frozen=false;u.suffocated=false});p.support.forEach(u=>{u.exhausted=false;u.summoning=false;u.activatedThisTurn=false});resetTurnState(p);p.maxEnergy=Math.min(10,p.maxEnergy+1);draw(g,p);p.energy=p.maxEnergy;resolveMaintenanceTriggers(g,1);if(p.terrain?.page===212)summonImage(g,1,"Gato Multidimensional");g.phase="principal";log(g,"A IA concluiu a manutenção.","phase")});return
+   }
+   const evolutionTargets=levelTargets(game.players[1]),evolutionNeed=evolutionTargets[game.players[1].level-1]??999,evolutionCost=game.players[1].level===1?2:3;
+   if(game.phase==="principal"&&game.players[1].level<3&&game.players[1].levelUpsThisTurn===0&&heroEvolutionProgress(game.players[1])>=evolutionNeed&&game.players[1].energy+game.players[1].reserve>=evolutionCost){update(g=>{const p=g.players[1],fromEnergy=Math.min(p.energy,evolutionCost);p.energy-=fromEnergy;p.reserve-=evolutionCost-fromEnergy;p.level++;p.levelUpsThisTurn++;log(g,`A IA evoluiu ${deckById(p.heroId).name} para o nível ${p.level}.`,"effect")});return}
+   const heroAction=chooseAIHeroAbility(game,1,difficulty);if(heroAction){update(g=>{const p=g.players[1],foe=g.players[0],target=p.board.find(unit=>unit.uid===heroAction.targetId)||p.support.find(unit=>unit.uid===heroAction.targetId);if(heroAction.kind==="gimble-ready"&&target)target.exhausted=false;else if(heroAction.kind==="saymon-lifesteal"&&target){p.life-=2;p.heroXP++;if(!target.tags.includes("Roubo de Vida"))target.tags.push("Roubo de Vida")}else if(heroAction.kind==="saymon-damage"){p.life-=2;p.heroXP++;const victim=foe.board.find(unit=>unit.uid===heroAction.targetId);if(victim)victim.damage+=1;else foe.life-=1}else if(heroAction.kind==="ngoro-stealth"&&target){p.heroXP-=3;if(!target.tags.includes("Furtivo"))target.tags.push("Furtivo")}else if(heroAction.kind==="nature-markers"&&target){target.markers=(target.markers||0)+2;p.heroXP+=2}p.abilityUses[`${p.heroId}-${heroAction.slot}`]=1;log(g,`A IA ativou uma habilidade de ${deckById(p.heroId).name}.`,"effect")});return}
+   const player=game.players[1],profile=aiDifficultyProfile(difficulty),candidates=buildAIActionCandidates(game,1,difficulty).filter(command=>player.turnCardsPlayed<profile.cardBudget||command.type!=="playCard");
+   const command=candidates.find(candidate=>{try{executeCommand(structuredClone(game),candidate,{priority:true});return true}catch{return false}})??(game.phase!=="principal"?{type:"advancePhase",owner:1}:null);
+   if(!command)return;
+   if(command.type==="playCard"){const card=player.hand.find(item=>item.id===command.cardId);if(card){const kind:VisualFx["kind"]=card.type==="Criatura"?"summon":card.type==="Feitiço"?"spell":card.type==="Terreno"?"terrain":"artifact";showFx(kind,"AÇÃO DO OPONENTE",card.name,card)}}
+   void runRulesCommand(command,1)
+  },difficulty==="Difícil"?300:520);
+  return()=>window.clearTimeout(timer)
  },[game,mode,difficulty,responseWindow,combatAction,visualFx,visualFxQueue.length]);
 
  useEffect(()=>{
@@ -781,7 +756,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
   return()=>clearTimeout(t);
  },[game,mode,difficulty,combatAction,responseWindow,aiAttackQueue]);
 
- useEffect(()=>{if(!game||responseWindow?.responder!==1||game.winner!==null||mode!=="bot")return;const t=setTimeout(()=>{const priorityGame={...game,pendingResponse:responseWindow};const command=chooseAIResponse(priorityGame,1,Math.random);if(command.type==="passPriority"){void passPriorityWindow(1,true);update(g=>log(g,"A IA não tinha resposta legal e passou imediatamente.","response"));return}if(command.type==="activate"){void runRulesCommand(command,1);return}const idx=game.players[1].hand.findIndex(c=>c.id===command.cardId),c=game.players[1].hand[idx];if(!c){void passPriorityWindow(1,true);return}const p=game.players[1],rule=targetRule(c),target=rule==="ally"?p.board[0]?.uid:rule==="enemy"?(game.players[0].board[0]?.uid||"enemy-hero"):rule==="any"?(game.players[0].board[0]?.uid||p.board[0]?.uid):undefined;if(rule!=="none"&&!target){void passPriorityWindow(1,true);return}playCard(idx,1,target,undefined,undefined,true)},legalPriorityResponses({...game,pendingResponse:responseWindow},1).length?650:50);return()=>clearTimeout(t)},[game,responseWindow,mode]);
+ useEffect(()=>{if(!game||responseWindow?.responder!==1||game.winner!==null||mode!=="bot")return;const t=setTimeout(()=>{const priorityGame={...game,pendingResponse:responseWindow};const command=chooseAIResponse(priorityGame,1,Math.random);if(command.type==="passPriority"){void passPriorityWindow(1,true);update(g=>log(g,"A IA não tinha resposta legal e passou imediatamente.","response"));return}if(command.type==="activate"){void runRulesCommand(command,1);return}const card=game.players[1].hand.find(c=>c.id===command.cardId),completed=card?completeAIPlayCommand(priorityGame,1,card,difficulty,{hasPriority:true}):null;if(!completed){void passPriorityWindow(1,true);return}void runRulesCommand(completed,1)},legalPriorityResponses({...game,pendingResponse:responseWindow},1).length?420:50);return()=>clearTimeout(t)},[game,responseWindow,mode,difficulty]);
  const hasUsableAcceleratedResponse=(state:Game,owner:0|1=0)=>{const player=state.players[owner];return player.hand.some(card=>{if(!isFast(card)||effectiveCost(card,player)>player.reserve)return false;const policy=playTargetPolicy(card);return policy.selections<=0||canChooseAllTargets(card,policy.steps||[])})};
  useEffect(()=>{if(!game||responseWindow?.responder!==0||priorityControl!=="assisted")return;if(hasUsableAcceleratedResponse(game,0))return;const t=setTimeout(()=>{void passPriorityWindow(0,true);if(mode==="bot")update(g=>log(g,"Sem Acelerado utilizável — prioridade passada automaticamente.","response"))},80);return()=>clearTimeout(t)},[game,responseWindow,mode,priorityControl]);
 
