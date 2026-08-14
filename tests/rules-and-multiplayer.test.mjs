@@ -52,6 +52,7 @@ test("Spectral Sorceress activation survives stale serialized card instances",()
  assert.match(page,/markerGatedActivation=unit\?\.page===80\|\|unit\?\.page===134/);
  assert.match(page,/const structured=activatedUnitAbility\(card\)/);
  assert.match(page,/compiled=localAbility\?unit:canonicalUnit\(unit\)/);
+ assert.match(page,/if\(unit\.page===80\)return !!ability&&!used&&!unit\.suffocated&&markerAmount\(unit\)>=1/);
 });
 
 test("mulligan has a server-authoritative 30 second deadline and visible card inspection",()=>{
