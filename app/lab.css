@@ -1,13 +1,7 @@
 @import "./lab-legacy.css";
 @import "./board-layout.css";
 @import "./board-tuning.css";
-@import "./lab-interaction-responsive.css";
-@import "./rules-interaction-v2.css";
-@import "./ui-gameplay-polish-v4.css";
-@import "./ui-gameplay-polish-v5.css";
-@import "./ui-gameplay-motion-v5.css";
-@import "./ui-gameplay-polish-v6.css";
-@import "./ui-board-polish-v8.css";
+@import "./lab-overrides.css";
 
 /*
  * Hemsfell Heroes — canonical match CSS authority.
