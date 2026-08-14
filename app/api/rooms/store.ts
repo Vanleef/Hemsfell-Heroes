@@ -178,7 +178,7 @@ export async function readRoom(id: string): Promise<Room | null> {
       try { return await readSupabaseStorageRoom(id); }
       catch (storageError) {
         if (!hasBlobStore()) throw storageError;
-        console.warn("[rooms] Supabase Storage unavailable; reading from Blob fallback.", storageError);
+        console.warn("[rooms] Supabase unavailable; reading from Blob fallback.", storageError);
       }
     }
   }
@@ -194,7 +194,7 @@ export async function writeRoom(room: Room) {
       try { return await writeSupabaseStorageRoom(room); }
       catch (storageError) {
         if (!hasBlobStore()) throw storageError;
-        console.warn("[rooms] Supabase Storage unavailable; writing to Blob fallback.", storageError);
+        console.warn("[rooms] Supabase unavailable; writing to Blob fallback.", storageError);
       }
     }
   }

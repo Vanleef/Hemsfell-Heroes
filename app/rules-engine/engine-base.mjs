@@ -274,7 +274,7 @@ function replayAbilityCandidates(state, owner, effect) {
 function validateTargets(state, owner, abilities, command, source) {
   const targetIds = command.targetIds || []; const steps = abilities.flatMap(abilityTargetSteps); const minimum = steps.filter((step) => !step.optional).length;
   if (targetIds.length < minimum || targetIds.length > steps.length || new Set(targetIds).size !== targetIds.length) { if (steps.length || targetIds.length) throw new RulesViolation("invalid-target-count"); return; }
-  targetIds.forEach((id, index) => { const step = steps[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, owner, targetOwner, targetKind) || (step.requireExhausted && (!target || !target.exhausted)) || (step.requiredSubtype && (!target || !subtype(target, step.requiredSubtype)))) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
+  targetIds.forEach((id, index) => { const step = steps[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (step.requiredSubtype && (!target || !subtype(target, step.requiredSubtype))) throw new RulesViolation("invalid-target-subtype"); if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, owner, targetOwner, targetKind) || (step.requireExhausted && (!target || !target.exhausted))) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
 }
 function preflightPlay(state, command, handlers) {
   const entry = state.players[command.owner];
@@ -673,7 +673,7 @@ export function executeCommand(inputState, command, options = {}) {
         for (const effect of [...chosen].reverse()) stack.push({ kind: "effect", effect, context: decisionContext });
       } else if (item.command.type === "reposition") {
         const pending = state.pendingReposition;
-        if (!pending || pending.activeOwner !== item.command.owner || pending.confirmed.includes(item.command.owner)) throw new RulesViolation("reposition-unavailable");
+        if (!pending || (pending.activeOwner != null ? pending.activeOwner !== item.command.owner : !pending.owners.includes(item.command.owner)) || pending.confirmed.includes(item.command.owner)) throw new RulesViolation("reposition-unavailable");
         const entry = state.players[item.command.owner];
         for (const move of item.command.moves || []) {
           const destination = move.slot;
@@ -696,7 +696,7 @@ export function executeCommand(inputState, command, options = {}) {
         }
       } else if (item.command.type === "confirmReposition") {
         const pending = state.pendingReposition;
-        if (!pending || pending.activeOwner !== item.command.owner || pending.confirmed.includes(item.command.owner)) throw new RulesViolation("reposition-unavailable");
+        if (!pending || (pending.activeOwner != null ? pending.activeOwner !== item.command.owner : !pending.owners.includes(item.command.owner)) || pending.confirmed.includes(item.command.owner)) throw new RulesViolation("reposition-unavailable");
         pending.confirmed.push(item.command.owner);
         const next = pending.owners.find((owner) => !pending.confirmed.includes(owner));
         if (next == null) state.pendingReposition = null;

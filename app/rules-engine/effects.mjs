@@ -58,7 +58,7 @@ const cleanCardForHiddenZone = (card, metadata = {}) => {
   const printed = card?._printedState ? structuredClone(card._printedState) : null;
   const copy = { ...card, ...(printed || {}), ...metadata };
   for (const key of [
-    "uid", "slot", "enteredRound", "exhausted", "summoning", "attackedThisTurn", "attacksThisTurn", "defenseUses",
+    "slot", "enteredRound", "exhausted", "summoning", "attackedThisTurn", "attacksThisTurn", "defenseUses",
     "damage", "bonusAtk", "bonusHp", "frozen", "stunned", "suffocated", "suffocatedUntilTurnEnd", "suffocatedBySources",
     "immobilized", "impacting", "activatedThisTurn", "markers", "modifiers", "grantedKeywords", "staticModifiers",
     "temporaryAtk", "temporaryHp", "temporaryTags", "temporarySubtypes", "combatRestrictions", "damageShields",
