@@ -14,6 +14,16 @@ import { canActivateCard } from "../app/card-activation.mjs";
 
 const state = () => ({ active: 0, phase: "principal", round: 1, players: [0, 1].map(() => ({ life: 30, maxLife: 30, energy: 5, maxEnergy: 5, reserve: 0, deck: [], hand: [], board: [], support: [], terrain: null, grave: [], obscuro: [] })) });
 
+test("ending a turn banks at most three energy and clears main energy", () => {
+  const game = state(); game.phase = "fim"; game.players[0].energy = 5; game.players[0].reserve = 1;
+  const result = executeCommand(game, { type: "advancePhase", owner: 0 }).state;
+  assert.deepEqual([result.players[0].energy, result.players[0].reserve, result.active, result.phase], [0, 3, 1, "manutencao"]);
+
+  const blocked = state(); blocked.phase = "fim"; blocked.players[0].energy = 2; blocked.players[0].reserve = 1; blocked.players[0].noReserveStorageThisTurn = true;
+  const withoutStorage = executeCommand(blocked, { type: "advancePhase", owner: 0 }).state;
+  assert.deepEqual([withoutStorage.players[0].energy, withoutStorage.players[0].reserve], [0, 1]);
+});
+
 test("complex card text composes ordered primitives", () => {
   const result = compileCardText("Primeiro Ato: Compre 2 cartas e cause 1 de dano a uma criatura.");
   assert.equal(result.abilities[0].trigger, "onEnter");

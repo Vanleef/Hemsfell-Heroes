@@ -44,7 +44,7 @@ test("Punho Sísmico exige criatura e aceita um ou dois alvos distintos", () => 
 test("Maestria Elemental cria somente a imagem escolhida do deck extra", () => {
   const game = state(); game.players[0].extraDeck = [71, 72, 73, 74, 81].map((page) => printed(page));
   const result = cast(game, printed(70, { cost: 0 }), [], { selectedImageName: "Maestria Elemental: Hidromancia", slot: 2 });
-  assert.equal(result.players[0].support.length, 2); assert.ok(result.players[0].support.some((card) => card.page === 72)); assert.equal(result.pendingDecision, undefined);
+  assert.equal(printed(70).type, "Feitiço"); assert.equal(result.players[0].support.length, 1); assert.ok(result.players[0].support.some((card) => card.page === 72)); assert.equal(result.players[0].grave.some((card) => card.page === 70), true); assert.equal(result.pendingDecision, undefined);
 });
 
 test("Hidromancia e Aeromancia disparam no primeiro feitiço de cada turno global", () => {
