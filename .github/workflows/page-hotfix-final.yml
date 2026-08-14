@@ -1,0 +1,41 @@
+name: Finalize canonical response hotfix
+
+on:
+  push:
+    branches:
+      - fix/response-uruk-priority-rules
+    paths:
+      - .github/workflows/page-hotfix-final.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/response-uruk-priority-rules
+          fetch-depth: 0
+      - name: Apply reviewed canonical page patch
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import textwrap
+          source=Path('.github/workflows/page-hotfix-retry.yml').read_text()
+          block=source.split("python <<'PY'\n",1)[1].split("\n          PY",1)[0]
+          exec(textwrap.dedent(block), {'__name__':'__main__'})
+          PY
+      - name: Run focused rule tests
+        run: node --test tests/response-elemental-rules.test.mjs
+      - name: Commit canonical fixes and remove temporary workflows
+        shell: bash
+        run: |
+          git config user.name "Eduardo Santos"
+          git config user.email "94094011+Vanleef@users.noreply.github.com"
+          git rm .github/workflows/page-hotfix.yml .github/workflows/page-hotfix-retry.yml .github/workflows/page-hotfix-final.yml
+          git add app/page.tsx
+          git commit -m "fix: align response targeting and elemental status UI"
+          git push origin HEAD:fix/response-uruk-priority-rules
