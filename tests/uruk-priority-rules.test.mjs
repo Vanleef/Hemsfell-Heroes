@@ -129,15 +129,26 @@ test("Levantar Maré em resposta permite escolher o Clone de Água como defensor
 });
 
 test("Uruk III repete no fim do turno o último feitiço usado naquele turno", () => {
-  let game = state(); game.players[0].heroId = "uruk"; game.players[0].level = 3; game.players[1].board.push(unit("uruk-target", 1, { hp: 5 }));
+  let game = state(); game.players[0].heroId = "uruk"; game.players[0].level = 3; game.players[1].board.push(unit("old-target", 0, { hp: 5 }), unit("uruk-target", 1, { hp: 5 }));
+  game = cast(game, spell("earlier-spell", "Água", [{ type: "damage", amount: 1, target: "anyCreature", selections: 1 }]), ["old-target"]);
   game = cast(game, spell("last-spell", "Fogo", [{ type: "damage", amount: 1, target: "anyCreature", selections: 1 }]), ["uruk-target"]);
-  assert.equal(game.players[1].board[0].damage, 1);
+  assert.deepEqual(game.players[1].board.map((card) => card.damage), [1, 1]);
   game.phase = "combate";
   game = executeCommand(game, { type: "advancePhase", owner: 0 }).state;
   assert.equal(game.phase, "fim");
   assert.equal(game.pendingDecision.kind, "targets");
   game = executeCommand(game, { type: "resolveDecision", owner: 0, targetIds: ["enemy-hero"] }).state;
-  assert.equal(game.players[1].board[0].damage, 2);
+  assert.deepEqual(game.players[1].board.map((card) => card.damage), [1, 2], "somente o último feitiço é repetido");
+  assert.equal(game.players[0].lastSpellReplay, undefined, "a cópia é consumida uma única vez");
+});
+
+test("Eclipse Final causa duas vezes o total de feitiços do turno incluindo ela mesma", () => {
+  let game = state();
+  game = cast(game, spell("first-spell", "Ar"));
+  game = cast(game, spell("second-spell", "Terra"));
+  game = cast(game, printed(75, { cost: 0 }), ["enemy-hero"]);
+  assert.equal(game.players[1].life, 24);
+  assert.equal(game.players[0].turnSpellsPlayed, 3);
 });
 
 test("retornos dos demais decks reutilizam a regra de Imagens e bônus de subtipo", () => {

@@ -70,6 +70,7 @@ export const explicitCardRules = Object.freeze({
   p70: [ability("onPlay", [effect("createSelectedMasteryImage")])],
   p73: [ability("onSpellCast", [effect("geomancyChoice", { amount: 3, minimum: 1 })], [], { condition: { firstEachTurn: true, spellElement: "Terra", anyCreatureInPlay: true } })],
   p74: [ability("onSpellCast", [effect("empowerSpellDamage", { additionalDamage: 2, trample: true })], [], { condition: { firstEachTurn: true, spellElement: "Fogo" } })],
+  p75: [ability("onPlay", [effect("damageFromSpellsThisTurn", { target: "anyCharacter", selections: 1, amountPerSpell: 2 })])],
   p76: [ability("static", [effect("keyword", { keyword: "Defensor 2" })]), ability("onEnter", [effect("grantRobustIfSpellPlayedThisTurn")])],
   p77: [ability("onEnter", [effect("grantNextCardDiscount", { amount: 1, typeOnly: "Feitiço", duration: "turn" })])],
   p78: [ability("onSpellCast", [effect("modifyStats", { target: "self", attack: 1, health: 0, duration: "permanent" })])],

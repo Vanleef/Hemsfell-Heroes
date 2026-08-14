@@ -162,6 +162,11 @@ test("Uruk I resolves only the latest elemental spell at end of turn",()=>{
  assert.match(page,/p\.lastElement=undefined;p\.lastElementSource=undefined/);
 });
 
+test("equal elemental status cues render only once",()=>{
+ assert.match(page,/const shownElementCues=new Set<string>\(\)/);
+ assert.match(page,/if\(shownElementCues\.has\(cueKey\)\)continue/);
+});
+
 test("visual effects coalesce accidental duplicates but explicit copies may repeat",()=>{
  assert.match(page,/visualFxDedupeRef/);
  assert.match(page,/allowRepeat=false/);

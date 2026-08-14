@@ -995,7 +995,7 @@
     "name": "Eclipse Final",
     "type": "Feitiço",
     "cost": 9,
-    "text": "Cause 2 de dano a um alvo. Repita este efeito para cada outro feitiço que você conjurou neste turno.",
+    "text": "Cause 2 de dano a um alvo para cada feitiço que você conjurou neste turno, incluindo Eclipse Final.",
     "tags": [],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/075",
     "hero": false,
