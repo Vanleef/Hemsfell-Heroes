@@ -4,6 +4,9 @@
 @import "./lab-overrides.css";
 @import "./lab-interaction-responsive.css";
 
+/* Keep the deck selector's base layout explicit in the canonical entrypoint. */
+.deck-picker{display:grid}
+
 /*
  * Hemsfell Heroes — canonical match CSS authority.
  *
