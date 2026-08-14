@@ -32,6 +32,18 @@ test("command bar copy is density-aware and cannot overflow its panel",()=>{
  assert.match(uiOverrides,/overflow-wrap:anywhere/);
 });
 
+test("mulligan has a server-authoritative 30 second deadline and visible card inspection",()=>{
+ assert.match(roomApi,/const mulliganDeadline = deadline\(30\)/);
+ assert.match(page,/Se o tempo acabar, sua mão atual será mantida/);
+ assert.match(page,/<OriginalCard card=\{card\} small inspectable\/>/);
+ assert.match(uiOverrides,/\.mulligan-card-static \.card-tooltip\{display:block!important/);
+});
+
+test("local end of turn expires turn-duration effects before the opponent turn",()=>{
+ assert.match(page,/unit\.modifiers=\(unit\.modifiers\|\|\[\]\)\.filter\(modifier=>modifier\.duration!=="turn"\)/);
+ assert.match(page,/unit\.combatRestrictions=\(unit\.combatRestrictions\|\|\[\]\)\.filter\(rule=>rule\.duration!=="turn"\)/);
+});
+
 test("rulebook resource and turn invariants stay automated",()=>{
  assert.match(page,/life:startingLife/);
  assert.match(page,/Math\.min\(10,p\.maxEnergy\+1\)/);

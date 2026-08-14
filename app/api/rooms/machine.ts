@@ -18,6 +18,7 @@ export type Participant = {
   deckLocked: boolean;
   mulliganDone: boolean;
   mulliganCount: number;
+  mulliganDeadline?: number | null;
   disconnectedAt?: number | null;
 };
 
@@ -74,6 +75,20 @@ export function deadline(seconds: number) {
 }
 
 export function applyTimeout(room: Room) {
+  if (room.game && room.status === "mulligan") {
+    const now = Date.now(); let changed = false;
+    for (const role of ["host", "guest"] as const) {
+      const current = room[role];
+      if (current && !current.mulliganDone && current.mulliganDeadline && current.mulliganDeadline <= now) {
+        current.mulliganDone = true; current.mulliganDeadline = null; changed = true;
+      }
+    }
+    if (room.host.mulliganDone && room.guest?.mulliganDone) {
+      room.status = "started"; room.game.turnDeadline = deadline(room.settings.turnSeconds); changed = true;
+      room.game.log = [{ id: crypto.randomUUID(), text: "O tempo da mão inicial terminou. As mãos não confirmadas foram mantidas automaticamente.", tone: "phase" }, ...(room.game.log ?? [])];
+    }
+    return changed;
+  }
   if (!room.game || room.status !== "started") return false;
   const now = Date.now();
   const disconnected = room.host.disconnectedAt ? { role: "host" as RoomRole, at: room.host.disconnectedAt } : room.guest?.disconnectedAt ? { role: "guest" as RoomRole, at: room.guest.disconnectedAt } : null;

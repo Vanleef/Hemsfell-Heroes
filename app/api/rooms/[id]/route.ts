@@ -23,6 +23,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!isRoomId(id)) return NextResponse.json({ error: "not found" }, { status: 404 });
   const room = await readRoom(id);
   if (!room) return NextResponse.json({ error: "not found" }, { status: 404 });
+  if (applyTimeout(room)) { room.revision++; await writeRoom(room); }
   try {
     const parsed = await readSafeJson(req);
     if (!parsed.body) return NextResponse.json({ error: parsed.error ?? "invalid request" }, { status: 400 });
@@ -82,6 +83,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!isBoundedGame(body.game)) return NextResponse.json({ error: "invalid game state" }, { status: 400 });
       room.game = body.game;
       room.game.turnDeadline = null;
+      const mulliganDeadline = deadline(30);
+      room.host.mulliganDeadline = mulliganDeadline;
+      if (room.guest) room.guest.mulliganDeadline = mulliganDeadline;
       room.revision++;
     } else if (body.action === "mulligan") {
       if (room.status !== "mulligan" || !room.game) return NextResponse.json({ error: "mulligan unavailable" }, { status: 409 });
@@ -92,6 +96,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!player?.hand || !player?.deck) return NextResponse.json({ error: "invalid game state" }, { status: 409 });
       if (body.keep || player.hand.length <= 1) {
         current.mulliganDone = true;
+        current.mulliganDeadline = null;
       } else {
         const nextSize = Math.max(1, player.hand.length - 1);
         const pool = [...player.deck, ...player.hand];
@@ -133,4 +138,3 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "request failed" }, { status: 500 });
   }
 }
-
