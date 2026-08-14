@@ -1,0 +1,41 @@
+/* Hero status render v31 — keep the local cue in the same visible HUD column as EVOLUIR. */
+.screen-game .player-hero:not(.enemy){overflow:visible!important}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local{
+  left:116px!important;
+  right:auto!important;
+  top:116px!important;
+  bottom:auto!important;
+  width:128px!important;
+  transform:none!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:5px!important;
+  z-index:90!important;
+  visibility:visible!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  animation:none!important;
+}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local span{
+  min-width:0!important;
+  width:100%!important;
+  padding:6px 8px!important;
+  border:2px solid color-mix(in srgb,var(--deck,#69d5ff) 82%,white)!important;
+  border-radius:7px!important;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--deck,#69d5ff) 40%,#08121d),#07101af5)!important;
+  color:#fff!important;
+  text-align:center!important;
+  font:900 9px/1.15 Arial,sans-serif!important;
+  letter-spacing:.055em!important;
+  text-transform:uppercase!important;
+  box-shadow:0 0 0 1px #ffffff20,0 0 16px color-mix(in srgb,var(--deck,#69d5ff) 58%,transparent),0 5px 12px #000c!important;
+  text-shadow:0 1px 3px #000!important;
+  cursor:help!important;
+}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local.has-cues span{animation:heroCueAttention 1.8s ease-in-out infinite}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local .cue-empty{opacity:.62!important;border-style:dashed!important;box-shadow:0 3px 10px #0008!important;animation:none!important;font-size:8px!important}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local .cue-life{border-color:#e75e6d!important;background:linear-gradient(135deg,#631621,#17090df5)!important}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local .cue-warning{border-color:#f2ba55!important;background:linear-gradient(135deg,#604216,#171006f5)!important}
+@keyframes heroCueAttention{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
+@container hemsfell-board (max-height:44rem){.screen-game .player-hero:not(.enemy) .hero-status-cues.local{left:108px!important;top:108px!important;width:120px!important}.screen-game .player-hero:not(.enemy) .hero-status-cues.local span{padding:5px 6px!important;font-size:8px!important}}
