@@ -70,6 +70,9 @@ export function cardPlayTargetPolicy(card) {
       requireExhausted: !!effect.requireExhausted,
       requiredSubtype: effect.requiredSubtype,
       requiresDamagedOwnerThisTurn: effect.type === "destroyIfDamagedControllerThisTurn" || !!effect.requiresDamagedOwnerThisTurn,
+      requiresEffectAppliedThisTurn: !!effect.requiresEffectAppliedThisTurn,
+      requiresMarker: !!effect.requiresMarker,
+      allowedIds: effect.allowedIds,
     }));
   }));
   const steps = [...sacrificeSteps, ...effectSteps];

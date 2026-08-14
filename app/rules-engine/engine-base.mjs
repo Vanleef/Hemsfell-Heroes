@@ -113,6 +113,8 @@ function conditionMatches(state, source, owner, condition, event = {}) {
   if (condition.controllerTurn && state.active !== owner) return false;
   if (condition.controllerReserveBelow != null && entry.reserve >= condition.controllerReserveBelow) return false;
   if (condition.anyCreatureInPlay && !state.players.some((candidate) => candidate.board.length > 0)) return false;
+  if (condition.eventAmountAtLeast != null && Number(event.amount || 0) < condition.eventAmountAtLeast) return false;
+  if (condition.anyPermanentHasMarker && !state.players.some((candidate) => permanentUnits(candidate).some((card) => markerTotalForEngine(card) > 0))) return false;
   if (condition.controllerControlsOtherSubtype) {
     const preEntry = event.preEntryControlledIds;
     const candidates = entry.board.filter((card) => Array.isArray(preEntry) ? preEntry.includes(card.uid || card.id) : (card.uid || card.id) !== (source.uid || source.id));
@@ -168,6 +170,8 @@ function playConditionMatches(state, owner, condition) {
   if (!condition) return true;
   if (condition.anyCreatureInPlay && !state.players.some((entry) => entry.board.length > 0)) return false;
   if (condition.controllerGraveHasSubtype && !state.players[owner].grave.some((card) => subtype(card, condition.controllerGraveHasSubtype))) return false;
+  if (condition.controllerGraveHasTrigger && !state.players[owner].grave.some((card) => card.type === "Criatura" && (card.abilities || []).some((ability) => ability.trigger === condition.controllerGraveHasTrigger))) return false;
+  if (condition.controllerGraveCreatureCountAtLeast != null && state.players[owner].grave.filter((card) => card.type === "Criatura").length < condition.controllerGraveCreatureCountAtLeast) return false;
   if (condition.alliedPermanentHasTrigger) return permanentUnits(state.players[owner]).some((card) => (card.abilities || []).some((ability) => {
     if (ability.trigger !== condition.alliedPermanentHasTrigger) return false;
     const steps = abilityTargetSteps(ability);
@@ -232,15 +236,18 @@ function abilityTargetSteps(ability) {
     const scope = targetScope(effect.target);
     const selections = effect.selections ?? (scope === TargetScope.NONE ? 0 : 1);
     const minimum = effect.minimumSelections ?? selections;
-    return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: effect.excludeIds || [] }));
+    return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: effect.excludeIds || [], allowedIds: effect.allowedIds, requiresMarker: !!effect.requiresMarker, requiresEffectAppliedThisTurn: !!effect.requiresEffectAppliedThisTurn }));
   }).filter((step) => step.scope !== TargetScope.NONE);
 }
-function targetMatchesStep(target, id, step) {
+function targetMatchesStep(state, target, id, step) {
   if ((step.excludeIds || []).includes(id)) return false;
+  if (step.allowedIds?.length && !step.allowedIds.includes(id)) return false;
   if (step.requiredSubtype && !subtype(target, step.requiredSubtype)) return false;
   if (step.requiredName && String(target?.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() !== String(step.requiredName).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()) return false;
   if (step.imageOnly && !(target?.generatedImage || target?.imageCard)) return false;
   if (step.maxCost != null && (target?.cost || 0) > step.maxCost) return false;
+  if (step.requiresMarker && markerTotalForEngine(target) < 1) return false;
+  if (step.requiresEffectAppliedThisTurn && target?.effectAppliedRound !== state.round) return false;
   return true;
 }
 function targetCandidates(state, owner, step) {
@@ -249,7 +256,7 @@ function targetCandidates(state, owner, step) {
     for (const target of permanentUnits(entry)) {
       const id = target.uid || target.id;
       const targetKind = entry.board.includes(target) || target.type === "Criatura" ? "creature" : "permanent";
-      if (isValidTarget(step, owner, targetOwner, targetKind) && targetMatchesStep(target, id, step)) result.push(id);
+      if (isValidTarget(step, owner, targetOwner, targetKind) && targetMatchesStep(state, target, id, step)) result.push(id);
     }
     if (isValidTarget(step, owner, targetOwner, "hero") && !(step.excludeIds || []).includes(targetOwner === owner ? "ally-hero" : "enemy-hero")) result.push(targetOwner === owner ? "ally-hero" : "enemy-hero");
   });
@@ -264,6 +271,21 @@ function canSatisfyTargetSteps(state, owner, steps) {
   });
   return choose(0, new Set());
 }
+const directlyAppliedTargetEffects = new Set(["damage", "heal", "tap", "ready", "toggleTap", "addMarker", "moveMarker", "modifyStats", "conditionalStats", "grantKeyword", "grantSubtype", "combatRestriction", "suffocateWhileSourceInField", "suffocateUntilTurnEndAndDrawOwner", "immobilize", "grantCombatImmobilize", "freeze", "grantDamageShield", "grantDamageReductionShield", "tapUntilAnotherSpellEffect", "convertActionMarkersToPlusOneCounters"]);
+function captureEffectTargets(state, effect, context) {
+  if (!directlyAppliedTargetEffects.has(effect.type) || !context.effectSource?.name) return [];
+  return (context.targetIds || []).map((id) => { const target = findPermanentById(state, id); return target ? { id, damage: Number(target.damage || 0) } : null; }).filter(Boolean);
+}
+function recordAppliedTargetEffects(state, effect, context, snapshots) {
+  for (const snapshot of snapshots) {
+    const target = findPermanentById(state, snapshot.id);
+    if (!target || (effect.type === "damage" && Number(target.damage || 0) <= snapshot.damage)) continue;
+    target.effectAppliedRound = state.round;
+    target.effectAppliedSourceId = context.sourceId;
+    const lock = target.staysExhaustedUntilSpellEffect;
+    if (lock && context.effectSource?.type === "Feitiço" && context.sourceId !== lock.sourceId) { target.grantedKeywords = (target.grantedKeywords || []).filter((keyword) => keyword !== lock.keyword); delete target.staysExhaustedUntilSpellEffect; }
+  }
+}
 function replayAbilityCandidates(state, owner, effect) {
   return (state.players[owner].board || []).filter((card) => (!effect.selector?.type || card.type === effect.selector.type) && (card.abilities || []).some((ability) => {
     if (ability.trigger !== effect.trigger) return false;
@@ -274,7 +296,7 @@ function replayAbilityCandidates(state, owner, effect) {
 function validateTargets(state, owner, abilities, command, source) {
   const targetIds = command.targetIds || []; const steps = abilities.flatMap(abilityTargetSteps); const minimum = steps.filter((step) => !step.optional).length;
   if (targetIds.length < minimum || targetIds.length > steps.length || new Set(targetIds).size !== targetIds.length) { if (steps.length || targetIds.length) throw new RulesViolation("invalid-target-count"); return; }
-  targetIds.forEach((id, index) => { const step = steps[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (step.requiredSubtype && (!target || !subtype(target, step.requiredSubtype))) throw new RulesViolation("invalid-target-subtype"); if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, owner, targetOwner, targetKind) || (step.requireExhausted && (!target || !target.exhausted))) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
+  targetIds.forEach((id, index) => { const step = steps[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (step.requiredSubtype && (!target || !subtype(target, step.requiredSubtype))) throw new RulesViolation("invalid-target-subtype"); if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, owner, targetOwner, targetKind) || (!hero && !targetMatchesStep(state, target, id, step)) || (step.requireExhausted && (!target || !target.exhausted))) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
 }
 function preflightPlay(state, command, handlers) {
   const entry = state.players[command.owner];
@@ -371,6 +393,7 @@ function activeAbilities(state, event) {
 
 export function executeCommand(inputState, command, options = {}) {
   const state = clone(inputState); const originalPhase = inputState.phase; const maxSteps = options.maxSteps ?? 512; const maxRepeats = options.maxRepeats ?? 4; const handlers = { ...defaultEffectHandlers, ...(options.handlers || {}) }; let actionLabel = command.type;
+  if (command.type === "advancePhase" && state.phase === "manutencao" && state.players[state.active]?.skipNextTurn) { state.players[state.active].skipNextTurn = false; state.phase = "fim"; }
   const stack = [{ kind: "command", command }]; const trace = []; const repeats = new Map(); let steps = 0;
   while (stack.length) {
     refreshSupportAuras(state);
@@ -546,6 +569,21 @@ export function executeCommand(inputState, command, options = {}) {
           for (const id of ids) { const index = entry.hand.findIndex((card) => card.uid === id || card.id === id); entry.grave.push(entry.hand.splice(index, 1)[0]); }
           state.pendingDecision = null; stack.push(...continuation); continue;
         }
+        if (decision.kind === "hand-discard-one") {
+          const entry = state.players[item.command.owner], ids = [...new Set(item.command.selectedCardIds || [])];
+          if (ids.length !== 1 || !entry.hand.some((card) => card.uid === ids[0] || card.id === ids[0])) throw new RulesViolation("invalid-hand-selection");
+          const index = entry.hand.findIndex((card) => card.uid === ids[0] || card.id === ids[0]);
+          entry.grave.push(entry.hand.splice(index, 1)[0]);
+          state.pendingDecision = null; stack.push(...continuation); continue;
+        }
+        if (decision.kind === "grave-to-hand-many" || decision.kind === "grave-to-hand-and-banish") {
+          const entry = state.players[item.command.owner], ids = [...new Set(item.command.selectedCardIds || [])], choices = decision.effect.choices || [], minimum = Math.min(decision.effect.minimum ?? 0, choices.length), maximum = Math.min(decision.effect.maximum ?? choices.length, choices.length);
+          if (ids.length < minimum || ids.length > maximum || ids.some((id) => !choices.includes(id) || !entry.grave.some((card) => card.uid === id || card.id === id))) throw new RulesViolation("invalid-grave-selection");
+          const selected = ids.map((id) => { const index = entry.grave.findIndex((card) => card.uid === id || card.id === id); return entry.grave.splice(index, 1)[0]; });
+          entry.hand.push(...selected);
+          if (decision.kind === "grave-to-hand-and-banish") entry.obscuro.push(...entry.grave.splice(0).map((card) => resetCardForZone(state, card)));
+          state.pendingDecision = null; stack.push(...continuation); continue;
+        }
         if (decision.kind === "hand-to-deck-bottom") {
           const entry = state.players[item.command.owner], ids = [...new Set(item.command.selectedCardIds || [])], amount = Math.min(decision.effect.amount || 1, entry.hand.length);
           if (ids.length !== amount || ids.some((id) => !entry.hand.some((card) => card.uid === id || card.id === id))) throw new RulesViolation("invalid-hand-selection");
@@ -671,7 +709,7 @@ export function executeCommand(inputState, command, options = {}) {
           const targetIds = item.command.targetIds || []; const steps = decision.targetSteps || [];
           const minimum = steps.filter((step) => !step.optional).length;
           if (targetIds.length < minimum || targetIds.length > steps.length || new Set(targetIds).size !== targetIds.length) throw new RulesViolation("invalid-target-count");
-          targetIds.forEach((id, index) => { const step = steps[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - decision.owner : id === "ally-hero" || id === "controller-hero" ? decision.owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, decision.owner, targetOwner, targetKind) || (!hero && !targetMatchesStep(target, id, step)) || (hero && ((step.requiredSubtype || step.requiredName || step.imageOnly || step.maxCost != null) || (step.excludeIds || []).includes(id)))) throw new RulesViolation("invalid-target"); });
+          targetIds.forEach((id, index) => { const step = steps[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - decision.owner : id === "ally-hero" || id === "controller-hero" ? decision.owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, decision.owner, targetOwner, targetKind) || (!hero && !targetMatchesStep(state, target, id, step)) || (hero && ((step.requiredSubtype || step.requiredName || step.imageOnly || step.maxCost != null) || (step.excludeIds || []).includes(id)))) throw new RulesViolation("invalid-target"); });
           if (decision.kind === "activation-targets") { state.pendingDecision = null; stack.push(...continuation); stack.push({ kind: "command", command: { ...decision.command, targetIds } }); continue; }
         }
         state.pendingDecision = null; stack.push(...continuation); if (decision.kind === "repeat-choice" && decision.effect.remaining > 1) stack.push({ kind: "effect", effect: { ...decision.effect, type: "repeatChoiceForCoffeeCount", remaining: decision.effect.remaining - 1 }, context: decision.context }); const chosen = decision.effect.choices?.[item.command.choiceIndex] || decision.effect.replayEffects || [];
@@ -716,8 +754,10 @@ export function executeCommand(inputState, command, options = {}) {
       const replacementIndex = item.context.replacementApplied ? -1 : replacements.findIndex((entry) => String(item.context.effectSource?.name || "").toLowerCase().includes(String(entry.nameIncludes || "").toLowerCase()));
       if (replacementIndex >= 0) { replacements.splice(replacementIndex, 1); stack.push({ kind: "effect", effect: item.effect, context: { ...item.context, replacementApplied: true } }); }
       if (item.effect.type === "replaySelectedAbility") item.context.replayCandidateIds = replayAbilityCandidates(state, item.context.owner, item.effect).map((card) => card.uid || card.id);
+      const appliedTargetSnapshots = captureEffectTargets(state, item.effect, item.context);
       applyEffect(state, item.effect, item.context, handlers);
-      if (state.pendingDecision && stack.length) { state.pendingDecision.continuation = stack.splice(0); }
+      recordAppliedTargetEffects(state, item.effect, item.context, appliedTargetSnapshots);
+      if (state.pendingDecision && stack.length) { state.pendingDecision.continuation = [...stack.splice(0), ...(state.pendingDecision.continuation || [])]; }
       if (item.context.effectSource?.name && (item.context.targetIds || []).length) stack.push({ kind: "event", event: { type: "onNamedEffectApplied", owner: item.context.owner, sourceId: item.context.sourceId, effectSource: item.context.effectSource, card: item.context.effectSource, effect: item.effect, targetIds: item.context.targetIds } });
       cleanupLethal(state, stack);
       for (const event of (state.rulesEvents || []).splice(0).reverse()) stack.push({ kind: "event", event });
@@ -731,7 +771,7 @@ export function executeCommand(inputState, command, options = {}) {
           target.modifiers.push({ attack: 1, health: 0, duration: "permanent", sourceId: target.uid || target.id });
         }
       }
-      const triggered = activeAbilities(state, item.event); for (const trigger of triggered.reverse()) { claimUsage(state, trigger.source, trigger.owner, trigger.ability); const baseTargetSteps = abilityTargetSteps(trigger.ability); const imageEntering = item.event.type === "onEnter" && (item.event.card?.generatedImage || item.event.card?.imageCard); const targetSteps = imageEntering ? baseTargetSteps.map((step) => ({ ...step, excludeIds: [...new Set([...(step.excludeIds || []), item.event.sourceId].filter(Boolean))] })) : baseTargetSteps; const context = { owner: trigger.owner, sourceId: trigger.ability.replaySourceId || trigger.source.uid, event: item.event, targetIds: item.event.targetIds || [] }; if (targetSteps.length && !context.targetIds.length) { if (!canSatisfyTargetSteps(state, trigger.owner, targetSteps)) continue; state.pendingDecision = { kind: "targets", owner: trigger.owner, effect: { replayEffects: trigger.ability.effects }, context, targetSteps, sourceName: trigger.ability.replaySourceId ? item.event.card?.name || "Primeiro Ato" : trigger.source.name || "efeito ativado" }; break; } for (const effect of [...trigger.ability.effects].reverse()) stack.push({ kind: "effect", effect, context }); }
+      const triggered = activeAbilities(state, item.event); for (const trigger of triggered.reverse()) { claimUsage(state, trigger.source, trigger.owner, trigger.ability); const baseTargetSteps = abilityTargetSteps(trigger.ability); const imageEntering = item.event.type === "onEnter" && (item.event.card?.generatedImage || item.event.card?.imageCard); const targetSteps = imageEntering ? baseTargetSteps.map((step) => ({ ...step, excludeIds: [...new Set([...(step.excludeIds || []), item.event.sourceId].filter(Boolean))] })) : baseTargetSteps; const context = { owner: trigger.owner, sourceId: trigger.ability.replaySourceId || trigger.source.uid, event: item.event, targetIds: trigger.ability.useEventTargets === false ? [] : item.event.targetIds || [] }; if (targetSteps.length && !context.targetIds.length) { if (!canSatisfyTargetSteps(state, trigger.owner, targetSteps)) continue; state.pendingDecision = { kind: "targets", owner: trigger.owner, effect: { replayEffects: trigger.ability.effects }, context, targetSteps, sourceName: trigger.ability.replaySourceId ? item.event.card?.name || "Primeiro Ato" : trigger.source.name || "efeito ativado" }; break; } for (const effect of [...trigger.ability.effects].reverse()) stack.push({ kind: "effect", effect, context }); }
     }
   }
   if (command.type === "advancePhase" && originalPhase === "fim" && state.phase === "manutencao") {

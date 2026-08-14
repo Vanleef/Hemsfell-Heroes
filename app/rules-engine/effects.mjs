@@ -10,6 +10,13 @@ const findUnit = (state, id) => allUnits(state).find((unit) => unit.uid === id |
 const heroOwner = (context, id) => id === "enemy-hero" ? 1 - context.owner : id === "ally-hero" || id === "controller-hero" ? context.owner : /^hero-[01]$/.test(id || "") ? Number(id.slice(-1)) : null;
 const markerTotal = (card) => typeof card?.markers === "number" ? card.markers : Object.values(card?.markers || {}).reduce((sum, value) => sum + Number(value || 0), 0);
 const setMarker = (card, marker, amount) => { if (typeof card.markers === "number" && marker === "action") card.markers = amount; else card.markers = { ...(typeof card.markers === "object" ? card.markers : {}), [marker]: amount }; };
+const removeOneMarker = (card) => {
+  if (typeof card?.markers === "number") { if (card.markers < 1) return false; card.markers--; return true; }
+  const key = Object.keys(card?.markers || {}).find((name) => Number(card.markers[name] || 0) > 0);
+  if (!key) return false;
+  card.markers[key]--;
+  return true;
+};
 const queueEvent = (state, event) => { state.rulesEvents ||= []; state.rulesEvents.push(event); };
 const selectedIds = (context) => context.targetIds?.length ? context.targetIds : context.targetId ? [context.targetId] : [];
 const effectTargets = (state, effect, context) => {
@@ -26,6 +33,19 @@ const queueDecision = (state, effect, context, kind = effect.type) => { if (stat
 const keywordsOf = (card) => card?.suffocated ? [] : [...(card?.tags || []), ...(card?.temporaryTags || []), ...(card?.grantedKeywords || []).map((value) => String(value).replace(/^(?:attachment|support|duelist):[^:]+:/, ""))];
 const hasKeyword = (card, pattern) => keywordsOf(card).some((tag) => pattern.test(String(tag)));
 const normalizedName = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, " ").trim().toLowerCase();
+const hasTrigger = (card, trigger) => (card?.abilities || []).some((ability) => ability.trigger === trigger);
+const nextRandomIndex = (state, length) => {
+  const seed = Number(state.randomSeed ?? (((state.round || 1) * 2654435761 + (state.events || 0) * 1013904223) >>> 0));
+  state.randomSeed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+  return length > 0 ? state.randomSeed % length : -1;
+};
+const targetScopeForEffect = (target) => ({ anyCharacter: "anyCharacter", anyCreature: "anyCreature", allyCreature: "allyCreature", enemyCreature: "enemyCreature", anyPermanent: "anyPermanent", allyPermanent: "allyPermanent", enemyPermanent: "enemyPermanent", creature: "anyCreature" }[target]);
+const targetStepsForEffects = (effects = []) => effects.flatMap((nested) => {
+  const scope = targetScopeForEffect(nested.target);
+  if (!scope) return [];
+  const selections = nested.selections ?? 1, minimum = nested.minimumSelections ?? selections;
+  return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: nested.requiredSubtype, requiresMarker: !!nested.requiresMarker, requiresEffectAppliedThisTurn: !!nested.requiresEffectAppliedThisTurn }));
+});
 const effectiveUnitName = (state, unit) => {
   let name = unit?.name || "";
   for (const attachment of allUnits(state).filter((card) => card.attachedTo === unit?.uid && !card.suffocated)) {
@@ -63,7 +83,8 @@ const cleanCardForHiddenZone = (card, metadata = {}) => {
     "immobilized", "impacting", "activatedThisTurn", "markers", "modifiers", "grantedKeywords", "staticModifiers",
     "temporaryAtk", "temporaryHp", "temporaryTags", "temporarySubtypes", "combatRestrictions", "damageShields",
     "attachedTo", "linkedCreatures", "lastDamagedBy", "damagedOwnersThisTurn", "killedByRepeatSourceId",
-    "costModifier", "costModifierExpires", "costModifierExpiresRound", "cardsPlayedAfterSelf", "targetClass", "selected"
+    "costModifier", "costModifierExpires", "costModifierExpiresRound", "cardsPlayedAfterSelf", "targetClass", "selected",
+    "effectAppliedRound", "effectAppliedSourceId", "staysExhaustedUntilSpellEffect"
   ]) delete copy[key];
   return copy;
 };
@@ -199,6 +220,38 @@ export const defaultEffectHandlers = Object.freeze({
       if (removed && !removed.card.generatedImage && !removed.card.imageCard) player(state, removed.owner).hand.push(cleanCardForHiddenZone(removed.card));
     }
   },
+  returnSelectedGraveCardsToHand(state, effect, context) {
+    const entry = player(state, context.owner), choices = entry.grave.filter((card) => card.type === effect.cardType && (!effect.requiredTrigger || hasTrigger(card, effect.requiredTrigger))).map((card) => card.uid || card.id);
+    if (!choices.length) throw new RulesViolation("play-condition-not-met");
+    queueDecision(state, { ...effect, choices }, context, "grave-to-hand-many");
+  },
+  returnSelectedGraveCardsAndBanishRest(state, effect, context) {
+    const entry = player(state, context.owner), choices = entry.grave.filter((card) => card.type === effect.cardType).map((card) => card.uid || card.id);
+    queueDecision(state, { ...effect, choices }, context, "grave-to-hand-and-banish");
+  },
+  escapeCreatureAndTransferArtifacts(state, effect, context) {
+    const id = context.targetIds?.[0], target = findUnit(state, id);
+    if (!target || target.type !== "Criatura") throw new RulesViolation("target-required");
+    const targetOwner = state.players.findIndex((entry) => (entry.board || []).includes(target));
+    if (targetOwner < 0) throw new RulesViolation("target-required");
+    const originalEntry = player(state, targetOwner), attachments = (originalEntry.support || []).filter((card) => card.attachedTo === (target.uid || target.id));
+    originalEntry.support = (originalEntry.support || []).filter((card) => !attachments.includes(card));
+    for (const artifact of attachments) {
+      target.modifiers = (target.modifiers || []).filter((modifier) => modifier.sourceId !== (artifact.uid || artifact.id));
+      target.grantedKeywords = (target.grantedKeywords || []).filter((keyword) => !String(keyword).startsWith(`attachment:${artifact.uid || artifact.id}:`));
+      const artifactOwner = targetOwner, newOwner = 1 - artifactOwner, receiver = player(state, newOwner);
+      const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !(receiver.support || []).some((card) => card.slot === slot));
+      artifact.attachedTo = undefined;
+      artifact.slot = openSlot ?? artifact.slot ?? 0;
+      receiver.support ||= [];
+      receiver.support.push(artifact);
+    }
+    const removed = removeFromZones(state, id);
+    if (!removed || removed.card.generatedImage || removed.card.imageCard) return;
+    const returned = cleanCardForHiddenZone(removed.card);
+    if (attachments.length) returned.costModifier = -(returned.cost || 0);
+    player(state, removed.owner).hand.push(returned);
+  },
   returnToHandWithSubtypeBonus(state, effect, context) {
     const id = context.targetIds?.[0], target = findUnit(state, id);
     if (!target) throw new RulesViolation("target-required");
@@ -221,8 +274,11 @@ export const defaultEffectHandlers = Object.freeze({
     const taxed = player(state, removed.owner); taxed.nextCreatureTaxes ||= []; taxed.nextCreatureTaxes.push({ amount: effect.tax || 1, createdRound: state.round, sourceId: context.sourceId });
   },
   tap(state, effect, context) { const target = findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); target.exhausted = true; },
+  tapUntilAnotherSpellEffect(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); target.exhausted = true; const keyword = `Imobilizado · Abstinência de Café · ${context.sourceId}`; target.grantedKeywords ||= []; if (!target.grantedKeywords.includes(keyword)) target.grantedKeywords.push(keyword); target.staysExhaustedUntilSpellEffect = { sourceId: context.sourceId, keyword }; },
   ready(state, effect, context) { const target = findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); target.exhausted = false; },
   addMarker(state, effect, context) { const target = effect.target === "hero" ? player(state, context.owner) : findUnit(state, context.targetIds?.[0] || context.sourceId); if (!target) throw new RulesViolation("target-required"); const key = effect.marker || "action"; setMarker(target, key, (typeof target.markers === "object" ? target.markers[key] || 0 : target.markers || 0) + (effect.amount ?? 1)); },
+  moveMarkerToSelf(state, effect, context) { const source = findUnit(state, context.sourceId), donor = findUnit(state, context.targetIds?.[0]); if (!source || !donor) return; if (!removeOneMarker(donor)) throw new RulesViolation("not-enough-markers"); setMarker(source, "action", (typeof source.markers === "object" ? source.markers.action || 0 : source.markers || 0) + 1); },
+  convertActionMarkersToPlusOneCounters(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); const amount = typeof target.markers === "object" ? Number(target.markers.action || 0) : Number(target.markers || 0); if (amount < 1) return; setMarker(target, "action", 0); setMarker(target, "plusOne", (typeof target.markers === "object" ? Number(target.markers.plusOne || 0) : 0) + amount); target.modifiers ||= []; target.modifiers.push({ attack: amount, health: amount, duration: "permanent", sourceId: context.sourceId, markerBased: "plusOne" }); },
   modifyStats(state, effect, context) { const targets = effectTargets(state, effect, context); if (targets.some((target) => !target)) throw new RulesViolation("target-required"); for (const target of targets) { if (effect.subtype && !hasSubtype(target, effect.subtype)) throw new RulesViolation("invalid-target-subtype"); target.modifiers ||= []; const sourceId=context.sourceId; if (effect.duration === "attached" && target.modifiers.some((item) => item.sourceId === sourceId && item.attack === (effect.attack || 0) && item.health === (effect.health || 0))) continue; target.modifiers.push({ attack: effect.attack || 0, health: effect.health || 0, duration: effect.duration || "permanent", ...(effect.duration === "untilNextTurn" ? { expiresRound: (state.round || 0) + 2 } : {}), ...(effect.duration === "attached" ? { sourceId } : {}) }); } },
   attachedConditionalKeyword(state, effect, context) { const source=findUnit(state,context.sourceId); const target=source?.attachedTo?findUnit(state,source.attachedTo):null; if(!target||normalizedName(effectiveUnitName(state,target))!==normalizedName(effect.attachedName))return; target.grantedKeywords ||= []; const value=`attachment:${source.uid || source.id}:${effect.keyword}`; if(!target.grantedKeywords.includes(value))target.grantedKeywords.push(value); },
   optionalSacrificeBuff(state, effect, context) { const source=findUnit(state,context.sourceId); const choices=(player(state,context.owner).board||[]).filter((card)=>card.uid!==source?.uid).map((card)=>card.uid); if(!source||!choices.length)return; queueDecision(state,{...effect,choices},context,"optional-sacrifice-buff"); },
@@ -394,6 +450,56 @@ export const defaultEffectHandlers = Object.freeze({
   grantHeroDamageShield(state, effect, context) { const entry = player(state, context.owner); entry.damageShields ||= []; entry.damageShields.push({ uses: effect.uses || 1, sourceId: context.sourceId, expires: effect.duration }); },
   grantNextElementEffect(state, effect, context) { const entry = player(state, context.owner); entry.nextElementEffects ||= []; entry.nextElementEffects.push({ element: effect.element, keyword: effect.keyword, expires: effect.duration }); },
   consumeAllEnergyForDamage(state, effect, context) { const entry = player(state, context.owner), amount = (entry.energy || 0) + (entry.reserve || 0); entry.energy = 0; entry.reserve = 0; defaultEffectHandlers.damage(state, { ...effect, type: "damage", amount }, context); },
+  destroyIfEffectAppliedThisTurn(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target || target.effectAppliedRound !== state.round) throw new RulesViolation("invalid-target"); defaultEffectHandlers.destroy(state, { type: "destroy", target: "selected" }, context); },
+  banishOwnCreatureWithMostPlusOneCounters(state, effect, context) {
+    const entry = player(state, context.owner), creatures = entry.board || [];
+    if (!creatures.length) return;
+    const count = (card) => typeof card.markers === "object" ? Number(card.markers.plusOne || 0) : 0;
+    const maximum = Math.max(...creatures.map(count)), tied = creatures.filter((card) => count(card) === maximum);
+    if (tied.length === 1) { defaultEffectHandlers.banish(state, { type: "banish" }, { ...context, targetIds: [tied[0].uid || tied[0].id] }); return; }
+    if (state.pendingDecision) throw new RulesViolation("decision-pending");
+    state.pendingDecision = { kind: "targets", owner: context.owner, effect: { replayEffects: [{ type: "banish" }] }, context: { ...context, targetIds: [] }, targetSteps: [{ scope: "allyCreature", role: "effect", allowedIds: tied.map((card) => card.uid || card.id) }], sourceName: "CRIATURA 7" };
+  },
+  randomDiscardAndResolveByType(state, effect, context) {
+    const entry = player(state, context.owner);
+    if (!entry.hand.length) return;
+    const index = nextRandomIndex(state, entry.hand.length), discarded = entry.hand.splice(index, 1)[0];
+    entry.grave.push(cleanCardForHiddenZone(discarded, { discardedBy: context.sourceId }));
+    if (discarded.type === "Criatura") {
+      if (state.pendingDecision) throw new RulesViolation("decision-pending");
+      state.pendingDecision = { kind: "targets", owner: context.owner, effect: { replayEffects: [{ type: "damage", amount: discarded.cost || 0, target: "anyCharacter", selections: 1 }] }, context: { ...context, effectSource: discarded, targetIds: [] }, targetSteps: [{ scope: "anyCharacter", role: "effect" }], sourceName: "Descarte Estratégico" };
+      return;
+    }
+    if (discarded.type === "Feitiço") {
+      const accelerated = (discarded.tags || []).some((tag) => /acelerado/i.test(String(tag))) || /^\s*acelerado\b/i.test(String(discarded.text || ""));
+      if (!accelerated) {
+        const opponent = 1 - context.owner, opponentEntry = player(state, opponent);
+        if (opponentEntry.hand.length) queueDecision(state, { amount: 1 }, { ...context, decisionOwner: opponent }, "hand-discard-one");
+        return;
+      }
+      const replayEffects = (discarded.abilities || []).filter((ability) => ability.trigger === "onPlay").flatMap((ability) => ability.effects || []), targetSteps = targetStepsForEffects(replayEffects);
+      entry.spellsPlayed = (entry.spellsPlayed || 0) + 1;
+      if (state.active === context.owner) entry.turnSpellsPlayed = (entry.turnSpellsPlayed || 0) + 1;
+      queueEvent(state, { type: "onSpellCast", owner: context.owner, sourceId: discarded.id, card: discarded });
+      queueEvent(state, { type: "onCardPlayed", owner: context.owner, sourceId: discarded.id, card: discarded });
+      if (targetSteps.length) {
+        if (state.pendingDecision) throw new RulesViolation("decision-pending");
+        state.pendingDecision = { kind: "targets", owner: context.owner, effect: { replayEffects }, context: { ...context, sourceId: discarded.id, effectSource: discarded, targetIds: [] }, targetSteps, sourceName: discarded.name || "Feitiço acelerado descartado" };
+        return;
+      }
+      const replayContext = { ...context, sourceId: discarded.id, effectSource: discarded, targetIds: [] };
+      for (let replayIndex = 0; replayIndex < replayEffects.length; replayIndex++) {
+        applyEffect(state, replayEffects[replayIndex], replayContext);
+        if (state.pendingDecision) { state.pendingDecision.continuation = [...(state.pendingDecision.continuation || []), ...replayEffects.slice(replayIndex + 1).reverse().map((nested) => ({ kind: "effect", effect: nested, context: replayContext }))]; break; }
+      }
+      return;
+    }
+    if (discarded.type === "Terreno") {
+      const opponent = 1 - context.owner;
+      if (state.active === opponent) state.phase = "fim";
+      else player(state, opponent).skipNextTurn = true;
+    }
+  },
   createUniqueImage(state, effect, context) { if (allUnits(state).some((card) => normalizedName(card.name) === normalizedName(effect.name))) throw new RulesViolation("unique-image-already-present"); defaultEffectHandlers.createImage(state, { type: "createImage", name: effect.name, destination: "field" }, context); },
   createSelectedMasteryImage(state, effect, context) { const allowed = ["Maestria Elemental: Piromancia", "Maestria Elemental: Hidromancia", "Maestria Elemental: Geomancia", "Maestria Elemental: Aeromancia"]; const name = context.selectedImageName; if (!allowed.includes(name) || !(player(state, context.owner).extraDeck || []).some((card) => normalizedName(card.name) === normalizedName(name))) throw new RulesViolation("mastery-image-choice-required"); defaultEffectHandlers.createUniqueImage(state, { type: "createUniqueImage", name }, context); },
   geomancyChoice(state, effect, context) { if (!state.players.some((entry) => entry.board.length)) return; queueDecision(state, { ...effect, optional: true, choices: [[{ type: "reduceStatFloor", stat: "attack", amount: effect.amount, minimum: effect.minimum }], [{ type: "reduceStatFloor", stat: "health", amount: effect.amount, minimum: effect.minimum }]] }, context, "choice-target"); },

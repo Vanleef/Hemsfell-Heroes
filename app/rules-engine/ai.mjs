@@ -98,6 +98,9 @@ export function legalAITargets(state, owner, step = {}, selected = []) {
       if (step.maxCost != null && Number(card.cost || 0) > Number(step.maxCost)) continue;
       if (step.requireExhausted && !card.exhausted) continue;
       if (step.requiresDamagedOwnerThisTurn && !(card.damagedOwnersThisTurn || []).includes(owner)) continue;
+      if (step.requiresEffectAppliedThisTurn && card.effectAppliedRound !== state.round) continue;
+      if (step.requiresMarker && markerTotal(card) < 1) continue;
+      if (step.allowedIds?.length && !step.allowedIds.includes(id)) continue;
       if ((step.excludeIds || []).includes(id)) continue;
       options.push({ id, card, targetOwner, kind });
     }
@@ -150,10 +153,15 @@ export function chooseAIDecision(state, owner, difficulty = "Normal") {
     const eligible = eligibleSearchCards(state, decision).sort((a, b) => aiCardValue(b, state, owner, difficulty) - aiCardValue(a, state, owner, difficulty));
     return { ...command, selectedCardIds: eligible.slice(0, Math.min(effect.amount || 1, eligible.length)).map(cardId) };
   }
-  if (["hand-limit-discard", "hand-to-deck-bottom"].includes(decision.kind)) {
+  if (["hand-discard-one", "hand-limit-discard", "hand-to-deck-bottom"].includes(decision.kind)) {
     const amount = Math.min(effect.amount || (decision.kind === "hand-limit-discard" ? Math.max(0, entry.hand.length - 9) : 1), entry.hand.length);
     const cards = [...entry.hand].sort((a, b) => aiCardValue(a, state, owner, difficulty) - aiCardValue(b, state, owner, difficulty));
     return { ...command, selectedCardIds: cards.slice(0, amount).map(cardId) };
+  }
+  if (["grave-to-hand-many", "grave-to-hand-and-banish"].includes(decision.kind)) {
+    const choices = new Set(effect.choices || []), minimum = Math.min(effect.minimum ?? 0, choices.size), maximum = Math.min(effect.maximum ?? choices.size, choices.size);
+    const selected = entry.grave.filter((card) => choices.has(cardId(card))).sort((a, b) => aiCardValue(b, state, owner, difficulty) - aiCardValue(a, state, owner, difficulty)).slice(0, Math.max(minimum, maximum));
+    return { ...command, selectedCardIds: selected.map(cardId) };
   }
   if (["zone-card", "grave-resurrect"].includes(decision.kind)) {
     const choices = new Set(effect.choices || []), zone = decision.kind === "grave-resurrect" ? entry.grave : [...entry.hand, ...entry.grave, ...entry.deck];

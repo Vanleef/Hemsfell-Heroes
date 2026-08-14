@@ -206,3 +206,112 @@ test("lista de feitiços acelerados e bônus permanente de Biriba estão correto
   for (const page of [57, 61, 62, 63, 64, 65]) assert.ok(cards.find((card) => card.page === page).tags.includes("Acelerado"), `p${page}`);
   const biriba = printed(30); assert.equal(biriba.abilities[0].effects[0].duration, "permanent");
 });
+
+test("Marcha dos Condenados seleciona simultaneamente uma ou duas criaturas com Último Suspiro", () => {
+  const empty = state(); empty.players[0].hand.push(printed(122, { cost: 0 }));
+  assert.throws(() => executeCommand(empty, { type: "playCard", owner: 0, cardId: "p122", skipPriority: true }), /play-condition-not-met/);
+
+  let game = state();
+  game.players[0].grave.push({ ...printed(10), uid: "last-1" }, { ...printed(116), uid: "last-2" }, { ...unit("plain"), uid: "plain" });
+  game = cast(game, printed(122, { cost: 0 }));
+  assert.equal(game.pendingDecision.kind, "grave-to-hand-many");
+  assert.equal(game.pendingDecision.effect.maximum, 2);
+  game = executeCommand(game, { type: "resolveDecision", owner: 0, selectedCardIds: ["last-1"] }).state;
+  assert.ok(game.players[0].hand.some((card) => card.uid === "last-1"));
+  assert.ok(game.players[0].grave.some((card) => card.uid === "last-2"));
+});
+
+test("Castigo e Café Derramado exigem um efeito realmente aplicado no turno", () => {
+  let game = state(); game.players[1].board.push(unit("affected", 1));
+  game = cast(game, spell("real-effect", "Terra", [{ type: "modifyStats", target: "anyCreature", selections: 1, attack: 1, health: 0, duration: "turn" }]), ["affected"]);
+  assert.equal(game.players[1].board[0].effectAppliedRound, game.round);
+  game = cast(game, printed(162, { cost: 0 }), ["affected"]);
+  assert.equal(game.players[1].board.length, 0);
+
+  const prevented = state(), shielded = unit("shielded", 1, { damageShields: [{ uses: 1, reduction: Number.POSITIVE_INFINITY }] });
+  prevented.players[1].board.push(shielded);
+  let result = cast(prevented, spell("prevented", "Fogo", [{ type: "damage", target: "anyCreature", selections: 1, amount: 3 }]), ["shielded"]);
+  assert.equal(result.players[1].board[0].effectAppliedRound, undefined);
+  result.players[0].hand.push(printed(226, { cost: 0 }));
+  assert.throws(() => executeCommand(result, { type: "playCard", owner: 0, cardId: "p226", targetIds: ["shielded"], skipPriority: true }), /invalid-target/);
+});
+
+test("Abstinência de Café mantém a criatura virada até outro feitiço aplicar um efeito", () => {
+  let game = state(); game.players[1].board.push(unit("abstinence", 1));
+  game = cast(game, printed(227, { cost: 0 }), ["abstinence"]);
+  assert.equal(game.players[1].board[0].exhausted, true);
+  assert.ok(game.players[1].board[0].staysExhaustedUntilSpellEffect);
+  assert.ok(game.players[1].board[0].grantedKeywords.some((keyword) => /abstinência/i.test(keyword)));
+  game = cast(game, spell("later-effect", "Água", [{ type: "modifyStats", target: "anyCreature", selections: 1, attack: 0, health: 1, duration: "turn" }]), ["abstinence"]);
+  assert.equal(game.players[1].board[0].staysExhaustedUntilSpellEffect, undefined);
+  assert.ok(!game.players[1].board[0].grantedKeywords.some((keyword) => /abstinência/i.test(keyword)));
+  assert.equal(game.players[1].board[0].exhausted, true, "o efeito deixa de prender, mas não desvira imediatamente");
+});
+
+test("Descarte Estratégico escolhe aleatoriamente e resolve o tipo descartado", () => {
+  let creatureCase = state(); creatureCase.players[0].hand.push({ ...unit("discard-creature"), uid: undefined, cost: 4 });
+  creatureCase = cast(creatureCase, printed(253, { cost: 0 }));
+  assert.equal(creatureCase.pendingDecision.kind, "targets");
+  creatureCase = executeCommand(creatureCase, { type: "resolveDecision", owner: 0, targetIds: ["enemy-hero"] }).state;
+  assert.equal(creatureCase.players[1].life, 26);
+
+  let spellCase = state(); spellCase.players[0].hand.push(spell("discard-spell")); spellCase.players[1].hand.push({ id: "opponent-card", name: "Carta adversária", type: "Criatura" });
+  spellCase = cast(spellCase, printed(253, { cost: 0 }));
+  assert.equal(spellCase.pendingDecision.kind, "hand-discard-one"); assert.equal(spellCase.pendingDecision.owner, 1);
+  spellCase = executeCommand(spellCase, { type: "resolveDecision", owner: 1, selectedCardIds: ["opponent-card"] }).state;
+  assert.equal(spellCase.players[1].hand.length, 0); assert.equal(spellCase.players[1].grave.length, 1);
+
+  let acceleratedCase = state(); acceleratedCase.players[0].deck.push({ id: "drawn", name: "Comprada", type: "Criatura" }); acceleratedCase.players[0].hand.push({ ...spell("discard-fast", "Ar", [{ type: "draw", amount: 1 }]), tags: ["Ar", "Acelerado"] });
+  acceleratedCase = cast(acceleratedCase, printed(253, { cost: 0 }));
+  assert.ok(acceleratedCase.players[0].hand.some((card) => card.id === "drawn"));
+
+  let terrainCase = state(); terrainCase.players[0].hand.push({ id: "discard-terrain", name: "Terreno", type: "Terreno", cost: 1, text: "", tags: [], abilities: [] });
+  terrainCase = cast(terrainCase, printed(253, { cost: 0 }));
+  assert.equal(terrainCase.players[1].skipNextTurn, true);
+  terrainCase.active = 1; terrainCase.phase = "manutencao";
+  terrainCase = executeCommand(terrainCase, { type: "advancePhase", owner: 1 }).state;
+  assert.equal(terrainCase.active, 0); assert.equal(terrainCase.phase, "manutencao"); assert.equal(terrainCase.players[1].skipNextTurn, false);
+});
+
+test("CRIATURA 6 move opcionalmente um marcador de qualquer carta para si", () => {
+  let game = state(), source = { ...printed(297), uid: "marker-thief", slot: 0, summoning: false, exhausted: false, markers: { action: 0 } }, donor = unit("donor", 1, { markers: { coffee: 2 } });
+  game.players[0].board.push(source); game.players[1].board.push(donor);
+  game = executeCommand(game, { type: "emit", owner: 0, event: { type: "onCombatDamage", owner: 0, sourceId: source.uid, source, amount: 2, targetIds: [donor.uid] } }).state;
+  assert.equal(game.pendingDecision.kind, "targets"); assert.equal(game.pendingDecision.targetSteps[0].optional, true);
+  game = executeCommand(game, { type: "resolveDecision", owner: 0, targetIds: [donor.uid] }).state;
+  assert.equal(game.players[1].board[0].markers.coffee, 1); assert.equal(game.players[0].board[0].markers.action, 1);
+
+  game = executeCommand(game, { type: "emit", owner: 0, event: { type: "onCombatDamage", owner: 0, sourceId: source.uid, source: game.players[0].board[0], amount: 1 } }).state;
+  game = executeCommand(game, { type: "resolveDecision", owner: 0, targetIds: [] }).state;
+  assert.equal(game.players[0].board[0].markers.action, 1);
+});
+
+test("CRIATURA 7 converte marcadores e pede escolha em empate no fim do turno", () => {
+  let game = state(), source = { ...printed(298), uid: "converter", slot: 0, summoning: false, exhausted: false, enteredRound: 0 }, target = unit("converted", 1, { markers: { action: 2 } });
+  game.players[0].board.push(source); game.players[1].board.push(target);
+  game = executeCommand(game, { type: "activate", owner: 0, sourceId: source.uid, abilityId: source.abilities.find((ability) => ability.trigger === "activated").id, targetIds: [target.uid] }).state;
+  assert.equal(game.players[1].board[0].markers.action, 0); assert.equal(game.players[1].board[0].markers.plusOne, 2); assert.deepEqual(game.players[1].board[0].modifiers.at(-1), { attack: 2, health: 2, duration: "permanent", sourceId: source.uid, markerBased: "plusOne" });
+
+  const tie = state(); tie.players[0].board.push({ ...printed(298), uid: "tie-source", slot: 0, summoning: false }, unit("tie-a", 0, { slot: 1, markers: { plusOne: 2 } }), unit("tie-b", 0, { slot: 2, markers: { plusOne: 2 } }));
+  let tied = executeCommand(tie, { type: "emit", owner: 0, event: { type: "onTurnEnd", owner: 0 } }).state;
+  assert.equal(tied.pendingDecision.kind, "targets"); assert.deepEqual(new Set(tied.pendingDecision.targetSteps[0].allowedIds), new Set(["tie-a", "tie-b"]));
+  tied = executeCommand(tied, { type: "resolveDecision", owner: 0, targetIds: ["tie-b"] }).state;
+  assert.ok(!tied.players[0].board.some((card) => card.uid === "tie-b")); assert.ok(tied.players[0].obscuro.some((card) => card.uid === "tie-b"));
+});
+
+test("FUGA zera o custo retornado e transfere o artefato ao outro controlador", () => {
+  const game = state(), target = unit("escape-target", 1, { cost: 5, slot: 2 }), artifact = { uid: "stolen-artifact", id: "stolen-artifact", name: "Artefato", type: "Artefato", cost: 2, slot: 2, attachedTo: target.uid, tags: [], abilities: [], modifiers: [] };
+  game.players[1].board.push(target); game.players[1].support.push(artifact);
+  const result = cast(game, printed(307, { cost: 0 }), [target.uid]);
+  assert.equal(result.players[1].board.length, 0); assert.equal(result.players[1].hand[0].costModifier, -5);
+  assert.ok(result.players[0].support.some((card) => card.uid === artifact.uid && !card.attachedTo)); assert.equal(result.players[1].support.length, 0);
+});
+
+test("SOPRO NATURAL devolve até três criaturas e bane todo o restante do cemitério", () => {
+  let game = state(); game.players[0].grave = Array.from({ length: 5 }, (_, index) => ({ ...unit(`grave-${index}`), uid: `grave-${index}` })); game.players[0].grave.push({ id: "grave-spell", name: "Outro feitiço", type: "Feitiço" });
+  game = cast(game, printed(308, { cost: 0 }));
+  assert.equal(game.pendingDecision.kind, "grave-to-hand-and-banish"); assert.equal(game.pendingDecision.effect.maximum, 3); assert.equal(game.pendingDecision.effect.minimum, 0);
+  game = executeCommand(game, { type: "resolveDecision", owner: 0, selectedCardIds: ["grave-0", "grave-1"] }).state;
+  assert.equal(game.players[0].hand.filter((card) => /^grave-[01]$/.test(card.uid || "")).length, 2);
+  assert.equal(game.players[0].grave.length, 0); assert.equal(game.players[0].obscuro.length, 5);
+});
