@@ -36,7 +36,8 @@ test("mulligan has a server-authoritative 30 second deadline and visible card in
  assert.match(roomApi,/const mulliganDeadline = deadline\(30\)/);
  assert.match(page,/Se o tempo acabar, sua mão atual será mantida/);
  assert.match(page,/<OriginalCard card=\{card\} small inspectable\/>/);
- assert.match(uiOverrides,/\.mulligan-card-static \.card-tooltip\{display:block!important/);
+ assert.match(uiOverrides,/\.mulligan-card-static \.card-tooltip\{display:none!important/);
+ assert.match(uiOverrides,/\.mulligan-card-static \.original-card:hover>\.card-tooltip[\s\S]*?display:flex!important/);
 });
 
 test("local end of turn expires turn-duration effects before the opponent turn",()=>{

@@ -863,5 +863,7 @@
 .screen-game .mulligan-card-static{position:relative!important;z-index:21!important;pointer-events:auto!important}
 .screen-game .mulligan-card-static:hover{z-index:90000!important}
 .screen-game .mulligan-card-static .card-frame,.screen-game .mulligan-card-static .original-card{pointer-events:auto!important}
-.screen-game .mulligan-card-static .card-tooltip{display:block!important;position:absolute!important;z-index:91000!important;max-width:min(16rem,70vw)!important;pointer-events:none!important}
+.screen-game .mulligan-card-static .card-tooltip{display:none!important;position:absolute!important;z-index:91000!important;max-width:min(16rem,70vw)!important;pointer-events:none!important}
+.screen-game .mulligan-card-static .original-card:hover>.card-tooltip,
+.screen-game .mulligan-card-static .original-card:focus-visible>.card-tooltip{display:flex!important;flex-direction:column!important;gap:5px!important}
 .screen-game .mulligan-dialog>header .urgent{color:#ff766b!important}
