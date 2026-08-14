@@ -169,6 +169,7 @@ function conditionMatches(state, source, owner, condition, event = {}) {
 function playConditionMatches(state, owner, condition) {
   if (!condition) return true;
   if (condition.anyCreatureInPlay && !state.players.some((entry) => entry.board.length > 0)) return false;
+  if (condition.anySubtypeInPlay && !state.players.some((entry) => entry.board.some((card) => subtype(card, condition.anySubtypeInPlay)))) return false;
   if (condition.controllerGraveHasSubtype && !state.players[owner].grave.some((card) => subtype(card, condition.controllerGraveHasSubtype))) return false;
   if (condition.controllerGraveHasTrigger && !state.players[owner].grave.some((card) => card.type === "Criatura" && (card.abilities || []).some((ability) => ability.trigger === condition.controllerGraveHasTrigger))) return false;
   if (condition.controllerGraveCreatureCountAtLeast != null && state.players[owner].grave.filter((card) => card.type === "Criatura").length < condition.controllerGraveCreatureCountAtLeast) return false;

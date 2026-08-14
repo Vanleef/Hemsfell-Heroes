@@ -691,9 +691,23 @@ test("temporary stat and keyword effects across the catalog expire together", ()
   assert.deepEqual(expired.players[0].board[0].temporaryTags, []);
 });
 
+test("Escama Protetora só pode ser jogada com um Dragão em campo e só seleciona Dragões", () => {
+  const empty = state(); empty.players[0].hand.push(compileCard({ id: "p16", page: 16, name: "Escama Protetora", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  assert.throws(() => executeCommand(empty, { type: "playCard", owner: 0, cardId: "p16", targetIds: [] }), /play-condition-not-met/);
+
+  const game = state();
+  game.players[0].board.push({ uid: "human", type: "Criatura", subtypes: ["Humano"], modifiers: [], tags: [] });
+  game.players[1].board.push({ uid: "dragon", type: "Criatura", subtypes: ["Dragão"], modifiers: [], tags: [] });
+  game.players[0].hand.push(compileCard({ id: "p16", page: 16, name: "Escama Protetora", type: "Feitiço", cost: 0, text: "", tags: [] }));
+  assert.throws(() => executeCommand(game, { type: "playCard", owner: 0, cardId: "p16", targetIds: ["human"] }), /invalid-target-subtype/);
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p16", targetIds: ["dragon"] }).state;
+  assert.deepEqual(result.players[1].board[0].modifiers[0], { attack: 0, health: 2, duration: "turn" });
+});
+
 test("temporary subtype-restricted effects reject an invalid target", () => {
   const game = state();
   game.players[0].board.push({ uid: "human", type: "Criatura", subtypes: ["Humano"], modifiers: [], tags: [] });
+  game.players[1].board.push({ uid: "dragon", type: "Criatura", subtypes: ["Dragão"], modifiers: [], tags: [] });
   game.players[0].hand.push(compileCard({ id: "p16", page: 16, type: "Feitiço", cost: 0, text: "", tags: [] }));
   assert.throws(() => executeCommand(game, { type: "playCard", owner: 0, cardId: "p16", targetIds: ["human"] }), /invalid-target-subtype/);
 });

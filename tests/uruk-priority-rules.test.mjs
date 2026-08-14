@@ -137,9 +137,33 @@ test("Uruk III repete no fim do turno o último feitiço usado naquele turno", (
   game = executeCommand(game, { type: "advancePhase", owner: 0 }).state;
   assert.equal(game.phase, "fim");
   assert.equal(game.pendingDecision.kind, "targets");
+  assert.equal(game.pendingDecision.sourceName, "Uruk I · Fogo");
   game = executeCommand(game, { type: "resolveDecision", owner: 0, targetIds: ["enemy-hero"] }).state;
-  assert.deepEqual(game.players[1].board.map((card) => card.damage), [1, 2], "somente o último feitiço é repetido");
+  assert.equal(game.pendingDecision.sourceName, "Uruk III · last-spell");
+  game = executeCommand(game, { type: "resolveDecision", owner: 0, targetIds: ["old-target"] }).state;
+  assert.deepEqual(game.players[1].board.map((card) => card.damage), [2, 1], "o último feitiço recebe uma nova seleção de alvo");
   assert.equal(game.players[0].lastSpellReplay, undefined, "a cópia é consumida uma única vez");
+});
+
+test("Uruk III não abre seleção quando o último feitiço não possui mais alvo válido", () => {
+  let game = state(); game.players[0].heroId = "uruk"; game.players[0].level = 3; game.players[1].board.push(unit("only-target", 1, { hp: 1 }));
+  game = cast(game, spell("lethal-last-spell", "Água", [{ type: "damage", amount: 1, target: "anyCreature", selections: 1 }]), ["only-target"]);
+  assert.equal(game.players[1].board.length, 0);
+  game.phase = "combate";
+  game = executeCommand(game, { type: "advancePhase", owner: 0 }).state;
+  assert.equal(game.pendingDecision, undefined);
+});
+
+test("Uruk I resolve corretamente Fogo, Terra, Água e Ar no fim do turno", () => {
+  const ending = (element) => { const game = state(); game.players[0].heroId = "uruk"; game.players[0].level = 1; game.players[0].lastSpellElement = element; game.phase = "combate"; return executeCommand(game, { type: "advancePhase", owner: 0 }).state; };
+
+  const fire = ending("Fogo"); assert.equal(fire.pendingDecision.sourceName, "Uruk I · Fogo");
+  const earthGame = state(); earthGame.players[0].heroId = "uruk"; earthGame.players[0].level = 1; earthGame.players[0].lastSpellElement = "Terra"; earthGame.players[0].deck.push({ id: "drawn" }); earthGame.phase = "combate";
+  const earth = executeCommand(earthGame, { type: "advancePhase", owner: 0 }).state; assert.equal(earth.players[0].hand[0].id, "drawn");
+  const waterGame = state(); waterGame.players[0].heroId = "uruk"; waterGame.players[0].level = 1; waterGame.players[0].life = 20; waterGame.players[0].lastSpellElement = "Água"; waterGame.phase = "combate";
+  const water = executeCommand(waterGame, { type: "advancePhase", owner: 0 }).state; assert.equal(water.players[0].life, 21);
+  const airGame = state(); airGame.players[0].heroId = "uruk"; airGame.players[0].level = 1; airGame.players[0].energy = 3; airGame.players[0].lastSpellElement = "Ar"; airGame.phase = "combate";
+  const air = executeCommand(airGame, { type: "advancePhase", owner: 0 }).state; assert.equal(air.players[0].energy, 4);
 });
 
 test("Eclipse Final causa duas vezes o total de feitiços do turno incluindo ela mesma", () => {

@@ -11,7 +11,7 @@ export const explicitCardRules = Object.freeze({
   p5: [ability("static", [effect("keyword", { keyword: "Voar" }), effect("keyword", { keyword: "Indomável" })]), ability("onCombatDamage", [effect("damageAdjacent", { amount: 1, relation: "combatDefender" })])],
   p20: [ability("activated", [effect("gainMaxEnergy", { amount: 1 }), effect("destroy", { target: "self" })], [{ type: "tap", amount: 1 }], { uiActivation: true })],
   p15: [ability("onPlay", [effect("conditionalDrawByControlledSubtype", { subtype: "Dragão", ifTrue: 2, ifFalse: 1 })])],
-  p16: [ability("onPlay", [effect("modifyStats", { target: "anyCreature", requiredSubtype: "Dragão", attack: 0, health: 2, duration: "turn" })])],
+  p16: [ability("onPlay", [effect("modifyStats", { target: "anyCreature", requiredSubtype: "Dragão", attack: 0, health: 2, duration: "turn" })], [], { playCondition: { anySubtypeInPlay: "Dragão" } })],
   p6: [ability("onEnter", [effect("damage", { amount: 2, target: "anyCreature", selections: 1 })])],
   p9: [ability("static", [effect("protectAlliedDragonsOncePerTurn")])],
   p10: [ability("static", [effect("keyword", { keyword: "Atropelar" })]), ability("onDestroyed", [effect("damageAll", { amount: 2, target: "allCreatures" })])],

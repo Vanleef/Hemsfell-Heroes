@@ -1,4 +1,5 @@
 import { hasSubtype } from "./subtypes.mjs";
+import { isValidTarget } from "./targeting.mjs";
 
 export class RulesViolation extends Error {
   constructor(code, message = code) { super(message); this.name = "RulesViolation"; this.code = code; }
@@ -46,6 +47,41 @@ const targetStepsForEffects = (effects = []) => effects.flatMap((nested) => {
   const selections = nested.selections ?? 1, minimum = nested.minimumSelections ?? selections;
   return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: nested.requiredSubtype, requiresMarker: !!nested.requiresMarker, requiresEffectAppliedThisTurn: !!nested.requiresEffectAppliedThisTurn }));
 });
+const replayTargetCandidates = (state, owner, step) => {
+  const candidates = [];
+  state.players.forEach((entry, targetOwner) => {
+    for (const card of entry.board || []) {
+      const id = card.uid || card.id;
+      if (!isValidTarget(step, owner, targetOwner, "creature")) continue;
+      if (step.requiredSubtype && !hasSubtype(card, step.requiredSubtype)) continue;
+      if (step.requiresMarker && markerTotal(card) < 1) continue;
+      if (step.requiresEffectAppliedThisTurn && card.effectAppliedRound !== state.round) continue;
+      candidates.push(id);
+    }
+    if (isValidTarget(step, owner, targetOwner, "hero") && !step.requiredSubtype && !step.requiresMarker && !step.requiresEffectAppliedThisTurn) candidates.push(targetOwner === owner ? "ally-hero" : "enemy-hero");
+  });
+  return candidates;
+};
+const canSelectReplayTargets = (state, owner, steps) => {
+  const candidates = steps.map((step) => replayTargetCandidates(state, owner, step));
+  const choose = (index, used) => index >= steps.length || (steps[index].optional && choose(index + 1, used)) || candidates[index].some((id) => !used.has(id) && choose(index + 1, new Set([...used, id])));
+  return choose(0, new Set());
+};
+const resolveStoredSpellReplay = (state, replay, context) => {
+  if (!replay?.effects?.length) return;
+  const replayContext = { ...context, sourceId: replay.sourceId, effectSource: replay.card, targetIds: [], targetId: undefined, chosenElement: replay.chosenElement, selectedImageName: replay.selectedImageName, cafeEffect: replay.cafeEffect, elementalTargetId: undefined };
+  const targetSteps = targetStepsForEffects(replay.effects);
+  if (targetSteps.length) {
+    if (!canSelectReplayTargets(state, context.owner, targetSteps)) return;
+    if (state.pendingDecision) throw new RulesViolation("decision-pending");
+    state.pendingDecision = { kind: "targets", owner: context.owner, effect: { replayEffects: replay.effects }, context: replayContext, targetSteps, sourceName: `Uruk III · ${replay.card?.name || "último feitiço"}` };
+    return;
+  }
+  for (let index = 0; index < replay.effects.length; index++) {
+    applyEffect(state, replay.effects[index], replayContext);
+    if (state.pendingDecision) { state.pendingDecision.continuation = [...(state.pendingDecision.continuation || []), ...replay.effects.slice(index + 1).reverse().map((nested) => ({ kind: "effect", effect: nested, context: replayContext }))]; break; }
+  }
+};
 const effectiveUnitName = (state, unit) => {
   let name = unit?.name || "";
   for (const attachment of allUnits(state).filter((card) => card.attachedTo === unit?.uid && !card.suffocated)) {
@@ -513,12 +549,10 @@ export const defaultEffectHandlers = Object.freeze({
     const entry = player(state, context.owner), replay = entry.lastSpellReplay;
     delete entry.lastSpellReplay;
     if (!replay?.effects?.length) return;
-    const replayContext = { ...context, sourceId: replay.sourceId, effectSource: replay.card, targetIds: replay.targetIds || [], targetId: replay.targetIds?.[0], chosenElement: replay.chosenElement, selectedImageName: replay.selectedImageName, cafeEffect: replay.cafeEffect, elementalTargetId: replay.elementalTargetId };
-    for (const nested of replay.effects) {
-      try { applyEffect(state, nested, replayContext); }
-      catch (error) { if (!(error instanceof RulesViolation) || !["target-required", "invalid-target", "invalid-target-subtype"].includes(error.code)) throw error; }
-    }
+    if (state.pendingDecision) { state.pendingDecision.continuation = [...(state.pendingDecision.continuation || []), { kind: "effect", effect: { type: "repeatStoredSpell", replay }, context }]; return; }
+    resolveStoredSpellReplay(state, replay, context);
   },
+  repeatStoredSpell(state, effect, context) { resolveStoredSpellReplay(state, effect.replay, context); },
   damageHeroFromTurnDeaths(state, effect, context) { const amount = player(state, context.owner).turnDeaths || 0; defaultEffectHandlers.damage(state, { type: "damage", amount }, { ...context, targetIds: ["enemy-hero"] }); },
   resurrectByDoubleMarkerCost(state, effect, context) { const source = findUnit(state, context.sourceId), entry = player(state, context.owner); const eligible = entry.grave.filter((card) => card.type === effect.cardType && (card.cost || 0) * 2 <= markerTotal(source)); if (!eligible.length) throw new RulesViolation("ability-not-available"); queueDecision(state, { ...effect, choices: eligible.map((card) => card.uid || card.id) }, context, "grave-resurrect"); },
   healFromMarkersRemoved(state, effect, context) { const entry = player(state, context.owner); entry.life = Math.min(entry.maxLife ?? 30, entry.life + (context.markerAmount || 0)); },
