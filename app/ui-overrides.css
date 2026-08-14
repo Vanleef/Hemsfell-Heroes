@@ -1,0 +1,813 @@
+/*
+ * Hemsfell Heroes — canonical UI overrides
+ *
+ * Consolidated from the historical versioned UI stylesheets. Keep additions
+ * grouped by concern below instead of creating new vXX CSS files.
+ */
+
+/* ========================================================================== 
+   BOARD POLISH — former ui-board-polish-v9.css
+   ========================================================================== */
+/* Hemsfell Heroes — responsive board polish v9
+ * Loaded after lab.css from globals.css, making this the final match-layout
+ * authority for the three fixes below. Everything is anchored to the logical
+ * board container with cqw/cqh/clamp rather than viewport pixel coordinates.
+ */
+
+.screen-game .game-stage > .game-content.hs-board {
+  --hh-side-zone-left: 84.7cqw;
+  --hh-fx-left: 67.6cqw;
+  --hh-fx-gap: clamp(.22rem,.42cqw,.46rem);
+}
+
+.screen-game .game-stage > .game-content.hs-board > :is(.visual-effect,.combat-cinematic) {
+  position: absolute !important;
+  left: var(--hh-fx-left) !important;
+  right: calc(100cqw - var(--hh-side-zone-left) + var(--hh-fx-gap)) !important;
+  top: 50% !important;
+  bottom: auto !important;
+  width: auto !important;
+  min-width: clamp(12rem,15.5cqw,17rem) !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  transform: translateY(-50%) !important;
+  box-sizing: border-box !important;
+  z-index: 540 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .visual-effect.fx-targeted {
+  left: max(66.7cqw, calc(var(--hh-fx-left) - .9cqw)) !important;
+  width: auto !important;
+  min-width: clamp(12.8rem,16.4cqw,18rem) !important;
+  max-width: none !important;
+}
+
+.screen-game .visual-effect > section {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+.screen-game .visual-effect:not(.fx-targeted) {
+  grid-template-columns: minmax(3rem,4.8cqw) minmax(0,1fr) !important;
+}
+.screen-game .visual-effect.fx-targeted {
+  grid-template-columns: minmax(2.8rem,4.3cqw) auto minmax(2.8rem,4.3cqw) !important;
+}
+.screen-game .visual-effect > :is(.remote-card-art,canvas.remote-card-art,img) {
+  width: min(4.75cqw,9.1cqh) !important;
+  max-width: 100% !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero {
+  --hero-side-stack-width: clamp(4.85rem,7.5cqw,7.8rem);
+  --hero-side-stack-gap: clamp(.055rem,.13cqh,.12rem);
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-power-trigger > .hero-level,
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution,
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  left: var(--hero-side-stack-left) !important;
+  right: auto !important;
+  width: var(--hero-side-stack-width) !important;
+  min-width: var(--hero-side-stack-width) !important;
+  max-width: var(--hero-side-stack-width) !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  display: grid !important;
+  place-items: center !important;
+  justify-self: start !important;
+  padding-inline: clamp(.12rem,.2cqw,.2rem) !important;
+  border-radius: clamp(.24rem,.38cqw,.4rem) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+  margin-top: 0 !important;
+}
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  top: calc(var(--hero-card-top) + clamp(4rem,8.28cqh,4.94rem)) !important;
+}
+
+.card-focus-layer.overlay.inspector {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100dvw !important;
+  height: 100dvh !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: clamp(.7rem,2vmin,1.4rem) !important;
+  overflow: auto !important;
+  z-index: 40000 !important;
+  pointer-events: auto !important;
+  background: rgb(1 5 9 / .9) !important;
+  backdrop-filter: blur(clamp(.12rem,.35vmin,.3rem)) saturate(.82) !important;
+}
+
+.card-focus-layer.overlay.inspector > div {
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: minmax(9rem, min(32vw,20rem)) minmax(15rem,1fr) !important;
+  align-items: center !important;
+  gap: clamp(.8rem,2vw,1.8rem) !important;
+  width: min(92vw,52rem) !important;
+  max-height: min(92dvh,44rem) !important;
+  padding: clamp(.75rem,1.8vw,1.5rem) !important;
+  overflow: auto !important;
+  border-radius: clamp(.55rem,1vw,1rem) !important;
+  pointer-events: auto !important;
+}
+
+.card-focus-layer.overlay.inspector > div > .remote-card-art {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 78dvh !important;
+  object-fit: contain !important;
+}
+
+.card-focus-layer.overlay.inspector aside {
+  min-width: 0 !important;
+  max-height: 78dvh !important;
+  overflow-y: auto !important;
+  padding-right: clamp(.15rem,.35vw,.3rem) !important;
+}
+
+.card-focus-layer.overlay.inspector .inspector-close {
+  width: clamp(1.8rem,3vw,2.4rem) !important;
+  height: clamp(1.8rem,3vw,2.4rem) !important;
+  right: clamp(.35rem,.7vw,.7rem) !important;
+  top: clamp(.35rem,.7vw,.7rem) !important;
+  font-size: clamp(1rem,1.7vw,1.45rem) !important;
+}
+
+@container hemsfell-board (max-height: 44rem) {
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-side-zone-left: 84.9cqw;
+    --hh-fx-left: 68cqw;
+  }
+  .screen-game .game-stage > .game-content.hs-board > :is(.visual-effect,.combat-cinematic) {
+    min-width: clamp(10.6rem,14.8cqw,14.5rem) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board > .player-hero {
+    --hero-side-stack-width: clamp(4.35rem,7cqw,7.05rem);
+  }
+}
+
+@container hemsfell-board (max-height: 36rem) {
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-side-zone-left: 85.1cqw;
+    --hh-fx-left: 68.6cqw;
+  }
+  .screen-game .game-stage > .game-content.hs-board > :is(.visual-effect,.combat-cinematic) {
+    min-width: clamp(9.2rem,13.9cqw,12.6rem) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board > .player-hero {
+    --hero-side-stack-width: clamp(4rem,6.6cqw,6.45rem);
+  }
+}
+
+@media (max-width: 48rem), (orientation: portrait) {
+  .card-focus-layer.overlay.inspector > div {
+    grid-template-columns: 1fr !important;
+    width: min(94vw,32rem) !important;
+    max-height: 94dvh !important;
+  }
+  .card-focus-layer.overlay.inspector > div > .remote-card-art {
+    width: min(48vw,13rem) !important;
+    justify-self: center !important;
+    max-height: 42dvh !important;
+  }
+  .card-focus-layer.overlay.inspector aside {
+    max-height: 43dvh !important;
+  }
+}
+
+/* ========================================================================== 
+   BOARD POLISH — former ui-board-polish-v10.css
+   ========================================================================== */
+.screen-game .game-stage > .game-content.hs-board > .player-hero {
+  --hero-stack-gap: clamp(.08rem,.18cqw,.18rem);
+  --hero-stack-width: clamp(4.9rem,7.55cqw,7.85rem);
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-power-trigger > .hero-level {
+  position: absolute !important;
+  left: calc(100% + var(--hero-stack-gap)) !important;
+  right: auto !important;
+  top: clamp(.72rem,1.65cqh,1.08rem) !important;
+  bottom: auto !important;
+  width: var(--hero-stack-width) !important;
+  min-width: var(--hero-stack-width) !important;
+  max-width: var(--hero-stack-width) !important;
+  height: clamp(1.1rem,2.25cqh,1.42rem) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution,
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  position: absolute !important;
+  left: calc(var(--hero-card-left) + var(--hero-card-width) + var(--hero-stack-gap)) !important;
+  right: auto !important;
+  width: var(--hero-stack-width) !important;
+  min-width: var(--hero-stack-width) !important;
+  max-width: var(--hero-stack-width) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+  top: calc(var(--hero-card-top) + clamp(1.95rem,4.05cqh,2.45rem)) !important;
+  bottom: auto !important;
+  height: clamp(1.95rem,4.05cqh,2.42rem) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  top: calc(var(--hero-card-top) + clamp(3.98rem,8.3cqh,4.96rem)) !important;
+  bottom: auto !important;
+  height: clamp(.86rem,1.75cqh,1.04rem) !important;
+  min-height: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: clamp(.05rem,.11cqh,.09rem) clamp(.12rem,.2cqw,.2rem) !important;
+  border-radius: clamp(.24rem,.36cqw,.38rem) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board {
+  --hh-fx-v10-left: 73.1cqw;
+  --hh-fx-v10-right: 1.75cqw;
+}
+
+.screen-game .game-stage > .game-content.hs-board > :is(.visual-effect,.combat-cinematic) {
+  position: absolute !important;
+  left: var(--hh-fx-v10-left) !important;
+  right: var(--hh-fx-v10-right) !important;
+  top: 50% !important;
+  bottom: auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  transform: translateY(-50%) !important;
+  box-sizing: border-box !important;
+  z-index: 560 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .visual-effect.fx-targeted {
+  left: var(--hh-fx-v10-left) !important;
+  right: var(--hh-fx-v10-right) !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+.screen-game .visual-effect:not(.fx-targeted) {
+  grid-template-columns: minmax(3.1rem,5.1cqw) minmax(0,1fr) !important;
+}
+.screen-game .visual-effect.fx-targeted {
+  grid-template-columns: minmax(2.8rem,4.6cqw) minmax(1.2rem,2.2cqw) minmax(2.8rem,4.6cqw) minmax(0,1fr) !important;
+}
+.screen-game .visual-effect > section {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+.screen-game .visual-effect > :is(.remote-card-art,canvas.remote-card-art,img) {
+  width: min(5.1cqw,9.8cqh) !important;
+  max-width: 100% !important;
+}
+
+.screen-game .player-field .original-card.target-ally.hero-ability-target {
+  outline-color: #e9c35d !important;
+  box-shadow: 0 0 clamp(.55rem,1cqw,1rem) #e9c35dbb !important;
+}
+
+@container hemsfell-board (max-height: 44rem) {
+  .screen-game .game-stage > .game-content.hs-board > .player-hero {
+    --hero-stack-width: clamp(4.35rem,7cqw,7.1rem);
+  }
+  .screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-power-trigger > .hero-level {
+    top: clamp(.62rem,1.38cqh,.92rem) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+    top: calc(var(--hero-card-top) + clamp(1.7rem,3.55cqh,2.12rem)) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+    top: calc(var(--hero-card-top) + clamp(3.5rem,7.3cqh,4.35rem)) !important;
+  }
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-fx-v10-left: 73.4cqw;
+    --hh-fx-v10-right: 1.65cqw;
+  }
+}
+
+@container hemsfell-board (max-height: 36rem) {
+  .screen-game .game-stage > .game-content.hs-board > .player-hero {
+    --hero-stack-width: clamp(4rem,6.55cqw,6.55rem);
+  }
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-fx-v10-left: 73.8cqw;
+    --hh-fx-v10-right: 1.55cqw;
+  }
+}
+
+/* ========================================================================== 
+   BOARD POLISH — former ui-board-polish-v11.css
+   ========================================================================== */
+.screen-game .game-stage > .game-content.hs-board > .player-hero {
+  --hero-stack-v11-gap-x: clamp(.08rem,.17cqw,.18rem);
+  --hero-stack-v11-gap-y: clamp(.055rem,.13cqh,.12rem);
+  --hero-stack-v11-width: clamp(4.95rem,7.58cqw,7.9rem);
+  --hero-stack-v11-level-h: clamp(1.08rem,2.18cqh,1.4rem);
+  --hero-stack-v11-progress-h: clamp(1.9rem,3.95cqh,2.4rem);
+  --hero-stack-v11-button-h: var(--hero-stack-v11-level-h);
+  --hero-stack-v11-level-top: clamp(.72rem,1.62cqh,1.06rem);
+  --hero-stack-v11-progress-top: clamp(1.94rem,4.02cqh,2.43rem);
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-power-trigger > .hero-level {
+  position: absolute !important;
+  left: calc(100% + var(--hero-stack-v11-gap-x)) !important;
+  right: auto !important;
+  top: var(--hero-stack-v11-level-top) !important;
+  bottom: auto !important;
+  width: var(--hero-stack-v11-width) !important;
+  min-width: var(--hero-stack-v11-width) !important;
+  max-width: var(--hero-stack-v11-width) !important;
+  height: var(--hero-stack-v11-level-h) !important;
+  min-height: var(--hero-stack-v11-level-h) !important;
+  max-height: var(--hero-stack-v11-level-h) !important;
+  margin: 0 !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  place-items: center !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > :is(.hero-evolution,.level-button) {
+  position: absolute !important;
+  left: calc(var(--hero-card-left) + var(--hero-card-width) + var(--hero-stack-v11-gap-x)) !important;
+  right: auto !important;
+  width: var(--hero-stack-v11-width) !important;
+  min-width: var(--hero-stack-v11-width) !important;
+  max-width: var(--hero-stack-v11-width) !important;
+  margin: 0 !important;
+  margin-inline: 0 !important;
+  transform: none !important;
+  box-sizing: border-box !important;
+  justify-self: auto !important;
+  align-self: auto !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+  top: calc(var(--hero-card-top) + var(--hero-stack-v11-progress-top)) !important;
+  bottom: auto !important;
+  height: var(--hero-stack-v11-progress-h) !important;
+  min-height: var(--hero-stack-v11-progress-h) !important;
+  max-height: var(--hero-stack-v11-progress-h) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+  top: calc(var(--hero-card-top) + var(--hero-stack-v11-progress-top) + var(--hero-stack-v11-progress-h) + var(--hero-stack-v11-gap-y)) !important;
+  bottom: auto !important;
+  height: var(--hero-stack-v11-button-h) !important;
+  min-height: var(--hero-stack-v11-button-h) !important;
+  max-height: var(--hero-stack-v11-button-h) !important;
+  padding: 0 clamp(.12rem,.22cqw,.22rem) !important;
+  border-radius: clamp(.24rem,.36cqw,.39rem) !important;
+  display: grid !important;
+  place-items: center !important;
+  line-height: 1 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .defense-decision {
+  position: absolute !important;
+  left: 27.7cqw !important;
+  top: 50cqh !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%,-50%) !important;
+  width: clamp(11.5rem,18.2cqw,18.8rem) !important;
+  min-width: clamp(11.5rem,18.2cqw,18.8rem) !important;
+  max-width: clamp(11.5rem,18.2cqw,18.8rem) !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: clamp(.24rem,.48cqh,.42rem) clamp(.3rem,.5cqw,.52rem) !important;
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) auto !important;
+  grid-template-areas: "message action" !important;
+  align-items: center !important;
+  column-gap: clamp(.42rem,.75cqw,.72rem) !important;
+  row-gap: 0 !important;
+  box-sizing: border-box !important;
+  z-index: 780 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .defense-decision > span {
+  grid-area: message !important;
+  margin: 0 !important;
+  min-width: 0 !important;
+  font-size: clamp(.31rem,min(.51cqw,.99cqh),.55rem) !important;
+  line-height: 1.15 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .defense-decision > b {
+  display: none !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .defense-decision > button {
+  grid-area: action !important;
+  justify-self: end !important;
+  align-self: center !important;
+  width: clamp(4.1rem,6.1cqw,6.3rem) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: clamp(.2rem,.38cqh,.32rem) clamp(.3rem,.48cqw,.46rem) !important;
+  font-size: clamp(.31rem,min(.45cqw,.74cqh),.48rem) !important;
+  line-height: 1.08 !important;
+  text-align: center !important;
+  white-space: normal !important;
+}
+
+@container hemsfell-board (max-height: 44rem) {
+  .screen-game .game-stage > .game-content.hs-board > .player-hero {
+    --hero-stack-v11-width: clamp(4.4rem,7.02cqw,7.12rem);
+    --hero-stack-v11-level-h: clamp(.94rem,1.9cqh,1.18rem);
+    --hero-stack-v11-progress-h: clamp(1.68rem,3.42cqh,2.05rem);
+    --hero-stack-v11-level-top: clamp(.62rem,1.34cqh,.9rem);
+    --hero-stack-v11-progress-top: clamp(1.7rem,3.52cqh,2.1rem);
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .defense-decision {
+    left: 27.8cqw !important;
+    width: clamp(10rem,17.2cqw,15.8rem) !important;
+    min-width: clamp(10rem,17.2cqw,15.8rem) !important;
+    max-width: clamp(10rem,17.2cqw,15.8rem) !important;
+  }
+}
+
+@container hemsfell-board (max-height: 36rem) {
+  .screen-game .game-stage > .game-content.hs-board > .player-hero {
+    --hero-stack-v11-width: clamp(4rem,6.55cqw,6.6rem);
+    --hero-stack-v11-level-h: clamp(.82rem,1.62cqh,1rem);
+    --hero-stack-v11-progress-h: clamp(1.48rem,2.95cqh,1.78rem);
+    --hero-stack-v11-level-top: clamp(.52rem,1.08cqh,.74rem);
+    --hero-stack-v11-progress-top: clamp(1.48rem,3.04cqh,1.82rem);
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .defense-decision {
+    left: 28cqw !important;
+    width: clamp(8.8rem,16.4cqw,13.2rem) !important;
+    min-width: clamp(8.8rem,16.4cqw,13.2rem) !important;
+    max-width: clamp(8.8rem,16.4cqw,13.2rem) !important;
+    padding: clamp(.18rem,.34cqh,.28rem) clamp(.22rem,.38cqw,.36rem) !important;
+    column-gap: clamp(.28rem,.5cqw,.46rem) !important;
+  }
+}
+
+/* ========================================================================== 
+   CARD ART / COST PRESENTATION — former card-back.css + remote-card-art.css
+   ========================================================================== */
+.official-card-back,
+.opponent-hand .official-card-back {
+  background-color: #050505;
+  background-image: url("/cards/card-back-hemsfell.webp");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  color: transparent;
+}
+
+.pile-card.official-card-back {
+  overflow: visible;
+  border-color: rgba(233, 202, 113, 0.82);
+  box-shadow: 0 7px 18px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+}
+
+.pile-card.official-card-back > i {
+  background-image: url("/cards/card-back-hemsfell.webp");
+  background-position: center;
+  background-size: cover;
+}
+
+.original-card .effective-cost {
+  position: absolute;
+  z-index: 8;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid #8fffc3;
+  background: radial-gradient(circle at 35% 30%, #2fcf78, #06482d 72%);
+  color: #fff;
+  font: 900 13px/1 Arial, sans-serif;
+  text-shadow: 0 1px 3px #000;
+  box-shadow: 0 0 12px rgba(83, 255, 166, 0.9);
+}
+
+.original-card .effective-cost.modified {
+  border-color: #ffca64;
+  background: radial-gradient(circle at 35% 30%, #d9822b, #5a2608 72%);
+  box-shadow: 0 0 12px rgba(255, 178, 72, 0.88);
+}
+
+.remote-card-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 612 / 792;
+  border-radius: inherit;
+  background: #05070a url("/cards/card-back-hemsfell.webp") center / cover no-repeat;
+  color: transparent;
+}
+
+.remote-card-art[data-loaded="true"] { background: #05070a; }
+.remote-card-art-failed { filter: saturate(.55); }
+
+.hero-fan .remote-card-art {
+  position: absolute;
+  left: 37%;
+  top: 50px;
+  width: 310px;
+  border-radius: 13px;
+  box-shadow: 0 25px 55px #000;
+  transform-origin: 50% 120%;
+  transition: .25s;
+}
+.hero-fan .remote-card-art:hover { z-index: 10; translate: 0 -25px; }
+.deck-rail .remote-card-art { width: 45px; height: 60px; border-radius: 3px; float: left; margin-right: 8px; }
+.deck-detail > aside .remote-card-art { width: 150px; margin: auto; border-radius: 7px; box-shadow: 0 15px 30px #000; }
+.original-card > .remote-card-art { width: 100%; border-radius: 8px; }
+.deck-picker .remote-card-art { grid-row: 2 / 6; width: 120px; border-radius: 6px; }
+.player-hero > .remote-card-art { position: absolute; left: 8px; top: 7px; width: 46px; height: 57px; border-radius: 4px; }
+.inspector .remote-card-art { width: 300px; border-radius: 10px; }
+.pile-card .remote-card-art { width: 100%; height: 100%; object-fit: cover; }
+.image-choice-dialog > div .remote-card-art { width: 82px; border-radius: 5px; }
+.combatant .remote-card-art { width: 72px; height: 98px; border-radius: 6px; }
+.visual-effect > .remote-card-art { position: relative; z-index: 2; width: 105px; max-height: 145px; border: 2px solid #ffe18a; border-radius: 8px; box-shadow: 0 0 24px #e9c65d; animation: fx-card 1.45s ease both; }
+.combat-destroyed .remote-card-art { animation: grave-fall 1.15s ease-in forwards !important; filter: grayscale(.7); }
+
+@media (max-width: 760px) {
+  .deck-picker .remote-card-art { width: 90px; }
+  .inspector .remote-card-art { width: 220px; margin: auto; }
+}
+
+/* ========================================================================== 
+   INTERACTION / READABILITY — former v17/v18
+   ========================================================================== */
+.screen-game .hero-command-bar{pointer-events:auto!important;z-index:620!important}
+.screen-game .hero-command-bar>.hero-ability-chip{position:relative!important;pointer-events:auto!important}
+.screen-game .hero-command-bar>.hero-ability-chip[aria-disabled="true"]{pointer-events:none!important}
+.screen-game .hero-command-bar>.hero-ability-chip>span{margin-left:clamp(.12rem,.24cqw,.28rem)!important;align-self:stretch!important;display:flex!important;flex-direction:column!important;justify-content:center!important}
+.screen-game .hero-command-bar>.hero-ability-chip>span>b{align-self:flex-start!important;margin:0 0 clamp(.08rem,.16cqh,.14rem)!important;line-height:.9!important;letter-spacing:.08em!important}
+.screen-game .hero-command-bar>.hero-ability-chip>span>p{margin:0!important}
+.screen-game .hero-command-bar>.hero-ability-chip.is-active.is-available:hover,.screen-game .hero-command-bar>.hero-ability-chip.is-active.is-available:focus-visible{box-shadow:0 0 0 .1rem #ffd35ccc,0 0 clamp(.7rem,1.25cqw,1.25rem) #ffc934a8,inset 0 0 clamp(.35rem,.65cqw,.65rem) #ffd45a32!important;filter:brightness(1.13) saturate(1.14)!important}
+.screen-game .player-hero.hero-hurt>.hero-power-trigger{animation:heroDamagePulse .62s cubic-bezier(.2,.8,.25,1) both}
+.screen-game .player-hero.hero-hurt>.hero-power-trigger::after{content:"";position:absolute;inset:-7%;border-radius:16%;pointer-events:none;animation:heroDamageFlash .62s ease-out both}
+@keyframes heroDamagePulse{0%{transform:translateX(0) scale(1)}18%{transform:translateX(-2.5%) scale(1.035)}36%{transform:translateX(2.2%) scale(1.025)}54%{transform:translateX(-1.2%) scale(1.015)}100%{transform:translateX(0) scale(1)}}
+@keyframes heroDamageFlash{0%{box-shadow:0 0 0 0 rgba(255,74,57,.92);background:rgba(255,55,38,.28);opacity:1}100%{box-shadow:0 0 clamp(1rem,2cqw,2rem) clamp(.25rem,.55cqw,.55rem) rgba(255,51,34,0);background:rgba(255,55,38,0);opacity:0}}
+@container hemsfell-board (max-height:44rem){.screen-game .hero-command-bar>.hero-ability-chip>span{margin-left:clamp(.09rem,.2cqw,.2rem)!important}.screen-game .hero-command-bar>.hero-ability-chip>span>b{margin-bottom:clamp(.06rem,.12cqh,.1rem)!important}}
+@container hemsfell-board (max-height:36rem){.screen-game .hero-command-bar>.hero-ability-chip>span{margin-left:clamp(.07rem,.17cqw,.16rem)!important}}
+
+.screen-game .field-energy>div>b{font-size:clamp(.46rem,.68cqw,.7rem)!important;line-height:1!important;letter-spacing:.055em!important;font-weight:900!important}
+.screen-game .field-energy>div>strong{font-size:clamp(.46rem,.68cqw,.7rem)!important;line-height:1!important;font-weight:900!important}
+.screen-game .field-energy .reserve-track>b{font-size:clamp(.46rem,.68cqw,.7rem)!important}
+@container hemsfell-board (max-height:44rem){.screen-game .field-energy>div>b{font-size:clamp(.42rem,.62cqw,.64rem)!important}.screen-game .field-energy>div>strong{font-size:clamp(.6rem,.78cqw,.8rem)!important}}
+
+/* ========================================================================== 
+   BOARD VISUALS — former ui-board-visual-polish-v20.css
+   ========================================================================== */
+.screen-game .active-effect-label{display:none!important}
+.screen-game .card-frame.tessalia-commander-frame{isolation:isolate;filter:drop-shadow(0 0 clamp(.18rem,.42cqw,.5rem) rgba(226,48,48,.72))}
+.screen-game .card-frame.tessalia-commander-frame::before{content:"";position:absolute;inset:clamp(-.28rem,-.34cqw,-.16rem);z-index:5;pointer-events:none;border:clamp(2px,.16cqw,3px) solid rgba(255,76,67,.96);border-radius:clamp(.5rem,.8cqw,.85rem);box-shadow:0 0 0 1px rgba(255,196,108,.58),0 0 clamp(.55rem,1.05cqw,1.1rem) rgba(221,34,34,.58),inset 0 0 clamp(.35rem,.65cqw,.7rem) rgba(176,22,22,.2);clip-path:polygon(0 0,31% 0,35% 4%,65% 4%,69% 0,100% 0,100% 29%,96% 34%,96% 66%,100% 71%,100% 100%,69% 100%,65% 96%,35% 96%,31% 100%,0 100%,0 71%,4% 66%,4% 34%,0 29%)}
+.screen-game .card-frame.tessalia-commander-frame .original-card{box-shadow:inset 0 0 0 1px rgba(255,80,70,.72),0 0 clamp(.35rem,.7cqw,.75rem) rgba(218,38,38,.44)!important}
+.screen-game .card-frame.tessalia-commander-frame .original-card::after{content:"";position:absolute;inset:2%;pointer-events:none;border-radius:inherit;background:linear-gradient(90deg,transparent 0 12%,rgba(255,50,50,.95) 19%,transparent 29% 71%,rgba(255,50,50,.95) 81%,transparent 88%),linear-gradient(0deg,transparent 0 10%,rgba(255,76,60,.9) 19%,transparent 29% 71%,rgba(255,76,60,.9) 81%,transparent 90%);background-size:210% 100%,100% 210%;mix-blend-mode:screen;opacity:.88;animation:tessaliaCommandLines 9s linear infinite}
+@keyframes tessaliaCommandLines{0%{background-position:20% 40%,60% 80%}50%{background-position:80% 60%,40% 20%}100%{background-position:20% 40%,60% 80%}}
+.screen-game .pile-zone>span,.screen-game .pile-zone .pile-title,.screen-game .pile-zone b:first-of-type{font-size:clamp(.62rem,.78cqw,.88rem)!important;line-height:1.05!important;font-weight:900!important;letter-spacing:.055em!important}
+.screen-game .pile-zone>small,.screen-game .pile-zone .pile-count,.screen-game .pile-zone strong{font-size:clamp(.64rem,.82cqw,.94rem)!important;line-height:1!important;font-weight:900!important}
+@container hemsfell-board (max-height:44rem){.screen-game .pile-zone>span,.screen-game .pile-zone .pile-title,.screen-game .pile-zone b:first-of-type{font-size:clamp(.56rem,.68cqw,.76rem)!important}.screen-game .pile-zone>small,.screen-game .pile-zone .pile-count,.screen-game .pile-zone strong{font-size:clamp(.58rem,.72cqw,.82rem)!important}}
+@container hemsfell-board (max-height:36rem){.screen-game .pile-zone>span,.screen-game .pile-zone .pile-title,.screen-game .pile-zone b:first-of-type{font-size:clamp(.5rem,.61cqw,.68rem)!important}.screen-game .pile-zone>small,.screen-game .pile-zone .pile-count,.screen-game .pile-zone strong{font-size:clamp(.52rem,.64cqw,.72rem)!important}}
+
+/* ========================================================================== 
+   ARTE DA GUERRA
+   ========================================================================== */
+.arte-da-guerra-decision{position:fixed;left:50%;bottom:clamp(82px,10vh,128px);transform:translateX(-50%);z-index:125;display:flex;align-items:center;gap:14px;min-width:min(560px,92vw);padding:10px 14px;border:1px solid #d9ad5588;border-radius:12px;background:#090f1aee;box-shadow:0 12px 34px #0009;backdrop-filter:blur(8px);font:700 clamp(10px,.75vw,13px)/1.2 Arial,sans-serif;letter-spacing:.05em}.arte-da-guerra-decision span{flex:1;color:#e9dfca}.arte-da-guerra-decision span b{color:#d9ad55}.arte-da-guerra-decision strong{font-size:clamp(16px,1.3vw,22px);color:#f3c86f;min-width:38px;text-align:center}.arte-da-guerra-decision button{border:1px solid #d9ad5588;background:linear-gradient(135deg,#a86d20,#e2bc67);color:#17110a;border-radius:8px;padding:8px 12px;font-weight:900}.arte-reposition-active .creature-slot{outline:1px dashed #e5b95d66;outline-offset:-3px}.arte-reposition-active .creature-slot.can-drop{cursor:grab}.arte-reposition-active .creature-slot.drag-over{outline:2px solid #f1c96e;box-shadow:inset 0 0 22px #d9ad5533,0 0 16px #d9ad5533}.arte-reposition-active .auxiliary-slot{filter:saturate(.85)}@media(max-width:720px){.arte-da-guerra-decision{gap:8px;padding:8px 10px}.arte-da-guerra-decision span{max-width:45vw}.arte-da-guerra-decision button{padding:7px 9px}}
+
+/* ========================================================================== 
+   TESSÁLIA / COMMANDER — former v27/v28
+   ========================================================================== */
+.screen-game .field-slot.creature-slot.commander-slot{border-color:#f0444f!important;background:radial-gradient(circle at 50% 35%,rgba(191,35,47,.42),rgba(64,6,13,.72) 70%)!important;box-shadow:inset 0 0 1.7rem rgba(239,49,63,.34),0 0 .8rem rgba(222,35,48,.34)!important}
+.screen-game .field-slot.creature-slot.commander-slot::before{content:none!important;display:none!important}
+.screen-game .field-slot.creature-slot.commander-slot:has(.original-card){border-color:#ff5a61!important;box-shadow:inset 0 0 2rem rgba(255,55,69,.4),0 0 1rem rgba(230,36,50,.48)!important}
+.screen-game .card-frame-commander{position:absolute;z-index:36;top:clamp(-.32rem,-.24cqw,-.18rem);right:clamp(.12rem,.32cqw,.34rem);width:clamp(1rem,1.45cqw,1.35rem);height:clamp(1rem,1.45cqw,1.35rem);display:grid;place-items:center;border:1px solid rgba(255,111,116,.92);border-radius:50%;background:radial-gradient(circle,#a91f2c,#4a0710);color:#ff7379;font-style:normal;font-size:clamp(.62rem,.9cqw,.9rem);line-height:1;box-shadow:0 0 .65rem rgba(255,48,60,.58);cursor:help}
+
+.screen-game .field-slot.creature-slot.commander-slot,
+.hs-board .field-slot.creature-slot.commander-slot{
+  border-color:#ff3e49!important;
+  background:radial-gradient(circle at 50% 40%,rgba(190,25,38,.55),rgba(82,5,13,.82) 68%,rgba(34,3,8,.92))!important;
+  box-shadow:inset 0 0 30px rgba(255,46,61,.42),0 0 14px rgba(220,28,43,.42)!important;
+}
+.screen-game .field-slot.creature-slot.commander-slot::before,
+.hs-board .field-slot.creature-slot.commander-slot::before{
+  content:none!important;
+  display:none!important;
+}
+.screen-game .field-slot.creature-slot.commander-slot:has(.original-card),
+.hs-board .field-slot.creature-slot.commander-slot:has(.original-card){
+  border-color:#ff6068!important;
+  box-shadow:inset 0 0 34px rgba(255,54,68,.48),0 0 18px rgba(225,31,47,.52)!important;
+}
+.field-negative-statuses i[data-status="Comandante"]{
+  border-color:#ff6b72!important;
+  background:radial-gradient(circle,#b32331,#4b0710)!important;
+  color:#ffd9dc!important;
+  box-shadow:0 0 8px rgba(255,48,62,.62)!important;
+  cursor:help;
+}
+
+/* ========================================================================== 
+   LOCAL HERO STATUS HUD — former v29–v32
+   ========================================================================== */
+.screen-game .player-hero:not(.enemy) .hero-status-cues{left:auto!important;right:7px!important;top:auto!important;bottom:-80px!important;transform:none!important;z-index:42!important;gap:6px!important;animation:heroStatusCuePulse 1.65s ease-in-out infinite}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.cost{top:auto!important;bottom:-116px!important}
+.screen-game .player-hero:not(.enemy) .hero-status-cues span{min-width:142px!important;padding:7px 12px!important;border:2px solid color-mix(in srgb,var(--deck,#69d5ff) 78%,white)!important;border-radius:9px!important;background:linear-gradient(135deg,color-mix(in srgb,var(--deck,#69d5ff) 34%,#07131e),#07131ef5)!important;color:#fff!important;text-align:center!important;font:900 11px/1.15 system-ui!important;letter-spacing:.075em!important;text-transform:uppercase!important;box-shadow:0 0 0 1px #ffffff24,0 0 18px color-mix(in srgb,var(--deck,#69d5ff) 64%,transparent),0 7px 18px #000b!important;text-shadow:0 1px 4px #000!important}
+.screen-game .player-hero:not(.enemy) .hero-status-cues span::before{content:"✦ ";color:#fff4a6}
+@keyframes heroStatusCuePulse{0%,100%{filter:brightness(1);transform:translateY(0)}50%{filter:brightness(1.24);transform:translateY(-2px)}}
+
+.screen-game .player-hero:not(.enemy){overflow:visible!important}
+.screen-game .player-hero:not(.enemy)>button.level-button{
+  right:-150px!important;
+  top:auto!important;
+  bottom:38px!important;
+  width:142px!important;
+  height:34px!important;
+  z-index:64!important;
+}
+.screen-game .player-hero:not(.enemy) .hero-status-cues{
+  left:auto!important;
+  right:-150px!important;
+  top:auto!important;
+  bottom:2px!important;
+  transform:none!important;
+  z-index:65!important;
+  display:flex!important;
+  visibility:visible!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.cost{
+  left:auto!important;
+  right:-298px!important;
+  top:auto!important;
+  bottom:2px!important;
+}
+.screen-game .player-hero:not(.enemy) .hero-status-cues span{
+  min-width:142px!important;
+  position:relative!important;
+  z-index:66!important;
+}
+@container hemsfell-board (max-width:75rem){
+  .screen-game .player-hero:not(.enemy)>button.level-button{right:-132px!important;width:126px!important}
+  .screen-game .player-hero:not(.enemy) .hero-status-cues{right:-132px!important}
+  .screen-game .player-hero:not(.enemy) .hero-status-cues.cost{right:-264px!important}
+  .screen-game .player-hero:not(.enemy) .hero-status-cues span{min-width:126px!important;padding-inline:8px!important;font-size:10px!important}
+}
+
+.screen-game .player-hero:not(.enemy){overflow:visible!important}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local{
+  left:116px!important;
+  right:auto!important;
+  top:116px!important;
+  bottom:auto!important;
+  width:128px!important;
+  transform:none!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:5px!important;
+  z-index:90!important;
+  visibility:visible!important;
+  opacity:1!important;
+  pointer-events:auto!important;
+  animation:none!important;
+}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local span{
+  min-width:0!important;
+  width:100%!important;
+  padding:6px 8px!important;
+  border:2px solid color-mix(in srgb,var(--deck,#69d5ff) 82%,white)!important;
+  border-radius:7px!important;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--deck,#69d5ff) 40%,#08121d),#07101af5)!important;
+  color:#fff!important;
+  text-align:center!important;
+  font:900 9px/1.15 Arial,sans-serif!important;
+  letter-spacing:.055em!important;
+  text-transform:uppercase!important;
+  box-shadow:0 0 0 1px #ffffff20,0 0 16px color-mix(in srgb,var(--deck,#69d5ff) 58%,transparent),0 5px 12px #000c!important;
+  text-shadow:0 1px 3px #000!important;
+  cursor:help!important;
+}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local.has-cues span{animation:heroCueAttention 1.8s ease-in-out infinite}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local .cue-empty{opacity:.62!important;border-style:dashed!important;box-shadow:0 3px 10px #0008!important;animation:none!important;font-size:8px!important}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local .cue-life{border-color:#e75e6d!important;background:linear-gradient(135deg,#631621,#17090df5)!important}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local .cue-warning{border-color:#f2ba55!important;background:linear-gradient(135deg,#604216,#171006f5)!important}
+@keyframes heroCueAttention{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
+@container hemsfell-board (max-height:44rem){.screen-game .player-hero:not(.enemy) .hero-status-cues.local{left:108px!important;top:108px!important;width:120px!important}.screen-game .player-hero:not(.enemy) .hero-status-cues.local span{padding:5px 6px!important;font-size:8px!important}}
+
+.screen-game .player-hero:not(.enemy){overflow:visible!important}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local{
+  left:clamp(6.7rem,9.15cqw,7.4rem)!important;
+  right:auto!important;
+  top:clamp(6.25rem,9.2cqh,7.3rem)!important;
+  bottom:auto!important;
+  width:clamp(6.4rem,10.2cqw,8.6rem)!important;
+  max-width:min(8.6rem,calc(100cqw - 7.2rem))!important;
+  min-width:0!important;
+  transform:none!important;
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:stretch!important;
+  gap:clamp(.18rem,.32cqh,.34rem)!important;
+  z-index:90!important;
+  overflow:visible!important;
+}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local span{
+  box-sizing:border-box!important;
+  display:block!important;
+  width:100%!important;
+  min-width:0!important;
+  max-width:100%!important;
+  padding:clamp(.24rem,.4cqh,.4rem) clamp(.28rem,.45cqw,.52rem)!important;
+  font-size:clamp(.39rem,.58cqw,.56rem)!important;
+  line-height:1.12!important;
+  letter-spacing:clamp(.01em,.035cqw,.05em)!important;
+  white-space:normal!important;
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+  hyphens:auto!important;
+  text-wrap:balance!important;
+  text-overflow:clip!important;
+  overflow:hidden!important;
+}
+.screen-game .player-hero:not(.enemy) .hero-status-cues.local .cue-empty{
+  font-size:clamp(.36rem,.52cqw,.5rem)!important;
+}
+@container hemsfell-board (max-width:75rem){
+  .screen-game .player-hero:not(.enemy) .hero-status-cues.local{
+    left:clamp(6.2rem,8.9cqw,6.85rem)!important;
+    width:clamp(5.8rem,9.4cqw,7.5rem)!important;
+    max-width:min(7.5rem,calc(100cqw - 6.7rem))!important;
+  }
+  .screen-game .player-hero:not(.enemy) .hero-status-cues.local span{
+    padding:.28rem .34rem!important;
+    font-size:clamp(.37rem,.55cqw,.5rem)!important;
+    letter-spacing:.02em!important;
+  }
+}
+@container hemsfell-board (max-width:60rem){
+  .screen-game .player-hero:not(.enemy) .hero-status-cues.local{
+    left:clamp(5.7rem,8.6cqw,6.3rem)!important;
+    top:clamp(5.8rem,8.8cqh,6.65rem)!important;
+    width:clamp(5.25rem,8.9cqw,6.65rem)!important;
+    max-width:min(6.65rem,calc(100cqw - 6.1rem))!important;
+  }
+  .screen-game .player-hero:not(.enemy) .hero-status-cues.local span{
+    padding:.24rem .28rem!important;
+    font-size:clamp(.35rem,.52cqw,.46rem)!important;
+    line-height:1.08!important;
+  }
+}
+@container hemsfell-board (max-height:44rem){
+  .screen-game .player-hero:not(.enemy) .hero-status-cues.local{
+    top:clamp(5.65rem,8.4cqh,6.65rem)!important;
+    gap:.18rem!important;
+  }
+  .screen-game .player-hero:not(.enemy) .hero-status-cues.local span{
+    padding-block:.22rem!important;
+    font-size:clamp(.35rem,.5cqw,.46rem)!important;
+  }
+}
+@container hemsfell-board (max-height:36rem){
+  .screen-game .player-hero:not(.enemy) .hero-status-cues.local{
+    left:clamp(5.35rem,8.2cqw,5.9rem)!important;
+    top:clamp(5.2rem,7.9cqh,5.85rem)!important;
+    width:clamp(4.9rem,8.3cqw,5.9rem)!important;
+    max-width:min(5.9rem,calc(100cqw - 5.7rem))!important;
+  }
+  .screen-game .player-hero:not(.enemy) .hero-status-cues.local span{
+    padding:.18rem .22rem!important;
+    font-size:clamp(.32rem,.46cqw,.41rem)!important;
+    letter-spacing:0!important;
+    line-height:1.05!important;
+  }
+}
