@@ -16,6 +16,21 @@ const roomValidation=await readFile(new URL("../app/api/rooms/validation.ts",imp
 const nextConfig=await readFile(new URL("../next.config.ts",import.meta.url),"utf8");
 const roomConstants=await readFile(new URL("../app/api/rooms/constants.ts",import.meta.url),"utf8");
 const remoteCardArt=await readFile(new URL("../app/remote-card-art.tsx",import.meta.url),"utf8");
+const uiOverrides=await readFile(new URL("../app/ui-overrides.css",import.meta.url),"utf8");
+
+test("decision panels explain each action and the hand limit explicitly",()=>{
+ assert.match(page,/eyebrow:"LIMITE DE MÃO"/);
+ assert.match(page,/para ficar com 9 cartas/);
+ assert.match(page,/decisionCopy\.instruction/);
+ assert.doesNotMatch(page,/A partida continuará somente depois que o servidor validar esta decisão/);
+});
+
+test("command bar copy is density-aware and cannot overflow its panel",()=>{
+ assert.match(page,/copyDensity=abilityCopy\.length>110/);
+ assert.match(uiOverrides,/\.hero-command-bar\{[\s\S]*?max-width:100%[\s\S]*?overflow:hidden/);
+ assert.match(uiOverrides,/-webkit-line-clamp:4/);
+ assert.match(uiOverrides,/overflow-wrap:anywhere/);
+});
 
 test("rulebook resource and turn invariants stay automated",()=>{
  assert.match(page,/life:startingLife/);

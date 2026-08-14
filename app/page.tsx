@@ -814,6 +814,30 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
  const choiceTargetDecision=engineDecision?.kind==="choice-target";
  const choiceTargetOptions=choiceTargetDecision&&game?game.players.flatMap(player=>player.board):[];
  const resolveChoiceTarget=(id:string)=>{if(engineChoiceIndex==null)return;const choiceIndex=engineChoiceIndex;setEngineChoiceIndex(null);void runRulesCommand({type:"resolveDecision",choiceIndex,targetIds:[id]},0)};
+ const decisionAmount=Math.max(0,Number(engineDecision?.effect?.amount||0));
+ const plural=(amount:number,singular:string,pluralForm=`${singular}s`)=>amount===1?singular:pluralForm;
+ const decisionCopy=(()=>{
+  if(!engineDecision)return{eyebrow:"DECISÃO",title:"Escolha uma opção",instruction:"Escolha como o efeito deve ser resolvido."};
+  const source=engineDecision.sourceName||"este efeito";
+  switch(engineDecision.kind){
+   case "hand-limit-discard":return{eyebrow:"LIMITE DE MÃO",title:`Descarte ${decisionAmount} ${plural(decisionAmount,"carta")}`,instruction:`Você encerrou o turno com mais de 9 cartas. Selecione exatamente ${decisionAmount} ${plural(decisionAmount,"carta")} da sua mão e confirme o descarte para ficar com 9 cartas.`};
+   case "search":return{eyebrow:"BUSCA NO DECK",title:`Escolha ${decisionCardMaximum} ${plural(decisionCardMaximum,"carta")}`,instruction:`Selecione ${decisionCardMinimum===decisionCardMaximum?"exatamente ":`de ${decisionCardMinimum} a `}${decisionCardMaximum} ${plural(decisionCardMaximum,"carta")} válida do seu deck para adicionar à sua mão.`};
+   case "hand-discard-one":return{eyebrow:"DESCARTE",title:"Escolha uma carta para descartar",instruction:`Selecione a carta da sua mão que será descartada pelo efeito de ${source} e confirme.`};
+   case "hand-to-deck-bottom":return{eyebrow:"FUNDO DO DECK",title:"Escolha uma carta da sua mão",instruction:`Selecione a carta que será colocada no fundo do seu deck pelo efeito de ${source} e confirme.`};
+   case "zone-card":case "grave-resurrect":return{eyebrow:"CEMITÉRIO",title:"Escolha uma carta do cemitério",instruction:`Selecione a carta que será recuperada pelo efeito de ${source}.`};
+   case "grave-to-hand-many":case "grave-to-hand-and-banish":return{eyebrow:"CEMITÉRIO",title:`Escolha de ${decisionCardMinimum} a ${decisionCardMaximum} cartas`,instruction:`Selecione as cartas do cemitério que serão afetadas por ${source} e confirme sua escolha.`};
+   case "forced-attack":return{eyebrow:"ATAQUE OBRIGATÓRIO",title:engineTargetSelection.length?"Escolha o defensor":"Escolha o Dragão atacante",instruction:engineTargetSelection.length?"Selecione a criatura adversária que defenderá este ataque.":"Selecione um Dragão apto para realizar o ataque obrigatório."};
+   case "sacrifice-and-fill":return{eyebrow:"SACRIFÍCIO",title:"Escolha quais criaturas sacrificar",instruction:"Selecione qualquer número de criaturas que deseja sacrificar e confirme. Os espaços liberados serão preenchidos conforme o efeito."};
+   case "optional-sacrifice-buff":return{eyebrow:"SACRIFÍCIO OPCIONAL",title:"Escolha até 3 criaturas",instruction:"Selecione até 3 outras criaturas para sacrificar e fortalecer o Brutamontes, ou confirme sem selecionar nenhuma."};
+   case "draw-position":return{eyebrow:"COMPRA DE CARTA",title:"Escolha de onde comprar",instruction:"Escolha se a próxima carta será comprada do topo ou do fundo do deck."};
+   case "redirect":return{eyebrow:"REDIRECIONAMENTO",title:"Decida se deseja redirecionar",instruction:"Mantenha o alvo original ou selecione uma das suas cartas válidas para receber o efeito."};
+   case "choice-target":return engineChoiceIndex==null?{eyebrow:"ESCOLHA DE EFEITO",title:"Escolha qual efeito aplicar",instruction:`Escolha uma das opções oferecidas por ${source}.`}:{eyebrow:"ESCOLHA DE ALVO",title:"Escolha uma criatura",instruction:`Selecione a criatura que receberá o efeito escolhido de ${source}.`};
+   case "targets":case "activation-targets":return{eyebrow:engineDecision.kind==="activation-targets"?"EFEITO ATIVÁVEL":"ESCOLHA DE ALVO",title:`Escolha o alvo de ${source}`,instruction:`Selecione no campo ${engineTargetStep?.optional?"até um alvo válido":"um alvo válido"} para ${engineTargetConsequence.toLocaleLowerCase("pt-BR")}.`};
+   case "repeat-choice":return{eyebrow:"EFEITO REPETIDO",title:"Escolha o próximo efeito",instruction:`Escolha qual efeito de ${source} será aplicado nesta repetição.`};
+   case "replay-ability":return{eyebrow:"REPETIR HABILIDADE",title:"Escolha a habilidade que será repetida",instruction:"Selecione uma das habilidades disponíveis para aplicá-la novamente."};
+   default:return{eyebrow:"ESCOLHA DE EFEITO",title:"Escolha como resolver o efeito",instruction:`Selecione uma das opções disponíveis para ${source}.`};
+  }
+ })();
  const repositionForLocal=!!game?.pendingReposition&&game.pendingReposition.activeOwner===0&&!game.pendingReposition.confirmed.includes(0);
  const moveForArteDaGuerra=(sourceId:string,slot:number)=>{if(!repositionForLocal||!game)return;void runRulesCommand({type:"reposition",moves:[{sourceId,slot}]},0)};
  const confirmArteDaGuerra=()=>{if(!repositionForLocal)return;void runRulesCommand({type:"confirmReposition"},0)};
@@ -822,9 +846,9 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
  useEffect(()=>{const pending=game?.pendingReposition;if(mode!=="bot"||!game||pending?.activeOwner!==1||pending.confirmed.includes(1))return;const key=String(game.round)+":"+String(pending.deadline||0);if(aiRepositionHandledRef.current===key)return;aiRepositionHandledRef.current=key;const entry=game.players[1],isSupport=(card:Unit)=>!card.suffocated&&(/\bsuporte\b/i.test(card.text||"")||(card.tags||[]).some(tag=>/\bsuporte\b/i.test(String(tag)))),strength=(card:Unit)=>currentAtk(card,entry),moves:Array<{sourceId:string;slot:number}>=[],supportCreature=entry.board.find(isSupport);if(supportCreature){moves.push({sourceId:supportCreature.uid,slot:2});const others=entry.board.filter(card=>card.uid!==supportCreature.uid).sort((a,b)=>strength(b)-strength(a)),slots=[1,3,0,4];others.forEach((card,index)=>moves.push({sourceId:card.uid,slot:slots[index]??card.slot}))}else{const ordered=[...entry.board].sort((a,b)=>strength(b)-strength(a)),slots=[0,4,1,3,2];ordered.forEach((card,index)=>moves.push({sourceId:card.uid,slot:slots[index]??card.slot}))}const timer=window.setTimeout(()=>{void runRulesCommand({type:"reposition",moves},1).then(ok=>{if(ok)void runRulesCommand({type:"confirmReposition"},1)})},420);return()=>window.clearTimeout(timer)},[mode,game?.pendingReposition?.activeOwner,game?.pendingReposition?.deadline]);
  return <main className={`hh-app screen-${screen}`}>
   {decisionForLocal&&<div className={`engine-decision-backdrop ${engineTargetDecision?"engine-target-decision-backdrop":""}`}><section className={`engine-decision-panel ${engineTargetDecision?"engine-target-decision-panel":""}`} data-decision-kind={engineDecision.kind}>
-    <small>DECISÃO DE REGRA</small>
-    <h2>{cardSelectionDecision?"Escolha as cartas":forcedAttackDecision?"Escolha o Dragão e o defensor":sacrificeAndFill?"Sacrifique qualquer número de criaturas":drawPositionDecision?"De onde comprar?":redirectDecision?"Redirecionar o efeito?":sacrificeDecision?"Escolha até 3 criaturas para o Brutamontes":engineTargetDecision?`Escolha o alvo de ${engineDecision.sourceName||"Primeiro Ato"}`:choiceTargetDecision&&engineChoiceIndex!=null?"Escolha uma criatura":"Escolha um efeito"}</h2>
-    <p>A partida continuará somente depois que o servidor validar esta decisão.</p>
+    <small>{decisionCopy.eyebrow}</small>
+    <h2>{decisionCopy.title}</h2>
+    <p>{decisionCopy.instruction}</p>
     <div>
       {cardSelectionDecision?<><div className="visual-card-choice-grid">{decisionCards.map(card=>{const id=(card as any).uid||card.id;return <div className={`visual-card-choice ${engineTargetSelection.includes(id)?"selected":""}`} key={id}><OriginalCard card={card} small inspectable={false} selected={engineTargetSelection.includes(id)} onClick={()=>toggleDecisionCard(id)}/><span>{engineTargetSelection.includes(id)?"Selecionada":"Selecionar"}</span></div>})}</div><button className="gold" disabled={engineTargetSelection.length<decisionCardMinimum||engineTargetSelection.length>decisionCardMaximum} onClick={confirmDecisionCards}>Confirmar ({engineTargetSelection.length}/{decisionCardMaximum})</button></>:
       forcedAttackDecision?<div className="visual-card-choice-grid">{forcedAttackOptions.map(card=><div className="visual-card-choice" key={card.uid}><OriginalCard card={card} small inspectable={false} onClick={()=>selectForcedAttack(card.uid)}/><span>{engineTargetSelection.length?"Escolher como defensor":"Escolher para atacar"}</span></div>)}</div>:
@@ -960,7 +984,9 @@ function HeroAbilities({player,enemy=false,onAbility,interactionEnabled=true}:{p
    const stateClass=locked?"is-locked":active?(clickable?"is-active is-available":"is-active is-unavailable"):"is-passive";
    const action=d.id==="saymon"?"Pagar 2 de vida":d.id==="ngoro"?"Gastar 3 Pistas":"Ativar";
    const title=locked?`Habilidade liberada no nível ${slot+1}.`:active?(used?"Habilidade já usada neste turno.":noResource?"Recursos insuficientes.":noValidTarget?"Não há alvo válido.":!interactionEnabled?"Aguarde a ação atual terminar.":`${action}: ${ability}`):"Habilidade passiva; resolve automaticamente.";
-   return <button type="button" className={`ability hero-ability-chip ${stateClass}`} key={ability} aria-disabled={!clickable} tabIndex={clickable?0:-1} onClick={event=>{event.preventDefault();event.stopPropagation();if(clickable)onAbility?.(slot)}} title={title} aria-label={`${active?"Ativa":"Passiva"}: ${ability}`}><i aria-hidden="true">{slot+1}</i><span><b>{active?"ATIVA":"PASSIVA"}</b><p>{ability.replace(/^[IVX]+ · /,"")}</p></span></button>
+   const abilityCopy=ability.replace(/^[IVX]+ · /,"");
+   const copyDensity=abilityCopy.length>110?"copy-dense":abilityCopy.length>72?"copy-compact":"copy-normal";
+   return <button type="button" className={`ability hero-ability-chip ${stateClass} ${copyDensity}`} key={ability} aria-disabled={!clickable} tabIndex={clickable?0:-1} onClick={event=>{event.preventDefault();event.stopPropagation();if(clickable)onAbility?.(slot)}} title={title} aria-label={`${active?"Ativa":"Passiva"}: ${ability}`}><i aria-hidden="true">{slot+1}</i><span><b>{active?"ATIVA":"PASSIVA"}</b><p>{abilityCopy}</p></span></button>
   })}
  </aside>
 }

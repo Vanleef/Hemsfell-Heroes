@@ -835,3 +835,12 @@
 .screen-game .terrain-slot.can-drop{border-color:#ffe16f!important;background:radial-gradient(circle,#d8b34838,#0c2227e8 72%)!important;box-shadow:0 0 0 2px #ffe16f99,0 0 clamp(.85rem,1.5cqw,1.6rem) #ffc93eaa,inset 0 0 clamp(.55rem,1cqw,1rem) #ffd76038!important;animation:terrainDropPulse 1s ease-in-out infinite alternate!important}
 .screen-game .terrain-slot.can-drop>em{color:#fff1a9!important;text-shadow:0 0 .55rem #ffd85f!important}
 @keyframes terrainDropPulse{to{filter:brightness(1.16);transform:scale(1.035)}}
+
+/* Keep every command description inside its chip, including long localized abilities. */
+.screen-game .hero-command-bar{box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;container-type:inline-size}
+.screen-game .hero-command-bar>.hero-ability-chip{box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important}
+.screen-game .hero-command-bar>.hero-ability-chip>span{box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important}
+.screen-game .hero-command-bar .hero-ability-chip>span>b,.screen-game .hero-command-bar .hero-ability-chip p{box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;overflow:hidden!important;overflow-wrap:anywhere!important;word-break:normal!important;white-space:normal!important}
+.screen-game .hero-command-bar .hero-ability-chip p{display:-webkit-box!important;font-size:clamp(.28rem,4.1cqi,.5rem)!important;line-height:1.08!important;text-overflow:ellipsis!important;-webkit-box-orient:vertical;-webkit-line-clamp:3}
+.screen-game .hero-command-bar .hero-ability-chip.copy-compact p{font-size:clamp(.265rem,3.65cqi,.45rem)!important;line-height:1.05!important}
+.screen-game .hero-command-bar .hero-ability-chip.copy-dense p{font-size:clamp(.245rem,3.25cqi,.4rem)!important;line-height:1.02!important;-webkit-line-clamp:4}
