@@ -88,6 +88,10 @@ test("Orbe Cromático simula o elemento escolhido e ainda causa 1 de dano", () =
 });
 
 test("Feiticeira Espectral consome X marcadores e busca um feitiço de custo até X", () => {
+  const sick = state(), sickWitch = { ...printed(80), uid: "sick-witch", slot: 0, markers: 1, summoning: true, exhausted: false };
+  sick.players[0].board.push(sickWitch);
+  assert.throws(() => executeCommand(sick, { type: "activate", owner: 0, sourceId: sickWitch.uid, abilityId: sickWitch.abilities.find((entry) => entry.trigger === "activated").id, markerAmount: 1 }), /summoning-sickness/);
+
   const game = state(), witch = { ...printed(80), uid: "witch", slot: 0, markers: 2, summoning: false, exhausted: false };
   const cheap = spell("cheap", "Água"), expensive = { ...spell("expensive", "Fogo"), cost: 3 };
   cheap.cost = 2; game.players[0].board.push(witch); game.players[0].deck.push(cheap, expensive);

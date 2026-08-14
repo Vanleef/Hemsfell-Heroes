@@ -10,7 +10,8 @@ export const activationEnergyCost = (text = "") => activatedAbilities(text).flat
 export function canActivateCard(card, context) {
   if (card?.activatedThisTurn || card?.suffocated) return false;
   const ability = activatedAbilities(card)[0]; if (!ability) return false;
-  if (card.type !== "Criatura" && (card.exhausted || card.summoning)) return false;
+  if (card?.summoning) return false;
+  if (card.type !== "Criatura" && card.exhausted) return false;
   if (ability.availability?.reserveBelow != null && (context.reserve || 0) >= ability.availability.reserveBelow) return false;
   if (ability.availability?.topGraveHasTrigger) { const top = context.topGrave; if (!top || top.type !== "Criatura" || !compileCard(top).abilities.some((candidate) => candidate.trigger === ability.availability.topGraveHasTrigger)) return false; }
   return ability.costs.every((cost) => {
@@ -23,4 +24,3 @@ export function canActivateCard(card, context) {
     return true;
   });
 }
-
