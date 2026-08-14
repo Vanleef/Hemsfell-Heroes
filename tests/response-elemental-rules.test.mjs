@@ -75,7 +75,7 @@ test("Uruk consumes only the matching elemental promise, replaces the cue and cl
     abilities: [{ id: "fire-play", trigger: "onPlay", costs: [], effects: [{ type: "grantNextElementEffect", element: "Terra", keyword: "Imobilizado", expires: "turn" }] }],
   }));
 
-  const resolved = executeCommand(game, { type: "playCard", owner: 0, cardId: "fire", targetIds: ["enemy"], skipPriority: true }, { priority: true }).state;
+  const resolved = executeCommand(game, { type: "playCard", owner: 0, cardId: "fire", skipPriority: true }, { priority: true }).state;
   assert.equal(resolved.players[1].board[0].suffocated, true, "matching Fogo promise is consumed on this spell");
   assert.deepEqual(resolved.players[0].nextElementEffects.map(({ element, keyword }) => ({ element, keyword })), [{ element: "Terra", keyword: "Imobilizado" }], "only the newly prepared cue remains");
   assert.equal(resolved.players[0].nextElementEffects[0].expires, "turn");
