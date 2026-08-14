@@ -61,9 +61,12 @@ export function cardPlayTargetPolicy(card) {
   const effectSteps = abilities.flatMap((ability) => (ability.effects || []).flatMap((effect) => {
     const scope = effectScope(effect.target);
     if (scope === TargetScope.NONE || effect.global) return [];
-    return Array.from({ length: Number(effect.selections) || 1 }, () => ({
+    const selections = Number(effect.selections) || 1;
+    const minimum = effect.minimumSelections == null ? selections : Number(effect.minimumSelections);
+    return Array.from({ length: selections }, (_, index) => ({
       scope,
       role: "effect",
+      optional: index >= minimum,
       requireExhausted: !!effect.requireExhausted,
       requiredSubtype: effect.requiredSubtype,
       requiresDamagedOwnerThisTurn: effect.type === "destroyIfDamagedControllerThisTurn" || !!effect.requiresDamagedOwnerThisTurn,
@@ -73,6 +76,7 @@ export function cardPlayTargetPolicy(card) {
   return {
     scope: steps[0]?.scope || TargetScope.NONE,
     selections: steps.length,
+    minimumSelections: steps.filter((step) => !step.optional).length,
     sacrifice: sacrificeSteps.length > 0,
     sacrificeCount: sacrificeSteps.length,
     steps,

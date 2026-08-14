@@ -50,8 +50,9 @@ const consumeElementalPromise = (before, after, command) => {
   afterEntry.nextElementEffects = next.map((effect) => ({ ...effect, expires: "turn" }));
   afterEntry.lastSpellElement = element;
   if (!consumed.length) return;
-  const selected = (command.targetIds || []).map((id) => unitById(after, id)).filter(Boolean);
-  const targets = selected.length ? selected : (after.players[1 - command.owner].board || []);
+  const selectedIds = command.elementalTargetId ? [command.elementalTargetId] : (command.targetIds || []);
+  const selected = selectedIds.map((id) => unitById(after, id)).filter(Boolean);
+  const targets = selected.length ? selected : [61, 62, 65].includes(Number(card.page)) ? [] : (after.players[1 - command.owner].board || []);
   for (const promise of consumed) for (const target of targets) setKeywordState(target, promise.keyword);
 };
 const expireElementalPromises = (before, after, command) => {

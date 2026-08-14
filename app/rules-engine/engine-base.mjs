@@ -84,7 +84,7 @@ function adjacentSupportBonus(state, unit, owner) {
 }
 function baseAttack(state, unit, owner) { if (!unit?.suffocated && unit?.dynamicStats?.subtypeCountAcrossFields) return state.players.flatMap((entry) => entry.board).filter((card) => subtype(card, unit.dynamicStats.subtypeCountAcrossFields)).length; const support = unit?.suffocated ? {attack:0} : adjacentSupportBonus(state, unit, owner); return Math.max(0, (unit?.atk || 0) + support.attack + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value, unit)).reduce((sum, value) => sum + (value.attack || 0), 0)); }
 function effectiveAttack(state, unit, owner) {
-  if (unit?.frozen || hasKeyword(unit, /congelado/i)) return 0;
+  if (unit?.attackZeroUntilOwnerMaintenance != null || unit?.frozen || hasKeyword(unit, /congelado/i)) return 0;
   if (!unit?.suffocated && unit?.dynamicStats?.bothFromAttack) { const strongest = state.players[owner].board.filter((candidate) => candidate !== unit).reduce((best, candidate) => Math.max(best, baseAttack(state, candidate, owner)), 0); return strongest; }
   return baseAttack(state, unit, owner);
 }
@@ -106,84 +106,67 @@ function dealCombatDamage(state, target, targetOwner, source, sourceOwner, amoun
 function subtype(card, value) { return hasSubtype(card, value) || (card.tags || []).some((tag) => String(tag).toLowerCase() === String(value).toLowerCase()); }
 function conditionMatches(state, source, owner, condition, event = {}) {
   if (!condition) return true;
-  const cardsPlayedBeforeThis = Math.max(0, (state.players[owner].turnCardsPlayed || 0) - (event.type === "onPlay" && event.owner === owner ? 1 : 0));
+  const entry = state.players[owner];
+  const cardsPlayedBeforeThis = Math.max(0, (entry.turnCardsPlayed || 0) - (event.type === "onPlay" && event.owner === owner ? 1 : 0));
   if (condition.cardsPlayedBeforeThisAtLeast != null && cardsPlayedBeforeThis < condition.cardsPlayedBeforeThisAtLeast) return false;
   if (condition.cardsPlayedBeforeThisAtMost != null && cardsPlayedBeforeThis > condition.cardsPlayedBeforeThisAtMost) return false;
   if (condition.controllerTurn && state.active !== owner) return false;
-  if (condition.controllerControlsOtherSubtype) { const preEntry = event.preEntryControlledIds; const candidates = state.players[owner].board.filter((card) => Array.isArray(preEntry) ? preEntry.includes(card.uid || card.id) : (card.uid || card.id) !== (source.uid || source.id)); if (!candidates.some((card) => subtype(card, condition.controllerControlsOtherSubtype))) return false; }
-  if (condition.controllerControlsSubtype) { const entry = state.players[owner]; const controlled = [...entry.board, ...entry.support, ...(entry.terrain ? [entry.terrain] : [])]; if (!controlled.some((card) => subtype(card, condition.controllerControlsSubtype))) return false; }
-  if (condition.all) return condition.all.every((item) => conditionMatches(state, source, owner, item, event));
-  const eventCard = event.card || state.players.flatMap((entry) => [...entry.board, ...entry.support, ...entry.grave]).find((card) => card.uid === event.cardId || card.id === event.cardId);
+  if (condition.controllerReserveBelow != null && entry.reserve >= condition.controllerReserveBelow) return false;
+  if (condition.anyCreatureInPlay && !state.players.some((candidate) => candidate.board.length > 0)) return false;
+  if (condition.controllerControlsOtherSubtype) {
+    const preEntry = event.preEntryControlledIds;
+    const candidates = entry.board.filter((card) => Array.isArray(preEntry) ? preEntry.includes(card.uid || card.id) : (card.uid || card.id) !== (source.uid || source.id));
+    if (!candidates.some((card) => subtype(card, condition.controllerControlsOtherSubtype))) return false;
+  }
+  if (condition.controllerControlsSubtype && !permanentUnits(entry).some((card) => subtype(card, condition.controllerControlsSubtype))) return false;
+  if (condition.all && !condition.all.every((item) => conditionMatches(state, source, owner, item, event))) return false;
+  const eventCard = event.card || state.players.flatMap((candidate) => [...candidate.board, ...candidate.support, ...candidate.grave]).find((card) => card.uid === event.cardId || card.id === event.cardId);
   if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
-  if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
-  if (condition.eventCardKeyword && !hasKeyword(eventCard || {}, new RegExp(String(condition.eventCardKeyword).replace(/[.*+?^${}()|[\]\\]/g, "\\if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;"), "i"))) return false;
+  if (condition.eventCardKeyword) {
+    const escaped = String(condition.eventCardKeyword).replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+    if (!hasKeyword(eventCard || {}, new RegExp(escaped, "i"))) return false;
+  }
   if (condition.eventKilledBySource && event.card?.killedByRepeatSourceId !== (source.uid || source.id)) return false;
   if (condition.eventCardType && eventCard?.type !== condition.eventCardType) return false;
   if (condition.eventCardTypeNot && (eventCard?.type === condition.eventCardTypeNot || eventCard?.imageCard)) return false;
-  if (condition.spellElement && !(event.card?.tags || eventCard?.tags || []).includes(condition.spellElement)) return false;
+  if (condition.spellElement) {
+    const chosen = event.chosenElement || event.card?.chosenElement;
+    if (chosen !== condition.spellElement && !(event.card?.tags || eventCard?.tags || []).includes(condition.spellElement)) return false;
+  }
   if (condition.sourceSubtype && !subtype(event.source || {}, condition.sourceSubtype)) return false;
-  if (condition.controllerSubtypeEnteredThisTurn && (state.players[owner].subtypesEnteredThisTurn?.[condition.controllerSubtypeEnteredThisTurn.subtype] || 0) !== condition.controllerSubtypeEnteredThisTurn.count) return false;
+  if (condition.controllerSubtypeEnteredThisTurn && (entry.subtypesEnteredThisTurn?.[condition.controllerSubtypeEnteredThisTurn.subtype] || 0) !== condition.controllerSubtypeEnteredThisTurn.count) return false;
   if (condition.activePlayerControlsVanillaCreature && !state.players[state.active].board.some((card) => !(card.text || "").trim())) return false;
-  if (condition.wasOnlySubtypeInAllFields && state.players.flatMap((entry) => entry.board).filter((card) => subtype(card, condition.wasOnlySubtypeInAllFields)).length > 0) return false;
-  if (condition.sourceSurvived && !permanentUnits(state.players[owner]).some((card) => card.uid === source.uid || card.id === source.id)) return false;
-  if (condition.spellNameIncludes && !String(event.card?.name || eventCard?.name || "").toLowerCase().includes(String(condition.spellNameIncludes).toLowerCase())) return false;
+  if (condition.wasOnlySubtypeInAllFields && state.players.flatMap((candidate) => candidate.board).some((card) => subtype(card, condition.wasOnlySubtypeInAllFields))) return false;
+  if (condition.sourceSurvived && !permanentUnits(entry).some((card) => card.uid === source.uid || card.id === source.id)) return false;
+  if (condition.spellNameIncludes && !String(eventCard?.name || "").toLowerCase().includes(String(condition.spellNameIncludes).toLowerCase())) return false;
   if (condition.nameIncludes && !String(event.card?.name || event.effectSource?.name || "").toLowerCase().includes(String(condition.nameIncludes).toLowerCase())) return false;
   if (condition.eventOwnerIsController && event.owner !== owner) return false;
   if (condition.eventOwnerIsOpponent && event.owner === owner) return false;
+  if (condition.eventSourceOwnerIsOpponent && event.sourceOwner === owner) return false;
   if (condition.outsideMaintenance && !event.outsideMaintenance) return false;
-  if (condition.controllerOnlyCopyNamed && permanentUnits(state.players[owner]).filter((card) => String(card.name || "").toLowerCase() === String(condition.controllerOnlyCopyNamed).toLowerCase()).length !== 1) return false;
+  if (condition.controllerOnlyCopyNamed && permanentUnits(entry).filter((card) => String(card.name || "").toLowerCase() === String(condition.controllerOnlyCopyNamed).toLowerCase()).length !== 1) return false;
   if (condition.otherThanSource && (event.sourceId === source.uid || event.cardId === source.uid || event.cardId === source.id)) return false;
-  if (condition.eventTargetType) { const targets = (event.targetIds || []).map((id) => state.players.flatMap((entry) => permanentUnits(entry)).find((card) => card.uid === id || card.id === id)).filter(Boolean); if (!targets.some((target) => target.type === condition.eventTargetType)) return false; }
+  if (condition.eventTargetType) {
+    const targets = (event.targetIds || []).map((id) => state.players.flatMap(permanentUnits).find((card) => card.uid === id || card.id === id)).filter(Boolean);
+    if (!targets.some((target) => target.type === condition.eventTargetType)) return false;
+  }
+  if (condition.spellsCastAtLeast != null && (entry.spellsPlayed || 0) < condition.spellsCastAtLeast) return false;
+  if (condition.heroMarkersAtLeast != null && markerTotalForEngine(entry) < condition.heroMarkersAtLeast) return false;
+  if (condition.totalMarkersAtLeast != null && markerTotalForEngineAll(entry) < condition.totalMarkersAtLeast) return false;
+  if (condition.marker) {
+    const markerRule = typeof condition.marker === "object" ? condition.marker : { name: condition.marker };
+    const sourceMarkers = typeof source.markers === "number" ? source.markers : source.markers?.[markerRule.name] || 0;
+    if (sourceMarkers < (markerRule.atLeast ?? markerRule.minimum ?? 1)) return false;
+  }
+  if (condition.catsInAllFieldsAtLeast != null && state.players.flatMap((candidate) => candidate.board).filter((card) => subtype(card, "Gato")).length < condition.catsInAllFieldsAtLeast) return false;
+  if (condition.vanillaConstantsAtLeast != null && permanentUnits(entry).filter((card) => !(card.text || "").trim()).length < condition.vanillaConstantsAtLeast) return false;
+  if (condition.sourceIsCommander && entry.commanderId !== (source.uid || source.id)) return false;
   return true;
 }
 
 function playConditionMatches(state, owner, condition) {
   if (!condition) return true;
+  if (condition.anyCreatureInPlay && !state.players.some((entry) => entry.board.length > 0)) return false;
   if (condition.controllerGraveHasSubtype && !state.players[owner].grave.some((card) => subtype(card, condition.controllerGraveHasSubtype))) return false;
   if (condition.alliedPermanentHasTrigger) return permanentUnits(state.players[owner]).some((card) => (card.abilities || []).some((ability) => {
     if (ability.trigger !== condition.alliedPermanentHasTrigger) return false;
@@ -194,6 +177,7 @@ function playConditionMatches(state, owner, condition) {
 }
 function availabilityMatches(state, source, owner, availability) {
   if (!availability) return true;
+  if (availability.reserveBelow != null && state.players[owner].reserve >= availability.reserveBelow) return false;
   if (availability.topGraveHasTrigger) { const top = state.players[owner].grave.at(-1); return !!top && (top.abilities || []).some((ability) => ability.trigger === availability.topGraveHasTrigger); }
   if (availability.whileDefending && (state.phase !== "combate" || !(source.defenseUses > 0))) return false;
   if (availability.controllerHasFaction && !permanentUnits(state.players[owner]).some((card) => (card.tags || []).some((tag) => String(tag).toLowerCase() === String(availability.controllerHasFaction).toLowerCase()))) return false;
@@ -211,10 +195,10 @@ function eventAppliesToSource(event, source, owner) {
   return true;
 }
 
-function usageKey(source, ability) { return `${source.uid || source.id}:${ability.id}`; }
+function usageKey(state, source, ability) { return `${source.uid || source.id}:${ability.id}${ability?.condition?.firstEachTurn ? `:round-${state.round}` : ""}`; }
 function isOncePerTurnAbility(ability) { return ability?.trigger === "activated" || !!ability?.usageLimit || !!ability?.condition?.firstEachTurn; }
-function usageAvailable(state, source, owner, ability) { if (!isOncePerTurnAbility(ability)) return true; return !(state.players[owner].abilityUses || {})[usageKey(source, ability)]; }
-function claimUsage(state, source, owner, ability) { if (!isOncePerTurnAbility(ability)) return; state.players[owner].abilityUses ||= {}; state.players[owner].abilityUses[usageKey(source, ability)] = (state.players[owner].abilityUses[usageKey(source, ability)] || 0) + 1; }
+function usageAvailable(state, source, owner, ability) { if (!isOncePerTurnAbility(ability)) return true; return !(state.players[owner].abilityUses || {})[usageKey(state, source, ability)]; }
+function claimUsage(state, source, owner, ability) { if (!isOncePerTurnAbility(ability)) return; state.players[owner].abilityUses ||= {}; const key = usageKey(state, source, ability); state.players[owner].abilityUses[key] = (state.players[owner].abilityUses[key] || 0) + 1; }
 
 const permanentUnits = (entry) => [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])];
 const markerTotalForEngine = (card) => typeof card?.markers === "number" ? card.markers : Object.values(card?.markers || {}).reduce((sum, value) => sum + Number(value || 0), 0);
@@ -224,61 +208,19 @@ function removeMarkersAcross(entry, amount) { for (const card of permanentUnits(
 const findPermanentById = (state, id) => state.players.flatMap(permanentUnits).find((card) => card.uid === id || card.id === id);
 const nextCardDiscount = (entry, card, round = 0) => (entry.nextCardDiscounts || []).find((rule) => (rule.expiresRound == null || round < rule.expiresRound) && (!rule.type || rule.type === card.type) && (!rule.typeNot || rule.typeNot !== card.type));
 function intrinsicCost(state, entry, card) {
-  if (card.page === 13 && entry.board.some((unit) => unit.page === 23)) return -2;
-  if (card.page === 14 && entry.board.some((unit) => unit.page === 24)) return -3;
-  if (card.page === 88) return Math.max(0, entry.hand.length - 1) - (card.cost || 0);
-  if (card.page === 139) return Math.max(1, (card.cost || 0) - (entry.lifeLostThisTurn || 0)) - (card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) return -1;
-  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) return -(card.cost || 0);
-  if (card.page === 149) return -entry.board.filter((unit) => subtype(unit, "Vampiro")).length;
-  if (card.page === 203) return -2 * entry.board.length;
-  return 0;
+  let modifier = 0;
+  if (card.page === 13 && entry.board.some((unit) => unit.page === 23)) modifier -= 2;
+  if (card.page === 14 && entry.board.some((unit) => unit.page === 24)) modifier -= 3;
+  if (card.page === 88) modifier += Math.max(0, entry.hand.length - 1) - (card.cost || 0);
+  if (card.page === 139) modifier += Math.max(1, (card.cost || 0) - (entry.lifeLostThisTurn || 0)) - (card.cost || 0);
+  if (card.page === 42 && (entry.turnCardsPlayed || 0) >= 1) modifier -= 1;
+  if (entry.heroId === "goblin" && (entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !(entry.subtypesEnteredThisTurn?.Goblin || 0)) modifier -= card.cost || 0;
+  if (card.page === 149) modifier -= entry.board.filter((unit) => subtype(unit, "Vampiro")).length;
+  if (card.page === 203) modifier -= 2 * entry.board.length;
+  if (card.type === "Criatura") modifier += (entry.nextCreatureTaxes || [])
+    .filter((tax) => tax.createdRound == null || state.round > tax.createdRound)
+    .reduce((sum, tax) => sum + (tax.amount || 0), 0);
+  return modifier;
 }
 function targetSurcharge(state, owner, card, targetIds = []) { if (card.type !== "Feitiço") return 0; return targetIds.reduce((sum, id) => { const targetOwner = unitOwner(state, id); const target = targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); return sum + (target?.suffocated ? 0 : target?.spellTargetSurcharge || 0); }, 0); }
 function refreshSupportAuras(state){for(const entry of state.players)for(const unit of entry.board||[]){unit.grantedKeywords=(unit.grantedKeywords||[]).filter(value=>!String(value).startsWith("support:")&&!String(value).startsWith("duelist:"));unit.modifiers=(unit.modifiers||[]).filter(value=>value.duration!=="support");}state.players.forEach((entry)=>{for(const source of entry.board||[]){if(source.suffocated)continue;const sourceId=source.uid||source.id;for(const aura of (source.staticModifiers||[]).filter(value=>value.type==="supportAura")){for(const target of entry.board.filter(unit=>!unit.suffocated&&(unit.uid||unit.id)!==sourceId&&Math.abs((unit.slot??-10)-(source.slot??10))===1)){if(aura.keyword){target.grantedKeywords||=[];target.grantedKeywords.push(`support:${sourceId}:${aura.keyword}`);}if(aura.attack||aura.health){target.modifiers||=[];target.modifiers.push({attack:aura.attack||0,health:aura.health||0,duration:"support",sourceId});}}}}const female=entry.board.find(unit=>unit.page===171&&!unit.suffocated),male=entry.board.find(unit=>unit.page===172&&!unit.suffocated);if(female&&male){for(const target of [female,male]){target.grantedKeywords||=[];target.grantedKeywords.push("duelist:pair:Barreira Mágica","duelist:pair:Robusto");}}});}
@@ -288,7 +230,9 @@ function abilityTargetSteps(ability) {
   if (ability.sourceText) return (targetPolicy(ability.sourceText).steps || []).filter((step) => step.role !== "sacrifice");
   return (ability.effects || []).flatMap((effect) => {
     const scope = targetScope(effect.target);
-    return Array.from({ length: effect.selections ?? (scope === TargetScope.NONE ? 0 : 1) }, () => ({ scope, role: "effect", requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: effect.excludeIds || [] }));
+    const selections = effect.selections ?? (scope === TargetScope.NONE ? 0 : 1);
+    const minimum = effect.minimumSelections ?? selections;
+    return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: effect.excludeIds || [] }));
   }).filter((step) => step.scope !== TargetScope.NONE);
 }
 function targetMatchesStep(target, id, step) {
@@ -313,7 +257,7 @@ function targetCandidates(state, owner, step) {
 }
 function canSatisfyTargetSteps(state, owner, steps) {
   const candidates = steps.map((step) => targetCandidates(state, owner, step));
-  const choose = (index, used) => index >= candidates.length || candidates[index].some((id) => {
+  const choose = (index, used) => index >= candidates.length || (steps[index].optional && choose(index + 1, used)) || candidates[index].some((id) => {
     if (used.has(id)) return false;
     const next = new Set(used); next.add(id);
     return choose(index + 1, next);
@@ -328,8 +272,9 @@ function replayAbilityCandidates(state, owner, effect) {
   }));
 }
 function validateTargets(state, owner, abilities, command, source) {
-  const targetIds = command.targetIds || []; const steps = abilities.flatMap(abilityTargetSteps); if (steps.length !== targetIds.length) { if (steps.length || targetIds.length) throw new RulesViolation("invalid-target-count"); return; }
-  steps.forEach((step, index) => { const id = targetIds[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, owner, targetOwner, targetKind) || (step.requireExhausted && (!target || !target.exhausted)) || (step.requiredSubtype && (!target || !subtype(target, step.requiredSubtype)))) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
+  const targetIds = command.targetIds || []; const steps = abilities.flatMap(abilityTargetSteps); const minimum = steps.filter((step) => !step.optional).length;
+  if (targetIds.length < minimum || targetIds.length > steps.length || new Set(targetIds).size !== targetIds.length) { if (steps.length || targetIds.length) throw new RulesViolation("invalid-target-count"); return; }
+  targetIds.forEach((id, index) => { const step = steps[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, owner, targetOwner, targetKind) || (step.requireExhausted && (!target || !target.exhausted)) || (step.requiredSubtype && (!target || !subtype(target, step.requiredSubtype)))) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
 }
 function preflightPlay(state, command, handlers) {
   const entry = state.players[command.owner];
@@ -488,6 +433,7 @@ export function executeCommand(inputState, command, options = {}) {
         else if (canUseReserve) { const fromReserve = Math.min(entry.reserve, cost); entry.reserve -= fromReserve; entry.energy -= cost - fromReserve; } else { entry.energy -= cost; }
         if (queuedDiscount) entry.nextCardDiscounts = (entry.nextCardDiscounts || []).filter((rule) => rule !== queuedDiscount); entry.hand.splice(cardIndex, 1); for (const source of permanentUnits(entry)) if (typeof source.cardsPlayedAfterSelf === "number") source.cardsPlayedAfterSelf++; entry.cardsPlayed = (entry.cardsPlayed || 0) + 1; if (state.active === item.command.owner) entry.turnCardsPlayed = (entry.turnCardsPlayed || 0) + 1; if (state.active === item.command.owner && entry.heroId === "goblin") entry.goblinTurnCardsPlayed = (entry.goblinTurnCardsPlayed || 0) + 1; if (spell) { entry.spellsPlayed = (entry.spellsPlayed || 0) + 1; entry.turnSpellsPlayed = (entry.turnSpellsPlayed || 0) + 1; } const permanent = card.type !== "Feitiço" || card.abilities?.some((ability) => ability.effects?.some((effect) => effect.type === "remainUntilTurnEnd"));
         if (permanent) {
+          if (card.type === "Criatura") entry.nextCreatureTaxes = (entry.nextCreatureTaxes || []).filter((tax) => !(tax.createdRound == null || state.round > tax.createdRound));
           state.nextInstanceId = (state.nextInstanceId || 0) + 1;
           const unit = { ...card, _printedState: card._printedState ? structuredClone(card._printedState) : { name: card.name, type: card.type, cost: card.cost, atk: card.atk, hp: card.hp, text: card.text, tags: structuredClone(card.tags || []), subtypes: structuredClone(card.subtypes || []), abilities: structuredClone(card.abilities || []), page: card.page, id: card.id, image: card.image, hero: card.hero, imageCard: card.imageCard, generatedImage: card.generatedImage }, uid: item.command.instanceId || `${card.id}-${state.round}-${state.nextInstanceId}`, slot: item.command.slot ?? 0, enteredRound: state.round, attackedThisTurn: false, damage: 0, bonusAtk: 0, bonusHp: 0, exhausted: false, summoning: card.type === "Artefato" || (card.type === "Criatura" && !((card.tags || []).some((tag) => /investida/i.test(String(tag))) && !(card.page === 29 && Math.max(0, (entry.turnCardsPlayed || 0) - 1) < 1))), frozen: false, stunned: false, suffocated: false, immobilized: false, defenseUses: 0, markers: card.markers ?? 0, modifiers: [] };
           if (card.type === "Criatura") { const replaced = entry.board.find((existing) => existing.slot === unit.slot); if ((replaced && entry.board.length < 5) || (!replaced && entry.board.length >= 5)) throw new RulesViolation("creature-zone-full"); if (replaced) { entry.board = entry.board.filter((existing) => existing !== replaced); const attachments = entry.support.filter((attachment) => attachment.attachedTo === replaced.uid); entry.support = entry.support.filter((attachment) => attachment.attachedTo !== replaced.uid); for (const attachment of attachments) { if (attachment.generatedImage || attachment.imageCard) continue; if (attachment.page === 154) entry.obscuro.push(attachment); else entry.grave.push({ ...attachment, deathCause: "replaced" }); } if (!replaced.generatedImage && !replaced.imageCard) entry.obscuro.push({ ...replaced, lastZone: "board", deathCause: "replaced" }); stack.push({ kind: "event", event: { type: "onPermanentLeaves", owner: item.command.owner, sourceId: replaced.uid, cardId: replaced.uid, card: replaced, zone: "board" } }); } const preEntryControlledIds = entry.board.map((card) => card.uid || card.id); entry.board.push(unit); entry.subtypesEnteredThisTurn ||= {}; for (const value of new Set([...(card.subtypes || []), ...(card.tags || [])])) entry.subtypesEnteredThisTurn[value] = (entry.subtypesEnteredThisTurn[value] || 0) + 1; stack.push({ kind: "event", event: { type: "onCreatureEnter", owner: item.command.owner, sourceId: unit.uid, cardId: unit.uid, card: unit, preEntryControlledIds } }); }
@@ -502,7 +448,7 @@ export function executeCommand(inputState, command, options = {}) {
         } else entry.grave.push(card);
         for (const ability of playAbilities.reverse()) for (const effect of [...ability.effects].reverse()) stack.push({ kind: "effect", effect, context: { ...item.command, sourceId: item.command.instanceId || card.id, effectSource: card } });
         if ((item.command.targetIds || []).length) { stack.push({ kind: "event", event: { type: "onTargetedByOpponent", owner: item.command.owner, sourceId: card.id, source: card, targetIds: item.command.targetIds } }); stack.push({ kind: "event", event: { type: "onAttachedCreatureTargeted", owner: item.command.owner, sourceId: card.id, source: card, targetIds: item.command.targetIds } }); }
-        stack.push({ kind: "event", event: { type: "onCardPlayed", owner: item.command.owner, cardId: card.id, card } }); if (spell) stack.push({ kind: "event", event: { type: "onSpellCast", owner: item.command.owner, cardId: card.id, card } });
+        stack.push({ kind: "event", event: { type: "onCardPlayed", owner: item.command.owner, cardId: card.id, card } }); if (spell) stack.push({ kind: "event", event: { type: "onSpellCast", owner: item.command.owner, cardId: card.id, card, chosenElement: item.command.chosenElement } });
       } else if (item.command.type === "attack") {
         if (state.active !== item.command.owner || (state.phase !== "combate" && !item.command.forced)) throw new RulesViolation("wrong-combat-priority");
         const attackerOwner = item.command.owner; const defenderOwner = 1 - attackerOwner;
@@ -561,7 +507,7 @@ export function executeCommand(inputState, command, options = {}) {
       } else if (item.command.type === "activate") {
         const entry = state.players[item.command.owner]; if (state.active !== item.command.owner) throw new RulesViolation("not-your-turn");
         const source = [...entry.board, ...entry.support, ...(entry.terrain ? [entry.terrain] : [])].find((unit) => unit.uid === item.command.sourceId); const ability = source?.abilities?.find((candidate) => candidate.id === item.command.abilityId && candidate.trigger === "activated");
-        if (!ability) throw new RulesViolation("ability-not-found"); if ((source.type === "Artefato" || ((source.generatedImage || source.imageCard) && source.type === "Criatura")) && (source.summoning || source.enteredRound === state.round)) throw new RulesViolation("summoning-sickness"); if (!canExecuteCard(source, handlers)) throw new RulesViolation("card-not-migrated"); if (!availabilityMatches(state, source, item.command.owner, ability.availability)) throw new RulesViolation("ability-not-available"); actionLabel = source.name || source.uid; if (!usageAvailable(state, source, item.command.owner, ability)) throw new RulesViolation("ability-limit-reached"); const activationSteps = abilityTargetSteps(ability).map((step) => ({ ...step, excludeIds: ability.effects?.some((effect) => effect.excludeCurrentAttachment) && source.attachedTo ? [...new Set([...(step.excludeIds || []), source.attachedTo])] : step.excludeIds || [] })); if (activationSteps.length && !(item.command.targetIds || []).length) { if (!canSatisfyTargetSteps(state, item.command.owner, activationSteps)) throw new RulesViolation("ability-not-available"); state.pendingDecision = { kind: "activation-targets", owner: item.command.owner, effect: {}, context: { owner: item.command.owner, sourceId: source.uid }, targetSteps: activationSteps, sourceName: source.name, command: { ...item.command } }; continue; } validateTargets(state, item.command.owner, [ability], item.command, source); validateCosts(state, ability, item.command); payCosts(state, ability, item.command); claimUsage(state, source, item.command.owner, ability);
+        if (!ability) throw new RulesViolation("ability-not-found"); if (!canExecuteCard(source, handlers)) throw new RulesViolation("card-not-migrated"); if (!availabilityMatches(state, source, item.command.owner, ability.availability)) throw new RulesViolation("ability-not-available"); actionLabel = source.name || source.uid; if (!usageAvailable(state, source, item.command.owner, ability)) throw new RulesViolation("ability-limit-reached"); const isAuxiliary = entry.support.includes(source) || entry.terrain === source; if (isAuxiliary && (source.summoning || source.enteredRound === state.round || source.exhausted)) throw new RulesViolation("cannot-tap"); const activationSteps = abilityTargetSteps(ability).map((step) => ({ ...step, excludeIds: ability.effects?.some((effect) => effect.excludeCurrentAttachment) && source.attachedTo ? [...new Set([...(step.excludeIds || []), source.attachedTo])] : step.excludeIds || [] })); if (activationSteps.length && !(item.command.targetIds || []).length) { if (!canSatisfyTargetSteps(state, item.command.owner, activationSteps)) throw new RulesViolation("ability-not-available"); state.pendingDecision = { kind: "activation-targets", owner: item.command.owner, effect: {}, context: { owner: item.command.owner, sourceId: source.uid }, targetSteps: activationSteps, sourceName: source.name, command: { ...item.command } }; continue; } validateTargets(state, item.command.owner, [ability], item.command, source); validateCosts(state, ability, item.command); payCosts(state, ability, item.command); if (isAuxiliary && !(ability.costs || []).some((cost) => cost.type === "tap")) source.exhausted = true; claimUsage(state, source, item.command.owner, ability);
         /* A printed "Vire: Destrua este artefato e depois faça X" is an
            activated ability. The source remains available while X resolves;
            only the final self-destruction effect is placed at the end. */
@@ -586,6 +532,12 @@ export function executeCommand(inputState, command, options = {}) {
             stack.push({ kind: "event", event: { type: "onEnter", owner: item.command.owner, sourceId: unit.uid, card: unit } });
           } else throw new RulesViolation("unsupported-search-destination");
           if (effect.shuffle && entry.deck.length > 1) { const shift = ((state.round || 1) + (state.events || 0)) % entry.deck.length; entry.deck.push(...entry.deck.splice(0, shift)); }
+          state.pendingDecision = null; stack.push(...continuation); continue;
+        }
+        if (decision.kind === "hand-limit-discard") {
+          const entry = state.players[item.command.owner], ids = [...new Set(item.command.selectedCardIds || [])], amount = Math.min(decision.effect.amount || 0, entry.hand.length);
+          if (ids.length !== amount || ids.some((id) => !entry.hand.some((card) => card.uid === id || card.id === id))) throw new RulesViolation("invalid-hand-selection");
+          for (const id of ids) { const index = entry.hand.findIndex((card) => card.uid === id || card.id === id); entry.grave.push(entry.hand.splice(index, 1)[0]); }
           state.pendingDecision = null; stack.push(...continuation); continue;
         }
         if (decision.kind === "hand-to-deck-bottom") {
@@ -683,6 +635,7 @@ export function executeCommand(inputState, command, options = {}) {
           state.pendingDecision = null; stack.push(...continuation); continue;
         }
         if (decision.kind === "choice-target") {
+          if (decision.effect.optional && item.command.choiceIndex == null && !(item.command.targetIds || []).length) { state.pendingDecision = null; stack.push(...continuation); continue; }
           if ((item.command.targetIds || []).length !== 1 || !findPermanentById(state, item.command.targetIds[0])) throw new RulesViolation("invalid-target");
         }
         if (decision.kind === "replay-ability") {
@@ -710,8 +663,9 @@ export function executeCommand(inputState, command, options = {}) {
         }
         if (decision.kind === "targets" || decision.kind === "activation-targets") {
           const targetIds = item.command.targetIds || []; const steps = decision.targetSteps || [];
-          if (targetIds.length !== steps.length) throw new RulesViolation("invalid-target-count");
-          steps.forEach((step, index) => { const id = targetIds[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - decision.owner : id === "ally-hero" || id === "controller-hero" ? decision.owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, decision.owner, targetOwner, targetKind) || (!hero && !targetMatchesStep(target, id, step)) || (hero && ((step.requiredSubtype || step.requiredName || step.imageOnly || step.maxCost != null) || (step.excludeIds || []).includes(id)))) throw new RulesViolation("invalid-target"); });
+          const minimum = steps.filter((step) => !step.optional).length;
+          if (targetIds.length < minimum || targetIds.length > steps.length || new Set(targetIds).size !== targetIds.length) throw new RulesViolation("invalid-target-count");
+          targetIds.forEach((id, index) => { const step = steps[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - decision.owner : id === "ally-hero" || id === "controller-hero" ? decision.owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, decision.owner, targetOwner, targetKind) || (!hero && !targetMatchesStep(target, id, step)) || (hero && ((step.requiredSubtype || step.requiredName || step.imageOnly || step.maxCost != null) || (step.excludeIds || []).includes(id)))) throw new RulesViolation("invalid-target"); });
           if (decision.kind === "activation-targets") { state.pendingDecision = null; stack.push(...continuation); stack.push({ kind: "command", command: { ...decision.command, targetIds } }); continue; }
         }
         state.pendingDecision = null; stack.push(...continuation); if (decision.kind === "repeat-choice" && decision.effect.remaining > 1) stack.push({ kind: "effect", effect: { ...decision.effect, type: "repeatChoiceForCoffeeCount", remaining: decision.effect.remaining - 1 }, context: decision.context }); const chosen = decision.effect.choices?.[item.command.choiceIndex] || decision.effect.replayEffects || [];
@@ -749,7 +703,7 @@ export function executeCommand(inputState, command, options = {}) {
         else { pending.activeOwner = next; pending.deadline = Date.now() + 30000; }
       } else if (item.command.type === "emit") stack.push({ kind: "event", event: item.command.event });
       else if (item.command.type === "advancePhase") {
-        if (state.pendingDecision || state.pendingReposition) throw new RulesViolation("interaction-pending"); const order = ["manutencao", "principal", "combate", "fim"]; const index = order.indexOf(state.phase); if (state.phase === "fim") state.players.forEach((entry) => { for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn"); unit.abilities = (unit.abilities || []).filter((ability) => !ability.temporary); unit.temporaryTags = []; unit.temporarySubtypes = []; unit.combatRestrictions = (unit.combatRestrictions || []).filter((rule) => rule.duration !== "turn"); unit.attackLimit = 1; unit.damageShields = (unit.damageShields || []).filter((shield) => shield.expires !== "turn" && shield.duration !== "turn"); } entry.nextElementEffects = (entry.nextElementEffects || []).filter((effect) => effect.expires !== "turn"); }); if (state.phase === "combate" && state.players[state.active].board.some((unit) => !unit.exhausted && !unit.attackedThisTurn && !unit.summoning && !unit.stunned && !hasKeyword(unit, /atordoado/i) && attackPermissionMet(unit) && hasKeyword(unit, /indom[aá]vel/i))) throw new RulesViolation("indomitable-must-attack"); if (state.phase === "combate") state.players.forEach((entry) => entry.board.forEach((unit) => { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "combat"); if ((unit.defenseUses || 0) > 0) unit.exhausted = true; })); state.phase = order[(index + 1) % order.length]; if (state.phase === "fim") { stack.push({ kind: "event", event: { type: "onTurnEnd", owner: state.active } }); const due = (state.delayedEffects || []).filter((entry) => entry.timing === "turnEnd" && entry.owner === state.active); state.delayedEffects = (state.delayedEffects || []).filter((entry) => !due.includes(entry)); for (const delayed of due.reverse()) stack.push({ kind: "effect", effect: delayed.effect, context: delayed.context }); } if (state.phase === "combate") stack.push({ kind: "event", event: { type: "onCombatStart", owner: state.active } }); if (state.phase === "manutencao") { const previousActive = 1 - state.active; state.players[previousActive].goblinTurnCardsPlayed = 0; state.active = 1 - state.active; state.round += 1; state.players.forEach((candidate) => (candidate.board || []).forEach((unit) => { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.expiresOnMaintenanceOwner !== state.active); })); const entry = state.players[state.active]; entry.abilityUses = {}; entry.subtypesEnteredThisTurn = {}; entry.turnCardsPlayed = 0; entry.turnSpellsPlayed = 0; for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn" && modifier.duration !== "combat"); unit.temporaryTags = []; unit.temporarySubtypes = []; unit.combatRestrictions = (unit.combatRestrictions || []).filter((rule) => rule.duration !== "turn"); unit.attackLimit = 1; unit.summoning = false; unit.attackedThisTurn = false; unit.attacksThisTurn = 0; unit.defenseUses = 0; const immobilized = unit.immobilized || hasKeyword(unit, /imobilizado/i); if (immobilized) { unit.immobilized = false; unit.tags = (unit.tags || []).filter((tag) => !/imobilizado/i.test(String(tag))); } else unit.exhausted = false; } for (const unit of entry.board || []) unit.damage = 0; stack.push({ kind: "event", event: { type: "onMaintenance", owner: state.active } }); }
+        if (state.pendingDecision || state.pendingReposition) throw new RulesViolation("interaction-pending"); if (state.phase === "fim" && !item.command.handLimitSatisfied && state.players[state.active].hand.length > 9) { state.pendingDecision = { kind: "hand-limit-discard", owner: state.active, effect: { amount: state.players[state.active].hand.length - 9 }, context: { owner: state.active }, sourceName: "Limite de mão", continuation: [{ kind: "command", command: { ...item.command, handLimitSatisfied: true } }] }; continue; } const order = ["manutencao", "principal", "combate", "fim"]; const index = order.indexOf(state.phase); if (state.phase === "fim") state.players.forEach((entry) => { for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn"); unit.abilities = (unit.abilities || []).filter((ability) => !ability.temporary); unit.temporaryTags = []; unit.temporarySubtypes = []; unit.combatRestrictions = (unit.combatRestrictions || []).filter((rule) => rule.duration !== "turn"); unit.attackLimit = 1; unit.damageShields = (unit.damageShields || []).filter((shield) => shield.expires !== "turn" && shield.duration !== "turn"); } entry.nextElementEffects = (entry.nextElementEffects || []).filter((effect) => effect.expires !== "turn"); entry.damageShields = (entry.damageShields || []).filter((shield) => shield.expires !== "turn" && shield.duration !== "turn"); }); if (state.phase === "combate" && state.players[state.active].board.some((unit) => !unit.exhausted && !unit.attackedThisTurn && !unit.summoning && !unit.stunned && !hasKeyword(unit, /atordoado/i) && attackPermissionMet(unit) && hasKeyword(unit, /indom[aá]vel/i))) throw new RulesViolation("indomitable-must-attack"); if (state.phase === "combate") state.players.forEach((entry) => entry.board.forEach((unit) => { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "combat"); if ((unit.defenseUses || 0) > 0) unit.exhausted = true; })); state.phase = order[(index + 1) % order.length]; if (state.phase === "fim") { stack.push({ kind: "event", event: { type: "onTurnEnd", owner: state.active } }); const due = (state.delayedEffects || []).filter((entry) => entry.timing === "turnEnd" && entry.owner === state.active); state.delayedEffects = (state.delayedEffects || []).filter((entry) => !due.includes(entry)); for (const delayed of due.reverse()) stack.push({ kind: "effect", effect: delayed.effect, context: delayed.context }); } if (state.phase === "combate") stack.push({ kind: "event", event: { type: "onCombatStart", owner: state.active } }); if (state.phase === "manutencao") { const previousActive = 1 - state.active; state.players[previousActive].goblinTurnCardsPlayed = 0; state.active = 1 - state.active; state.round += 1; state.players.forEach((candidate) => [...(candidate.hand || []), ...(candidate.deck || []), ...(candidate.grave || []), ...permanentUnits(candidate)].forEach((unit) => { if (unit.attackZeroUntilOwnerMaintenance === state.active) delete unit.attackZeroUntilOwnerMaintenance; })); state.players.forEach((candidate) => (candidate.board || []).forEach((unit) => { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.expiresOnMaintenanceOwner !== state.active); })); const entry = state.players[state.active]; entry.abilityUses = {}; entry.subtypesEnteredThisTurn = {}; entry.turnCardsPlayed = 0; entry.turnSpellsPlayed = 0; for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn" && modifier.duration !== "combat"); unit.temporaryTags = []; unit.temporarySubtypes = []; unit.combatRestrictions = (unit.combatRestrictions || []).filter((rule) => rule.duration !== "turn"); unit.attackLimit = 1; unit.summoning = false; unit.attackedThisTurn = false; unit.attacksThisTurn = 0; unit.defenseUses = 0; const immobilized = unit.immobilized || hasKeyword(unit, /imobilizado/i); if (immobilized) { unit.immobilized = false; unit.tags = (unit.tags || []).filter((tag) => !/imobilizado/i.test(String(tag))); } else unit.exhausted = false; } for (const unit of entry.board || []) unit.damage = 0; stack.push({ kind: "event", event: { type: "onMaintenance", owner: state.active } }); }
       } else throw new RulesViolation("unknown-command");
     } else if (item.kind === "effect") {
       const replacements = state.players[item.context.owner]?.replacementEffects || [];

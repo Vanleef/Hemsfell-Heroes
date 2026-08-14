@@ -811,3 +811,10 @@
     line-height:1.05!important;
   }
 }
+/* Context-rich target prompt: the requesting card remains readable at every width. */
+.target-banner{position:fixed;left:50%;top:4.4rem;z-index:22000;transform:translateX(-50%);display:flex;align-items:center;gap:.65rem;max-width:min(44rem,calc(100vw - 1rem));padding:.55rem .7rem;border:1px solid #d9ad55;background:#080d19f2;box-shadow:0 .65rem 2rem #000b;color:#f5ecd8}
+.target-banner>div{display:flex;min-width:0;flex:1 1 auto;flex-direction:column;gap:.14rem}
+.target-banner b{font:800 .7rem/1.1 system-ui;letter-spacing:.14em;white-space:nowrap}
+.target-banner span{max-width:30rem;overflow:hidden;color:#d9ad55;font:700 .68rem/1.2 system-ui;text-overflow:ellipsis;white-space:nowrap}
+.target-banner button{flex:0 0 auto;border:1px solid #a94d68;background:#24111b;color:#fff;padding:.42rem .65rem;font:700 .62rem system-ui;text-transform:uppercase}
+@media(max-width:40rem){.target-banner{top:.35rem;width:calc(100vw - .7rem);flex-wrap:wrap}.target-banner>div{flex-basis:100%}.target-banner span{white-space:normal}}
