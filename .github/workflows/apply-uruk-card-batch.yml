@@ -1,0 +1,403 @@
+name: Apply Uruk card mechanics batch
+
+on:
+  push:
+    branches: ["fix/response-uruk-priority-rules"]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/response-uruk-priority-rules
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Patch canonical rules and UI
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path): return Path(path).read_text()
+          def write(path, text): Path(path).write_text(text)
+          def once(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f"patch point not found: {label}")
+              return text.replace(old, new, 1)
+
+          # ---- card rules: make the affected Uruk cards data-driven ----
+          path = "app/rules-engine/card-rules.mjs"
+          s = read(path)
+          marker = '  p57: [ability("onPlay", [effect("reduceEnemyAttackUntilControllerMaintenance", { amount: 2 }), effect("grantNextElementEffect", { element: "Fogo", keyword: "Sufocado", duration: "untilNextTurn" })])],'
+          insert = '''  p55: [ability("onPlay", [effect("damage", { amount: 1, target: "anyCreature", selections: 1 })], [], { playCondition: { anyCreatureInPlay: true } })],
+  p56: [ability("onPlay", [effect("damage", { amount: 1, target: "anyCreature", selections: 2, minimumSelections: 1 }), effect("grantNextElementEffect", { element: "Fogo", keyword: "Sufocado", duration: "untilNextTurn" })], [], { playCondition: { anyCreatureInPlay: true } })],
+  p60: [ability("activated", [effect("gainEnergy", { amount: 3, destination: "reserve" }), effect("destroy", { target: "self" })], [{ type: "tap", amount: 1 }], { uiActivation: true, availability: { reserveBelow: 3 } })],
+''' + marker
+          s = once(s, marker, insert, "insert p55 p56 p60")
+          s = once(s,
+            '  p64: [ability("onPlay", [effect("damageByAdjacentCount", { target: "anyCreature", selections: 1, baseAmount: 1, perAdjacent: 1 }), effect("grantNextElementEffect", { element: "Água", keyword: "Congelado", duration: "untilNextTurn" })])],',
+            '  p64: [ability("onPlay", [effect("damageByAdjacentCount", { target: "anyCreature", selections: 1, baseAmount: 1, perAdjacent: 1 }), effect("grantNextElementEffect", { element: "Água", keyword: "Congelado", duration: "untilNextTurn" })])],\n  p65: [ability("onPlay", [effect("returnToHandAndTaxNextCreature", { target: "anyCreature", selections: 1, amount: 1 }), effect("grantNextElementEffect", { element: "Água", keyword: "Congelado", duration: "untilNextTurn" })])],',
+            "insert p65")
+          s = once(s,
+            '  p71: [ability("onSpellCast", [effect("gainEnergy", { amount: 1, destination: "reserve" })], [], { condition: { firstEachTurn: true, spellElement: "Ar" } })],\n  p72: [ability("onSpellCast", [effect("heal", { amount: 3, target: "controllerHero" })], [], { condition: { firstEachTurn: true, spellElement: "Água" } })],',
+            '  p71: [ability("onSpellCast", [effect("gainEnergy", { amount: 1, destination: "reserve" })], [], { condition: { firstEachTurn: true, spellElement: "Ar", controllerReserveBelow: 3 } })],\n  p72: [ability("onSpellCast", [effect("heal", { amount: 3, target: "controllerHero" })], [], { condition: { firstEachTurn: true, spellElement: "Água" } })],',
+            "mastery air water")
+          s = once(s,
+            '  p62: [ability("onPlay", [effect("grantCharacterDamageShield", { target: "anyCharacter", selections: 1, uses: 1, duration: "turn" }), effect("grantNextElementEffect", { element: "Ar", keyword: "Atordoado", duration: "untilNextTurn" })])],',
+            '  p62: [ability("onPlay", [effect("grantHeroDamageShield", { uses: 1, duration: "turn" }), effect("grantNextElementEffect", { element: "Ar", keyword: "Atordoado", duration: "untilNextTurn" })])],',
+            "bubble shield")
+          s = once(s,
+            '  p70: [ability("onPlay", [effect("moveSelf", { destination: "grave" }), effect("controllerChoice", { choices: [[effect("createUniqueImage", { name: "Maestria Elemental: Piromancia" })], [effect("createUniqueImage", { name: "Maestria Elemental: Hidromancia" })], [effect("createUniqueImage", { name: "Maestria Elemental: Geomancia" })], [effect("createUniqueImage", { name: "Maestria Elemental: Aeromancia" })]] })])],\n  p73: [ability("onSpellCast", [effect("geomancyChoice", { amount: 3, minimum: 1 })], [], { condition: { firstEachTurn: true, spellElement: "Terra" } })],\n  p77:',
+            '  p70: [ability("onPlay", [effect("moveSelf", { destination: "grave" }), effect("createSelectedUniqueImage", { names: ["Maestria Elemental: Piromancia", "Maestria Elemental: Hidromancia", "Maestria Elemental: Geomancia", "Maestria Elemental: Aeromancia"] })])],\n  p73: [ability("onSpellCast", [effect("geomancyChoice", { amount: 3, minimum: 1, optional: true })], [], { condition: { firstEachTurn: true, spellElement: "Terra", anyCreatureInPlay: true } })],\n  p74: [ability("onSpellCast", [effect("markPyromancySpell", { additionalDamage: 2, trample: true })], [], { condition: { firstEachTurn: true, spellElement: "Fogo" } })],\n  p76: [ability("static", [effect("keyword", { keyword: "Defensor 2" })]), ability("onEnter", [effect("keyword", { target: "self", keyword: "Robusto" })], [], { condition: { controllerSpellsCastThisTurnAtLeast: 1 } })],\n  p78: [ability("onSpellCast", [effect("modifyStats", { target: "self", attack: 1, health: 0, duration: "permanent" })])],\n  p77:',
+            "mastery choice geomancy pyro golem archmage")
+          write(path, s)
+
+          # ---- targeting: optional 1..2 distinct targets ----
+          path = "app/rules-engine/targeting.mjs"
+          s = read(path)
+          s = once(s,
+            '    return Array.from({ length: Number(effect.selections) || 1 }, () => ({\n      scope,\n      role: "effect",\n      requireExhausted: !!effect.requireExhausted,\n      requiredSubtype: effect.requiredSubtype,\n      requiresDamagedOwnerThisTurn: effect.type === "destroyIfDamagedControllerThisTurn" || !!effect.requiresDamagedOwnerThisTurn,\n    }));',
+            '    const count = Number(effect.selections) || 1;\n    const minimum = effect.minimumSelections == null ? count : Math.max(0, Number(effect.minimumSelections));\n    return Array.from({ length: count }, (_, index) => ({\n      scope,\n      role: "effect",\n      optional: index >= minimum,\n      requireExhausted: !!effect.requireExhausted,\n      requiredSubtype: effect.requiredSubtype,\n      requiresDamagedOwnerThisTurn: effect.type === "destroyIfDamagedControllerThisTurn" || !!effect.requiresDamagedOwnerThisTurn,\n    }));',
+            "optional target steps")
+          s = once(s,
+            '    selections: steps.length,\n    sacrifice: sacrificeSteps.length > 0,',
+            '    selections: steps.length,\n    minimumSelections: steps.filter((step) => !step.optional).length,\n    sacrifice: sacrificeSteps.length > 0,',
+            "policy minimum selections")
+          write(path, s)
+
+          # ---- card activation: availability and creature non-tap activations ----
+          path = "app/card-activation.mjs"
+          s = read(path)
+          s = once(s,
+            '  if (ability.availability?.topGraveHasTrigger) { const top = context.topGrave; if (!top || top.type !== "Criatura" || !compileCard(top).abilities.some((candidate) => candidate.trigger === ability.availability.topGraveHasTrigger)) return false; }\n  return ability.costs.every((cost) => {',
+            '  if (ability.availability?.topGraveHasTrigger) { const top = context.topGrave; if (!top || top.type !== "Criatura" || !compileCard(top).abilities.some((candidate) => candidate.trigger === ability.availability.topGraveHasTrigger)) return false; }\n  if (ability.availability?.reserveBelow != null && (context.reserve ?? 0) >= ability.availability.reserveBelow) return false;\n  if (card.type !== "Criatura" && card.exhausted) return false;\n  return ability.costs.every((cost) => {',
+            "activation availability")
+          write(path, s)
+
+          # ---- effects ----
+          path = "app/rules-engine/effects.mjs"
+          s = read(path)
+          old = '''  damage(state, effect, context) {
+    const ids = selectedIds(context); if (!ids.length) throw new RulesViolation("target-required");
+    for (const targetId of ids) { const owner = heroOwner(context, targetId);
+      if (owner != null) { const amount = Math.max(0, effect.amount ?? 0); player(state, owner).life -= amount; queueEvent(state, { type: "onPlayerDamaged", owner, sourceOwner: context.owner, sourceId: context.sourceId, source: context.effectSource, amount }); if (amount > 0) queueEvent(state, { type: "onAttachedCreatureDamage", owner: context.owner, sourceId: context.sourceId, source: context.effectSource, targetIds: [targetId], amount }); continue; }
+      const target = findUnit(state, targetId); if (!target) throw new RulesViolation("target-required");'''
+          new = '''  damage(state, effect, context) {
+    const ids = selectedIds(context); if (!ids.length) throw new RulesViolation("target-required");
+    const empowerment = player(state, context.owner).spellEmpowerments?.[context.sourceId];
+    const rawAmount = Math.max(0, (effect.amount ?? 0) + (empowerment?.additionalDamage || 0));
+    for (const targetId of ids) { const owner = heroOwner(context, targetId);
+      if (owner != null) { const entry = player(state, owner); const shield = (entry.damageShields || []).find((item) => item.uses > 0); let amount = rawAmount; if (shield) { shield.uses--; entry.damageShields = entry.damageShields.filter((item) => item.uses > 0); amount = 0; } entry.life -= amount; queueEvent(state, { type: "onPlayerDamaged", owner, sourceOwner: context.owner, sourceId: context.sourceId, source: context.effectSource, amount }); if (amount > 0) queueEvent(state, { type: "onAttachedCreatureDamage", owner: context.owner, sourceId: context.sourceId, source: context.effectSource, targetIds: [targetId], amount }); continue; }
+      const target = findUnit(state, targetId); if (!target) throw new RulesViolation("target-required");
+      const targetOwner = state.players.findIndex((entry) => (entry.board || []).includes(target));
+      const healthBefore = (target.hp || 1) + (target.modifiers || []).reduce((sum, item) => sum + (item.health || 0), 0) - (target.damage || 0);'''
+          s = once(s, old, new, "damage empowerment and hero shield")
+          s = once(s,
+            '      let dealt = Math.max(0, (effect.amount ?? 0) - (hasKeyword(target, /robusto/i) ? 1 : 0) - shieldReduction);',
+            '      let dealt = Math.max(0, rawAmount - (hasKeyword(target, /robusto/i) ? 1 : 0) - shieldReduction);',
+            "damage raw amount")
+          s = once(s,
+            '      target.damage = (target.damage || 0) + dealt;',
+            '      target.damage = (target.damage || 0) + dealt;\n      if (empowerment?.trample && targetOwner >= 0 && dealt > Math.max(0, healthBefore)) player(state, targetOwner).life -= dealt - Math.max(0, healthBefore);',
+            "spell trample")
+          anchor = '  grantCharacterDamageShield(state, effect, context) { const id = context.targetIds?.[0], owner = heroOwner(context, id); if (owner != null) { const entry = player(state, owner); entry.damageShields ||= []; entry.damageShields.push({ uses: effect.uses || 1, sourceId: context.sourceId, expires: effect.duration }); } else defaultEffectHandlers.grantDamageShield(state, effect, context); },'
+          extra = anchor + '''
+  grantHeroDamageShield(state, effect, context) { const entry = player(state, context.owner); entry.damageShields ||= []; entry.damageShields.push({ uses: effect.uses || 1, sourceId: context.sourceId, expires: effect.duration || "turn" }); },
+  returnToHandAndTaxNextCreature(state, effect, context) { const id = context.targetIds?.[0], target = findUnit(state, id); if (!target) throw new RulesViolation("target-required"); const targetOwner = state.players.findIndex((entry) => (entry.board || []).includes(target)); defaultEffectHandlers.returnToHand(state, { type: "returnToHand" }, context); if (targetOwner >= 0 && targetOwner !== context.owner) { const entry = player(state, targetOwner); entry.pendingCreatureTax = (entry.pendingCreatureTax || 0) + (effect.amount || 1); } },
+  createSelectedUniqueImage(state, effect, context) { const name = context.selectedImageName; if (!name || !(effect.names || []).includes(name)) throw new RulesViolation("card-choice-required"); if (allUnits(state).some((card) => normalizedName(card.name) === normalizedName(name))) throw new RulesViolation("unique-image-already-present"); defaultEffectHandlers.createImage(state, { type: "createImage", name, destination: "field" }, context); },
+  markPyromancySpell(state, effect, context) { const cardId = context.event?.cardId || context.event?.card?.id; if (!cardId) return; const entry = player(state, context.owner); entry.spellEmpowerments ||= {}; entry.spellEmpowerments[cardId] = { additionalDamage: effect.additionalDamage || 0, trample: !!effect.trample, round: state.round }; },'''
+          s = once(s, anchor, extra, "new elemental handlers")
+          s = once(s,
+            '  geomancyChoice(state, effect, context) { queueDecision(state, { ...effect, choices: [[{ type: "reduceStatFloor", stat: "attack", amount: effect.amount, minimum: effect.minimum }], [{ type: "reduceStatFloor", stat: "health", amount: effect.amount, minimum: effect.minimum }]] }, context, "choice-target"); },',
+            '  geomancyChoice(state, effect, context) { if (!state.players.some((entry) => (entry.board || []).length)) return; queueDecision(state, { ...effect, choices: [[{ type: "reduceStatFloor", stat: "attack", amount: effect.amount, minimum: effect.minimum }], [{ type: "reduceStatFloor", stat: "health", amount: effect.amount, minimum: effect.minimum }], []], optional: true }, context, "choice-target"); },',
+            "optional geomancy")
+          write(path, s)
+
+          # ---- authoritative engine ----
+          path = "app/rules-engine/engine-base.mjs"
+          s = read(path)
+          s = once(s,
+            'function usageKey(source, ability) { return `${source.uid || source.id}:${ability.id}`; }\nfunction isOncePerTurnAbility(ability) { return ability?.trigger === "activated" || !!ability?.usageLimit || !!ability?.condition?.firstEachTurn; }\nfunction usageAvailable(state, source, owner, ability) { if (!isOncePerTurnAbility(ability)) return true; return !(state.players[owner].abilityUses || {})[usageKey(source, ability)]; }\nfunction claimUsage(state, source, owner, ability) { if (!isOncePerTurnAbility(ability)) return; state.players[owner].abilityUses ||= {}; state.players[owner].abilityUses[usageKey(source, ability)] = (state.players[owner].abilityUses[usageKey(source, ability)] || 0) + 1; }',
+            'function usageKey(state, source, ability) { const suffix = ability?.condition?.firstEachTurn ? `:round-${state.round}` : ""; return `${source.uid || source.id}:${ability.id}${suffix}`; }\nfunction isOncePerTurnAbility(ability) { return ability?.trigger === "activated" || !!ability?.usageLimit || !!ability?.condition?.firstEachTurn; }\nfunction usageAvailable(state, source, owner, ability) { if (!isOncePerTurnAbility(ability)) return true; return !(state.players[owner].abilityUses || {})[usageKey(state, source, ability)]; }\nfunction claimUsage(state, source, owner, ability) { if (!isOncePerTurnAbility(ability)) return; state.players[owner].abilityUses ||= {}; const key = usageKey(state, source, ability); state.players[owner].abilityUses[key] = (state.players[owner].abilityUses[key] || 0) + 1; }',
+            "round-scoped first each turn")
+          s = once(s,
+            '  if (condition.spellElement && !(event.card?.tags || eventCard?.tags || []).includes(condition.spellElement)) return false;',
+            '  if (condition.spellElement && String(event.chosenElement || "").toLowerCase() !== String(condition.spellElement).toLowerCase() && !(event.card?.tags || eventCard?.tags || []).some((tag) => String(tag).toLowerCase() === String(condition.spellElement).toLowerCase()) && !new RegExp(`Elemento\\\\s*:\\\\s*${condition.spellElement}`, "i").test(event.card?.text || eventCard?.text || "")) return false;\n  if (condition.controllerReserveBelow != null && (state.players[owner].reserve || 0) >= condition.controllerReserveBelow) return false;\n  if (condition.anyCreatureInPlay && !state.players.some((entry) => (entry.board || []).length)) return false;\n  if (condition.controllerSpellsCastThisTurnAtLeast != null && (state.players[owner].turnSpellsPlayed || 0) < condition.controllerSpellsCastThisTurnAtLeast) return false;',
+            "element and mastery conditions")
+          s = once(s,
+            'function playConditionMatches(state, owner, condition) {\n  if (!condition) return true;',
+            'function playConditionMatches(state, owner, condition) {\n  if (!condition) return true;\n  if (condition.anyCreatureInPlay && !state.players.some((entry) => (entry.board || []).length)) return false;',
+            "play condition creature")
+          s = once(s,
+            '  if (availability.controllerHasFaction && !permanentUnits(state.players[owner]).some((card) => (card.tags || []).some((tag) => String(tag).toLowerCase() === String(availability.controllerHasFaction).toLowerCase()))) return false;\n  return true;',
+            '  if (availability.controllerHasFaction && !permanentUnits(state.players[owner]).some((card) => (card.tags || []).some((tag) => String(tag).toLowerCase() === String(availability.controllerHasFaction).toLowerCase()))) return false;\n  if (availability.reserveBelow != null && (state.players[owner].reserve || 0) >= availability.reserveBelow) return false;\n  return true;',
+            "engine activation reserve")
+          s = once(s,
+            'function validateTargets(state, owner, abilities, command, source) {\n  const targetIds = command.targetIds || []; const steps = abilities.flatMap(abilityTargetSteps); if (steps.length !== targetIds.length) { if (steps.length || targetIds.length) throw new RulesViolation("invalid-target-count"); return; }\n  steps.forEach((step, index) => {',
+            'function validateTargets(state, owner, abilities, command, source) {\n  const targetIds = command.targetIds || []; const steps = abilities.flatMap(abilityTargetSteps); const minimum = steps.filter((step) => !step.optional).length; if (targetIds.length < minimum || targetIds.length > steps.length) { if (steps.length || targetIds.length) throw new RulesViolation("invalid-target-count"); return; }\n  if (new Set(targetIds).size !== targetIds.length) throw new RulesViolation("duplicate-target");\n  steps.slice(0, targetIds.length).forEach((step, index) => {',
+            "optional target validation")
+          s = once(s,
+            '    return Array.from({ length: effect.selections || 1 }, () => ({ scope, role: "effect", requireExhausted: !!effect.requireExhausted, requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, imageOnly: !!effect.imageOnly, maxCost: effect.maxCost, requiresDamagedOwnerThisTurn: effect.type === "destroyIfDamagedControllerThisTurn" || !!effect.requiresDamagedOwnerThisTurn }));',
+            '    const count = effect.selections || 1, minimum = effect.minimumSelections == null ? count : Math.max(0, Number(effect.minimumSelections)); return Array.from({ length: count }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requireExhausted: !!effect.requireExhausted, requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, imageOnly: !!effect.imageOnly, maxCost: effect.maxCost, requiresDamagedOwnerThisTurn: effect.type === "destroyIfDamagedControllerThisTurn" || !!effect.requiresDamagedOwnerThisTurn }));',
+            "engine optional steps")
+          # Accelerated pages in both preflight and execution.
+          s = s.replace('const accelerated = card.type === "Feitiço" && ((card.tags || []).some((tag) => /acelerado/i.test(tag)) || /^\\s*acelerado\\b/i.test(card.text || ""));', 'const accelerated = card.type === "Feitiço" && ([57,61,62,63,64,65].includes(Number(card.page)) || (card.tags || []).some((tag) => /acelerado/i.test(tag)) || /^\\s*acelerado\\b/i.test(card.text || ""));')
+          # Creature tax in both cost calculations.
+          s = s.replace('+ intrinsicCost(state, entry, card) + targetSurcharge', '+ intrinsicCost(state, entry, card) + (card.type === "Criatura" ? (entry.creatureCostTax || 0) : 0) + targetSurcharge')
+          # Once a creature is successfully played, the accumulated tax is consumed.
+          s = once(s,
+            '        if (queuedDiscount) entry.nextCardDiscounts = (entry.nextCardDiscounts || []).filter((rule) => rule !== queuedDiscount); entry.hand.splice(cardIndex, 1);',
+            '        if (queuedDiscount) entry.nextCardDiscounts = (entry.nextCardDiscounts || []).filter((rule) => rule !== queuedDiscount); if (card.type === "Criatura") entry.creatureCostTax = 0; entry.hand.splice(cardIndex, 1);',
+            "consume creature tax")
+          # Spell event carries chosen element.
+          s = once(s,
+            'if (spell) stack.push({ kind: "event", event: { type: "onSpellCast", owner: item.command.owner, cardId: card.id, card } });',
+            'if (spell) stack.push({ kind: "event", event: { type: "onSpellCast", owner: item.command.owner, cardId: card.id, card, chosenElement: item.command.chosenElement } });',
+            "chosen element event")
+          # Non-creature activated auxiliaries turn even when the printed ability has no explicit tap cost.
+          old = 'validateTargets(state, item.command.owner, [ability], item.command, source); validateCosts(state, ability, item.command); payCosts(state, ability, item.command); claimUsage(state, source, item.command.owner, ability);'
+          new = 'validateTargets(state, item.command.owner, [ability], item.command, source); if (source.type !== "Criatura" && source.exhausted) throw new RulesViolation("ability-not-available"); validateCosts(state, ability, item.command); payCosts(state, ability, item.command); if (source.type !== "Criatura" && !(ability.costs || []).some((cost) => cost.type === "tap")) source.exhausted = true; claimUsage(state, source, item.command.owner, ability);'
+          s = once(s, old, new, "auxiliary activations turn")
+          # Hand-limit decision resolver.
+          decision_anchor = '        if (decision.kind === "sacrifice-and-fill") {'
+          hand_limit = '''        if (decision.kind === "hand-limit-discard") {
+          const entry = state.players[item.command.owner], ids = [...new Set(item.command.selectedCardIds || [])], required = Math.max(0, entry.hand.length - 9);
+          if (ids.length !== required || ids.some((id) => !entry.hand.some((card) => card.id === id || card.uid === id))) throw new RulesViolation("invalid-hand-limit-selection");
+          for (const id of ids) { const index = entry.hand.findIndex((card) => card.id === id || card.uid === id); const card = entry.hand.splice(index, 1)[0]; if (card) entry.grave.push(card); }
+          state.pendingDecision = null; stack.push(...continuation); continue;
+        }
+''' + decision_anchor
+          s = once(s, decision_anchor, hand_limit, "hand limit decision resolver")
+          # Optional Geomancy skip.
+          s = once(s,
+            '        if (decision.kind === "choice-target") {\n          if ((item.command.targetIds || []).length !== 1 || !findPermanentById(state, item.command.targetIds[0])) throw new RulesViolation("invalid-target");\n        }',
+            '        if (decision.kind === "choice-target") {\n          const chosen = decision.effect.choices?.[item.command.choiceIndex];\n          if (decision.effect.optional && Array.isArray(chosen) && chosen.length === 0 && !(item.command.targetIds || []).length) { state.pendingDecision = null; stack.push(...continuation); continue; }\n          if ((item.command.targetIds || []).length !== 1 || !findPermanentById(state, item.command.targetIds[0])) throw new RulesViolation("invalid-target");\n        }',
+            "geomancy decline")
+          # Turn transition: activate Nuvem taxes, expire attack override, clear hero shields/empowerments.
+          s = once(s,
+            'const entry = state.players[state.active]; entry.abilityUses = {}; entry.subtypesEnteredThisTurn = {}; entry.turnCardsPlayed = 0; entry.turnSpellsPlayed = 0;',
+            'const entry = state.players[state.active]; entry.abilityUses = {}; entry.subtypesEnteredThisTurn = {}; entry.turnCardsPlayed = 0; entry.turnSpellsPlayed = 0; entry.creatureCostTax = (entry.creatureCostTax || 0) + (entry.pendingCreatureTax || 0); entry.pendingCreatureTax = 0; state.players.forEach((candidate) => { candidate.damageShields = (candidate.damageShields || []).filter((shield) => shield.expires !== "turn" && shield.duration !== "turn"); candidate.spellEmpowerments = {}; for (const zone of ["hand","board","support"]) for (const card of candidate[zone] || []) if (card.attackOverrideUntilMaintenanceOwner === state.active) delete card.attackOverrideUntilMaintenanceOwner; });',
+            "turn cleanup and taxes")
+          # Hand limit is enforced on entering Finalization, before the player can end the turn.
+          s = once(s,
+            'if (state.phase === "fim") { stack.push({ kind: "event", event: { type: "onTurnEnd", owner: state.active } });',
+            'if (state.phase === "fim") { const hand = state.players[state.active].hand || []; if (hand.length > 9 && !state.pendingDecision) state.pendingDecision = { kind: "hand-limit-discard", owner: state.active, effect: { amount: hand.length - 9 }, context: { owner: state.active }, sourceName: "Limite de mão" }; stack.push({ kind: "event", event: { type: "onTurnEnd", owner: state.active } });',
+            "hand limit queue")
+          write(path, s)
+
+          # ---- engine wrapper: accelerated pages + elemental enhancements ----
+          path = "app/rules-engine/engine.mjs"
+          s = read(path)
+          s = once(s,
+            'const accelerated = (card) => (card?.tags || []).some((tag) => /acelerado/i.test(String(tag))) || /\\bacelerado\\b/i.test(String(card?.text || ""));',
+            'const accelerated = (card) => [57,61,62,63,64,65].includes(Number(card?.page)) || (card?.tags || []).some((tag) => /acelerado/i.test(String(tag))) || /\\bacelerado\\b/i.test(String(card?.text || ""));',
+            "wrapper accelerated pages")
+          old = '''  if (!consumed.length) return;
+  const selected = (command.targetIds || []).map((id) => unitById(after, id)).filter(Boolean);
+  const targets = selected.length ? selected : (after.players[1 - command.owner].board || []);
+  for (const promise of consumed) for (const target of targets) setKeywordState(target, promise.keyword);'''
+          new = '''  if (!consumed.length) return;
+  if ([61, 62].includes(Number(card.page))) {
+    const target = command.elementalTargetId ? unitById(after, command.elementalTargetId) : null;
+    if (target) for (const promise of consumed) setKeywordState(target, promise.keyword);
+    return;
+  }
+  if (Number(card.page) === 65) {
+    const targetBefore = command.targetIds?.[0] ? unitById(before, command.targetIds[0]) : null;
+    if (targetBefore) {
+      const owner = unitOwner(before, command.targetIds[0]);
+      const returned = after.players?.[owner]?.hand?.find((candidate) => candidate.id === targetBefore.id);
+      if (returned) returned.attackOverrideUntilMaintenanceOwner = command.owner;
+    }
+    return;
+  }
+  const selected = (command.targetIds || []).map((id) => unitById(after, id)).filter(Boolean);
+  const targets = selected.length ? selected : [];
+  for (const promise of consumed) for (const target of targets) setKeywordState(target, promise.keyword);'''
+          s = once(s, old, new, "optional elemental targets and cloud")
+          # Hero shields and promises expire when the active turn ends, for both controllers' effects.
+          s = once(s,
+            '    if (after.players?.[owner]) { after.players[owner].nextElementEffects = []; after.players[owner].elementChain = undefined; }',
+            '    for (const entry of after.players || []) { entry.nextElementEffects = []; entry.elementChain = undefined; }',
+            "global turn promise expiry")
+          write(path, s)
+
+          # ---- priority accelerated recognition ----
+          path = "app/rules-engine/priority.mjs"
+          s = read(path)
+          s = once(s,
+            'export const isAccelerated = (card) => (card?.tags || []).some((tag) => /acelerado/i.test(String(tag))) || /(?:acelerado|instantâneo|instantaneo)/i.test(card?.text || "");',
+            'export const isAccelerated = (card) => [57,61,62,63,64,65].includes(Number(card?.page)) || (card?.tags || []).some((tag) => /acelerado/i.test(String(tag))) || /(?:acelerado|instantâneo|instantaneo)/i.test(card?.text || "");',
+            "priority accelerated pages")
+          write(path, s)
+
+          # ---- UI ----
+          path = "app/page.tsx"
+          s = read(path)
+          s = once(s,
+            'type Targeting={kind:"attach"|"spell"|"gimble"|"natureza"|"saymon"|"saymon-life"|"ngoro"|"uruk-fire";source:string;cardIndex?:number;amount?:number;response?:boolean;fieldSlot?:number;required?:number;selected?:string[]};',
+            'type Targeting={kind:"attach"|"spell"|"elemental-optional"|"gimble"|"natureza"|"saymon"|"saymon-life"|"ngoro"|"uruk-fire";source:string;cardIndex?:number;amount?:number;response?:boolean;fieldSlot?:number;required?:number;minimum?:number;selected?:string[];chosenElement?:ElementName};',
+            "targeting type")
+          s = once(s,
+            'const extraFor=(id:string)=>allFor(id).filter(c=>c.imageCard&&!disabledDeckCardIds.has(c.id));',
+            'const extraFor=(id:string)=>allFor(id).filter(c=>c.imageCard&&!disabledDeckCardIds.has(c.id)&&(id!=="uruk"||[71,72,73,74,81].includes(c.page)));',
+            "Uruk extra deck")
+          s = once(s,
+            'const heroEvolutionProgress=(player:Player)=>{if(player.heroId==="gimble")return player.board.filter(card=>hasFaction(card,"Dragão")).length;',
+            'const heroEvolutionProgress=(player:Player)=>{if(player.heroId==="uruk")return player.spellsPlayed||0;if(player.heroId==="gimble")return player.board.filter(card=>hasFaction(card,"Dragão")).length;',
+            "Uruk lifetime spell progress")
+          s = once(s,
+            'const imageChoices:Record<number,string[]>={87:["Ignis, a Chama Eterna","Terron, o Guardião Ancestral","Undaris, a Voz do Oceano","Zephyrus, o Relâmpago Voraz"]};',
+            'const imageChoices:Record<number,string[]>={70:["Maestria Elemental: Piromancia","Maestria Elemental: Hidromancia","Maestria Elemental: Geomancia","Maestria Elemental: Aeromancia"],87:["Ignis, a Chama Eterna","Terron, o Guardião Ancestral","Undaris, a Voz do Oceano","Zephyrus, o Relâmpago Voraz"]};',
+            "Maestria image choices")
+          s = once(s,
+            'const isFast=(c:CardDef)=>c.type==="Feitiço"&&(c.tags.includes("Acelerado")||/^\\s*Acelerado\\b/i.test(c.text)||/instantâneo|instantaneo/i.test(c.text));',
+            'const isFast=(c:CardDef)=>c.type==="Feitiço"&&([57,61,62,63,64,65].includes(c.page)||c.tags.includes("Acelerado")||/^\\s*Acelerado\\b/i.test(c.text)||/instantâneo|instantaneo/i.test(c.text));',
+            "UI accelerated pages")
+          s = once(s,
+            'const effectiveCost=(c:CardDef,p:Player)=>{let cost=c.cost+Number((c as CardDef&{costModifier?:number}).costModifier||0);',
+            'const effectiveCost=(c:CardDef,p:Player)=>{let cost=c.cost+Number((c as CardDef&{costModifier?:number}).costModifier||0)+(c.type==="Criatura"?Number((p as Player&{creatureCostTax?:number}).creatureCostTax||0):0);',
+            "UI creature tax cost")
+          s = once(s,
+            'const currentAtk=(u:Unit,p?:Player)=>{const modifier=statModifiers(p,u);return u.frozen?0:Math.max(0,(u.atk||0)+modifier.atk)};',
+            'const currentAtk=(u:Unit,p?:Player)=>{const modifier=statModifiers(p,u);return u.frozen||u.attackOverrideUntilMaintenanceOwner!==undefined?0:Math.max(0,(u.atk||0)+modifier.atk)};',
+            "cloud attack override UI")
+          # Remove the duplicate large Last Breath badge; the bottom keyword row remains.
+          s = re.sub(r',lastBreath=hasKeyword\(owner,unit,"Último Suspiro"\)', '', s, count=1)
+          s = s.replace('{lastBreath&&<i className="card-frame-last-breath" title="Último Suspiro">☠</i>}', '')
+          # Activation availability: creatures only care about summoning sickness if the ability actually pays tap.
+          old = 'const canActivateUnit=(player:Player,unit:Unit)=>{const ability=unit.abilities?.find((entry:any)=>entry.trigger==="activated"),used=ability&&player.abilityUses?.[`${unit.uid||unit.id}:${ability.id}`],summoningSick=!!unit.summoning;return !summoningSick&&!used&&canActivateCard(unit,{energy:player.energy,reserve:player.reserve,life:player.life,heroId:player.heroId,heroLevel:player.level,constantMarkers:markerTotal(player),hasSacrificeTarget:player.board.some(candidate=>candidate.uid!==unit.uid),topGrave:player.grave.at(-1)})};'
+          new = 'const canActivateUnit=(player:Player,unit:Unit)=>{const ability=unit.abilities?.find((entry:any)=>entry.trigger==="activated"),used=ability&&player.abilityUses?.[`${unit.uid||unit.id}:${ability.id}`],tapCost=!!ability?.costs?.some((cost:any)=>cost.type==="tap"),summoningBlocks=unit.type==="Criatura"&&tapCost&&!!unit.summoning;return !summoningBlocks&&!used&&canActivateCard(unit,{energy:player.energy,reserve:player.reserve,life:player.life,heroId:player.heroId,heroLevel:player.level,constantMarkers:markerTotal(player),hasSacrificeTarget:player.board.some(candidate=>candidate.uid!==unit.uid),topGrave:player.grave.at(-1)})};'
+          s = once(s, old, new, "creature activation icon")
+          # Targetability for optional elemental freeze.
+          s = once(s,
+            'const allyTarget=(!!targeting&&["attach","gimble","natureza","saymon-life","ngoro"].includes(targeting.kind))||',
+            'const allyTarget=(!!targeting&&["attach","gimble","natureza","saymon-life","ngoro","elemental-optional"].includes(targeting.kind))||',
+            "optional ally target")
+          s = once(s,
+            'const enemyTarget=(!!targeting&&["saymon","uruk-fire"].includes(targeting.kind))||',
+            'const enemyTarget=(!!targeting&&["saymon","uruk-fire","elemental-optional"].includes(targeting.kind))||',
+            "optional enemy target")
+          # Play requirements and target setup.
+          s = once(s,
+            'if(!cardPlayRequirementMet(c,p)){update(g=>log(g,`${c.name} só pode ser jogada se houver um Goblin no seu Cemitério.`,"danger"));return}',
+            'if(!cardPlayRequirementMet(c,p)){update(g=>log(g,`${c.name} não cumpre a condição necessária para ser jogada.`,"danger"));return}if([55,56].includes(c.page)&&!game.players.some(player=>player.board.length)){update(g=>log(g,`${c.name} só pode ser jogada se houver pelo menos uma criatura em campo.`,"danger"));return}',
+            "Orbe and Punho requirement")
+          s = once(s,
+            'if(cleanName(c.name)==="orbe cromatico"){setElementChoice({cardIndex:idx,name:c.name});return}',
+            'if(cleanName(c.name)==="orbe cromatico"){setElementChoice({cardIndex:idx,name:c.name});return}const matchingWaterEnhancement=[61,62].includes(c.page)&&(p.nextElementEffects||[]).some(effect=>cleanName(effect.element)==="agua")&&game.players.some(player=>player.board.length);if(matchingWaterEnhancement){setTargeting({kind:"elemental-optional",source:c.name,cardIndex:idx,fieldSlot,required:1,minimum:0,selected:[]});return}',
+            "optional water enhancement")
+          s = once(s,
+            'const policy=playTargetPolicy(c),duplicateFirstAct=c.type==="Criatura"&&p.heroId==="quarion"&&p.level>=3&&/primeiro ato/i.test(c.text)?2:1,required=Math.max(1,policy.selections*duplicateFirstAct);',
+            'const policy=playTargetPolicy(c),duplicateFirstAct=c.type==="Criatura"&&p.heroId==="quarion"&&p.level>=3&&/primeiro ato/i.test(c.text)?2:1,required=Math.max(1,policy.selections*duplicateFirstAct),minimum=Math.max(0,Number((policy as any).minimumSelections??policy.selections)*duplicateFirstAct);',
+            "target minimum")
+          s = once(s,
+            'setTargeting({kind:"spell",source:policy.sacrifice?`${c.name} · cumpra o custo e escolha os alvos`:c.name,cardIndex:idx,fieldSlot,required,selected:[]});',
+            'setTargeting({kind:"spell",source:policy.sacrifice?`${c.name} · cumpra o custo e escolha os alvos`:c.name,cardIndex:idx,fieldSlot,required,minimum,selected:[]});',
+            "store target minimum")
+          # playCard carries optional elemental target.
+          s = once(s,
+            'const playCard=(idx:number,owner:0|1=0,targetUid?:string,selectedImageName?:string,cafeEffect?:CafeChoice,asResponse=false,fieldSlot?:number,chosenElement?:ElementName,targetUids?:string[])=>{',
+            'const playCard=(idx:number,owner:0|1=0,targetUid?:string,selectedImageName?:string,cafeEffect?:CafeChoice,asResponse=false,fieldSlot?:number,chosenElement?:ElementName,targetUids?:string[],elementalTargetId?:string)=>{',
+            "playCard elemental target")
+          s = once(s,
+            'runRulesCommand({type:"playCard",cardId:snapshot.id,instanceId:uid(),slot,attachedTo:snapshot.type==="Artefato"?targetUid:undefined,targetIds:effectTargetIds,sacrificeIds,hasPriority:asResponse,chosenElement,selectedImageName,cafeEffect},owner)',
+            'runRulesCommand({type:"playCard",cardId:snapshot.id,instanceId:uid(),slot,attachedTo:snapshot.type==="Artefato"?targetUid:undefined,targetIds:effectTargetIds,sacrificeIds,hasPriority:asResponse,chosenElement,selectedImageName,cafeEffect,elementalTargetId},owner)',
+            "send elemental target")
+          # applyTarget special path + chosen element preservation.
+          apply_anchor = ' const applyTarget=(id:string,side:0|1)=>{if(!targeting||!game)return;const t=targeting;'
+          if apply_anchor not in s: raise SystemExit("patch point not found: applyTarget")
+          s = s.replace(apply_anchor, apply_anchor+'if(t.kind==="elemental-optional"){const card=game.players[0].hand[t.cardIndex!];if(!card||!game.players[side].board.some(unit=>unit.uid===id))return;setTargeting(null);playCard(t.cardIndex!,0,undefined,undefined,undefined,false,t.fieldSlot,undefined,undefined,id);return}', 1)
+          s = s.replace('playCard(t.cardIndex!,0,id,undefined,undefined,t.response,t.fieldSlot,undefined,next)', 'playCard(t.cardIndex!,0,id,undefined,undefined,t.response,t.fieldSlot,t.chosenElement,next)', 1)
+          # Partial Punho confirmation and optional enhancement skip.
+          helper_anchor = ' const targetRule=(c:CardDef,step=0):"ally"|"enemy"|"any"|"none"=>'
+          helper = ''' const confirmPartialTargeting=()=>{if(!targeting||targeting.kind!=="spell"||targeting.cardIndex==null)return;const selected=targeting.selected||[],minimum=targeting.minimum??targeting.required??1;if(selected.length<minimum)return;const idx=targeting.cardIndex,first=selected[0];setTargeting(null);playCard(idx,0,first,undefined,undefined,!!targeting.response,targeting.fieldSlot,targeting.chosenElement,selected)};
+ const skipOptionalElementalTarget=()=>{if(!targeting||targeting.kind!=="elemental-optional"||targeting.cardIndex==null)return;const idx=targeting.cardIndex,slot=targeting.fieldSlot;setTargeting(null);playCard(idx,0,undefined,undefined,undefined,false,slot)};
+'''
+          s = once(s, helper_anchor, helper+helper_anchor, "target confirmation helpers")
+          # Element choice now proceeds to creature targeting rather than resolving immediately.
+          s = once(s,
+            'onClick={()=>{playCard(elementChoice.cardIndex,0,undefined,undefined,undefined,false,undefined,element);setElementChoice(null)}}',
+            'onClick={()=>{const card=game?.players[0].hand[elementChoice.cardIndex];setElementChoice(null);if(card)setTargeting({kind:"spell",source:card.name,cardIndex:elementChoice.cardIndex,required:1,minimum:1,selected:[],chosenElement:element})}}',
+            "Orbe target after element")
+          # Target banner: card name on its own line, partial confirm, optional decline.
+          old_banner = '{targeting&&<div className="target-banner"><b>{targeting.required&&targeting.required>1?`SELECIONE ALVOS · ${(targeting.selected?.length||0)+1}/${targeting.required}`:"SELECIONE UM ALVO"}</b><span>{targeting.source}</span><button onClick={()=>setTargeting(null)}>Cancelar</button></div>}'
+          new_banner = '{targeting&&<div className="target-banner"><div><b>{targeting.kind==="elemental-optional"?"SELECIONE UM ALVO (OPCIONAL)":targeting.required&&targeting.required>1?`SELECIONE ALVOS · ${Math.min((targeting.selected?.length||0)+1,targeting.required)}/${targeting.required}`:"SELECIONE UM ALVO"}</b><span>{targeting.source}</span></div>{targeting.kind==="spell"&&(targeting.selected?.length||0)>=(targeting.minimum??targeting.required??1)&&(targeting.selected?.length||0)<(targeting.required||1)&&<button className="gold" onClick={confirmPartialTargeting}>Confirmar {targeting.selected?.length} alvo(s)</button>}{targeting.kind==="elemental-optional"&&<button className="gold" onClick={skipOptionalElementalTarget}>Não usar aprimoramento</button>}<button onClick={()=>setTargeting(null)}>Cancelar jogada</button></div>}'
+          s = once(s, old_banner, new_banner, "target banner")
+          # Engine decision UI supports hand limit and optional Geomancy skip.
+          s = once(s,
+            '["search","zone-card","grave-resurrect","hand-to-deck-bottom"].includes(engineDecision.kind)',
+            '["search","zone-card","grave-resurrect","hand-to-deck-bottom","hand-limit-discard"].includes(engineDecision.kind)',
+            "hand limit card selection")
+          s = once(s,
+            'engineDecision.kind==="hand-to-deck-bottom"?game.players[0].hand:',
+            '["hand-to-deck-bottom","hand-limit-discard"].includes(engineDecision.kind)?game.players[0].hand:',
+            "hand limit cards")
+          s = once(s,
+            'const decisionCardRequired=engineDecision?.kind==="zone-card"||engineDecision?.kind==="grave-resurrect"?1:Math.min(engineDecision?.effect.amount||1,decisionCards.length);',
+            'const decisionCardRequired=engineDecision?.kind==="zone-card"||engineDecision?.kind==="grave-resurrect"?1:Math.min(engineDecision?.effect.amount||1,decisionCards.length);',
+            "hand limit required")
+          # Empty third Geomancy choice resolves immediately instead of opening a target grid.
+          s = once(s,
+            'onClick={()=>choiceTargetDecision?setEngineChoiceIndex(index):resolveEngineChoice(index)}',
+            'onClick={()=>choiceTargetDecision?(choice.length?setEngineChoiceIndex(index):resolveEngineChoice(index)):resolveEngineChoice(index)}',
+            "geomancy skip UI")
+          # AI handles hand-limit discard deterministically.
+          s = once(s,
+            'if(["targets","activation-targets"].includes(current.kind)){',
+            'if(current.kind==="hand-limit-discard"){const amount=current.effect?.amount||Math.max(0,game.players[1].hand.length-9);void runRulesCommand({type:"resolveDecision",selectedCardIds:game.players[1].hand.slice(-amount).map(card=>card.id)},1);return}\n   if(["targets","activation-targets"].includes(current.kind)){',
+            "AI hand limit")
+          write(path, s)
+
+          # ---- responsive target banner polish ----
+          path = "app/globals.css"
+          s = read(path)
+          s += '''\n\n/* Target prompt: title and requesting card are always readable on separate rows. */\n.screen-game .target-banner{display:flex!important;align-items:center!important;gap:clamp(.35rem,.7cqw,.8rem)!important;max-width:min(94cqw,46rem)!important;padding:clamp(.45rem,.8cqh,.7rem) clamp(.6rem,1cqw,1rem)!important}\n.screen-game .target-banner>div{display:flex!important;flex:1 1 auto!important;min-width:0!important;flex-direction:column!important;gap:.16rem!important}\n.screen-game .target-banner>div>b{white-space:normal!important;line-height:1.1!important}\n.screen-game .target-banner>div>span{display:block!important;max-width:100%!important;overflow:visible!important;text-overflow:clip!important;white-space:normal!important;color:#d9ad55!important;font:800 clamp(.58rem,.72cqw,.78rem)/1.15 system-ui!important;letter-spacing:.08em!important;text-transform:uppercase!important}\n.screen-game .target-banner>button{flex:0 0 auto!important}\n@container hemsfell-board (max-width:48rem){.screen-game .target-banner{flex-wrap:wrap!important}.screen-game .target-banner>div{flex-basis:100%!important}.screen-game .target-banner>button{flex:1 1 auto!important}}\n'''
+          write(path, s)
+
+          # ---- focused regression tests ----
+          Path("tests/uruk-card-batch.test.mjs").write_text(r'''import assert from "node:assert/strict";
+import test from "node:test";
+import { compileCard } from "../app/rules-engine/compiler.mjs";
+import { executeCommand } from "../app/rules-engine/engine.mjs";
+import { cardPlayTargetPolicy } from "../app/rules-engine/targeting.mjs";
+
+const state = () => ({ active:0, phase:"principal", round:1, players:[0,1].map(()=>({life:30,maxLife:30,energy:10,maxEnergy:10,reserve:0,deck:[],extraDeck:[],hand:[],board:[],support:[],terrain:null,grave:[],obscuro:[],abilityUses:{},nextElementEffects:[],turnCardsPlayed:0,turnSpellsPlayed:0,spellsPlayed:0})), log:[], events:0 });
+const card = (page,name,type="Feitiço",extra={}) => compileCard({id:`p${page}`,page,name,type,cost:0,text:"",tags:[],image:"",hero:false,imageCard:false,...extra});
+const unit=(id,atk=2,hp=2)=>({uid:id,id,name:id,type:"Criatura",atk,hp,cost:1,text:"",tags:[],abilities:[],damage:0,modifiers:[],exhausted:false,summoning:false,markers:0,defenseUses:0});
+
+test("Anel de Safira fills reserve to three and destroys itself",()=>{const g=state();g.players[0].reserve=1;const ring=card(60,"Anel de Safira","Artefato");g.players[0].support.push({...ring,uid:"ring",slot:0,enteredRound:0,summoning:false,exhausted:false,markers:0,damage:0,modifiers:[],defenseUses:0});const ability=g.players[0].support[0].abilities.find(a=>a.trigger==="activated");const out=executeCommand(g,{type:"activate",owner:0,sourceId:"ring",abilityId:ability.id},{priority:true}).state;assert.equal(out.players[0].reserve,3);assert.equal(out.players[0].support.length,0);assert.equal(out.players[0].grave.some(c=>c.name==="Anel de Safira"),true)});
+
+test("Punho Sismico accepts one or two distinct creature targets but not zero",()=>{const fist=card(56,"Punho Sísmico");const policy=cardPlayTargetPolicy(fist);assert.equal(policy.selections,2);assert.equal(policy.minimumSelections,1);const g=state();g.players[0].hand.push(fist);g.players[1].board.push(unit("a"));assert.doesNotThrow(()=>executeCommand(g,{type:"playCard",owner:0,cardId:fist.id,targetIds:["a"],skipPriority:true},{priority:true}));const none=state();none.players[0].hand.push(card(56,"Punho Sísmico"));assert.throws(()=>executeCommand(none,{type:"playCard",owner:0,cardId:"p56",targetIds:[],skipPriority:true},{priority:true}))});
+
+test("Uruk accelerated spell pages are legal response cards",async()=>{const { isAccelerated }=await import("../app/rules-engine/priority.mjs");for(const page of [57,61,62,63,64,65])assert.equal(isAccelerated({page,type:"Feitiço",tags:[],text:""}),true)});
+
+test("Biriba's combo buff remains permanent",()=>{const biriba=card(30,"BIRIBA, O FOLGADO","Criatura",{atk:1,hp:1});const effect=biriba.abilities.flatMap(a=>a.effects).find(e=>e.type==="modifyStatsFromTurnCardsPlayed");assert.equal(effect.duration,"permanent")});
+
+test("Arquimago and Golem explicit rules do not request play targets",()=>{for(const page of [76,78]){const c=card(page,page===76?"Golem Rochedo":"Arquimago Sombrio","Criatura",{atk:2,hp:page===76?4:3});assert.equal(cardPlayTargetPolicy(c).selections,0)}});
+
+test("hand limit queues discard down to nine",()=>{const g=state();g.phase="combate";g.players[0].hand=Array.from({length:11},(_,i)=>({id:`h${i}`,name:`H${i}`,type:"Feitiço",cost:0,text:"",tags:[],abilities:[]}));const out=executeCommand(g,{type:"advancePhase",owner:0},{priority:true}).state;assert.equal(out.phase,"fim");assert.equal(out.pendingDecision?.kind,"hand-limit-discard");assert.equal(out.pendingDecision?.effect?.amount,2)});
+''')
+          PY
+      - name: Focused rules tests
+        run: node --test tests/response-elemental-rules.test.mjs tests/uruk-card-batch.test.mjs
+      - name: Next build
+        run: npx next build
+      - name: Commit canonical changes and remove temporary workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/apply-uruk-card-batch.yml
+          git add app tests/uruk-card-batch.test.mjs
+          git commit -m "fix: correct Uruk elemental cards and activation rules"
+          git push origin HEAD:fix/response-uruk-priority-rules
