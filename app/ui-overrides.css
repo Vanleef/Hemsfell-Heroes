@@ -922,7 +922,7 @@
 /* The opponent hand occupies a real responsive row. Its energy follows the
    visible card bottoms with a small gap instead of overlapping their art. */
 .screen-game .game-stage>.game-content.hs-board{
- grid-template-rows:minmax(0,4.5fr) minmax(0,15.5fr) minmax(0,4fr) minmax(0,23fr) minmax(0,7fr) minmax(0,28fr) minmax(0,4fr) minmax(0,14fr)!important;
+ grid-template-rows:minmax(0,4.5fr) minmax(0,15.5fr) minmax(0,4fr) minmax(0,24fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,14fr)!important;
 }
 .screen-game .game-stage>.game-content.hs-board>.opponent-hand{
  align-self:start!important;height:15.5cqh!important;padding-bottom:clamp(.08rem,.2cqh,.18rem)!important;
@@ -931,6 +931,6 @@
  align-self:start!important;margin-top:clamp(.08rem,.25cqh,.2rem)!important;
 }
 @container hemsfell-board (max-width:60rem){
- .screen-game .game-stage>.game-content.hs-board{grid-template-rows:minmax(0,4.5fr) minmax(0,14fr) minmax(0,4fr) minmax(0,24.5fr) minmax(0,7fr) minmax(0,28fr) minmax(0,4fr) minmax(0,14fr)!important}
+ .screen-game .game-stage>.game-content.hs-board{grid-template-rows:minmax(0,4.5fr) minmax(0,14fr) minmax(0,4fr) minmax(0,25.5fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,14fr)!important}
  .screen-game .game-stage>.game-content.hs-board>.opponent-hand{height:14cqh!important}
 }
