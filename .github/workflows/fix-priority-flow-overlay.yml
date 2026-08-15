@@ -1,0 +1,33 @@
+name: Fix priority flow and overlays
+on:
+  push:
+    branches: [fix/cards_mechanics]
+    paths: [.github/workflows/fix-priority-flow-overlay.yml]
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: python .github/scripts/fix-priority-flow.py
+      - run: python .github/scripts/fix-priority-overlay-css.py
+      - run: npm ci
+      - run: chmod +x scripts/*.sh
+      - run: node --test tests/bot-priority-sync.test.mjs tests/gimble-authoritative-hero.test.mjs tests/hero-priority-response.test.mjs tests/hero-priority-ui.test.mjs
+      - run: npm run build
+      - name: Commit repair
+        run: |
+          rm .github/scripts/fix-priority-flow.py .github/scripts/fix-priority-overlay-css.py .github/workflows/fix-priority-flow-overlay.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx app/ui-overrides.css .github/scripts/fix-priority-flow.py .github/scripts/fix-priority-overlay-css.py .github/workflows/fix-priority-flow-overlay.yml
+          git commit -m "fix: close bot priority loops and center stack"
+          git push origin HEAD:fix/cards_mechanics
