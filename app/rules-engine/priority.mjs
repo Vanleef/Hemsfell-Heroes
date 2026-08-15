@@ -10,10 +10,32 @@ export const PriorityState = Object.freeze({
 });
 
 const permanents = (player) => [...(player.board || []), ...(player.support || []), ...(player.terrain ? [player.terrain] : [])];
-const HERO_RULE_PAGE = Object.freeze({ saymon: 129, ngoro: 255, natureza: 291 });
+const HERO_RULE_PAGE = Object.freeze({ gimble: 2, saymon: 129, ngoro: 255, natureza: 291 });
 const heroSource = (entry, owner) => ({ uid: `${entry.heroId}-hero-${owner}`, id: `${entry.heroId}-hero-${owner}`, name: entry.heroId, slot: -1 });
 const stackHas = (state, predicate) => (state.priorityStack || []).some((frame) => frame?.kind === "command" && predicate(frame.command || {}));
 const heroUsageKey = (state, source, ability) => `${source.uid || source.id}:${ability.id}${ability?.condition?.firstEachTurn ? `:round-${state.round}` : ""}`;
+const normalizedSubtype = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const hasSubtype = (card, subtype) => !subtype || (card?.subtypes || card?.tags || []).some((value) => normalizedSubtype(value) === normalizedSubtype(subtype));
+function heroAbilityTargetsAvailable(state, owner, ability) {
+  for (const effect of ability.effects || []) {
+    const target = effect.target;
+    if (!target || !/(?:Character|Creature|Permanent)$/.test(target)) continue;
+    const minimum = Number(effect.minimumSelections ?? effect.selections ?? 1);
+    if (minimum <= 0) continue;
+    const wantsCreature = /Creature$/.test(target) || /Character$/.test(target);
+    const wantsPermanent = /Permanent$/.test(target);
+    const owners = target.startsWith("ally") ? [owner] : target.startsWith("enemy") ? [1 - owner] : [0, 1];
+    let count = 0;
+    for (const targetOwner of owners) {
+      const entry = state.players[targetOwner];
+      const candidates = wantsCreature ? (entry.board || []) : wantsPermanent ? permanents(entry) : [];
+      count += candidates.filter((card) => hasSubtype(card, effect.requiredSubtype) && (!effect.requireExhausted || card.exhausted)).length;
+      if (/Character$/.test(target) && targetOwner !== owner) count += 1;
+    }
+    if (count < minimum) return false;
+  }
+  return true;
+}
 export const isAccelerated = (card) => (card?.tags || []).some((tag) => /acelerado/i.test(String(tag))) || /(?:acelerado|instantâneo|instantaneo)/i.test(card?.text || "");
 
 function spellCost(state, owner, card) {
@@ -41,7 +63,7 @@ export function legalPriorityResponses(state, owner) {
   const rule = page ? getExplicitCardRule(`p${page}`) : null;
   const source = heroSource(player, owner);
   const heroAbilities = abilitiesForLevel(rule, player.level || 1).flatMap((ability) => {
-    if (ability.trigger !== "activated" || ability.responseAllowed === false || !ability.id) return [];
+    if (ability.trigger !== "activated" || ability.responseAllowed === false || !ability.id || !heroAbilityTargetsAvailable(state, owner, ability)) return [];
     if (player.abilityUses?.[heroUsageKey(state, source, ability)]) return [];
     if (stackHas(state, command => command.type === "activateHero" && command.owner === owner && command.abilityId === ability.id)) return [];
     try { validateCosts(state, ability, { owner, sourceId: source.uid }); } catch { return []; }

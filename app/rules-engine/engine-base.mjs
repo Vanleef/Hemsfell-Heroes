@@ -8,7 +8,7 @@ export class RulesLoopError extends Error {
 }
 
 const INTERACTIVE_EFFECTS = new Set();
-const HERO_RULE_PAGE = Object.freeze({ saymon: 129, quarion: 180, rasmus: 211, ngoro: 255, zayan: 273, natureza: 291 });
+const HERO_RULE_PAGE = Object.freeze({ gimble: 2, saymon: 129, quarion: 180, rasmus: 211, ngoro: 255, zayan: 273, natureza: 291 });
 export function canExecuteCard(card, handlers = defaultEffectHandlers) {
   if (!handlers || typeof handlers !== "object") handlers = defaultEffectHandlers;
   const inspect = (effects = []) => effects.every((effect) => !!handlers[effect.type] && effect.type !== "unsupported" && !INTERACTIVE_EFFECTS.has(effect.type) && inspect(effect.effects) && (effect.branches || []).every((branch) => inspect(branch.effects)) && (effect.choices || []).every(inspect));

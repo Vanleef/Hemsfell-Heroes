@@ -7,6 +7,7 @@ const effect = (type, data = {}) => ({ type, ...data });
  * code, and may later be loaded directly from Supabase.
  */
 export const explicitCardRules = Object.freeze({
+  p2: { hero: true, levels: { 1: [], 2: [ability("activated", [effect("ready", { target: "allyCreature", requiredSubtype: "Dragão", requireExhausted: true, selections: 1 })], [], { id: "gimble-level-2", uiActivation: true, usageLimit: { count: 1, period: "turn" } })], 3: [] } },
   p3: [ability("static", [effect("keyword", { keyword: "Voar" })]), ability("activated", [effect("transformFromHandOrDeck", { name: "Valorian, o Dragão Verdadeiro", replaceSelf: true, shuffle: true })], [{ type: "energy", amount: 10 }], { uiActivation: true })],
   p5: [ability("static", [effect("keyword", { keyword: "Voar" }), effect("keyword", { keyword: "Indomável" })]), ability("onCombatDamage", [effect("damageAdjacent", { amount: 1, relation: "combatDefender" })])],
   p20: [ability("activated", [effect("gainMaxEnergy", { amount: 1 }), effect("destroy", { target: "self" })], [{ type: "tap", amount: 1 }], { uiActivation: true })],
