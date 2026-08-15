@@ -76,6 +76,12 @@ export const shouldAutoPass = (state, owner, control = "assisted") =>
   control === "assisted" && !!state?.pendingResponse && state.pendingResponse.responder === owner && legalPriorityResponses(state, owner).length === 0;
 
 export function chooseAIResponse(state, owner, random = Math.random) {
+  const pending = state?.pendingResponse;
+  /* Once the opponent has passed, priority returns to the actor with passes=1.
+     The bot must pass here so the current top of the stack resolves instead of
+     extending its own chain with more responses indefinitely. */
+  if (pending?.responder === owner && pending?.actor === owner && (pending.passes || 0) > 0)
+    return { type: "passPriority", owner, auto: true };
   const legal = legalPriorityResponses(state, owner);
   if (!legal.length) return { type: "passPriority", owner, auto: true };
   const scored = legal.map((command) => {
