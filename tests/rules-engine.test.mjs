@@ -1301,7 +1301,9 @@ test("investigation triggers share reveal events and archive replacement", () =>
 test("Ngoro chooses a deck at maintenance and gains exactly one clue per investigation", () => {
   const game = state(); game.phase = "manutencao"; game.players[0].heroId = "ngoro"; game.players[0].level = 1; game.players[0].heroXP = 0; game.players[0].markers = { clue: 0 };
   game.players[1].deck.push({ id: "enemy-top", name: "Topo inimigo", type: "Feitiço" });
-  let result = executeCommand(game, { type: "emit", owner: 0, event: { type: "onMaintenance", owner: 0 } }).state;
+  const beforeResources = executeCommand(game, { type: "emit", owner: 0, event: { type: "onMaintenance", owner: 0 } }).state;
+  assert.equal(beforeResources.pendingDecision, undefined);
+  let result = executeCommand(beforeResources, { type: "emit", owner: 0, event: { type: "onMaintenance", owner: 0, afterResourceChoice: true } }).state;
   assert.equal(result.pendingDecision.kind, "choice");
   result = executeCommand(result, { type: "resolveDecision", owner: 0, choiceIndex: 1 }).state;
   assert.equal(result.pendingDecision.kind, "investigate-selection");

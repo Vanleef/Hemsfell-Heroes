@@ -906,9 +906,9 @@
 .screen-game .revealed-deck-card:hover{z-index:60!important;transform:translate(var(--revealed-x),calc(var(--revealed-y) - .28cqh)) scale(1.08)!important}
 
 .screen-game .hero-power-trigger{position:relative}
-.screen-game .hero-clue-counter{position:absolute;right:clamp(.08rem,.28cqw,.25rem);bottom:clamp(.08rem,.35cqh,.3rem);z-index:18;display:flex;align-items:center;gap:clamp(.12rem,.2cqw,.2rem);min-width:clamp(1.25rem,2.2cqw,2rem);padding:clamp(.1rem,.22cqh,.18rem) clamp(.18rem,.32cqw,.3rem);border:1px solid #c48aff;border-radius:999px;background:linear-gradient(135deg,#6a2d96eF,#26113cf2);box-shadow:0 0 clamp(.3rem,.65cqw,.65rem) #9d54dcaa;color:#fff;pointer-events:auto}
-.screen-game .hero-clue-counter i{font:900 clamp(.46rem,.72cqw,.7rem)/1 system-ui;font-style:normal}
-.screen-game .hero-clue-counter b{font:900 clamp(.48rem,.76cqw,.74rem)/1 system-ui}
+.screen-game .hero-clue-counter{position:absolute;right:clamp(.08rem,.28cqw,.25rem);bottom:clamp(.08rem,.35cqh,.3rem);z-index:18;display:flex;align-items:center;justify-content:center;gap:clamp(.2rem,.34cqw,.34rem);min-width:clamp(1.85rem,3.15cqw,2.9rem);min-height:clamp(1.05rem,1.7cqh,1.5rem);padding:clamp(.16rem,.3cqh,.26rem) clamp(.3rem,.5cqw,.46rem);border:clamp(1px,.1cqw,2px) solid #c48aff;border-radius:999px;background:linear-gradient(135deg,#7130a1f2,#26113cf7);box-shadow:0 0 clamp(.42rem,.82cqw,.8rem) #9d54dccc;color:#fff;pointer-events:auto}
+.screen-game .hero-clue-counter i{font:900 clamp(.64rem,.98cqw,.96rem)/1 system-ui;font-style:normal}
+.screen-game .hero-clue-counter b{font:900 clamp(.68rem,1.04cqw,1rem)/1 system-ui}
 
 .screen-game .engine-decision-panel[data-decision-kind="investigate-selection"] .visual-card-choice-grid{display:flex!important;flex-wrap:nowrap!important;justify-content:flex-start!important;gap:clamp(.35rem,1.2cqw,.7rem)!important;overflow-x:auto!important;overflow-y:hidden!important;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
 .screen-game .engine-decision-panel[data-decision-kind="investigate-selection"] .visual-card-choice{flex:0 0 clamp(4.4rem,9cqw,6.7rem)!important;scroll-snap-align:center}

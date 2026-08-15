@@ -217,7 +217,7 @@ test("trigger lifecycle covers entries, deaths and turn boundaries",()=>{
  assert.match(page,/GATILHO · UNDARIS/);
  assert.match(page,/GATILHO · RITUAL/);
  assert.match(page,/GATO-METRO detectou/);
- assert.match(page,/Ngoro I permite escolher um deck para Investigar 1/);
+ assert.match(page,/Após escolher os recursos da manutenção, Ngoro I permite escolher um deck para Investigar 1/);
 });
 
 
@@ -272,6 +272,7 @@ test("public hand and deck information is rendered symmetrically",()=>{
  assert.match(page,/revealedTop\.map/);
  assert.match(uiOverrides,/opponent-hand>\.card-frame/);
  assert.match(uiOverrides,/hero-clue-counter/);
+ assert.match(uiOverrides,/min-width:clamp\(1\.85rem,3\.15cqw,2\.9rem\)/);
 });
 
 test("browser-facing routes include baseline hardening headers",()=>{
