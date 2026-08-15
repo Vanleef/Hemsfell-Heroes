@@ -1,4 +1,4 @@
-name: Fix stale priority test
+name: Fix stale priority tests
 
 on:
   push:
@@ -20,20 +20,55 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22.13.0'
-      - name: Update stale priority regression
+      - name: Update stale regressions
         run: |
           python - <<'PY'
           from pathlib import Path
-          p = Path('tests/rules-engine.test.mjs')
-          s = p.read_text()
-          old_title = 'test("priority API exposes only legal accelerated cards and usable activations", () => {'
-          new_title = 'test("priority API exposes accelerated cards but excludes ordinary permanent activations", () => {'
-          old_assert = '  assert.deepEqual(legal.map((command) => command.type), ["playCard", "activate"]);'
-          new_assert = '  assert.deepEqual(legal.map((command) => command.type), ["playCard"]);'
-          if old_title not in s or old_assert not in s:
-              raise SystemExit('Expected stale priority test text was not found')
-          s = s.replace(old_title, new_title, 1).replace(old_assert, new_assert, 1)
-          p.write_text(s)
+
+          rules = Path('tests/rules-engine.test.mjs')
+          s = rules.read_text()
+          replacements = [
+              (
+                  'test("priority API exposes only legal accelerated cards and usable activations", () => {',
+                  'test("priority API exposes accelerated cards but excludes ordinary permanent activations", () => {'
+              ),
+              (
+                  '  assert.deepEqual(legal.map((command) => command.type), ["playCard", "activate"]);',
+                  '  assert.deepEqual(legal.map((command) => command.type), ["playCard"]);'
+              ),
+              (
+                  '  assert.equal(explicitRuleIds.length, 247);',
+                  '  assert.equal(explicitRuleIds.length, 248);'
+              ),
+          ]
+          for old, new in replacements:
+              if old not in s:
+                  raise SystemExit(f'Expected stale rules test text was not found: {old}')
+              s = s.replace(old, new, 1)
+          rules.write_text(s)
+
+          ai = Path('tests/ai-priority-lock.test.mjs')
+          s = ai.read_text()
+          old_block = '''test("AI response timer is keyed only to the pending priority window",async()=>{
+  const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
+  const marker=page.match(/useEffect\\(\\(\\)=>\\{if\\(responseWindow\\?\\.responder!==1[\\s\\S]*?\\},\\[responseWindow\\?\\.actor,responseWindow\\?\\.responder,responseWindow\\?\\.passes,responseWindow\\?\\.action,mode,difficulty\\]\\);/)?.[0]||"";
+  assert.ok(marker);
+  assert.match(marker,/currentGameRef\\.current/);
+  assert.doesNotMatch(marker,/\\[game,responseWindow,mode,difficulty\\]/);
+  assert.doesNotMatch(marker,/command\\.type==="activate"/);
+});'''
+          new_block = '''test("AI response timer is keyed only to the authoritative pending priority window",async()=>{
+  const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
+  const marker=page.match(/useEffect\\(\\(\\)=>\\{const authoritativePending=game\\?\\.pendingResponse[\\s\\S]*?\\},\\[game\\?\\.pendingResponse\\?\\.actor,game\\?\\.pendingResponse\\?\\.responder,game\\?\\.pendingResponse\\?\\.passes,game\\?\\.pendingResponse\\?\\.action,mode,difficulty\\]\\);/)?.[0]||"";
+  assert.ok(marker);
+  assert.match(marker,/currentGameRef\\.current/);
+  assert.match(marker,/chooseAIResponse/);
+  assert.match(marker,/command\\.type==="activateHero"/);
+  assert.doesNotMatch(marker,/\\[game,responseWindow,mode,difficulty\\]/);
+});'''
+          if old_block not in s:
+              raise SystemExit('Expected stale AI timer test block was not found')
+          ai.write_text(s.replace(old_block, new_block, 1))
           PY
       - name: Validate targeted and full test suite
         run: |
@@ -47,6 +82,6 @@ jobs:
           rm .github/workflows/fix-vercel-stale-priority-test.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tests/rules-engine.test.mjs .github/workflows/fix-vercel-stale-priority-test.yml
-          git commit -m "test: align priority regression with hero-only activations"
+          git add tests/rules-engine.test.mjs tests/ai-priority-lock.test.mjs .github/workflows/fix-vercel-stale-priority-test.yml
+          git commit -m "test: align priority regressions with authoritative flow"
           git push origin HEAD:fix/cards_mechanics
