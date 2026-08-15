@@ -33,3 +33,13 @@ test("hero response reaches its target decision after both players pass",()=>{
   assert.equal(state.pendingDecision?.owner,1);
   assert.equal(state.pendingDecision?.kind,"activation-targets");
 });
+
+test("Ngoro hero responses respect their clue costs before AI can choose them",()=>{
+  const state={...baseState(),players:[player("saymon",3),player("ngoro",3,{markers:{clue:1},heroXP:1})]};
+  assert.equal(legalPriorityResponses(state,1).some(command=>command.type==="activateHero"),false);
+  state.players[1].markers={clue:3};
+  state.players[1].heroXP=3;
+  const legal=legalPriorityResponses(state,1);
+  assert.ok(legal.some(command=>command.type==="activateHero"&&command.abilityId==="ngoro-level-2"));
+  assert.ok(legal.some(command=>command.type==="activateHero"&&command.abilityId==="ngoro-level-3"));
+});
