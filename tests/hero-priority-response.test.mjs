@@ -3,7 +3,8 @@ import test from "node:test";
 import { legalPriorityResponses, chooseAIResponse } from "../app/rules-engine/priority.mjs";
 import { executeCommand } from "../app/rules-engine/engine.mjs";
 
-const player=(heroId, level, extra={})=>({heroId,level,life:20,energy:3,reserve:3,hand:[],board:[],support:[],terrain:null,abilityUses:{},markers:{clue:10},heroXP:10,...extra});
+const unit=(uid="ally-1")=>({id:uid,uid,name:"Aliado",type:"Criatura",subtypes:[],tags:[],abilities:[],cost:1,atk:1,hp:1,damage:0,slot:0,exhausted:false,summoning:false,defenseUses:0,markers:0});
+const player=(heroId, level, extra={})=>({heroId,level,life:20,energy:3,reserve:3,hand:[],deck:[],grave:[],obscuro:[],board:[],support:[],terrain:null,abilityUses:{},markers:{clue:10},heroXP:10,...extra});
 const baseState=()=>({active:0,phase:"combate",round:4,pendingAction:{type:"attack",owner:0},pendingResponse:{responder:1,actor:0,action:"ataque",passes:0},players:[player("saymon",3),player("saymon",3)]});
 
 test("activated hero abilities are legal priority responses even off turn",()=>{
@@ -34,12 +35,14 @@ test("hero response reaches its target decision after both players pass",()=>{
   assert.equal(state.pendingDecision?.kind,"activation-targets");
 });
 
-test("Ngoro hero responses respect their clue costs before AI can choose them",()=>{
-  const state={...baseState(),players:[player("saymon",3),player("ngoro",3,{markers:{clue:1},heroXP:1})]};
+test("Ngoro hero responses respect clue costs and target legality before AI can choose them",()=>{
+  const state={...baseState(),players:[player("saymon",3),player("ngoro",3,{markers:{clue:1},heroXP:1,board:[unit()]})]};
   assert.equal(legalPriorityResponses(state,1).some(command=>command.type==="activateHero"),false);
   state.players[1].markers={clue:3};
   state.players[1].heroXP=3;
   const legal=legalPriorityResponses(state,1);
   assert.ok(legal.some(command=>command.type==="activateHero"&&command.abilityId==="ngoro-level-2"));
   assert.ok(legal.some(command=>command.type==="activateHero"&&command.abilityId==="ngoro-level-3"));
+  state.players[1].board=[];
+  assert.ok(!legalPriorityResponses(state,1).some(command=>command.type==="activateHero"&&command.abilityId==="ngoro-level-3"));
 });
