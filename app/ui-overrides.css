@@ -935,3 +935,12 @@
  .screen-game .game-stage>.game-content.hs-board{grid-template-rows:minmax(0,4.5fr) minmax(0,14fr) minmax(0,4fr) minmax(0,25.5fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,14fr)!important}
  .screen-game .game-stage>.game-content.hs-board>.opponent-hand{height:14cqh!important}
 }
+
+/* Hero abilities inside priority response windows. */
+.screen-game .response-hero-abilities{display:flex;flex-direction:column;gap:clamp(.3rem,.55cqh,.55rem);padding:0 clamp(.65rem,1.15cqw,1rem) clamp(.55rem,1cqh,.9rem)}
+.screen-game .response-hero-abilities>button{display:grid;grid-template-columns:clamp(1.5rem,2.25cqw,2rem) minmax(0,1fr);align-items:center;gap:clamp(.35rem,.65cqw,.6rem);width:100%;padding:clamp(.42rem,.72cqh,.65rem) clamp(.5rem,.85cqw,.75rem);border:1px solid rgb(100 205 255/.58);border-radius:clamp(.3rem,.5cqw,.48rem);background:linear-gradient(135deg,rgb(21 79 126/.78),rgb(7 25 42/.96));color:#eaf8ff;text-align:left;box-shadow:0 0 clamp(.25rem,.55cqw,.5rem) rgb(65 170 255/.18)}
+.screen-game .response-hero-abilities>button:hover{border-color:rgb(149 227 255/.92);box-shadow:0 0 clamp(.4rem,.8cqw,.75rem) rgb(65 170 255/.38)}
+.screen-game .response-hero-abilities i{display:grid;place-items:center;aspect-ratio:1;border:1px solid rgb(145 225 255/.68);border-radius:50%;font-style:normal;color:#9fe5ff}
+.screen-game .response-hero-abilities span{min-width:0;display:flex;flex-direction:column;gap:.12rem}
+.screen-game .response-hero-abilities b{font-size:clamp(.46rem,.72cqw,.68rem);line-height:1.2}
+.screen-game .response-hero-abilities small{color:#91b9ce;font-size:clamp(.38rem,.56cqw,.52rem)}
