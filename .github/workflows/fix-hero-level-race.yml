@@ -30,3 +30,4 @@ jobs:
           git add app/page.tsx app/ui-overrides.css tests/hero-level-race.test.mjs .github/scripts/fix-hero-level-race.py .github/workflows/fix-hero-level-race.yml
           git commit -m "fix: preserve hero evolution and compact command text"
           git push origin HEAD:fix/cards_mechanics
+# rerun after correcting Ngoro regression assertion
