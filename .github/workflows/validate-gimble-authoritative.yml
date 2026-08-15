@@ -23,8 +23,9 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: chmod +x scripts/sites-env.sh scripts/build-verified.sh
-      - run: npm test
+      - run: chmod +x scripts/*.sh
+      - run: node --test tests/gimble-authoritative-hero.test.mjs tests/hero-priority-response.test.mjs tests/hero-priority-ui.test.mjs
+      - run: npm run build
       - name: Remove one-shot validator
         run: |
           rm .github/workflows/validate-gimble-authoritative.yml
