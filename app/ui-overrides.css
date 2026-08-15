@@ -889,7 +889,8 @@
 
 /* Public information in hands and decks. Opponent cards use the same sizing,
    rhythm and interaction affordances as the local hand without exposing backs. */
-.screen-game .game-content>.opponent-hand{box-sizing:border-box!important;display:flex!important;align-items:flex-start!important;justify-content:center!important;width:100%!important;min-width:0!important;height:16cqh!important;gap:var(--card-gap)!important;padding:0 .35cqw .45cqh!important;overflow-x:auto!important;overflow-y:visible!important;scroll-snap-type:x proximity;scrollbar-width:thin}
+.screen-game .game-content>.opponent-hand{box-sizing:border-box!important;display:flex!important;align-items:flex-start!important;justify-content:center!important;width:100%!important;min-width:0!important;height:16cqh!important;gap:var(--card-gap)!important;padding:0 .35cqw .45cqh!important;overflow-x:auto!important;overflow-y:hidden!important;scroll-snap-type:x proximity;scrollbar-width:none!important;-ms-overflow-style:none}
+.screen-game .game-content>.opponent-hand::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
 .screen-game .game-content>.opponent-hand>.card-frame,
 .screen-game .game-content>.opponent-hand>.opponent-card-back{box-sizing:border-box!important;flex:1 1 0!important;width:auto!important;min-width:3cqw!important;max-width:5.9cqw!important;height:auto!important;aspect-ratio:5/7!important;margin:0!important;border-radius:clamp(.14rem,.34cqw,.34rem)!important;scroll-snap-align:center;transition:transform .16s ease,filter .16s ease!important}
 .screen-game .game-content>.opponent-hand .original-card,
