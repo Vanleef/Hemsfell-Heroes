@@ -192,6 +192,9 @@ export function compileCardText(text = "") {
 
 export function compileCard(card) {
   if (card?.page === 252) card = { ...card, type: "Feitiço", tags: [...new Set([...(card.tags || []), "Acelerado"])] };
+  /* Liaz only gains Furtivo temporarily when an Artefato is actually revealed by Investigar.
+     The generated catalog used to promote the conditional rules-text mention into a printed tag. */
+  if (card?.page === 263) card = { ...card, tags: (card.tags || []).filter((tag) => String(tag).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() !== "furtivo") };
   card = withDerivedSubtypes(card);
   const explicit = getExplicitCardRule(card);
   if (explicit) {
