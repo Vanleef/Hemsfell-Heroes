@@ -32,10 +32,10 @@ export function legalPriorityResponses(state, owner) {
   const cards = player.hand.flatMap((card, handIndex) => isAccelerated(card) && canExecuteCard(card) && responseEnergy >= spellCost(state, owner, card)
     ? [{ type: "playCard", owner, cardId: card.id, handIndex, hasPriority: true, label: card.name || card.id }]
     : []);
-  const abilities = permanents(player).flatMap((source) => (source.abilities || []).flatMap((ability) => activationAvailable(state, owner, source, ability)
-    ? [{ type: "activate", owner, sourceId: source.uid || source.id, abilityId: ability.id, hasPriority: true, label: source.name || source.id }]
-    : []));
-  return [...cards, ...abilities];
+  // Response windows are intentionally limited to Accelerated cards.
+  // Activated permanent abilities are main-phase actions and must never keep
+  // an AI priority window alive.
+  return cards;
 }
 
 export const shouldAutoPass = (state, owner, control = "assisted") =>
