@@ -1,6 +1,0 @@
-from pathlib import Path
-p=Path('app/ui-overrides.css')
-s=p.read_text(encoding='utf-8')
-block='''\n\n/* Priority/tooltip layering hardening. */\n.screen-game .game-content > .opponent-hand:has(.original-card:hover){overflow:visible!important;z-index:2400!important}\n.screen-game .game-content > .opponent-hand:has(.original-card:hover) .original-card,.screen-game .game-content > .opponent-hand:has(.original-card:hover) .card-tooltip{overflow:visible!important}\n.screen-game .game-content > .opponent-hand:has(.original-card:hover) .card-tooltip{z-index:2600!important}\n.screen-game .game-content > .priority-stack-indicator{position:absolute!important;inset:auto!important;left:50%!important;top:50%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:max-content!important;max-width:min(28cqw,16rem)!important;min-width:0!important;padding:clamp(.22rem,.48cqh,.42rem) clamp(.5rem,.8cqw,.9rem)!important;z-index:900!important;pointer-events:none!important}\n.screen-game .priority-stack-indicator span,.screen-game .priority-stack-indicator b{font-size:clamp(.42rem,.62cqw,.68rem)!important}\n'''
-if 'Priority/tooltip layering hardening.' not in s:s+=block
-p.write_text(s,encoding='utf-8')
