@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import { compileCard } from "../app/rules-engine/compiler.mjs";
 import { hasIntrinsicKeyword, intrinsicKeywordNames } from "../app/card-keywords.mjs";
 
@@ -55,4 +56,12 @@ test("printed static keywords still come from authoritative static abilities whe
   });
 
   assert.equal(hasIntrinsicKeyword(infiltrator, "Furtivo"), true);
+});
+
+test("battlefield UI consumes semantic keywords instead of activating words found in rules text", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /hasIntrinsicKeyword\(u,keyword\)/);
+  assert.match(page, /intrinsicKeywordNames\(unit\)/);
+  const hasKeywordSource = page.match(/const hasKeyword=.*?;\n/)?.[0] || "";
+  assert.doesNotMatch(hasKeywordSource, /matches\(u\.text\)/);
 });
