@@ -41,8 +41,9 @@ export function intrinsicKeywordNames(card) {
   }
 
   const text = String(card.text || "");
-  if (/\búltimo\s+suspiro\s*:/i.test(text) && abilities.some((ability) => ability?.trigger === "onDestroyed")) names.add("Último Suspiro");
-  if (/\bprimeiro\s+ato\s*:/i.test(text) && abilities.some((ability) => ability?.trigger === "onEnter")) names.add("Primeiro Ato");
+  const normalizedText = normalize(text);
+  if (/\bultimo suspiro\b/.test(normalizedText) && abilities.some((ability) => ability?.trigger === "onDestroyed")) names.add("Último Suspiro");
+  if (/\bprimeiro ato\b/.test(normalizedText) && abilities.some((ability) => ability?.trigger === "onEnter")) names.add("Primeiro Ato");
 
   return [...names].filter(Boolean);
 }
