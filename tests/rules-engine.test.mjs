@@ -126,7 +126,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 247);
+  assert.equal(explicitRuleIds.length, 248);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -1041,7 +1041,7 @@ test("priority defers the original action until both players pass", () => {
   assert.equal(result.state.pendingAction, undefined);
 });
 
-test("priority API exposes only legal accelerated cards and usable activations", () => {
+test("priority API exposes accelerated cards but excludes ordinary permanent activations", () => {
   const game = state();
   game.pendingAction = { type: "playCard", owner: 1, cardId: "original" };
   game.pendingResponse = { responder: 0, actor: 1, action: "original", passes: 0 };
@@ -1053,7 +1053,7 @@ test("priority API exposes only legal accelerated cards and usable activations",
   );
   game.players[0].board.push({ uid: "ready", name: "Ativável", abilities: [{ id: "answer", trigger: "activated", costs: [], effects: [] }] });
   const legal = legalPriorityResponses(game, 0);
-  assert.deepEqual(legal.map((command) => command.type), ["playCard", "activate"]);
+  assert.deepEqual(legal.map((command) => command.type), ["playCard"]);
   assert.equal(legal[0].cardId, "fast");
   assert.equal(isAccelerated(game.players[0].hand[1]), false);
   assert.equal(priorityView(game, 0).state, PriorityState.WAITING_FOR_PLAYER);

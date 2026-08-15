@@ -26,11 +26,12 @@ test("Accelerated cards remain legal priority responses",()=>{
   assert.equal(legal[0].cardId,"fast-1");
 });
 
-test("AI response timer is keyed only to the pending priority window",async()=>{
+test("AI response timer is keyed only to the authoritative pending priority window",async()=>{
   const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
-  const marker=page.match(/useEffect\(\(\)=>\{if\(responseWindow\?\.responder!==1[\s\S]*?\},\[responseWindow\?\.actor,responseWindow\?\.responder,responseWindow\?\.passes,responseWindow\?\.action,mode,difficulty\]\);/)?.[0]||"";
+  const marker=page.match(/useEffect\(\(\)=>\{const authoritativePending=game\?\.pendingResponse[\s\S]*?\},\[game\?\.pendingResponse\?\.actor,game\?\.pendingResponse\?\.responder,game\?\.pendingResponse\?\.passes,game\?\.pendingResponse\?\.action,mode,difficulty\]\);/)?.[0]||"";
   assert.ok(marker);
   assert.match(marker,/currentGameRef\.current/);
+  assert.match(marker,/chooseAIResponse/);
+  assert.match(marker,/command\.type==="activateHero"/);
   assert.doesNotMatch(marker,/\[game,responseWindow,mode,difficulty\]/);
-  assert.doesNotMatch(marker,/command\.type==="activate"/);
 });
