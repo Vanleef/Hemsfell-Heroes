@@ -1,0 +1,38 @@
+name: Fix bot priority and tooltip layer
+
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+    paths:
+      - .github/workflows/fix-bot-priority-tooltip-layer.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: python .github/scripts/fix-bot-priority-tooltip-layer.py
+      - run: npm ci
+      - run: chmod +x scripts/*.sh
+      - run: node --test tests/bot-priority-sync.test.mjs tests/gimble-authoritative-hero.test.mjs tests/hero-priority-response.test.mjs tests/hero-priority-ui.test.mjs
+      - run: npm run build
+      - name: Commit repair and remove one-shot files
+        run: |
+          rm .github/scripts/fix-bot-priority-tooltip-layer.py
+          rm .github/workflows/fix-bot-priority-tooltip-layer.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx app/ui-overrides.css tests/bot-priority-sync.test.mjs .github/scripts/fix-bot-priority-tooltip-layer.py .github/workflows/fix-bot-priority-tooltip-layer.yml
+          git commit -m "fix: synchronize bot priority and raise opponent tooltips"
+          git push origin HEAD:fix/cards_mechanics
