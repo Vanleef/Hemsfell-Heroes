@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./command-bar-fixes.css";
+import "./panel-text-fit.css";
+import PanelTextAutoFit from "./panel-text-autofit";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,6 +45,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <PanelTextAutoFit />
         {children}
       </body>
     </html>
