@@ -1,0 +1,43 @@
+name: One-shot Liaz investigation hotfix
+
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+    paths:
+      - .github/workflows/hotfix-liaz-investigation.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+
+      - name: Remove conditional Furtivo from Liaz printed state
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('app/rules-engine/compiler.mjs')
+          source = path.read_text(encoding='utf-8')
+          old = 'export function compileCard(card) {\n  if (card?.page === 252) card = { ...card, type: "Feitiço", tags: [...new Set([...(card.tags || []), "Acelerado"])] };\n  card = withDerivedSubtypes(card);'
+          new = 'export function compileCard(card) {\n  if (card?.page === 252) card = { ...card, type: "Feitiço", tags: [...new Set([...(card.tags || []), "Acelerado"])] };\n  /* Liaz only gains Furtivo temporarily when an Artefato is actually revealed by Investigar.\n     The generated catalog used to promote the conditional rules-text mention into a printed tag. */\n  if (card?.page === 263) card = { ...card, tags: (card.tags || []).filter((tag) => String(tag).normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase() !== "furtivo") };\n  card = withDerivedSubtypes(card);'
+          count = source.count(old)
+          if count != 1:
+              raise SystemExit(f'expected compiler anchor exactly once, found {count}')
+          path.write_text(source.replace(old, new), encoding='utf-8')
+
+      - name: Remove one-shot workflow and publish fix
+        run: |
+          rm .github/workflows/hotfix-liaz-investigation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/rules-engine/compiler.mjs .github/workflows/hotfix-liaz-investigation.yml
+          git commit -m "fix: make Liaz investigation bonuses conditional"
+          git push origin HEAD:fix/cards_mechanics
