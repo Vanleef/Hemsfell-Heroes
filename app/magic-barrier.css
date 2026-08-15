@@ -23,7 +23,9 @@
     0 0 clamp(.2rem,.45cqw,.42rem) rgb(38 157 255 / .72),
     0 0 clamp(.55rem,1.15cqw,1.05rem) rgb(28 105 255 / .42);
   backdrop-filter: saturate(1.12) brightness(1.05);
-  animation: hh-magic-barrier-pulse 1.85s ease-in-out infinite;
+  will-change: opacity, filter, transform;
+  transform-origin: 50% 54%;
+  animation: hh-magic-barrier-pulse 3.8s cubic-bezier(.45,0,.55,1) infinite;
 }
 
 .screen-game .card-frame:has(> .original-card.has-magic-barrier)::after {
@@ -59,12 +61,24 @@
 
 @keyframes hh-magic-barrier-pulse {
   0%,100% {
-    opacity: .78;
-    filter: brightness(.96) saturate(1.05);
+    opacity: .88;
+    filter: brightness(1) saturate(1.08);
+    transform: scale(1);
+  }
+  25% {
+    opacity: .93;
+    filter: brightness(1.035) saturate(1.12);
+    transform: scale(1.0025);
   }
   50% {
-    opacity: 1;
-    filter: brightness(1.18) saturate(1.25);
+    opacity: .98;
+    filter: brightness(1.075) saturate(1.17);
+    transform: scale(1.006);
+  }
+  75% {
+    opacity: .93;
+    filter: brightness(1.035) saturate(1.12);
+    transform: scale(1.0025);
   }
 }
 
