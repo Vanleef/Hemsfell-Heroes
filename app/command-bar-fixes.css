@@ -1,0 +1,71 @@
+/* Keep every hero command-bar description inside its chip with a stable inset. */
+.screen-game .hero-command-bar{
+  overflow:visible;
+}
+
+.screen-game .hero-command-bar .hero-ability-chip{
+  box-sizing:border-box!important;
+  min-width:0!important;
+  overflow:hidden!important;
+  padding:clamp(.14rem,.28cqh,.25rem) clamp(.18rem,.34cqw,.32rem)!important;
+}
+
+.screen-game .hero-command-bar .hero-ability-chip>i{
+  flex:0 0 auto!important;
+}
+
+.screen-game .hero-command-bar .hero-ability-chip>span{
+  box-sizing:border-box!important;
+  min-width:0!important;
+  max-width:100%!important;
+  height:100%!important;
+  display:flex!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  gap:clamp(.03rem,.08cqh,.07rem)!important;
+  padding:clamp(.03rem,.08cqh,.07rem) clamp(.08rem,.14cqw,.13rem)!important;
+  overflow:hidden!important;
+}
+
+.screen-game .hero-command-bar .hero-ability-chip>span>b,
+.screen-game .hero-command-bar .hero-ability-chip p{
+  box-sizing:border-box!important;
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  margin:0!important;
+  overflow:hidden!important;
+  overflow-wrap:anywhere!important;
+  word-break:normal!important;
+  white-space:normal!important;
+  text-wrap:balance!important;
+}
+
+.screen-game .hero-command-bar .hero-ability-chip p{
+  display:-webkit-box!important;
+  -webkit-box-orient:vertical!important;
+  -webkit-line-clamp:4!important;
+  line-clamp:4!important;
+  max-height:calc(4 * 1.06em)!important;
+}
+
+.screen-game .hero-command-bar .hero-ability-chip.copy-compact p{
+  -webkit-line-clamp:4!important;
+  line-clamp:4!important;
+  max-height:calc(4 * 1.06em)!important;
+}
+
+.screen-game .hero-command-bar .hero-ability-chip.copy-dense p{
+  -webkit-line-clamp:5!important;
+  line-clamp:5!important;
+  max-height:calc(5 * 1.04em)!important;
+}
+
+@container hemsfell-board (max-height:36rem){
+  .screen-game .hero-command-bar .hero-ability-chip{
+    padding:clamp(.1rem,.2cqh,.18rem) clamp(.14rem,.26cqw,.24rem)!important;
+  }
+  .screen-game .hero-command-bar .hero-ability-chip>span{
+    padding-inline:clamp(.06rem,.1cqw,.1rem)!important;
+  }
+}
