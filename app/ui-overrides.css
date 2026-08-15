@@ -881,8 +881,40 @@
 .screen-game .mulligan-dialog>header .urgent{color:#ff766b!important}
 
 /* Target confirmation stays compact and shifts right on roomier boards. */
-.screen-game .target-banner{left:10%!important;max-width:min(38rem,calc(100vw - 1rem))!important;padding:clamp(.38rem,.8vw,.5rem) clamp(.48rem,1vw,.64rem)!important;gap:clamp(.36rem,.2vw,.55rem)!important; font-size:clamp(.22rem,.32vw,.29rem)!important;line-height:1.05!important;}
-.screen-game .target-banner b{font-size:clamp(.42rem,.52vw,.39rem)!important; line-height:1.05!important;letter-spacing:.015em!important; margin-top: 0.5rem!important;}
+.screen-game .target-banner{left:10%!important;max-width:min(38rem,calc(100vw - 1rem))!important;padding:clamp(.38rem,.8vw,.5rem) clamp(.48rem,1vw,.64rem)!important;gap:clamp(.36rem,.2vw,.55rem)!important;font-size:clamp(.22rem,.32vw,.29rem)!important;line-height:1.05!important}
+.screen-game .target-banner b{font-size:clamp(.42rem,.52vw,.39rem)!important;line-height:1.05!important;letter-spacing:.015em!important;margin-top:.5rem!important}
 .screen-game .target-banner span{opacity:0;font-size:clamp(.42rem,.52vw,.39rem)!important;line-height:1.05!important;letter-spacing:.02em!important}
 .screen-game .target-banner button{font-size:clamp(.42rem,.52vw,.49rem)!important;line-height:1.05!important;letter-spacing:.025em!important;padding:clamp(.29rem,.5vw,.34rem) clamp(.42rem,.75vw,.54rem)!important;white-space:nowrap!important}
 @media(max-width:40rem){.screen-game .target-banner{left:50%!important;width:calc(100vw - .7rem)!important;max-width:calc(100vw - .7rem)!important}.screen-game .target-banner button{font-size:clamp(.4rem,2.5vw,.47rem)!important}}
+
+/* Public information in hands and decks. Opponent cards use the same sizing,
+   rhythm and interaction affordances as the local hand without exposing backs. */
+.screen-game .game-content>.opponent-hand{box-sizing:border-box!important;display:flex!important;align-items:flex-start!important;justify-content:center!important;width:100%!important;min-width:0!important;height:16cqh!important;gap:var(--card-gap)!important;padding:0 .35cqw .45cqh!important;overflow-x:auto!important;overflow-y:visible!important;scroll-snap-type:x proximity;scrollbar-width:thin}
+.screen-game .game-content>.opponent-hand>.card-frame,
+.screen-game .game-content>.opponent-hand>.opponent-card-back{box-sizing:border-box!important;flex:1 1 0!important;width:auto!important;min-width:3cqw!important;max-width:5.9cqw!important;height:auto!important;aspect-ratio:5/7!important;margin:0!important;border-radius:clamp(.14rem,.34cqw,.34rem)!important;scroll-snap-align:center;transition:transform .16s ease,filter .16s ease!important}
+.screen-game .game-content>.opponent-hand .original-card,
+.screen-game .game-content>.opponent-hand .original-card.is-small{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;aspect-ratio:5/7!important;margin:0!important}
+.screen-game .game-content>.opponent-hand>.card-frame:hover,
+.screen-game .game-content>.opponent-hand>.opponent-card-back:hover{z-index:80!important;transform:translateY(2.4cqh) scale(1.06)!important;filter:brightness(1.08)}
+.screen-game .opponent-card-back{appearance:none;border:1px solid rgba(231,188,97,.58);padding:0;cursor:default}
+.screen-game .revealed-badge{display:grid!important;place-items:center!important;left:auto!important;right:clamp(-.2rem,-2cqi,-.08rem)!important;top:clamp(-.38rem,-4cqi,-.18rem)!important;width:clamp(.82rem,18cqi,1.15rem)!important;height:clamp(.82rem,18cqi,1.15rem)!important;padding:0!important;transform:none!important;border:1px solid #d9b9ff!important;border-radius:50%!important;background:linear-gradient(145deg,#6d36a4,#32144f)!important;color:#fff4ff!important;font:900 clamp(.48rem,9cqi,.7rem)/1 system-ui!important;letter-spacing:0!important;box-shadow:0 0 clamp(.28rem,5cqi,.55rem) #b875ffcc!important}
+
+.screen-game .main-deck.has-revealed-top{overflow:visible!important}
+.screen-game .revealed-deck-stack{position:relative;display:block;width:100%;height:100%;overflow:visible}
+.screen-game .revealed-deck-card{position:absolute!important;inset:0!important;z-index:var(--revealed-index)!important;width:100%!important;height:100%!important;padding:0!important;overflow:visible!important;border-color:#d9b9ff!important;transform:translate(var(--revealed-x),var(--revealed-y));cursor:zoom-in!important}
+.screen-game .revealed-deck-card>.remote-card-art{width:100%!important;height:100%!important}
+.screen-game .revealed-deck-card:hover{z-index:60!important;transform:translate(var(--revealed-x),calc(var(--revealed-y) - .28cqh)) scale(1.08)!important}
+
+.screen-game .hero-power-trigger{position:relative}
+.screen-game .hero-clue-counter{position:absolute;right:clamp(.08rem,.28cqw,.25rem);bottom:clamp(.08rem,.35cqh,.3rem);z-index:18;display:flex;align-items:center;gap:clamp(.12rem,.2cqw,.2rem);min-width:clamp(1.25rem,2.2cqw,2rem);padding:clamp(.1rem,.22cqh,.18rem) clamp(.18rem,.32cqw,.3rem);border:1px solid #c48aff;border-radius:999px;background:linear-gradient(135deg,#6a2d96eF,#26113cf2);box-shadow:0 0 clamp(.3rem,.65cqw,.65rem) #9d54dcaa;color:#fff;pointer-events:auto}
+.screen-game .hero-clue-counter i{font:900 clamp(.46rem,.72cqw,.7rem)/1 system-ui;font-style:normal}
+.screen-game .hero-clue-counter b{font:900 clamp(.48rem,.76cqw,.74rem)/1 system-ui}
+
+.screen-game .engine-decision-panel[data-decision-kind="investigate-selection"] .visual-card-choice-grid{display:flex!important;flex-wrap:nowrap!important;justify-content:flex-start!important;gap:clamp(.35rem,1.2cqw,.7rem)!important;overflow-x:auto!important;overflow-y:hidden!important;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch}
+.screen-game .engine-decision-panel[data-decision-kind="investigate-selection"] .visual-card-choice{flex:0 0 clamp(4.4rem,9cqw,6.7rem)!important;scroll-snap-align:center}
+
+@media(max-width:40rem){
+ .screen-game .game-content>.opponent-hand{height:13cqh!important;padding-inline:.2rem!important}
+ .screen-game .game-content>.opponent-hand>.card-frame,.screen-game .game-content>.opponent-hand>.opponent-card-back{min-width:clamp(2.55rem,12vw,3.5rem)!important;max-width:clamp(3.2rem,15vw,4.25rem)!important}
+ .screen-game .hero-clue-counter{right:.08rem;bottom:.08rem}
+}

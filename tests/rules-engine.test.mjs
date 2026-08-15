@@ -1190,9 +1190,12 @@ test("Saral lets its controller choose a deck and resolves Investigar without ex
   assert.equal(entered.pendingDecision.kind, "choice");
   assert.equal(entered.pendingDecision.effect.choices.length, 2);
   const investigated = executeCommand(entered, { type: "resolveDecision", owner: 0, choiceIndex: 1 }).state;
-  assert.equal(investigated.players[1].deck[0].id, "revealed");
-  assert.equal(investigated.players[1].deck.at(-1).id, "archived");
-  assert.ok(investigated.rulesEvents?.some((event) => event.type === "onCardRevealed") || investigated.events > entered.events);
+  assert.equal(investigated.pendingDecision.kind, "investigate-selection");
+  const resolved = executeCommand(investigated, { type: "resolveDecision", owner: 0, selectedCardIds: ["revealed"] }).state;
+  assert.equal(resolved.players[1].deck[0].id, "revealed");
+  assert.equal(resolved.players[1].deck[0].revealed, true);
+  assert.equal(resolved.players[1].deck.at(-1).id, "archived");
+  assert.ok(resolved.events > entered.events);
 });
 
 test("Dança Macabra grants Vampiro only for the turn and prevents combat with Vampiros", () => {
@@ -1291,7 +1294,37 @@ test("investigation triggers share reveal events and archive replacement", () =>
   result = executeCommand(result, { type: "emit", owner: 0, event: { type: "onPlay", owner: 0 } }).state;
   defaultEffectHandlers.archiveToGrave(result, { amount: 1 }, { owner: 0 });
   defaultEffectHandlers.investigate(result, { amount: 2, target: "controllerDeck" }, { owner: 0, sourceId: "spy" });
+  result = executeCommand(result, { type: "resolveDecision", owner: 0, selectedCardIds: ["creature-top"] }).state;
   assert.ok(result.players[0].grave.some((card) => card.id === "archive"));
+});
+
+test("Ngoro chooses a deck at maintenance and gains exactly one clue per investigation", () => {
+  const game = state(); game.phase = "manutencao"; game.players[0].heroId = "ngoro"; game.players[0].level = 1; game.players[0].heroXP = 0; game.players[0].markers = { clue: 0 };
+  game.players[1].deck.push({ id: "enemy-top", name: "Topo inimigo", type: "Feitiço" });
+  let result = executeCommand(game, { type: "emit", owner: 0, event: { type: "onMaintenance", owner: 0 } }).state;
+  assert.equal(result.pendingDecision.kind, "choice");
+  result = executeCommand(result, { type: "resolveDecision", owner: 0, choiceIndex: 1 }).state;
+  assert.equal(result.pendingDecision.kind, "investigate-selection");
+  assert.equal(result.pendingDecision.effect.targetOwner, 1);
+  result = executeCommand(result, { type: "resolveDecision", owner: 0, selectedCardIds: ["enemy-top"] }).state;
+  assert.equal(result.players[0].markers.clue, 1);
+  assert.equal(result.players[0].heroXP, 1);
+  assert.equal(result.players[1].deck[0].revealed, true);
+});
+
+test("Triturar moves the opponent top cards automatically and in order", () => {
+  const game = state(); game.players[1].deck.push({ id: "first" }, { id: "second" }, { id: "third" });
+  defaultEffectHandlers.mill(game, { amount: 2, target: "enemy" }, { owner: 0 });
+  assert.deepEqual(game.players[1].grave.map((card) => card.id), ["first", "second"]);
+  assert.deepEqual(game.players[1].deck.map((card) => card.id), ["third"]);
+  assert.equal(game.pendingDecision, undefined);
+});
+
+test("a creature returned from the field remains public in its owner's hand", () => {
+  const game = state(); game.players[1].board.push({ uid: "returned", id: "returned", page: 999, name: "Conhecida", type: "Criatura", slot: 0, tags: [], abilities: [] });
+  defaultEffectHandlers.returnToHand(game, {}, { owner: 0, targetIds: ["returned"] });
+  assert.equal(game.players[1].hand[0].revealed, true);
+  assert.deepEqual(game.players[1].hand[0].revealedTo, [0, 1]);
 });
 
 test("Brutamontes only gains attack for creatures explicitly sacrificed", () => {

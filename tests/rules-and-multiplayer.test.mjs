@@ -217,16 +217,15 @@ test("trigger lifecycle covers entries, deaths and turn boundaries",()=>{
  assert.match(page,/GATILHO · UNDARIS/);
  assert.match(page,/GATILHO · RITUAL/);
  assert.match(page,/GATO-METRO detectou/);
- assert.match(page,/Ngoro I investigou 1 carta/);
+ assert.match(page,/Ngoro I permite escolher um deck para Investigar 1/);
 });
 
 
-test("investigate dispatches revealed-card triggers without consuming the reveal",()=>{
- assert.match(page,/Espião Infiltrado recebeu \+1\/\+0/);
- assert.match(page,/Nmali triturou/);
- assert.match(page,/Base de Investigação concedeu 1 de energia/);
- assert.match(page,/Base de Investigação comprou 1 carta/);
- assert.match(page,/if\(investigator\.heroId==="ngoro"\)/);
+test("investigate uses an authoritative public selection without consuming revealed cards",()=>{
+ assert.match(page,/kind:"investigate-selection"/);
+ assert.match(page,/Escolha quais cartas revelar/);
+ assert.match(page,/permanecerão reveladas no topo do deck/);
+ assert.match(page,/targetOwner/);
 });
 
 
@@ -261,6 +260,18 @@ test("room APIs reject unsafe input and never expose opponent hidden zones",()=>
  assert.match(roomApi,/isRoomId/);
  assert.match(roomApi,/request failed/);
  assert.match(roomMachine,/stale revision/);
+ assert.match(roomStore,/card\?\.revealed === true \? card : hiddenCard/);
+ assert.match(roomStore,/game\.pendingDecision\?\.kind === "investigate-selection"/);
+});
+
+test("public hand and deck information is rendered symmetrically",()=>{
+ assert.match(page,/className="opponent-card-back official-card-back"/);
+ assert.match(page,/card\.revealed\?<OriginalCard/);
+ assert.match(page,/className="revealed-badge" title="Carta revelada/);
+ assert.match(page,/className="hero-clue-counter" title="Pistas"/);
+ assert.match(page,/revealedTop\.map/);
+ assert.match(uiOverrides,/opponent-hand>\.card-frame/);
+ assert.match(uiOverrides,/hero-clue-counter/);
 });
 
 test("browser-facing routes include baseline hardening headers",()=>{

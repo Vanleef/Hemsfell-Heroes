@@ -379,8 +379,8 @@ function cleanupLethal(state, stack) {
       if (!state.pendingDecision && zayanReplacements.length) { unit.damage = Math.max(0, (unit.hp || 1) + modifiers - 1); state.pendingDecision = { kind: "zayan-destruction-replacement", owner, effect: { type: "zayanDestructionReplacement", originalId: unit.uid || unit.id, lethal: true, choices: zayanReplacements.map((card) => card.uid || card.id) }, context: { owner, decisionOwner: owner, sourceId: unit.lastDamagedBy?.sourceId }, sourceName: "Zayan II" }; continue; }
       if (unit.returnCombatPairOnDefeat && unit.lastDamagedBy?.combat) {
         const winnerOwner = unit.lastDamagedBy.sourceOwner, winnerEntry = state.players[winnerOwner], winner = winnerEntry?.board.find((card) => (card.uid || card.id) === unit.lastDamagedBy.sourceId);
-        entry.board.splice(entry.board.indexOf(unit), 1); const defeatedAttachments = entry.support.filter((card) => card.attachedTo === unit.uid); entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid); for (const attachment of defeatedAttachments) if (!attachment.generatedImage && !attachment.imageCard) entry.grave.push(resetCardForZone(state, attachment)); if (!unit.generatedImage && !unit.imageCard) entry.hand.push(resetCardForZone(state, unit));
-        if (winner) { winnerEntry.board.splice(winnerEntry.board.indexOf(winner), 1); const winnerAttachments = winnerEntry.support.filter((card) => card.attachedTo === winner.uid); winnerEntry.support = winnerEntry.support.filter((card) => card.attachedTo !== winner.uid); for (const attachment of winnerAttachments) if (!attachment.generatedImage && !attachment.imageCard) winnerEntry.grave.push(resetCardForZone(state, attachment)); if (!winner.generatedImage && !winner.imageCard) winnerEntry.hand.push(resetCardForZone(state, winner)); }
+        entry.board.splice(entry.board.indexOf(unit), 1); const defeatedAttachments = entry.support.filter((card) => card.attachedTo === unit.uid); entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid); for (const attachment of defeatedAttachments) if (!attachment.generatedImage && !attachment.imageCard) entry.grave.push(resetCardForZone(state, attachment)); if (!unit.generatedImage && !unit.imageCard) entry.hand.push({ ...resetCardForZone(state, unit), revealed: true, revealedTo: [0, 1] });
+        if (winner) { winnerEntry.board.splice(winnerEntry.board.indexOf(winner), 1); const winnerAttachments = winnerEntry.support.filter((card) => card.attachedTo === winner.uid); winnerEntry.support = winnerEntry.support.filter((card) => card.attachedTo !== winner.uid); for (const attachment of winnerAttachments) if (!attachment.generatedImage && !attachment.imageCard) winnerEntry.grave.push(resetCardForZone(state, attachment)); if (!winner.generatedImage && !winner.imageCard) winnerEntry.hand.push({ ...resetCardForZone(state, winner), revealed: true, revealedTo: [0, 1] }); }
         stack.push({ kind: "event", event: { type: "onPermanentLeaves", owner, sourceId: unit.uid, card: unit, zone: "board", replacement: "gran-finale" } });
         continue;
       }
@@ -390,7 +390,7 @@ function cleanupLethal(state, stack) {
         entry.board.splice(entry.board.indexOf(unit), 1);
         const attachments = entry.support.filter((card) => card.attachedTo === unit.uid); entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid);
         for (const attachment of attachments) if (!attachment.generatedImage && !attachment.imageCard) entry.grave.push(resetCardForZone(state, attachment));
-        if (!unit.generatedImage && !unit.imageCard) entry.hand.push(resetCardForZone(state, unit));
+        if (!unit.generatedImage && !unit.imageCard) entry.hand.push({ ...resetCardForZone(state, unit), revealed: true, revealedTo: [0, 1] });
         stack.push({ kind: "event", event: { type: "onPermanentLeaves", owner, sourceId: unit.uid, card: unit, zone: "board", replacement: "quarion-level-2" } });
         continue;
       }
@@ -455,7 +455,7 @@ function activeAbilities(state, event) {
     if (entry.heroId === "rasmus" && event.type === "onSpellCast" && event.owner === owner && String(event.card?.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("cafe")) result.push({ source: heroSource, owner, ability: { id: "rasmus-level-1", trigger: "onSpellCast", effects: [{ type: "addMarker", target: "hero", marker: "coffee", amount: 1 }, { type: "threshold", marker: "coffee", amount: 10, reset: true, effects: [{ type: "createImage", name: "Café Especial", destination: "hand" }] }] } });
     if (entry.heroId === "ngoro" && event.type === "onInvestigate" && event.owner === owner) {
       result.push({ source: heroSource, owner, ability: { id: "ngoro-level-1-clue", trigger: "onInvestigate", effects: [{ type: "addMarker", target: "hero", marker: "clue", amount: 1 }] } });
-      if ((entry.level || 1) >= 2 && markerTotalForEngine(entry) >= 2) result.push({ source: heroSource, owner, ability: { id: "ngoro-level-2", trigger: "onInvestigate", effects: [{ type: "optionalClueChoice", cost: 2 }] } });
+      if ((entry.level || 1) >= 2 && Math.max(markerTotalForEngine(entry), Number(entry.heroXP || 0)) + 1 >= 2) result.push({ source: heroSource, owner, ability: { id: "ngoro-level-2", trigger: "onInvestigate", effects: [{ type: "optionalClueChoice", cost: 2 }] } });
     }
     if (entry.heroId === "ngoro" && event.type === "onMaintenance" && event.owner === owner) result.push({ source: heroSource, owner, ability: { id: "ngoro-level-1-maintenance", trigger: "onMaintenance", effects: [{ type: "chooseDeckAndInvestigate", amount: 1 }] } });
     if (entry.heroId === "zayan" && event.type === "onCombatStart" && event.owner === owner && (entry.board || []).some((card) => !(card.text || "").trim())) result.push({ source: heroSource, owner, ability: { id: "zayan-level-1", trigger: "onCombatStart", effects: [{ type: "modifyStats", target: "allyCreature", vanillaOnly: true, attack: 1, health: 1, duration: "turn", selections: 1 }] } });
@@ -655,7 +655,7 @@ export function executeCommand(inputState, command, options = {}) {
           const maximum = Math.min(effect.amount || 1, entry.deck.length), eligible = entry.deck.filter((card) => (!effect.types?.length || effect.types.includes(card.type)) && (!effect.subtype || hasSubtype(card, effect.subtype)) && (!effect.nameIncludes || String(card.name || "").toLowerCase().includes(String(effect.nameIncludes).toLowerCase())) && (!effect.vanillaOnly || !String(card.text || "").trim()) && (effect.minCost == null || (card.cost || 0) >= effect.minCost) && (effect.maxCost == null || (card.cost || 0) <= effect.maxCost) && (!effect.maxCostFromMarkerAmount || (card.cost || 0) <= Number(decision.context.markerAmount || 0)));
           if (selectedIds.length !== Math.min(maximum, eligible.length) || selectedIds.some((id) => !eligible.some((card) => card.uid === id || card.id === id))) throw new RulesViolation("invalid-search-selection");
           const selected = selectedIds.map((id) => { const index = entry.deck.findIndex((card) => card.uid === id || card.id === id); return entry.deck.splice(index, 1)[0]; });
-          if (effect.destination === "hand") entry.hand.push(...selected);
+          if (effect.destination === "hand") entry.hand.push(...selected.map((card) => effect.reveal || effect.name || effect.nameIncludes ? { ...card, revealed: true, revealedTo: [0, 1] } : card));
           else if (effect.destination === "field") for (const card of selected) {
             const unit = { ...card, uid: `${card.id}-${state.round}-searched`, enteredRound: state.round, attackedThisTurn: false, damage: 0, exhausted: false, summoning: card.type === "Criatura", modifiers: [], abilities: card.abilities || [] };
             if (card.type === "Terreno") { if (entry.terrain && !entry.terrain.generatedImage) entry.grave.push(entry.terrain); entry.terrain = { ...unit, slot: 0 }; }
@@ -665,6 +665,28 @@ export function executeCommand(inputState, command, options = {}) {
           } else throw new RulesViolation("unsupported-search-destination");
           if (effect.shuffle && entry.deck.length > 1) { const shift = ((state.round || 1) + (state.events || 0)) % entry.deck.length; entry.deck.push(...entry.deck.splice(0, shift)); }
           state.pendingDecision = null; stack.push(...continuation); continue;
+        }
+        if (decision.kind === "investigate-selection") {
+          const targetOwner = Number(decision.effect.targetOwner);
+          if (![0, 1].includes(targetOwner)) throw new RulesViolation("invalid-investigation-target");
+          const target = state.players[targetOwner], investigator = state.players[item.command.owner];
+          const amount = Math.min(Math.max(1, Number(decision.effect.amount || 1)), target.deck.length);
+          const topCards = target.deck.slice(0, amount), topIds = topCards.map((card) => card.uid || card.id);
+          const selectedIds = [...new Set(item.command.selectedCardIds || [])];
+          if (selectedIds.some((id) => !topIds.includes(id))) throw new RulesViolation("invalid-investigation-selection");
+          target.deck.splice(0, amount);
+          const selected = topCards.filter((card) => selectedIds.includes(card.uid || card.id)).map((card) => ({ ...card, revealed: true, revealedTo: [0, 1] }));
+          const archived = topCards.filter((card) => !selectedIds.includes(card.uid || card.id)).map((card) => { const copy = { ...card }; delete copy.revealed; delete copy.revealedTo; return copy; });
+          target.deck.unshift(...selected);
+          for (const card of archived) {
+            if ((investigator.archiveToGrave || 0) > 0) { investigator.archiveToGrave--; target.grave.push({ ...card, deathCause: "archived" }); }
+            else target.deck.push(card);
+          }
+          state.pendingDecision = null;
+          stack.push(...continuation);
+          for (const card of [...selected].reverse()) stack.push({ kind: "event", event: { type: "onCardRevealed", owner: item.command.owner, targetOwner, sourceId: decision.context?.sourceId, card, cardType: card.type } });
+          stack.push({ kind: "event", event: { type: "onInvestigate", owner: item.command.owner, targetOwner, sourceId: decision.context?.sourceId, cards: selected, amount } });
+          continue;
         }
         if (decision.kind === "hand-limit-discard") {
           const entry = state.players[item.command.owner], ids = [...new Set(item.command.selectedCardIds || [])], amount = Math.min(decision.effect.amount || 0, entry.hand.length);
@@ -701,7 +723,7 @@ export function executeCommand(inputState, command, options = {}) {
           const entry = state.players[item.command.owner], ids = [...new Set(item.command.selectedCardIds || [])], choices = decision.effect.choices || [], minimum = Math.min(decision.effect.minimum ?? 0, choices.length), maximum = Math.min(decision.effect.maximum ?? choices.length, choices.length);
           if (ids.length < minimum || ids.length > maximum || ids.some((id) => !choices.includes(id) || !entry.grave.some((card) => card.uid === id || card.id === id))) throw new RulesViolation("invalid-grave-selection");
           const selected = ids.map((id) => { const index = entry.grave.findIndex((card) => card.uid === id || card.id === id); return entry.grave.splice(index, 1)[0]; });
-          entry.hand.push(...selected);
+          entry.hand.push(...selected.map((card) => ({ ...card, revealed: true, revealedTo: [0, 1] })));
           if (decision.kind === "grave-to-hand-and-banish") entry.obscuro.push(...entry.grave.splice(0).map((card) => resetCardForZone(state, card)));
           state.pendingDecision = null; stack.push(...continuation); continue;
         }

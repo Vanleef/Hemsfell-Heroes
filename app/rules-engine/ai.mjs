@@ -149,6 +149,10 @@ export function chooseAIDecision(state, owner, difficulty = "Normal") {
   const decision = state?.pendingDecision;
   if (!decision || (decision.owner !== owner && decision.context?.decisionOwner !== owner)) return null;
   const entry = state.players[owner], effect = decision.effect || {}, command = { type: "resolveDecision", owner };
+  if (decision.kind === "investigate-selection") {
+    const visible = effect.cards || [];
+    return { ...command, selectedCardIds: visible.map(cardId) };
+  }
   if (decision.kind === "search") {
     const eligible = eligibleSearchCards(state, decision).sort((a, b) => aiCardValue(b, state, owner, difficulty) - aiCardValue(a, state, owner, difficulty));
     return { ...command, selectedCardIds: eligible.slice(0, Math.min(effect.amount || 1, eligible.length)).map(cardId) };

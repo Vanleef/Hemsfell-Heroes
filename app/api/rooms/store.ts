@@ -206,8 +206,17 @@ type SecretZone = "hand" | "deck" | "extraDeck";
 const hiddenCard = (index: number) => ({ id: `hidden-${index}`, name: "Carta oculta", type: "Feitiço", cost: 0, text: "", tags: [], image: "", hero: false, imageCard: false, revealed: false });
 function publicGameView(room: Room, role: RoomRole) {
   if (!room.game) return null;
-  const game = structuredClone(room.game); const opponent = game.players?.[role === "host" ? 1 : 0];
-  if (opponent) (["hand", "deck", "extraDeck"] as SecretZone[]).forEach((zone) => { if (Array.isArray(opponent[zone])) opponent[zone] = opponent[zone].map((_: unknown, index: number) => hiddenCard(index)); });
+  const game = structuredClone(room.game), viewer = role === "host" ? 0 : 1, opponent = game.players?.[1 - viewer];
+  if (opponent) {
+    opponent.hand = (opponent.hand || []).map((card: any, index: number) => card?.revealed === true ? card : hiddenCard(index));
+    let publicTop = true;
+    opponent.deck = (opponent.deck || []).map((card: any, index: number) => {
+      publicTop = publicTop && card?.revealed === true;
+      return publicTop ? card : hiddenCard(index);
+    });
+    opponent.extraDeck = (opponent.extraDeck || []).map((_: unknown, index: number) => hiddenCard(index));
+  }
+  if (game.pendingDecision?.kind === "investigate-selection" && game.pendingDecision.owner !== viewer && game.pendingDecision.effect) delete game.pendingDecision.effect.cards;
   return game;
 }
 export function preserveOpponentSecrets(room: Room, nextGame: any, role: RoomRole) {
