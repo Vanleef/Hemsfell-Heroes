@@ -1,18 +1,15 @@
-/* Keep every hero command-bar description inside its chip with a stable inset.
-   Chips grow with their content: never solve overflow by clipping the copy. */
+/* Command-bar-only text containment. The panel dimensions remain owned by the
+   board layout; copy shrinks when needed instead of enlarging the chip. */
 .screen-game .hero-command-bar{
-  max-height:none!important;
   overflow:visible!important;
 }
 
 .screen-game .hero-command-bar .hero-ability-chip{
   box-sizing:border-box!important;
   min-width:0!important;
-  min-height:clamp(1.6rem,3.6cqh,2.25rem)!important;
-  height:auto!important;
-  max-height:none!important;
+  min-height:0!important;
   overflow:hidden!important;
-  padding:clamp(.16rem,.34cqh,.3rem) clamp(.2rem,.4cqw,.38rem)!important;
+  padding:clamp(.11rem,.23cqh,.2rem) clamp(.16rem,.3cqw,.28rem)!important;
 }
 
 .screen-game .hero-command-bar .hero-ability-chip>i{
@@ -23,16 +20,17 @@
 .screen-game .hero-command-bar .hero-ability-chip>span{
   box-sizing:border-box!important;
   min-width:0!important;
-  max-width:100%!important;
   min-height:0!important;
-  height:auto!important;
-  max-height:none!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:100%!important;
+  max-height:100%!important;
   display:flex!important;
   flex-direction:column!important;
   justify-content:center!important;
-  gap:clamp(.04rem,.1cqh,.08rem)!important;
-  padding:clamp(.05rem,.11cqh,.09rem) clamp(.09rem,.16cqw,.15rem)!important;
-  overflow:visible!important;
+  gap:clamp(.02rem,.055cqh,.05rem)!important;
+  padding:clamp(.025rem,.06cqh,.055rem) clamp(.06rem,.11cqw,.1rem)!important;
+  overflow:hidden!important;
 }
 
 .screen-game .hero-command-bar .hero-ability-chip>span>b,
@@ -42,15 +40,15 @@
   max-width:100%!important;
   min-width:0!important;
   margin:0!important;
-  overflow:visible!important;
   overflow-wrap:anywhere!important;
   word-break:normal!important;
   white-space:normal!important;
   text-wrap:pretty!important;
 }
 
-/* Never line-clamp command descriptions. The chip itself expands vertically,
-   while its padding guarantees a visible inset between copy and border. */
+/* Never hide command descriptions with line-clamp. The dedicated client-side
+   fitter reduces font-size until the complete title + description fit inside
+   the existing chip dimensions. */
 .screen-game .hero-command-bar .hero-ability-chip p,
 .screen-game .hero-command-bar .hero-ability-chip.copy-compact p,
 .screen-game .hero-command-bar .hero-ability-chip.copy-dense p{
@@ -60,14 +58,20 @@
   line-clamp:unset!important;
   max-height:none!important;
   height:auto!important;
+  overflow:visible!important;
+}
+
+.screen-game .hero-command-bar .hero-ability-chip[data-command-text-fit="scaled"]>span,
+.screen-game .hero-command-bar .hero-ability-chip[data-command-text-fit="minimum"]>span{
+  justify-content:center!important;
 }
 
 @container hemsfell-board (max-height:36rem){
   .screen-game .hero-command-bar .hero-ability-chip{
-    min-height:clamp(1.35rem,3.2cqh,1.85rem)!important;
-    padding:clamp(.12rem,.25cqh,.22rem) clamp(.16rem,.3cqw,.28rem)!important;
+    padding:clamp(.08rem,.16cqh,.14rem) clamp(.12rem,.22cqw,.2rem)!important;
   }
   .screen-game .hero-command-bar .hero-ability-chip>span{
-    padding:clamp(.04rem,.08cqh,.07rem) clamp(.07rem,.12cqw,.11rem)!important;
+    gap:clamp(.01rem,.035cqh,.03rem)!important;
+    padding:clamp(.015rem,.04cqh,.035rem) clamp(.045rem,.08cqw,.075rem)!important;
   }
 }
