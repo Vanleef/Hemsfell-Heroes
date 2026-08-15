@@ -1,4 +1,5 @@
 import { canExecuteCard, validateCosts } from "./engine.mjs";
+import { abilitiesForLevel, getExplicitCardRule } from "./card-rules.mjs";
 
 export const PriorityState = Object.freeze({
   IDLE: "IDLE",
@@ -9,6 +10,10 @@ export const PriorityState = Object.freeze({
 });
 
 const permanents = (player) => [...(player.board || []), ...(player.support || []), ...(player.terrain ? [player.terrain] : [])];
+const HERO_RULE_PAGE = Object.freeze({ saymon: 129, ngoro: 255, natureza: 291 });
+const heroSource = (entry, owner) => ({ uid: `${entry.heroId}-hero-${owner}`, id: `${entry.heroId}-hero-${owner}`, name: entry.heroId, slot: -1 });
+const stackHas = (state, predicate) => (state.priorityStack || []).some((frame) => frame?.kind === "command" && predicate(frame.command || {}));
+const heroUsageKey = (state, source, ability) => `${source.uid || source.id}:${ability.id}${ability?.condition?.firstEachTurn ? `:round-${state.round}` : ""}`;
 export const isAccelerated = (card) => (card?.tags || []).some((tag) => /acelerado/i.test(String(tag))) || /(?:acelerado|instantâneo|instantaneo)/i.test(card?.text || "");
 
 function spellCost(state, owner, card) {
@@ -29,13 +34,20 @@ export function legalPriorityResponses(state, owner) {
   if (!state?.pendingResponse || state.pendingResponse.responder !== owner) return [];
   const player = state.players[owner];
   const responseEnergy = state.active === owner ? player.energy + player.reserve : player.reserve;
-  const cards = player.hand.flatMap((card, handIndex) => isAccelerated(card) && canExecuteCard(card) && responseEnergy >= spellCost(state, owner, card)
+  const cards = player.hand.flatMap((card, handIndex) => isAccelerated(card) && canExecuteCard(card) && responseEnergy >= spellCost(state, owner, card) && !stackHas(state, command => command.type === "playCard" && command.owner === owner && command.cardId === card.id)
     ? [{ type: "playCard", owner, cardId: card.id, handIndex, hasPriority: true, label: card.name || card.id }]
     : []);
-  // Response windows are intentionally limited to Accelerated cards.
-  // Activated permanent abilities are main-phase actions and must never keep
-  // an AI priority window alive.
-  return cards;
+  const page = HERO_RULE_PAGE[player.heroId];
+  const rule = page ? getExplicitCardRule(`p${page}`) : null;
+  const source = heroSource(player, owner);
+  const heroAbilities = abilitiesForLevel(rule, player.level || 1).flatMap((ability) => {
+    if (ability.trigger !== "activated" || ability.responseAllowed === false || !ability.id) return [];
+    if (player.abilityUses?.[heroUsageKey(state, source, ability)]) return [];
+    if (stackHas(state, command => command.type === "activateHero" && command.owner === owner && command.abilityId === ability.id)) return [];
+    try { validateCosts(state, ability, { owner, sourceId: source.uid }); } catch { return []; }
+    return [{ type: "activateHero", owner, abilityId: ability.id, hasPriority: true, label: `${player.heroId}: ${ability.id}` }];
+  });
+  return [...cards, ...heroAbilities];
 }
 
 export const shouldAutoPass = (state, owner, control = "assisted") =>

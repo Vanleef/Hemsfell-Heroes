@@ -623,7 +623,8 @@ export function executeCommand(inputState, command, options = {}) {
         state.combatAction = null;
       } else if (item.command.type === "activateHero") {
         const entry = state.players[item.command.owner];
-        if (state.active !== item.command.owner || state.phase !== "principal") throw new RulesViolation("not-your-turn");
+        const priorityHeroActivation = !!item.command.hasPriority;
+        if (!priorityHeroActivation && (state.active !== item.command.owner || state.phase !== "principal")) throw new RulesViolation("not-your-turn");
         const page = HERO_RULE_PAGE[entry.heroId], rule = page ? getExplicitCardRule(`p${page}`) : null;
         const ability = abilitiesForLevel(rule, entry.level || 1).find((candidate) => candidate.id === item.command.abilityId && candidate.trigger === "activated");
         const source = { uid: `${entry.heroId}-hero-${item.command.owner}`, id: `${entry.heroId}-hero-${item.command.owner}`, name: entry.heroId, slot: -1 };

@@ -134,6 +134,19 @@ export function executeCommand(inputState, command, options = {}) {
     return stackResult(state, ["priority:push-accelerated"], 0);
   }
 
+  if (priorityEnabled && command.type === "activateHero" && command.hasPriority && !command.skipPriority && inputState.pendingResponse) {
+    if (inputState.pendingResponse.responder !== command.owner) throw new RulesViolation("not-your-priority");
+    const existingStack = inputState.priorityStack || [];
+    if (existingStack.some((frame) => frame.kind === "command" && frame.command?.type === "activateHero" && frame.command?.owner === command.owner && frame.command?.abilityId === command.abilityId)) throw new RulesViolation("hero-response-already-on-stack");
+    const root = existingStack.length ? null : rootPriorityFrame(inputState);
+    if (!existingStack.length && !root) throw new RulesViolation("nothing-to-respond-to");
+    const state = clone(inputState);
+    state.priorityStack = existingStack.length ? clone(existingStack) : [root];
+    state.priorityStack.push(commandFrame(inputState, command));
+    state.pendingResponse = { responder: 1 - command.owner, actor: command.owner, action: command.abilityId || "habilidade de herói", passes: 0 };
+    return stackResult(state, ["priority:push-hero-ability"], 0);
+  }
+
   if (priorityEnabled && command.type === "passPriority" && (inputState.priorityStack?.length || 0) > 1) {
     const pending = inputState.pendingResponse;
     if (!pending || pending.responder !== command.owner) throw new RulesViolation("not-your-priority");
