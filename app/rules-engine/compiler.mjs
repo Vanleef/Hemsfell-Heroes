@@ -191,6 +191,7 @@ export function compileCardText(text = "") {
 }
 
 export function compileCard(card) {
+  if (card?.page === 252) card = { ...card, type: "Feitiço", tags: [...new Set([...(card.tags || []), "Acelerado"])] };
   card = withDerivedSubtypes(card);
   const explicit = getExplicitCardRule(card);
   if (explicit) {

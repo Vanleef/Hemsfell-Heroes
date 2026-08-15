@@ -126,7 +126,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 223);
+  assert.equal(explicitRuleIds.length, 247);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -489,7 +489,7 @@ test("Quarion artifacts modify their connected creature", () => {
   const game = state(); game.players[0].board.push({ uid: "host", id: "host", hp: 4, damage: 0 });
   game.players[0].hand.push(compileCard({ id: "p193", page: 193, type: "Artefato", cost: 1, text: "" }));
   const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p193", attachedTo: "host", slot: 0 });
-  assert.deepEqual(result.state.players[0].board[0].modifiers[0], { attack: 3, health: 2, duration: "permanent" });
+  assert.deepEqual(result.state.players[0].board[0].modifiers[0], { attack: 3, health: 2, duration: "attached", sourceId: "p193-1-1" });
   assert.deepEqual(result.state.players[0].support[0].modifiers, []);
 });
 

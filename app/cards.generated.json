@@ -3424,10 +3424,12 @@
     "page": 252,
     "id": "p252",
     "name": "Café Expresso Duplo",
-    "type": "Herói",
+    "type": "Feitiço",
     "cost": 2,
     "text": "Aumente em 2 pontos de vitalidade de um alvo à sua escolha. “Dois é melhor do que um” FEITIÇO INSTANTÂNEO",
-    "tags": [],
+    "tags": [
+      "Acelerado"
+    ],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/252",
     "hero": false,
     "imageCard": false

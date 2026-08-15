@@ -169,12 +169,16 @@ export function chooseAIDecision(state, owner, difficulty = "Normal") {
     return selected ? { ...command, selectedCardId: cardId(selected) } : null;
   }
   if (decision.kind === "forced-attack") {
+    if (effect.attackerId && effect.defenderId) return { ...command, attackerId: effect.attackerId, defenderId: effect.defenderId, targetIds: [effect.attackerId, effect.defenderId] };
     const rule = effect.attacker || {}, attackers = (entry.board || []).filter((card) => (!rule.subtype || hasSubtype(card, rule.subtype)) && (!rule.ready || !card.exhausted) && isReadyAttacker(card));
     const defenders = state.players[1 - owner].board || [];
     if (!attackers.length || !defenders.length) return null;
     const attacker = attackers.sort((a, b) => Number(b.atk || 0) - Number(a.atk || 0))[0], defender = [...defenders].sort((a, b) => Number(a.hp || 1) - Number(a.damage || 0) - (Number(b.hp || 1) - Number(b.damage || 0)))[0];
     return { ...command, attackerId: cardId(attacker), defenderId: cardId(defender), targetIds: [cardId(attacker), cardId(defender)] };
   }
+  if (decision.kind === "zayan-destruction-replacement") { const candidates = entry.board.filter((card) => (effect.choices || []).includes(cardId(card))).sort((a, b) => aiCardValue(a, state, owner, difficulty) - aiCardValue(b, state, owner, difficulty)); return candidates.length && difficulty !== "Fácil" ? { ...command, choiceIndex: 1, targetIds: [cardId(candidates[0])] } : { ...command, choiceIndex: 0, targetIds: [] }; }
+  if (decision.kind === "maria-stat-tie") { const candidates = entry.board.filter((card) => (effect.choices || []).includes(cardId(card))).sort((a, b) => Number(b.hp || 1) - Number(b.damage || 0) - (Number(a.hp || 1) - Number(a.damage || 0))); return candidates[0] ? { ...command, targetIds: [cardId(candidates[0])] } : null; }
+  if (decision.kind === "marker-payment-search") { let remaining = effect.amount || 5; const markerSelections = []; for (const choice of effect.choices || []) { const amount = Math.min(remaining, Number(choice.markers || 0)); if (amount > 0) markerSelections.push({ id: choice.id, amount }); remaining -= amount; if (!remaining) break; } return remaining ? null : { ...command, markerSelections }; }
   if (decision.kind === "sacrifice-and-fill") {
     const maximum = Math.min(effect.maximum ?? entry.board.length, entry.board.length), targets = [...entry.board].sort((a, b) => aiCardValue(a, state, owner, difficulty) - aiCardValue(b, state, owner, difficulty)).slice(0, maximum);
     return { ...command, targetIds: targets.map(cardId) };
@@ -224,9 +228,10 @@ export function completeAIPlayCommand(state, owner, card, difficulty = "Normal",
   const sacrificeIds = [], targetIds = []; let attachedTo;
   steps.forEach((step, index) => { const id = ids[index]; if (!id) return; if (step.role === "sacrifice") sacrificeIds.push(id); else if (step.role === "attachment") attachedTo = id; else targetIds.push(id); });
   if (card.type === "Artefato" && !attachedTo) attachedTo = (entry.board || []).find((unit) => !(entry.support || []).some((item) => item.attachedTo === cardId(unit)))?.uid;
-  const occupied = card.type === "Criatura" ? entry.board : entry.support, fieldSlot = card.type === "Terreno" ? 0 : card.type === "Artefato" && attachedTo ? entry.board.find((unit) => cardId(unit) === attachedTo)?.slot : preferredAISlot({ ...entry, board: occupied });
+  const catSupport = card.type === "Criatura" && entry.heroId === "rasmus" && (entry.level || 1) >= 3 && hasSubtype(card, "Gato") && entry.board.length >= 5 && entry.support.length < 5;
+  const occupied = card.type === "Criatura" && !catSupport ? entry.board : entry.support, fieldSlot = card.type === "Terreno" ? 0 : card.type === "Artefato" && attachedTo ? entry.board.find((unit) => cardId(unit) === attachedTo)?.slot : preferredAISlot({ ...entry, board: occupied });
   if (card.type !== "Feitiço" && card.type !== "Terreno" && fieldSlot == null) return null;
-  return { type: "playCard", owner, cardId: card.id, instanceId: `ai-${state.round}-${card.id}-${state.events || 0}`, slot: fieldSlot, attachedTo, targetIds, sacrificeIds, chosenElement, selectedImageName: imageSelection(card, entry), cafeEffect: Number(card.page) === 231 ? ((entry.life || 30) < 12 ? "heal" : "draw") : undefined, hasPriority: !!options.hasPriority };
+  return { type: "playCard", owner, cardId: card.id, instanceId: `ai-${state.round}-${card.id}-${state.events || 0}`, slot: fieldSlot, placementZone: catSupport ? "support" : undefined, attachedTo, targetIds, sacrificeIds, chosenElement, selectedImageName: imageSelection(card, entry), cafeEffect: Number(card.page) === 231 ? ((entry.life || 30) < 12 ? "heal" : "draw") : undefined, hasPriority: !!options.hasPriority };
 }
 
 export function buildAIActionCandidates(state, owner, difficulty = "Normal") {
