@@ -480,9 +480,11 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
   /* Bot priority must live in the authoritative game snapshot too. Keeping this
      only in responseWindow made the UI wait forever while the AI inspected a
      currentGameRef with no pendingResponse and therefore never passed. */
-  const current=currentGameRef.current;if(!current)return;const next=structuredClone(current);
-  next.pendingResponse=timed?{...timed,passes:timed.passes??0}:null;next.combatAction=sharedAction;
-  currentGameRef.current=next;setGame(next);
+  /* Queue this mutation against React's latest game value instead of cloning
+     currentGameRef synchronously. Actions such as hero evolution update the
+     game and immediately open priority; cloning the ref here could restore the
+     pre-action snapshot and silently undo the evolution. */
+  setGame(old=>{if(!old)return old;const next=structuredClone(old);next.pendingResponse=timed?{...timed,passes:timed.passes??0}:null;next.combatAction=sharedAction;currentGameRef.current=next;return next});
  };
  useEffect(()=>{if(mode!=="online"||!game)return;setCombatAction(game.combatAction??null);const pending=game.pendingResponse??null;if(!pending){setResponseWindow(null);return}if(pending.responder!==0){setResponseWindow(pending);return}/* The responder first sees the opponent's serialized card animation. */const timer=window.setTimeout(()=>setResponseWindow(pending),RESPONSE_REVEAL_DELAY_MS);return()=>window.clearTimeout(timer)},[mode,game?.combatAction,game?.pendingResponse?.action,game?.pendingResponse?.deadline,game?.pendingResponse?.responder,game?.pendingResponse?.passes]);
  useEffect(()=>{currentGameRef.current=game},[game]);

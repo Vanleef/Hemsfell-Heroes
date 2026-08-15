@@ -961,3 +961,11 @@
 .screen-game .game-content > .opponent-hand:has(.original-card:hover) .card-tooltip{z-index:2600!important}
 .screen-game .game-content > .priority-stack-indicator{position:absolute!important;inset:auto!important;left:50%!important;top:52.5%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:max-content!important;max-width:min(28cqw,16rem)!important;min-width:0!important;padding:clamp(.22rem,.48cqh,.42rem) clamp(.5rem,.8cqw,.9rem)!important;z-index:900!important;pointer-events:none!important}
 .screen-game .priority-stack-indicator span,.screen-game .priority-stack-indicator b{font-size:clamp(.42rem,.62cqw,.68rem)!important}
+
+
+/* Slightly denser command-bar typography: preserve the existing responsive
+   geometry while giving long hero abilities more breathing room. */
+.screen-game .hero-command-bar .hero-ability-chip p{font-size:clamp(.255rem,3.72cqi,.455rem)!important;line-height:1.06!important}
+.screen-game .hero-command-bar .hero-ability-chip>span>b{font-size:clamp(.235rem,3.35cqi,.385rem)!important}
+.screen-game .hero-command-bar .hero-ability-chip.copy-compact p{font-size:clamp(.245rem,3.35cqi,.415rem)!important}
+.screen-game .hero-command-bar .hero-ability-chip.copy-dense p{font-size:clamp(.225rem,2.95cqi,.37rem)!important}
