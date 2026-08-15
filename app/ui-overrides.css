@@ -944,3 +944,12 @@
 .screen-game .response-hero-abilities span{min-width:0;display:flex;flex-direction:column;gap:.12rem}
 .screen-game .response-hero-abilities b{font-size:clamp(.46rem,.72cqw,.68rem);line-height:1.2}
 .screen-game .response-hero-abilities small{color:#91b9ce;font-size:clamp(.38rem,.56cqw,.52rem)}
+
+/* Opponent revealed-card tooltips must render over the opponent energy bar,
+   battlefield slots and permanents. Raise the whole hand stacking context only
+   while a revealed card is hovered so normal board layering is unchanged. */
+.hs-board .opponent-hand { overflow: visible; }
+.hs-board .opponent-hand:has(.original-card:hover) { z-index: 1200 !important; }
+.hs-board .opponent-hand .original-card,
+.hs-board .opponent-hand .original-card:hover { overflow: visible; }
+.hs-board .opponent-hand .original-card:hover .card-tooltip { z-index: 1400 !important; }

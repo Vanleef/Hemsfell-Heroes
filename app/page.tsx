@@ -476,7 +476,13 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
  const setSharedResponse=(response:PendingResponse|null,sharedAction:CombatAction|null=combatAction)=>{
   const timed=response?{...response,deadline:response.deadline??Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000}:null;
   setResponseWindow(timed);
-  if(mode==="online")update(g=>{g.pendingResponse=timed?{...timed,passes:timed.passes??0}:null;g.combatAction=sharedAction});
+  if(mode==="online"){update(g=>{g.pendingResponse=timed?{...timed,passes:timed.passes??0}:null;g.combatAction=sharedAction});return}
+  /* Bot priority must live in the authoritative game snapshot too. Keeping this
+     only in responseWindow made the UI wait forever while the AI inspected a
+     currentGameRef with no pendingResponse and therefore never passed. */
+  const current=currentGameRef.current;if(!current)return;const next=structuredClone(current);
+  next.pendingResponse=timed?{...timed,passes:timed.passes??0}:null;next.combatAction=sharedAction;
+  currentGameRef.current=next;setGame(next);
  };
  useEffect(()=>{if(mode!=="online"||!game)return;setCombatAction(game.combatAction??null);const pending=game.pendingResponse??null;if(!pending){setResponseWindow(null);return}if(pending.responder!==0){setResponseWindow(pending);return}/* The responder first sees the opponent's serialized card animation. */const timer=window.setTimeout(()=>setResponseWindow(pending),RESPONSE_REVEAL_DELAY_MS);return()=>window.clearTimeout(timer)},[mode,game?.combatAction,game?.pendingResponse?.action,game?.pendingResponse?.deadline,game?.pendingResponse?.responder,game?.pendingResponse?.passes]);
  useEffect(()=>{currentGameRef.current=game},[game]);
