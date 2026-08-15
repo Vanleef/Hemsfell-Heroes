@@ -1,0 +1,56 @@
+name: One-shot AI priority lock fix
+
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+    paths:
+      - .github/workflows/hotfix-ai-priority-lock.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+
+      - name: Patch authoritative priority and AI responder
+        shell: python
+        run: |
+          from pathlib import Path
+
+          priority_path = Path('app/rules-engine/priority.mjs')
+          priority = priority_path.read_text(encoding='utf-8')
+          old = '''  const abilities = permanents(player).flatMap((source) => (source.abilities || []).flatMap((ability) => activationAvailable(state, owner, source, ability)\n    ? [{ type: "activate", owner, sourceId: source.uid || source.id, abilityId: ability.id, hasPriority: true, label: source.name || source.id }]\n    : []));\n  return [...cards, ...abilities];'''
+          new = '''  // Response windows are intentionally limited to Accelerated cards.\n  // Activated permanent abilities are main-phase actions and must never keep\n  // an AI priority window alive.\n  return cards;'''
+          if old not in priority:
+              raise SystemExit('priority ability response anchor not found')
+          priority = priority.replace(old, new, 1)
+          priority_path.write_text(priority, encoding='utf-8')
+
+          page_path = Path('app/page.tsx')
+          page = page_path.read_text(encoding='utf-8')
+          old_effect = ''' useEffect(()=>{if(!game||responseWindow?.responder!==1||game.winner!==null||mode!=="bot")return;const t=setTimeout(()=>{const priorityGame={...game,pendingResponse:responseWindow},fallback=()=>{void passPriorityWindow(1,true)};const command=chooseAIResponse(priorityGame,1,Math.random);if(command.type==="passPriority"){fallback();update(g=>log(g,"A IA não tinha resposta legal e passou imediatamente.","response"));return}if(command.type==="activate"){void runRulesCommand(command,1).then(accepted=>{if(!accepted)fallback()});return}const card=game.players[1].hand.find(c=>c.id===command.cardId),completed=card?completeAIPlayCommand(priorityGame,1,card,difficulty,{hasPriority:true}):null;if(!completed){fallback();return}void runRulesCommand(completed,1).then(accepted=>{if(!accepted)fallback()})},legalPriorityResponses({...game,pendingResponse:responseWindow},1).length?420:50);return()=>clearTimeout(t)},[game,responseWindow,mode,difficulty]);'''
+          new_effect = ''' useEffect(()=>{if(responseWindow?.responder!==1||mode!=="bot")return;const pendingKey=`${responseWindow.actor}:${responseWindow.responder}:${responseWindow.passes??0}:${responseWindow.action}`;const snapshot=currentGameRef.current;if(!snapshot||snapshot.winner!==null||snapshot.pendingResponse?.responder!==1)return;const delay=legalPriorityResponses(snapshot,1).length?420:50;const t=setTimeout(()=>{const current=currentGameRef.current;if(!current||current.winner!==null||mode!=="bot")return;const pending=current.pendingResponse;if(!pending||pending.responder!==1)return;const currentKey=`${pending.actor}:${pending.responder}:${pending.passes??0}:${pending.action}`;if(currentKey!==pendingKey)return;const command=chooseAIResponse(current,1,Math.random);const fallback=async()=>{await passPriorityWindow(1,true)};if(command.type==="passPriority"){void fallback();return}const card=current.players[1].hand.find(c=>c.id===command.cardId),completed=card?completeAIPlayCommand(current,1,card,difficulty,{hasPriority:true}):null;if(!completed){void fallback();return}void runRulesCommand(completed,1).then(accepted=>{if(!accepted)void fallback()})},delay);return()=>clearTimeout(t)},[responseWindow?.actor,responseWindow?.responder,responseWindow?.passes,responseWindow?.action,mode,difficulty]);'''
+          if old_effect not in page:
+              raise SystemExit('AI response effect anchor not found')
+          page = page.replace(old_effect, new_effect, 1)
+          page_path.write_text(page, encoding='utf-8')
+
+          test_path = Path('tests/ai-priority-lock.test.mjs')
+          test_path.write_text('''import assert from "node:assert/strict";\nimport test from "node:test";\nimport { readFile } from "node:fs/promises";\nimport { legalPriorityResponses } from "../app/rules-engine/priority.mjs";\n\nconst makeState=()=>({\n  active:1,phase:"principal",round:3,\n  pendingResponse:{responder:1,actor:0,action:"Teste",passes:0},\n  players:[\n    {energy:0,reserve:0,hand:[],board:[],support:[],terrain:null,abilityUses:{}},\n    {energy:3,reserve:3,hand:[],board:[{uid:"u1",id:"u1",name:"Ativavel",type:"Criatura",exhausted:false,summoning:false,enteredRound:1,abilities:[{id:"a1",trigger:"activated",costs:[],effects:[]}]}],support:[],terrain:null,abilityUses:{}}\n  ]\n});\n\ntest("priority response list never exposes activated permanent abilities",()=>{\n  const state=makeState();\n  assert.deepEqual(legalPriorityResponses(state,1),[]);\n});\n\ntest("AI response timer is keyed only to the pending priority window",async()=>{\n  const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");\n  const marker=page.match(/useEffect\(\(\)=>\{if\(responseWindow\?\.responder!==1[\\s\\S]*?\},\[responseWindow\?\.actor,responseWindow\?\.responder,responseWindow\?\.passes,responseWindow\?\.action,mode,difficulty\]\);/)?.[0]||"";\n  assert.ok(marker);\n  assert.match(marker,/currentGameRef\.current/);\n  assert.doesNotMatch(marker,/\[game,responseWindow,mode,difficulty\]/);\n  assert.doesNotMatch(marker,/command\.type===\"activate\"/);\n});\n''', encoding='utf-8')
+
+      - name: Remove one-shot workflow and publish fix
+        run: |
+          rm .github/workflows/hotfix-ai-priority-lock.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx app/rules-engine/priority.mjs tests/ai-priority-lock.test.mjs .github/workflows/hotfix-ai-priority-lock.yml
+          git commit -m "fix: prevent AI priority response loop"
+          git push origin HEAD:fix/cards_mechanics
