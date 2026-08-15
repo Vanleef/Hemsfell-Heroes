@@ -1,0 +1,60 @@
+name: One-shot semantic field keyword UI fix
+
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+    paths:
+      - .github/workflows/hotfix-field-keyword-semantics.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+
+      - name: Patch battlefield keyword semantics
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path('app/page.tsx')
+          source = path.read_text(encoding='utf-8')
+
+          import_anchor = 'import { compileCard } from "./rules-engine/compiler.mjs";\n'
+          import_line = 'import { hasIntrinsicKeyword, intrinsicKeywordNames } from "./card-keywords.mjs";\n'
+          if import_line not in source:
+              if source.count(import_anchor) != 1:
+                  raise SystemExit('compiler import anchor not found exactly once')
+              source = source.replace(import_anchor, import_anchor + import_line, 1)
+
+          old_has_keyword = 'const hasKeyword=(p:Player|undefined,u:Unit,keyword:string)=>{if(u.suffocated)return false;const wanted=cleanName(keyword),matches=(value:string)=>cleanName(value).includes(wanted),pairedDuelist=u.page===171?p?.board.some(card=>card.page===172&&!card.suffocated):u.page===172?p?.board.some(card=>card.page===171&&!card.suffocated):false;if((u.page===171||u.page===172)&&(wanted==="barreira magica"||wanted==="robusto"))return !!pairedDuelist;if(wanted==="atropelar"&&isCommander(p,u)&&p!.level>=2)return true;if(u.tags.some(tag=>cleanName(tag)===wanted)||u.temporaryTags?.some(tag=>cleanName(tag)===wanted)||u.grantedKeywords?.some(matches)||matches(u.text))return true;if(!p)return false;return p.support.some(source=>!source.suffocated&&(source.attachedTo===u.uid||Math.abs(source.slot-u.slot)===1&&/\\bSuporte\\b/i.test(source.text))&&matches(source.text))||!!p.terrain&&!p.terrain.suffocated&&matches(p.terrain.text)};'
+          new_has_keyword = 'const hasKeyword=(p:Player|undefined,u:Unit,keyword:string)=>{if(u.suffocated)return false;const wanted=cleanName(keyword),matches=(value:string)=>cleanName(value).includes(wanted),pairedDuelist=u.page===171?p?.board.some(card=>card.page===172&&!card.suffocated):u.page===172?p?.board.some(card=>card.page===171&&!card.suffocated):false;if((u.page===171||u.page===172)&&(wanted==="barreira magica"||wanted==="robusto"))return !!pairedDuelist;if(wanted==="atropelar"&&isCommander(p,u)&&p!.level>=2)return true;if(hasIntrinsicKeyword(u,keyword))return true;if(!p)return false;return p.support.some(source=>!source.suffocated&&(source.attachedTo===u.uid||Math.abs(source.slot-u.slot)===1&&/\\bSuporte\\b/i.test(source.text))&&matches(source.text))||!!p.terrain&&!p.terrain.suffocated&&matches(p.terrain.text)};'
+          if old_has_keyword not in source:
+              raise SystemExit('hasKeyword anchor not found')
+          source = source.replace(old_has_keyword, new_has_keyword, 1)
+
+          pattern = re.compile(r'const liveKeywordNames=unit\?\[\.\.\.new Set\(\(unit\.suffocated\?\[\]:\[\.\.\.card\.tags,\.\.\.\(unit\.temporaryTags\|\|\[\]\),\.\.\.\(unit\.grantedKeywords\|\|\[\]\)\]\.filter\(Boolean\)\)\.map\(tag=>keywordEntry\(tag\)\?\.key\)\.filter\(\(tag\):tag is string=>!!tag&&!negativeKeywordKeys\.has\(tag\)\)\)\]:\[\];')
+          replacement = 'const liveKeywordNames=unit?[...new Set(intrinsicKeywordNames(unit).map(tag=>keywordEntry(tag)?.key).filter((tag):tag is string=>!!tag&&!negativeKeywordKeys.has(tag)))]:[];'
+          source, count = pattern.subn(replacement, source, count=1)
+          if count != 1:
+              raise SystemExit(f'liveKeywordNames anchor replacements: {count}')
+
+          path.write_text(source, encoding='utf-8')
+
+      - name: Remove one-shot workflow and publish fix
+        run: |
+          rm .github/workflows/hotfix-field-keyword-semantics.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx .github/workflows/hotfix-field-keyword-semantics.yml
+          git commit -m "fix: render active field keywords from authoritative semantics"
+          git push origin HEAD:fix/cards_mechanics
