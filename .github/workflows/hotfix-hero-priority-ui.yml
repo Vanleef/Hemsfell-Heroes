@@ -18,7 +18,10 @@ jobs:
         with:
           ref: fix/cards_mechanics
           fetch-depth: 0
-      - run: python .github/scripts/hotfix-hero-priority-ui.py
+      - run: |
+          sed -i "s/old=''' function ResponseModal/old='''function ResponseModal/" .github/scripts/hotfix-hero-priority-ui.py
+          sed -i "s/new=''' function ResponseModal/new='''function ResponseModal/" .github/scripts/hotfix-hero-priority-ui.py
+          python .github/scripts/hotfix-hero-priority-ui.py
       - run: |
           rm .github/workflows/hotfix-hero-priority-ui.yml
           rm .github/scripts/hotfix-hero-priority-ui.py
