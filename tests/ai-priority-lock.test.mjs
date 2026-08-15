@@ -17,6 +17,15 @@ test("priority response list never exposes activated permanent abilities",()=>{
   assert.deepEqual(legalPriorityResponses(state,1),[]);
 });
 
+test("Accelerated cards remain legal priority responses",()=>{
+  const state=makeState();
+  state.players[1].hand=[{id:"fast-1",name:"Resposta Acelerada",type:"Feitiço",cost:1,tags:["Acelerado"],text:"",abilities:[]}];
+  const legal=legalPriorityResponses(state,1);
+  assert.equal(legal.length,1);
+  assert.equal(legal[0].type,"playCard");
+  assert.equal(legal[0].cardId,"fast-1");
+});
+
 test("AI response timer is keyed only to the pending priority window",async()=>{
   const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
   const marker=page.match(/useEffect\(\(\)=>\{if\(responseWindow\?\.responder!==1[\s\S]*?\},\[responseWindow\?\.actor,responseWindow\?\.responder,responseWindow\?\.passes,responseWindow\?\.action,mode,difficulty\]\);/)?.[0]||"";
