@@ -1,5 +1,6 @@
 name: Validate Gimble authoritative migration
 
+# Rerun after aligning hero-priority fixtures with target legality.
 on:
   push:
     branches:
