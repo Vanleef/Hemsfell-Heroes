@@ -56,6 +56,13 @@ test("poderes ativos dos heróis também entram no planejamento do bot", () => {
   assert.deepEqual(chooseAIHeroAbility(game, 1, "Difícil"), { kind: "saymon-damage", slot: 0, targetId: "victim" });
 });
 
+test("bot recognizes both active Ngoro clue powers", () => {
+  const game = state(); game.players[1].heroId = "ngoro"; game.players[1].level = 3; game.players[1].heroXP = 3; game.players[1].board.push(unit("agent", { atk: 4 }));
+  assert.deepEqual(chooseAIHeroAbility(game, 1, "Difícil"), { kind: "ngoro-stealth", slot: 2, targetId: "agent" });
+  game.players[1].abilityUses["ngoro-2"] = 1;
+  assert.deepEqual(chooseAIHeroAbility(game, 1, "Difícil"), { kind: "ngoro-clue-action", slot: 1 });
+});
+
 test("simulação adversarial resolve prioridades e decisões sem ciclo ou travamento", () => {
   let game = state(); game.players[0].board.push(unit("enemy")); game.players[1].hand = [printed(55, { cost: 0 }), printed(56, { cost: 0 }), printed(60, { cost: 0 })];
   const fingerprints = new Map();

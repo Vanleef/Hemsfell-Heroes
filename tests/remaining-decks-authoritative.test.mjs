@@ -18,6 +18,32 @@ test("Café Expresso Duplo is an accelerated spell in the source catalog", () =>
   assert.ok(card.tags.includes("Acelerado"));
 });
 
+test("Ngoro II and III are active powers that spend clues", () => {
+  const levelTwo = state("ngoro", 2); levelTwo.players[0].heroXP = 2; levelTwo.players[0].deck.push({ id: "clue-draw" });
+  const choosing = executeCommand(levelTwo, { type: "activateHero", owner: 0, abilityId: "ngoro-level-2" }).state;
+  assert.equal(choosing.players[0].heroXP, 0);
+  assert.equal(choosing.pendingDecision.kind, "choice");
+  const drawn = executeCommand(choosing, { type: "resolveDecision", owner: 0, choiceIndex: 0 }).state;
+  assert.equal(drawn.players[0].hand[0].id, "clue-draw");
+  assert.equal(drawn.players[0].abilityUses["ngoro-1"], 1);
+
+  const levelThree = state("ngoro", 3); levelThree.players[0].markers = { clue: 3 }; levelThree.players[0].board.push(unit("spy"));
+  const hidden = executeCommand(levelThree, { type: "activateHero", owner: 0, abilityId: "ngoro-level-3", targetIds: ["spy"] }).state;
+  assert.equal(hidden.players[0].markers.clue, 0);
+  assert.ok(hidden.players[0].board[0].temporaryTags.includes("Furtivo"));
+  assert.equal(hidden.players[0].abilityUses["ngoro-2"], 1);
+});
+
+test("Anel de Ametista turns on activation and cannot be activated twice", () => {
+  const game = state("ngoro", 1), ring = { ...printed(267), uid: "amethyst-ring", slot: 0, attachedTo: "chaos", enteredRound: 0, exhausted: false, summoning: false }, chaos = unit("chaos", { tags: ["Caos"] });
+  game.players[0].energy = 5; game.players[0].board.push(chaos); game.players[0].support.push(ring);
+  const ability = ring.abilities.find((candidate) => candidate.trigger === "activated");
+  const activated = executeCommand(game, { type: "activate", owner: 0, sourceId: ring.uid, abilityId: ability.id }).state;
+  assert.equal(activated.players[0].support[0].exhausted, true);
+  assert.equal(activated.players[0].energy, 6);
+  assert.throws(() => executeCommand(activated, { type: "activate", owner: 0, sourceId: ring.uid, abilityId: ability.id }), /ability-limit-reached|cannot-tap/);
+});
+
 test("Quarion I draws once and Quarion III repeats the first First Act", () => {
   const game = state("quarion", 3);
   game.players[0].deck.push({ id: "draw-a" }, { id: "draw-b" });
