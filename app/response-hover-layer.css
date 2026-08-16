@@ -1,0 +1,31 @@
+/* Response window hover layering.
+   The hovered response card and its tooltip must render above sibling cards. */
+.response-cards {
+  position: relative;
+  overflow: visible !important;
+  isolation: isolate;
+}
+
+.response-cards > * {
+  position: relative;
+  z-index: 1;
+}
+
+.response-cards > *:hover,
+.response-cards > *:focus-within {
+  z-index: 120 !important;
+}
+
+.response-cards > *:hover .card-tooltip,
+.response-cards > *:focus-within .card-tooltip,
+.response-cards .card-tooltip:hover {
+  z-index: 140 !important;
+}
+
+/* Do not let the response strip clip an enlarged/hovered card or its tooltip. */
+.response-window,
+.response-panel,
+.response-options,
+.response-cards {
+  overflow-y: visible !important;
+}
