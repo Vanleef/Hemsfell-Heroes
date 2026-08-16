@@ -3,10 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./command-bar-fixes.css";
 import "./match-ui-guard.css";
+import "./setup-heading-fixes.css";
 import CommandBarTextAutoFit from "./command-bar-text-autofit";
 import MatchUiGuard from "./match-ui-guard";
-import HeroFactionNormalizer from "./hero-faction-normalizer";
-import TifonPickerNormalizer from "./tifon-picker-normalizer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,8 +49,6 @@ export default function RootLayout({
       >
         <CommandBarTextAutoFit />
         <MatchUiGuard />
-        <HeroFactionNormalizer />
-        <TifonPickerNormalizer />
         {children}
       </body>
     </html>
