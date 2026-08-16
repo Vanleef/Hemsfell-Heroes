@@ -1,0 +1,53 @@
+name: Fix Erva de Gato Once
+
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+    paths:
+      - .github/workflows/fix-catnip-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+
+      - name: Patch canonical rule and regression test
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app/rules-engine/card-rules.mjs')
+          text = path.read_text(encoding='utf-8')
+          anchor = '  p221: [ability("onEnter", [effect("linkDestroyCreatures", { target: "anyCreature", selections: 1 })]), ability("onPermanentLeaves", [effect("destroyLinkedCreature")])],\n  p223:'
+          replacement = '  p221: [ability("onEnter", [effect("linkDestroyCreatures", { target: "anyCreature", selections: 1 })]), ability("onPermanentLeaves", [effect("destroyLinkedCreature")])],\n  p222: [ability("onPlay", [effect("search", { zone: "deck", destination: "hand", subtype: "Gato", amount: 1, shuffle: true, reveal: true })])],\n  p223:'
+          if 'p222: [ability("onPlay", [effect("search"' not in text:
+              if anchor not in text:
+                  raise SystemExit('Could not locate p221/p223 anchor')
+              text = text.replace(anchor, replacement, 1)
+              path.write_text(text, encoding='utf-8')
+
+          test = Path('tests/rasmus-catnip-regression.test.mjs')
+          test.write_text('''import test from "node:test";\nimport assert from "node:assert/strict";\nimport { compileCard } from "../app/rules-engine/compiler.mjs";\nimport { executeCommand } from "../app/rules-engine/engine.mjs";\n\nconst card = (page, extra = {}) => ({ ...compileCard({ page, id: `p${page}`, name: page === 222 ? "Erva de Gato" : "Gato Teste", type: page === 222 ? "Feitiço" : "Criatura", cost: page === 222 ? 2 : 1, text: page === 222 ? "Busque uma criatura do tipo Gato em seu deck." : "", tags: [], subtypes: page === 222 ? [] : ["Gato"], image: "", hero: false, imageCard: false }), ...extra });\nconst player = () => ({ heroId: "rasmus", level: 1, heroXP: 0, levelUpsThisTurn: 0, life: 30, maxEnergy: 10, energy: 10, reserve: 0, deck: [], extraDeck: [], hand: [], board: [], support: [], terrain: null, grave: [], obscuro: [], cardsPlayed: 0, turnCardsPlayed: 0, turnSpellsPlayed: 0, spellsPlayed: 0, coffeeSpells: 0, damageDealt: 0, turnDeaths: 0, abilityUses: {}, pendingTranqueira: false, nextCardDiscount: 0, nextNonCreatureDiscount: 0, nextSpellDiscount: 0, nextSummonPaysLife: false, catsEnteredThisTurn: 0 });\n\ntest("Erva de Gato searches exactly one Gato from deck into hand", () => {\n  const p0 = player(), p1 = player();\n  const cat = card(214, { id: "cat-1", uid: "cat-1", name: "Gato Teste", subtypes: ["Gato"] });\n  const nonCat = card(3, { id: "not-cat", uid: "not-cat", name: "Não Gato", subtypes: ["Dragão"] });\n  const herb = card(222, { uid: "herb-1" });\n  p0.deck = [cat, nonCat];\n  p0.hand = [herb];\n  const state = { players: [p0, p1], active: 0, phase: "principal", round: 1, log: [], winner: null, selectedAttackers: [], events: 0, priorityStack: [], pendingResponse: null, pendingDecision: null };\n  executeCommand(state, { type: "playCard", owner: 0, handIndex: 0 });\n  assert.equal(state.pendingDecision?.kind, "search");\n  assert.equal(state.pendingDecision?.effect?.subtype, "Gato");\n  executeCommand(state, { type: "resolveDecision", owner: 0, selectedCardIds: ["cat-1"] });\n  assert.equal(p0.hand.some((c) => c.id === "cat-1"), true);\n  assert.equal(p0.deck.some((c) => c.id === "cat-1"), false);\n  assert.equal(p0.deck.some((c) => c.id === "not-cat"), true);\n});\n''', encoding='utf-8')
+          PY
+
+      - name: Run focused regression
+        run: node --test tests/rasmus-catnip-regression.test.mjs
+
+      - name: Commit repair and remove one-shot workflow
+        shell: bash
+        run: |
+          rm .github/workflows/fix-catnip-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/rules-engine/card-rules.mjs tests/rasmus-catnip-regression.test.mjs .github/workflows/fix-catnip-once.yml
+          git commit -m "fix: implement Erva de Gato deck search"
+          git push origin HEAD:fix/cards_mechanics
