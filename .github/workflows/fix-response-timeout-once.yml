@@ -1,0 +1,78 @@
+name: Fix Response Timeout Once
+
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+    paths:
+      - .github/workflows/fix-response-timeout-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+
+      - name: Patch expired response auto-pass and regression
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app/match-ui-guard.tsx')
+          text = path.read_text(encoding='utf-8')
+          marker = 'export default function MatchUiGuard() {'
+          helper = '''function passExpiredResponseWindow() {
+  const dialog = document.querySelector<HTMLElement>(".response-dialog");
+  if (!dialog) return;
+  const timerNodes = Array.from(dialog.querySelectorAll<HTMLElement>("header *, .response-timer, .response-countdown"));
+  const expired = timerNodes.some((node) => /^0s$/i.test((node.textContent || "").trim()));
+  if (!expired) {
+    delete dialog.dataset.timeoutPassDispatched;
+    return;
+  }
+  if (dialog.dataset.timeoutPassDispatched === "true") return;
+  const passButton = Array.from(dialog.querySelectorAll<HTMLButtonElement>("button")).find((button) =>
+    button.classList.contains("pass-response") || /passar prioridade/i.test(button.textContent || "")
+  );
+  if (!passButton || passButton.disabled) return;
+  dialog.dataset.timeoutPassDispatched = "true";
+  passButton.click();
+}
+
+'''
+          if 'function passExpiredResponseWindow()' not in text:
+              if marker not in text:
+                  raise SystemExit('Could not locate MatchUiGuard export marker')
+              text = text.replace(marker, helper + marker, 1)
+
+          old = '    const observer = new MutationObserver(scheduleSync);\n    observer.observe(document.body, { childList: true, subtree: true });\n    sync();\n    return () => {\n'
+          new = '    const observer = new MutationObserver(scheduleSync);\n    observer.observe(document.body, { childList: true, subtree: true });\n    const responseTimeoutTimer = window.setInterval(passExpiredResponseWindow, 200);\n    sync();\n    return () => {\n      window.clearInterval(responseTimeoutTimer);\n'
+          if 'responseTimeoutTimer' not in text:
+              if old not in text:
+                  raise SystemExit('Could not locate MatchUiGuard observer cleanup block')
+              text = text.replace(old, new, 1)
+          path.write_text(text, encoding='utf-8')
+
+          test = Path('tests/cafe-pingado-priority-regression.test.mjs')
+          test.write_text('''import test from "node:test";\nimport assert from "node:assert/strict";\nimport { compileCard } from "../app/rules-engine/compiler.mjs";\nimport { isAccelerated, legalPriorityResponses } from "../app/rules-engine/priority.mjs";\n\nconst player = () => ({ heroId: "rasmus", level: 1, life: 30, energy: 3, reserve: 3, hand: [], deck: [], board: [], support: [], terrain: null, grave: [], obscuro: [], abilityUses: {} });\n\ntest("Café Pingado is not an accelerated response", () => {\n  const cafe = compileCard({ page: 236, id: "p236", name: "Café Pingado", type: "Feitiço", cost: 1, text: "A próxima vez que a criatura alvo receberia dano neste turno, previna 1 desse dano.", tags: [], image: "", hero: false, imageCard: false });\n  assert.equal(isAccelerated(cafe), false);\n  const p0 = player(), p1 = player();\n  p0.hand = [cafe];\n  const state = { players: [p0, p1], active: 1, phase: "principal", round: 1, pendingResponse: { responder: 0, actor: 1, action: "ação", passes: 0 }, priorityStack: [] };\n  assert.deepEqual(legalPriorityResponses(state, 0), []);\n});\n\ntest("response timeout guard dispatches pass only once per expired cycle", async () => {\n  const source = await import("node:fs/promises").then((fs) => fs.readFile(new URL("../app/match-ui-guard.tsx", import.meta.url), "utf8"));\n  assert.match(source, /function passExpiredResponseWindow\(\)/);\n  assert.match(source, /timeoutPassDispatched/);\n  assert.match(source, /setInterval\(passExpiredResponseWindow, 200\)/);\n  assert.match(source, /passButton\.click\(\)/);\n});\n''', encoding='utf-8')
+          PY
+
+      - name: Run focused regression
+        run: node --test tests/cafe-pingado-priority-regression.test.mjs
+
+      - name: Commit repair and remove one-shot workflow
+        shell: bash
+        run: |
+          rm .github/workflows/fix-response-timeout-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/match-ui-guard.tsx tests/cafe-pingado-priority-regression.test.mjs .github/workflows/fix-response-timeout-once.yml
+          git commit -m "fix: auto-pass expired response windows"
+          git push origin HEAD:fix/cards_mechanics
