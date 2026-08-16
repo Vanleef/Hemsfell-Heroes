@@ -41,3 +41,25 @@ test_text = must_replace(test_text,
 test_text = test_text.replace('const cobra = field(byName("Cobra Dor"), "cobra");', 'const cobra = field(compileCard(cards.find((card) => Number(card.page) === 134)), "cobra");')
 test_text = test_text.replace('assert.equal(cobraCommand?.markerAmount, 3, JSON.stringify({page:cobra.page,name:cobra.name,abilities:cobra.abilities,commands}));', 'assert.equal(cobraCommand?.markerAmount, 3);')
 test_path.write_text(test_text)
+
+legacy_path = Path('tests/rules-engine.test.mjs')
+legacy = legacy_path.read_text()
+old = '''test("Condutor de Rasnóvia replaces its First Act with a bounded Vampiro search", () => {
+  const game = state(); game.players[0].life = 20; game.players[0].deck.push({ id: "drawn" }, { id: "cheap", type: "Criatura", cost: 3, subtypes: ["Vampiro"] }, { id: "valid", type: "Criatura", cost: 4, subtypes: ["Vampiro"] });
+  game.players[0].hand.push(compileCard({ id: "p135", page: 135, name: "Condutor de Rasnóvia", type: "Criatura", cost: 0, atk: 3, hp: 3, text: "", tags: [] }));
+  const entered = executeCommand(game, { type: "playCard", owner: 0, cardId: "p135", slot: 0, skipPriority: true }).state;
+  const source = entered.players[0].board[0]; assert.equal(entered.players[0].life, 16); assert.equal(entered.players[0].hand[0].id, "drawn"); assert.equal(source.firstActReplaced, true);
+  defaultEffectHandlers.search(entered, source.abilities[0].effects[0], { owner: 0, sourceId: source.uid });
+  assert.equal(entered.pendingDecision.effect.minCost, 4); assert.equal(entered.pendingDecision.effect.subtype, "Vampiro"); assert.equal(entered.pendingDecision.effect.amount, 1);
+});'''
+new = '''test("Condutor de Rasnóvia offers draw or a four-life Vampiro search", () => {
+  const game = state(); game.players[0].heroId = "saymon"; game.players[0].level = 3; game.players[0].life = 20; game.players[0].deck.push({ id: "drawn" }, { id: "cheap", type: "Criatura", cost: 3, subtypes: ["Vampiro"] }, { id: "valid", type: "Criatura", cost: 4, subtypes: ["Vampiro"] });
+  game.players[0].hand.push(compileCard({ id: "p135", page: 135, name: "Condutor de Rasnóvia", type: "Criatura", cost: 0, atk: 3, hp: 3, text: "", tags: [] }));
+  let entered = executeCommand(game, { type: "playCard", owner: 0, cardId: "p135", slot: 0, skipPriority: true }).state;
+  assert.equal(entered.players[0].life, 20); assert.equal(entered.pendingDecision?.kind, "choice");
+  entered = executeCommand(entered, { type: "resolveDecision", owner: 0, choiceIndex: 1 }).state;
+  assert.equal(entered.players[0].life, 16); assert.equal(entered.pendingDecision?.kind, "search");
+  assert.equal(entered.pendingDecision.effect.minCost, 4); assert.equal(entered.pendingDecision.effect.subtype, "Vampiro"); assert.equal(entered.pendingDecision.effect.amount, 1);
+});'''
+legacy = must_replace(legacy, old, new, 'legacy Condutor test')
+legacy_path.write_text(legacy)
