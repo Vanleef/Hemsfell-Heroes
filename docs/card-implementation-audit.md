@@ -6,11 +6,11 @@
 
 - Total de cartas: **306**
 - Ativas: **294**
-- Regras explícitas: **235**
-- Regras derivadas do texto: **59**
+- Regras explícitas: **237**
+- Regras derivadas do texto: **57**
 - Executáveis pelo motor canônico: **294**
 - Com efeito textual não suportado: **0**
-- Marcadas para revisão: **29**
+- Marcadas para revisão: **28**
 
 ## Achados confirmados / revisão prioritária
 
@@ -145,12 +145,6 @@ Implementação: **text** · Executável: **sim** · Gatilhos: static · Efeitos
 ### 128. Altar da Carnificina
 
 Implementação: **text** · Executável: **sim** · Gatilhos: onTurnEnd · Efeitos: keyword
-
-- **REVIEW · text-parser-conditional:** Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso.
-
-### 131. Discípulo de Sangue
-
-Implementação: **text** · Executável: **sim** · Gatilhos: onLifeLost · Efeitos: modifyStats
 
 - **REVIEW · text-parser-conditional:** Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso.
 
@@ -324,11 +318,11 @@ Implementação: **text** · Executável: **sim** · Gatilhos: onDestroyed · Ef
 | 128 | Altar da Carnificina | Terreno | text | ✓ | onTurnEnd | keyword |
 | 129 | Saymon, o Primeiro | Herói | explicit | ✓ | activated | damage |
 | 130 | Servo Iniciante | Criatura | explicit | ✓ | onEnter | loseLife |
-| 131 | Discípulo de Sangue | Criatura | text | ✓ | onLifeLost | modifyStats |
-| 132 | Morcego Rastreador | Criatura | text | ✓ | onPlay | draw, keyword |
+| 131 | Discípulo de Sangue | Criatura | explicit | ✓ | onLifeLost | modifyStats |
+| 132 | Morcego Rastreador | Criatura | explicit | ✓ | onLifeLost | draw |
 | 133 | O Carniceiro | Criatura | explicit | ✓ | static, onEnter | keyword, loseLife |
 | 134 | O Cobra Dor | Criatura | explicit | ✓ | onMaintenance, activated | loseLife, addMarker, healFromMarkersRemoved |
-| 135 | Condutor de Rasnóvia | Criatura | explicit | ✓ | onEnter | draw, loseLife, replaceFirstAct |
+| 135 | Condutor de Rasnóvia | Criatura | explicit | ✓ | onEnter | controllerChoice |
 | 136 | Extrator da Lua sangrenta | Criatura | explicit | ✓ | static, onCreatureEnter | keyword, forceSelfCombatEnteringCreature |
 | 137 | Viúva Negra | Criatura | explicit | ✓ | onDestroyed, activated | heal, grantKeyword |
 | 138 | Olhos Sangrentos | Criatura | explicit | ✓ | activated | grantKeyword |

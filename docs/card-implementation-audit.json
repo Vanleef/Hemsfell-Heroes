@@ -1,14 +1,14 @@
 {
   "summary": {
-    "generatedAt": "2026-08-16T13:59:05.955Z",
+    "generatedAt": "2026-08-16T16:07:54.447Z",
     "totalCards": 306,
     "activeCards": 294,
     "ignoredCards": 12,
-    "explicitCards": 235,
-    "textParsedCards": 59,
+    "explicitCards": 237,
+    "textParsedCards": 57,
     "executableCards": 294,
     "unsupportedCards": 0,
-    "cardsWithRisks": 29,
+    "cardsWithRisks": 28,
     "confirmedFindings": []
   },
   "cards": [
@@ -3591,7 +3591,7 @@
       "targetEffects": [
         {
           "type": "damage",
-          "target": "enemyCharacter",
+          "target": "anyCharacter",
           "selections": 1,
           "requiredSubtype": null
         }
@@ -3637,7 +3637,7 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -3648,15 +3648,16 @@
         "modifyStats"
       ],
       "costTypes": [],
-      "targetEffects": [],
-      "printedText": "Sempre que você perder vida no seu turno, esta criatura recebe +1/+0.",
-      "risks": [
+      "targetEffects": [
         {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
+          "type": "modifyStats",
+          "target": "self",
+          "selections": null,
+          "requiredSubtype": null
         }
-      ]
+      ],
+      "printedText": "Sempre que você perder vida no seu turno, esta criatura recebe +1/+0.",
+      "risks": []
     },
     {
       "page": 132,
@@ -3666,16 +3667,15 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onPlay"
+        "onLifeLost"
       ],
       "effectTypes": [
-        "draw",
-        "keyword"
+        "draw"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -3777,19 +3777,10 @@
         "onEnter"
       ],
       "effectTypes": [
-        "draw",
-        "loseLife",
-        "replaceFirstAct"
+        "controllerChoice"
       ],
       "costTypes": [],
-      "targetEffects": [
-        {
-          "type": "loseLife",
-          "target": "controllerHero",
-          "selections": null,
-          "requiredSubtype": null
-        }
-      ],
+      "targetEffects": [],
       "printedText": "Primeiro Ato: Compre 1 carta. Pague 4 de vida e mude o efeito do Primeiro Ato para: Procure um vampiro de custo 4 ou mais no seu deck e coloque-o na sua mão.",
       "risks": []
     },

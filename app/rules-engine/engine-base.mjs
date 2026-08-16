@@ -1,4 +1,4 @@
-import { applyEffect, defaultEffectHandlers, RulesViolation } from "./effects.mjs";
+import { applyEffect, defaultEffectHandlers, recordLifeLoss, RulesViolation } from "./effects.mjs";
 import { hasSubtype } from "./subtypes.mjs";
 import { isValidTarget, targetPolicy, TargetScope } from "./targeting.mjs";
 import { abilitiesForLevel, getExplicitCardRule } from "./card-rules.mjs";
@@ -40,14 +40,7 @@ function payCosts(state, ability, context) {
     if (cost.type === "tap") applyEffect(state, { type: "tap" }, context);
     if (cost.type === "sacrifice") { const chosen = (context.sacrificeIds || []).map((id) => entry.board.find((unit) => unit.uid === id)).filter(Boolean); context.paidSacrificeAttack = chosen.reduce((sum, unit) => sum + effectiveAttack(state, unit, context.owner), 0); applyEffect(state, { type: "sacrifice" }, context); }
     if (cost.type === "energy") { const source = permanentUnits(entry).find((unit) => unit.uid === context.sourceId); const fromEnergy = Math.min(entry.energy, cost.amount); entry.energy -= fromEnergy; const fromReserve = source?.type !== "Criatura" ? cost.amount - fromEnergy : 0; entry.reserve -= fromReserve; }
-    if (cost.type === "life") {
-      entry.life -= cost.amount;
-      entry.lifeLostThisTurn = (entry.lifeLostThisTurn || 0) + cost.amount;
-      entry.lifeLossEvents = (entry.lifeLossEvents || 0) + 1;
-      if (entry.heroId === "saymon") entry.heroXP = (entry.heroXP || 0) + 1;
-      state.rulesEvents ||= [];
-      state.rulesEvents.push({ type: "onLifeLost", owner: context.owner, sourceOwner: context.owner, sourceId: context.sourceId, amount: cost.amount, paidAsCost: true });
-    }
+    if (cost.type === "life") recordLifeLoss(state, context.owner, cost.amount, { sourceOwner: context.owner, sourceId: context.sourceId, paidAsCost: true });
     if (cost.type === "removeMarkers") {
       const source = [...entry.board, ...entry.support].find((unit) => unit.uid === context.sourceId); let remaining = cost.amount === "X" ? context.markerAmount || 0 : cost.amount;
       if (typeof source.markers === "number") source.markers -= Math.min(source.markers, remaining); else for (const key of Object.keys(source.markers || {})) { const used = Math.min(source.markers[key], remaining); source.markers[key] -= used; remaining -= used; if (!remaining) break; }
@@ -126,6 +119,7 @@ function conditionMatches(state, source, owner, condition, event = {}) {
   if (condition.cardsPlayedBeforeThisAtLeast != null && cardsPlayedBeforeThis < condition.cardsPlayedBeforeThisAtLeast) return false;
   if (condition.cardsPlayedBeforeThisAtMost != null && cardsPlayedBeforeThis > condition.cardsPlayedBeforeThisAtMost) return false;
   if (condition.controllerTurn && state.active !== owner) return false;
+  if (condition.firstLifeLossEachTurn && Number(event.lifeLossIndex || 0) !== 1) return false;
   if (condition.controllerReserveBelow != null && entry.reserve >= condition.controllerReserveBelow) return false;
   if (condition.anyCreatureInPlay && !state.players.some((candidate) => candidate.board.length > 0)) return false;
   if (condition.eventAmountAtLeast != null && Number(event.amount || 0) < condition.eventAmountAtLeast) return false;
@@ -355,7 +349,7 @@ function replayAbilityCandidates(state, owner, effect) {
 function validateTargets(state, owner, abilities, command, source) {
   const targetIds = command.targetIds || []; const steps = abilities.flatMap(abilityTargetSteps); const minimum = steps.filter((step) => !step.optional).length;
   if (targetIds.length < minimum || targetIds.length > steps.length || new Set(targetIds).size !== targetIds.length) { if (steps.length || targetIds.length) throw new RulesViolation("invalid-target-count"); return; }
-  targetIds.forEach((id, index) => { const step = steps[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (step.requiredSubtype && (!target || !subtype(target, step.requiredSubtype))) throw new RulesViolation("invalid-target-subtype"); if (targetOwner < 0 || (!hero && !target) || !isValidTarget(step, owner, targetOwner, targetKind) || (!hero && !targetMatchesStep(state, target, id, step)) || (step.requireExhausted && (!target || !target.exhausted))) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
+  targetIds.forEach((id, index) => { const step = steps[index]; const hero = /^(?:ally|enemy|controller)-hero$|^hero-[01]$/.test(id || ""); const targetOwner = hero ? (id === "enemy-hero" ? 1 - owner : id === "ally-hero" || id === "controller-hero" ? owner : Number(id.slice(-1))) : unitOwner(state, id); const target = hero || targetOwner < 0 ? null : permanentUnits(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id); const targetKind = hero ? "hero" : target && (target.type === "Criatura" || state.players[targetOwner].board.includes(target)) ? "creature" : "permanent"; if (step.requiredSubtype && (!target || !subtype(target, step.requiredSubtype))) throw new RulesViolation("invalid-target-subtype"); if ((step.excludeIds || []).includes(id) || targetOwner < 0 || (!hero && !target) || !isValidTarget(step, owner, targetOwner, targetKind) || (!hero && !targetMatchesStep(state, target, id, step)) || (step.requireExhausted && (!target || !target.exhausted))) throw new RulesViolation("invalid-target"); const barrier = target && hasKeyword(target, /barreira m[aá]gica/i); if (barrier && !/ignora.*barreira m[aá]gica/i.test(source?.text || "")) throw new RulesViolation("magic-barrier"); });
 }
 function preflightPlay(state, command, handlers) {
   const entry = state.players[command.owner];
@@ -561,7 +555,7 @@ export function executeCommand(inputState, command, options = {}) {
         const available = accelerated && state.active !== item.command.owner ? entry.reserve : paysLife ? entry.life - (entry.heroId === "saymon" && (entry.level || 1) >= 3 ? 1 : 0) : entry.energy + (canUseReserve ? entry.reserve : 0);
         if (available < cost) throw new RulesViolation(paysLife ? "not-enough-life" : "not-enough-energy");
         for (const ability of playAbilities) payCosts(state, ability, item.command);
-        if (paysLife) { entry.life -= cost; entry.nextCreaturePaysLife = false; entry.lifeLostThisTurn = (entry.lifeLostThisTurn || 0) + cost; entry.lifeLossEvents = (entry.lifeLossEvents || 0) + 1; if (entry.heroId === "saymon") entry.heroXP = (entry.heroXP || 0) + 1; state.rulesEvents ||= []; state.rulesEvents.push({ type: "onLifeLost", owner: item.command.owner, sourceOwner: item.command.owner, sourceId: card.id, amount: cost, paidAsCost: true }); }
+        if (paysLife) { recordLifeLoss(state, item.command.owner, cost, { sourceOwner: item.command.owner, sourceId: card.id, paidAsCost: true }); entry.nextCreaturePaysLife = false; }
         else if (accelerated) { const fromReserve = Math.min(entry.reserve, cost); entry.reserve -= fromReserve; entry.energy -= cost - fromReserve; }
         else if (canUseReserve) { const fromReserve = Math.min(entry.reserve, cost); entry.reserve -= fromReserve; entry.energy -= cost - fromReserve; } else { entry.energy -= cost; }
         if (queuedDiscount) entry.nextCardDiscounts = (entry.nextCardDiscounts || []).filter((rule) => rule !== queuedDiscount); entry.hand.splice(cardIndex, 1); for (const source of permanentUnits(entry)) if (typeof source.cardsPlayedAfterSelf === "number") source.cardsPlayedAfterSelf++; entry.cardsPlayed = (entry.cardsPlayed || 0) + 1; if (state.active === item.command.owner) entry.turnCardsPlayed = (entry.turnCardsPlayed || 0) + 1; if (state.active === item.command.owner && entry.heroId === "goblin") entry.goblinTurnCardsPlayed = (entry.goblinTurnCardsPlayed || 0) + 1; entry.namedCardsPlayedThisTurn ||= {}; const playedTokens = [...new Set([card.name, ...(card.tags || [])].filter(Boolean).map((value) => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()))]; if (playedTokens.some((value) => value.includes("cafe"))) playedTokens.push("cafe"); for (const token of playedTokens) entry.namedCardsPlayedThisTurn[token] = (entry.namedCardsPlayedThisTurn[token] || 0) + 1; if (spell) { entry.spellsPlayed = (entry.spellsPlayed || 0) + 1; entry.turnSpellsPlayed = (entry.turnSpellsPlayed || 0) + 1; } const permanent = card.type !== "Feitiço" || card.abilities?.some((ability) => ability.effects?.some((effect) => effect.type === "remainUntilTurnEnd"));
@@ -604,7 +598,7 @@ export function executeCommand(inputState, command, options = {}) {
         let damageDealtByAttacker = 0;
         if (!defender) {
           damageDealtByAttacker = attack;
-          defenderPlayer.life -= attack;
+          recordLifeLoss(state, defenderOwner, attack, { sourceOwner: attackerOwner, sourceId: attacker.uid || attacker.id, damage: true });
           if (attack > 0) { attacker.damagedOwnersThisTurn ||= []; if (!attacker.damagedOwnersThisTurn.includes(defenderOwner)) attacker.damagedOwnersThisTurn.push(defenderOwner); }
           if (attack > 0 && hasKeyword(attacker, /roubo de vida/i)) attackerPlayer.life = Math.min(attackerPlayer.maxLife ?? 30, attackerPlayer.life + attack);
         } else {
@@ -634,7 +628,7 @@ export function executeCommand(inputState, command, options = {}) {
             stack.push({ kind: "event", event: { type: "onDamageTaken", owner: attackerOwner, targetId: attacker.uid, sourceOwner: defenderOwner, sourceId: defender.uid, amount: dealtByDefender } });
             stack.push({ kind: "event", event: { type: "onAttachedCreatureDamage", owner: defenderOwner, sourceId: defender.uid, source: defender, targetIds: [attacker.uid], amount: dealtByDefender } });
           }
-          if (hasKeyword(attacker, /atropelar/i) && dealtByAttacker > defenderRemaining) { const overflow = dealtByAttacker - defenderRemaining; defenderPlayer.life -= overflow; damageDealtByAttacker += overflow; }
+          if (hasKeyword(attacker, /atropelar/i) && dealtByAttacker > defenderRemaining) { const overflow = dealtByAttacker - defenderRemaining; recordLifeLoss(state, defenderOwner, overflow, { sourceOwner: attackerOwner, sourceId: attacker.uid || attacker.id, damage: true }); damageDealtByAttacker += overflow; }
         }
         const attackerSurvived = attackerPlayer.board.includes(attacker); const defenderDestroyed = !!defender && !defenderPlayer.board.includes(defender);
         if (defenderDestroyed && attackerSurvived) stack.push({ kind: "event", event: { type: "onCombatKill", owner: attackerOwner, sourceId: attacker.uid, source: attacker, card: defender } });
@@ -817,7 +811,7 @@ export function executeCommand(inputState, command, options = {}) {
 
           if (hasKeyword(attacker, /atropelar/i) && dealtByAttacker > defenderRemaining) {
             const overflow = dealtByAttacker - defenderRemaining;
-            defenderPlayer.life -= overflow;
+            recordLifeLoss(state, defenderOwner, overflow, { sourceOwner: attackerOwner, sourceId: attacker.uid || attacker.id, damage: true });
             if (overflow > 0) stack.push({ kind: "event", event: { type: "onPlayerDamaged", owner: defenderOwner, sourceOwner: attackerOwner, sourceId: attacker.uid, source: attacker, amount: overflow } });
           }
           if (defenderDestroyed && attackerSurvived) stack.push({ kind: "event", event: { type: "onCombatKill", owner: attackerOwner, sourceId: attacker.uid, source: attacker, card: defender } });

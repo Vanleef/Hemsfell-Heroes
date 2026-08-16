@@ -1887,9 +1887,7 @@
     "atk": 5,
     "hp": 3,
     "text": "Pague 2 de vida: Esta criatura recebe Veloz até o final do turno.",
-    "tags": [
-      "Veloz"
-    ],
+    "tags": [],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/138",
     "hero": false,
     "imageCard": false

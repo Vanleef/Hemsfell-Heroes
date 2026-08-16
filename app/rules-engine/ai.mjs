@@ -39,7 +39,7 @@ export function preferredAISlot(player) {
 }
 
 export function canAIPlayLifeCost(card, player) {
-  const printedLoss = Number(String(card?.text || "").match(/\bperca\s+(\d+)\s+(?:de\s+)?vida/i)?.[1] || 0);
+  const printedLoss = Number(String(card?.text || "").match(/\b(?:perca|pague)\s+(\d+)\s+(?:de\s+)?vida/i)?.[1] || 0);
   const minimum = player?.heroId === "saymon" && (player.level || 1) >= 3 ? 1 : 0;
   return !printedLoss || (player?.life || 0) - printedLoss >= minimum;
 }
@@ -189,6 +189,12 @@ export function chooseAIDecision(state, owner, difficulty = "Normal") {
   }
   if (decision.kind === "draw-position") return { ...command, choiceIndex: difficulty === "Fácil" ? Math.floor(Math.random() * 2) : 0 };
   if (decision.kind === "redirect") return { ...command, choiceIndex: 0 };
+  if (decision.kind === "choice" && effect.aiPolicy === "saymon-condutor") {
+    const minimumLife = entry.heroId === "saymon" && (entry.level || 1) >= 3 ? 1 : 0;
+    const canPay = entry.life - 4 >= minimumLife;
+    const hasVampire = (entry.deck || []).some((card) => card.type === "Criatura" && hasSubtype(card, "Vampiro") && Number(card.cost || 0) >= 4);
+    return { ...command, choiceIndex: canPay && hasVampire && difficulty !== "Fácil" ? 1 : 0 };
+  }
   if (decision.kind === "replay-ability") {
     const candidates = permanentUnits(entry).filter((card) => card.type === (effect.selector?.type || card.type) && (card.abilities || []).some((ability) => ability.trigger === effect.trigger));
     const selected = candidates.sort((a, b) => aiCardValue(b, state, owner, difficulty) - aiCardValue(a, state, owner, difficulty))[0];
@@ -238,6 +244,38 @@ export function completeAIPlayCommand(state, owner, card, difficulty = "Normal",
   return { type: "playCard", owner, cardId: card.id, instanceId: `ai-${state.round}-${card.id}-${state.events || 0}`, slot: fieldSlot, placementZone: catSupport ? "support" : undefined, attachedTo, targetIds, sacrificeIds, chosenElement, selectedImageName: imageSelection(card, entry), cafeEffect: Number(card.page) === 231 ? ((entry.life || 30) < 12 ? "heal" : "draw") : undefined, hasPriority: !!options.hasPriority };
 }
 
+function completeAIActivationCommand(state, owner, source, ability, difficulty = "Normal") {
+  const entry = state.players[owner], opponent = state.players[1 - owner];
+  if (!source || source.summoning) return null;
+  const command = { type: "activate", owner, sourceId: cardId(source), abilityId: ability.id };
+  const xCost = (ability.costs || []).find((cost) => cost.type === "removeMarkers" && String(cost.amount || "").toUpperCase() === "X");
+  if (xCost) {
+    const available = markerTotal(source), minimum = Number(xCost.minimum || 0);
+    if (available < minimum) return null;
+    if (Number(source.page) === 134) {
+      const missingLife = Math.max(0, Number(entry.maxLife ?? 30) - Number(entry.life || 0));
+      if (!missingLife) return null;
+      command.markerAmount = Math.max(minimum, Math.min(available, missingLife));
+    } else command.markerAmount = available;
+  }
+  const lifeCost = (ability.costs || []).filter((cost) => cost.type === "life").reduce((sum, cost) => sum + Number(cost.amount || 0), 0);
+  if (lifeCost) {
+    const hardFloor = entry.heroId === "saymon" && (entry.level || 1) >= 3 ? 1 : 0;
+    const after = Number(entry.life || 0) - lifeCost;
+    if (after < hardFloor) return null;
+    const tacticalFloor = difficulty === "Difícil" ? Math.max(hardFloor, 3) : Math.max(hardFloor, 6);
+    if (after < tacticalFloor) return null;
+    const keywords = [...(source.tags || []), ...(source.temporaryTags || []), ...(source.grantedKeywords || [])].map(normalized).join(' ');
+    if (Number(source.page) === 137 && (!opponent.board?.length || keywords.includes('toque da morte'))) return null;
+    if (Number(source.page) === 138 && (!opponent.board?.length || source.exhausted || keywords.includes('veloz'))) return null;
+    if (Number(source.page) === 141) {
+      const host = (entry.board || []).find((card) => cardId(card) === source.attachedTo);
+      if (!host || host.exhausted) return null;
+    }
+  }
+  return command;
+}
+
 export function buildAIActionCandidates(state, owner, difficulty = "Normal") {
   if (!state || state.winner != null) return [];
   if (state.pendingDecision) { const decision = chooseAIDecision(state, owner, difficulty); return decision ? [decision] : []; }
@@ -246,7 +284,16 @@ export function buildAIActionCandidates(state, owner, difficulty = "Normal") {
   if (state.active !== owner) return [];
   const entry = state.players[owner], candidates = [];
   if (state.phase === "principal") {
-    for (const source of permanentUnits(entry)) for (const ability of source.abilities || []) if (ability.trigger === "activated") candidates.push({ type: "activate", owner, sourceId: cardId(source), abilityId: ability.id });
+    for (const source of permanentUnits(entry)) {
+      const abilities = (source.abilities || []).filter((ability) => ability.trigger === "activated");
+      if (Number(source.page) === 134 || normalized(source.name) === "cobra dor") {
+        const ability = abilities[0];
+        const available = markerTotal(source), missingLife = Math.max(0, Number(entry.maxLife ?? 30) - Number(entry.life || 0));
+        if (ability && !source.summoning && available > 0 && missingLife > 0) candidates.push({ type: "activate", owner, sourceId: cardId(source), abilityId: ability.id, markerAmount: Math.min(available, missingLife) });
+        continue;
+      }
+      for (const ability of abilities) { const command = completeAIActivationCommand(state, owner, source, ability, difficulty); if (command) candidates.push(command); }
+    }
     const cards = [...entry.hand].sort((a, b) => aiCardValue(b, state, owner, difficulty) - aiCardValue(a, state, owner, difficulty));
     for (const card of cards) { const command = completeAIPlayCommand(state, owner, card, difficulty); if (command) candidates.push(command); }
   }

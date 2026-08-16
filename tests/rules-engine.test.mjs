@@ -126,7 +126,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 249);
+  assert.equal(explicitRuleIds.length, 251);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -312,12 +312,13 @@ test("Pacto de Sangue resolves its activation without opening a response lock", 
   assert.equal(result.players[0].board[0].modifiers.at(-1).attack, 2); assert.equal(result.pendingResponse, undefined);
 });
 
-test("Condutor de Rasnóvia replaces its First Act with a bounded Vampiro search", () => {
-  const game = state(); game.players[0].life = 20; game.players[0].deck.push({ id: "drawn" }, { id: "cheap", type: "Criatura", cost: 3, subtypes: ["Vampiro"] }, { id: "valid", type: "Criatura", cost: 4, subtypes: ["Vampiro"] });
+test("Condutor de Rasnóvia offers draw or a four-life Vampiro search", () => {
+  const game = state(); game.players[0].heroId = "saymon"; game.players[0].level = 3; game.players[0].life = 20; game.players[0].deck.push({ id: "drawn" }, { id: "cheap", type: "Criatura", cost: 3, subtypes: ["Vampiro"] }, { id: "valid", type: "Criatura", cost: 4, subtypes: ["Vampiro"] });
   game.players[0].hand.push(compileCard({ id: "p135", page: 135, name: "Condutor de Rasnóvia", type: "Criatura", cost: 0, atk: 3, hp: 3, text: "", tags: [] }));
-  const entered = executeCommand(game, { type: "playCard", owner: 0, cardId: "p135", slot: 0, skipPriority: true }).state;
-  const source = entered.players[0].board[0]; assert.equal(entered.players[0].life, 16); assert.equal(entered.players[0].hand[0].id, "drawn"); assert.equal(source.firstActReplaced, true);
-  defaultEffectHandlers.search(entered, source.abilities[0].effects[0], { owner: 0, sourceId: source.uid });
+  let entered = executeCommand(game, { type: "playCard", owner: 0, cardId: "p135", slot: 0, skipPriority: true }).state;
+  assert.equal(entered.players[0].life, 20); assert.equal(entered.pendingDecision?.kind, "choice");
+  entered = executeCommand(entered, { type: "resolveDecision", owner: 0, choiceIndex: 1 }).state;
+  assert.equal(entered.players[0].life, 16); assert.equal(entered.pendingDecision?.kind, "search");
   assert.equal(entered.pendingDecision.effect.minCost, 4); assert.equal(entered.pendingDecision.effect.subtype, "Vampiro"); assert.equal(entered.pendingDecision.effect.amount, 1);
 });
 
