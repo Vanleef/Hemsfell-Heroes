@@ -193,6 +193,7 @@ export const explicitCardRules = Object.freeze({
   p217: [ability("onDestroyed", [effect("returnSelfToField")], [], { condition: { wasOnlySubtypeInAllFields: "Gato" } })],
   p219: [ability("static", [effect("costModifier", { selector: { controller: "self", zone: "hand" }, amount: -1, firstEachTurn: true })])],
   p221: [ability("onEnter", [effect("linkDestroyCreatures", { target: "anyCreature", selections: 1 })]), ability("onPermanentLeaves", [effect("destroyLinkedCreature")])],
+  p222: [ability("onPlay", [effect("search", { zone: "deck", destination: "hand", subtype: "Gato", amount: 1, shuffle: true, reveal: true })])],
   p223: [ability("onPlay", [effect("drawIfPriorSpell", { base: 1, additional: 1 })])],
   p224: [ability("onPlay", [effect("returnToHandWithSubtypeBonus", { target: "anyCreature", selections: 1, subtype: "Gato", freeThisTurn: true })])],
   p225: [ability("onPlay", [effect("grantKeyword", { target: "anyPermanent", keyword: "Sufocado", duration: "turn" })])],
