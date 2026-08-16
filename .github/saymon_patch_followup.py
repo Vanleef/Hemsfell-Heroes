@@ -34,9 +34,9 @@ ai_path.write_text(ai)
 
 test_path = Path('tests/saymon-authoritative-regressions.test.mjs')
 test_text = test_path.read_text()
-old_assert = 'assert.equal(cobraCommand?.markerAmount, 3);'
-if old_assert in test_text:
-    test_text = test_text.replace(old_assert, 'assert.equal(cobraCommand?.markerAmount, 3, JSON.stringify({page:cobra.page,name:cobra.name,abilities:cobra.abilities,commands}));', 1)
-elif 'JSON.stringify(commands)' in test_text:
-    test_text = test_text.replace('assert.equal(cobraCommand?.markerAmount, 3, JSON.stringify(commands));', 'assert.equal(cobraCommand?.markerAmount, 3, JSON.stringify({page:cobra.page,name:cobra.name,abilities:cobra.abilities,commands}));', 1)
+test_text = must_replace(test_text,
+'const byName = (name) => compileCard(cards.find((card) => card.name === name));',
+'const normalize = (value = "") => String(value).normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();\nconst byName = (name) => compileCard(cards.find((card) => normalize(card.name) === normalize(name)));',
+'normalized test card lookup')
+test_text = test_text.replace('assert.equal(cobraCommand?.markerAmount, 3, JSON.stringify({page:cobra.page,name:cobra.name,abilities:cobra.abilities,commands}));', 'assert.equal(cobraCommand?.markerAmount, 3);')
 test_path.write_text(test_text)
