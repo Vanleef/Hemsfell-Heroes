@@ -196,6 +196,24 @@ function clearOrphanedMatchUi() {
   document.querySelectorAll(".engine-decision-backdrop,.defense-decision,.target-banner,.response-waiting,.match-reconnect-overlay,.priority-stack-indicator,.visual-effect,.deck-shuffle-effect,.combat-cinematic").forEach((node) => node.remove());
 }
 
+function passExpiredResponseWindow() {
+  const dialog = document.querySelector<HTMLElement>(".response-dialog");
+  if (!dialog) return;
+  const timerNodes = Array.from(dialog.querySelectorAll<HTMLElement>("header *, .response-timer, .response-countdown"));
+  const expired = timerNodes.some((node) => /^0s$/i.test((node.textContent || "").trim()));
+  if (!expired) {
+    delete dialog.dataset.timeoutPassDispatched;
+    return;
+  }
+  if (dialog.dataset.timeoutPassDispatched === "true") return;
+  const passButton = Array.from(dialog.querySelectorAll<HTMLButtonElement>("button")).find((button) =>
+    button.classList.contains("pass-response") || /passar prioridade/i.test(button.textContent || "")
+  );
+  if (!passButton || passButton.disabled) return;
+  dialog.dataset.timeoutPassDispatched = "true";
+  passButton.click();
+}
+
 export default function MatchUiGuard() {
   useEffect(() => {
     let wasInMatch = !!document.querySelector(".game-stage");
@@ -231,8 +249,10 @@ export default function MatchUiGuard() {
     document.addEventListener("change", onChange, true);
     const observer = new MutationObserver(scheduleSync);
     observer.observe(document.body, { childList: true, subtree: true });
+    const responseTimeoutTimer = window.setInterval(passExpiredResponseWindow, 200);
     sync();
     return () => {
+      window.clearInterval(responseTimeoutTimer);
       document.removeEventListener("change", onChange, true);
       observer.disconnect();
       delete document.body.dataset.matchActive;
