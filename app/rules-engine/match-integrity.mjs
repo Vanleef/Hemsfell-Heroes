@@ -10,6 +10,16 @@ export const isAcceleratedCard = (card) => (card?.tags || []).some((tag) => /ace
 
 const cardInHand = (state, command) => state.players?.[command.owner]?.hand?.find((card) => card.id === command.cardId || card.uid === command.cardId);
 
+const validateWeddingRingLink = (state, command, card) => {
+  if (Number(card?.page) !== 150) return;
+  const entry = state.players?.[command.owner];
+  const host = (entry?.board || []).find((unit) => (unit.uid || unit.id) === command.attachedTo);
+  const linkedId = command.targetIds?.[0];
+  const linked = (entry?.board || []).find((unit) => (unit.uid || unit.id) === linkedId);
+  if (!host) throw new RulesViolation("artifact-target-required");
+  if (!linkedId || !linked || linkedId === (host.uid || host.id)) throw new RulesViolation("wedding-ring-requires-different-allied-creature");
+};
+
 const staticCostDiscount = (state, owner, card) => permanents(state.players?.[owner]).filter((source) => !source?.suffocated).flatMap((source) => source.staticModifiers || [])
   .filter((modifier) => modifier.type === "costModifier" && (!modifier.selector?.type || modifier.selector.type === card.type) && (!modifier.during || modifier.during !== "controllerTurn" || state.active === owner) && (!modifier.firstEachTurn || !(state.players?.[owner]?.turnCardsPlayed || 0)))
   .reduce((sum, modifier) => sum + Number(modifier.amount || 0), 0);
@@ -49,6 +59,7 @@ const targetSurcharge = (state, owner, card, targetIds = []) => {
 export function priorityPlayCost(state, command) {
   const card = cardInHand(state, command);
   if (!card) throw new RulesViolation("card-not-in-hand");
+  validateWeddingRingLink(state, command, card);
   const modifier = card.costModifierExpiresRound != null && state.round >= card.costModifierExpiresRound ? 0 : Number(card.costModifier || 0);
   return Math.max(0,
     Number(card.cost || 0)
@@ -129,6 +140,9 @@ const zoneCard = (unit) => {
     delete card[key];
   return card;
 };
+const removeFromKnownZones = (state, source) => {
+  for (const entry of state.players) for (const zone of ["hand", "obscuro", "grave"]) entry[zone] = (entry[zone] || []).filter((card) => !sameRuntimeCard(card, source));
+};
 const moveAttachmentsWithHost = (entry, hostId) => {
   const attachments = (entry.support || []).filter((card) => card.attachedTo === hostId);
   entry.support = (entry.support || []).filter((card) => card.attachedTo !== hostId);
@@ -142,6 +156,7 @@ const moveLinkedCard = (state, owner, unit, destination) => {
   if (unit.generatedImage || unit.imageCard) return;
   const zone = destination?.zone === "hand" || destination?.zone === "obscuro" ? destination.zone : "grave";
   const targetOwner = destination?.owner ?? owner;
+  removeFromKnownZones(state, unit);
   state.players[targetOwner][zone].push(zoneCard(unit));
 };
 
@@ -159,7 +174,22 @@ export function propagateWeddingRingLinks(before, after) {
       const beforeA = boardCard(before, pair[0]), beforeB = boardCard(before, pair[1]);
       if (!beforeA || !beforeB) { processed.add(key); continue; }
       const afterA = boardCard(after, pair[0]), afterB = boardCard(after, pair[1]);
-      if (!!afterA === !!afterB) { if (!afterA) processed.add(key); continue; }
+      const destinationA = locateDestination(after, beforeA.card);
+      const destinationB = locateDestination(after, beforeB.card);
+
+      if (!afterA && !afterB) {
+        if (!destinationA && destinationB) moveLinkedCard(after, beforeB.owner, beforeB.card, { owner: beforeA.owner, zone: "grave" });
+        else if (!destinationB && destinationA) moveLinkedCard(after, beforeA.owner, beforeA.card, { owner: beforeB.owner, zone: "grave" });
+        else if (destinationA && destinationB && (destinationA.owner !== destinationB.owner || destinationA.zone !== destinationB.zone)) {
+          const aLooksLegacyFallback = destinationA.zone === "obscuro" && destinationB.zone !== "obscuro";
+          const destination = aLooksLegacyFallback ? destinationB : destinationA;
+          const source = aLooksLegacyFallback ? beforeA : beforeB;
+          moveLinkedCard(after, source.owner, source.card, destination);
+        }
+        processed.add(key);
+        continue;
+      }
+      if (!!afterA === !!afterB) continue;
       const departed = afterA ? beforeB : beforeA;
       const survivor = afterA || afterB;
       const destination = locateDestination(after, departed.card) || { owner: departed.owner, zone: "grave" };
