@@ -8,6 +8,7 @@ on:
       - .github/workflows/rasmus-authoritative-fix.yml
       - .github/rasmus_patch.py
       - .github/rasmus_patch_followup.py
+      - .github/rasmus_patch_counts.py
 
 permissions:
   contents: write
@@ -29,6 +30,7 @@ jobs:
         run: |
           python3 .github/rasmus_patch.py
           python3 .github/rasmus_patch_followup.py
+          python3 .github/rasmus_patch_counts.py
       - name: Install dependencies
         run: npm ci
       - name: Validate project
@@ -43,7 +45,7 @@ jobs:
         run: npm run audit:cards:full
       - name: Commit authoritative fixes and remove temporary helpers
         run: |
-          rm .github/workflows/rasmus-authoritative-fix.yml .github/rasmus_patch.py .github/rasmus_patch_followup.py
+          rm .github/workflows/rasmus-authoritative-fix.yml .github/rasmus_patch.py .github/rasmus_patch_followup.py .github/rasmus_patch_counts.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
