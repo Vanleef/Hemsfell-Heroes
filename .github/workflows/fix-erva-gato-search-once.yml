@@ -1,0 +1,33 @@
+name: Fix Erva de Gato Search Once
+
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+    paths:
+      - scripts/patch-erva-gato-search.mjs
+      - .github/workflows/fix-erva-gato-search-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - name: Apply Erva de Gato search patch
+        run: node scripts/patch-erva-gato-search.mjs
+      - name: Run focused regression
+        run: node --test tests/rasmus-catnip-regression.test.mjs
+      - name: Commit canonical fix and remove temporary patch files
+        run: |
+          rm .github/workflows/fix-erva-gato-search-once.yml scripts/patch-erva-gato-search.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/rules-engine/card-rules.mjs tests/rasmus-catnip-regression.test.mjs .github/workflows/fix-erva-gato-search-once.yml scripts/patch-erva-gato-search.mjs
+          git commit -m "fix: make Erva de Gato search the deck"
+          git push origin HEAD:fix/cards_mechanics
