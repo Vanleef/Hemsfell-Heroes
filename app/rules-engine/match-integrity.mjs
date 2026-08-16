@@ -3,6 +3,8 @@ import { RulesViolation } from "./effects.mjs";
 const clone = (value) => structuredClone(value);
 const fold = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const permanents = (player) => [...(player?.board || []), ...(player?.support || []), ...(player?.terrain ? [player.terrain] : [])];
+const subtype = (card, value) => [...(card?.subtypes || []), ...(card?.tags || [])].some((tag) => fold(tag) === fold(value));
+const unitOwner = (state, id) => state.players.findIndex((entry) => permanents(entry).some((unit) => unit.uid === id || unit.id === id));
 
 export const isAcceleratedCard = (card) => (card?.tags || []).some((tag) => /acelerado/i.test(String(tag))) || /(?:acelerado|instantâneo|instantaneo)/i.test(String(card?.text || ""));
 
@@ -14,19 +16,47 @@ const staticCostDiscount = (state, owner, card) => permanents(state.players?.[ow
 
 const queuedDiscount = (state, owner, card) => {
   const player = state.players?.[owner];
-  const candidates = player?.nextCardDiscounts || [];
-  const match = candidates.find((item) => (!item.type || item.type === card.type) && (!item.typeNot || item.typeNot !== card.type) && (item.expiresRound == null || state.round < item.expiresRound));
-  if (match) return Math.max(0, Number(match.amount || 0));
-  if (card.type === "Feitiço") return Math.max(Number(player?.nextSpellDiscount || 0), Number(player?.nextNonCreatureDiscount || 0), Number(player?.nextCardDiscount || 0));
-  if (card.type !== "Criatura") return Math.max(Number(player?.nextNonCreatureDiscount || 0), Number(player?.nextCardDiscount || 0));
-  return Math.max(0, Number(player?.nextCardDiscount || 0));
+  const match = (player?.nextCardDiscounts || []).find((rule) => (rule.expiresRound == null || state.round < rule.expiresRound) && (!rule.type || rule.type === card.type) && (!rule.typeNot || rule.typeNot !== card.type));
+  return Number(match?.amount || 0);
+};
+
+const intrinsicCost = (state, owner, card) => {
+  const entry = state.players[owner];
+  let modifier = 0;
+  if (card.page === 13 && entry.board.some((unit) => unit.page === 23)) modifier -= 2;
+  if (card.page === 14 && entry.board.some((unit) => unit.page === 24)) modifier -= 3;
+  if (card.page === 88) modifier += Math.max(0, entry.hand.length - 1) - Number(card.cost || 0);
+  if (card.page === 139) modifier += Math.max(1, Number(card.cost || 0) - Number(entry.lifeLostThisTurn || 0)) - Number(card.cost || 0);
+  if (card.page === 42 && Number(entry.turnCardsPlayed || 0) >= 1) modifier -= 1;
+  if (entry.heroId === "goblin" && Number(entry.level || 1) >= 3 && card.type === "Criatura" && subtype(card, "Goblin") && !Number(entry.subtypesEnteredThisTurn?.Goblin || 0)) modifier -= Number(card.cost || 0);
+  if (card.page === 149) modifier -= entry.board.filter((unit) => subtype(unit, "Vampiro")).length;
+  if (card.page === 203) modifier -= 2 * entry.board.length;
+  if (card.type === "Criatura") modifier += (entry.nextCreatureTaxes || [])
+    .filter((tax) => tax.createdRound == null || state.round > tax.createdRound)
+    .reduce((sum, tax) => sum + Number(tax.amount || 0), 0);
+  return modifier;
+};
+
+const targetSurcharge = (state, owner, card, targetIds = []) => {
+  if (card.type !== "Feitiço") return 0;
+  return targetIds.reduce((sum, id) => {
+    const targetOwner = unitOwner(state, id);
+    const target = targetOwner < 0 ? null : permanents(state.players[targetOwner]).find((unit) => unit.uid === id || unit.id === id);
+    return sum + Number(target?.suffocated ? 0 : target?.spellTargetSurcharge || 0);
+  }, 0);
 };
 
 export function priorityPlayCost(state, command) {
   const card = cardInHand(state, command);
   if (!card) throw new RulesViolation("card-not-in-hand");
   const modifier = card.costModifierExpiresRound != null && state.round >= card.costModifierExpiresRound ? 0 : Number(card.costModifier || 0);
-  return Math.max(0, Number(card.cost || 0) + modifier + staticCostDiscount(state, command.owner, card) - queuedDiscount(state, command.owner, card));
+  return Math.max(0,
+    Number(card.cost || 0)
+    + intrinsicCost(state, command.owner, card)
+    + targetSurcharge(state, command.owner, card, command.targetIds || [])
+    + modifier
+    + staticCostDiscount(state, command.owner, card)
+    - queuedDiscount(state, command.owner, card));
 }
 
 export function reservePriorityPayment(state, command) {
