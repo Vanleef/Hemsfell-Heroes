@@ -23,6 +23,10 @@ const createText = (tag: string, className: string, text: string) => {
   return node;
 };
 
+const setTextIfChanged = (node: HTMLElement | null, text: string) => {
+  if (node && node.textContent !== text) node.textContent = text;
+};
+
 function ensureLandingGuide() {
   const copy = document.querySelector<HTMLElement>(".landing-copy");
   if (!copy || copy.querySelector(".landing-mode-guide")) return;
@@ -54,10 +58,8 @@ function enrichDeckPicker(picker: HTMLElement) {
   const label = select?.selectedOptions?.[0]?.textContent?.trim() || "";
   const meta = deckMeta[label];
   if (!meta) return;
-  const evolution = summary.querySelector<HTMLElement>(".deck-evolution");
-  const plan = summary.querySelector<HTMLElement>(".deck-plan");
-  if (evolution) evolution.textContent = meta.evolution;
-  if (plan) plan.textContent = meta.plan;
+  setTextIfChanged(summary.querySelector<HTMLElement>(".deck-evolution"), meta.evolution);
+  setTextIfChanged(summary.querySelector<HTMLElement>(".deck-plan"), meta.plan);
 }
 
 function enhanceDeckPickers() {
@@ -117,8 +119,10 @@ export default function MatchUiGuard() {
   useEffect(() => {
     let wasInMatch = !!document.querySelector(".game-stage");
     let inspectorSeenInMatch = wasInMatch && !!document.querySelector(".inspector");
+    let syncQueued = false;
 
     const sync = () => {
+      syncQueued = false;
       const inMatch = !!document.querySelector(".game-stage");
       document.body.dataset.matchActive = inMatch ? "true" : "false";
       if (inMatch && document.querySelector(".inspector")) inspectorSeenInMatch = true;
@@ -133,11 +137,17 @@ export default function MatchUiGuard() {
       enhanceMatchResult();
     };
 
+    const scheduleSync = () => {
+      if (syncQueued) return;
+      syncQueued = true;
+      queueMicrotask(sync);
+    };
+
     const onChange = (event: Event) => {
-      if (event.target instanceof HTMLSelectElement && event.target.closest(".deck-picker")) queueMicrotask(sync);
+      if (event.target instanceof HTMLSelectElement && event.target.closest(".deck-picker")) scheduleSync();
     };
     document.addEventListener("change", onChange, true);
-    const observer = new MutationObserver(sync);
+    const observer = new MutationObserver(scheduleSync);
     observer.observe(document.body, { childList: true, subtree: true });
     sync();
     return () => {
