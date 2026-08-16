@@ -5,6 +5,7 @@ import "./command-bar-fixes.css";
 import "./match-ui-guard.css";
 import "./setup-heading-fixes.css";
 import "./response-hover-layer.css";
+import "./card-list-scrollviews.css";
 import CommandBarTextAutoFit from "./command-bar-text-autofit";
 import MatchUiGuard from "./match-ui-guard";
 
