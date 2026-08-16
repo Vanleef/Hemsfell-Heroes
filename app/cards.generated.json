@@ -3102,8 +3102,10 @@
     "name": "Café Pingado",
     "type": "Feitiço",
     "cost": 1,
-    "text": "A próxima vez que a criatura alvo receberia dano neste turno, previna 1 desse dano.",
-    "tags": [],
+    "text": "Acelerado. A próxima vez que a criatura alvo receberia dano neste turno, previna 1 desse dano.",
+    "tags": [
+      "Acelerado"
+    ],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/236",
     "hero": false,
     "imageCard": false
