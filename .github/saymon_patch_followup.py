@@ -15,7 +15,13 @@ engine_path.write_text(engine)
 
 ai_path = Path('app/rules-engine/ai.mjs')
 ai = ai_path.read_text()
-old = 'const xCost = (ability.costs || []).find((cost) => cost.type === "removeMarkers" && cost.amount === "X");'
-new = 'const xCost = (ability.costs || []).find((cost) => cost.type === "removeMarkers" && (String(cost.amount || "").toUpperCase() === "X" || Number(source.page) === 134));'
-ai = must_replace(ai, old, new, 'variable marker cost detection')
+old = '  const command = { type: "activate", owner, sourceId: cardId(source), abilityId: ability.id };\n  const xCost = (ability.costs || []).find((cost) => cost.type === "removeMarkers" && cost.amount === "X");'
+new = '''  const command = { type: "activate", owner, sourceId: cardId(source), abilityId: ability.id };
+  if (Number(source.page) === 134) {
+    const available = markerTotal(source), missingLife = Math.max(0, Number(entry.maxLife ?? 30) - Number(entry.life || 0));
+    if (available < 1 || missingLife < 1) return null;
+    command.markerAmount = Math.min(available, missingLife);
+  }
+  const xCost = (ability.costs || []).find((cost) => cost.type === "removeMarkers" && String(cost.amount || "").toUpperCase() === "X");'''
+ai = must_replace(ai, old, new, 'Cobra marker amount and variable marker cost')
 ai_path.write_text(ai)
