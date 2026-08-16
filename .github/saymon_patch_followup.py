@@ -28,3 +28,8 @@ old = '    for (const source of permanentUnits(entry)) for (const ability of sou
 new = '    for (const source of permanentUnits(entry)) for (const ability of source.abilities || []) if (ability.trigger === "activated") { const command = completeAIActivationCommand(state, owner, source, ability, difficulty); if (command) { if ((Number(source.page) === 134 || normalized(source.name) === "cobra dor") && command.markerAmount == null) { const available = markerTotal(source), missingLife = Math.max(0, Number(entry.maxLife ?? 30) - Number(entry.life || 0)); if (available > 0 && missingLife > 0) command.markerAmount = Math.min(available, missingLife); } candidates.push(command); } }'
 ai = must_replace(ai, old, new, 'Cobra candidate boundary')
 ai_path.write_text(ai)
+
+test_path = Path('tests/saymon-authoritative-regressions.test.mjs')
+test_text = test_path.read_text()
+test_text = must_replace(test_text, 'assert.equal(cobraCommand?.markerAmount, 3);', 'assert.equal(cobraCommand?.markerAmount, 3, JSON.stringify(commands));', 'Cobra diagnostic assertion')
+test_path.write_text(test_text)
