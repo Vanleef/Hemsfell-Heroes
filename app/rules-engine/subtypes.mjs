@@ -7,6 +7,7 @@ const subtypePages = Object.freeze({
   Vampiro: [130, 131, 133, 134, 135, 136, 137, 138, 139, 140],
   Recruta: [182, 183, 184, 185, 186, 187, 188, 189, 190],
   "Fênix": [82, 83],
+  Malorga: [111, 112, 113, 114, 115, 116, 117, 118, 119, 120],
 });
 
 const pageSubtypes = new Map();

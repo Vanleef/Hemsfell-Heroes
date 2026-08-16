@@ -1475,7 +1475,7 @@
     "name": "Tifon, a Peste",
     "type": "Herói",
     "cost": 0,
-    "text": "Veja suas criaturas morrer     3 criaturas→ Nível 2 para poder upar de nivel       7 criaturas→ Nível 3 Durante o seu turno, quando uma criatura sua morrer, você pode comprar 1 carta. (Max 3 por turno) I Sempre que uma criatura sua com Último II    Suspiro morrer, cause 1 de dano ao herói inimigo. Criaturas ativam seu Último Suspiro duas vezes.                                           III",
+    "text": "Veja suas criaturas morrer     3 criaturas→ Nível 2 para poder upar de nivel       7 criaturas→ Nível 3 Durante o seu turno, quando uma criatura sua morrer, compre 1 carta. (Máx. 1 por turno) I Sempre que uma criatura sua com Último II    Suspiro morrer, cause 1 de dano ao herói inimigo. Criaturas ativam seu Último Suspiro duas vezes.                                           III",
     "tags": [
       "Último Suspiro"
     ],
@@ -1633,7 +1633,7 @@
     "cost": 6,
     "atk": 4,
     "hp": 4,
-    "text": "Ao matar uma criatura inimiga, \"O Primordial\" traz de volta a campo uma criatura de custo 1 do seu cemitério. Último Suspiro: Você pode sacrificar uma outra criatura aliada para manter \"O Primordial\" em campo.",
+    "text": "Ao matar uma criatura inimiga, \"O Primordial\" traz de volta a campo uma criatura de custo 1 do seu cemitério. Último Suspiro: Você pode destruir uma outra criatura aliada para manter \"O Primordial\" em campo.",
     "tags": [
       "Último Suspiro"
     ],

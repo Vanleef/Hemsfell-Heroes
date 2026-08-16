@@ -8,7 +8,7 @@ export class RulesLoopError extends Error {
 }
 
 const INTERACTIVE_EFFECTS = new Set();
-const HERO_RULE_PAGE = Object.freeze({ gimble: 2, saymon: 129, quarion: 180, rasmus: 211, ngoro: 255, zayan: 273, natureza: 291 });
+const HERO_RULE_PAGE = Object.freeze({ gimble: 2, tifon: 110, saymon: 129, quarion: 180, rasmus: 211, ngoro: 255, zayan: 273, natureza: 291 });
 export function canExecuteCard(card, handlers = defaultEffectHandlers) {
   if (!handlers || typeof handlers !== "object") handlers = defaultEffectHandlers;
   const inspect = (effects = []) => effects.every((effect) => !!handlers[effect.type] && effect.type !== "unsupported" && !INTERACTIVE_EFFECTS.has(effect.type) && inspect(effect.effects) && (effect.branches || []).every((branch) => inspect(branch.effects)) && (effect.choices || []).every(inspect));
@@ -130,9 +130,11 @@ function conditionMatches(state, source, owner, condition, event = {}) {
     if (!candidates.some((card) => subtype(card, condition.controllerControlsOtherSubtype))) return false;
   }
   if (condition.controllerControlsSubtype && !permanentUnits(entry).some((card) => subtype(card, condition.controllerControlsSubtype))) return false;
+  if (condition.controllerGraveHasCreatureMaxCost != null && !entry.grave.some((card) => card.type === "Criatura" && (card.cost || 0) <= condition.controllerGraveHasCreatureMaxCost)) return false;
   if (condition.all && !condition.all.every((item) => conditionMatches(state, source, owner, item, event))) return false;
   const eventCard = event.card || state.players.flatMap((candidate) => [...candidate.board, ...candidate.support, ...candidate.grave]).find((card) => card.uid === event.cardId || card.id === event.cardId);
   if (condition.eventCardSubtype && !subtype(eventCard || {}, condition.eventCardSubtype)) return false;
+  if (condition.eventCardHasTrigger && !(eventCard?.abilities || []).some((ability) => ability.trigger === condition.eventCardHasTrigger)) return false;
   if (condition.eventCardKeyword) {
     const escaped = String(condition.eventCardKeyword).replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
     if (!hasKeyword(eventCard || {}, new RegExp(escaped, "i"))) return false;
@@ -420,6 +422,8 @@ function cleanupLethal(state, stack) {
       if (!unit.generatedImage && !unit.imageCard) entry.grave.push(resetCardForZone(state, unit));
       stack.push({ kind: "event", event: { type: "onPermanentLeaves", owner, sourceId: unit.uid, cardId: unit.uid, card: unit, zone: "board", destination: "grave" } });
       if (!unit.suppressDeathTrigger && !unit.generatedImage && !unit.imageCard) stack.push({ kind: "event", event: { type: "onDestroyed", owner, sourceId: unit.uid, cardId: unit.uid, card: unit, deathCause: "effect" } });
+      entry.turnDeaths = (entry.turnDeaths || 0) + 1;
+      if (entry.heroId === "tifon") entry.heroXP = (entry.heroXP || 0) + 1;
       stack.push({ kind: "event", event: { type: "onCreatureDestroyed", owner, cardId: unit.uid, card: unit, destroyedBySourceId: unit.lastDamagedBy?.sourceId, destroyedByOwner: unit.lastDamagedBy?.sourceOwner } });
     }
   });
@@ -439,7 +443,10 @@ function activeAbilities(state, event) {
       if (active) { const effects = (event.card.abilities || []).filter((ability) => ability.trigger === "onEnter").flatMap((ability) => ability.effects || []); if (effects.length) result.push({ source, owner, ability: { id: `${source.uid}-recruit-passive`, effects, replaySourceId: event.card.uid || event.card.id } }); }
     }
   });
-  if ((event.type === "onDestroyed" || event.type === "onPermanentLeaves") && event.card && !event.card.suffocated) for (const ability of event.card.abilities || []) if (ability.trigger === event.type && conditionMatches(state, event.card, event.owner, ability.condition, event) && usageAvailable(state, event.card, event.owner, ability)) result.push({ source: event.card, owner: event.owner, ability });
+  if ((event.type === "onDestroyed" || event.type === "onPermanentLeaves") && event.card && !event.card.suffocated) for (const ability of event.card.abilities || []) if (ability.trigger === event.type && conditionMatches(state, event.card, event.owner, ability.condition, event) && usageAvailable(state, event.card, event.owner, ability)) {
+    const repeats = event.type === "onDestroyed" && state.players[event.owner]?.heroId === "tifon" && (state.players[event.owner]?.level || 1) >= 3 ? 2 : 1;
+    for (let copy = 0; copy < repeats; copy++) result.push({ source: event.card, owner: event.owner, ability: copy ? { ...ability, id: `${ability.id}:tifon-copy-${copy}` } : ability });
+  }
   state.players.forEach((entry, owner) => {
       for (const source of permanentUnits(entry)) {
       if (source.suffocated) continue;
@@ -468,6 +475,10 @@ function activeAbilities(state, event) {
     if (entry.heroId === "quarion" && (entry.level || 1) >= 1 && event.type === "onFirstActResolved" && event.owner === owner) {
       const ability = { id: "quarion-level-1", trigger: "onFirstActResolved", effects: [{ type: "draw", amount: 1 }], usageLimit: { count: 1, period: "turn" } };
       if (usageAvailable(state, heroSource, owner, ability)) result.push({ source: heroSource, owner, ability });
+    }
+    if (entry.heroId === "tifon" && event.type === "onCreatureDestroyed" && event.owner === owner) {
+      const heroRule = getExplicitCardRule("p110"), heroAbilities = abilitiesForLevel(heroRule, entry.level || 1);
+      for (const ability of heroAbilities.filter((candidate) => candidate.trigger === "onCreatureDestroyed" && conditionMatches(state, heroSource, owner, candidate.condition, event) && usageAvailable(state, heroSource, owner, candidate))) result.push({ source: heroSource, owner, ability });
     }
     if (entry.heroId === "rasmus" && (entry.level || 1) >= 2 && event.type === "onPlayerDamaged" && event.sourceOwner === owner && subtype(event.source || {}, "Gato") && event.amount > 0) result.push({ source: heroSource, owner, ability: { id: "rasmus-level-2", trigger: "onPlayerDamaged", effects: [{ type: "heal", amount: 1, target: "controllerHero" }] } });
     if (entry.heroId === "rasmus" && event.type === "onSpellCast" && event.owner === owner && String(event.card?.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().includes("cafe")) result.push({ source: heroSource, owner, ability: { id: "rasmus-level-1", trigger: "onSpellCast", effects: [{ type: "addMarker", target: "hero", marker: "coffee", amount: 1 }, { type: "threshold", marker: "coffee", amount: 10, reset: true, effects: [{ type: "createImage", name: "Café Especial", destination: "hand" }] }] } });
@@ -940,7 +951,7 @@ export function executeCommand(inputState, command, options = {}) {
     }
   }
   if (command.type === "advancePhase" && originalPhase === "fim" && state.phase === "manutencao") {
-    const entry = state.players[state.active]; entry.lifeLostThisTurn = 0; entry.lifeLossEvents = 0; entry.cardsDrawnThisTurn = 0; entry.cardsMilledThisTurn = 0; entry.namedCardsPlayedThisTurn = {}; if (entry.heroId === "saymon") entry.heroXP = 0;
+    const entry = state.players[state.active]; state.players.forEach((playerEntry) => { playerEntry.turnDeaths = 0; }); entry.lifeLostThisTurn = 0; entry.lifeLossEvents = 0; entry.cardsDrawnThisTurn = 0; entry.cardsMilledThisTurn = 0; entry.namedCardsPlayedThisTurn = {}; if (entry.heroId === "saymon") entry.heroXP = 0;
   }
   state.events = (state.events || 0) + 1; state.log ||= []; state.log.unshift({ id: `rules-${state.round}-${state.events}`, text: command.type === "playCard" ? `${actionLabel} foi jogada pelo motor de regras.` : command.type === "activate" ? `${actionLabel} ativou sua habilidade.` : `${actionLabel}: ${command.type}.`, tone: "effect" });
   if (["playCard"].includes(command.type)) if (!command.skipPriority && state.pendingAction && command.hasPriority) state.pendingResponse = { responder: state.pendingAction.actor, actor: command.owner, action: actionLabel, passes: 0 }; else if (!command.skipPriority && !state.pendingAction) state.pendingResponse = command.hasPriority ? null : { responder: 1 - command.owner, actor: command.owner, action: actionLabel, passes: 0 };
