@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   test-and-build:
-    name: Rules, card audit and Next.js build
+    name: Rules, lint, types, card audit and Next.js build
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -45,6 +45,12 @@ jobs:
 
       - name: Run rules tests
         run: npm run test:rules
+
+      - name: Lint application
+        run: npm run lint
+
+      - name: Typecheck application
+        run: npx tsc --noEmit
 
       - name: Export full card implementation audit
         run: npm run audit:cards:full
