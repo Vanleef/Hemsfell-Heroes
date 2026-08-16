@@ -1,16 +1,82 @@
-/* Response window hover layering.
-   The hovered response card and its tooltip must render above sibling cards. */
-.response-cards {
-  position: relative;
-  overflow: visible !important;
-  isolation: isolate;
+/* Response window hover layering + responsive card fitting.
+   Response cards must always stay inside their panel while the hovered card/tooltip
+   may temporarily paint above siblings. */
+.response-window,
+.response-panel,
+.response-options {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
+.response-cards {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-start;
+  justify-content: center;
+  gap: clamp(.2rem, .6cqw, .55rem) !important;
+  padding-inline: clamp(.2rem, .7cqw, .6rem);
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  container-type: inline-size;
+}
+
+/* Every response option shares the available width instead of keeping a fixed
+   card width. The slot itself never exceeds the panel. */
 .response-cards > * {
   position: relative;
   z-index: 1;
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  max-width: clamp(4.25rem, 16cqw, 7.75rem) !important;
+  box-sizing: border-box;
 }
 
+/* Let the visual card follow its responsive slot. These selectors intentionally
+   cover the card wrappers used by the response UI without changing tooltips. */
+.response-cards > * > button,
+.response-cards > * > .card,
+.response-cards > * .lab-card,
+.response-cards > * .game-card,
+.response-cards > * .card-shell,
+.response-cards > * .card-frame {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box;
+}
+
+.response-cards > * img:not(.card-tooltip img) {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* Reduce the maximum slot size as the strip gets tighter. */
+@container (max-width: 44rem) {
+  .response-cards > * {
+    max-width: clamp(3.9rem, 15cqw, 6.6rem) !important;
+  }
+}
+
+@container (max-width: 32rem) {
+  .response-cards {
+    gap: clamp(.12rem, .4cqw, .3rem) !important;
+    padding-inline: .15rem;
+  }
+
+  .response-cards > * {
+    max-width: clamp(3.35rem, 14cqw, 5.4rem) !important;
+  }
+}
+
+/* Hover/focus may paint above siblings, but does not reclaim layout space. */
 .response-cards > *:hover,
 .response-cards > *:focus-within {
   z-index: 120 !important;
@@ -22,7 +88,8 @@
   z-index: 140 !important;
 }
 
-/* Do not let the response strip clip an enlarged/hovered card or its tooltip. */
+/* Keep vertical painting available for enlarged hover/tooltip while horizontal
+   layout remains strictly constrained to the response panel. */
 .response-window,
 .response-panel,
 .response-options,
