@@ -126,7 +126,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 254);
+  assert.equal(explicitRuleIds.length, 255);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -505,7 +505,7 @@ test("Quarion Recruit terrains are passive and do not request play targets", () 
   for (const id of ["p181", "p182"]) {
     const card = compileCard({ id, page: Number(id.slice(1)), type: id === "p181" ? "Terreno" : "Criatura", cost: 1, text: "" });
     assert.equal(canExecuteCard(card), true);
-    assert.deepEqual(card.abilities.flatMap((ability) => ability.effects).map((effect) => effect.type), [id === "p181" ? "recruitFirstActOnLeave" : "doubleRecruitFirstAct"]);
+    assert.deepEqual(card.abilities.flatMap((ability) => ability.effects).map((effect) => effect.type), [id === "p181" ? "recruitFirstActOnLeave" : "doubleRecruitEffects"]);
   }
 });
 
@@ -568,7 +568,7 @@ test("Saideira skips a targeted First Act when no valid target remains", () => {
 test("First Act duplicators skip the extra instance when it has no valid target", () => {
   const game = state();
   const recruit = { uid: "recruit", id: "recruit", name: "Recruta de Teste", type: "Criatura", slot: 1, subtypes: ["Recruta"], tags: ["Primeiro Ato"], abilities: [{ id: "enemy-etb", trigger: "onEnter", costs: [], effects: [{ type: "damage", amount: 2, target: "enemyCreature", selections: 1 }] }] };
-  game.players[0].board.push({ uid: "chief", slot: 0, staticModifiers: [{ type: "doubleRecruitFirstAct" }], abilities: [] }, recruit);
+  game.players[0].board.push({ uid: "chief", slot: 0, staticModifiers: [{ type: "doubleRecruitEffects" }], abilities: [] }, recruit);
   const result = executeCommand(game, { type: "emit", event: { type: "onCreatureEnter", owner: 0, sourceId: "recruit", card: recruit } }).state;
   assert.equal(result.pendingDecision, undefined);
   assert.equal(result.players[1].board.length, 0);
@@ -599,7 +599,7 @@ test("Nada se cria rejects play when no First Act can currently resolve", () => 
 test("Chefe da Guarda adds exactly one First Act instance for entering Recruits", () => {
   const game = state();
   game.players[0].life = 20;
-  game.players[0].board.push({ uid: "chief", slot: 0, staticModifiers: [{ type: "doubleRecruitFirstAct" }], abilities: [] });
+  game.players[0].board.push({ uid: "chief", id: "p182", page: 182, name: "Chefe da Guarda", type: "Criatura", slot: 0, subtypes: [], staticModifiers: [{ type: "doubleRecruitEffects" }], abilities: [] });
   game.players[0].hand.push(compileCard({ id: "p189", page: 189, name: "Recruta Pinguço", type: "Criatura", cost: 0, text: "", tags: ["Primeiro Ato"], subtypes: ["Recruta"] }));
   const result = executeCommand(game, { type: "playCard", owner: 0, cardId: "p189", slot: 1 }).state;
   assert.equal(result.players[0].life, 24);
@@ -976,7 +976,7 @@ test("migration coverage is explicit and simple cards use the command engine", a
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 306); assert.equal(pending.length, 0);
+  assert.equal(migrated.length, 298); assert.equal(pending.length, 0);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
@@ -984,7 +984,7 @@ test("the complete generated catalog has full classified coverage", async () => 
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
   const report = auditCards(cards);
   const errors = report.issues.filter((issue) => issue.severity === "error");
-  assert.equal(report.cards, 306);
+  assert.equal(report.cards, 298);
   assert.deepEqual(errors, []);
   assert.equal(report.unsupported, 0);
   assert.equal(report.coverage, 1);
@@ -1341,9 +1341,9 @@ test("Brutamontes may decline every sacrifice and stays at base attack", () => {
   const pending=executeCommand(game,{type:"playCard",owner:0,cardId:"p117",instanceId:"brute",slot:1}).state; const resolved=executeCommand(pending,{type:"resolveDecision",owner:0,targetIds:[]}).state; assert.equal(resolved.players[0].board.find(card=>card.uid==="brute").modifiers.length,0);
 });
 
-test("Caneca da Sorte grants one modifier and Magic Barrier to Recruta Pinguço", () => {
+test("Caneca da Sorte grants its modifier and spell-damage immunity without Magic Barrier", () => {
   const game=state(); game.players[0].board.push({uid:"pinguco",id:"p189",page:189,name:"Recruta Pinguço",type:"Criatura",slot:0,atk:2,hp:2,tags:[],modifiers:[],abilities:[]}); game.players[0].hand.push(compileCard({id:"p192",page:192,name:"Caneca da Sorte",type:"Artefato",cost:0,text:"",tags:[]}));
-  const result=executeCommand(game,{type:"playCard",owner:0,cardId:"p192",instanceId:"mug",slot:0,attachedTo:"pinguco"}).state; const host=result.players[0].board[0]; assert.equal(host.modifiers.length,1); assert.deepEqual([host.modifiers[0].attack,host.modifiers[0].health],[2,-1]); assert.ok(host.grantedKeywords.some(value=>/barreira mágica/i.test(value)));
+  const result=executeCommand(game,{type:"playCard",owner:0,cardId:"p192",instanceId:"mug",slot:0,attachedTo:"pinguco"}).state; const host=result.players[0].board[0], mug=result.players[0].support.find(card=>card.uid==="mug"); assert.equal(host.modifiers.length,1); assert.deepEqual([host.modifiers[0].attack,host.modifiers[0].health],[2,-1]); assert.equal((host.grantedKeywords||[]).some(value=>/barreira mágica/i.test(value)),false); assert.ok(mug.staticModifiers.some(value=>value.type==="attachedSpellDamageImmunity"));
 });
 
 test("zero vitality from a modifier sends a reset card to grave", () => {

@@ -436,21 +436,32 @@ function resetCardForZone(state, card) {
 
 function activeAbilities(state, event) {
   const result = [];
-  if (["onDestroyed", "onPermanentLeaves", "onCreatureEnter"].includes(event.type) && event.card && subtype(event.card, "Recruta")) state.players.forEach((entry, owner) => {
-    for (const source of permanentUnits(entry)) {
-      const modifiers = source.staticModifiers || [];
-      const active = event.owner === owner && (((event.type === "onDestroyed" || event.type === "onPermanentLeaves") && modifiers.some((modifier) => modifier.type === "recruitFirstActOnLeave")) || (event.type === "onCreatureEnter" && event.sourceId !== source.uid && modifiers.some((modifier) => modifier.type === "doubleRecruitFirstAct")));
-      if (active) { const effects = (event.card.abilities || []).filter((ability) => ability.trigger === "onEnter").flatMap((ability) => ability.effects || []); if (effects.length) result.push({ source, owner, ability: { id: `${source.uid}-recruit-passive`, effects, replaySourceId: event.card.uid || event.card.id } }); }
-    }
+  if (event.type === "onCreatureEnter" && event.card && subtype(event.card, "Recruta")) state.players.forEach((entry, owner) => {
+    if (event.owner !== owner) return;
+    const chief = permanentUnits(entry).find((source) => source.page === 182 && !source.suffocated && (source.staticModifiers || []).some((modifier) => modifier.type === "doubleRecruitEffects"));
+    if (!chief || event.sourceId === chief.uid) return;
+    const effects = (event.card.abilities || []).filter((ability) => ability.trigger === "onEnter").flatMap((ability) => ability.effects || []);
+    if (effects.length) result.push({ source: chief, owner, ability: { id: `${chief.uid}-recruit-enter-copy`, effects, replaySourceId: event.card.uid || event.card.id } });
+  });
+  if ((event.type === "onDestroyed" || event.type === "onPermanentLeaves") && event.card && subtype(event.card, "Recruta")) state.players.forEach((entry, owner) => {
+    if (event.owner !== owner) return;
+    const saideiras = permanentUnits(entry).filter((source) => !source.suffocated && (source.staticModifiers || []).some((modifier) => modifier.type === "recruitFirstActOnLeave"));
+    if (!saideiras.length) return;
+    const effects = (event.card.abilities || []).filter((ability) => ability.trigger === "onEnter").flatMap((ability) => ability.effects || []);
+    if (!effects.length) return;
+    const chiefCopies = permanentUnits(entry).some((source) => source.page === 182 && !source.suffocated && (source.staticModifiers || []).some((modifier) => modifier.type === "doubleRecruitEffects")) ? 2 : 1;
+    for (const source of saideiras) for (let copy = 0; copy < chiefCopies; copy++) result.push({ source, owner, ability: { id: `${source.uid}-recruit-leave-${copy}`, effects, replaySourceId: event.card.uid || event.card.id } });
   });
   if ((event.type === "onDestroyed" || event.type === "onPermanentLeaves") && event.card && !event.card.suffocated) for (const ability of event.card.abilities || []) if (ability.trigger === event.type && conditionMatches(state, event.card, event.owner, ability.condition, event) && usageAvailable(state, event.card, event.owner, ability)) {
-    const repeats = event.type === "onDestroyed" && state.players[event.owner]?.heroId === "tifon" && (state.players[event.owner]?.level || 1) >= 3 ? 2 : 1;
-    for (let copy = 0; copy < repeats; copy++) result.push({ source: event.card, owner: event.owner, ability: copy ? { ...ability, id: `${ability.id}:tifon-copy-${copy}` } : ability });
+    const tifonCopies = event.type === "onDestroyed" && state.players[event.owner]?.heroId === "tifon" && (state.players[event.owner]?.level || 1) >= 3 ? 2 : 1;
+    const chiefCopies = subtype(event.card, "Recruta") && permanentUnits(state.players[event.owner]).some((source) => source.page === 182 && !source.suffocated && (source.staticModifiers || []).some((modifier) => modifier.type === "doubleRecruitEffects")) ? 2 : 1;
+    const repeats = tifonCopies * chiefCopies;
+    for (let copy = 0; copy < repeats; copy++) result.push({ source: event.card, owner: event.owner, ability: copy ? { ...ability, id: `${ability.id}:repeat-${copy}` } : ability });
   }
   state.players.forEach((entry, owner) => {
       for (const source of permanentUnits(entry)) {
       if (source.suffocated) continue;
-      for (const ability of source.abilities || []) if (!(source.page === 165 && event.type === "onDamageTaken" && ability.trigger === "onDamageTaken") && ability.trigger === event.type && eventAppliesToSource(event, source, owner) && conditionMatches(state, source, owner, ability.condition, event) && usageAvailable(state, source, owner, ability)) result.push({ source, owner, ability });
+      for (const ability of source.abilities || []) if (!(source.page === 165 && event.type === "onDamageTaken" && ability.trigger === "onDamageTaken") && ability.trigger === event.type && eventAppliesToSource(event, source, owner) && conditionMatches(state, source, owner, ability.condition, event) && usageAvailable(state, source, owner, ability)) { const copies = subtype(source, "Recruta") && permanentUnits(entry).some((chief) => chief.page === 182 && !chief.suffocated && (chief.staticModifiers || []).some((modifier) => modifier.type === "doubleRecruitEffects")) ? 2 : 1; for (let copy = 0; copy < copies; copy++) result.push({ source, owner, ability: copy ? { ...ability, id: `${ability.id}:chief-copy-${copy}` } : ability }); }
     }
   });
   state.players.forEach((entry, owner) => {
@@ -676,7 +687,7 @@ export function executeCommand(inputState, command, options = {}) {
            only the final self-destruction effect is placed at the end. */
         const selfDestruction = ability.effects.filter((effect) => effect.type === "destroy" && ["self", "this", "thisArtifact", "thisEnchantment"].includes(effect.target));
         const otherEffects = ability.effects.filter((effect) => !selfDestruction.includes(effect));
-        [...otherEffects, ...selfDestruction].reverse().forEach((effect) => stack.push({ kind: "effect", effect, context: item.command }));
+        const recruitCopies = subtype(source, "Recruta") && permanentUnits(entry).some((chief) => chief.page === 182 && !chief.suffocated && (chief.staticModifiers || []).some((modifier) => modifier.type === "doubleRecruitEffects")) ? 2 : 1; const repeatedEffects = Array.from({ length: recruitCopies }, () => otherEffects).flat(); [...repeatedEffects, ...selfDestruction].reverse().forEach((effect) => stack.push({ kind: "effect", effect, context: item.command }));
         if ((item.command.targetIds || []).length) { stack.push({ kind: "event", event: { type: "onTargetedByOpponent", owner: item.command.owner, sourceId: source.uid, source, targetIds: item.command.targetIds } }); stack.push({ kind: "event", event: { type: "onAttachedCreatureTargeted", owner: item.command.owner, sourceId: source.uid, source, targetIds: item.command.targetIds } }); }
       } else if (item.command.type === "resolveDecision") {
         const decision = state.pendingDecision; if (!decision || (decision.owner !== item.command.owner && decision.context?.decisionOwner !== item.command.owner)) throw new RulesViolation("decision-not-owned");

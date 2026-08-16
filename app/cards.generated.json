@@ -2642,7 +2642,7 @@
     "name": "Caneca da Sorte",
     "type": "Artefato",
     "cost": 2,
-    "text": "A criatura equipada recebe +2/-1. Se equipada no “Recruta Pinguço”, ele agora se chama “Pinguço Sortudo” e não sofre dano de feitiços.",
+    "text": "A criatura equipada recebe +2/-1. Se equipada no “Recruta Pinguço”, ele agora se chama “Pinguço Sortudo” e todo dano causado a ele por Feitiços é reduzido a 0.",
     "tags": [],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/192",
     "hero": false,
@@ -2741,32 +2741,6 @@
     "imageCard": false
   },
   {
-    "page": 200,
-    "id": "p200",
-    "name": "Torneio dos Campeões",
-    "type": "Terreno",
-    "cost": 5,
-    "text": "Enquanto esta estiver em campo, campeões também participam do combate e podem realizar ou defender ataques. Heróis tem Ofensividade equivalente ao seu nível. Se a vida do seu herói chegar a 0, a partida se encerra e você perde.",
-    "tags": [],
-    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/200",
-    "hero": false,
-    "imageCard": false
-  },
-  {
-    "page": 201,
-    "id": "p201",
-    "name": "Escudeiro Fiél",
-    "type": "Criatura",
-    "cost": 1,
-    "atk": 1,
-    "hp": 1,
-    "text": "Você pode redirecionar o dano que seria dado a uma de suas criaturas para qualquer \"Escudeiro Fiél\" no seu campo.",
-    "tags": [],
-    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/201",
-    "hero": false,
-    "imageCard": false
-  },
-  {
     "page": 202,
     "id": "p202",
     "name": "Juramento Solene",
@@ -2775,44 +2749,6 @@
     "text": "Recupere 2 pontos de vida para cada criatura virada em campo.",
     "tags": [],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/202",
-    "hero": false,
-    "imageCard": false
-  },
-  {
-    "page": 203,
-    "id": "p203",
-    "name": "Recrutas ao Resgate!",
-    "type": "Feitiço",
-    "cost": 10,
-    "text": "Você pode sacrificar qualquer número de criaturas que controla. Em seguida, este feitiço irá custar 2 a menos para cada espaço de criatura preenchido no seu campo. Procure no seu deck por criaturas “Recruta” e coloque-as em campo até preencher todos os seus espaços de criatura disponíveis. Depois, embaralhe seu deck.",
-    "tags": [],
-    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/203",
-    "hero": false,
-    "imageCard": false
-  },
-  {
-    "page": 204,
-    "id": "p204",
-    "name": "Circulo de Proteção Divina",
-    "type": "Terreno",
-    "cost": 5,
-    "text": "Suas criaturas viradas tem barreira mágica.",
-    "tags": [
-      "Barreira Mágica"
-    ],
-    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/204",
-    "hero": false,
-    "imageCard": false
-  },
-  {
-    "page": 205,
-    "id": "p205",
-    "name": "Escudo Vingativo",
-    "type": "Artefato",
-    "cost": 2,
-    "text": "Criatura equipada ganha +0/+2 e “Quando esta criatura sair do campo, destrua uma criatura virada do oponente.”",
-    "tags": [],
-    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/205",
     "hero": false,
     "imageCard": false
   },
@@ -2831,18 +2767,6 @@
     "imageCard": false
   },
   {
-    "page": 207,
-    "id": "p207",
-    "name": "Dízimo",
-    "type": "Feitiço",
-    "cost": 3,
-    "text": "Quando um de seus oponentes utilizar uma carta, da mão dele, que tenha como alvo uma das constantes dele, redirecione esse alvo para uma de suas criaturas.",
-    "tags": [],
-    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/207",
-    "hero": false,
-    "imageCard": false
-  },
-  {
     "page": 208,
     "id": "p208",
     "name": "O Informante",
@@ -2857,36 +2781,6 @@
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/208",
     "hero": false,
     "imageCard": false
-  },
-  {
-    "page": 209,
-    "id": "p209",
-    "name": "A Dama de Ferro",
-    "type": "Feitiço",
-    "cost": 6,
-    "text": "Envie para o cemitério todos os feitiços e feitiços acelerados da sua mão e deck. Em seguida, embaralhe seu deck. Coloque 1 imagem de “Tessália, a Mão de Ferro” no seu campo. Você só pode conjurar “A Dama de Ferro” uma vez por partida.",
-    "tags": [
-      "Acelerado"
-    ],
-    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/209",
-    "hero": false,
-    "imageCard": false
-  },
-  {
-    "page": 210,
-    "id": "p210",
-    "name": "Tessália, a Mão de Ferro",
-    "type": "Criatura",
-    "cost": 0,
-    "atk": 8,
-    "hp": 8,
-    "text": "Sempre que “Tessália, a Mão de Ferro” for alvo de qualquer efeito, feitiço ou feitiço acelerado do oponente, escolha um: Anule o efeito. Cause 4 de dano a vida do oponente.",
-    "tags": [
-      "Acelerado"
-    ],
-    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/210",
-    "hero": false,
-    "imageCard": true
   },
   {
     "page": 211,
