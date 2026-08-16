@@ -1,0 +1,11 @@
+name: Quarion smoke
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo ok
