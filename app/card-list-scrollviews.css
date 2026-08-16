@@ -33,7 +33,7 @@
   align-items: flex-start !important;
   justify-content: flex-start !important;
   gap: clamp(.45rem, 1cqw, .85rem) !important;
-  padding: clamp(.45rem, 1cqh, .8rem) clamp(.5rem, 1cqw, .9rem) clamp(.75rem, 1.4cqh, 1rem) !important;
+  padding: clamp(.55rem, 1.2cqh, .9rem) clamp(.5rem, 1cqw, .9rem) clamp(1rem, 2.2cqh, 1.35rem) !important;
   overflow: auto !important;
   overscroll-behavior: contain;
   scroll-snap-type: x proximity;
@@ -51,8 +51,23 @@
   width: clamp(6rem, 11cqw, 8.5rem) !important;
   min-width: clamp(6rem, 11cqw, 8.5rem) !important;
   max-width: clamp(6rem, 11cqw, 8.5rem) !important;
+  min-height: max-content !important;
   box-sizing: border-box !important;
   scroll-snap-align: center;
+  overflow: visible !important;
+  padding-bottom: clamp(.2rem, .5cqh, .4rem) !important;
+}
+
+/* OriginalCard nameplates sit on/below the lower edge of the art. Give them
+   breathing room so names such as Café are never clipped by a choice tile. */
+.screen-game .visual-card-choice .original-card,
+.screen-game .card-choice-grid .original-card,
+.screen-game .card-selection-grid .original-card,
+.screen-game .selection-card-grid .original-card,
+.screen-game .popup-card-list .original-card,
+.screen-game .choice-cards .original-card {
+  overflow: visible !important;
+  margin-bottom: clamp(.38rem, .9cqh, .68rem) !important;
 }
 
 .screen-game .visual-card-choice-grid > .visual-card-choice :is(img, canvas, .remote-card-art),
