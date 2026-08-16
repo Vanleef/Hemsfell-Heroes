@@ -214,6 +214,51 @@ function passExpiredResponseWindow() {
   passButton.click();
 }
 
+function layoutTargetBannerInSafeLane() {
+  const board = document.querySelector<HTMLElement>(".screen-game .game-content.hs-board");
+  const banner = board?.querySelector<HTMLElement>(":scope > .target-banner");
+  if (!board || !banner) return;
+
+  const boardRect = board.getBoundingClientRect();
+  if (!boardRect.width || !boardRect.height) return;
+
+  const commandBars = Array.from(board.querySelectorAll<HTMLElement>(":scope > .hero-command-bar"))
+    .filter((node) => node.getClientRects().length > 0)
+    .map((node) => node.getBoundingClientRect());
+  const creatureSlots = Array.from(board.querySelectorAll<HTMLElement>(".paired-field .creature-slot"))
+    .filter((node) => node.getClientRects().length > 0)
+    .map((node) => node.getBoundingClientRect());
+  const terrains = Array.from(board.querySelectorAll<HTMLElement>(":scope > .terrain-slot"))
+    .filter((node) => node.getClientRects().length > 0)
+    .map((node) => node.getBoundingClientRect())
+    .sort((a, b) => a.top - b.top);
+
+  if (!commandBars.length || !creatureSlots.length || terrains.length < 2) return;
+
+  // Horizontal safe lane: begins immediately after the command bars and ends
+  // at the outer edge of the creature-space group. Because this lives in the
+  // center row, it never covers the creature cards themselves.
+  const leftPx = Math.max(...commandBars.map((rect) => rect.right));
+  const rightPx = Math.max(...creatureSlots.map((rect) => rect.right));
+
+  // Vertical safe lane: exactly the free interval between both Cruel Terrains.
+  const topPx = terrains[0].bottom;
+  const bottomPx = terrains[terrains.length - 1].top;
+
+  const clampPct = (value: number) => Math.max(0, Math.min(100, value));
+  const left = clampPct(((leftPx - boardRect.left) / boardRect.width) * 100);
+  const right = clampPct(((rightPx - boardRect.left) / boardRect.width) * 100);
+  const top = clampPct(((topPx - boardRect.top) / boardRect.height) * 100);
+  const bottom = clampPct(((bottomPx - boardRect.top) / boardRect.height) * 100);
+
+  if (right <= left || bottom <= top) return;
+  banner.style.setProperty("--target-safe-left", left.toFixed(3) + "%");
+  banner.style.setProperty("--target-safe-right", right.toFixed(3) + "%");
+  banner.style.setProperty("--target-safe-top", top.toFixed(3) + "%");
+  banner.style.setProperty("--target-safe-bottom", bottom.toFixed(3) + "%");
+  banner.dataset.safeLaneMeasured = "true";
+}
+
 export default function MatchUiGuard() {
   useEffect(() => {
     let wasInMatch = !!document.querySelector(".game-stage");
@@ -235,6 +280,7 @@ export default function MatchUiGuard() {
       enhanceDeckPickers();
       enhanceHeroInspector();
       enhanceMatchResult();
+      layoutTargetBannerInSafeLane();
     };
 
     const scheduleSync = () => {
@@ -247,6 +293,7 @@ export default function MatchUiGuard() {
       if (event.target instanceof HTMLSelectElement && event.target.closest(".deck-picker")) scheduleSync();
     };
     document.addEventListener("change", onChange, true);
+    window.addEventListener("resize", scheduleSync);
     const observer = new MutationObserver(scheduleSync);
     observer.observe(document.body, { childList: true, subtree: true });
     const responseTimeoutTimer = window.setInterval(passExpiredResponseWindow, 200);
@@ -254,6 +301,7 @@ export default function MatchUiGuard() {
     return () => {
       window.clearInterval(responseTimeoutTimer);
       document.removeEventListener("change", onChange, true);
+      window.removeEventListener("resize", scheduleSync);
       observer.disconnect();
       delete document.body.dataset.matchActive;
     };

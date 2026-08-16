@@ -969,3 +969,41 @@
 .screen-game .hero-command-bar .hero-ability-chip>span>b{font-size:clamp(.235rem,3.35cqi,.385rem)!important}
 .screen-game .hero-command-bar .hero-ability-chip.copy-compact p{font-size:clamp(.245rem,3.35cqi,.415rem)!important}
 .screen-game .hero-command-bar .hero-ability-chip.copy-dense p{font-size:clamp(.225rem,2.95cqi,.37rem)!important}
+
+
+/* Targeting banner: exact responsive safe lane between command bars / creature
+   spaces horizontally and both Cruel Terrains vertically. Geometry is measured
+   from the rendered board and exposed as relative percentages by MatchUiGuard. */
+.screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
+  position: absolute !important;
+  left: var(--target-safe-left) !important;
+  right: auto !important;
+  top: var(--target-safe-top) !important;
+  bottom: auto !important;
+  width: calc(var(--target-safe-right) - var(--target-safe-left)) !important;
+  height: calc(var(--target-safe-bottom) - var(--target-safe-top)) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  margin: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  gap: clamp(.3rem,.65cqw,.6rem) !important;
+  padding: clamp(.24rem,.5cqh,.42rem) clamp(.42rem,.72cqw,.68rem) !important;
+  overflow: visible !important;
+  z-index: 760 !important;
+}
+.screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] > :is(b,span) {
+  min-width: 0 !important;
+  margin: 0 !important;
+  align-self: center !important;
+}
+.screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] > button {
+  justify-self: end !important;
+  align-self: center !important;
+  margin: 0 !important;
+}
