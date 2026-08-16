@@ -1,7 +1,9 @@
 import { executeCommand as executeBase } from "./engine-base.mjs";
 import { RulesViolation } from "./effects.mjs";
+import { propagateWeddingRingLinks, reservePriorityPayment, restorePriorityPayment } from "./match-integrity.mjs";
 
 export * from "./engine-base.mjs";
+export { propagateWeddingRingLinks, priorityPlayCost } from "./match-integrity.mjs";
 
 const clone = (value) => structuredClone(value);
 const fold = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
@@ -113,10 +115,30 @@ const postProcess = (before, after, command) => {
   consumeElementalPromise(before, after, command);
   expireElementalPromises(before, after, command);
   recordCombatDamage(after, snapshot);
+  propagateWeddingRingLinks(before, after);
 };
 const stackResult = (state, trace = [], steps = 0) => ({ state, trace, steps });
 
-export function executeCommand(inputState, command, options = {}) {
+const restoreCommandPayment = (inputState, inputCommand) => {
+  if (!inputCommand?.__priorityPayment) return { state: inputState, command: inputCommand };
+  const state = restorePriorityPayment(inputState, inputCommand.__priorityPayment, inputCommand.owner);
+  const command = { ...inputCommand };
+  delete command.__priorityPayment;
+  return { state, command };
+};
+const restoreRootPaymentBeforeResolution = (inputState, command) => {
+  const payment = inputState.pendingAction?.__priorityPayment;
+  if (command?.type !== "passPriority" || !payment || (inputState.pendingResponse?.passes || 0) < 1) return inputState;
+  const state = restorePriorityPayment(inputState, payment, inputState.pendingAction.owner);
+  state.pendingAction = { ...state.pendingAction };
+  delete state.pendingAction.__priorityPayment;
+  return state;
+};
+
+export function executeCommand(rawInputState, rawCommand, options = {}) {
+  const restored = restoreCommandPayment(rawInputState, rawCommand);
+  let inputState = restoreRootPaymentBeforeResolution(restored.state, restored.command);
+  let command = restored.command;
   const priorityEnabled = !!options.priority;
 
   if (priorityEnabled && command.type === "playCard" && command.hasPriority && !command.skipPriority && inputState.pendingResponse) {
@@ -128,10 +150,12 @@ export function executeCommand(inputState, command, options = {}) {
     const root = existingStack.length ? null : rootPriorityFrame(inputState);
     if (!existingStack.length && !root) throw new RulesViolation("nothing-to-respond-to");
     const state = clone(inputState);
+    const payment = reservePriorityPayment(state, command);
+    const paidCommand = { ...command, __priorityPayment: payment };
     state.priorityStack = existingStack.length ? clone(existingStack) : [root];
-    state.priorityStack.push(commandFrame(inputState, command));
-    state.pendingResponse = { responder: 1 - command.owner, actor: command.owner, action: card.name || command.cardId, passes: 0 };
-    return stackResult(state, ["priority:push-accelerated"], 0);
+    state.priorityStack.push(commandFrame(inputState, paidCommand));
+    state.pendingResponse = { responder: 1 - command.owner, actor: command.owner, action: card.name || command.cardId, passes: 0, reservedCost: payment.cost };
+    return stackResult(state, ["priority:push-accelerated", "priority:cost-paid"], 0);
   }
 
   if (priorityEnabled && command.type === "activateHero" && command.hasPriority && !command.skipPriority && inputState.pendingResponse) {
@@ -191,6 +215,12 @@ export function executeCommand(inputState, command, options = {}) {
   const before = clone(inputState);
   const pendingBefore = command.type === "passPriority" && before.pendingAction ? clone(before.pendingAction) : null;
   const result = executeBase(inputState, command, options);
+  if (priorityEnabled && command.type === "playCard" && !command.skipPriority && !command.hasPriority && result.state.pendingAction?.type === "playCard" && result.state.pendingAction.cardId === command.cardId && !result.state.pendingAction.__priorityPayment) {
+    const payment = reservePriorityPayment(result.state, command);
+    result.state.pendingAction.__priorityPayment = payment;
+    if (result.state.pendingResponse) result.state.pendingResponse = { ...result.state.pendingResponse, reservedCost: payment.cost };
+    result.trace = [...(result.trace || []), "priority:cost-paid-before-window"];
+  }
   postProcess(before, result.state, command);
   if (pendingBefore?.type === "playCard" && !result.state.pendingAction) postProcess(before, result.state, { ...pendingBefore, skipPriority: true });
   return result;
