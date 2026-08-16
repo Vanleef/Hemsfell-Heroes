@@ -47,7 +47,7 @@ jobs:
         run: npm run test:rules
 
       - name: Lint changed application surfaces
-        run: npx eslint app/layout.tsx app/match-ui-guard.tsx app/rules-engine/engine.mjs app/rules-engine/match-integrity.mjs tests/priority-wedding-ring-regressions.test.mjs
+        run: npx eslint app/layout.tsx app/match-ui-guard.tsx app/hero-faction-normalizer.tsx app/rules-engine/engine.mjs app/rules-engine/match-integrity.mjs tests/priority-wedding-ring-regressions.test.mjs
 
       - name: Report repository-wide legacy lint debt
         continue-on-error: true
