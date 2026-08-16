@@ -17,19 +17,22 @@ ai_path = Path('app/rules-engine/ai.mjs')
 ai = ai_path.read_text()
 old = '  const command = { type: "activate", owner, sourceId: cardId(source), abilityId: ability.id };\n  const xCost = (ability.costs || []).find((cost) => cost.type === "removeMarkers" && cost.amount === "X");'
 new = '''  const command = { type: "activate", owner, sourceId: cardId(source), abilityId: ability.id };
-  if (Number(source.page) === 134 || normalized(source.name) === "cobra dor") {
-    const available = markerTotal(source), missingLife = Math.max(0, Number(entry.maxLife ?? 30) - Number(entry.life || 0));
-    if (available < 1 || missingLife < 1) return null;
-    command.markerAmount = Math.min(available, missingLife);
-  }
   const xCost = (ability.costs || []).find((cost) => cost.type === "removeMarkers" && String(cost.amount || "").toUpperCase() === "X");'''
-ai = must_replace(ai, old, new, 'Cobra marker amount and variable marker cost')
+ai = must_replace(ai, old, new, 'variable marker cost normalization')
 old = '    for (const source of permanentUnits(entry)) for (const ability of source.abilities || []) if (ability.trigger === "activated") { const command = completeAIActivationCommand(state, owner, source, ability, difficulty); if (command) candidates.push(command); }'
-new = '    for (const source of permanentUnits(entry)) for (const ability of source.abilities || []) if (ability.trigger === "activated") { const command = completeAIActivationCommand(state, owner, source, ability, difficulty); if (command) { if ((Number(source.page) === 134 || normalized(source.name) === "cobra dor") && command.markerAmount == null) { const available = markerTotal(source), missingLife = Math.max(0, Number(entry.maxLife ?? 30) - Number(entry.life || 0)); if (available > 0 && missingLife > 0) command.markerAmount = Math.min(available, missingLife); } candidates.push(command); } }'
-ai = must_replace(ai, old, new, 'Cobra candidate boundary')
+new = '''    for (const source of permanentUnits(entry)) for (const ability of source.abilities || []) if (ability.trigger === "activated") {
+      if (Number(source.page) === 134 || normalized(source.name) === "cobra dor") {
+        const available = markerTotal(source), missingLife = Math.max(0, Number(entry.maxLife ?? 30) - Number(entry.life || 0));
+        if (!source.summoning && available > 0 && missingLife > 0) candidates.push({ type: "activate", owner, sourceId: cardId(source), abilityId: ability.id, markerAmount: Math.min(available, missingLife) });
+        continue;
+      }
+      const command = completeAIActivationCommand(state, owner, source, ability, difficulty);
+      if (command) candidates.push(command);
+    }'''
+ai = must_replace(ai, old, new, 'Cobra direct activation candidate')
 ai_path.write_text(ai)
 
 test_path = Path('tests/saymon-authoritative-regressions.test.mjs')
 test_text = test_path.read_text()
-test_text = must_replace(test_text, 'assert.equal(cobraCommand?.markerAmount, 3);', 'assert.equal(cobraCommand?.markerAmount, 3, JSON.stringify(commands));', 'Cobra diagnostic assertion')
+test_text = must_replace(test_text, 'assert.equal(cobraCommand?.markerAmount, 3);', 'assert.equal(cobraCommand?.markerAmount, 3);', 'restore Cobra assertion') if 'assert.equal(cobraCommand?.markerAmount, 3);' in test_text else test_text.replace('assert.equal(cobraCommand?.markerAmount, 3, JSON.stringify(commands));', 'assert.equal(cobraCommand?.markerAmount, 3);')
 test_path.write_text(test_text)
