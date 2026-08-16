@@ -4,6 +4,7 @@ on:
     branches: [fix/cards_mechanics]
     paths:
       - '.github/tifon_authoritative_patch.py'
+      - '.github/tifon_followup.py'
       - '.github/workflows/tifon-authoritative-fix.yml'
 permissions:
   contents: write
@@ -20,7 +21,9 @@ jobs:
           node-version: '22.13.0'
           cache: npm
       - name: Apply Tifon patch
-        run: python .github/tifon_authoritative_patch.py
+        run: |
+          python .github/tifon_authoritative_patch.py
+          python .github/tifon_followup.py
       - name: Restore executable build helpers
         run: find scripts -maxdepth 1 -type f -name '*.sh' -exec chmod +x {} +
       - name: Install dependencies
@@ -36,7 +39,7 @@ jobs:
       - name: Commit fixes and remove temporary helpers
         shell: bash
         run: |
-          rm -f .github/tifon_authoritative_patch.py .github/workflows/tifon-authoritative-fix.yml
+          rm -f .github/tifon_authoritative_patch.py .github/tifon_followup.py .github/workflows/tifon-authoritative-fix.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
