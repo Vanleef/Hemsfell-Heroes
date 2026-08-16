@@ -2,18 +2,27 @@
 
 import { useEffect } from "react";
 
-const deckMeta: Record<string, { evolution: string; plan: string }> = {
-  "Gimble, Presenteado Sortudo": { evolution: "Evolui ao estabelecer 2 e depois 4 Dragões.", plan: "Faça Dragões crescerem, recicle valor quando eles saem do campo e domine a mesa no jogo longo." },
-  "Sr. Goblin, o Mercador": { evolution: "Evolui ao jogar 3 e depois 5 cartas no mesmo turno.", plan: "Encadeie cartas baratas, Fura-Fila e Goblins para transformar volume em compra e tempo." },
-  "Uruk, a Encantriz": { evolution: "Evolui após conjurar 4 e depois 8 feitiços.", plan: "Alterne elementos, prepare efeitos adicionais e converta sequências de feitiços em controle." },
-  "Tifon, a Peste": { evolution: "Evolui após 3 e depois 7 mortes de criaturas.", plan: "Use Último Suspiro e sacrifícios para transformar perdas planejadas em vantagem inevitável." },
-  "Saymon, o Primeiro": { evolution: "Evolui após 3 e depois 5 eventos de perda de vida.", plan: "Trate a própria vida como recurso, estabilizando a partida com Vampiros e Roubo de Vida." },
-  "Tessália, a Mão de Ferro": { evolution: "Evolui após 3 e depois 6 ataques.", plan: "Construa uma formação em torno do Comandante e pressione o combate com proteção e substituições." },
-  "Quarion Siannodel": { evolution: "Evolui após resolver 2 e depois 4 nomes diferentes de Primeiro Ato.", plan: "Extraia valor de entradas em campo, recupere criaturas e reutilize seus melhores Primeiros Atos." },
-  "Rasmus, Barista do Tempo": { evolution: "Evolui ao desenvolver 5 e depois 7 Gatos.", plan: "Acumule Cafés, espalhe Gatos e converta presença de mesa em cura e utilidade flexível." },
-  "Ngoro, o Investigador": { evolution: "Evolui ao alcançar 5 e depois 10 Pistas.", plan: "Investigue decks, gere Pistas e gaste informação para comprar, triturar ou preparar ataques furtivos." },
-  "Zayan, a Revolucionária": { evolution: "Evolui ao sustentar 3 e depois 4 constantes sem efeito.", plan: "Valorize criaturas simples com bônus de combate, substituições e Investida." },
-  "Campeão de Natureza": { evolution: "Evolui ao distribuir 10 e depois 20 marcadores de ação.", plan: "Espalhe marcadores entre constantes e converta essa economia em controle de mesa." },
+type HeroMeta = {
+  faction: "Natureza" | "Caos" | "Divino" | "Ordem" | "Neutro";
+  color: string;
+  style: string;
+  evolution: string;
+  plan: string;
+  abilities: Array<{ level: "I" | "II" | "III"; type: "Ativa" | "Passiva"; text: string }>;
+};
+
+const heroMeta: Record<string, HeroMeta> = {
+  "Gimble, Presenteado Sortudo": { faction: "Natureza", color: "#2d9a58", style: "Dragões · crescimento", evolution: "Reúna 2 Dragões para o nível 2 e 4 Dragões para o nível 3.", plan: "Faça Dragões crescerem, recicle valor quando eles saem do campo e domine a mesa no jogo longo.", abilities: [{ level: "I", type: "Passiva", text: "Quando um Dragão deixa o campo, cure 1." }, { level: "II", type: "Ativa", text: "Uma vez por turno, desvire um Dragão aliado." }, { level: "III", type: "Passiva", text: "Na manutenção, seus Dragões recebem +1/+1." }] },
+  "Sr. Goblin, o Mercador": { faction: "Caos", color: "#8d45ce", style: "Goblin · Fura-Fila", evolution: "Jogue 3 cartas no mesmo turno para o nível 2 e 5 cartas para o nível 3.", plan: "Encadeie cartas baratas, Fura-Fila e Goblins para transformar volume em compra e tempo.", abilities: [{ level: "I", type: "Passiva", text: "Ao perder um Goblin, compre 1 carta, uma vez por turno." }, { level: "II", type: "Passiva", text: "Compre 1 carta adicional na manutenção." }, { level: "III", type: "Passiva", text: "O primeiro Goblin do turno custa 0." }] },
+  "Uruk, a Encantriz": { faction: "Divino", color: "#378ed0", style: "Elementos · feitiços", evolution: "Conjure 4 feitiços para o nível 2 e 8 feitiços para o nível 3.", plan: "Alterne elementos, prepare efeitos adicionais e converta sequências de feitiços em controle.", abilities: [{ level: "I", type: "Passiva", text: "No fim do turno, ative o elemento do último feitiço conjurado." }, { level: "II", type: "Passiva", text: "Seu primeiro feitiço custa 1 a menos." }, { level: "III", type: "Passiva", text: "No fim do turno, repita o último feitiço se ainda houver uma resolução válida." }] },
+  "Tifon, a Peste": { faction: "Neutro", color: "#777d86", style: "Último Suspiro", evolution: "Registre 3 mortes de criaturas para o nível 2 e 7 mortes para o nível 3.", plan: "Use Último Suspiro e sacrifícios para transformar perdas planejadas em vantagem inevitável.", abilities: [{ level: "I", type: "Passiva", text: "Quando uma criatura sua morrer, compre 1 carta, até o limite indicado pelo efeito." }, { level: "II", type: "Passiva", text: "Último Suspiro aliado causa 1 de dano ao herói inimigo." }, { level: "III", type: "Passiva", text: "Seus Últimos Suspiros são ativados duas vezes." }] },
+  "Saymon, o Primeiro": { faction: "Neutro", color: "#777d86", style: "Vampiros · Roubo de Vida", evolution: "Perca vida em 3 eventos para o nível 2 e em 5 eventos para o nível 3.", plan: "Trate a própria vida como recurso, estabilizando a partida com Vampiros e Roubo de Vida.", abilities: [{ level: "I", type: "Ativa", text: "Pague 2 de vida para causar 1 de dano a um alvo válido, uma vez por turno." }, { level: "II", type: "Ativa", text: "Pague 2 de vida para dar Roubo de Vida permanente a uma criatura aliada, exceto o próprio Saymon." }, { level: "III", type: "Passiva", text: "Custos de vida não podem reduzir sua vida abaixo de 1." }] },
+  "Tessália, a Mão de Ferro": { faction: "Ordem", color: "#d54a45", style: "Comandante · formação", evolution: "Ataque 3 vezes para o nível 2 e 6 vezes para o nível 3.", plan: "Construa uma formação em torno do Comandante e pressione o combate com proteção e substituições.", abilities: [{ level: "I", type: "Passiva", text: "Seu Comandante recebe +2 de Ofensividade e, sem ele, as outras criaturas não podem atacar." }, { level: "II", type: "Passiva", text: "Seu Comandante recebe Atropelar e o bônus adicional indicado." }, { level: "III", type: "Passiva", text: "Uma vez por turno, outra criatura pode ser destruída no lugar do Comandante." }] },
+  "Quarion Siannodel": { faction: "Ordem", color: "#c84642", style: "Primeiro Ato · valor", evolution: "Resolva 2 nomes diferentes de Primeiro Ato para o nível 2 e 4 nomes para o nível 3.", plan: "Extraia valor de entradas em campo, recupere criaturas e reutilize seus melhores Primeiros Atos.", abilities: [{ level: "I", type: "Passiva", text: "Ao ativar Primeiro Ato, compre 1 carta, uma vez por turno." }, { level: "II", type: "Passiva", text: "A primeira criatura que morrer no seu turno volta à mão." }, { level: "III", type: "Passiva", text: "O primeiro Primeiro Ato do turno é ativado novamente." }] },
+  "Rasmus, Barista do Tempo": { faction: "Divino", color: "#378ed0", style: "Gatos · Café", evolution: "Tenha 5 Gatos em jogo para o nível 2 e 7 Gatos para o nível 3.", plan: "Acumule Cafés, espalhe Gatos e converta presença de mesa em cura e utilidade flexível.", abilities: [{ level: "I", type: "Passiva", text: "Após utilizar 10 efeitos com Café no nome, crie uma Imagem de Café Especial em sua mão." }, { level: "II", type: "Passiva", text: "Sempre que um Gato causar dano à vida de um jogador, cure 1 de vida." }, { level: "III", type: "Passiva", text: "Criaturas do tipo Gato podem entrar em espaços de Criatura e de Não Criatura; em espaço de Não Criatura, não podem receber Artefato." }] },
+  "Ngoro, o Investigador": { faction: "Caos", color: "#7949b5", style: "Investigar · Triturar", evolution: "Alcance 5 Pistas para o nível 2 e 10 Pistas para o nível 3.", plan: "Investigue decks, gere Pistas e gaste informação para comprar, triturar ou preparar ataques furtivos.", abilities: [{ level: "I", type: "Passiva", text: "Ao Investigar, ganhe 1 Pista; no início, Investigue 1." }, { level: "II", type: "Ativa", text: "Gaste 2 Pistas para escolher entre comprar 1 carta ou triturar 2 cartas." }, { level: "III", type: "Ativa", text: "Gaste 3 Pistas para dar Furtivo a uma criatura aliada." }] },
+  "Zayan, a Revolucionária": { faction: "Ordem", color: "#cf4c45", style: "Criaturas sem efeito", evolution: "Mantenha 3 constantes sem efeito para o nível 2 e 4 constantes para o nível 3.", plan: "Valorize criaturas simples com bônus de combate, substituições e Investida.", abilities: [{ level: "I", type: "Passiva", text: "No combate, uma criatura sem efeito recebe +1/+1." }, { level: "II", type: "Passiva", text: "Outra criatura pode ser destruída no lugar de uma criatura sem efeito." }, { level: "III", type: "Passiva", text: "Criaturas sem efeito recebem Investida." }] },
+  "Campeão de Natureza": { faction: "Natureza", color: "#289455", style: "Marcadores de ação", evolution: "Distribua 10 marcadores de ação para o nível 2 e 20 marcadores para o nível 3.", plan: "Espalhe marcadores entre constantes e converta essa economia em controle de mesa.", abilities: [{ level: "I", type: "Ativa", text: "Uma vez por turno, dê 2 marcadores a até duas constantes aliadas." }, { level: "II", type: "Passiva", text: "Ao colocar marcadores, coloque um marcador adicional." }, { level: "III", type: "Ativa", text: "Remova 4 marcadores para virar uma criatura alvo." }] },
 };
 
 const createText = (tag: string, className: string, text: string) => {
@@ -47,23 +56,95 @@ function ensureLandingGuide() {
 }
 
 function enrichDeckPicker(picker: HTMLElement) {
+  const select = picker.querySelector<HTMLSelectElement>("select");
+  const label = select?.selectedOptions?.[0]?.textContent?.trim() || "";
+  const meta = heroMeta[label];
+  if (!meta) return;
+  picker.style.setProperty("--deck", meta.color);
+  picker.style.setProperty("--faction-color", meta.color);
+  picker.dataset.faction = meta.faction;
+
+  const faction = picker.querySelector<HTMLElement>(":scope > b");
+  const legacyStyle = picker.querySelector<HTMLElement>(":scope > small");
+  if (faction) {
+    faction.classList.add("deck-picker-faction");
+    setTextIfChanged(faction, meta.faction);
+  }
+  if (legacyStyle) legacyStyle.hidden = true;
+
   let summary = picker.querySelector<HTMLElement>(".deck-picker-summary");
   if (!summary) {
     summary = document.createElement("div");
     summary.className = "deck-picker-summary";
-    summary.append(createText("strong", "deck-evolution", ""), createText("p", "deck-plan", ""));
+    summary.append(createText("p", "deck-plan", ""));
     picker.append(summary);
   }
-  const select = picker.querySelector<HTMLSelectElement>("select");
-  const label = select?.selectedOptions?.[0]?.textContent?.trim() || "";
-  const meta = deckMeta[label];
-  if (!meta) return;
-  setTextIfChanged(summary.querySelector<HTMLElement>(".deck-evolution"), meta.evolution);
+  summary.querySelector(".deck-evolution")?.remove();
   setTextIfChanged(summary.querySelector<HTMLElement>(".deck-plan"), meta.plan);
 }
 
 function enhanceDeckPickers() {
   document.querySelectorAll<HTMLElement>(".deck-picker").forEach(enrichDeckPicker);
+}
+
+function findHeroInspectorMeta(inspector: HTMLElement) {
+  const heading = Array.from(inspector.querySelectorAll<HTMLElement>("h1,h2,h3")).find((node) => heroMeta[node.textContent?.trim() || ""]);
+  if (!heading) return null;
+  const name = heading.textContent?.trim() || "";
+  return { heading, name, meta: heroMeta[name] };
+}
+
+function hideLegacyHeroInspectorSections(container: HTMLElement) {
+  for (const node of Array.from(container.querySelectorAll<HTMLElement>("section,div"))) {
+    const ownLabel = Array.from(node.children).find((child) => /^(EFEITO COMPLETO|PALAVRAS-CHAVE)$/i.test(child.textContent?.trim() || ""));
+    if (ownLabel) node.classList.add("hero-inspector-legacy-section");
+  }
+}
+
+function enhanceHeroInspector() {
+  const inspector = document.querySelector<HTMLElement>(".inspector");
+  if (!inspector) return;
+  const found = findHeroInspectorMeta(inspector);
+  if (!found) {
+    inspector.classList.remove("hero-inspector-modern");
+    inspector.querySelector(".hero-inspector-guide")?.remove();
+    inspector.querySelectorAll(".hero-inspector-legacy-section").forEach((node) => node.classList.remove("hero-inspector-legacy-section"));
+    return;
+  }
+  const { heading, name, meta } = found;
+  inspector.classList.add("hero-inspector-modern");
+  inspector.style.setProperty("--hero-faction", meta.color);
+  const details = heading.parentElement;
+  if (!details) return;
+  hideLegacyHeroInspectorSections(details);
+
+  let guide = details.querySelector<HTMLElement>(".hero-inspector-guide");
+  if (guide?.dataset.hero === name) return;
+  guide?.remove();
+  guide = document.createElement("div");
+  guide.className = "hero-inspector-guide";
+  guide.dataset.hero = name;
+
+  const identity = document.createElement("section");
+  identity.className = "hero-guide-identity";
+  identity.append(createText("small", "", "IDENTIDADE"), createText("strong", "hero-guide-faction", meta.faction), createText("span", "", meta.style), createText("p", "", meta.plan));
+
+  const evolution = document.createElement("section");
+  evolution.className = "hero-guide-evolution";
+  evolution.append(createText("small", "", "EVOLUÇÃO"), createText("p", "", meta.evolution));
+
+  const abilities = document.createElement("section");
+  abilities.className = "hero-guide-abilities";
+  abilities.append(createText("small", "", "HABILIDADES POR NÍVEL"));
+  const list = document.createElement("div");
+  for (const ability of meta.abilities) {
+    const row = document.createElement("article");
+    row.append(createText("i", "", ability.level), createText("b", ability.type === "Ativa" ? "is-active" : "is-passive", ability.type.toUpperCase()), createText("p", "", ability.text));
+    list.append(row);
+  }
+  abilities.append(list);
+  guide.append(identity, evolution, abilities);
+  details.append(guide);
 }
 
 function enhanceMatchResult() {
@@ -134,6 +215,7 @@ export default function MatchUiGuard() {
       wasInMatch = inMatch;
       ensureLandingGuide();
       enhanceDeckPickers();
+      enhanceHeroInspector();
       enhanceMatchResult();
     };
 
