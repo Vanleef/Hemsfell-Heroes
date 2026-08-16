@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { executeCommand, propagateWeddingRingLinks } from "../app/rules-engine/engine.mjs";
+import { executeCommand, priorityPlayCost, propagateWeddingRingLinks } from "../app/rules-engine/engine.mjs";
 import { legalPriorityResponses } from "../app/rules-engine/priority.mjs";
 
 const player = () => ({
@@ -73,6 +73,13 @@ test("the original card cost is paid before the response window is exposed", () 
   assert.equal(resolved.players[0].board.some((candidate) => candidate.id === "root-creature"), true);
 });
 
+test("reserved response cost mirrors intrinsic rules-engine discounts", () => {
+  const game = state();
+  game.players[0].turnCardsPlayed = 1;
+  game.players[0].hand.push(card("combo-discount", "Carta com desconto intrínseco", "Feitiço", 2, { page: 42 }));
+  assert.equal(priorityPlayCost(game, { type: "playCard", owner: 0, cardId: "combo-discount" }), 1);
+});
+
 test("an accelerated response pays its reserve before giving priority away", () => {
   const game = state();
   game.players[1].reserve = 3;
@@ -85,6 +92,20 @@ test("an accelerated response pays its reserve before giving priority away", () 
   assert.equal(stacked.players[1].reserve, 1);
   assert.equal(stacked.players[1].energy, 5, "off-turn accelerated cards do not consume main energy");
   assert.equal(stacked.pendingResponse.responder, 0);
+});
+
+test("Anel de Casamento only accepts a different allied second creature", () => {
+  const game = state();
+  const first = unit("first", "Primeira", 500);
+  const ally = { ...unit("ally", "Aliada", 501), slot: 1 };
+  const enemy = unit("enemy", "Inimiga", 502);
+  game.players[0].board.push(first, ally);
+  game.players[1].board.push(enemy);
+  game.players[0].hand.push(card("ring", "Anel de Casamento", "Artefato", 1, { page: 150 }));
+
+  assert.equal(priorityPlayCost(game, { type: "playCard", owner: 0, cardId: "ring", attachedTo: "first", targetIds: ["ally"] }), 1);
+  assert.throws(() => priorityPlayCost(game, { type: "playCard", owner: 0, cardId: "ring", attachedTo: "first", targetIds: ["first"] }), /wedding-ring-requires-different-allied-creature/);
+  assert.throws(() => priorityPlayCost(game, { type: "playCard", owner: 0, cardId: "ring", attachedTo: "first", targetIds: ["enemy"] }), /wedding-ring-requires-different-allied-creature/);
 });
 
 test("Anel de Casamento follows a linked creature to the same known destination", () => {
@@ -117,5 +138,22 @@ test("Anel de Casamento falls back to the graveyard when the destination is ambi
 
   propagateWeddingRingLinks(before, after);
   assert.equal(after.players[0].board.some((candidate) => candidate.uid === "second"), false);
+  assert.equal(after.players[0].grave.some((candidate) => candidate.name === "Segunda"), true);
+});
+
+test("Anel de Casamento corrects the legacy obscuro fallback to graveyard", () => {
+  const before = state();
+  const first = unit("first", "Primeira", 500);
+  const second = { ...unit("second", "Segunda", 501), slot: 1 };
+  before.players[0].board.push(first, second);
+  before.players[0].support.push({ ...card("ring", "Anel de Casamento", "Artefato", 1, { page: 150 }), uid: "ring-1", slot: 0, attachedTo: "first", linkedCreatures: ["first", "second"], exhausted: false, summoning: false, markers: 0 });
+
+  const after = structuredClone(before);
+  after.players[0].board = [];
+  after.players[0].support = [];
+  after.players[0].obscuro.push({ id: second.id, page: second.page, name: second.name, type: second.type, cost: second.cost, text: second.text, tags: second.tags, abilities: second.abilities, atk: second.atk, hp: second.hp });
+
+  propagateWeddingRingLinks(before, after);
+  assert.equal(after.players[0].obscuro.some((candidate) => candidate.name === "Segunda"), false);
   assert.equal(after.players[0].grave.some((candidate) => candidate.name === "Segunda"), true);
 });
