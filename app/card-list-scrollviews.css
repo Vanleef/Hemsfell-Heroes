@@ -1,0 +1,102 @@
+/* Canonical scrollviews for card lists shown inside modal/decision surfaces.
+   Lists keep cards readable; overflow belongs to the list, never to the popup. */
+
+.screen-game .engine-decision-panel,
+.screen-game .overlay > .maintenance,
+.screen-game .popup,
+.screen-game .modal,
+.screen-game .choice-modal {
+  min-width: 0;
+  max-width: min(94vw, 72rem);
+  max-height: min(88dvh, 46rem);
+  box-sizing: border-box;
+}
+
+/* Engine decision card lists (target selection, investigate and similar choices). */
+.screen-game .engine-decision-panel .visual-card-choice-grid,
+.screen-game .overlay .visual-card-choice-grid,
+.screen-game .popup .visual-card-choice-grid,
+.screen-game .modal .visual-card-choice-grid,
+.screen-game .choice-modal .visual-card-choice-grid,
+.screen-game .card-choice-grid,
+.screen-game .card-selection-grid,
+.screen-game .selection-card-grid,
+.screen-game .popup-card-list,
+.screen-game .choice-cards {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  max-height: min(58dvh, 32rem) !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: clamp(.45rem, 1cqw, .85rem) !important;
+  padding: clamp(.45rem, 1cqh, .8rem) clamp(.5rem, 1cqw, .9rem) clamp(.75rem, 1.4cqh, 1rem) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-gutter: stable both-edges;
+  -webkit-overflow-scrolling: touch;
+}
+
+.screen-game .visual-card-choice-grid > .visual-card-choice,
+.screen-game .card-choice-grid > *,
+.screen-game .card-selection-grid > *,
+.screen-game .selection-card-grid > *,
+.screen-game .popup-card-list > *,
+.screen-game .choice-cards > * {
+  flex: 0 0 clamp(6rem, 11cqw, 8.5rem) !important;
+  width: clamp(6rem, 11cqw, 8.5rem) !important;
+  min-width: clamp(6rem, 11cqw, 8.5rem) !important;
+  max-width: clamp(6rem, 11cqw, 8.5rem) !important;
+  box-sizing: border-box !important;
+  scroll-snap-align: center;
+}
+
+.screen-game .visual-card-choice-grid > .visual-card-choice :is(img, canvas, .remote-card-art),
+.screen-game .card-choice-grid > * :is(img, canvas, .remote-card-art),
+.screen-game .card-selection-grid > * :is(img, canvas, .remote-card-art),
+.screen-game .selection-card-grid > * :is(img, canvas, .remote-card-art),
+.screen-game .popup-card-list > * :is(img, canvas, .remote-card-art),
+.screen-game .choice-cards > * :is(img, canvas, .remote-card-art) {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* A popup owns its frame; its card list owns scrolling. */
+.screen-game .engine-decision-panel:has(.visual-card-choice-grid),
+.screen-game .overlay > .maintenance:has(.visual-card-choice-grid),
+.screen-game .popup:has(.visual-card-choice-grid),
+.screen-game .modal:has(.visual-card-choice-grid),
+.screen-game .choice-modal:has(.visual-card-choice-grid) {
+  overflow: hidden !important;
+}
+
+@media (max-width: 52rem), (max-height: 42rem) {
+  .screen-game .engine-decision-panel .visual-card-choice-grid,
+  .screen-game .overlay .visual-card-choice-grid,
+  .screen-game .popup .visual-card-choice-grid,
+  .screen-game .modal .visual-card-choice-grid,
+  .screen-game .choice-modal .visual-card-choice-grid,
+  .screen-game .card-choice-grid,
+  .screen-game .card-selection-grid,
+  .screen-game .selection-card-grid,
+  .screen-game .popup-card-list,
+  .screen-game .choice-cards {
+    max-height: min(52dvh, 26rem) !important;
+  }
+
+  .screen-game .visual-card-choice-grid > .visual-card-choice,
+  .screen-game .card-choice-grid > *,
+  .screen-game .card-selection-grid > *,
+  .screen-game .selection-card-grid > *,
+  .screen-game .popup-card-list > *,
+  .screen-game .choice-cards > * {
+    flex-basis: clamp(5.2rem, 17vw, 7rem) !important;
+    width: clamp(5.2rem, 17vw, 7rem) !important;
+    min-width: clamp(5.2rem, 17vw, 7rem) !important;
+    max-width: clamp(5.2rem, 17vw, 7rem) !important;
+  }
+}
