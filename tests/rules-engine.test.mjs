@@ -126,7 +126,7 @@ test("headless simulations are deterministic and bounded", () => {
 });
 
 test("all clarified clauses are represented by explicit card records", () => {
-  assert.equal(explicitRuleIds.length, 248);
+  assert.equal(explicitRuleIds.length, 249);
   assert.ok(Array.isArray(explicitCardRules.p120));
   assert.equal(explicitCardRules.p120.length, 2);
   assert.deepEqual(["p84", "p85", "p93", "p99", "p101", "p178", "p207"].filter((id) => !explicitCardRules[id]?.ignored), []);
@@ -975,7 +975,7 @@ test("migration coverage is explicit and simple cards use the command engine", a
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 308); assert.equal(pending.length, 0);
+  assert.equal(migrated.length, 306); assert.equal(pending.length, 0);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
@@ -983,7 +983,7 @@ test("the complete generated catalog has full classified coverage", async () => 
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
   const report = auditCards(cards);
   const errors = report.issues.filter((issue) => issue.severity === "error");
-  assert.equal(report.cards, 308);
+  assert.equal(report.cards, 306);
   assert.deepEqual(errors, []);
   assert.equal(report.unsupported, 0);
   assert.equal(report.coverage, 1);

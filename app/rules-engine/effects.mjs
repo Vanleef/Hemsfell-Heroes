@@ -121,7 +121,7 @@ const cleanCardForHiddenZone = (card, metadata = {}) => {
     "temporaryAtk", "temporaryHp", "temporaryTags", "temporarySubtypes", "combatRestrictions", "damageShields",
     "attachedTo", "linkedCreatures", "lastDamagedBy", "damagedOwnersThisTurn", "killedByRepeatSourceId",
     "costModifier", "costModifierExpires", "costModifierExpiresRound", "cardsPlayedAfterSelf", "targetClass", "selected",
-    "effectAppliedRound", "effectAppliedSourceId", "staysExhaustedUntilSpellEffect"
+    "effectAppliedRound", "effectAppliedSourceId", "staysExhaustedUntilSpellEffect", "skipNextUntap"
   ]) delete copy[key];
   return copy;
 };
@@ -600,6 +600,7 @@ export const defaultEffectHandlers = Object.freeze({
   increaseVitality(state, effect, context) { const id = context.targetIds?.[0]; const owner = heroOwner(context, id); if (owner != null) { const entry = player(state, owner); entry.maxLife = (entry.maxLife ?? 30) + (effect.amount ?? 0); entry.life += effect.amount ?? 0; } else defaultEffectHandlers.modifyStats(state, { type: "modifyStats", health: effect.amount, duration: effect.duration }, context); },
   toggleTap(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); target.exhausted = !target.exhausted; },
   grantDamageShield(state, effect, context) { const target = findUnit(state, context.targetIds?.[0]); if (!target) throw new RulesViolation("target-required"); target.damageShields ||= []; target.damageShields.push({ uses: effect.uses ?? 1, sourceId: context.sourceId, expires: effect.duration }); },
+  skipNextUntap(state, effect, context) { for (const target of effectTargets(state, effect, context)) { if (!target) throw new RulesViolation("target-required"); target.skipNextUntap = true; } },
   removeMarker(state, effect, context) { const target = findUnit(state, context.sourceId); if (!target || markerTotal(target) < effect.amount) throw new RulesViolation("not-enough-markers"); const current = typeof target.markers === "object" ? target.markers[effect.marker] || 0 : target.markers; setMarker(target, effect.marker || "action", current - effect.amount); },
   doubleMarkers(state) { for (const target of allUnits(state)) { if (typeof target.markers === "number") target.markers *= 2; else for (const key of Object.keys(target.markers || {})) target.markers[key] *= 2; } },
   halveMaxEnergy(state, effect, context) { const entry = player(state, context.owner); entry.maxEnergy = Math.ceil(entry.maxEnergy / 2); entry.energy = Math.min(entry.energy, entry.maxEnergy); },

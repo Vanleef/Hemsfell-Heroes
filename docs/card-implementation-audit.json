@@ -1,14 +1,14 @@
 {
   "summary": {
-    "generatedAt": "2026-08-13T15:41:09.021Z",
-    "totalCards": 308,
-    "activeCards": 301,
-    "ignoredCards": 7,
-    "explicitCards": 183,
-    "textParsedCards": 118,
-    "executableCards": 301,
+    "generatedAt": "2026-08-16T13:59:05.955Z",
+    "totalCards": 306,
+    "activeCards": 294,
+    "ignoredCards": 12,
+    "explicitCards": 235,
+    "textParsedCards": 59,
+    "executableCards": 294,
     "unsupportedCards": 0,
-    "cardsWithRisks": 65,
+    "cardsWithRisks": 29,
     "confirmedFindings": []
   },
   "cards": [
@@ -20,26 +20,16 @@
       "cost": 0,
       "hero": true,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
-      "triggers": [
-        "onMaintenance"
-      ],
-      "effectTypes": [
-        "modifyStats"
-      ],
+      "triggers": [],
+      "effectTypes": [],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Controle criaturas do tipo Dragão para poder upar 2 Dragões → Nível 2 de nivel                      4 Dragões → Nível 3 Quando uma Criatura da classe Dragão deixa o campo, cure 1 de vida.                            I Uma vez por turno, voce pode desvirar uma II     Criatura da classe Dragão no seu campo de batalha. No inicio da sua fase de manutenção, suas Criaturas da classe Dragão em campo recebem um marcador +1/+1.                      III",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 3,
@@ -295,7 +285,7 @@
       "page": 12,
       "id": "p12",
       "name": "Ilusão Dracônica Menor",
-      "type": "Feitiço",
+      "type": "Encanto",
       "cost": 2,
       "hero": false,
       "imageCard": false,
@@ -768,7 +758,7 @@
       "cost": 1,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -776,10 +766,18 @@
         "onPlay"
       ],
       "effectTypes": [
-        "grantKeyword"
+        "keyword",
+        "modifyStats"
       ],
       "costTypes": [],
-      "targetEffects": [],
+      "targetEffects": [
+        {
+          "type": "modifyStats",
+          "target": "self",
+          "selections": null,
+          "requiredSubtype": null
+        }
+      ],
       "printedText": "Fura-fila: Recebe Investida e +1 de Ofensividade.",
       "risks": []
     },
@@ -821,7 +819,7 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -841,13 +839,7 @@
         }
       ],
       "printedText": "Fura-fila: Cause 2 de dano a um alvo.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 32,
@@ -867,17 +859,10 @@
       ],
       "effectTypes": [
         "keyword",
-        "destroyByCardsPlayedThisTurn"
+        "destroyCreatureUpToTurnCardsPlayed"
       ],
       "costTypes": [],
-      "targetEffects": [
-        {
-          "type": "destroyByCardsPlayedThisTurn",
-          "target": "anyCreature",
-          "selections": 1,
-          "requiredSubtype": null
-        }
-      ],
+      "targetEffects": [],
       "printedText": "Veloz. Fura-fila: Destrua uma criatura de custo máximo X. X é o número de cartas que você jogou neste turno.",
       "risks": []
     },
@@ -889,12 +874,12 @@
       "cost": 4,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "static"
+        "onCardPlayed"
       ],
       "effectTypes": [
         "draw"
@@ -902,13 +887,7 @@
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Sempre que você jogar 1 carta com Fura-fila, compre 1 carta.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 34,
@@ -918,33 +897,34 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onEnter"
+        "onEnter",
+        "onCreatureDestroyed"
       ],
       "effectTypes": [
-        "damage"
+        "damageAndMarkRepeat"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "damage",
+          "type": "damageAndMarkRepeat",
+          "target": "anyCreature",
+          "selections": 1,
+          "requiredSubtype": null
+        },
+        {
+          "type": "damageAndMarkRepeat",
           "target": "anyCreature",
           "selections": 1,
           "requiredSubtype": null
         }
       ],
       "printedText": "Primeiro Ato: Cause 1 de dano a uma criatura. Se ela morrer, repita este efeito.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 35,
@@ -993,7 +973,7 @@
         "onPlay"
       ],
       "effectTypes": [
-        "retrieve",
+        "returnNamedFromGraveToHand",
         "grantUntilTurnEnd"
       ],
       "costTypes": [],
@@ -1005,7 +985,7 @@
       "page": 37,
       "id": "p37",
       "name": "BUCHA DE CANHÃO",
-      "type": "Encanto",
+      "type": "Feitiço",
       "cost": 0,
       "hero": false,
       "imageCard": true,
@@ -1148,19 +1128,12 @@
         "onPlay"
       ],
       "effectTypes": [
-        "returnToHand",
-        "discountReturnedCard"
+        "returnAllyToHandWithComboDiscount"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "returnToHand",
-          "target": "allyCreature",
-          "selections": 1,
-          "requiredSubtype": null
-        },
-        {
-          "type": "returnToHand",
+          "type": "returnAllyToHandWithComboDiscount",
           "target": "allyCreature",
           "selections": 1,
           "requiredSubtype": null
@@ -1191,8 +1164,7 @@
         "onPlay"
       ],
       "effectTypes": [
-        "draw",
-        "modifySelfCost"
+        "draw"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -1236,7 +1208,7 @@
       "cost": 0,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -1244,7 +1216,8 @@
         "onPlay"
       ],
       "effectTypes": [
-        "gainEnergy"
+        "gainEnergy",
+        "disableReserveStorage"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -1561,7 +1534,7 @@
       "cost": 1,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -1581,13 +1554,7 @@
         }
       ],
       "printedText": "Elemento: Não Definido Escolha entre Água, Ar, Fogo ou Terra para ser o elemento deste feitiço. Cause 1 de dano a uma criatura. (Aplica efeitos elementais.)",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 56,
@@ -1597,7 +1564,7 @@
       "cost": 1,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -1606,14 +1573,14 @@
       ],
       "effectTypes": [
         "damage",
-        "keyword"
+        "grantNextElementEffect"
       ],
       "costTypes": [],
       "targetEffects": [
         {
           "type": "damage",
           "target": "anyCreature",
-          "selections": 1,
+          "selections": 2,
           "requiredSubtype": null
         }
       ],
@@ -1628,7 +1595,7 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -1636,7 +1603,8 @@
         "onPlay"
       ],
       "effectTypes": [
-        "keyword"
+        "reduceEnemyAttackUntilControllerMaintenance",
+        "grantNextElementEffect"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -1704,7 +1672,7 @@
       "cost": 0,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -1712,6 +1680,7 @@
         "activated"
       ],
       "effectTypes": [
+        "fillReserve",
         "destroy"
       ],
       "costTypes": [
@@ -1720,19 +1689,13 @@
       "targetEffects": [
         {
           "type": "destroy",
-          "target": "selected",
+          "target": "self",
           "selections": null,
           "requiredSubtype": null
         }
       ],
       "printedText": "Vire: Destrua este artefato e preencha sua energia reserva. (Só funciona se houver espaço na sua energia reserva.)",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 61,
@@ -1774,18 +1737,11 @@
         "onPlay"
       ],
       "effectTypes": [
-        "grantCharacterDamageShield",
+        "grantHeroDamageShield",
         "grantNextElementEffect"
       ],
       "costTypes": [],
-      "targetEffects": [
-        {
-          "type": "grantCharacterDamageShield",
-          "target": "anyCharacter",
-          "selections": 1,
-          "requiredSubtype": null
-        }
-      ],
+      "targetEffects": [],
       "printedText": "Elemento: Água. Cancele o próximo dano que você ou uma criatura sofreria neste turno. Neste turno, seu próximo feitiço de Ar recebe o efeito: “Aplica Atordoado até o inicio do seu próximo turno.”",
       "risks": []
     },
@@ -1820,7 +1776,7 @@
       "cost": 1,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -1828,15 +1784,15 @@
         "onPlay"
       ],
       "effectTypes": [
-        "damageAll",
-        "keyword"
+        "damageByAdjacentCount",
+        "grantNextElementEffect"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "damageAll",
-          "target": "none",
-          "selections": 0,
+          "type": "damageByAdjacentCount",
+          "target": "anyCreature",
+          "selections": 1,
           "requiredSubtype": null
         }
       ],
@@ -1851,7 +1807,7 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -1859,15 +1815,15 @@
         "onPlay"
       ],
       "effectTypes": [
-        "returnToHand",
-        "keyword"
+        "returnToHandAndTaxNextCreature",
+        "grantNextElementEffect"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "returnToHand",
-          "target": "selected",
-          "selections": null,
+          "type": "returnToHandAndTaxNextCreature",
+          "target": "anyCreature",
+          "selections": 1,
           "requiredSubtype": null
         }
       ],
@@ -1882,7 +1838,7 @@
       "cost": 6,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -1890,17 +1846,10 @@
         "onPlay"
       ],
       "effectTypes": [
-        "returnToHand"
+        "returnAllCreaturesToOwnersHands"
       ],
       "costTypes": [],
-      "targetEffects": [
-        {
-          "type": "returnToHand",
-          "target": "selected",
-          "selections": null,
-          "requiredSubtype": null
-        }
-      ],
+      "targetEffects": [],
       "printedText": "Elemento: Ar. Retorne todas as criaturas para as mãos de seus donos.",
       "risks": []
     },
@@ -2000,7 +1949,7 @@
       "page": 70,
       "id": "p70",
       "name": "Maestria Elemental",
-      "type": "Encanto",
+      "type": "Feitiço",
       "cost": 4,
       "hero": false,
       "imageCard": false,
@@ -2012,7 +1961,7 @@
         "onPlay"
       ],
       "effectTypes": [
-        "controllerChoice"
+        "createSelectedMasteryImage"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -2103,15 +2052,15 @@
       "cost": 0,
       "hero": false,
       "imageCard": true,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onPlay"
+        "onSpellCast"
       ],
       "effectTypes": [
-        "keyword"
+        "empowerSpellDamage"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -2126,7 +2075,7 @@
       "cost": 9,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -2134,25 +2083,19 @@
         "onPlay"
       ],
       "effectTypes": [
-        "damage"
+        "damageFromSpellsThisTurn"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "damage",
+          "type": "damageFromSpellsThisTurn",
           "target": "anyCharacter",
           "selections": 1,
           "requiredSubtype": null
         }
       ],
-      "printedText": "Cause 2 de dano a um alvo. Repita este efeito para cada outro feitiço que você conjurou neste turno.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "printedText": "Cause 2 de dano a um alvo para cada feitiço que você conjurou neste turno, incluindo Eclipse Final.",
+      "risks": []
     },
     {
       "page": 76,
@@ -2162,28 +2105,22 @@
       "cost": 4,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onPlay",
+        "static",
         "onEnter"
       ],
       "effectTypes": [
         "keyword",
-        "grantKeyword"
+        "grantRobustIfSpellPlayedThisTurn"
       ],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Defensor 2. Primeiro Ato: Se você conjurou um feitiço neste turno, esta criatura recebe Robusto.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 77,
@@ -2222,7 +2159,7 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -2233,15 +2170,16 @@
         "modifyStats"
       ],
       "costTypes": [],
-      "targetEffects": [],
-      "printedText": "Sempre que você conjurar um feitiço, esta criatura recebe +1/+0.",
-      "risks": [
+      "targetEffects": [
         {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
+          "type": "modifyStats",
+          "target": "self",
+          "selections": null,
+          "requiredSubtype": null
         }
-      ]
+      ],
+      "printedText": "Sempre que você conjurar um feitiço, esta criatura recebe +1/+0.",
+      "risks": []
     },
     {
       "page": 79,
@@ -2251,12 +2189,12 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "static"
+        "onSpellCast"
       ],
       "effectTypes": [
         "draw"
@@ -2264,13 +2202,7 @@
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Quando você conjurar um feitiço no seu turno, compre 1 carta. (Limite de 1 vez por turno)",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 80,
@@ -3446,7 +3378,7 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -3454,17 +3386,10 @@
         "onPlay"
       ],
       "effectTypes": [
-        "returnToHand"
+        "returnSelectedGraveCardsToHand"
       ],
       "costTypes": [],
-      "targetEffects": [
-        {
-          "type": "returnToHand",
-          "target": "selected",
-          "selections": null,
-          "requiredSubtype": null
-        }
-      ],
+      "targetEffects": [],
       "printedText": "Retorne até 2 criaturas com Último Suspiro do seu cemitério para sua mão.",
       "risks": []
     },
@@ -3650,40 +3575,29 @@
       "cost": 0,
       "hero": true,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onLifeLost"
+        "activated"
       ],
       "effectTypes": [
-        "damage",
-        "addMarker",
-        "keyword"
+        "damage"
       ],
-      "costTypes": [],
+      "costTypes": [
+        "life"
+      ],
       "targetEffects": [
         {
           "type": "damage",
-          "target": "anyCreature",
+          "target": "enemyCharacter",
           "selections": 1,
           "requiredSubtype": null
         }
       ],
       "printedText": "Sempre que perder vida coloque 1 marcador no 3 marcadores → Nível 2 Saymon até o fim do turno        5 marcadores → Nível 3 Pague 2 de vida: No seu turno, cause 1 de dano a um alvo. (Limite de 1 vez por turno) I Pague 2 de vida: Conceda Roubo de Vida a II     uma criatura. (Limite de 1 vez por turno) Seus efeitos que custam vida não podem deixar sua vida abaixo de 1.                      III",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        },
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 130,
@@ -3887,26 +3801,22 @@
       "cost": 4,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "static"
+        "static",
+        "onCreatureEnter"
       ],
       "effectTypes": [
-        "keyword"
+        "keyword",
+        "forceSelfCombatEnteringCreature"
       ],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Roubo de Vida. Sempre que o oponente invocar uma criatura, ataque-a.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 137,
@@ -4143,7 +4053,7 @@
       "cost": 4,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -4151,15 +4061,14 @@
         "onPlay"
       ],
       "effectTypes": [
-        "damageAll",
-        "keyword"
+        "damageAllWithLifesteal"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "damageAll",
-          "target": "none",
-          "selections": 0,
+          "type": "damageAllWithLifesteal",
+          "target": "allCreatures",
+          "selections": null,
           "requiredSubtype": null
         }
       ],
@@ -4174,7 +4083,7 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -4182,26 +4091,19 @@
         "onPlay"
       ],
       "effectTypes": [
-        "damage",
-        "keyword"
+        "fatalBite"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "damage",
+          "type": "fatalBite",
           "target": "anyCreature",
           "selections": 1,
           "requiredSubtype": null
         }
       ],
       "printedText": "Roubo de Vida. Cause 3 de dano a uma criatura. Se o dano causado destruí-la, coloque esta carta no fundo de seu deck.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 146,
@@ -4291,25 +4193,14 @@
       "cost": 5,
       "hero": false,
       "imageCard": false,
-      "implementation": "explicit",
-      "ignoredReason": null,
-      "executable": true,
+      "implementation": "ignored",
+      "ignoredReason": "removed-from-catalog",
+      "executable": false,
       "unsupported": 0,
-      "triggers": [
-        "onEnter"
-      ],
-      "effectTypes": [
-        "discard"
-      ],
+      "triggers": [],
+      "effectTypes": [],
       "costTypes": [],
-      "targetEffects": [
-        {
-          "type": "discard",
-          "target": "controller",
-          "selections": null,
-          "requiredSubtype": null
-        }
-      ],
+      "targetEffects": [],
       "printedText": "Primeiro Ato: Descarte duas Custa 1 a menos para cada vampiro em campo.",
       "risks": []
     },
@@ -4456,7 +4347,7 @@
       ],
       "costTypes": [],
       "targetEffects": [],
-      "printedText": "Toda vez que a criatura equipada for alvo de um efeito, feitiço ou feitiço acelerado, você compra uma carta. Se essa carta seria enviada ao cemitério, bana-a.",
+      "printedText": "Toda vez que a criatura equipada for alvo de um efeito de outra criatura, Feitiço ou Feitiço Acelerado, você compra uma carta. Se Correntes Purificadoras seria enviada ao Cemitério, bana-a.",
       "risks": []
     },
     {
@@ -4467,15 +4358,16 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onPlay"
+        "static"
       ],
       "effectTypes": [
-        "keyword"
+        "attachedStats",
+        "attachedKeyword"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -4664,7 +4556,7 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -4672,26 +4564,19 @@
         "onPlay"
       ],
       "effectTypes": [
-        "destroy",
-        "keyword"
+        "destroyIfEffectAppliedThisTurn"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "destroy",
-          "target": "selected",
-          "selections": null,
+          "type": "destroyIfEffectAppliedThisTurn",
+          "target": "anyCreature",
+          "selections": 1,
           "requiredSubtype": null
         }
       ],
       "printedText": "Acelerado Destrua uma criatura que foi alvo de um efeito, feitiço ou feitiço acelerado neste turno.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 163,
@@ -5158,12 +5043,12 @@
       "cost": 0,
       "hero": true,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "static"
+        "onFirstActResolved"
       ],
       "effectTypes": [
         "draw"
@@ -5171,13 +5056,7 @@
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Controle criaturas com nomes          2 criaturas → nível 2 diferentes em campo para poder        4 criaturas → nível 3 subir de nível. Quando um Primeiro Ato de uma criatura sua é ativado, compre 1 carta. (Limite de 1 uso por turno) I A primeira criatura que você controla que II      morrer no seu turno, retorna para sua mão. A primeira criatura com Primeiro Ato que você invocar em seu turno ativa o efeito dela 1 vez adicional.                                   III",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 181,
@@ -5541,7 +5420,8 @@
         "static"
       ],
       "effectTypes": [
-        "modifyStats"
+        "attachedStats",
+        "attachedKillGrowth"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -5564,8 +5444,7 @@
         "static"
       ],
       "effectTypes": [
-        "modifyStats",
-        "keyword"
+        "attachedSupportAura"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -5612,7 +5491,8 @@
         "static"
       ],
       "effectTypes": [
-        "modifyStats"
+        "attachedStats",
+        "granFinale"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -5707,16 +5587,12 @@
       "cost": 5,
       "hero": false,
       "imageCard": false,
-      "implementation": "explicit",
-      "ignoredReason": null,
-      "executable": true,
+      "implementation": "ignored",
+      "ignoredReason": "removed-from-catalog",
+      "executable": false,
       "unsupported": 0,
-      "triggers": [
-        "static"
-      ],
-      "effectTypes": [
-        "enableChampionCombat"
-      ],
+      "triggers": [],
+      "effectTypes": [],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Enquanto esta estiver em campo, campeões também participam do combate e podem realizar ou defender ataques. Heróis tem Ofensividade equivalente ao seu nível. Se a vida do seu herói chegar a 0, a partida se encerra e você perde.",
@@ -5730,16 +5606,12 @@
       "cost": 1,
       "hero": false,
       "imageCard": false,
-      "implementation": "explicit",
-      "ignoredReason": null,
-      "executable": true,
+      "implementation": "ignored",
+      "ignoredReason": "removed-from-catalog",
+      "executable": false,
       "unsupported": 0,
-      "triggers": [
-        "static"
-      ],
-      "effectTypes": [
-        "faithfulSquireRedirect"
-      ],
+      "triggers": [],
+      "effectTypes": [],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Você pode redirecionar o dano que seria dado a uma de suas criaturas para qualquer \"Escudeiro Fiél\" no seu campo.",
@@ -5806,16 +5678,12 @@
       "cost": 5,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
-      "ignoredReason": null,
-      "executable": true,
+      "implementation": "ignored",
+      "ignoredReason": "removed-from-catalog",
+      "executable": false,
       "unsupported": 0,
-      "triggers": [
-        "onPlay"
-      ],
-      "effectTypes": [
-        "keyword"
-      ],
+      "triggers": [],
+      "effectTypes": [],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Suas criaturas viradas tem barreira mágica.",
@@ -5829,34 +5697,16 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
-      "ignoredReason": null,
-      "executable": true,
+      "implementation": "ignored",
+      "ignoredReason": "removed-from-catalog",
+      "executable": false,
       "unsupported": 0,
-      "triggers": [
-        "static"
-      ],
-      "effectTypes": [
-        "destroy",
-        "modifyStats"
-      ],
+      "triggers": [],
+      "effectTypes": [],
       "costTypes": [],
-      "targetEffects": [
-        {
-          "type": "destroy",
-          "target": "selected",
-          "selections": null,
-          "requiredSubtype": null
-        }
-      ],
+      "targetEffects": [],
       "printedText": "Criatura equipada ganha +0/+2 e “Quando esta criatura sair do campo, destrua uma criatura virada do oponente.”",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 206,
@@ -5897,7 +5747,7 @@
       "hero": false,
       "imageCard": false,
       "implementation": "ignored",
-      "ignoredReason": "removed-from-game",
+      "ignoredReason": "removed-from-catalog",
       "executable": false,
       "unsupported": 0,
       "triggers": [],
@@ -6105,7 +5955,7 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -6174,7 +6024,7 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -6182,18 +6032,12 @@
         "static"
       ],
       "effectTypes": [
-        "modifyStats"
+        "subtypeAura"
       ],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Enquanto estiver em campo, seus Gatos tem +1/+1.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 219,
@@ -6226,16 +6070,16 @@
       "cost": 6,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onPlay"
+        "static"
       ],
       "effectTypes": [
-        "supportAura",
-        "keyword"
+        "keyword",
+        "supportAura"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -6305,7 +6149,7 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -6313,18 +6157,12 @@
         "onPlay"
       ],
       "effectTypes": [
-        "draw"
+        "drawIfPriorSpell"
       ],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Compre 1 Carta. Se você já jogou um Feitiço neste turno, compre mais 1 carta.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 224,
@@ -6334,7 +6172,7 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -6342,31 +6180,19 @@
         "onPlay"
       ],
       "effectTypes": [
-        "returnToHand",
-        "keyword"
+        "returnToHandWithSubtypeBonus"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "returnToHand",
-          "target": "selected",
-          "selections": null,
+          "type": "returnToHandWithSubtypeBonus",
+          "target": "anyCreature",
+          "selections": 1,
           "requiredSubtype": null
         }
       ],
       "printedText": "Acelerado. Devolva a criatura alvo para a mão de seu controlador. Se for um Gato, pode ser jogado por 0 de custo neste turno.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        },
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 225,
@@ -6406,7 +6232,7 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -6414,31 +6240,19 @@
         "onPlay"
       ],
       "effectTypes": [
-        "destroy",
-        "keyword"
+        "destroyIfEffectAppliedThisTurn"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "destroy",
-          "target": "selected",
-          "selections": null,
+          "type": "destroyIfEffectAppliedThisTurn",
+          "target": "anyCreature",
+          "selections": 1,
           "requiredSubtype": null
         }
       ],
       "printedText": "Acelerado. Se a criatura alvo recebeu efeito de outra carta neste turno, destrua ela. \"Pode chorar pelo Café Derramado\"",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        },
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 227,
@@ -6448,39 +6262,27 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "static"
+        "onPlay"
       ],
       "effectTypes": [
-        "tap",
-        "keyword"
+        "tapUntilAnotherSpellEffect"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "tap",
-          "target": "selected",
-          "selections": null,
+          "type": "tapUntilAnotherSpellEffect",
+          "target": "anyCreature",
+          "selections": 1,
           "requiredSubtype": null
         }
       ],
       "printedText": "Acelerado. Vire a criatura alvo. Enquanto não receber um efeito vindo de outro Feitiço, essa criatura continua virada.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        },
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 228,
@@ -6490,7 +6292,7 @@
       "cost": 7,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -6498,25 +6300,19 @@
         "onPlay"
       ],
       "effectTypes": [
-        "damage"
+        "damagePerSubtype"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "damage",
-          "target": "anyCharacter",
-          "selections": 1,
+          "type": "damagePerSubtype",
+          "target": "enemyHero",
+          "selections": null,
           "requiredSubtype": null
         }
       ],
       "printedText": "Para cada Gato em campo, cause 1 de dano ao oponente alvo.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 229,
@@ -6597,7 +6393,7 @@
       "cost": 5,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -6605,100 +6401,20 @@
         "activated"
       ],
       "effectTypes": [
-        "keyword"
+        "grantKeyword"
       ],
       "costTypes": [
         "tap"
       ],
-      "targetEffects": [],
+      "targetEffects": [
+        {
+          "type": "grantKeyword",
+          "target": "anyPermanent",
+          "selections": null,
+          "requiredSubtype": null
+        }
+      ],
       "printedText": "Vire: dê Barreira Mágica à constante alvo.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
-    },
-    {
-      "page": 233,
-      "id": "p233",
-      "name": "Gato Multidimensional",
-      "type": "Criatura",
-      "cost": 0,
-      "hero": false,
-      "imageCard": true,
-      "implementation": "explicit",
-      "ignoredReason": null,
-      "executable": true,
-      "unsupported": 0,
-      "triggers": [
-        "static",
-        "onEnter",
-        "activated",
-        "onTurnEnd"
-      ],
-      "effectTypes": [
-        "cannotDefend",
-        "cannotBeDestroyedForSpace",
-        "loseLife",
-        "moveSelf"
-      ],
-      "costTypes": [
-        "energy"
-      ],
-      "targetEffects": [
-        {
-          "type": "loseLife",
-          "target": "controllerHero",
-          "selections": null,
-          "requiredSubtype": null
-        },
-        {
-          "type": "loseLife",
-          "target": "controllerHero",
-          "selections": null,
-          "requiredSubtype": null
-        }
-      ],
-      "printedText": "1                           1 Gato",
-      "risks": []
-    },
-    {
-      "page": 234,
-      "id": "p234",
-      "name": "Café Expresso",
-      "type": "Feitiço",
-      "cost": 1,
-      "hero": false,
-      "imageCard": false,
-      "implementation": "explicit",
-      "ignoredReason": null,
-      "executable": true,
-      "unsupported": 0,
-      "triggers": [
-        "onPlay"
-      ],
-      "effectTypes": [
-        "ready",
-        "modifyStats"
-      ],
-      "costTypes": [],
-      "targetEffects": [
-        {
-          "type": "ready",
-          "target": "anyCreature",
-          "selections": null,
-          "requiredSubtype": null
-        },
-        {
-          "type": "modifyStats",
-          "target": "anyCreature",
-          "selections": null,
-          "requiredSubtype": null
-        }
-      ],
-      "printedText": "Desvire a criatura alvo. Ela ganha +1/+1 até o fim do turno. \"Aproveite enquanto está quente\"",
       "risks": []
     },
     {
@@ -6709,7 +6425,7 @@
       "cost": 0,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -6717,6 +6433,7 @@
         "activated"
       ],
       "effectTypes": [
+        "fillReserve",
         "destroy"
       ],
       "costTypes": [
@@ -6725,7 +6442,7 @@
       "targetEffects": [
         {
           "type": "destroy",
-          "target": "selected",
+          "target": "self",
           "selections": null,
           "requiredSubtype": null
         }
@@ -6838,7 +6555,7 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -6846,18 +6563,12 @@
         "onPlay"
       ],
       "effectTypes": [
-        "draw"
+        "drawIfPriorNamedCard"
       ],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Compre 1 carta. Se você já jogou uma carta “Café” neste turno, compre mais 1 carta.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 240,
@@ -6867,38 +6578,27 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "static"
+        "onPlay"
       ],
       "effectTypes": [
-        "returnToHand"
+        "returnToHandWithSubtypeBonus"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "returnToHand",
-          "target": "selected",
-          "selections": null,
+          "type": "returnToHandWithSubtypeBonus",
+          "target": "anyCreature",
+          "selections": 1,
           "requiredSubtype": null
         }
       ],
       "printedText": "Devolva a criatura alvo para a mão de seu controlador. Se for um Gato, ela entra apto a atacar quando for conjurada novamente.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        },
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 241,
@@ -6917,7 +6617,7 @@
       ],
       "effectTypes": [
         "modifyStats",
-        "immobilize"
+        "skipNextUntap"
       ],
       "costTypes": [],
       "targetEffects": [
@@ -6928,7 +6628,7 @@
           "requiredSubtype": null
         },
         {
-          "type": "immobilize",
+          "type": "skipNextUntap",
           "target": "anyCreature",
           "selections": null,
           "requiredSubtype": null
@@ -6945,7 +6645,7 @@
       "cost": 4,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -6956,15 +6656,16 @@
         "modifyStats"
       ],
       "costTypes": [],
-      "targetEffects": [],
-      "printedText": "Escolha duas criaturas. Até o começo de seu próximo turno, cada uma ganha +1/+1.",
-      "risks": [
+      "targetEffects": [
         {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
+          "type": "modifyStats",
+          "target": "anyCreature",
+          "selections": 2,
+          "requiredSubtype": null
         }
-      ]
+      ],
+      "printedText": "Escolha duas criaturas. Até o começo de seu próximo turno, cada uma ganha +1/+1.",
+      "risks": []
     },
     {
       "page": 243,
@@ -7020,15 +6721,15 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onPlay"
+        "static"
       ],
       "effectTypes": [
-        "modifyStats"
+        "dynamicSubtypeStats"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -7043,21 +6744,23 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onPlay"
+        "static",
+        "onNamedEffectApplied"
       ],
       "effectTypes": [
+        "entersExhausted",
         "ready"
       ],
       "costTypes": [],
       "targetEffects": [
         {
           "type": "ready",
-          "target": "selected",
+          "target": "self",
           "selections": null,
           "requiredSubtype": null
         }
@@ -7135,7 +6838,7 @@
       ],
       "effectTypes": [
         "modifyStats",
-        "immobilize"
+        "skipNextUntap"
       ],
       "costTypes": [],
       "targetEffects": [
@@ -7146,7 +6849,7 @@
           "requiredSubtype": null
         },
         {
-          "type": "immobilize",
+          "type": "skipNextUntap",
           "target": "anyCreature",
           "selections": null,
           "requiredSubtype": null
@@ -7163,7 +6866,7 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -7171,7 +6874,7 @@
         "onPlay"
       ],
       "effectTypes": [
-        "discard"
+        "redrawHand"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -7186,7 +6889,7 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -7194,25 +6897,18 @@
         "onPlay"
       ],
       "effectTypes": [
-        "draw",
-        "discard"
+        "strategicDraw"
       ],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Compre 1 carta. Caso seja: Criatura: sofra o custo dela em dano. Feitiço: repita o efeito desta carta. Artefato ou Encanto: nada acontece. Terreno Cruel: descarte a carta comprada.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 252,
       "id": "p252",
       "name": "Café Expresso Duplo",
-      "type": "Herói",
+      "type": "Feitiço",
       "cost": 2,
       "hero": false,
       "imageCard": false,
@@ -7246,32 +6942,20 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onTurnEnd"
+        "onPlay"
       ],
       "effectTypes": [
-        "discard",
-        "keyword"
+        "randomDiscardAndResolveByType"
       ],
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Seu oponente escolhe aleatoriamente uma carta de sua mão para ser descartada. Caso seja: Criatura: cause o custo dela em dano a um alvo de sua escolha. Feitiço: o oponente escolhe uma carta da mão para descartar. Feitiço acelerado: jogue a carta escolhida. Artefato ou Encanto: descarte a carta escolhida. Terreno Cruel: o oponente finaliza o turno.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        },
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 254,
@@ -7281,12 +6965,12 @@
       "cost": 5,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "static"
+        "onSpellCast"
       ],
       "effectTypes": [
         "draw"
@@ -7294,13 +6978,7 @@
       "costTypes": [],
       "targetEffects": [],
       "printedText": "Sempre que um Café for servido, compre uma carta. \"Sempre é hora do café\"",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 255,
@@ -7418,26 +7096,29 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onDamage"
+        "static",
+        "onPlayerDamaged"
       ],
       "effectTypes": [
-        "keyword"
+        "keyword",
+        "investigate"
       ],
       "costTypes": [],
-      "targetEffects": [],
-      "printedText": "Furtivo Sempre que esta criatura causar dano direto a um campeão, Investigue 1 no deck dele.",
-      "risks": [
+      "targetEffects": [
         {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
+          "type": "investigate",
+          "target": "damagedPlayerDeck",
+          "selections": null,
+          "requiredSubtype": null
         }
-      ]
+      ],
+      "printedText": "Furtivo Sempre que esta criatura causar dano direto a um campeão, Investigue 1 no deck dele.",
+      "risks": []
     },
     {
       "page": 260,
@@ -7447,26 +7128,19 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onPlay"
+        "static"
       ],
       "effectTypes": [
-        "modifyStats",
-        "keyword"
+        "keyword",
+        "dynamicMilledAttack"
       ],
       "costTypes": [],
-      "targetEffects": [
-        {
-          "type": "modifyStats",
-          "target": "self",
-          "selections": 0,
-          "requiredSubtype": null
-        }
-      ],
+      "targetEffects": [],
       "printedText": "Veloz Ganha +1 de Ofensividade para cada carta triturada no turno.",
       "risks": []
     },
@@ -7581,18 +7255,27 @@
       "cost": 4,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "static"
+        "static",
+        "onCreatureEnter"
       ],
       "effectTypes": [
-        "keyword"
+        "keyword",
+        "investigate"
       ],
       "costTypes": [],
-      "targetEffects": [],
+      "targetEffects": [
+        {
+          "type": "investigate",
+          "target": "controllerDeck",
+          "selections": null,
+          "requiredSubtype": null
+        }
+      ],
       "printedText": "Barreira Mágica Toda vez que um oponente colocar uma criatura em campo, Investigue 1.",
       "risks": []
     },
@@ -7732,15 +7415,15 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onPlay"
+        "static"
       ],
       "effectTypes": [
-        "grantKeyword"
+        "attachedKeyword"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -8094,7 +7777,7 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -8107,13 +7790,7 @@
       "costTypes": [],
       "targetEffects": [],
       "printedText": "No fim do seu turno, se você controlar apenas criaturas de ordem e comprou duas ou mais cartas neste turno, compre uma carta.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 285,
@@ -8194,7 +7871,14 @@
         "repeatDamageUntilDeaths"
       ],
       "costTypes": [],
-      "targetEffects": [],
+      "targetEffects": [
+        {
+          "type": "repeatDamageUntilDeaths",
+          "target": "anyCreature",
+          "selections": 4,
+          "requiredSubtype": null
+        }
+      ],
       "printedText": "Escolha duas criaturas de cada um dos jogadores. Todas as criaturas alvo recebem 1 de dano repetidamente até que duas criaturas sejam destruídas.",
       "risks": []
     },
@@ -8206,7 +7890,7 @@
       "cost": 5,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -8214,15 +7898,14 @@
         "onPlay"
       ],
       "effectTypes": [
-        "destroy",
-        "keyword"
+        "destroy"
       ],
       "costTypes": [],
       "targetEffects": [
         {
           "type": "destroy",
-          "target": "selected",
-          "selections": null,
+          "target": "anyCreature",
+          "selections": 2,
           "requiredSubtype": null
         }
       ],
@@ -8321,7 +8004,7 @@
       "cost": 1,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -8334,7 +8017,14 @@
       "costTypes": [
         "tap"
       ],
-      "targetEffects": [],
+      "targetEffects": [
+        {
+          "type": "addMarker",
+          "target": "anyPermanent",
+          "selections": 1,
+          "requiredSubtype": null
+        }
+      ],
       "printedText": "Vire: coloque um marcador de ação em qualquer carta.",
       "risks": []
     },
@@ -8371,7 +8061,7 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -8387,19 +8077,13 @@
       "targetEffects": [
         {
           "type": "ready",
-          "target": "selected",
-          "selections": null,
+          "target": "anyCreature",
+          "selections": 1,
           "requiredSubtype": null
         }
       ],
       "printedText": "Remova dois marcadores de ação dessa carta: Desvire a criatura alvo.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 295,
@@ -8472,26 +8156,29 @@
       "cost": 4,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "onDamage"
+        "static",
+        "onCombatDamage"
       ],
       "effectTypes": [
-        "keyword"
+        "keyword",
+        "moveMarkerToSelf"
       ],
       "costTypes": [],
-      "targetEffects": [],
-      "printedText": "Atropelar. Sempre que essa carta causar dano, você pode remover um marcador de uma constante em campo e adicionar um marcador de ação nessa constante.",
-      "risks": [
+      "targetEffects": [
         {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
+          "type": "moveMarkerToSelf",
+          "target": "anyPermanent",
+          "selections": 1,
+          "requiredSubtype": null
         }
-      ]
+      ],
+      "printedText": "Atropelar. Sempre que essa carta causar dano, você pode remover um marcador de uma constante em campo e adicionar um marcador de ação nessa constante.",
+      "risks": []
     },
     {
       "page": 298,
@@ -8501,41 +8188,31 @@
       "cost": 3,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
       "triggers": [
-        "activated"
+        "activated",
+        "onTurnEnd"
       ],
       "effectTypes": [
-        "banish",
-        "modifyStats"
+        "convertActionMarkersToPlusOneCounters",
+        "banishOwnCreatureWithMostPlusOneCounters"
       ],
       "costTypes": [
         "tap"
       ],
       "targetEffects": [
         {
-          "type": "banish",
-          "target": "selected",
-          "selections": null,
+          "type": "convertActionMarkersToPlusOneCounters",
+          "target": "anyCreature",
+          "selections": 1,
           "requiredSubtype": null
         }
       ],
       "printedText": "Vire: Escolha a criatura alvo. Ela perde todos os seus marcadores de ação e recebe a mesma quantidade em marcadores +1/+1. No fim do seu turno, bana a sua criatura com mais marcadores +1/+1 em campo.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        },
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 299,
@@ -8578,11 +8255,9 @@
         "activated"
       ],
       "effectTypes": [
-        "search"
+        "selectMarkersThenSearch"
       ],
-      "costTypes": [
-        "removeMarkersFromConstants"
-      ],
+      "costTypes": [],
       "targetEffects": [],
       "printedText": "Remova 5 marcadores de suas constantes. Você pode procurar por uma carta de encanto ou feitiço do seu deck.",
       "risks": []
@@ -8725,7 +8400,7 @@
         "static"
       ],
       "effectTypes": [
-        "conditionalAttachedKeyword"
+        "conditionalAttachedBlockRestriction"
       ],
       "costTypes": [],
       "targetEffects": [],
@@ -8773,7 +8448,7 @@
       "cost": 2,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -8781,31 +8456,19 @@
         "onPlay"
       ],
       "effectTypes": [
-        "returnToHand",
-        "keyword"
+        "escapeCreatureAndTransferArtifacts"
       ],
       "costTypes": [],
       "targetEffects": [
         {
-          "type": "returnToHand",
-          "target": "selected",
-          "selections": null,
+          "type": "escapeCreatureAndTransferArtifacts",
+          "target": "anyCreature",
+          "selections": 1,
           "requiredSubtype": null
         }
       ],
       "printedText": "Acelerado. Retorne a criatura alvo para a mão do seu controlador. Se havia qualquer artefato atrelado a criatura alvo, o custo dela passa a ser 0 e o controle do artefato passa para o jogador alvo, que não seja seu controlador anterior.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        },
-        {
-          "severity": "review",
-          "code": "text-parser-targeting",
-          "detail": "Seleção de alvo depende do parser textual; revisar escopo, opcionalidade e quantidade de alvos."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 308,
@@ -8815,7 +8478,7 @@
       "cost": 4,
       "hero": false,
       "imageCard": false,
-      "implementation": "text",
+      "implementation": "explicit",
       "ignoredReason": null,
       "executable": true,
       "unsupported": 0,
@@ -8823,32 +8486,12 @@
         "onPlay"
       ],
       "effectTypes": [
-        "banish",
-        "returnToHand"
+        "returnSelectedGraveCardsAndBanishRest"
       ],
       "costTypes": [],
-      "targetEffects": [
-        {
-          "type": "banish",
-          "target": "selected",
-          "selections": null,
-          "requiredSubtype": null
-        },
-        {
-          "type": "returnToHand",
-          "target": "selected",
-          "selections": null,
-          "requiredSubtype": null
-        }
-      ],
+      "targetEffects": [],
       "printedText": "Se você possui 5 ou mais criaturas no cemitério, retorne 3 criaturas do seu cemitério para a sua mão e depois bana o seu cemitério.",
-      "risks": [
-        {
-          "severity": "review",
-          "code": "text-parser-conditional",
-          "detail": "Regra condicional/temporal depende do parser textual; comparar o comportamento executável com o texto impresso."
-        }
-      ]
+      "risks": []
     },
     {
       "page": 309,

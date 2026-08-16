@@ -778,7 +778,9 @@
     "type": "Feitiço",
     "cost": 2,
     "text": "Elemento: Terra. Reduza em 2 o ataque de todas as criaturas inimigas até o ínicio do seu próximo turno. Neste turno, seu próximo feitiço de Fogo recebe o efeito: “Aplica Sufocado até o inicio do seu próximo turno.”",
-    "tags": ["Acelerado"],
+    "tags": [
+      "Acelerado"
+    ],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/057",
     "hero": false,
     "imageCard": false
@@ -826,7 +828,9 @@
     "type": "Feitiço",
     "cost": 1,
     "text": "Elemento: Água. Coloque 1 imagem de “Clone de Água” em seu campo. O “Clone de Água” aplica os efeitos elementais deste feitiço. Neste turno, seu próximo feitiço de Ar recebe o efeito: “Aplica Atordoado até o inicio do seu próximo turno.”",
-    "tags": ["Acelerado"],
+    "tags": [
+      "Acelerado"
+    ],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/061",
     "hero": false,
     "imageCard": false
@@ -838,7 +842,9 @@
     "type": "Feitiço",
     "cost": 2,
     "text": "Elemento: Água. Cancele o próximo dano que você ou uma criatura sofreria neste turno. Neste turno, seu próximo feitiço de Ar recebe o efeito: “Aplica Atordoado até o inicio do seu próximo turno.”",
-    "tags": ["Acelerado"],
+    "tags": [
+      "Acelerado"
+    ],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/062",
     "hero": false,
     "imageCard": false
@@ -850,7 +856,9 @@
     "type": "Feitiço",
     "cost": 3,
     "text": "Elemento: Água. Alveje todas as criaturas inimigas e aplique Congelado em todas elas até o final do turno. Se alguma já estiver Congelada, ela recebe 2 de dano. Neste turno, seu próximo feitiço de Ar recebe o efeito: “Aplica Atordoado até o inicio do seu próximo turno.”",
-    "tags": ["Acelerado"],
+    "tags": [
+      "Acelerado"
+    ],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/063",
     "hero": false,
     "imageCard": false
@@ -862,7 +870,9 @@
     "type": "Feitiço",
     "cost": 1,
     "text": "Elemento: Ar. Cause 1 de dano a uma criatura. A criatura recebe 1 de dano adicional para cada criatura adjacente a ela. Neste turno, seu próximo feitiço de Água recebe o efeito: “Aplica Congelado até o inicio do seu próximo turno.”",
-    "tags": ["Acelerado"],
+    "tags": [
+      "Acelerado"
+    ],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/064",
     "hero": false,
     "imageCard": false
@@ -874,7 +884,9 @@
     "type": "Feitiço",
     "cost": 3,
     "text": "Elemento: Ar. Retorne uma criatura para a mão de seu dono. No próximo turno do oponente, a primeira criatura que ele conjurar custa 1 de energia adicional. Neste turno, seu próximo feitiço de Água recebe o efeito: “Aplica Congelado até o inicio do seu próximo turno.”",
-    "tags": ["Acelerado"],
+    "tags": [
+      "Acelerado"
+    ],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/065",
     "hero": false,
     "imageCard": false
@@ -3177,32 +3189,6 @@
       "Barreira Mágica"
     ],
     "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/232",
-    "hero": false,
-    "imageCard": false
-  },
-  {
-    "page": 233,
-    "id": "p233",
-    "name": "Gato Multidimensional",
-    "type": "Criatura",
-    "cost": 0,
-    "atk": 1,
-    "hp": 1,
-    "text": "1                           1 Gato",
-    "tags": [],
-    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/233",
-    "hero": false,
-    "imageCard": true
-  },
-  {
-    "page": 234,
-    "id": "p234",
-    "name": "Café Expresso",
-    "type": "Feitiço",
-    "cost": 1,
-    "text": "Desvire a criatura alvo. Ela ganha +1/+1 até o fim do turno. \"Aproveite enquanto está quente\"",
-    "tags": [],
-    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/234",
     "hero": false,
     "imageCard": false
   },
