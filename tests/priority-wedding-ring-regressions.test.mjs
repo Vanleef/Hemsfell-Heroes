@@ -58,7 +58,7 @@ test("the original card cost is paid before the response window is exposed", () 
     card("expensive-fast", "Resposta cara", "Feitiço", 5, { tags: ["Acelerado"] }),
   );
 
-  const opened = executeCommand(game, { type: "playCard", owner: 0, cardId: "root-creature", fieldSlot: 0 }, { priority: true }).state;
+  const opened = executeCommand(game, { type: "playCard", owner: 0, cardId: "root-creature", slot: 0 }, { priority: true }).state;
   assert.equal(opened.players[0].energy, 2, "the root action must reserve/pay its 3 energy before priority opens");
   assert.equal(opened.pendingAction.cardId, "root-creature");
   assert.equal(opened.pendingResponse.responder, 1);
