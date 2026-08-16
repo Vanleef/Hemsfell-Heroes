@@ -38,5 +38,6 @@ test_text = must_replace(test_text,
 'const byName = (name) => compileCard(cards.find((card) => card.name === name));',
 'const normalize = (value = "") => String(value).normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase();\nconst byName = (name) => compileCard(cards.find((card) => normalize(card.name) === normalize(name)));',
 'normalized test card lookup')
+test_text = test_text.replace('const cobra = field(byName("Cobra Dor"), "cobra");', 'const cobra = field(compileCard(cards.find((card) => Number(card.page) === 134)), "cobra");')
 test_text = test_text.replace('assert.equal(cobraCommand?.markerAmount, 3, JSON.stringify({page:cobra.page,name:cobra.name,abilities:cobra.abilities,commands}));', 'assert.equal(cobraCommand?.markerAmount, 3);')
 test_path.write_text(test_text)
