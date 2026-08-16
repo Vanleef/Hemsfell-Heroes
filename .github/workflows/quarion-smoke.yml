@@ -18,7 +18,9 @@ jobs:
           node-version: 22.13.0
           cache: npm
       - name: Apply patch
-        run: python scripts/quarion_authoritative_patch.py
+        run: |
+          python scripts/quarion_authoritative_patch.py
+          python scripts/quarion_followup_patch.py
       - name: Install
         run: npm ci
       - name: Shell permissions
@@ -36,7 +38,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git checkout -- scripts/*.sh || true
-          git rm -f .github/workflows/quarion-authoritative-fix.yml .github/workflows/quarion-smoke.yml scripts/quarion_authoritative_patch.py
+          git rm -f .github/workflows/quarion-authoritative-fix.yml .github/workflows/quarion-smoke.yml scripts/quarion_authoritative_patch.py scripts/quarion_followup_patch.py
           git add app tests docs || true
           git commit -m 'fix: make Quarion recruit mechanics authoritative'
           git push origin HEAD:fix/cards_mechanics
