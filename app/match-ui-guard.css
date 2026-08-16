@@ -138,28 +138,285 @@
   opacity: .78;
 }
 
-/* Deck setup: useful compact context stays attached to each picker. */
-.deck-picker .deck-picker-summary {
-  display: grid;
-  gap: .28rem;
-  width: 100%;
-  margin-top: clamp(.45rem, 1vh, .75rem);
-  padding-top: clamp(.45rem, 1vh, .75rem);
-  border-top: .0625rem solid color-mix(in srgb, currentColor 16%, transparent);
-  text-align: left;
+/* Deck setup: only faction + concise game plan remain below the selector. */
+.match-setup .versus,
+.room-deck-row {
+  align-items: stretch;
 }
 
-.deck-picker-summary .deck-evolution {
-  font-size: clamp(.66rem, .78vw, .82rem);
-  line-height: 1.3;
-  color: color-mix(in srgb, var(--deck, #d6a74f) 72%, white);
+.deck-picker {
+  min-width: 0;
+  border: .0625rem solid color-mix(in srgb, var(--deck, #d6a74f) 46%, #24303a) !important;
+  border-radius: clamp(.75rem, 1.2vw, 1rem);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--deck, #777d86) 9%, #0d1822), #0b141d 64%) !important;
+  box-shadow: inset 0 .0625rem 0 color-mix(in srgb, white 5%, transparent), 0 .65rem 1.6rem rgba(0,0,0,.14);
+  padding: clamp(.8rem, 1.25vw, 1.15rem) !important;
+  display: grid !important;
+  grid-template-columns: clamp(4.8rem, 7.5vw, 7rem) minmax(0, 1fr) !important;
+  grid-template-areas:
+    "label label"
+    "art select"
+    "art faction"
+    "art plan" !important;
+  column-gap: clamp(.75rem, 1.25vw, 1.1rem) !important;
+  row-gap: clamp(.28rem, .55vw, .5rem) !important;
+  align-content: start;
+}
+
+.deck-picker > span:first-child {
+  grid-area: label;
+  color: color-mix(in srgb, var(--faction-color, var(--deck, #d6a74f)) 72%, white);
+  letter-spacing: .16em;
+  font-size: clamp(.62rem, .72vw, .76rem);
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.deck-picker > img,
+.deck-picker > .remote-card-art,
+.deck-picker > :has(> img):not(.deck-picker-summary) {
+  grid-area: art;
+  align-self: start;
+}
+
+.deck-picker > select {
+  grid-area: select;
+  width: 100%;
+  min-width: 0;
+  align-self: start;
+}
+
+.deck-picker > .deck-picker-faction {
+  grid-area: faction;
+  align-self: end;
+  margin: clamp(.1rem, .4vw, .25rem) 0 0;
+  color: var(--faction-color, var(--deck, #d6a74f)) !important;
+  font-size: clamp(1.05rem, 1.5vw, 1.45rem) !important;
+  line-height: 1;
+  letter-spacing: .01em;
+}
+
+.deck-picker > small[hidden] {
+  display: none !important;
+}
+
+.deck-picker .deck-picker-summary {
+  grid-area: plan;
+  display: grid;
+  align-content: start;
+  gap: .28rem;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  padding-top: clamp(.45rem, .75vw, .7rem);
+  border-top: .0625rem solid color-mix(in srgb, var(--faction-color, currentColor) 30%, transparent);
+  text-align: left;
 }
 
 .deck-picker-summary .deck-plan {
   margin: 0;
-  font-size: clamp(.63rem, .74vw, .78rem);
+  color: color-mix(in srgb, var(--faction-color, #d6a74f) 60%, #dce5ec);
+  font-size: clamp(.68rem, .78vw, .82rem);
+  line-height: 1.5;
+  opacity: .92;
+  text-wrap: pretty;
+}
+
+.match-setup .versus {
+  gap: clamp(.8rem, 1.8vw, 1.6rem) !important;
+}
+
+.match-setup .versus > strong {
+  align-self: center;
+  min-width: clamp(2.4rem, 4vw, 3.5rem);
+  text-align: center;
+  opacity: .55;
+}
+
+.match-setup .difficulty {
+  border: .0625rem solid color-mix(in srgb, white 10%, transparent);
+  border-radius: clamp(.7rem, 1vw, .95rem);
+  background: color-mix(in srgb, #0b141d 88%, transparent);
+  padding: clamp(.65rem, 1vw, .9rem);
+}
+
+.room-panel {
+  display: grid;
+  gap: clamp(.8rem, 1.5vw, 1.35rem);
+}
+
+.room-entry,
+.room-link,
+.room-deck-row,
+.lobby-head,
+.lobby-steps,
+.invite-card {
+  border: .0625rem solid color-mix(in srgb, white 10%, transparent) !important;
+  border-radius: clamp(.8rem, 1.2vw, 1.1rem) !important;
+  background: linear-gradient(145deg, rgba(16,27,38,.94), rgba(8,15,22,.96)) !important;
+  box-shadow: inset 0 .0625rem 0 rgba(255,255,255,.035);
+}
+
+.room-entry {
+  display: grid !important;
+  grid-template-columns: minmax(12rem, 1.15fr) minmax(16rem, 1.4fr) auto;
+  gap: clamp(.8rem, 1.4vw, 1.25rem) !important;
+  align-items: end !important;
+  padding: clamp(.9rem, 1.5vw, 1.3rem) !important;
+}
+
+.host-settings {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(.55rem, .9vw, .8rem) !important;
+}
+
+.host-settings label {
+  min-width: 0;
+  display: grid;
+  gap: .35rem;
+}
+
+.host-settings input,
+.host-settings select,
+.room-toolbar input,
+.room-link input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.room-deck-row {
+  display: grid !important;
+  grid-template-columns: minmax(22rem, 1.5fr) minmax(10rem, auto) minmax(10rem, .6fr);
+  gap: clamp(.8rem, 1.4vw, 1.2rem) !important;
+  align-items: center !important;
+  padding: clamp(.85rem, 1.4vw, 1.2rem) !important;
+}
+
+.room-deck-row > aside {
+  min-width: 0;
+  display: grid;
+  gap: .25rem;
+  align-content: center;
+  padding: clamp(.65rem, 1vw, .9rem);
+  border-left: .0625rem solid rgba(255,255,255,.09);
+}
+
+/* Hero inspector: replace raw card text with the same structured language used by hero guides. */
+.hero-inspector-modern .hero-inspector-legacy-section {
+  display: none !important;
+}
+
+.hero-inspector-modern {
+  --hero-faction: #777d86;
+}
+
+.hero-inspector-modern .hero-inspector-guide {
+  display: grid;
+  grid-template-columns: minmax(0, .88fr) minmax(0, 1.12fr);
+  grid-template-areas:
+    "identity evolution"
+    "abilities abilities";
+  gap: clamp(.65rem, 1vw, .95rem);
+  margin-top: clamp(.7rem, 1.2vw, 1rem);
+}
+
+.hero-inspector-guide > section {
+  min-width: 0;
+  border: .0625rem solid color-mix(in srgb, var(--hero-faction) 28%, #25313a);
+  border-radius: clamp(.65rem, .9vw, .85rem);
+  background: linear-gradient(145deg, color-mix(in srgb, var(--hero-faction) 7%, #0c151e), #0a121a);
+  padding: clamp(.75rem, 1.15vw, 1rem);
+}
+
+.hero-inspector-guide > section > small {
+  display: block;
+  margin-bottom: .45rem;
+  color: color-mix(in srgb, var(--hero-faction) 68%, white);
+  font-size: clamp(.58rem, .68vw, .72rem);
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+
+.hero-guide-identity { grid-area: identity; }
+.hero-guide-evolution { grid-area: evolution; }
+.hero-guide-abilities { grid-area: abilities; }
+
+.hero-guide-identity .hero-guide-faction {
+  display: block;
+  color: var(--hero-faction);
+  font-size: clamp(1.15rem, 1.8vw, 1.65rem);
+  line-height: 1;
+}
+
+.hero-guide-identity > span {
+  display: block;
+  margin-top: .2rem;
+  font-size: clamp(.7rem, .82vw, .86rem);
+  opacity: .78;
+}
+
+.hero-guide-identity p,
+.hero-guide-evolution p {
+  margin: .55rem 0 0;
+  font-size: clamp(.72rem, .84vw, .9rem);
+  line-height: 1.48;
+  color: #d5dde4;
+  text-wrap: pretty;
+}
+
+.hero-guide-abilities > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(.5rem, .85vw, .75rem);
+}
+
+.hero-guide-abilities article {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas: "level type" "level text";
+  column-gap: .55rem;
+  row-gap: .18rem;
+  align-items: start;
+  padding: clamp(.6rem, .85vw, .8rem);
+  border-radius: .65rem;
+  background: rgba(255,255,255,.035);
+}
+
+.hero-guide-abilities article > i {
+  grid-area: level;
+  width: clamp(1.75rem, 2.4vw, 2.15rem);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--hero-faction) 22%, #0c1117);
+  border: .0625rem solid color-mix(in srgb, var(--hero-faction) 58%, transparent);
+  color: #fff;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.hero-guide-abilities article > b {
+  grid-area: type;
+  color: color-mix(in srgb, var(--hero-faction) 72%, white);
+  font-size: clamp(.56rem, .65vw, .68rem);
+  letter-spacing: .12em;
+}
+
+.hero-guide-abilities article > b.is-active {
+  color: #f3bd67;
+}
+
+.hero-guide-abilities article > p {
+  grid-area: text;
+  margin: 0;
+  font-size: clamp(.68rem, .78vw, .82rem);
   line-height: 1.42;
-  opacity: .72;
+  text-wrap: pretty;
 }
 
 /* Result screen. MatchUiGuard adds the semantic class and canonical hero art. */
@@ -239,8 +496,41 @@
   gap: clamp(.45rem, .9vw, .75rem);
 }
 
+@media (max-width: 64rem) {
+  .room-entry {
+    grid-template-columns: 1fr;
+    align-items: stretch !important;
+  }
+  .room-deck-row {
+    grid-template-columns: 1fr;
+  }
+  .room-deck-row > aside {
+    border-left: 0;
+    border-top: .0625rem solid rgba(255,255,255,.09);
+  }
+}
+
 @media (max-width: 48rem) {
   .landing-copy .landing-mode-guide { grid-template-columns: 1fr; }
+  .match-setup .versus {
+    grid-template-columns: 1fr !important;
+  }
+  .match-setup .versus > strong {
+    transform: none !important;
+  }
+  .deck-picker {
+    grid-template-columns: clamp(4.5rem, 20vw, 6rem) minmax(0,1fr) !important;
+  }
+  .host-settings {
+    grid-template-columns: 1fr;
+  }
+  .hero-inspector-modern .hero-inspector-guide {
+    grid-template-columns: 1fr;
+    grid-template-areas: "identity" "evolution" "abilities";
+  }
+  .hero-guide-abilities > div {
+    grid-template-columns: 1fr;
+  }
   .match-result-overlay > .maintenance {
     grid-template-columns: 1fr;
     grid-template-areas: "art" "eyebrow" "title" "summary" "meta" "actions";
