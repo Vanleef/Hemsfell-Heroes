@@ -1,0 +1,48 @@
+/* Keep card-choice decisions inside the central lane between both Terreno Cruel zones. */
+.screen-game .engine-decision-backdrop {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 86 !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 0 !important;
+  pointer-events: none;
+  background: transparent !important;
+}
+
+.screen-game .engine-decision-backdrop > .engine-decision-panel {
+  pointer-events: auto;
+  position: absolute !important;
+  left: 50% !important;
+  right: auto !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(58cqw, 46rem) !important;
+  max-width: min(58cqw, 46rem) !important;
+  max-height: min(56cqh, 34rem) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* Card lists scroll inside the panel instead of pushing the panel outside the lane. */
+.screen-game .engine-decision-panel .visual-card-choice-grid {
+  max-height: min(38cqh, 22rem) !important;
+  overflow: auto !important;
+}
+
+@container hemsfell-board (max-width: 72rem) {
+  .screen-game .engine-decision-backdrop > .engine-decision-panel {
+    width: min(64cqw, 42rem) !important;
+    max-width: min(64cqw, 42rem) !important;
+  }
+}
+
+@container hemsfell-board (max-width: 54rem) {
+  .screen-game .engine-decision-backdrop > .engine-decision-panel {
+    width: min(82cqw, 38rem) !important;
+    max-width: min(82cqw, 38rem) !important;
+    max-height: min(62cqh, 32rem) !important;
+  }
+}
