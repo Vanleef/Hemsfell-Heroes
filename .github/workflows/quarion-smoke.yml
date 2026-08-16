@@ -1,11 +1,42 @@
-name: Quarion smoke
+name: Quarion patch runner
 on:
   push:
     branches:
       - fix/cards_mechanics
+permissions:
+  contents: write
 jobs:
-  smoke:
+  patch:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo ok
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - name: Apply patch
+        run: python scripts/quarion_authoritative_patch.py
+      - name: Install
+        run: npm ci
+      - name: Shell permissions
+        run: find scripts -maxdepth 1 -name '*.sh' -exec chmod +x {} +
+      - name: Quarion regression suite
+        run: node --test tests/quarion-authoritative.test.mjs tests/remaining-decks-authoritative.test.mjs tests/rules-engine.test.mjs
+      - name: Full suite
+        run: npm test
+      - name: Production build
+        run: npm run vercel-build
+      - name: Card audit
+        run: npm run audit:cards --if-present
+      - name: Commit validated fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -- scripts/*.sh || true
+          git rm -f .github/workflows/quarion-authoritative-fix.yml .github/workflows/quarion-smoke.yml scripts/quarion_authoritative_patch.py
+          git add app tests docs || true
+          git commit -m 'fix: make Quarion recruit mechanics authoritative'
+          git push origin HEAD:fix/cards_mechanics
