@@ -22,7 +22,7 @@ jobs:
       - name: Apply Tifon patch
         run: python .github/tifon_authoritative_patch.py
       - name: Restore executable build helpers
-        run: chmod +x scripts/sites-env.sh scripts/build-verified.sh || true
+        run: find scripts -maxdepth 1 -type f -name '*.sh' -exec chmod +x {} +
       - name: Install dependencies
         run: npm ci
       - name: Validate focused Tifon regressions
