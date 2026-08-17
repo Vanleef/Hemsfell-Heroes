@@ -32,10 +32,45 @@
   overflow: auto !important;
 }
 
+/* Simple target-selection banner: the measured safe lane already knows where
+   the creature slots begin and where both Terreno Cruel zones end. Anchor the
+   banner by its RIGHT edge just before the creature slots instead of centering
+   it across the whole lane. Its vertical center remains exactly between both
+   Terreno Cruel zones. */
+.screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
+  --target-slot-gap: clamp(.28rem, .48cqw, .58rem);
+  position: absolute !important;
+  left: calc(var(--target-safe-right) - var(--target-slot-gap)) !important;
+  right: auto !important;
+  top: var(--target-safe-center-y) !important;
+  bottom: auto !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: calc(var(--target-safe-right) - var(--target-safe-left) - var(--target-slot-gap)) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: calc(var(--target-safe-bottom) - var(--target-safe-top)) !important;
+  margin: 0 !important;
+  transform: translate(-100%, -50%) !important;
+  box-sizing: border-box !important;
+  z-index: 760 !important;
+}
+
+/* Keep the compact text/button composition while allowing long localized copy
+   to wrap before it reaches the creature-slot boundary. */
+.screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] > :is(b, span, div) {
+  min-width: 0 !important;
+  max-width: min(28cqw, 30rem) !important;
+}
+
 @container hemsfell-board (max-width: 72rem) {
   .screen-game .engine-decision-backdrop > .engine-decision-panel {
     width: min(64cqw, 42rem) !important;
     max-width: min(64cqw, 42rem) !important;
+  }
+
+  .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
+    --target-slot-gap: clamp(.22rem, .42cqw, .48rem);
   }
 }
 
@@ -44,5 +79,10 @@
     width: min(82cqw, 38rem) !important;
     max-width: min(82cqw, 38rem) !important;
     max-height: min(62cqh, 32rem) !important;
+  }
+
+  .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
+    --target-slot-gap: clamp(.16rem, .34cqw, .36rem);
+    max-width: calc(var(--target-safe-right) - var(--target-safe-left) - var(--target-slot-gap)) !important;
   }
 }
