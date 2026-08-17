@@ -1,11 +1,13 @@
-/* Response window: keep cards legible and contain long lists in an internal scrollview.
-   Hovered cards/tooltips may paint above siblings without forcing the list outside the panel. */
+/* Response window: keep cards legible and long lists horizontally scrollable.
+   When a response card is hovered/focused, temporarily release overflow so its
+   tooltip can paint beyond the internal card rail and the popup itself. */
 .response-window,
 .response-panel,
 .response-options {
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
+  overflow: visible !important;
 }
 
 .response-cards {
@@ -22,11 +24,20 @@
   gap: clamp(.35rem, .75cqw, .65rem) !important;
   padding: clamp(.25rem, .55cqh, .45rem) clamp(.3rem, .7cqw, .65rem) clamp(.55rem, 1cqh, .85rem);
   overflow-x: auto !important;
-  overflow-y: visible !important;
+  overflow-y: hidden !important;
   overscroll-behavior-x: contain;
   scroll-snap-type: x proximity;
   scrollbar-gutter: stable;
   -webkit-overflow-scrolling: touch;
+}
+
+/* CSS normalizes `overflow-y: visible` to auto whenever overflow-x is auto,
+   which clips absolutely-positioned tooltips. During hover/focus we release
+   both axes; after hover, the horizontal scroll rail is restored. */
+.response-cards:has(> *:hover),
+.response-cards:has(> *:focus-within) {
+  overflow: visible !important;
+  scrollbar-gutter: auto;
 }
 
 .response-cards > * {
@@ -38,6 +49,7 @@
   max-width: clamp(5rem, 8.5cqw, 7.25rem) !important;
   box-sizing: border-box;
   scroll-snap-align: center;
+  overflow: visible !important;
 }
 
 .response-cards > * > button,
@@ -50,6 +62,7 @@
   max-width: 100% !important;
   min-width: 0 !important;
   box-sizing: border-box;
+  overflow: visible !important;
 }
 
 .response-cards > * img:not(.card-tooltip img) {
@@ -65,12 +78,14 @@
 .response-cards > *:hover .card-tooltip,
 .response-cards > *:focus-within .card-tooltip,
 .response-cards .card-tooltip:hover {
-  z-index: 140 !important;
+  z-index: 50020 !important;
 }
 
-/* The list owns horizontal overflow; outer response shells never let cards escape. */
+/* The popup shells must never become a paint-clipping ancestor for card hover. */
+.response-overlay,
+.response-dialog,
 .response-window,
 .response-panel,
 .response-options {
-  overflow-x: hidden !important;
+  overflow: visible !important;
 }
