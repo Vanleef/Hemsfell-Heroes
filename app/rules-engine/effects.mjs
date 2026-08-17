@@ -640,7 +640,8 @@ export const defaultEffectHandlers = Object.freeze({
   createImage(state, effect, context) {
     const owner = effect.destination === "activePlayerField" ? state.active : context.owner;
     const entry = player(state, owner);
-    const catalog = [...(entry.extraDeck || []), ...(state.cardCatalog || [])];
+    /* Prefer the authoritative compiled catalog so generated Images inherit\n       their canonical abilities (notably Primeiro Ato) before falling back to\n       the presentation-only extra deck copy. */
+    const catalog = [...(state.cardCatalog || []), ...(entry.extraDeck || [])];
     const base = catalog.find((card) => card.name === effect.name) || { id: `image:${effect.name}`, name: effect.name, type: "Criatura", atk: 1, hp: 1, tags: [] };
     state.nextGeneratedId = (state.nextGeneratedId || 0) + 1;
     const copy = { ...structuredClone(base), uid: `${base.id}-image-${state.round}-${state.nextGeneratedId}`, generatedImage: true, imageCard: true, enteredRound: state.round, attackedThisTurn: false, summoning: base.type === "Artefato" || (base.type === "Criatura" && !(base.tags || []).some((tag) => /investida/i.test(String(tag)))), exhausted: false, damage: 0, slot: context.slot ?? 0, abilities: base.abilities || [] };

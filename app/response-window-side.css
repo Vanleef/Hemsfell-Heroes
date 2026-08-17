@@ -1,0 +1,58 @@
+.screen-game .response-overlay{
+  position:fixed!important;
+  inset:0!important;
+  display:block!important;
+  padding:0!important;
+  background:rgba(2,5,10,.72)!important;
+  backdrop-filter:brightness(.48) saturate(.78)!important;
+  z-index:1800!important;
+}
+.screen-game .response-overlay .response-dialog{
+  position:absolute!important;
+  top:50%!important;
+  right:clamp(.7rem,2.4cqw,2.4rem)!important;
+  left:auto!important;
+  bottom:auto!important;
+  translate:0 -50%!important;
+  transform:none!important;
+  width:fit-content!important;
+  min-width:min(18rem,31cqw)!important;
+  max-width:min(27rem,34cqw)!important;
+  height:fit-content!important;
+  max-height:min(76cqh,42rem)!important;
+  margin:0!important;
+  overflow:auto!important;
+  box-sizing:border-box!important;
+  z-index:1801!important;
+}
+.screen-game .response-overlay .response-cards{
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  max-width:100%!important;
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+}
+.screen-game .response-overlay .response-cards .original-card.is-small{
+  width:clamp(3.8rem,5.2cqw,5.4rem)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip.is-unlocked{filter:none!important;}
+.screen-game .hero-command-bar .hero-ability-chip.is-unlocked:not(.is-unavailable){opacity:1!important;}
+.screen-game .hero-command-bar .hero-ability-chip.is-unlocked.is-unavailable{opacity:.68!important;}
+.screen-game .hero-command-bar .hero-ability-chip.is-unlocked>i{filter:none!important;}
+@container hemsfell-board (max-width:70rem){
+  .screen-game .response-overlay .response-dialog{
+    right:clamp(.45rem,1.4cqw,1rem)!important;
+    min-width:min(16rem,35cqw)!important;
+    max-width:min(23rem,38cqw)!important;
+  }
+}
+@media (max-width:760px){
+  .screen-game .response-overlay .response-dialog{
+    top:50%!important;
+    right:.5rem!important;
+    width:min(20rem,46vw)!important;
+    min-width:0!important;
+    max-width:46vw!important;
+    max-height:78vh!important;
+  }
+}

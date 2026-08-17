@@ -1029,7 +1029,7 @@ function HeroAbilities({player,enemy=false,onAbility,interactionEnabled=true}:{p
  return <aside className={`hero-abilities hero-command-bar ${enemy?"enemy":""}`} style={{"--deck":d.color} as React.CSSProperties} aria-label={`Habilidades de ${heroDisplayName(player.heroId)}`}>
   <header><b>Poderes</b><span>Nv. {player.level}</span></header>
   {d.abilities.map((ability,slot)=>{
-   const active=isActiveAbility(d.id,slot),key=`${d.id}-${slot}`,locked=slot+1>player.level,used=!!player.abilityUses[key],clueCount=Math.max(Number(player.heroXP||0),Number((player.markers as any)?.clue||0)),clueCost=d.id==="ngoro"?(slot===1?2:slot===2?3:0):0;
+   const active=isActiveAbility(d.id,slot),key=`${d.id}-${slot}`,unlockLevel=Math.min(3,slot+1),locked=player.level<unlockLevel,used=!!player.abilityUses[key],clueCount=Math.max(Number(player.heroXP||0),Number((player.markers as any)?.clue||0)),clueCost=d.id==="ngoro"?(slot===1?2:slot===2?3:0):0;
    const noResource=d.id==="saymon"&&(slot===0||slot===1)?player.life<=2:clueCost>0?clueCount<clueCost:false;
    const noValidTarget=d.id==="gimble"&&slot===1?!player.board.some(card=>hasFaction(card,"Dragão")&&card.exhausted):d.id==="ngoro"&&slot===2?!player.board.length:false;
    const unavailable=enemy||locked||used||noResource||noValidTarget||!interactionEnabled;
@@ -1039,7 +1039,7 @@ function HeroAbilities({player,enemy=false,onAbility,interactionEnabled=true}:{p
    const title=locked?`Habilidade liberada no nível ${slot+1}.`:active?(used?"Habilidade já usada neste turno.":noResource?"Recursos insuficientes.":noValidTarget?"Não há alvo válido.":!interactionEnabled?"Aguarde a ação atual terminar.":`${action}: ${ability}`):"Habilidade passiva; resolve automaticamente.";
    const abilityCopy=ability.replace(/^[IVX]+ · /,"");
    const copyDensity=abilityCopy.length>110?"copy-dense":abilityCopy.length>72?"copy-compact":"copy-normal";
-   return <button type="button" className={`ability hero-ability-chip ${stateClass} ${copyDensity}`} key={ability} aria-disabled={!clickable} tabIndex={clickable?0:-1} onClick={event=>{event.preventDefault();event.stopPropagation();if(clickable)onAbility?.(slot)}} title={title} aria-label={`${active?"Ativa":"Passiva"}: ${ability}`}><i aria-hidden="true">{slot+1}</i><span><b>{active?"ATIVA":"PASSIVA"}</b><p>{abilityCopy}</p></span></button>
+   return <button type="button" className={`ability hero-ability-chip ${stateClass} ${locked?"":"is-unlocked"} ${copyDensity}`} key={ability} aria-disabled={!clickable} tabIndex={clickable?0:-1} onClick={event=>{event.preventDefault();event.stopPropagation();if(clickable)onAbility?.(slot)}} title={title} aria-label={`${active?"Ativa":"Passiva"}: ${ability}`}><i aria-hidden="true">{slot+1}</i><span><b>{active?"ATIVA":"PASSIVA"}</b><p>{abilityCopy}</p></span></button>
   })}
  </aside>
 }

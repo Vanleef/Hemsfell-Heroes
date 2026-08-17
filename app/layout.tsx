@@ -5,6 +5,7 @@ import "./command-bar-fixes.css";
 import "./match-ui-guard.css";
 import "./setup-heading-fixes.css";
 import "./response-hover-layer.css";
+import "./response-window-side.css";
 import "./card-list-scrollviews.css";
 import "./card-list-grid-layout.css";
 import "./card-list-grid-fit.css";

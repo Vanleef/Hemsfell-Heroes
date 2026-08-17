@@ -14,6 +14,7 @@ export const explicitCardRules = Object.freeze({
   p15: [ability("onPlay", [effect("conditionalDrawByControlledSubtype", { subtype: "Dragão", ifTrue: 2, ifFalse: 1 })])],
   p16: [ability("onPlay", [effect("modifyStats", { target: "anyCreature", requiredSubtype: "Dragão", attack: 0, health: 2, duration: "turn" })], [], { playCondition: { anySubtypeInPlay: "Dragão" } })],
   p6: [ability("onEnter", [effect("damage", { amount: 2, target: "anyCreature", selections: 1 })])],
+  p7: [ability("onEnter", [effect("draw", { amount: 2 })], [], { condition: { controllerControlsOtherSubtype: "Dragão" }, triggerMeta: { kind: "first-act", scenario: "Ao entrar, se você já controlava outro Dragão aliado, compre 2 cartas." } })],
   p9: [ability("static", [effect("protectAlliedDragonsOncePerTurn")])],
   p10: [ability("static", [effect("keyword", { keyword: "Atropelar" })]), ability("onDestroyed", [effect("damageAll", { amount: 2, target: "allCreatures" })])],
   p11: [ability("static", [effect("keyword", { keyword: "Voar" })]), ability("onCreatureEnter", [effect("damageEnemyHero", { amount: 2 })], [], { condition: { eventOwnerIsController: true, eventCardSubtype: "Dragão", otherThanSource: true }, triggerMeta: { kind: "conditional-passive", scenario: "Sempre que outra criatura aliada da classe Dragão entrar em campo." } })],
