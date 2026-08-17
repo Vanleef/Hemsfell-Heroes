@@ -43,3 +43,5 @@ jobs:
           git add app/page.tsx app/rules-engine/engine-base.mjs app/rules-engine/effects.mjs tests/saymon-cat-espresso-turn-regression.test.mjs
           git commit -m "fix: stabilize Saymon cat return and espresso activation"
           git push origin HEAD:fix/cards_mechanics
+
+# Re-run marker: canonical hero inspector rollout depends on this repair being green.
