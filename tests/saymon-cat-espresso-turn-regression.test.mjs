@@ -57,7 +57,7 @@ test("AI sees Saymon I as used after the authoritative activation", () => {
   assert.notEqual(after?.kind, "saymon-damage", "the AI must not schedule Saymon I twice in one turn");
 });
 
-test("Máquina de Expresso cannot tap on entry, then creates Café Expresso in hand after maintenance", () => {
+test("Máquina de Expresso cannot tap on entry, then creates Café Expresso in hand on a later round", () => {
   let game = state(); game.active = 0; game.round = 3;
   const machineCard = byPage(229), espressoImage = byPage(230);
   assert.ok(machineCard?.abilities?.some((ability) => ability.trigger === "activated"));
@@ -69,8 +69,9 @@ test("Máquina de Expresso cannot tap on entry, then creates Café Expresso in h
   const ability = fresh.abilities.find((candidate) => candidate.trigger === "activated");
   assert.throws(() => executeCommand(game, { type: "activate", owner: 0, sourceId: fresh.uid, abilityId: ability.id }), /cannot-tap|summoning-sickness/);
 
-  // Maintenance clears the lifecycle sickness. enteredRound may still match the
-  // current round identifier and must not incorrectly block the activated cost.
+  // Model the following maintenance/turn lifecycle: the artifact is no longer
+  // summoning-sick and its entry round is strictly older than the current round.
+  game.round = 4;
   game.players[0].support[0].summoning = false;
   const next = executeCommand(game, { type: "activate", owner: 0, sourceId: fresh.uid, abilityId: ability.id }).state;
   assert.equal(next.players[0].support[0].exhausted, true, "Máquina de Expresso turns as its cost");
