@@ -9,6 +9,7 @@ import "./card-list-scrollviews.css";
 import "./card-list-grid-layout.css";
 import "./card-list-grid-fit.css";
 import "./decision-lane-position.css";
+import "./target-banner-anchor.css";
 import CommandBarTextAutoFit from "./command-bar-text-autofit";
 import MatchUiGuard from "./match-ui-guard";
 import CardListTooltipPortal from "./card-list-tooltip-portal";
