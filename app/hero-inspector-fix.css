@@ -1,0 +1,33 @@
+/* Keep every in-match hero inspector on the same structured guide layout. */
+.card-focus-layer .inspector-hero-guide{
+  width:100%;
+  min-width:0;
+  display:block;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-guide{
+  width:100%;
+  max-width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide>div:last-child{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:clamp(.4rem,.8cqw,.75rem)!important;
+  width:100%!important;
+  min-width:0!important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide>div:last-child>*{
+  min-width:0!important;
+  width:100%!important;
+  box-sizing:border-box!important;
+}
+
+@container (max-width:46rem){
+  .card-focus-layer .inspector-hero-guide .hero-guide{
+    font-size:clamp(.78rem,2.3cqw,.96rem);
+  }
+}
