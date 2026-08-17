@@ -238,6 +238,28 @@
   outline-offset: clamp(.08rem,.12cqw,.12rem) !important;
 }
 
+/* Inline tooltips stay suppressed inside clipped/scrolling card strips.
+   CardListTooltipPortal mirrors only the hovered card's tooltip into body, so
+   the card itself never escapes the popup while its tooltip can render above
+   the modal and every non-hovered card. */
+.screen-game :is(.visual-card-choice-grid,.card-choice-grid,.card-selection-grid,.selection-card-grid,.popup-card-list,.choice-cards,.hand-limit-choice-area) .original-card > .card-tooltip,
+.screen-game :is(.visual-card-choice-grid,.card-choice-grid,.card-selection-grid,.selection-card-grid,.popup-card-list,.choice-cards,.hand-limit-choice-area) .original-card:hover > .card-tooltip {
+  display: none !important;
+}
+
+.card-list-tooltip-portal {
+  display: flex !important;
+  position: fixed !important;
+  width: min(14.5rem, calc(100dvw - 1rem)) !important;
+  max-width: calc(100dvw - 1rem) !important;
+  max-height: calc(100dvh - 1rem) !important;
+  overflow: auto !important;
+  z-index: 100000 !important;
+  pointer-events: none !important;
+  transform: none !important;
+  filter: none !important;
+}
+
 @media (max-width: 52rem), (max-height: 42rem) {
   .screen-game .engine-decision-panel .visual-card-choice-grid,
   .screen-game .overlay .visual-card-choice-grid,
