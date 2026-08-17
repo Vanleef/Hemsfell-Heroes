@@ -55,5 +55,12 @@ s = priority_test.read_text(encoding='utf-8')
 s = s.replace('[252,3],[230,3],[254,2]', '[252,3],[234,3],[254,2]')
 priority_test.write_text(s, encoding='utf-8')
 
+# Restoring the legitimate playable card increases the generated catalog by one.
+rules_test = Path('tests/rules-engine.test.mjs')
+s = rules_test.read_text(encoding='utf-8')
+s = s.replace('assert.equal(migrated.length, 298); assert.equal(pending.length, 0);', 'assert.equal(migrated.length, 299); assert.equal(pending.length, 0);')
+s = s.replace('assert.equal(report.cards, 298);', 'assert.equal(report.cards, 299);')
+rules_test.write_text(s, encoding='utf-8')
+
 # 5) Add a direct regression guaranteeing no supplied Rasmus main-deck page is an Image.
 Path('tests/rasmus-deck-no-images.test.mjs').write_text('''import assert from "node:assert/strict";\nimport test from "node:test";\nimport fs from "node:fs";\nimport cards from "../app/cards.generated.json" with { type: "json" };\n\nconst source=fs.readFileSync(new URL("../app/page.tsx", import.meta.url),"utf8");\n\ntest("Rasmus supplied deck contains 49 real cards and zero Images",()=>{\n  const match=source.match(/rasmus:\\[(.*?)\\],\\n ngoro:/s);\n  assert.ok(match);\n  const pairs=[...match[1].matchAll(/\\[(\\d+),(\\d+)\\]/g)].map(entry=>[Number(entry[1]),Number(entry[2])]);\n  assert.equal(pairs.reduce((sum,[,qty])=>sum+qty,0),49);\n  for(const [page] of pairs){\n    const card=cards.find(item=>item.page===page);\n    assert.ok(card,`missing page ${page}`);\n    assert.equal(card.imageCard,false,`${card.name} (p${page}) must not be an Image in Rasmus main deck`);\n  }\n  assert.ok(pairs.some(([page])=>page===234));\n  assert.ok(!pairs.some(([page])=>page===230));\n});\n''', encoding='utf-8')
