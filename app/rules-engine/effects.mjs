@@ -61,7 +61,7 @@ const nextRandomIndex = (state, length) => {
 const targetScopeForEffect = (target) => ({ anyCharacter: "anyCharacter", anyCreature: "anyCreature", allyCreature: "allyCreature", enemyCreature: "enemyCreature", anyPermanent: "anyPermanent", allyPermanent: "allyPermanent", enemyPermanent: "enemyPermanent", creature: "anyCreature" }[target]);
 const targetStepsForEffects = (effects = []) => effects.flatMap((nested) => {
   const scope = targetScopeForEffect(nested.target);
-  if (!scope) return [];
+  if (!scope || nested.reusePreviousTarget) return [];
   const selections = nested.selections ?? 1, minimum = nested.minimumSelections ?? selections;
   return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: nested.requiredSubtype, requiresMarker: !!nested.requiresMarker, requiresEffectAppliedThisTurn: !!nested.requiresEffectAppliedThisTurn }));
 });

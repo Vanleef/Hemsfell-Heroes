@@ -218,7 +218,7 @@ export const explicitCardRules = Object.freeze({
   p246: [ability("static", [effect("entersExhausted")]), ability("onNamedEffectApplied", [effect("ready", { target: "self" })], [], { condition: { nameIncludes: "Café", eventTargetIsSelf: true } })],
   p247: [ability("onNamedEffectApplied", [effect("copyEventEffect", { target: "self" })], [], { condition: { nameIncludes: "Café", eventTargetType: "Criatura" } })],
   p248: [ability("onPlay", [effect("repeatChoiceForCoffeeCount", { choices: [[effect("draw", { amount: 1 })], [effect("tap", { target: "anyCreature", selections: 1 })], [effect("modifyStats", { target: "anyCreature", attack: 2, health: 2, duration: "turn" })]] })])],
-  p249: [ability("onPlay", [effect("modifyStats", { target: "anyCreature", selections: 1, attack: 5, health: 5, duration: "untilNextTurn" })])],
+  p249: [ability("onPlay", [effect("modifyStats", { target: "anyCreature", selections: 1, attack: 5, health: 5, duration: "untilNextTurn" }), effect("skipNextUntap", { target: "anyCreature", reusePreviousTarget: true })])],
   p250: [ability("onPlay", [effect("redrawHand")])],
   p251: [ability("onPlay", [effect("strategicDraw")])],
   p252: [ability("onPlay", [effect("increaseVitality", { amount: 2, target: "anyCharacter", duration: "permanent" })])],

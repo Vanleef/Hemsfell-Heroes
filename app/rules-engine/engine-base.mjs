@@ -289,6 +289,7 @@ function abilityTargetSteps(ability) {
   if (ability.sourceText) return (targetPolicy(ability.sourceText).steps || []).filter((step) => step.role !== "sacrifice");
   return (ability.effects || []).flatMap((effect) => {
     const scope = targetScope(effect.target);
+    if (effect.reusePreviousTarget) return [];
     const selections = effect.selections ?? (scope === TargetScope.NONE ? 0 : 1);
     const minimum = effect.minimumSelections ?? selections;
     return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: effect.excludeIds || [], allowedIds: effect.allowedIds, requiresMarker: !!effect.requiresMarker, requiresEffectAppliedThisTurn: !!effect.requiresEffectAppliedThisTurn }));

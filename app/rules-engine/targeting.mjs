@@ -60,7 +60,9 @@ export function cardPlayTargetPolicy(card) {
     : []));
   const effectSteps = abilities.flatMap((ability) => (ability.effects || []).flatMap((effect) => {
     const scope = effectScope(effect.target);
-    if (scope === TargetScope.NONE || effect.global) return [];
+    /* Compound effects may apply multiple consequences to one chosen target.
+       Follow-up effects marked reusePreviousTarget do not create another UI target step. */
+    if (scope === TargetScope.NONE || effect.global || effect.reusePreviousTarget) return [];
     const selections = Number(effect.selections) || 1;
     const minimum = effect.minimumSelections == null ? selections : Number(effect.minimumSelections);
     return Array.from({ length: selections }, (_, index) => ({
