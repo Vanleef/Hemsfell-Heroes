@@ -16,84 +16,93 @@
   overflow: hidden !important;
 }
 
+/* The guide itself is a strict three-row document: header, evolution, powers.
+   Using named grid rows here prevents any legacy hero-card grid/flex rule from
+   moving the powers beside or on top of the evolution block. */
 .card-focus-layer .inspector-hero-guide .hero-guide {
-  position: static !important;
+  position: relative !important;
   inset: auto !important;
   transform: none !important;
+  translate: none !important;
+  rotate: none !important;
+  scale: 1 !important;
+  float: none !important;
+  clear: both !important;
   width: 100% !important;
   max-width: 100% !important;
   height: auto !important;
   min-height: 0 !important;
   margin: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
+  padding: 0 !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto !important;
+  grid-template-areas:
+    "hero-header"
+    "hero-evolution"
+    "hero-abilities" !important;
+  grid-auto-flow: row !important;
   align-items: stretch !important;
-  justify-content: flex-start !important;
+  justify-items: stretch !important;
+  align-content: start !important;
+  justify-content: stretch !important;
   gap: 0 !important;
   overflow: visible !important;
+  isolation: isolate !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-guide > header {
+  grid-area: hero-header !important;
+  display: grid !important;
+  grid-template-columns: auto minmax(0, 1fr) auto !important;
+  grid-template-rows: auto !important;
+  align-items: center !important;
+  gap: clamp(.55rem, 1.1cqw, 1rem) !important;
+  padding: clamp(.65rem, 1.3cqw, 1rem) clamp(.75rem, 1.4cqw, 1.15rem) !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-guide > header > span,
+.card-focus-layer .inspector-hero-guide .hero-guide > header > h3,
+.card-focus-layer .inspector-hero-guide .hero-guide > header > p {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  translate: none !important;
+  float: none !important;
+  width: auto !important;
+  max-width: none !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  white-space: normal !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-guide > header > h3 {
+  min-width: 0 !important;
+  line-height: 1.12 !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-guide > header > p {
+  justify-self: end !important;
+  text-align: right !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide {
+  grid-area: hero-evolution !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide {
+  grid-area: hero-abilities !important;
 }
 
 .card-focus-layer .inspector-hero-guide .hero-guide > header,
 .card-focus-layer .inspector-hero-guide .hero-evolution-guide,
 .card-focus-layer .inspector-hero-guide .hero-abilities-guide {
-  position: static !important;
-  inset: auto !important;
-  transform: none !important;
-  float: none !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  box-sizing: border-box !important;
-}
-
-.card-focus-layer .inspector-hero-guide .hero-evolution-guide > ol {
-  display: flex !important;
-  flex-direction: column !important;
-  grid-template-columns: none !important;
-  width: 100% !important;
-  gap: clamp(.35rem,.7cqw,.65rem) !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.card-focus-layer .inspector-hero-guide .hero-evolution-guide > ol > li {
-  position: static !important;
-  inset: auto !important;
-  transform: none !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: auto !important;
-  min-height: clamp(2.6rem,6cqh,4rem) !important;
-  box-sizing: border-box !important;
-}
-
-/* The second direct child is the abilities list. Legacy styles previously
-   turned this into a horizontal three-column deck-card layout. */
-.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child {
-  position: static !important;
-  inset: auto !important;
-  transform: none !important;
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: stretch !important;
-  justify-content: flex-start !important;
-  grid-template-columns: none !important;
-  grid-auto-flow: row !important;
-  gap: clamp(.4rem,.8cqw,.75rem) !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  overflow: visible !important;
-}
-
-.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article {
-  position: static !important;
+  position: relative !important;
   inset: auto !important;
   left: auto !important;
   right: auto !important;
@@ -104,10 +113,177 @@
   rotate: none !important;
   scale: 1 !important;
   float: none !important;
+  clear: both !important;
+  z-index: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide,
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide {
+  display: block !important;
+  padding: clamp(.75rem, 1.4cqw, 1.15rem) !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-guide-title {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  translate: none !important;
+  float: none !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: clamp(.45rem, .9cqw, .75rem) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  margin: 0 0 clamp(.45rem, .8cqw, .7rem) !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-guide-title > i,
+.card-focus-layer .inspector-hero-guide .hero-guide-title > span,
+.card-focus-layer .inspector-hero-guide .hero-guide-title small,
+.card-focus-layer .inspector-hero-guide .hero-guide-title b {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  translate: none !important;
+  float: none !important;
+  height: auto !important;
+  max-width: 100% !important;
+  white-space: normal !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-guide-title > span {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide > p {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 0 clamp(.55rem, 1cqw, .85rem) !important;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide > ol {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  grid-template-columns: none !important;
+  grid-auto-flow: row !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  gap: clamp(.35rem,.7cqw,.65rem) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  list-style: none !important;
+  overflow: visible !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide > ol > li {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  translate: none !important;
+  float: none !important;
+  display: grid !important;
+  grid-template-columns: clamp(3.4rem, 8cqw, 5.2rem) minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: clamp(.45rem, .9cqw, .8rem) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: clamp(2.6rem,6cqh,4rem) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide > ol > li > span,
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide > ol > li > b {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  margin: 0 !important;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+/* Powers are always one vertical list. */
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  translate: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  grid-template-columns: none !important;
+  grid-template-rows: none !important;
+  grid-auto-flow: row !important;
+  gap: clamp(.4rem,.8cqw,.75rem) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article {
+  position: relative !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  translate: none !important;
+  rotate: none !important;
+  scale: 1 !important;
+  float: none !important;
+  clear: both !important;
   flex: 0 0 auto !important;
   display: grid !important;
   grid-template-columns: clamp(2rem,5cqw,3rem) minmax(0,1fr) !important;
-  align-items: stretch !important;
+  grid-template-rows: auto !important;
+  align-items: center !important;
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
@@ -120,33 +296,64 @@
 
 .card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article > span,
 .card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article > div,
-.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article p {
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article p,
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article p > * {
   position: static !important;
   inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
   transform: none !important;
+  translate: none !important;
+  float: none !important;
   min-width: 0 !important;
   max-width: 100% !important;
   height: auto !important;
   box-sizing: border-box !important;
 }
 
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article > div {
+  width: 100% !important;
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article p {
+  width: 100% !important;
   display: flex !important;
   flex-wrap: wrap !important;
   align-items: center !important;
+  justify-content: flex-start !important;
   gap: clamp(.25rem,.5cqw,.45rem) !important;
   margin: 0 !important;
+  padding: 0 !important;
   white-space: normal !important;
-  overflow-wrap: anywhere !important;
+  overflow: visible !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article p > em {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  white-space: nowrap !important;
 }
 
 .card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article p > span:not(.uruk-element-list) {
   flex: 1 1 12rem !important;
+  width: auto !important;
   min-width: 0 !important;
   white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
 }
 
 .card-focus-layer .inspector-hero-guide > small {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
   flex: 0 0 auto !important;
   margin-top: auto !important;
 }
@@ -162,6 +369,14 @@
 @container (max-width:46rem) {
   .card-focus-layer .inspector-hero-guide .hero-guide {
     font-size: clamp(.78rem,2.3cqw,.96rem) !important;
+  }
+
+  .card-focus-layer .inspector-hero-guide .hero-guide > header {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+  }
+
+  .card-focus-layer .inspector-hero-guide .hero-guide > header > span {
+    grid-column: 1 / -1 !important;
   }
 
   .card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article {
