@@ -256,6 +256,8 @@ function layoutTargetBannerInSafeLane() {
   banner.style.setProperty("--target-safe-right", right.toFixed(3) + "%");
   banner.style.setProperty("--target-safe-top", top.toFixed(3) + "%");
   banner.style.setProperty("--target-safe-bottom", bottom.toFixed(3) + "%");
+  banner.style.setProperty("--target-safe-center-x", ((left + right) / 2).toFixed(3) + "%");
+  banner.style.setProperty("--target-safe-center-y", ((top + bottom) / 2).toFixed(3) + "%");
   banner.dataset.safeLaneMeasured = "true";
 }
 
