@@ -12,7 +12,9 @@
   box-sizing: border-box;
 }
 
-/* Engine decision card lists (target selection, investigate and similar choices). */
+/* Every popup that asks the player to choose cards (search, seek, graveyard,
+   deck inspection, hand limit, investigate, replacement choices, etc.) uses
+   one horizontal strip. Cards never wrap or stack; the strip owns scrolling. */
 .screen-game .engine-decision-panel .visual-card-choice-grid,
 .screen-game .overlay .visual-card-choice-grid,
 .screen-game .popup .visual-card-choice-grid,
@@ -29,15 +31,17 @@
   max-height: min(58dvh, 32rem) !important;
   box-sizing: border-box !important;
   display: flex !important;
+  flex-direction: row !important;
   flex-wrap: nowrap !important;
   align-items: flex-start !important;
   justify-content: flex-start !important;
   gap: clamp(.45rem, 1cqw, .85rem) !important;
   padding: clamp(.55rem, 1.2cqh, .9rem) clamp(.5rem, 1cqw, .9rem) clamp(1rem, 2.2cqh, 1.35rem) !important;
-  overflow: auto !important;
-  overscroll-behavior: contain;
-  scroll-snap-type: x proximity;
-  scrollbar-gutter: stable both-edges;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  overscroll-behavior-inline: contain !important;
+  scroll-snap-type: x proximity !important;
+  scrollbar-gutter: stable both-edges !important;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -47,27 +51,53 @@
 .screen-game .selection-card-grid > *,
 .screen-game .popup-card-list > *,
 .screen-game .choice-cards > * {
+  position: relative !important;
+  inset: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
   flex: 0 0 clamp(6rem, 11cqw, 8.5rem) !important;
   width: clamp(6rem, 11cqw, 8.5rem) !important;
   min-width: clamp(6rem, 11cqw, 8.5rem) !important;
   max-width: clamp(6rem, 11cqw, 8.5rem) !important;
+  height: auto !important;
   min-height: max-content !important;
+  margin: 0 !important;
   box-sizing: border-box !important;
-  scroll-snap-align: center;
+  scroll-snap-align: start !important;
   overflow: visible !important;
   padding-bottom: clamp(.2rem, .5cqh, .4rem) !important;
 }
 
-/* OriginalCard nameplates sit on/below the lower edge of the art. Give them
-   breathing room so names such as Café are never clipped by a choice tile. */
-.screen-game .visual-card-choice .original-card,
-.screen-game .card-choice-grid .original-card,
-.screen-game .card-selection-grid .original-card,
-.screen-game .selection-card-grid .original-card,
-.screen-game .popup-card-list .original-card,
-.screen-game .choice-cards .original-card {
+/* Reset board/hand positioning from OriginalCard while it is rendered as a
+   selectable popup item. One choice tile must always contain exactly one fully
+   visible card plus its action label below. */
+.screen-game .engine-decision-panel .visual-card-choice > .original-card,
+.screen-game .overlay .visual-card-choice > .original-card,
+.screen-game .popup .visual-card-choice > .original-card,
+.screen-game .modal .visual-card-choice > .original-card,
+.screen-game .choice-modal .visual-card-choice > .original-card,
+.screen-game .card-choice-grid > * > .original-card,
+.screen-game .card-selection-grid > * > .original-card,
+.screen-game .selection-card-grid > * > .original-card,
+.screen-game .popup-card-list > * > .original-card,
+.screen-game .choice-cards > * > .original-card {
+  position: relative !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  translate: none !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 0 clamp(.38rem, .9cqh, .68rem) !important;
   overflow: visible !important;
-  margin-bottom: clamp(.38rem, .9cqh, .68rem) !important;
 }
 
 .screen-game .visual-card-choice-grid > .visual-card-choice :is(img, canvas, .remote-card-art),
@@ -76,11 +106,32 @@
 .screen-game .selection-card-grid > * :is(img, canvas, .remote-card-art),
 .screen-game .popup-card-list > * :is(img, canvas, .remote-card-art),
 .screen-game .choice-cards > * :is(img, canvas, .remote-card-art) {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  display: block !important;
+  width: 100% !important;
   max-width: 100% !important;
   height: auto !important;
+  object-fit: contain !important;
 }
 
-/* A popup owns its frame; its card list owns scrolling. */
+.screen-game .visual-card-choice > span,
+.screen-game .card-choice-grid > * > span,
+.screen-game .card-selection-grid > * > span,
+.screen-game .selection-card-grid > * > span,
+.screen-game .popup-card-list > * > span,
+.screen-game .choice-cards > * > span {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  margin: 0 !important;
+  text-align: center !important;
+}
+
+/* A popup owns its frame; its card list owns scrolling. Confirmation/actions
+   remain siblings outside the scrolling strip. */
 .screen-game .engine-decision-panel:has(.visual-card-choice-grid),
 .screen-game .overlay > .maintenance:has(.visual-card-choice-grid),
 .screen-game .popup:has(.visual-card-choice-grid),
@@ -89,9 +140,7 @@
   overflow: hidden !important;
 }
 
-/* Hand limit uses the same canonical horizontal card-list behavior.
-   The confirm button remains outside this scrollview as a sibling action.
-   Override the older adaptive-grid fit so cards never stack or overlap. */
+/* Hand limit uses the exact same canonical horizontal behavior. */
 .screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] {
   display: flex !important;
   flex-flow: row nowrap !important;
@@ -129,20 +178,6 @@
   overflow: visible !important;
 }
 
-.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] :is(.original-card,.card-frame,.remote-card-art,img,canvas) {
-  position: relative !important;
-  inset: auto !important;
-  transform: none !important;
-  max-width: 100% !important;
-  height: auto !important;
-}
-
-.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] .original-card {
-  width: 100% !important;
-  margin: 0 0 clamp(.38rem,.8cqh,.62rem) !important;
-  overflow: visible !important;
-}
-
 @media (max-width: 52rem), (max-height: 42rem) {
   .screen-game .engine-decision-panel .visual-card-choice-grid,
   .screen-game .overlay .visual-card-choice-grid,
@@ -167,12 +202,5 @@
     width: clamp(5.2rem, 17vw, 7rem) !important;
     min-width: clamp(5.2rem, 17vw, 7rem) !important;
     max-width: clamp(5.2rem, 17vw, 7rem) !important;
-  }
-
-  .screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] > * {
-    flex-basis: clamp(5.4rem, 17vw, 6.8rem) !important;
-    width: clamp(5.4rem, 17vw, 6.8rem) !important;
-    min-width: clamp(5.4rem, 17vw, 6.8rem) !important;
-    max-width: clamp(5.4rem, 17vw, 6.8rem) !important;
   }
 }
