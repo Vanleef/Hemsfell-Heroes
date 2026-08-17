@@ -1,0 +1,73 @@
+name: Fix canonical hero inspector once
+
+on:
+  push:
+    branches: [fix/cards_mechanics]
+    paths:
+      - '.github/workflows/fix-hero-inspector-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+
+      - name: Route every canonical hero through HeroGuide
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app/page.tsx')
+          text = p.read_text(encoding='utf-8')
+          old = 'showInspector.hero&&deckByHeroPage(showInspector.page)?<div className="inspector-hero-guide">'
+          new = 'deckByHeroPage(showInspector.page)?<div className="inspector-hero-guide">'
+          if old in text:
+              text = text.replace(old, new, 1)
+              p.write_text(text, encoding='utf-8')
+          elif new not in text:
+              raise SystemExit('hero inspector routing pattern not found')
+          PY
+
+      - name: Verify Sr. Goblin and all hero pages use canonical guide
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const page = fs.readFileSync('app/page.tsx', 'utf8');
+          if (page.includes('showInspector.hero&&deckByHeroPage(showInspector.page)')) {
+            throw new Error('legacy CardDef.hero gate is still present');
+          }
+          if (!page.includes('deckByHeroPage(showInspector.page)?<div className="inspector-hero-guide"><HeroGuide')) {
+            throw new Error('canonical heroPage -> HeroGuide route is missing');
+          }
+          if (!page.includes('id:"goblin",heroPage:26')) {
+            throw new Error('Sr. Goblin canonical heroPage 26 is missing');
+          }
+          console.log('OK: canonical hero pages, including Sr. Goblin page 26, route to HeroGuide.');
+          NODE
+
+      - name: Commit source fix
+        run: |
+          if git diff --quiet -- app/page.tsx; then
+            echo "Canonical routing was already fixed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx
+          git commit -m "fix: route every hero inspector through HeroGuide"
+          git push origin HEAD:fix/cards_mechanics
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Build validation
+        run: npm run vercel-build
