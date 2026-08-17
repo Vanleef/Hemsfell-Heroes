@@ -20,6 +20,7 @@ import CardListTooltipPortal from "./card-list-tooltip-portal";
 import TargetBannerPositionGuard from "./target-banner-position-guard";
 import MatchResultEnhancer from "./match-result-enhancer";
 import HeroInspectorCanonicalizer from "./hero-inspector-canonicalizer";
+import ResponseWindowAnchor from "./response-window-anchor";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,6 +68,7 @@ export default function RootLayout({
         <CardListTooltipPortal />
         <MatchResultEnhancer />
         <HeroInspectorCanonicalizer />
+        <ResponseWindowAnchor />
         {children}
       </body>
     </html>
