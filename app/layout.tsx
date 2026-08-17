@@ -13,6 +13,7 @@ import "./target-banner-anchor.css";
 import CommandBarTextAutoFit from "./command-bar-text-autofit";
 import MatchUiGuard from "./match-ui-guard";
 import CardListTooltipPortal from "./card-list-tooltip-portal";
+import TargetBannerPositionGuard from "./target-banner-position-guard";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -56,6 +57,7 @@ export default function RootLayout({
       >
         <CommandBarTextAutoFit />
         <MatchUiGuard />
+        <TargetBannerPositionGuard />
         <CardListTooltipPortal />
         {children}
       </body>
