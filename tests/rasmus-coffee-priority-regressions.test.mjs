@@ -5,18 +5,20 @@ import { explicitCardRules } from "../app/rules-engine/card-rules.mjs";
 
 const pageSource = fs.readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 
-test("Café Preto Sem Açúcar grants exactly one target +5/+5 until next turn without skipping untap", () => {
+test("Café Preto Sem Açúcar uses one target for +5/+5 and the next-untap skip", () => {
   const rule = explicitCardRules.p249?.[0];
   assert.equal(rule?.trigger, "onPlay");
-  assert.equal(rule?.effects?.length, 1);
-  const effect = rule.effects[0];
-  assert.equal(effect.type, "modifyStats");
-  assert.equal(effect.target, "anyCreature");
-  assert.equal(effect.selections, 1);
-  assert.equal(effect.attack, 5);
-  assert.equal(effect.health, 5);
-  assert.equal(effect.duration, "untilNextTurn");
-  assert.ok(!rule.effects.some((item) => item.type === "skipNextUntap"));
+  assert.equal(rule?.effects?.length, 2);
+  const [buff, untapSkip] = rule.effects;
+  assert.equal(buff.type, "modifyStats");
+  assert.equal(buff.target, "anyCreature");
+  assert.equal(buff.selections, 1);
+  assert.equal(buff.attack, 5);
+  assert.equal(buff.health, 5);
+  assert.equal(buff.duration, "untilNextTurn");
+  assert.equal(untapSkip.type, "skipNextUntap");
+  assert.equal(untapSkip.target, "anyCreature");
+  assert.equal(untapSkip.reusePreviousTarget, true);
 });
 
 test("Rasmus supplied deck matches the author list and totals exactly 49 cards", () => {
