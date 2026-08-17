@@ -1,0 +1,191 @@
+name: Fix Gimble dragon and response bundle
+
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+    paths:
+      - .github/workflows/fix-gimble-dragon-response-bundle.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - name: Apply repairs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          rules = Path('app/rules-engine/card-rules.mjs')
+          text = rules.read_text()
+          anchor = '  p6: [ability("onEnter", [effect("damage", { amount: 2, target: "anyCreature", selections: 1 })])],\n'
+          p7 = '  p7: [ability("onEnter", [effect("draw", { amount: 2 })], [], { condition: { controllerControlsOtherSubtype: "Dragão" }, triggerMeta: { kind: "first-act", scenario: "Ao entrar, se você já controlava outro Dragão aliado, compre 2 cartas." } })],\n'
+          if '  p7: [ability("onEnter"' not in text:
+              if anchor not in text: raise SystemExit('p6 anchor not found')
+              text = text.replace(anchor, anchor + p7, 1)
+          rules.write_text(text)
+
+          effects = Path('app/rules-engine/effects.mjs')
+          text = effects.read_text()
+          old = '    const catalog = [...(entry.extraDeck || []), ...(state.cardCatalog || [])];\n    const base = catalog.find((card) => card.name === effect.name) || { id: `image:${effect.name}`, name: effect.name, type: "Criatura", atk: 1, hp: 1, tags: [] };'
+          new = '    /* Prefer the authoritative compiled catalog so generated Images inherit\\n       their canonical abilities (notably Primeiro Ato) before falling back to\\n       the presentation-only extra deck copy. */\n    const catalog = [...(state.cardCatalog || []), ...(entry.extraDeck || [])];\n    const base = catalog.find((card) => card.name === effect.name) || { id: `image:${effect.name}`, name: effect.name, type: "Criatura", atk: 1, hp: 1, tags: [] };'
+          if old not in text: raise SystemExit('createImage catalog anchor not found')
+          text = text.replace(old, new, 1)
+          effects.write_text(text)
+
+          page = Path('app/page.tsx')
+          text = page.read_text()
+          old = '   const active=isActiveAbility(d.id,slot),key=`${d.id}-${slot}`,locked=slot+1>player.level,used=!!player.abilityUses[key],clueCount=Math.max(Number(player.heroXP||0),Number((player.markers as any)?.clue||0)),clueCost=d.id==="ngoro"?(slot===1?2:slot===2?3:0):0;'
+          new = '   const active=isActiveAbility(d.id,slot),key=`${d.id}-${slot}`,unlockLevel=Math.min(3,slot+1),locked=player.level<unlockLevel,used=!!player.abilityUses[key],clueCount=Math.max(Number(player.heroXP||0),Number((player.markers as any)?.clue||0)),clueCost=d.id==="ngoro"?(slot===1?2:slot===2?3:0):0;'
+          if old not in text: raise SystemExit('HeroAbilities locked anchor not found')
+          text = text.replace(old, new, 1)
+          old = '   return <button type="button" className={`ability hero-ability-chip ${stateClass} ${copyDensity}`} key={ability}'
+          new = '   return <button type="button" className={`ability hero-ability-chip ${stateClass} ${locked?"":"is-unlocked"} ${copyDensity}`} key={ability}'
+          if old not in text: raise SystemExit('HeroAbilities class anchor not found')
+          text = text.replace(old, new, 1)
+          page.write_text(text)
+
+          layout = Path('app/layout.tsx')
+          text = layout.read_text()
+          imp = 'import "./response-window-side.css";\n'
+          if imp not in text:
+              anchor = 'import "./response-hover-layer.css";\n'
+              if anchor not in text: raise SystemExit('layout response import anchor not found')
+              text = text.replace(anchor, anchor + imp, 1)
+          layout.write_text(text)
+          PY
+
+          cat > app/response-window-side.css <<'CSS'
+          /* Response priority is modal to the match, but the dialog itself lives in
+             the right-side utility lane so it never masks creature slots. */
+          .screen-game .response-overlay{
+            position:fixed!important;
+            inset:0!important;
+            display:block!important;
+            padding:0!important;
+            background:rgba(2,5,10,.72)!important;
+            backdrop-filter:brightness(.48) saturate(.78)!important;
+            z-index:1800!important;
+          }
+
+          .screen-game .response-overlay .response-dialog{
+            position:absolute!important;
+            top:50%!important;
+            right:clamp(.7rem,2.4cqw,2.4rem)!important;
+            left:auto!important;
+            bottom:auto!important;
+            translate:0 -50%!important;
+            transform:none!important;
+            width:fit-content!important;
+            min-width:min(18rem,31cqw)!important;
+            max-width:min(27rem,34cqw)!important;
+            height:fit-content!important;
+            max-height:min(76cqh,42rem)!important;
+            margin:0!important;
+            overflow:auto!important;
+            box-sizing:border-box!important;
+            z-index:1801!important;
+          }
+
+          .screen-game .response-overlay .response-cards{
+            display:flex!important;
+            flex-wrap:nowrap!important;
+            max-width:100%!important;
+            overflow-x:auto!important;
+            overflow-y:hidden!important;
+          }
+
+          .screen-game .response-overlay .response-cards .original-card.is-small{
+            width:clamp(3.8rem,5.2cqw,5.4rem)!important;
+          }
+
+          /* Unlocked is a persistent progression state. Temporary inability to use
+             the power must not visually turn it back into a locked skill. */
+          .screen-game .hero-command-bar .hero-ability-chip.is-unlocked{
+            filter:none!important;
+          }
+          .screen-game .hero-command-bar .hero-ability-chip.is-unlocked:not(.is-unavailable){
+            opacity:1!important;
+          }
+          .screen-game .hero-command-bar .hero-ability-chip.is-unlocked.is-unavailable{
+            opacity:.68!important;
+          }
+          .screen-game .hero-command-bar .hero-ability-chip.is-unlocked>i{
+            filter:none!important;
+          }
+
+          @container hemsfell-board (max-width:70rem){
+            .screen-game .response-overlay .response-dialog{
+              right:clamp(.45rem,1.4cqw,1rem)!important;
+              min-width:min(16rem,35cqw)!important;
+              max-width:min(23rem,38cqw)!important;
+            }
+          }
+
+          @media (max-width:760px){
+            .screen-game .response-overlay .response-dialog{
+              top:50%!important;
+              right:.5rem!important;
+              width:min(20rem,46vw)!important;
+              min-width:0!important;
+              max-width:46vw!important;
+              max-height:78vh!important;
+            }
+          }
+          CSS
+
+          cat > tests/gimble-dragon-response-regression.test.mjs <<'TEST'
+          import assert from "node:assert/strict";
+          import test from "node:test";
+          import { getExplicitCardRule } from "../app/rules-engine/card-rules.mjs";
+          import { readFileSync } from "node:fs";
+
+          test("Xarqiroth has a targetless conditional First Act", () => {
+            const rule = getExplicitCardRule("p7");
+            assert.ok(Array.isArray(rule));
+            const enter = rule.find(ability => ability.trigger === "onEnter");
+            assert.ok(enter);
+            assert.equal(enter.condition?.controllerControlsOtherSubtype, "Dragão");
+            assert.deepEqual(enter.effects, [{ type: "draw", amount: 2 }]);
+            assert.equal(enter.effects.some(effect => effect.target), false);
+          });
+
+          test("generated Images prefer the compiled catalog and still emit entry events", () => {
+            const source = readFileSync(new URL("../app/rules-engine/effects.mjs", import.meta.url), "utf8");
+            assert.match(source, /const catalog = \[\.\.\.\(state\.cardCatalog \|\| \[\]\), \.\.\.\(entry\.extraDeck \|\| \[\]\)\]/);
+            assert.match(source, /queueEvent\(state, \{ type: "onEnter", owner, sourceId: copy\.uid/);
+            assert.match(source, /if \(base\.type === "Criatura"\) queueEvent\(state, \{ type: "onCreatureEnter"/);
+          });
+
+          test("Gimble level-two UI distinguishes unlocked from temporarily unavailable", () => {
+            const page = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+            assert.match(page, /unlockLevel=Math\.min\(3,slot\+1\),locked=player\.level<unlockLevel/);
+            assert.match(page, /locked\?"":"is-unlocked"/);
+          });
+
+          test("response window owns a dark full-screen backdrop and right side lane", () => {
+            const css = readFileSync(new URL("../app/response-window-side.css", import.meta.url), "utf8");
+            assert.match(css, /\.response-overlay\{[\s\S]*position:fixed!important;[\s\S]*inset:0!important;[\s\S]*background:rgba\(2,5,10,\.72\)!important;/);
+            assert.match(css, /\.response-dialog\{[\s\S]*right:clamp\([\s\S]*left:auto!important;[\s\S]*width:fit-content!important;/);
+          });
+          TEST
+
+      - name: Verify focused regressions
+        run: node --test tests/gimble-dragon-response-regression.test.mjs
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-gimble-dragon-response-bundle.yml
+          git add app/rules-engine/card-rules.mjs app/rules-engine/effects.mjs app/page.tsx app/layout.tsx app/response-window-side.css tests/gimble-dragon-response-regression.test.mjs
+          git commit -m "fix: repair Gimble dragon triggers and response UI"
+          git push origin fix/cards_mechanics
