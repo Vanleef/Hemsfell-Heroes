@@ -297,7 +297,7 @@
 
   .screen-game .game-stage > .game-content.hs-board > .response-overlay {
     position: absolute !important;
-    top: clamp(3.5rem, 10.2cqh, 5.8rem) !important;
+    top: clamp(1.5rem, 10.2cqh, 5.8rem) !important;
     right: clamp(.85rem, 1.9cqw, 1.9rem) !important;
     bottom: auto !important;
     left: auto !important;
