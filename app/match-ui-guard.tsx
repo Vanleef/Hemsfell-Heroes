@@ -259,6 +259,53 @@ function layoutTargetBannerInSafeLane() {
   banner.dataset.safeLaneMeasured = "true";
 }
 
+function layoutHandLimitChoices() {
+  const dialogs = Array.from(document.querySelectorAll<HTMLElement>(".maintenance, .maintenance-dialog, .engine-decision-panel"));
+  const dialog = dialogs.find((node) => /LIMITE DE MÃO/i.test(node.textContent || ""));
+  if (!dialog) return;
+  dialog.classList.add("hand-limit-dialog");
+
+  const grid = dialog.querySelector<HTMLElement>(".visual-card-choice-grid, .card-choice-grid, .decision-card-grid");
+  if (!grid) return;
+  grid.classList.add("hand-limit-choice-area");
+
+  const items = Array.from(grid.children).filter((node): node is HTMLElement => node instanceof HTMLElement);
+  if (!items.length) return;
+  const confirm = Array.from(dialog.querySelectorAll<HTMLButtonElement>("button")).find((button) => /confirmar/i.test(button.textContent || ""));
+  const dialogRect = dialog.getBoundingClientRect();
+  const gridRect = grid.getBoundingClientRect();
+  const confirmRect = confirm?.getBoundingClientRect();
+  const style = getComputedStyle(dialog);
+  const horizontalPadding = parseFloat(style.paddingLeft || "0") + parseFloat(style.paddingRight || "0");
+  const availableWidth = Math.max(1, dialogRect.width - horizontalPadding);
+  const availableHeight = Math.max(1, (confirmRect ? confirmRect.top : dialogRect.bottom) - gridRect.top - Math.max(8, dialogRect.height * .025));
+  const count = items.length;
+  const gap = Math.max(6, Math.min(14, availableWidth * .018));
+  const itemAspect = .64; // selectable tile width / height (card art + caption/padding)
+
+  let bestColumns = 1;
+  let bestWidth = 0;
+  for (let columns = 1; columns <= count; columns += 1) {
+    const rows = Math.ceil(count / columns);
+    const widthByRow = (availableWidth - gap * (columns - 1)) / columns;
+    const heightPerItem = (availableHeight - gap * (rows - 1)) / rows;
+    const widthByHeight = heightPerItem * itemAspect;
+    const candidate = Math.min(widthByRow, widthByHeight);
+    if (candidate > bestWidth) {
+      bestWidth = candidate;
+      bestColumns = columns;
+    }
+  }
+
+  const maxReadable = Math.min(132, availableWidth / Math.min(count, 5));
+  const fittedWidth = Math.max(44, Math.min(bestWidth, maxReadable));
+  grid.style.setProperty("--hand-limit-cols", String(bestColumns));
+  grid.style.setProperty("--hand-limit-item-w", fittedWidth.toFixed(2) + "px");
+  grid.style.setProperty("--hand-limit-gap", gap.toFixed(2) + "px");
+  grid.style.setProperty("--hand-limit-max-h", availableHeight.toFixed(2) + "px");
+  grid.dataset.handLimitFit = "true";
+}
+
 export default function MatchUiGuard() {
   useEffect(() => {
     let wasInMatch = !!document.querySelector(".game-stage");
@@ -281,6 +328,7 @@ export default function MatchUiGuard() {
       enhanceHeroInspector();
       enhanceMatchResult();
       layoutTargetBannerInSafeLane();
+      layoutHandLimitChoices();
     };
 
     const scheduleSync = () => {

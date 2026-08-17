@@ -1007,3 +1007,50 @@
   align-self: center !important;
   margin: 0 !important;
 }
+
+
+/* Hand-limit picker: selectable cards fit inside the invisible lane between
+   explanatory copy and the confirm action. The guard measures that lane and
+   chooses the largest grid geometry that fits without overlap. */
+.screen-game .hand-limit-dialog {
+  box-sizing: border-box !important;
+  max-height: min(92dvh, 48rem) !important;
+  overflow: hidden !important;
+}
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] {
+  display: grid !important;
+  grid-template-columns: repeat(var(--hand-limit-cols), var(--hand-limit-item-w)) !important;
+  grid-auto-rows: minmax(0, auto) !important;
+  justify-content: center !important;
+  align-content: center !important;
+  gap: var(--hand-limit-gap) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: min(var(--hand-limit-max-h), 100%) !important;
+  max-height: var(--hand-limit-max-h) !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: clamp(.1rem,.35cqh,.28rem) clamp(.1rem,.35cqw,.28rem) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] > * {
+  width: var(--hand-limit-item-w) !important;
+  max-width: var(--hand-limit-item-w) !important;
+  min-width: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  justify-self: center !important;
+  align-self: center !important;
+}
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] .original-card,
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] .card-frame,
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] .remote-card-art {
+  max-width: 100% !important;
+  height: auto !important;
+}
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] > *:hover,
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] > *:focus-within {
+  z-index: 40 !important;
+}
