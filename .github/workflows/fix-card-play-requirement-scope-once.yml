@@ -1,0 +1,61 @@
+name: Fix card requirement scope once
+
+on:
+  push:
+    branches: [fix/cards_mechanics]
+    paths:
+      - .github/workflows/fix-card-play-requirement-scope-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+
+      - name: Patch cardPlayRequirementMet scope
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app/page.tsx')
+          text = p.read_text()
+          old_def = 'const cardPlayRequirementMet=(c:CardDef,p:Player)=>c.page===17?!!game&&p.board.some(card=>hasFaction(card,"Dragão")&&!card.exhausted&&!card.stunned)&&game.players[1].board.length>0:c.page!==48||p.grave.some(card=>hasFaction(card,"Goblin"));'
+          new_def = 'const cardPlayRequirementMet=(c:CardDef,p:Player,g?:Game,owner:0|1=0)=>c.page===17?!!g&&p.board.some(card=>hasFaction(card,"Dragão")&&!card.exhausted&&!card.stunned)&&g.players[1-owner].board.length>0:c.page!==48||p.grave.some(card=>hasFaction(card,"Goblin"));'
+          if old_def not in text:
+              raise SystemExit('cardPlayRequirementMet definition pattern not found')
+          text = text.replace(old_def, new_def, 1)
+
+          old_request = 'if(!cardPlayRequirementMet(c,p)){update(g=>log(g,`${c.name} só pode ser jogada se houver um Goblin no seu Cemitério.`,"danger"));return}'
+          new_request = 'if(!cardPlayRequirementMet(c,p,game,0)){update(g=>log(g,c.page===17?`${c.name} exige um Dragão desvirado seu e uma criatura inimiga em campo.`:`${c.name} só pode ser jogada se houver um Goblin no seu Cemitério.`,"danger"));return}'
+          if old_request not in text:
+              raise SystemExit('requestPlay requirement pattern not found')
+          text = text.replace(old_request, new_request, 1)
+
+          old_disabled = '!cardPlayRequirementMet(c,me)||effectiveCost(c,me)>playableResource(c,me)'
+          new_disabled = '!cardPlayRequirementMet(c,me,game,0)||effectiveCost(c,me)>playableResource(c,me)'
+          if old_disabled not in text:
+              raise SystemExit('hand disabled requirement pattern not found')
+          text = text.replace(old_disabled, new_disabled, 1)
+
+          p.write_text(text)
+          PY
+
+      - name: Verify scope fix
+        run: |
+          grep -q 'cardPlayRequirementMet=(c:CardDef,p:Player,g?:Game,owner:0|1=0)' app/page.tsx
+          grep -q 'cardPlayRequirementMet(c,p,game,0)' app/page.tsx
+          grep -q 'cardPlayRequirementMet(c,me,game,0)' app/page.tsx
+          ! grep -q 'c.page===17?!!game&&' app/page.tsx
+
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/page.tsx
+          git commit -m 'fix: pass game state into card play requirements' || exit 0
+          git push origin HEAD:fix/cards_mechanics
