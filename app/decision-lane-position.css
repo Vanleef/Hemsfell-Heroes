@@ -1,8 +1,8 @@
 /*
  * Decision UI must never sit on top of the creature battlefield.
  * Generic text/target decisions use the side lanes. Decisions that show card
- * collections are intentionally different: they use a large centered browser
- * so the cards remain readable and can scroll inside the popup.
+ * collections are intentionally different: they use a centered browser with
+ * responsive card sizing and internal scrolling.
  */
 .screen-game .engine-decision-backdrop {
   position: absolute !important;
@@ -47,7 +47,7 @@
   overflow-wrap: anywhere;
 }
 
-/* Search / tutor / card-list decisions are large centered browsers. */
+/* Search / tutor / card-list decisions: centered, slightly more compact. */
 .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.visual-card-choice-grid),
 .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.card-choice-grid),
 .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.decision-card-grid) {
@@ -56,20 +56,20 @@
   top: 50% !important;
   bottom: auto !important;
   transform: translate(-50%, -50%) !important;
-  width: min(88cqw, 72rem) !important;
-  min-width: min(64cqw, 42rem) !important;
-  max-width: min(92cqw, 76rem) !important;
+  width: min(82cqw, 66rem) !important;
+  min-width: min(60cqw, 38rem) !important;
+  max-width: min(86cqw, 70rem) !important;
   height: auto !important;
   min-height: 0 !important;
-  max-height: min(84cqh, 48rem) !important;
-  padding: clamp(.85rem, 1.35cqw, 1.35rem) !important;
+  max-height: min(78cqh, 44rem) !important;
+  padding: clamp(.75rem, 1.15cqw, 1.15rem) !important;
   overflow: hidden !important;
 }
 
 .screen-game .engine-decision-panel :is(.visual-card-choice-grid, .card-choice-grid, .decision-card-grid) {
   width: 100% !important;
   max-width: 100% !important;
-  max-height: min(62cqh, 34rem) !important;
+  max-height: min(57cqh, 30rem) !important;
   overflow: auto !important;
   overscroll-behavior: contain;
   scrollbar-width: none;
@@ -114,9 +114,10 @@
   .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.visual-card-choice-grid),
   .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.card-choice-grid),
   .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.decision-card-grid) {
-    width: min(91cqw, 68rem) !important;
-    min-width: min(70cqw, 38rem) !important;
-    max-width: 94cqw !important;
+    width: min(86cqw, 62rem) !important;
+    min-width: min(66cqw, 35rem) !important;
+    max-width: 89cqw !important;
+    max-height: 80cqh !important;
   }
 
   .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
@@ -134,11 +135,11 @@
   .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.visual-card-choice-grid),
   .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.card-choice-grid),
   .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.decision-card-grid) {
-    width: 94cqw !important;
+    width: 89cqw !important;
     min-width: 0 !important;
-    max-width: 94cqw !important;
-    max-height: 86cqh !important;
-    padding: clamp(.6rem, 1.1cqw, .9rem) !important;
+    max-width: 89cqw !important;
+    max-height: 81cqh !important;
+    padding: clamp(.55rem, 1cqw, .8rem) !important;
   }
 
   .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
