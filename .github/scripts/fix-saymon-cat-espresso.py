@@ -19,6 +19,16 @@ replace_once(
     "return { page:template.page,id:card.id,uid:card.uid,name:template.name,type:template.type,cost:template.cost,atk:template.atk,hp:template.hp,text:template.text,tags:[...(template.tags||[])],subtypes:[...(template.subtypes||[])],abilities:clone(template.abilities||[]),image:template.image,hero:template.hero,imageCard:template.imageCard,generatedImage:card.generatedImage };"
 )
 
+# Gato de Rua must be able to find the physical card after a destruction even in
+# older serialized states/tests where the permanent did not have a uid yet.
+# Prefer uid, but fall back to the event card/id rather than silently leaving it
+# stranded in the graveyard.
+replace_once(
+    "app/rules-engine/effects.mjs",
+    'returnSelfToField(state, effect, context) { const entry = player(state, context.owner), index = entry.grave.findIndex((card) => card.uid === context.sourceId || card.id === context.sourceId); if (index < 0 || entry.board.length >= 5) return; const card = entry.grave.splice(index,1)[0], slot=Array.from({length:5},(_,value)=>value).find((value)=>!entry.board.some((unit)=>unit.slot===value)); entry.board.push({...card, uid: card.uid || `${card.id}-${state.round}-returned`, slot:slot??0, enteredRound:state.round, attackedThisTurn:false, damage:0, summoning:true, exhausted:false, modifiers:[], abilities:card.abilities||[]}); },',
+    'returnSelfToField(state, effect, context) { const entry = player(state, context.owner), sourceKeys = new Set([context.sourceId, context.event?.sourceId, context.event?.card?.uid, context.event?.card?.id, context.effectSource?.uid, context.effectSource?.id].filter(Boolean)), index = entry.grave.findIndex((card) => sourceKeys.has(card.uid) || sourceKeys.has(card.id)); if (index < 0 || entry.board.length >= 5) return; const card = entry.grave.splice(index,1)[0], slot=Array.from({length:5},(_,value)=>value).find((value)=>!entry.board.some((unit)=>unit.slot===value)); entry.board.push({...card, uid: card.uid || context.event?.card?.uid || `${card.id}-${state.round}-returned`, slot:slot??0, enteredRound:state.round, attackedThisTurn:false, damage:0, summoning:true, exhausted:false, modifiers:[], abilities:card.abilities||[]}); },'
+)
+
 # The lifecycle flag is `summoning`. enteredRound is metadata and can remain the
 # same across the opponent turn, so it must not keep a tap-cost permanent locked
 # after its controller has reached the next maintenance.
