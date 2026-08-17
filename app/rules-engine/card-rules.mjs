@@ -16,6 +16,7 @@ export const explicitCardRules = Object.freeze({
   p6: [ability("onEnter", [effect("damage", { amount: 2, target: "anyCreature", selections: 1 })])],
   p9: [ability("static", [effect("protectAlliedDragonsOncePerTurn")])],
   p10: [ability("static", [effect("keyword", { keyword: "Atropelar" })]), ability("onDestroyed", [effect("damageAll", { amount: 2, target: "allCreatures" })])],
+  p11: [ability("static", [effect("keyword", { keyword: "Voar" })]), ability("onCreatureEnter", [effect("damageEnemyHero", { amount: 2 })], [], { condition: { eventOwnerIsController: true, eventCardSubtype: "Dragão", otherThanSource: true }, triggerMeta: { kind: "conditional-passive", scenario: "Sempre que outra criatura aliada da classe Dragão entrar em campo." } })],
   p12: [ability("onPlay", [effect("createImage", { name: "Dragão Filhote", destination: "field" })])],
   p13: [ability("onPlay", [effect("replaceImage", { oldName: "Dragão Filhote", newName: "Dragão Jovem" })])],
   p14: [ability("onPlay", [effect("replaceImage", { oldName: "Dragão Jovem", newName: "Dragão Ancião" })])],

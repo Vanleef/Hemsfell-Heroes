@@ -157,7 +157,7 @@ const resolveCreatureEntryTriggers=(g:Game,owner:0|1,entering:Unit)=>{
  if(entering.page===88){const cardsInHand=Math.max(0,p.hand.length);entering.bonusAtk+=cardsInHand;entering.bonusHp+=cardsInHand;log(g,`Acumulador recebeu +${cardsInHand}/+${cardsInHand} ao entrar em campo.`,"effect")}
  /* Cross-player entry trigger: each Extrator attacks the newly summoned creature. */
  foe.board.filter(unit=>unit.page===136&&!unit.suffocated&&!unit.exhausted).forEach(unit=>{const dealt=currentAtk(unit,foe),received=currentAtk(entering,p);entering.damage+=dealt;unit.damage+=received;unit.exhausted=true;log(g,`Extrator da Lua Sangrenta atacou ${entering.name} ao ser invocada.`,"combat")});
- if(hasFaction(entering,"Dragão"))p.board.filter(unit=>unit.page===11&&!unit.suffocated).forEach(unit=>{foe.life-=2;p.damageDealt+=2;markCreatureDamage(unit,owner===0?1:0);log(g,`Valorian causou 2 de dano ao herói inimigo quando ${entering.name} entrou em campo.`,"damage")});
+ if(hasFaction(entering,"Dragão"))p.board.filter(unit=>unit.page===11&&!unit.suffocated&&unit.uid!==entering.uid).forEach(unit=>{foe.life-=2;p.damageDealt+=2;markCreatureDamage(unit,owner===0?1:0);log(g,`Valorian causou 2 de dano ao herói inimigo quando outro Dragão aliado, ${entering.name}, entrou em campo.`,"damage")});
  if(hasFaction(entering,"Goblin"))p.board.filter(unit=>unit.page===35&&!unit.suffocated).forEach(unit=>{foe.life-=1;p.damageDealt+=1;markCreatureDamage(unit,owner===0?1:0);log(g,`Bombardeiro Gente Boa causou 1 de dano ao herói inimigo ao invocar ${entering.name}.`,"damage")});
 };
 const cleanName=(value:unknown)=>String(value??"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-zA-Z0-9]+/g," ").trim().toLowerCase();
