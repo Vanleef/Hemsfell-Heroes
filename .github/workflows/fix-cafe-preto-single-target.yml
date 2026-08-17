@@ -26,6 +26,6 @@ jobs:
           rm .github/scripts/fix-cafe-preto-single-target.py .github/workflows/fix-cafe-preto-single-target.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/rules-engine/card-rules.mjs app/rules-engine/targeting.mjs app/rules-engine/effects.mjs tests/rasmus-authoritative.test.mjs tests/cafe-preto-single-target.test.mjs .github/scripts/fix-cafe-preto-single-target.py .github/workflows/fix-cafe-preto-single-target.yml
+          git add app/rules-engine/card-rules.mjs app/rules-engine/targeting.mjs app/rules-engine/effects.mjs app/rules-engine/engine-base.mjs tests/rasmus-authoritative.test.mjs tests/cafe-preto-single-target.test.mjs .github/scripts/fix-cafe-preto-single-target.py .github/workflows/fix-cafe-preto-single-target.yml
           git commit -m "fix: reuse Café Preto target for untap skip"
           git push origin HEAD:fix/cards_mechanics
