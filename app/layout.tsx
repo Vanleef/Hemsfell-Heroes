@@ -6,6 +6,7 @@ import "./match-ui-guard.css";
 import "./setup-heading-fixes.css";
 import "./response-hover-layer.css";
 import "./card-list-scrollviews.css";
+import "./card-list-grid-layout.css";
 import "./decision-lane-position.css";
 import CommandBarTextAutoFit from "./command-bar-text-autofit";
 import MatchUiGuard from "./match-ui-guard";
