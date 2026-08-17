@@ -1,0 +1,88 @@
+name: Fix smoke breath self target once
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-smoke-breath-self-target-once.yml'
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - name: Apply Bafo de Fumaca target exclusion
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          rules=Path('app/rules-engine/card-rules.mjs')
+          text=rules.read_text()
+          old='  p34: [ability("onEnter", [effect("damageAndMarkRepeat", { amount: 1, target: "anyCreature", selections: 1 })]), ability("onCreatureDestroyed", [effect("damageAndMarkRepeat", { amount: 1, target: "anyCreature", selections: 1 })], [], { condition: { eventKilledBySource: true }, triggerMeta: { kind: "conditional-passive", scenario: "Se a criatura que recebeu o dano de Bafo de Fumaça morrer, repita o efeito." } })],'
+          new='  p34: [ability("onEnter", [effect("damageAndMarkRepeat", { amount: 1, target: "anyCreature", selections: 1, excludeSource: true })]), ability("onCreatureDestroyed", [effect("damageAndMarkRepeat", { amount: 1, target: "anyCreature", selections: 1, excludeSource: true })], [], { condition: { eventKilledBySource: true }, triggerMeta: { kind: "conditional-passive", scenario: "Se a criatura que recebeu o dano de Bafo de Fumaça morrer, repita o efeito." } })],'
+          if old not in text: raise SystemExit('p34 anchor not found')
+          rules.write_text(text.replace(old,new,1))
+
+          engine=Path('app/rules-engine/engine-base.mjs')
+          text=engine.read_text()
+          old='function abilityTargetSteps(ability) {'
+          new='function abilityTargetSteps(ability, sourceId = null) {'
+          if old not in text: raise SystemExit('abilityTargetSteps signature not found')
+          text=text.replace(old,new,1)
+          old='excludeIds: effect.excludeIds || [], allowedIds: effect.allowedIds'
+          new='excludeIds: [...new Set([...(effect.excludeIds || []), ...(effect.excludeSource && sourceId ? [sourceId] : [])])], allowedIds: effect.allowedIds'
+          if old not in text: raise SystemExit('excludeIds mapping anchor not found')
+          text=text.replace(old,new,1)
+          text=text.replace('const resolvable = [...ability.effects].filter(enterEffectCanResolve), steps = abilityTargetSteps(ability), supplied = item.command.targetIds || [];','const resolvable = [...ability.effects].filter(enterEffectCanResolve), steps = abilityTargetSteps(ability, unit.uid || unit.id), supplied = item.command.targetIds || [];',1)
+          text=text.replace('const targetSteps = abilityTargetSteps(ability);\n          if (targetSteps.length && !canSatisfyTargetSteps(state, item.command.owner, targetSteps))','const targetSteps = abilityTargetSteps(ability, selected.uid || selected.id);\n          if (targetSteps.length && !canSatisfyTargetSteps(state, item.command.owner, targetSteps))',1)
+          text=text.replace('const baseTargetSteps = abilityTargetSteps(trigger.ability);','const baseTargetSteps = abilityTargetSteps(trigger.ability, trigger.source.uid || trigger.source.id);',1)
+          engine.write_text(text)
+
+          effects=Path('app/rules-engine/effects.mjs')
+          text=effects.read_text()
+          old='  damageAndMarkRepeat(state, effect, context) {\n    const target = findUnit(state, context.targetIds?.[0]);\n    if (!target) throw new RulesViolation("target-required");'
+          new='  damageAndMarkRepeat(state, effect, context) {\n    const target = findUnit(state, context.targetIds?.[0]);\n    if (!target) throw new RulesViolation("target-required");\n    if (effect.excludeSource && (target.uid || target.id) === context.sourceId) throw new RulesViolation("invalid-target");'
+          if old not in text: raise SystemExit('damageAndMarkRepeat anchor not found')
+          effects.write_text(text.replace(old,new,1))
+          PY
+
+          cat > tests/smoke-breath-self-target-regression.test.mjs <<'TEST'
+          import assert from "node:assert/strict";
+          import test from "node:test";
+          import { readFileSync } from "node:fs";
+          import { getExplicitCardRule } from "../app/rules-engine/card-rules.mjs";
+
+          test("Bafo de Fumaça excludes itself on enter and repeat", () => {
+            const rule=getExplicitCardRule("p34");
+            assert.equal(rule.length,2);
+            for(const ability of rule){
+              const effect=ability.effects.find(item=>item.type==="damageAndMarkRepeat");
+              assert.ok(effect);
+              assert.equal(effect.excludeSource,true);
+            }
+          });
+
+          test("target plumbing propagates and validates source exclusion", () => {
+            const engine=readFileSync(new URL("../app/rules-engine/engine-base.mjs",import.meta.url),"utf8");
+            const effects=readFileSync(new URL("../app/rules-engine/effects.mjs",import.meta.url),"utf8");
+            assert.match(engine,/function abilityTargetSteps\(ability, sourceId = null\)/);
+            assert.match(engine,/effect\.excludeSource && sourceId \? \[sourceId\] : \[\]/);
+            assert.match(engine,/abilityTargetSteps\(ability, unit\.uid \|\| unit\.id\)/);
+            assert.match(engine,/abilityTargetSteps\(trigger\.ability, trigger\.source\.uid \|\| trigger\.source\.id\)/);
+            assert.match(effects,/effect\.excludeSource && \(target\.uid \|\| target\.id\) === context\.sourceId/);
+          });
+          TEST
+
+      - name: Run focused regression
+        run: node --test tests/smoke-breath-self-target-regression.test.mjs
+      - name: Commit
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git rm .github/workflows/fix-smoke-breath-self-target-once.yml
+          git rm -f .github/workflows/inspect-smoke-breath-target-once.yml .github/workflows/inspect-target-filter-source-once.yml 2>/dev/null || true
+          git add app/rules-engine/card-rules.mjs app/rules-engine/engine-base.mjs app/rules-engine/effects.mjs tests/smoke-breath-self-target-regression.test.mjs
+          git commit -m "fix: prevent Bafo de Fumaça from targeting itself"
+          git push origin fix/cards_mechanics
