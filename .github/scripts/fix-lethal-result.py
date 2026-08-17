@@ -1,9 +1,16 @@
 from pathlib import Path
+import re
 
 def rep(path, old, new):
     p=Path(path); t=p.read_text(encoding='utf-8')
     if old not in t: raise SystemExit(f'pattern missing in {path}: {old[:140]!r}')
     p.write_text(t.replace(old,new,1),encoding='utf-8')
+
+def sub1(path, pattern, replacement):
+    p=Path(path); t=p.read_text(encoding='utf-8')
+    new,count=re.subn(pattern,replacement,t,count=1,flags=re.S)
+    if count!=1: raise SystemExit(f'regex missing in {path}: {pattern[:140]!r}')
+    p.write_text(new,encoding='utf-8')
 
 # Authoritative state-based defeat check for every rules command.
 rep('app/rules-engine/engine-base.mjs',
@@ -24,14 +31,14 @@ rep('app/rules-engine/engine-base.mjs',
   return { state, trace, steps };
 }''')
 
-# Make local authoritative bridge defensive as well, including old room snapshots.
+# Local bridge is defensive too, for older room/state snapshots.
 rep('app/page.tsx',
 '''const next=executeCommand(current,{...command,owner},{priority:true}).state as Game;currentGameRef.current=next;setGame(next);setResponseWindow(next.pendingResponse??null);return true''',
 '''const next=executeCommand(current,{...command,owner},{priority:true}).state as Game;if(next.winner==null){const defeated=next.players.findIndex(player=>player.life<=0);if(defeated>=0)next.winner=defeated===0?1:0}if(next.winner!==null){next.pendingDecision=null;next.pendingResponse=null;next.pendingAction=undefined;next.pendingReposition=null;next.combatAction=null}currentGameRef.current=next;setGame(next);setResponseWindow(next.pendingResponse??null);return true''')
 
-old='''{game.winner!==null&&<div className="overlay"><div className="maintenance"><p>FIM DO TESTE</p><h2>{game.winner===0?"Vitória":"Derrota"}</h2><span>{deckById(game.players[game.winner].heroId).name} venceu após {game.round} turnos.</span><div><button className="gold" onClick={begin}>Revanche</button><button onClick={()=>setScreen("setup")}>Trocar decks</button></div></div></div>}'''
+# Replace the existing compact end-screen regardless of minor text/layout differences.
 new='''{game.winner!==null&&<div className="overlay match-result-overlay"><section className="match-result" style={{"--winner-color":deckById(game.players[game.winner].heroId).color} as React.CSSProperties}><div className="match-result-art"><RemoteCardArt page={deckById(game.players[game.winner].heroId).heroPage} name={deckById(game.players[game.winner].heroId).name} priority/></div><div className="match-result-copy"><p>FIM DA PARTIDA</p><h2>{game.winner===0?"Vitória":"Derrota"}</h2><strong>{deckById(game.players[game.winner].heroId).name}</strong><span>venceu após {game.round} turnos.</span><div className="match-result-actions"><button className="gold" onClick={begin}>Revanche</button><button onClick={()=>setScreen("setup")}>Trocar decks</button><button onClick={()=>setScreen("menu")}>Menu</button></div></div></section></div>}'''
-rep('app/page.tsx',old,new)
+sub1('app/page.tsx',r'\{game\.winner!==null&&<div className="overlay">.*?<button[^>]*onClick=\{\(\)=>setScreen\("setup"\)\}[^>]*>Trocar decks</button>.*?</div></div>\}',new)
 
 css='''/* Dedicated end-of-match presentation. */
 .match-result-overlay{display:grid!important;place-items:center!important;padding:clamp(1rem,3vw,2.5rem)!important;background:radial-gradient(circle at 50% 35%,#081a22d9,#02070bea 68%)!important;z-index:900!important}
