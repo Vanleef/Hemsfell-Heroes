@@ -11,6 +11,7 @@ import "./card-list-grid-fit.css";
 import "./decision-lane-position.css";
 import "./target-banner-anchor.css";
 import "./hero-inspector-fix.css";
+import "./hero-inspector-cleanup.css";
 import "./match-result-enhancer.css";
 import CommandBarTextAutoFit from "./command-bar-text-autofit";
 import MatchUiGuard from "./match-ui-guard";
