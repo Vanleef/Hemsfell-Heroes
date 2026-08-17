@@ -1,0 +1,88 @@
+name: Fix Valorian trigger once
+on:
+  push:
+    branches: [fix/cards_mechanics]
+    paths: [.github/workflows/fix-valorian-trigger-once.yml]
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+      - name: Patch canonical Valorian trigger
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app/rules-engine/card-rules.mjs')
+          s=p.read_text()
+          anchor='  p10: [ability("static", [effect("keyword", { keyword: "Atropelar" })]), ability("onDestroyed", [effect("damageAll", { amount: 2, target: "allCreatures" })])],\n'
+          insert='  p11: [ability("static", [effect("keyword", { keyword: "Voar" })]), ability("onCreatureEnter", [effect("damageEnemyHero", { amount: 2 })], [], { condition: { eventOwnerIsController: true, eventCardSubtype: "Dragão", otherThanSource: true }, triggerMeta: { kind: "conditional-passive", scenario: "Sempre que outra criatura aliada da classe Dragão entrar em campo." } })],\n'
+          if '  p11:' not in s:
+              if anchor not in s: raise SystemExit('p10 anchor not found')
+              s=s.replace(anchor,anchor+insert,1)
+          else:
+              raise SystemExit('p11 already exists; inspect manually')
+          p.write_text(s)
+          PY
+      - name: Patch local Valorian trigger
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app/page.tsx')
+          s=p.read_text()
+          old='if(hasFaction(entering,"Dragão"))p.board.filter(unit=>unit.page===11&&!unit.suffocated).forEach(unit=>{foe.life-=2;p.damageDealt+=2;markCreatureDamage(unit,owner===0?1:0);log(g,`Valorian causou 2 de dano ao herói inimigo quando ${entering.name} entrou em campo.`,"damage")});'
+          new='if(hasFaction(entering,"Dragão"))p.board.filter(unit=>unit.page===11&&!unit.suffocated&&unit.uid!==entering.uid).forEach(unit=>{foe.life-=2;p.damageDealt+=2;markCreatureDamage(unit,owner===0?1:0);log(g,`Valorian causou 2 de dano ao herói inimigo quando outro Dragão aliado, ${entering.name}, entrou em campo.`,"damage")});'
+          if old not in s: raise SystemExit('legacy Valorian trigger anchor not found')
+          p.write_text(s.replace(old,new,1))
+          PY
+      - name: Add regression
+        run: |
+          cat > tests/valorian-trigger-regression.test.mjs <<'EOF'
+          import assert from "node:assert/strict";
+          import test from "node:test";
+          import cards from "../app/cards.generated.json" with { type: "json" };
+          import { compileCard } from "../app/rules-engine/compiler.mjs";
+          import { executeCommand } from "../app/rules-engine/engine.mjs";
+
+          const byPage=(page)=>compileCard(cards.find(card=>Number(card.page)===page));
+          const base=()=>({active:0,phase:"principal",round:1,players:[0,1].map((_,i)=>({heroId:i?"goblin":"gimble",level:1,life:30,maxLife:30,energy:20,maxEnergy:20,reserve:0,deck:[],extraDeck:[],hand:[],board:[],support:[],terrain:null,grave:[],obscuro:[],cardsPlayed:0,turnCardsPlayed:0,turnSpellsPlayed:0,spellsPlayed:0,abilityUses:{}})),rulesEvents:[],pendingDecision:null,pendingResponse:null,combatAction:null});
+
+          test("Valorian custo 7 não ativa na própria entrada",()=>{
+            const g=base(); const valorian=byPage(11); g.players[0].hand.push({...valorian,id:"valorian-hand"});
+            const r=executeCommand(g,{type:"playCard",owner:0,cardId:"valorian-hand",slot:0,skipPriority:true}).state;
+            assert.equal(r.players[1].life,30);
+          });
+
+          test("Valorian custo 7 ignora criatura aliada que não é Dragão",()=>{
+            let g=base(); const valorian=byPage(11); g.players[0].hand.push({...valorian,id:"valorian-hand"});
+            g=executeCommand(g,{type:"playCard",owner:0,cardId:"valorian-hand",slot:0,skipPriority:true}).state;
+            const nonDragon=compileCard({page:999,id:"non-dragon",name:"Soldado",type:"Criatura",cost:0,atk:1,hp:1,text:"",tags:[],subtypes:[]});
+            g.players[0].hand.push(nonDragon);
+            g=executeCommand(g,{type:"playCard",owner:0,cardId:"non-dragon",slot:1,skipPriority:true}).state;
+            assert.equal(g.players[1].life,30);
+          });
+
+          test("Valorian custo 7 ativa quando outro Dragão aliado entra",()=>{
+            let g=base(); const valorian=byPage(11); g.players[0].hand.push({...valorian,id:"valorian-hand"});
+            g=executeCommand(g,{type:"playCard",owner:0,cardId:"valorian-hand",slot:0,skipPriority:true}).state;
+            const dragon=compileCard({page:998,id:"dragon",name:"Outro Dragão",type:"Criatura",cost:0,atk:1,hp:1,text:"",tags:["Dragão"],subtypes:["Dragão"]});
+            g.players[0].hand.push(dragon);
+            g=executeCommand(g,{type:"playCard",owner:0,cardId:"dragon",slot:1,skipPriority:true}).state;
+            assert.equal(g.players[1].life,28);
+          });
+          EOF
+          node --test tests/valorian-trigger-regression.test.mjs
+      - name: Verify source
+        run: |
+          grep -F 'eventCardSubtype: "Dragão", otherThanSource: true' app/rules-engine/card-rules.mjs
+          grep -F 'unit.uid!==entering.uid' app/page.tsx
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/rules-engine/card-rules.mjs app/page.tsx tests/valorian-trigger-regression.test.mjs
+          git commit -m 'fix: restrict Valorian trigger to other allied Dragons'
+          git push origin fix/cards_mechanics
