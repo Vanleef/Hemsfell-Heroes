@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 
+// One-shot canonical patch for the Barista Cat search UI.
 const pagePath = 'app/page.tsx';
 let page = fs.readFileSync(pagePath, 'utf8');
 
