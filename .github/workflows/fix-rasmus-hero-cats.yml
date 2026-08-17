@@ -1,0 +1,48 @@
+name: Fix Rasmus hero and cats
+
+on:
+  push:
+    branches: [fix/cards_mechanics]
+    paths:
+      - '.github/scripts/fix-rasmus-mechanics.py'
+      - '.github/scripts/fix-rasmus-ui.py'
+      - 'tests/rasmus-hero-cat-regressions.test.mjs'
+      - '.github/workflows/fix-rasmus-hero-cats.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Apply mechanics patch
+        run: python .github/scripts/fix-rasmus-mechanics.py
+      - name: Apply UI patch
+        run: python .github/scripts/fix-rasmus-ui.py
+      - name: Install dependencies
+        run: npm ci
+      - name: Focused regressions
+        run: node --test tests/rasmus-hero-cat-regressions.test.mjs tests/barista-search-regression.test.mjs tests/cafe-do-tempo-placement.test.mjs tests/cafe-preto-single-target.test.mjs tests/saymon-cat-espresso-turn-regression.test.mjs
+      - name: Full Vercel build
+        run: npm run vercel-build
+      - name: Commit repair
+        run: |
+          if git diff --quiet; then
+            echo "No repair diff to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx app/cards.generated.json app/lab.css app/hero-inspector-fix.css app/rules-engine/card-rules.mjs app/rules-engine/effects.mjs app/rules-engine/engine-base.mjs tests/rasmus-hero-cat-regressions.test.mjs
+          git commit -m "fix: align Rasmus hero cats and inspector"
+          git push origin HEAD:fix/cards_mechanics
