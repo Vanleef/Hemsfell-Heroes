@@ -25,7 +25,7 @@ test("Rasmus supplied deck matches the author list and totals exactly 49 cards",
   const match = pageSource.match(/rasmus:\[(.*?)\],\n ngoro:/s);
   assert.ok(match, "Rasmus supplied deck must exist");
   const pairs = [...match[1].matchAll(/\[(\d+),(\d+)\]/g)].map((entry) => [Number(entry[1]), Number(entry[2])]);
-  const expected = [[221,3],[245,3],[244,2],[217,3],[215,3],[246,3],[247,3],[216,3],[214,2],[250,2],[225,3],[249,3],[252,3],[230,3],[254,2],[212,1],[229,3],[251,2],[235,2]];
+  const expected = [[221,3],[245,3],[244,2],[217,3],[215,3],[246,3],[247,3],[216,3],[214,2],[250,2],[225,3],[249,3],[252,3],[234,3],[254,2],[212,1],[229,3],[251,2],[235,2]];
   assert.deepEqual(pairs, expected);
   assert.equal(pairs.reduce((sum, [, quantity]) => sum + quantity, 0), 49);
 });

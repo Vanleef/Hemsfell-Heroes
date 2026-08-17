@@ -205,7 +205,7 @@ export const explicitCardRules = Object.freeze({
   p231: [ability("onPlay", [effect("controllerChoice", { choices: [[effect("createImagesAcrossFields", { name: "Gato Multidimensional", amount: 3 })], [effect("heal", { amount: 10, target: "controllerHero" })], [effect("draw", { amount: 3 })], [effect("levelHero", { amount: 1, maximum: 3 })]] })])],
   p232: [ability("activated", [effect("grantKeyword", { target: "anyPermanent", keyword: "Barreira Mágica", duration: "permanent" })], [{ type: "tap", amount: 1 }], { uiActivation: true, usageLimit: { count: 1, period: "turn" } })],
   p233: { ignored: true, reason: "removed-from-catalog" },
-  p234: { ignored: true, reason: "removed-from-catalog" },
+  p234: [ability("onPlay", [effect("ready", { target: "anyCreature", selections: 1 }), effect("modifyStats", { target: "anyCreature", attack: 1, health: 1, duration: "turn", reusePreviousTarget: true })])],
   p236: [ability("onPlay", [effect("grantDamageReductionShield", { target: "anyCreature", selections: 1, reduction: 1, uses: 1, duration: "turn" })])],
   p240: [ability("onPlay", [effect("returnToHandWithSubtypeBonus", { target: "anyCreature", selections: 1, subtype: "Gato", keywordOnNextPlay: "Investida" })])],
   p237: [ability("onPlay", [effect("grantDamageShield", { target: "anyCreature", uses: 1, duration: "untilUsed" })])],

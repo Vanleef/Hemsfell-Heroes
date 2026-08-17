@@ -976,7 +976,7 @@ test("migration coverage is explicit and simple cards use the command engine", a
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
-  assert.equal(migrated.length, 298); assert.equal(pending.length, 0);
+  assert.equal(migrated.length, 299); assert.equal(pending.length, 0);
   assert.ok(migrated.every((card) => card.abilities.every((ability) => ability.effects.every((effect) => effect.type !== "unsupported"))));
 });
 
@@ -984,7 +984,7 @@ test("the complete generated catalog has full classified coverage", async () => 
   const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
   const report = auditCards(cards);
   const errors = report.issues.filter((issue) => issue.severity === "error");
-  assert.equal(report.cards, 298);
+  assert.equal(report.cards, 299);
   assert.deepEqual(errors, []);
   assert.equal(report.unsupported, 0);
   assert.equal(report.coverage, 1);

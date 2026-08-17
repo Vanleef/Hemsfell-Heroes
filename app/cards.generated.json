@@ -3085,6 +3085,18 @@
     "imageCard": false
   },
   {
+    "page": 234,
+    "id": "p234",
+    "name": "Café Expresso Simples",
+    "type": "Feitiço",
+    "cost": 1,
+    "text": "Desvire a criatura alvo. Ela ganha +1/+1 até o fim do turno. \"Aproveite enquanto está quente\"",
+    "tags": [],
+    "image": "drive://1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC/page/234",
+    "hero": false,
+    "imageCard": false
+  },
+  {
     "page": 235,
     "id": "p235",
     "name": "Anel de Safira",
