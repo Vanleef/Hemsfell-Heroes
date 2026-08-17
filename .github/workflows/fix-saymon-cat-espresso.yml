@@ -34,12 +34,12 @@ jobs:
         run: npm run vercel-build
       - name: Commit repair
         run: |
-          if git diff --quiet -- app/page.tsx app/rules-engine/engine-base.mjs; then
+          if git diff --quiet -- app/page.tsx app/rules-engine/engine-base.mjs app/rules-engine/effects.mjs; then
             echo "No repair diff to commit"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/page.tsx app/rules-engine/engine-base.mjs tests/saymon-cat-espresso-turn-regression.test.mjs
+          git add app/page.tsx app/rules-engine/engine-base.mjs app/rules-engine/effects.mjs tests/saymon-cat-espresso-turn-regression.test.mjs
           git commit -m "fix: stabilize Saymon cat return and espresso activation"
           git push origin HEAD:fix/cards_mechanics
