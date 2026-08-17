@@ -1,42 +1,80 @@
-/* Keep card-choice decisions inside the central lane between both Terreno Cruel zones. */
+/*
+ * Decision UI must never sit on top of the creature battlefield.
+ * Target selection uses the measured LEFT safe lane; engine decisions use the
+ * opposite RIGHT side lane. Both stay compact to their actual content.
+ */
 .screen-game .engine-decision-backdrop {
   position: absolute !important;
   inset: 0 !important;
   z-index: 86 !important;
-  display: grid !important;
-  place-items: center !important;
+  display: block !important;
   padding: 0 !important;
   pointer-events: none;
   background: transparent !important;
 }
 
+/*
+ * Generic decisions live in the right-side gutter instead of the middle of
+ * the board. max-content keeps short text decisions genuinely compact while
+ * the max-width prevents localized text from invading the creature rows.
+ */
 .screen-game .engine-decision-backdrop > .engine-decision-panel {
+  --decision-side-gap: clamp(.45rem, .7cqw, .8rem);
+  --decision-side-width: clamp(14rem, 23cqw, 24rem);
   pointer-events: auto;
   position: absolute !important;
-  left: 50% !important;
-  right: auto !important;
+  left: auto !important;
+  right: var(--decision-side-gap) !important;
   top: 50% !important;
   bottom: auto !important;
-  transform: translate(-50%, -50%) !important;
-  width: min(58cqw, 46rem) !important;
-  max-width: min(58cqw, 46rem) !important;
-  max-height: min(56cqh, 34rem) !important;
+  transform: translateY(-50%) !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: var(--decision-side-width) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: min(72cqh, 38rem) !important;
   margin: 0 !important;
+  padding: clamp(.7rem, 1.15cqw, 1rem) !important;
   box-sizing: border-box !important;
-  overflow: hidden !important;
-}
-
-/* Card lists scroll inside the panel instead of pushing the panel outside the lane. */
-.screen-game .engine-decision-panel .visual-card-choice-grid {
-  max-height: min(38cqh, 22rem) !important;
   overflow: auto !important;
+  overscroll-behavior: contain;
 }
 
-/* Simple target-selection banner: the measured safe lane already knows where
-   the creature slots begin and where both Terreno Cruel zones end. Anchor the
-   banner by its RIGHT edge just before the creature slots instead of centering
-   it across the whole lane. Its vertical center remains exactly between both
-   Terreno Cruel zones. */
+/* No child may force a compact decision wider than its side gutter. */
+.screen-game .engine-decision-panel > :is(header, section, div, p, ol, ul) {
+  min-width: 0 !important;
+  max-width: 100% !important;
+}
+
+.screen-game .engine-decision-panel :is(h1, h2, h3, p, span, b, small) {
+  overflow-wrap: anywhere;
+}
+
+/*
+ * Card-choice decisions are the one case allowed to use the full side-panel
+ * width. The list itself scrolls instead of increasing the dialog until it
+ * reaches the battlefield or bottom controls.
+ */
+.screen-game .engine-decision-panel:has(.visual-card-choice-grid),
+.screen-game .engine-decision-panel:has(.card-choice-grid),
+.screen-game .engine-decision-panel:has(.decision-card-grid) {
+  width: var(--decision-side-width) !important;
+}
+
+.screen-game .engine-decision-panel :is(.visual-card-choice-grid, .card-choice-grid, .decision-card-grid) {
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: min(52cqh, 28rem) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+}
+
+/*
+ * Simple target-selection banner stays in the opposite side lane. The
+ * measured bounds come from MatchUiGuard and end immediately before the first
+ * creature-space group, so the banner cannot cover a creature slot.
+ */
 .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
   --target-slot-gap: clamp(.28rem, .48cqw, .58rem);
   position: absolute !important;
@@ -54,10 +92,9 @@
   transform: translate(-100%, -50%) !important;
   box-sizing: border-box !important;
   z-index: 760 !important;
+  overflow: auto !important;
 }
 
-/* Keep the compact text/button composition while allowing long localized copy
-   to wrap before it reaches the creature-slot boundary. */
 .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] > :is(b, span, div) {
   min-width: 0 !important;
   max-width: min(28cqw, 30rem) !important;
@@ -65,8 +102,8 @@
 
 @container hemsfell-board (max-width: 72rem) {
   .screen-game .engine-decision-backdrop > .engine-decision-panel {
-    width: min(64cqw, 42rem) !important;
-    max-width: min(64cqw, 42rem) !important;
+    --decision-side-gap: clamp(.32rem, .55cqw, .6rem);
+    --decision-side-width: clamp(12rem, 25cqw, 21rem);
   }
 
   .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
@@ -76,9 +113,10 @@
 
 @container hemsfell-board (max-width: 54rem) {
   .screen-game .engine-decision-backdrop > .engine-decision-panel {
-    width: min(82cqw, 38rem) !important;
-    max-width: min(82cqw, 38rem) !important;
-    max-height: min(62cqh, 32rem) !important;
+    --decision-side-gap: clamp(.22rem, .4cqw, .42rem);
+    --decision-side-width: clamp(10.5rem, 29cqw, 18rem);
+    max-height: min(78cqh, 34rem) !important;
+    padding: clamp(.55rem, 1cqw, .8rem) !important;
   }
 
   .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
