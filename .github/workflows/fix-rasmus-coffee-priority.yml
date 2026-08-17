@@ -1,0 +1,31 @@
+name: Fix Rasmus coffee and priority
+on:
+  push:
+    branches: [fix/cards_mechanics]
+    paths: [.github/workflows/fix-rasmus-coffee-priority.yml]
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: python .github/scripts/fix-rasmus-coffee-priority.py
+      - run: npm ci
+      - run: node --test tests/rasmus-coffee-priority-regressions.test.mjs tests/ai-priority-progress.test.mjs tests/bot-priority-sync.test.mjs tests/rules-engine.test.mjs
+      - run: npm run build
+      - name: Commit repair
+        run: |
+          rm .github/scripts/fix-rasmus-coffee-priority.py .github/workflows/fix-rasmus-coffee-priority.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx app/rules-engine/card-rules.mjs tests/rasmus-coffee-priority-regressions.test.mjs .github/scripts/fix-rasmus-coffee-priority.py .github/workflows/fix-rasmus-coffee-priority.yml
+          git commit -m "fix: correct Rasmus deck coffee buff and bot priority"
+          git push origin HEAD:fix/cards_mechanics
