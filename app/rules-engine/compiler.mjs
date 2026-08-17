@@ -191,6 +191,7 @@ export function compileCardText(text = "") {
 }
 
 export function compileCard(card) {
+  if ([12, 13, 14].includes(Number(card?.page))) card = { ...card, type: "Feitiço" };
   if (card?.page === 252) card = { ...card, type: "Feitiço", tags: [...new Set([...(card.tags || []), "Acelerado"])] };
   /* Liaz only gains Furtivo temporarily when an Artefato is actually revealed by Investigar.
      The generated catalog used to promote the conditional rules-text mention into a printed tag. */

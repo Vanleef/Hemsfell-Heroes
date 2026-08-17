@@ -92,3 +92,24 @@ test("Ilusão Dracônica Maior auto-replaces a single Dragão Jovem", () => {
   assert.equal(result.players[0].board.some((card) => card.uid === "young"), false);
   assert.equal(result.players[0].board.find((card) => card.name === "Dragão Ancião")?.slot, 2);
 });
+
+
+test("Draconic Illusions are spells and never remain as permanents", async () => {
+  const rawCards = (await import("../app/cards.generated.json", { with: { type: "json" } })).default;
+  for (const page of [12, 13, 14]) {
+    const compiled = compileCard(rawCards.find((card) => Number(card.page) === page));
+    assert.equal(compiled.type, "Feitiço", `p${page} must compile as Feitiço`);
+  }
+
+  const game = baseState();
+  game.players[0].energy = 10;
+  const minor = compileCard(rawCards.find((card) => Number(card.page) === 12));
+  game.players[0].hand.push(minor);
+  game.players[0].extraDeck.push(extra(23, "Dragão Filhote"));
+
+  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: minor.id, skipPriority: true }).state;
+  assert.equal(result.players[0].support.some((card) => Number(card.page) === 12), false, "Ilusão Dracônica Menor must not remain in support");
+  assert.equal(result.players[0].board.some((card) => Number(card.page) === 12), false, "Ilusão Dracônica Menor must not remain on board");
+  assert.equal(result.players[0].grave.some((card) => Number(card.page) === 12), true, "Ilusão Dracônica Menor must go to grave after resolving");
+  assert.equal(result.players[0].board.some((card) => card.name === "Dragão Filhote"), true, "created Dragon Image remains on field");
+});
