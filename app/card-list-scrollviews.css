@@ -89,6 +89,60 @@
   overflow: hidden !important;
 }
 
+/* Hand limit uses the same canonical horizontal card-list behavior.
+   The confirm button remains outside this scrollview as a sibling action.
+   Override the older adaptive-grid fit so cards never stack or overlap. */
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: clamp(.5rem, 1cqw, .85rem) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: min(52dvh, 27rem) !important;
+  margin: 0 !important;
+  padding: clamp(.55rem, 1.1cqh, .85rem) clamp(.5rem, 1cqw, .9rem) clamp(1rem, 2cqh, 1.3rem) !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  box-sizing: border-box !important;
+  scroll-snap-type: x proximity !important;
+  overscroll-behavior-inline: contain !important;
+  scrollbar-gutter: stable both-edges !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] > * {
+  flex: 0 0 clamp(6.25rem, 10.5cqw, 8.25rem) !important;
+  width: clamp(6.25rem, 10.5cqw, 8.25rem) !important;
+  min-width: clamp(6.25rem, 10.5cqw, 8.25rem) !important;
+  max-width: clamp(6.25rem, 10.5cqw, 8.25rem) !important;
+  height: auto !important;
+  min-height: max-content !important;
+  margin: 0 !important;
+  padding-bottom: clamp(.3rem, .65cqh, .5rem) !important;
+  box-sizing: border-box !important;
+  align-self: flex-start !important;
+  scroll-snap-align: start !important;
+  overflow: visible !important;
+}
+
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] :is(.original-card,.card-frame,.remote-card-art,img,canvas) {
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] .original-card {
+  width: 100% !important;
+  margin: 0 0 clamp(.38rem,.8cqh,.62rem) !important;
+  overflow: visible !important;
+}
+
 @media (max-width: 52rem), (max-height: 42rem) {
   .screen-game .engine-decision-panel .visual-card-choice-grid,
   .screen-game .overlay .visual-card-choice-grid,
@@ -113,5 +167,12 @@
     width: clamp(5.2rem, 17vw, 7rem) !important;
     min-width: clamp(5.2rem, 17vw, 7rem) !important;
     max-width: clamp(5.2rem, 17vw, 7rem) !important;
+  }
+
+  .screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] > * {
+    flex-basis: clamp(5.4rem, 17vw, 6.8rem) !important;
+    width: clamp(5.4rem, 17vw, 6.8rem) !important;
+    min-width: clamp(5.4rem, 17vw, 6.8rem) !important;
+    max-width: clamp(5.4rem, 17vw, 6.8rem) !important;
   }
 }
