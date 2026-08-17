@@ -1,0 +1,33 @@
+name: Fix Compact Target Banner Once
+
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+    paths:
+      - scripts/patch-compact-target-banner.mjs
+      - .github/workflows/fix-compact-target-banner-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - name: Apply compact target banner patch
+        run: node scripts/patch-compact-target-banner.mjs
+      - name: Run focused regression
+        run: node --test tests/target-banner-safe-lane-regression.test.mjs
+      - name: Commit canonical fix and remove temporary patch files
+        run: |
+          rm .github/workflows/fix-compact-target-banner-once.yml scripts/patch-compact-target-banner.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/match-ui-guard.tsx app/ui-overrides.css tests/target-banner-safe-lane-regression.test.mjs .github/workflows/fix-compact-target-banner-once.yml scripts/patch-compact-target-banner.mjs
+          git commit -m "fix: keep target selection popup compact"
+          git push origin HEAD:fix/cards_mechanics
