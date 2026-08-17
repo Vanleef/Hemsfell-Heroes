@@ -10,10 +10,12 @@ import "./card-list-grid-layout.css";
 import "./card-list-grid-fit.css";
 import "./decision-lane-position.css";
 import "./target-banner-anchor.css";
+import "./match-result-enhancer.css";
 import CommandBarTextAutoFit from "./command-bar-text-autofit";
 import MatchUiGuard from "./match-ui-guard";
 import CardListTooltipPortal from "./card-list-tooltip-portal";
 import TargetBannerPositionGuard from "./target-banner-position-guard";
+import MatchResultEnhancer from "./match-result-enhancer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,6 +61,7 @@ export default function RootLayout({
         <MatchUiGuard />
         <TargetBannerPositionGuard />
         <CardListTooltipPortal />
+        <MatchResultEnhancer />
         {children}
       </body>
     </html>
