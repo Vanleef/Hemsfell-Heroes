@@ -1,0 +1,31 @@
+name: Fix Cafe Preto single target
+on:
+  push:
+    branches: [fix/cards_mechanics]
+    paths: [.github/workflows/fix-cafe-preto-single-target.yml]
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: python .github/scripts/fix-cafe-preto-single-target.py
+      - run: npm ci
+      - run: node --test tests/cafe-preto-single-target.test.mjs tests/rasmus-authoritative.test.mjs tests/rules-engine.test.mjs
+      - run: npm run build
+      - name: Commit repair
+        run: |
+          rm .github/scripts/fix-cafe-preto-single-target.py .github/workflows/fix-cafe-preto-single-target.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/rules-engine/card-rules.mjs app/rules-engine/targeting.mjs app/rules-engine/effects.mjs tests/rasmus-authoritative.test.mjs tests/cafe-preto-single-target.test.mjs .github/scripts/fix-cafe-preto-single-target.py .github/workflows/fix-cafe-preto-single-target.yml
+          git commit -m "fix: reuse Café Preto target for untap skip"
+          git push origin HEAD:fix/cards_mechanics
