@@ -10,6 +10,7 @@ const LIST_SELECTOR = [
   ".popup-card-list",
   ".choice-cards",
   ".hand-limit-choice-area",
+  ".response-cards",
 ].join(",");
 
 export default function CardListTooltipPortal() {
