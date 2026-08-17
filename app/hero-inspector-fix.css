@@ -1,33 +1,170 @@
-/* Keep every in-match hero inspector on the same structured guide layout. */
-.card-focus-layer .inspector-hero-guide{
-  width:100%;
-  min-width:0;
-  display:block;
+/* Canonical in-match hero inspector layout.
+   All heroes must render exactly like the structured Rasmus guide, regardless
+   of legacy collection/hero-card rules loaded earlier in the cascade. */
+.card-focus-layer.inspector > div,
+.card-focus-layer .inspector-hero-guide,
+.card-focus-layer .inspector-hero-guide .hero-guide {
+  min-width: 0 !important;
+  box-sizing: border-box !important;
 }
 
-.card-focus-layer .inspector-hero-guide .hero-guide{
-  width:100%;
-  max-width:100%;
-  min-width:0;
-  box-sizing:border-box;
+.card-focus-layer .inspector-hero-guide {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
 }
 
-.card-focus-layer .inspector-hero-guide .hero-abilities-guide>div:last-child{
-  display:grid!important;
-  grid-template-columns:1fr!important;
-  gap:clamp(.4rem,.8cqw,.75rem)!important;
-  width:100%!important;
-  min-width:0!important;
+.card-focus-layer .inspector-hero-guide .hero-guide {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 0 !important;
+  overflow: visible !important;
 }
 
-.card-focus-layer .inspector-hero-guide .hero-abilities-guide>div:last-child>*{
-  min-width:0!important;
-  width:100%!important;
-  box-sizing:border-box!important;
+.card-focus-layer .inspector-hero-guide .hero-guide > header,
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide,
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  float: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  box-sizing: border-box !important;
 }
 
-@container (max-width:46rem){
-  .card-focus-layer .inspector-hero-guide .hero-guide{
-    font-size:clamp(.78rem,2.3cqw,.96rem);
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide > ol {
+  display: flex !important;
+  flex-direction: column !important;
+  grid-template-columns: none !important;
+  width: 100% !important;
+  gap: clamp(.35rem,.7cqw,.65rem) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide > ol > li {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: clamp(2.6rem,6cqh,4rem) !important;
+  box-sizing: border-box !important;
+}
+
+/* The second direct child is the abilities list. Legacy styles previously
+   turned this into a horizontal three-column deck-card layout. */
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  grid-template-columns: none !important;
+  grid-auto-flow: row !important;
+  gap: clamp(.4rem,.8cqw,.75rem) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article {
+  position: static !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+  translate: none !important;
+  rotate: none !important;
+  scale: 1 !important;
+  float: none !important;
+  flex: 0 0 auto !important;
+  display: grid !important;
+  grid-template-columns: clamp(2rem,5cqw,3rem) minmax(0,1fr) !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: clamp(3rem,7cqh,4.6rem) !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article > span,
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article > div,
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article p {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  box-sizing: border-box !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article p {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: clamp(.25rem,.5cqw,.45rem) !important;
+  margin: 0 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article p > span:not(.uruk-element-list) {
+  flex: 1 1 12rem !important;
+  min-width: 0 !important;
+  white-space: normal !important;
+}
+
+.card-focus-layer .inspector-hero-guide > small {
+  flex: 0 0 auto !important;
+  margin-top: auto !important;
+}
+
+/* The right inspector pane owns scrolling; individual guide sections never
+   become independent scroll containers or overlap each other. */
+.card-focus-layer.inspector > div > aside {
+  min-width: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+
+@container (max-width:46rem) {
+  .card-focus-layer .inspector-hero-guide .hero-guide {
+    font-size: clamp(.78rem,2.3cqw,.96rem) !important;
+  }
+
+  .card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article {
+    grid-template-columns: clamp(1.9rem,7cqw,2.6rem) minmax(0,1fr) !important;
   }
 }
