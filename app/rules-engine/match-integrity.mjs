@@ -10,6 +10,24 @@ export const isAcceleratedCard = (card) => (card?.tags || []).some((tag) => /ace
 
 const cardInHand = (state, command) => state.players?.[command.owner]?.hand?.find((card) => card.id === command.cardId || card.uid === command.cardId);
 
+const finalizeLethalLife = (state) => {
+  if (!state?.players?.length || state.winner != null) return state;
+  const dead = state.players.map((entry, owner) => ({ owner, life: Number(entry?.life || 0) })).filter((entry) => entry.life <= 0);
+  if (!dead.length) return state;
+  if (dead.length === 1) state.winner = dead[0].owner === 0 ? 1 : 0;
+  else {
+    // Simultaneous lethal is resolved against the active player. This keeps the
+    // outcome deterministic and prevents a match from remaining interactive at 0 life.
+    state.winner = state.active === 0 ? 1 : 0;
+  }
+  state.pendingDecision = null;
+  state.pendingResponse = null;
+  state.pendingAction = undefined;
+  state.priorityStack = [];
+  state.combatAction = null;
+  return state;
+};
+
 const validateWeddingRingLink = (state, command, card) => {
   if (Number(card?.page) !== 150) return;
   const entry = state.players?.[command.owner];
@@ -84,6 +102,7 @@ export function reservePriorityPayment(state, command) {
     if (player.life - cost < minimumLife) throw new RulesViolation("not-enough-life");
     player.life -= cost;
     payment.life = cost;
+    finalizeLethalLife(state);
     return payment;
   }
 
@@ -117,6 +136,7 @@ export function restorePriorityPayment(state, payment, owner) {
   player.energy += Number(payment.energy || 0);
   player.reserve += Number(payment.reserve || 0);
   player.life += Number(payment.life || 0);
+  if (player.life > 0 && next.winner != null) next.winner = null;
   return next;
 }
 
@@ -161,6 +181,7 @@ const moveLinkedCard = (state, owner, unit, destination) => {
 };
 
 export function propagateWeddingRingLinks(before, after) {
+  finalizeLethalLife(after);
   const links = before.players.flatMap((entry) => (entry.support || []).filter((card) => Number(card.page) === 150 && Array.isArray(card.linkedCreatures) && card.linkedCreatures.length >= 2).map((ring) => [...new Set(ring.linkedCreatures.map(String))].slice(0, 2))).filter((pair) => pair.length === 2);
   if (!links.length) return after;
   const processed = new Set();
@@ -198,6 +219,7 @@ export function propagateWeddingRingLinks(before, after) {
       changed = true;
     }
   }
+  finalizeLethalLife(after);
   return after;
 }
 
