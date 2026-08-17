@@ -87,66 +87,6 @@ function enhanceDeckPickers() {
   document.querySelectorAll<HTMLElement>(".deck-picker").forEach(enrichDeckPicker);
 }
 
-function findHeroInspectorMeta(inspector: HTMLElement) {
-  const heading = Array.from(inspector.querySelectorAll<HTMLElement>("h1,h2,h3")).find((node) => heroMeta[node.textContent?.trim() || ""]);
-  if (!heading) return null;
-  const name = heading.textContent?.trim() || "";
-  return { heading, name, meta: heroMeta[name] };
-}
-
-function hideLegacyHeroInspectorSections(container: HTMLElement) {
-  for (const node of Array.from(container.querySelectorAll<HTMLElement>("section,div"))) {
-    const ownLabel = Array.from(node.children).find((child) => /^(EFEITO COMPLETO|PALAVRAS-CHAVE)$/i.test(child.textContent?.trim() || ""));
-    if (ownLabel) node.classList.add("hero-inspector-legacy-section");
-  }
-}
-
-function enhanceHeroInspector() {
-  const inspector = document.querySelector<HTMLElement>(".inspector");
-  if (!inspector) return;
-  const found = findHeroInspectorMeta(inspector);
-  if (!found) {
-    inspector.classList.remove("hero-inspector-modern");
-    inspector.querySelector(".hero-inspector-guide")?.remove();
-    inspector.querySelectorAll(".hero-inspector-legacy-section").forEach((node) => node.classList.remove("hero-inspector-legacy-section"));
-    return;
-  }
-  const { heading, name, meta } = found;
-  inspector.classList.add("hero-inspector-modern");
-  inspector.style.setProperty("--hero-faction", meta.color);
-  const details = heading.parentElement;
-  if (!details) return;
-  hideLegacyHeroInspectorSections(details);
-
-  let guide = details.querySelector<HTMLElement>(".hero-inspector-guide");
-  if (guide?.dataset.hero === name) return;
-  guide?.remove();
-  guide = document.createElement("div");
-  guide.className = "hero-inspector-guide";
-  guide.dataset.hero = name;
-
-  const identity = document.createElement("section");
-  identity.className = "hero-guide-identity";
-  identity.append(createText("small", "", "IDENTIDADE"), createText("strong", "hero-guide-faction", meta.faction), createText("span", "", meta.style), createText("p", "", meta.plan));
-
-  const evolution = document.createElement("section");
-  evolution.className = "hero-guide-evolution";
-  evolution.append(createText("small", "", "EVOLUÇÃO"), createText("p", "", meta.evolution));
-
-  const abilities = document.createElement("section");
-  abilities.className = "hero-guide-abilities";
-  abilities.append(createText("small", "", "HABILIDADES POR NÍVEL"));
-  const list = document.createElement("div");
-  for (const ability of meta.abilities) {
-    const row = document.createElement("article");
-    row.append(createText("i", "", ability.level), createText("b", ability.type === "Ativa" ? "is-active" : "is-passive", ability.type.toUpperCase()), createText("p", "", ability.text));
-    list.append(row);
-  }
-  abilities.append(list);
-  guide.append(identity, evolution, abilities);
-  details.append(guide);
-}
-
 function enhanceMatchResult() {
   const overlays = Array.from(document.querySelectorAll<HTMLElement>(".overlay"));
   const result = overlays.find((overlay) => overlay.textContent?.includes("FIM DO TESTE"));
@@ -327,7 +267,6 @@ export default function MatchUiGuard() {
       wasInMatch = inMatch;
       ensureLandingGuide();
       enhanceDeckPickers();
-      enhanceHeroInspector();
       enhanceMatchResult();
       layoutTargetBannerInSafeLane();
       layoutHandLimitChoices();
