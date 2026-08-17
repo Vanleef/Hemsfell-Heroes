@@ -1,5 +1,6 @@
 /* Canonical scrollviews for card lists shown inside modal/decision surfaces.
-   Lists keep cards readable; overflow belongs to the list, never to the popup. */
+   Lists keep cards fully visible and readable; overflow belongs to the strip,
+   while the scrollbar itself stays visually hidden. */
 
 .screen-game .engine-decision-panel,
 .screen-game .overlay > .maintenance,
@@ -26,35 +27,53 @@
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
-  max-height: min(58dvh, 32rem) !important;
+  max-height: min(54dvh, 28rem) !important;
   box-sizing: border-box !important;
   display: flex !important;
   flex-flow: row nowrap !important;
   align-items: flex-start !important;
   justify-content: flex-start !important;
   gap: clamp(.55rem, 1cqw, .9rem) !important;
-  padding: clamp(.55rem, 1.2cqh, .9rem) clamp(.5rem, 1cqw, .9rem) clamp(1rem, 2.2cqh, 1.35rem) !important;
+  padding: clamp(.45rem, .9cqh, .7rem) clamp(.45rem, .9cqw, .8rem) clamp(.55rem, 1.1cqh, .8rem) !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
   overscroll-behavior-inline: contain !important;
   scroll-snap-type: x proximity !important;
-  scrollbar-gutter: stable both-edges !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   -webkit-overflow-scrolling: touch;
 }
 
+.screen-game .engine-decision-panel .visual-card-choice-grid::-webkit-scrollbar,
+.screen-game .overlay .visual-card-choice-grid::-webkit-scrollbar,
+.screen-game .popup .visual-card-choice-grid::-webkit-scrollbar,
+.screen-game .modal .visual-card-choice-grid::-webkit-scrollbar,
+.screen-game .choice-modal .visual-card-choice-grid::-webkit-scrollbar,
+.screen-game .card-choice-grid::-webkit-scrollbar,
+.screen-game .card-selection-grid::-webkit-scrollbar,
+.screen-game .selection-card-grid::-webkit-scrollbar,
+.screen-game .popup-card-list::-webkit-scrollbar,
+.screen-game .choice-cards::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 /* Choice items intentionally look like pile/deck viewers: the card itself is
-   the item. No large tile, frame or stacked-card surface around it. */
+   the item. Width is capped by viewport height as well, so the complete card
+   remains inside the usable vertical area on short screens. */
 .screen-game .visual-card-choice-grid > .visual-card-choice,
 .screen-game .card-choice-grid > *,
 .screen-game .card-selection-grid > *,
 .screen-game .selection-card-grid > *,
 .screen-game .popup-card-list > *,
 .screen-game .choice-cards > * {
+  --choice-card-width: clamp(4.7rem, min(9.4cqw, 12dvh), 7.25rem);
   position: relative !important;
-  flex: 0 0 clamp(6rem, 9.4cqw, 7.6rem) !important;
-  width: clamp(6rem, 9.4cqw, 7.6rem) !important;
-  min-width: clamp(6rem, 9.4cqw, 7.6rem) !important;
-  max-width: clamp(6rem, 9.4cqw, 7.6rem) !important;
+  flex: 0 0 var(--choice-card-width) !important;
+  width: var(--choice-card-width) !important;
+  min-width: var(--choice-card-width) !important;
+  max-width: var(--choice-card-width) !important;
   min-height: 0 !important;
   height: auto !important;
   display: flex !important;
@@ -142,8 +161,9 @@
   overflow: hidden !important;
 }
 
-/* Hand limit uses exactly the same loose-card strip. The confirm action remains
-   a sibling outside the scrollview. */
+/* Hand limit uses the same loose-card strip. Confirm remains a sibling outside
+   the scrollview. Scrolling works with wheel/touchpad/touch, but no scrollbar
+   is painted and therefore it never steals card height. */
 .screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] {
   display: flex !important;
   flex-flow: row nowrap !important;
@@ -154,24 +174,32 @@
   max-width: 100% !important;
   height: auto !important;
   min-height: 0 !important;
-  max-height: min(52dvh, 27rem) !important;
+  max-height: min(46dvh, 23rem) !important;
   margin: 0 !important;
-  padding: clamp(.55rem, 1.1cqh, .85rem) clamp(.5rem, 1cqw, .9rem) clamp(1rem, 2cqh, 1.3rem) !important;
+  padding: clamp(.45rem,.9cqh,.7rem) clamp(.45rem,.9cqw,.8rem) clamp(.55rem,1.1cqh,.8rem) !important;
   overflow-x: auto !important;
   overflow-y: hidden !important;
   box-sizing: border-box !important;
   scroll-snap-type: x proximity !important;
   overscroll-behavior-inline: contain !important;
-  scrollbar-gutter: stable both-edges !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
   -webkit-overflow-scrolling: touch;
 }
 
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"]::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
 .screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] > * {
+  --choice-card-width: clamp(4.7rem, min(9.4cqw, 12dvh), 7.25rem);
   position: relative !important;
-  flex: 0 0 clamp(6rem, 9.4cqw, 7.6rem) !important;
-  width: clamp(6rem, 9.4cqw, 7.6rem) !important;
-  min-width: clamp(6rem, 9.4cqw, 7.6rem) !important;
-  max-width: clamp(6rem, 9.4cqw, 7.6rem) !important;
+  flex: 0 0 var(--choice-card-width) !important;
+  width: var(--choice-card-width) !important;
+  min-width: var(--choice-card-width) !important;
+  max-width: var(--choice-card-width) !important;
   height: auto !important;
   min-height: 0 !important;
   display: flex !important;
@@ -221,7 +249,7 @@
   .screen-game .selection-card-grid,
   .screen-game .popup-card-list,
   .screen-game .choice-cards {
-    max-height: min(52dvh, 26rem) !important;
+    max-height: min(47dvh, 22rem) !important;
   }
 
   .screen-game .visual-card-choice-grid > .visual-card-choice,
@@ -231,9 +259,6 @@
   .screen-game .popup-card-list > *,
   .screen-game .choice-cards > *,
   .screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] > * {
-    flex-basis: clamp(5.4rem, 15vw, 6.6rem) !important;
-    width: clamp(5.4rem, 15vw, 6.6rem) !important;
-    min-width: clamp(5.4rem, 15vw, 6.6rem) !important;
-    max-width: clamp(5.4rem, 15vw, 6.6rem) !important;
+    --choice-card-width: clamp(4.3rem, min(15vw, 11dvh), 6.2rem);
   }
 }
