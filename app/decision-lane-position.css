@@ -1,7 +1,8 @@
 /*
  * Decision UI must never sit on top of the creature battlefield.
- * Target selection uses the measured LEFT safe lane; engine decisions use the
- * opposite RIGHT side lane. Both stay compact to their actual content.
+ * Generic text/target decisions use the side lanes. Decisions that show card
+ * collections are intentionally different: they use a large centered browser
+ * so the cards remain readable and can scroll inside the popup.
  */
 .screen-game .engine-decision-backdrop {
   position: absolute !important;
@@ -13,13 +14,9 @@
   background: transparent !important;
 }
 
-/*
- * Generic decisions live in the right-side gutter instead of the middle of
- * the board. max-content keeps short text decisions genuinely compact while
- * the max-width prevents localized text from invading the creature rows.
- */
+/* Generic decisions: compact to content and anchored in the right-side lane. */
 .screen-game .engine-decision-backdrop > .engine-decision-panel {
-  --decision-side-gap: clamp(.45rem, .7cqw, .8rem);
+  --decision-side-gap: clamp(11.45rem, .7cqw, .8rem);
   --decision-side-width: clamp(14rem, 23cqw, 24rem);
   pointer-events: auto;
   position: absolute !important;
@@ -41,7 +38,6 @@
   overscroll-behavior: contain;
 }
 
-/* No child may force a compact decision wider than its side gutter. */
 .screen-game .engine-decision-panel > :is(header, section, div, p, ol, ul) {
   min-width: 0 !important;
   max-width: 100% !important;
@@ -51,30 +47,40 @@
   overflow-wrap: anywhere;
 }
 
-/*
- * Card-choice decisions are the one case allowed to use the full side-panel
- * width. The list itself scrolls instead of increasing the dialog until it
- * reaches the battlefield or bottom controls.
- */
-.screen-game .engine-decision-panel:has(.visual-card-choice-grid),
-.screen-game .engine-decision-panel:has(.card-choice-grid),
-.screen-game .engine-decision-panel:has(.decision-card-grid) {
-  width: var(--decision-side-width) !important;
+/* Search / tutor / card-list decisions are large centered browsers. */
+.screen-game .engine-decision-backdrop > .engine-decision-panel:has(.visual-card-choice-grid),
+.screen-game .engine-decision-backdrop > .engine-decision-panel:has(.card-choice-grid),
+.screen-game .engine-decision-backdrop > .engine-decision-panel:has(.decision-card-grid) {
+  left: 50% !important;
+  right: auto !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(88cqw, 72rem) !important;
+  min-width: min(64cqw, 42rem) !important;
+  max-width: min(92cqw, 76rem) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: min(84cqh, 48rem) !important;
+  padding: clamp(.85rem, 1.35cqw, 1.35rem) !important;
+  overflow: hidden !important;
 }
 
 .screen-game .engine-decision-panel :is(.visual-card-choice-grid, .card-choice-grid, .decision-card-grid) {
   width: 100% !important;
   max-width: 100% !important;
-  max-height: min(52cqh, 28rem) !important;
+  max-height: min(62cqh, 34rem) !important;
   overflow: auto !important;
   overscroll-behavior: contain;
+  scrollbar-width: none;
 }
 
-/*
- * Simple target-selection banner stays in the opposite side lane. The
- * measured bounds come from MatchUiGuard and end immediately before the first
- * creature-space group, so the banner cannot cover a creature slot.
- */
+.screen-game .engine-decision-panel :is(.visual-card-choice-grid, .card-choice-grid, .decision-card-grid)::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Simple target-selection banner stays in the opposite left-side lane. */
 .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
   --target-slot-gap: clamp(.28rem, .48cqw, .58rem);
   position: absolute !important;
@@ -102,8 +108,15 @@
 
 @container hemsfell-board (max-width: 72rem) {
   .screen-game .engine-decision-backdrop > .engine-decision-panel {
-    --decision-side-gap: clamp(.32rem, .55cqw, .6rem);
     --decision-side-width: clamp(12rem, 25cqw, 21rem);
+  }
+
+  .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.visual-card-choice-grid),
+  .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.card-choice-grid),
+  .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.decision-card-grid) {
+    width: min(91cqw, 68rem) !important;
+    min-width: min(70cqw, 38rem) !important;
+    max-width: 94cqw !important;
   }
 
   .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
@@ -113,10 +126,19 @@
 
 @container hemsfell-board (max-width: 54rem) {
   .screen-game .engine-decision-backdrop > .engine-decision-panel {
-    --decision-side-gap: clamp(.22rem, .4cqw, .42rem);
     --decision-side-width: clamp(10.5rem, 29cqw, 18rem);
     max-height: min(78cqh, 34rem) !important;
     padding: clamp(.55rem, 1cqw, .8rem) !important;
+  }
+
+  .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.visual-card-choice-grid),
+  .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.card-choice-grid),
+  .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.decision-card-grid) {
+    width: 94cqw !important;
+    min-width: 0 !important;
+    max-width: 94cqw !important;
+    max-height: 86cqh !important;
+    padding: clamp(.6rem, 1.1cqw, .9rem) !important;
   }
 
   .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
