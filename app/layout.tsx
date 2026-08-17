@@ -18,6 +18,7 @@ import MatchUiGuard from "./match-ui-guard";
 import CardListTooltipPortal from "./card-list-tooltip-portal";
 import TargetBannerPositionGuard from "./target-banner-position-guard";
 import MatchResultEnhancer from "./match-result-enhancer";
+import HeroInspectorCanonicalizer from "./hero-inspector-canonicalizer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -64,6 +65,7 @@ export default function RootLayout({
         <TargetBannerPositionGuard />
         <CardListTooltipPortal />
         <MatchResultEnhancer />
+        <HeroInspectorCanonicalizer />
         {children}
       </body>
     </html>
