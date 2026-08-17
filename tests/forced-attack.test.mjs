@@ -96,3 +96,18 @@ test("forced Dragon combat rejects a turned Dragon", () => {
     /invalid-forced-attack/,
   );
 });
+
+
+test("Investida Alada allows a ready Image Dragon to attack immediately", () => {
+  const game = state();
+  const imageDragon = unit({ uid: "image-dragon", name: "Dragão Filhote", atk: 2, hp: 1, tags: ["Dragão"] });
+  imageDragon.page = 23; imageDragon.imageCard = true; imageDragon.generatedImage = true; imageDragon.summoning = true;
+  game.players[0].board.push(imageDragon);
+  game.players[1].board.push(unit({ uid: "enemy", name: "Inimigo", atk: 1, hp: 4 }));
+  game.pendingDecision.effect.attacker.allowSummoning = true;
+  game.pendingDecision.effect.defender = "enemyCreature";
+  const result = executeCommand(game, { type: "resolveDecision", owner: 0, attackerId: "image-dragon", defenderId: "enemy" }).state;
+  const enemy = result.players[1].board.find((card) => card.uid === "enemy");
+  assert.equal(enemy.damage, 2);
+  assert.equal(result.pendingDecision ?? null, null);
+});

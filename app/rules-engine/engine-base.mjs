@@ -122,6 +122,8 @@ function conditionMatches(state, source, owner, condition, event = {}) {
   if (condition.firstLifeLossEachTurn && Number(event.lifeLossIndex || 0) !== 1) return false;
   if (condition.controllerReserveBelow != null && entry.reserve >= condition.controllerReserveBelow) return false;
   if (condition.anyCreatureInPlay && !state.players.some((candidate) => candidate.board.length > 0)) return false;
+  if (condition.enemyCreatureInPlay && !(state.players[1 - owner].board || []).length) return false;
+  if (condition.controllerReadySubtype && !(entry.board || []).some((card) => subtype(card, condition.controllerReadySubtype) && !card.exhausted && !card.stunned && !hasKeyword(card, /atordoado/i))) return false;
   if (condition.eventAmountAtLeast != null && Number(event.amount || 0) < condition.eventAmountAtLeast) return false;
   if (condition.anyPermanentHasMarker && !state.players.some((candidate) => permanentUnits(candidate).some((card) => markerTotalForEngine(card) > 0))) return false;
   if (condition.controllerControlsOtherSubtype) {
@@ -815,7 +817,7 @@ export function executeCommand(inputState, command, options = {}) {
             || (decision.effect.attacker?.subtype && !subtype(attacker, decision.effect.attacker.subtype))
             || (requiresReady && attacker.exhausted)
             || attacker.cannotAttack
-            || attacker.summoning
+            || (attacker.summoning && !decision.effect.attacker?.allowSummoning)
             || attacker.stunned
             || hasKeyword(attacker, /atordoado/i)
             || attacksUsed >= (attacker.attackLimit || 1)

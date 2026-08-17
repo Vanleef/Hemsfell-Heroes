@@ -19,7 +19,7 @@ export const explicitCardRules = Object.freeze({
   p12: [ability("onPlay", [effect("createImage", { name: "Dragão Filhote", destination: "field" })])],
   p13: [ability("onPlay", [effect("replaceImage", { oldName: "Dragão Filhote", newName: "Dragão Jovem" })])],
   p14: [ability("onPlay", [effect("replaceImage", { oldName: "Dragão Jovem", newName: "Dragão Ancião" })])],
-  p17: [ability("onPlay", [effect("forceAttack", { attacker: { controller: "self", subtype: "Dragão", ready: true }, defender: "anyCreature" })])],
+  p17: [ability("onPlay", [effect("forceAttack", { attacker: { controller: "self", subtype: "Dragão", ready: true, allowSummoning: true }, defender: "enemyCreature" })], [], { playCondition: { controllerReadySubtype: "Dragão", enemyCreatureInPlay: true } })],
   p19: [ability("static", [effect("attachedStats", { attack: 0, health: 2 }), effect("conditionalAttachedBonus", { requiredSubtype: "Dragão", keyword: "Defensor" })])],
   p21: [ability("static", [effect("attachedKeyword", { keyword: "Voar" }), effect("conditionalAttachedBonus", { requiredSubtype: "Dragão", attack: 2, health: 0 })])],
   p22: [ability("onCreatureDestroyed", [effect("createImage", { name: "Dragão Filhote", destination: "field" })], [], { condition: { all: [{ eventCardTypeNot: "Imagem" }, { eventCardSubtype: "Dragão" }] } })],
