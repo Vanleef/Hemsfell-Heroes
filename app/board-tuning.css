@@ -282,3 +282,27 @@
     height: min(2.65cqh, 1.35rem) !important;
   }
 }
+
+/* -------------------------------------------------------------------------
+   RESPONSE UI — anchored to the opponent deck/right rail
+   ------------------------------------------------------------------------- */
+@media (min-width: 36.01rem) {
+  .screen-game .game-stage > .game-content.hs-board > .priority-control-toggle {
+    position: absolute !important;
+    top: clamp(2.7rem, 5.7cqh, 3.8rem) !important;
+    right: clamp(.85rem, 1.9cqw, 1.9rem) !important;
+    bottom: auto !important;
+    left: auto !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .response-overlay {
+    position: absolute !important;
+    top: clamp(3.5rem, 10.2cqh, 5.8rem) !important;
+    right: clamp(.85rem, 1.9cqw, 1.9rem) !important;
+    bottom: auto !important;
+    left: auto !important;
+    width: min(18rem, 26cqw) !important;
+    max-width: calc(100cqw - 2 * clamp(.85rem, 1.9cqw, 1.9rem)) !important;
+    transform: none !important;
+  }
+}
