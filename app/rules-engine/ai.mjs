@@ -149,6 +149,12 @@ export function chooseAIDecision(state, owner, difficulty = "Normal") {
   const decision = state?.pendingDecision;
   if (!decision || (decision.owner !== owner && decision.context?.decisionOwner !== owner)) return null;
   const entry = state.players[owner], effect = decision.effect || {}, command = { type: "resolveDecision", owner };
+  if (decision.kind === "image-placement") {
+    const creatureSlots = effect.creatureSlots || [], supportSlots = effect.supportSlots || [];
+    if (creatureSlots.length) return { ...command, slot: creatureSlots[0], placementZone: "creature" };
+    if (supportSlots.length) return { ...command, slot: supportSlots[0], placementZone: "support" };
+    return null;
+  }
   if (decision.kind === "investigate-selection") {
     const visible = effect.cards || [];
     return { ...command, selectedCardIds: visible.map(cardId) };

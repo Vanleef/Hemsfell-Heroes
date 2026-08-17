@@ -628,6 +628,15 @@ export const defaultEffectHandlers = Object.freeze({
   doubleMarkers(state) { for (const target of allUnits(state)) { if (typeof target.markers === "number") target.markers *= 2; else for (const key of Object.keys(target.markers || {})) target.markers[key] *= 2; } },
   halveMaxEnergy(state, effect, context) { const entry = player(state, context.owner); entry.maxEnergy = Math.ceil(entry.maxEnergy / 2); entry.energy = Math.min(entry.energy, entry.maxEnergy); },
   retrieve(state, effect, context) { const entry = player(state, context.owner); const zone = entry[effect.zone] || []; const index = zone.findIndex((card) => (!effect.name || card.name === effect.name) && (!context.selectedCardId || card.id === context.selectedCardId)); if (index < 0) { if (!effect.optional) throw new RulesViolation("card-choice-required"); return; } entry[effect.destination].push(zone.splice(index, 1)[0]); },
+  chooseActivePlayerImagePlacement(state, effect, context) {
+    const targetOwner = state.active, target = player(state, targetOwner), controller = player(state, context.owner);
+    const creatureSlots = Array.from({ length: 5 }, (_, slot) => slot).filter((slot) => !(target.board || []).some((unit) => unit.slot === slot));
+    const supportRule = effect.supportAllowedIfHeroLevel;
+    const supportAllowed = !!supportRule && controller.heroId === supportRule.heroId && (controller.level || 1) >= (supportRule.level || 3);
+    const supportSlots = supportAllowed ? Array.from({ length: 5 }, (_, slot) => slot).filter((slot) => !(target.support || []).some((unit) => unit.slot === slot)) : [];
+    if (!creatureSlots.length && !supportSlots.length) return;
+    queueDecision(state, { ...effect, targetOwner, creatureSlots, supportSlots }, { ...context, decisionOwner: context.owner }, "image-placement");
+  },
   createImage(state, effect, context) {
     const owner = effect.destination === "activePlayerField" ? state.active : context.owner;
     const entry = player(state, owner);
@@ -641,10 +650,17 @@ export const defaultEffectHandlers = Object.freeze({
       if (entry.terrain && !entry.terrain.generatedImage && !entry.terrain.imageCard) entry.grave.push({ ...entry.terrain, lastZone: "terrain" });
       entry.terrain = copy;
     } else if (base.type === "Criatura") {
-      const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !entry.board.some((unit) => unit.slot === slot));
-      if (openSlot == null) { if (effect.mandatory) { queueDecision(state, effect, { ...context, owner }, "replace-for-mandatory-image"); return; } throw new RulesViolation("field-full"); }
-      copy.slot = context.slot != null && !entry.board.some((unit) => unit.slot === context.slot) ? context.slot : openSlot;
-      entry.board.push(copy);
+      if (context.placementZone === "support") {
+        const desired = Number(context.slot);
+        if (!Number.isInteger(desired) || desired < 0 || desired > 4 || entry.support.some((unit) => unit.slot === desired)) throw new RulesViolation("support-zone-full");
+        copy.slot = desired;
+        entry.support.push(copy);
+      } else {
+        const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !entry.board.some((unit) => unit.slot === slot));
+        if (openSlot == null) { if (effect.mandatory) { queueDecision(state, effect, { ...context, owner }, "replace-for-mandatory-image"); return; } throw new RulesViolation("field-full"); }
+        copy.slot = context.slot != null && !entry.board.some((unit) => unit.slot === context.slot) ? context.slot : openSlot;
+        entry.board.push(copy);
+      }
     } else {
       const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !entry.support.some((unit) => unit.slot === slot));
       if (openSlot == null) throw new RulesViolation("support-zone-full");
