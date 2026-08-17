@@ -1,0 +1,54 @@
+name: Fix Draconic Illusion spell once
+
+on:
+  push:
+    branches: [fix/cards_mechanics]
+    paths:
+      - .github/workflows/fix-draconic-illusion-spell-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+
+      - name: Canonicalize Draconic Illusions as spells
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('app/rules-engine/compiler.mjs')
+          text = p.read_text()
+          anchor = 'export function compileCard(card) {\n  if (card?.page === 252) card = { ...card, type: "Feitiço", tags: [...new Set([...(card.tags || []), "Acelerado"])] };'
+          replacement = 'export function compileCard(card) {\n  if ([12, 13, 14].includes(Number(card?.page))) card = { ...card, type: "Feitiço" };\n  if (card?.page === 252) card = { ...card, type: "Feitiço", tags: [...new Set([...(card.tags || []), "Acelerado"])] };'
+          if anchor not in text:
+              raise SystemExit('compiler anchor not found')
+          p.write_text(text.replace(anchor, replacement, 1))
+
+          t = Path('tests/illusion-rules.test.mjs')
+          test = t.read_text()
+          if 'Draconic Illusions are spells and never remain as permanents' not in test:
+              test += '''\n\ntest("Draconic Illusions are spells and never remain as permanents", async () => {\n  const rawCards = (await import("../app/cards.generated.json", { with: { type: "json" } })).default;\n  for (const page of [12, 13, 14]) {\n    const compiled = compileCard(rawCards.find((card) => Number(card.page) === page));\n    assert.equal(compiled.type, "Feitiço", `p${page} must compile as Feitiço`);\n  }\n\n  const game = baseState();\n  game.players[0].energy = 10;\n  const minor = compileCard(rawCards.find((card) => Number(card.page) === 12));\n  game.players[0].hand.push(minor);\n  game.players[0].extraDeck.push(extra(23, "Dragão Filhote"));\n\n  const result = executeCommand(game, { type: "playCard", owner: 0, cardId: minor.id, skipPriority: true }).state;\n  assert.equal(result.players[0].support.some((card) => Number(card.page) === 12), false, "Ilusão Dracônica Menor must not remain in support");\n  assert.equal(result.players[0].board.some((card) => Number(card.page) === 12), false, "Ilusão Dracônica Menor must not remain on board");\n  assert.equal(result.players[0].grave.some((card) => Number(card.page) === 12), true, "Ilusão Dracônica Menor must go to grave after resolving");\n  assert.equal(result.players[0].board.some((card) => card.name === "Dragão Filhote"), true, "created Dragon Image remains on field");\n});\n'''
+              t.write_text(test)
+          PY
+
+      - name: Run illusion regressions
+        run: node --test tests/illusion-rules.test.mjs
+
+      - name: Verify source
+        run: |
+          grep -q '\[12, 13, 14\].*type: "Feitiço"' app/rules-engine/compiler.mjs
+
+      - name: Commit repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/rules-engine/compiler.mjs tests/illusion-rules.test.mjs
+          git commit -m 'fix: resolve draconic illusions as spells' || exit 0
+          git push origin HEAD:fix/cards_mechanics
