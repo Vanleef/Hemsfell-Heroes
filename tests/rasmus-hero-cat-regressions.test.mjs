@@ -78,3 +78,5 @@ test('hero inspector uses one normal-flow structured guide for all heroes',()=>{
  assert.match(css,/grid-template-columns:1fr!important/);
  assert.match(page,/showInspector\.hero&&deckByHeroPage\(showInspector\.page\)/);
 });
+
+// Latest-branch workflow retrigger marker.
