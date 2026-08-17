@@ -436,6 +436,7 @@ export const defaultEffectHandlers = Object.freeze({
   damageAndMarkRepeat(state, effect, context) {
     const target = findUnit(state, context.targetIds?.[0]);
     if (!target) throw new RulesViolation("target-required");
+    if (effect.excludeSource && (target.uid || target.id) === context.sourceId) throw new RulesViolation("invalid-target");
     defaultEffectHandlers.damage(state, { ...effect, type: "damage" }, context);
     const owner = state.players.findIndex((entry) => (entry.board || []).includes(target));
     const healthBonus = (target.modifiers || []).reduce((sum, item) => sum + (item.health || 0), 0);
