@@ -7,24 +7,29 @@
   backdrop-filter:brightness(.48) saturate(.78)!important;
   z-index:1800!important;
 }
+
+/* Response priority always lives in the opponent-deck lane: upper-right of the
+   match viewport, never in the central creature area. This file is imported
+   after the generic decision CSS so this anchor is authoritative. */
 .screen-game .response-overlay .response-dialog{
-  position:absolute!important;
-  top:50%!important;
-  right:clamp(.7rem,2.4cqw,2.4rem)!important;
+  position:fixed!important;
+  top:clamp(3rem,6.5cqh,4.75rem)!important;
+  right:clamp(.7rem,1.25cqw,1.45rem)!important;
   left:auto!important;
   bottom:auto!important;
-  translate:0 -50%!important;
+  translate:none!important;
   transform:none!important;
   width:fit-content!important;
-  min-width:min(18rem,31cqw)!important;
-  max-width:min(27rem,34cqw)!important;
+  min-width:min(17rem,27cqw)!important;
+  max-width:min(24rem,30cqw)!important;
   height:fit-content!important;
-  max-height:min(76cqh,42rem)!important;
+  max-height:min(72cqh,40rem)!important;
   margin:0!important;
   overflow:auto!important;
   box-sizing:border-box!important;
   z-index:1801!important;
 }
+
 .screen-game .response-overlay .response-cards{
   display:flex!important;
   flex-wrap:nowrap!important;
@@ -32,27 +37,37 @@
   overflow-x:auto!important;
   overflow-y:hidden!important;
 }
+
 .screen-game .response-overlay .response-cards .original-card.is-small{
   width:clamp(3.8rem,5.2cqw,5.4rem)!important;
 }
+
 .screen-game .hero-command-bar .hero-ability-chip.is-unlocked{filter:none!important;}
 .screen-game .hero-command-bar .hero-ability-chip.is-unlocked:not(.is-unavailable){opacity:1!important;}
 .screen-game .hero-command-bar .hero-ability-chip.is-unlocked.is-unavailable{opacity:.68!important;}
 .screen-game .hero-command-bar .hero-ability-chip.is-unlocked>i{filter:none!important;}
+
 @container hemsfell-board (max-width:70rem){
   .screen-game .response-overlay .response-dialog{
-    right:clamp(.45rem,1.4cqw,1rem)!important;
-    min-width:min(16rem,35cqw)!important;
-    max-width:min(23rem,38cqw)!important;
+    top:clamp(2.6rem,6cqh,4rem)!important;
+    right:clamp(.45rem,1cqw,.85rem)!important;
+    min-width:min(15rem,31cqw)!important;
+    max-width:min(21rem,34cqw)!important;
+    max-height:70cqh!important;
   }
 }
+
 @media (max-width:760px){
   .screen-game .response-overlay .response-dialog{
-    top:50%!important;
-    right:.5rem!important;
-    width:min(20rem,46vw)!important;
+    top:clamp(2.5rem,7vh,3.75rem)!important;
+    right:.45rem!important;
+    left:auto!important;
+    bottom:auto!important;
+    width:min(19rem,48vw)!important;
     min-width:0!important;
-    max-width:46vw!important;
-    max-height:78vh!important;
+    max-width:48vw!important;
+    max-height:72vh!important;
+    translate:none!important;
+    transform:none!important;
   }
 }
