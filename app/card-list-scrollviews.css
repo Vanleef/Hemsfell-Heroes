@@ -152,6 +152,103 @@
   height: auto !important;
 }
 
+/* Search/procure decisions must visually match the hand-limit strip: one
+   complete card per horizontal item, never a compressed multi-row pile. The
+   real OriginalCard root is .card-frame, so size/reset that wrapper too. */
+.screen-game .engine-decision-panel[data-decision-kind="search"] .visual-card-choice-grid {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  grid-template-columns: none !important;
+  grid-template-rows: none !important;
+  grid-auto-flow: unset !important;
+  grid-auto-columns: unset !important;
+  grid-auto-rows: unset !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  align-content: flex-start !important;
+  gap: clamp(.65rem, 1.25cqw, 1rem) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: min(46dvh, 23rem) !important;
+  padding: clamp(.45rem,.9cqh,.7rem) clamp(.45rem,.9cqw,.8rem) clamp(.55rem,1.1cqh,.8rem) !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+  scroll-snap-type: x proximity !important;
+}
+
+.screen-game .engine-decision-panel[data-decision-kind="search"] .visual-card-choice-grid::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+.screen-game .engine-decision-panel[data-decision-kind="search"] .visual-card-choice-grid > .visual-card-choice {
+  --choice-card-width: clamp(4.7rem, min(9.4cqw, 12dvh), 7.25rem);
+  position: relative !important;
+  display: block !important;
+  flex: 0 0 var(--choice-card-width) !important;
+  width: var(--choice-card-width) !important;
+  min-width: var(--choice-card-width) !important;
+  max-width: var(--choice-card-width) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  inset: auto !important;
+  transform: none !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  scroll-snap-align: start !important;
+}
+
+.screen-game .engine-decision-panel[data-decision-kind="search"] .visual-card-choice-grid > .visual-card-choice > .card-frame {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  inset: auto !important;
+  transform: none !important;
+  overflow: visible !important;
+}
+
+.screen-game .engine-decision-panel[data-decision-kind="search"] .visual-card-choice-grid > .visual-card-choice > .card-frame > .original-card {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  inset: auto !important;
+  transform: none !important;
+  overflow: visible !important;
+}
+
+.screen-game .engine-decision-panel[data-decision-kind="search"] .visual-card-choice-grid > .visual-card-choice > .card-frame > .original-card > :is(img,canvas,.remote-card-art) {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/* The card itself is the selection affordance. Search/procure popups do not
+   need the redundant "Selecionar" / "Selecionada" caption underneath. */
+.screen-game .engine-decision-panel[data-decision-kind="search"] .visual-card-choice-grid > .visual-card-choice > span {
+  display: none !important;
+}
+
 /* A popup owns its frame; its card list owns scrolling. */
 .screen-game .engine-decision-panel:has(.visual-card-choice-grid),
 .screen-game .overlay > .maintenance:has(.visual-card-choice-grid),
@@ -280,7 +377,8 @@
   .screen-game .selection-card-grid > *,
   .screen-game .popup-card-list > *,
   .screen-game .choice-cards > *,
-  .screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] > * {
+  .screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] > *,
+  .screen-game .engine-decision-panel[data-decision-kind="search"] .visual-card-choice-grid > .visual-card-choice {
     --choice-card-width: clamp(4.3rem, min(15vw, 11dvh), 6.2rem);
   }
 }
