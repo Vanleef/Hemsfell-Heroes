@@ -1,0 +1,56 @@
+name: Remove Hero Guide header label once
+
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+    paths:
+      - .github/workflows/remove-hero-guide-header-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fix/cards_mechanics
+        uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+
+      - name: Remove redundant Hero Guide header label
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path("app/page.tsx")
+          text = path.read_text(encoding="utf-8")
+          old = '<header><span>GUIA DO HERÓI</span><h3>{deck.name}</h3><p>{deck.faction}</p></header>'
+          new = '<header><h3>{deck.name}</h3><p>{deck.faction}</p></header>'
+
+          if old not in text:
+              raise SystemExit("Expected HeroGuide header markup was not found; refusing a broad replacement.")
+
+          text = text.replace(old, new, 1)
+          path.write_text(text, encoding="utf-8")
+
+          if 'GUIA DO HERÓI' in text:
+              raise SystemExit("GUIA DO HERÓI still exists after the targeted replacement.")
+
+      - name: Verify targeted diff
+        run: |
+          git diff --check
+          git diff -- app/page.tsx
+          grep -F '<header><h3>{deck.name}</h3><p>{deck.faction}</p></header>' app/page.tsx
+          ! grep -F 'GUIA DO HERÓI' app/page.tsx
+
+      - name: Commit cleanup and remove one-shot workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/remove-hero-guide-header-once.yml
+          git add app/page.tsx
+          git commit -m "ui: remove redundant hero guide header label"
+          git push origin HEAD:fix/cards_mechanics
