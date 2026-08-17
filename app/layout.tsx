@@ -9,6 +9,7 @@ import "./card-list-scrollviews.css";
 import "./decision-lane-position.css";
 import CommandBarTextAutoFit from "./command-bar-text-autofit";
 import MatchUiGuard from "./match-ui-guard";
+import CardListTooltipPortal from "./card-list-tooltip-portal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,6 +53,7 @@ export default function RootLayout({
       >
         <CommandBarTextAutoFit />
         <MatchUiGuard />
+        <CardListTooltipPortal />
         {children}
       </body>
     </html>
