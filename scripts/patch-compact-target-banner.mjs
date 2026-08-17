@@ -1,3 +1,4 @@
+// one-shot patch runner: compact target banner
 import fs from 'node:fs';
 
 const guardPath = 'app/match-ui-guard.tsx';
