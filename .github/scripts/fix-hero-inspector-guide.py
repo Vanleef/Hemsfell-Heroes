@@ -1,0 +1,27 @@
+from pathlib import Path
+
+p=Path('app/page.tsx')
+s=p.read_text(encoding='utf-8')
+
+# Canonical Rasmus display name: match the printed hero card and prior UI copy.
+s=s.replace('name:"Rasmus, Barista do Tempo"','name:"Rasmus, o Barista do Tempo"')
+
+# Add page-based resolver next to deckById. Names are presentation text and must
+# never determine which hero guide is shown.
+anchor='const deckById=(id:string)=>deckDefs.find(d=>d.id===id)!;\n'
+insert='const deckByHeroPage=(page:number)=>deckDefs.find(d=>d.heroPage===page);\n'
+if insert not in s:
+    if anchor not in s: raise SystemExit('deckById anchor missing')
+    s=s.replace(anchor,anchor+insert,1)
+
+old='{showInspector&&<div className="overlay inspector card-focus-layer" onClick={()=>setShowInspector(null)} role="dialog" aria-modal="true" aria-label={`Detalhes de ${showInspector.name}`}><div onClick={event=>event.stopPropagation()}><button className="inspector-close" onClick={()=>setShowInspector(null)} aria-label="Fechar carta ampliada">×</button><RemoteCardArt page={showInspector.page} name={showInspector.name} priority/><aside><p>{showInspector.imageCard?"IMAGEM · ":""}{showInspector.type} · custo {showInspector.cost}{showInspector.atk!=null?` · ${showInspector.atk}/${showInspector.hp}`:""}</p><h2>{showInspector.name}</h2>{showInspector.hero&&(()=>{const heroDeck=deckDefs.find(deck=>showInspector.name===deck.name||showInspector.name.startsWith(deck.name));return heroDeck?<div className="inspector-hero-guide"><HeroGuide deck={heroDeck}/></div>:null})()}{showInspector.subtypes?.length?<section className="inspector-section"><b>SUBTIPOS</b><div className="inspector-subtypes">{showInspector.subtypes.map(subtype=><span key={subtype} title={`Esta carta pertence ao subtipo ${subtype}.`}>{subtype}</span>)}</div></section>:null}<section className="inspector-section"><b>EFEITO COMPLETO</b><RichCardText text={showInspector.text||"Esta carta não possui texto de efeito."}/></section><section className="inspector-section"><b>PALAVRAS-CHAVE</b><div className="inspector-keywords">{showInspector.tags.length?showInspector.tags.map(tag=><KeywordBadge name={tag} key={tag}/>):<span>Sem palavra-chave</span>}</div></section><small>Carta {showInspector.page} · clique fora ou pressione o botão × para fechar</small></aside></div></div>}'
+new='{showInspector&&<div className="overlay inspector card-focus-layer" onClick={()=>setShowInspector(null)} role="dialog" aria-modal="true" aria-label={`Detalhes de ${showInspector.name}`}><div onClick={event=>event.stopPropagation()}><button className="inspector-close" onClick={()=>setShowInspector(null)} aria-label="Fechar carta ampliada">×</button><RemoteCardArt page={showInspector.page} name={showInspector.name} priority/><aside>{showInspector.hero&&deckByHeroPage(showInspector.page)?<div className="inspector-hero-guide"><HeroGuide deck={deckByHeroPage(showInspector.page)!}/><small>Carta {showInspector.page} · clique fora ou pressione o botão × para fechar</small></div>:<><p>{showInspector.imageCard?"IMAGEM · ":""}{showInspector.type} · custo {showInspector.cost}{showInspector.atk!=null?` · ${showInspector.atk}/${showInspector.hp}`:""}</p><h2>{showInspector.name}</h2>{showInspector.subtypes?.length?<section className="inspector-section"><b>SUBTIPOS</b><div className="inspector-subtypes">{showInspector.subtypes.map(subtype=><span key={subtype} title={`Esta carta pertence ao subtipo ${subtype}.`}>{subtype}</span>)}</div></section>:null}<section className="inspector-section"><b>EFEITO COMPLETO</b><RichCardText text={showInspector.text||"Esta carta não possui texto de efeito."}/></section><section className="inspector-section"><b>PALAVRAS-CHAVE</b><div className="inspector-keywords">{showInspector.tags.length?showInspector.tags.map(tag=><KeywordBadge name={tag} key={tag}/>):<span>Sem palavra-chave</span>}</div></section><small>Carta {showInspector.page} · clique fora ou pressione o botão × para fechar</small></>}</aside></div></div>}'
+if old not in s:
+    raise SystemExit('inspector render anchor missing')
+s=s.replace(old,new,1)
+p.write_text(s,encoding='utf-8')
+
+# Regression checks source-level contract: all hero inspectors are page-based,
+# structured, and raw legacy effect blocks stay on non-hero cards only.
+t=Path('tests/hero-inspector-guide.test.mjs')
+t.write_text('''import assert from "node:assert/strict";\nimport test from "node:test";\nimport fs from "node:fs";\n\nconst source=fs.readFileSync(new URL("../app/page.tsx",import.meta.url),"utf8");\n\ntest("hero inspector resolves guide by canonical hero page",()=>{\n assert.match(source,/const deckByHeroPage=\\(page:number\\)=>deckDefs\\.find\\(d=>d\\.heroPage===page\\)/);\n assert.match(source,/showInspector\\.hero&&deckByHeroPage\\(showInspector\\.page\\)/);\n assert.doesNotMatch(source,/showInspector\\.name===deck\\.name\\|\\|showInspector\\.name\\.startsWith/);\n});\n\ntest("hero inspector uses HeroGuide instead of legacy raw effect sections",()=>{\n const inspector=source.slice(source.indexOf('{showInspector&&<div className="overlay inspector'),source.indexOf('function CombatAnimation'));\n assert.match(inspector,/HeroGuide deck=\\{deckByHeroPage\\(showInspector\\.page\\)!\\}/);\n assert.match(inspector,/showInspector\\.hero&&deckByHeroPage[\\s\\S]*?:<>/);\n assert.ok(inspector.indexOf('EFEITO COMPLETO')>inspector.indexOf(':<>'));\n});\n\ntest("Rasmus canonical hero title keeps the printed article",()=>{\n assert.match(source,/name:"Rasmus, o Barista do Tempo"/);\n});\n''',encoding='utf-8')
