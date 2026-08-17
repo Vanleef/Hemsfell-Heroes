@@ -11,27 +11,21 @@ def replace_once(path: str, old: str, new: str):
     p.write_text(text.replace(old, new, 1), encoding="utf-8")
 
 # Preserve the physical card uid when a lethal creature is moved to the grave.
-# Death triggers such as Gato de Rua use that uid to locate the same card and
-# return it to the field. resetCardForZone previously discarded it.
 replace_once(
     "app/rules-engine/engine-base.mjs",
     "return { page:template.page,id:card.id,name:template.name,type:template.type,cost:template.cost,atk:template.atk,hp:template.hp,text:template.text,tags:[...(template.tags||[])],subtypes:[...(template.subtypes||[])],abilities:clone(template.abilities||[]),image:template.image,hero:template.hero,imageCard:template.imageCard,generatedImage:card.generatedImage };",
     "return { page:template.page,id:card.id,uid:card.uid,name:template.name,type:template.type,cost:template.cost,atk:template.atk,hp:template.hp,text:template.text,tags:[...(template.tags||[])],subtypes:[...(template.subtypes||[])],abilities:clone(template.abilities||[]),image:template.image,hero:template.hero,imageCard:template.imageCard,generatedImage:card.generatedImage };"
 )
 
-# Gato de Rua must be able to find the physical card after a destruction even in
-# older serialized states/tests where the permanent did not have a uid yet.
-# Prefer uid, but fall back to the event card/id rather than silently leaving it
-# stranded in the graveyard.
+# Gato de Rua must find the grave card through either its live uid or its card id.
 replace_once(
     "app/rules-engine/effects.mjs",
-    'returnSelfToField(state, effect, context) { const entry = player(state, context.owner), index = entry.grave.findIndex((card) => card.uid === context.sourceId || card.id === context.sourceId); if (index < 0 || entry.board.length >= 5) return; const card = entry.grave.splice(index,1)[0], slot=Array.from({length:5},(_,value)=>value).find((value)=>!entry.board.some((unit)=>unit.slot===value)); entry.board.push({...card, uid: card.uid || `${card.id}-${state.round}-returned`, slot:slot??0, enteredRound:state.round, attackedThisTurn:false, damage:0, summoning:true, exhausted:false, modifiers:[], abilities:card.abilities||[]}); },',
-    'returnSelfToField(state, effect, context) { const entry = player(state, context.owner), sourceKeys = new Set([context.sourceId, context.event?.sourceId, context.event?.card?.uid, context.event?.card?.id, context.effectSource?.uid, context.effectSource?.id].filter(Boolean)), index = entry.grave.findIndex((card) => sourceKeys.has(card.uid) || sourceKeys.has(card.id)); if (index < 0 || entry.board.length >= 5) return; const card = entry.grave.splice(index,1)[0], slot=Array.from({length:5},(_,value)=>value).find((value)=>!entry.board.some((unit)=>unit.slot===value)); entry.board.push({...card, uid: card.uid || context.event?.card?.uid || `${card.id}-${state.round}-returned`, slot:slot??0, enteredRound:state.round, attackedThisTurn:false, damage:0, summoning:true, exhausted:false, modifiers:[], abilities:card.abilities||[]}); },'
+    'returnSelfToField(state, effect, context) { const entry = player(state, context.owner); const index = entry.grave.findIndex((card) => card.uid === context.sourceId || card.id === context.sourceId); const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !entry.board.some((unit) => unit.slot === slot)); if (index >= 0 && openSlot != null) { const copy = { ...entry.grave.splice(index, 1)[0], enteredRound: state.round, attackedThisTurn: false, damage: 0, exhausted: false, summoning: false, slot: openSlot }; entry.board.push(copy); queueEvent(state, { type: "onEnter", owner: context.owner, sourceId: copy.uid || copy.id, cardId: copy.uid || copy.id, card: copy }); queueEvent(state, { type: "onCreatureEnter", owner: context.owner, sourceId: copy.uid || copy.id, cardId: copy.uid || copy.id, card: copy }); } },',
+    'returnSelfToField(state, effect, context) { const entry = player(state, context.owner); const sourceKeys = new Set([context.sourceId, context.event?.sourceId, context.event?.card?.uid, context.event?.card?.id, context.effectSource?.uid, context.effectSource?.id].filter(Boolean)); const index = entry.grave.findIndex((card) => sourceKeys.has(card.uid) || sourceKeys.has(card.id)); const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !entry.board.some((unit) => unit.slot === slot)); if (index >= 0 && openSlot != null) { const buried = entry.grave.splice(index, 1)[0]; const copy = { ...buried, uid: buried.uid || context.event?.card?.uid || `${buried.id}-${state.round}-returned`, enteredRound: state.round, attackedThisTurn: false, damage: 0, exhausted: false, summoning: false, slot: openSlot }; entry.board.push(copy); queueEvent(state, { type: "onEnter", owner: context.owner, sourceId: copy.uid || copy.id, cardId: copy.uid || copy.id, card: copy }); queueEvent(state, { type: "onCreatureEnter", owner: context.owner, sourceId: copy.uid || copy.id, cardId: copy.uid || copy.id, card: copy }); } },'
 )
 
-# The lifecycle flag is `summoning`. enteredRound is metadata and can remain the
-# same across the opponent turn, so it must not keep a tap-cost permanent locked
-# after its controller has reached the next maintenance.
+# `summoning` is the lifecycle gate. enteredRound must not keep tap activations
+# blocked after the controller has already cleared summoning at maintenance.
 replace_once(
     "app/rules-engine/engine-base.mjs",
     "if (cost.type === \"tap\") { const source = [...entry.board, ...entry.support, ...(entry.terrain ? [entry.terrain] : [])].find((unit) => unit.uid === context.sourceId); if (!source || source.exhausted || source.summoning || source.enteredRound === state.round) throw new RulesViolation(\"cannot-tap\"); }",
@@ -43,8 +37,8 @@ replace_once(
     "if (isAuxiliary && (source.summoning || source.exhausted)) throw new RulesViolation(\"cannot-tap\");"
 )
 
-# Prevent overlapping stale AI timers from dispatching the same hero power more
-# than once before React commits the authoritative state produced by the first.
+# Avoid stale overlapping AI timers dispatching the same hero power twice before
+# the first authoritative state update has committed to React.
 replace_once(
     "app/page.tsx",
     "const [repositionSeconds,setRepositionSeconds]=useState(30);const aiRepositionHandledRef=useRef<string>(\"\");",
