@@ -1,0 +1,33 @@
+name: Fix Explicit Rule Count Once
+
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+    paths:
+      - scripts/patch-explicit-rule-count.mjs
+      - .github/workflows/fix-explicit-rule-count-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - name: Update explicit rule count expectation
+        run: node scripts/patch-explicit-rule-count.mjs
+      - name: Run focused catalog test
+        run: node --test tests/rules-engine.test.mjs
+      - name: Commit repair and remove temporary files
+        run: |
+          rm .github/workflows/fix-explicit-rule-count-once.yml scripts/patch-explicit-rule-count.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tests/rules-engine.test.mjs .github/workflows/fix-explicit-rule-count-once.yml scripts/patch-explicit-rule-count.mjs
+          git commit -m "fix: update explicit card rule count"
+          git push origin HEAD:fix/cards_mechanics
