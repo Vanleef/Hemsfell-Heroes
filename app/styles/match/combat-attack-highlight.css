@@ -1,0 +1,43 @@
+/* Combat attack availability — intentionally more prominent visual feedback. */
+.screen-game .original-card.combat-attack-ready {
+  outline: clamp(.13rem, .22cqw, .2rem) solid #ffd35a !important;
+  outline-offset: clamp(.08rem, .14cqw, .16rem) !important;
+  cursor: pointer !important;
+  filter: brightness(1.14) saturate(1.22) drop-shadow(0 0 .48rem #ff5a36) !important;
+  box-shadow:
+    0 0 0 clamp(.12rem, .2cqw, .18rem) #ffcf56,
+    0 0 clamp(1rem, 1.7cqw, 1.7rem) #ff6a36,
+    0 0 clamp(2rem, 3.2cqw, 3.2rem) #ff3c22b8,
+    inset 0 0 clamp(.7rem, 1.2cqw, 1.15rem) #ffb34722 !important;
+  animation: combat-attack-ready-emphasis .9s ease-in-out infinite !important;
+}
+
+@keyframes combat-attack-ready-emphasis {
+  0%, 100% {
+    outline-color: #ffd35a;
+    filter: brightness(1.12) saturate(1.2) drop-shadow(0 0 .42rem #ff5634);
+    box-shadow:
+      0 0 0 clamp(.1rem, .17cqw, .16rem) #ffc94f,
+      0 0 clamp(.9rem, 1.45cqw, 1.45rem) #ff6236,
+      0 0 clamp(1.7rem, 2.75cqw, 2.75rem) #ff34209c,
+      inset 0 0 clamp(.55rem, .95cqw, .9rem) #ffb3471f;
+  }
+
+  50% {
+    outline-color: #fff4b5;
+    filter: brightness(1.25) saturate(1.34) drop-shadow(0 0 .72rem #ff8b3d);
+    box-shadow:
+      0 0 0 clamp(.2rem, .32cqw, .28rem) #fff0a0,
+      0 0 clamp(1.45rem, 2.35cqw, 2.3rem) #ff8b3d,
+      0 0 clamp(2.8rem, 4.4cqw, 4.25rem) #ff3c22df,
+      inset 0 0 clamp(.95rem, 1.55cqw, 1.5rem) #ffc05a33;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-game .original-card.combat-attack-ready {
+    animation: none !important;
+    outline-color: #fff0a0 !important;
+    filter: brightness(1.18) saturate(1.25) drop-shadow(0 0 .58rem #ff6a36) !important;
+  }
+}
