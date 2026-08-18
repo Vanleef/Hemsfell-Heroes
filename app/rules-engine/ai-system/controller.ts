@@ -85,12 +85,16 @@ export class AIController {
 
     emitThinking(true, { difficulty: this.difficulty, personality: personality.id, expectedMs: config.thinkTimeMs });
     try {
+      // Any one-ply or post-search heuristic must evaluate a sampled hidden
+      // state, never the actual opponent hand stored by the local game model.
+      const planningState = this.belief.determinize(state, owner);
+
       // Easy deliberately avoids tree search. It ranks one ply, then occasionally
       // picks a plausible inferior line instead of making obviously random plays.
       if (this.difficulty === "Easy") {
         const ranked = legal.map((action) => {
           try {
-            const next = this.adapter.applyAction(state, action);
+            const next = this.adapter.applyAction(planningState, action);
             return { action, score: this.evaluator.evaluate(next, owner, personality, config.evaluationNoise) };
           } catch { return { action, score: -Infinity }; }
         }).sort((a, b) => b.score - a.score);
@@ -100,7 +104,7 @@ export class AIController {
       }
 
       const result = await this.mcts.search({ state, owner, config, personality, belief: this.belief, adapter: this.adapter, evaluator: this.evaluator, legacyDifficulty: legalDifficulty });
-      let action = this.applyRiskPolicy(state, owner, personality, result.action, legal, config.evaluationNoise);
+      let action = this.applyRiskPolicy(state, planningState, owner, personality, result.action, legal, config.evaluationNoise);
 
       // Lower non-easy levels retain a small, controlled error model: choose a
       // legal alternative, never an illegal move or information-cheating line.
@@ -118,22 +122,21 @@ export class AIController {
   /**
    * A search can correctly value development but still choose a marginal extra
    * permanent when a human Control/Combo player would respect a possible sweep.
-   * This post-search policy only overrides a play when (a) the risk model says
-   * not to overextend, (b) we do not have immediate lethal and (c) a validated
-   * non-play alternative is strategically close. It never fabricates an action.
+   * Risk uses only public counts; score comparisons use a belief determinization
+   * so this safety layer cannot accidentally inspect the true hidden hand.
    */
-  private applyRiskPolicy(state: AIGameState, owner: number, personality: PersonalityProfile, selected: AIAction | null, legal: AIAction[], noise: number): AIAction | null {
-    if (!selected || selected.type !== "playCard" || this.risk.shouldOverextend(state, owner, personality)) return selected;
-    if (this.combat.findLethal(state, owner)) return selected;
+  private applyRiskPolicy(publicState: AIGameState, planningState: AIGameState, owner: number, personality: PersonalityProfile, selected: AIAction | null, legal: AIAction[], noise: number): AIAction | null {
+    if (!selected || selected.type !== "playCard" || this.risk.shouldOverextend(publicState, owner, personality)) return selected;
+    if (this.combat.findLethal(publicState, owner)) return selected;
 
     const alternatives = legal.filter((action) => action.type !== "playCard");
     if (!alternatives.length) return selected;
 
     let selectedScore = -Infinity;
-    try { selectedScore = this.evaluator.evaluate(this.adapter.applyAction(state, selected), owner, personality, 0); } catch { return alternatives[0]; }
+    try { selectedScore = this.evaluator.evaluate(this.adapter.applyAction(planningState, selected), owner, personality, 0); } catch { return alternatives[0]; }
 
     const ranked = alternatives.map((action) => {
-      try { return { action, score: this.evaluator.evaluate(this.adapter.applyAction(state, action), owner, personality, noise * .25) }; }
+      try { return { action, score: this.evaluator.evaluate(this.adapter.applyAction(planningState, action), owner, personality, noise * .25) }; }
       catch { return { action, score: -Infinity }; }
     }).sort((a, b) => b.score - a.score);
 
