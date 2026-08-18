@@ -6,6 +6,7 @@ on:
       - main
       - fix/cards_mechanics
       - optimization-cleanup
+      - ai/advanced-opponent-system
       - fix/response-uruk-priority-rules
       - refactor/consolidate-scripts
       - refactor/consolidate-css
