@@ -48,3 +48,16 @@ test("a new active player receives a fresh turn clock", () => {
   assert.equal(after.turnDeadline, now + 120_000);
   assert.equal("turnTimeRemainingMs" in after, false);
 });
+
+test("a new turn that immediately opens response priority keeps its full action clock paused", () => {
+  const before = game({ active: 0, turnDeadline: null, turnTimeRemainingMs: 5_000 });
+  const after = game({
+    active: 1,
+    turnDeadline: null,
+    pendingResponse: { responder: 1, actor: 1, passes: 0 },
+  });
+  reconcileOnlineClocks(before, after, settings, now);
+  assert.equal(after.turnDeadline, null);
+  assert.equal(after.turnTimeRemainingMs, 120_000);
+  assert.equal(after.pendingResponse.deadline, now + 30_000);
+});
