@@ -51,8 +51,8 @@ jobs:
       - name: Run AI calibration smoke suite
         run: npm run ai:calibrate:smoke
 
-      - name: Lint changed application surfaces
-        run: npx eslint app/layout.tsx app/match-ui-guard.tsx app/match-ui-runtime.tsx app/rules-engine/engine.mjs app/rules-engine/match-integrity.mjs tests/priority-wedding-ring-regressions.test.mjs
+      - name: Lint advanced AI surfaces
+        run: npx eslint app/rules-engine/ai-system/*.ts scripts/ai-calibration.ts scripts/ai-selfplay.ts tests/advanced-ai.test.mjs
 
       - name: Report repository-wide legacy lint debt
         continue-on-error: true
