@@ -123,7 +123,7 @@ export class Evaluator {
     const ownResponses = responseCount(me), enemyResponses = responseCount(foe);
     const openResources = Number(me.energy || 0) + Number(me.reserve || 0);
     const dangerRatio = Math.min(1.4, enemyReadyAttack / ownLife);
-    const holdResponseValue = ownResponses * Math.min(1.7, openResources * 0.22) * profile.holdResponses * Math.max(0.15, 1 - dangerRatio * 0.65) * w.responseValue;
+    const holdResponseValue = ownResponses * Math.min(3.2, 0.55 + openResources * 0.3) * profile.holdResponses * Math.max(0.12, 1 - dangerRatio * 0.72) * w.responseValue * 1.25;
     const interaction = ((removalCount(me) - removalCount(foe)) * w.removal + (ownResponses - enemyResponses) * w.responseValue) + holdResponseValue;
 
     const heroLevelValue = (Number(me.level || 1) - Number(foe.level || 1)) * 4.5;
@@ -135,10 +135,17 @@ export class Evaluator {
     // therefore beliefs, not privileged reads of the real hidden hand.
     const ownBoardCount = (me.board || []).length;
     const enemySweepSignals = sweepCount(foe);
-    const sweepProbability = 1 - Math.pow(0.58, enemySweepSignals);
-    const overextension = Math.max(0, ownBoardCount - 3) * sweepProbability * w.overextensionPenalty * (1.25 - profile.riskTolerance * 0.55);
-    const lowLifeRisk = Number(me.life || 0) <= 8 ? (9 - Number(me.life || 0)) * (1 - profile.riskTolerance) * 1.35 : 0;
-    const handCapRisk = Math.max(0, (me.hand || []).length - 8) * (0.8 + w.handValue * 0.2);
+    const sweepProbability = 1 - Math.pow(0.28, enemySweepSignals);
+    const overextension = Math.max(0, ownBoardCount - 3) * sweepProbability * w.overextensionPenalty * (2.5 - profile.riskTolerance * 0.65);
+    const lowLifeRisk = Number(me.life || 0) <= 8 ? (9 - Number(me.life || 0)) * (1 - profile.riskTolerance) * 1.55 : 0;
+
+    // Hemsfell forces the player down to nine cards at the end of turn. Being
+    // near the cap has a small opportunity cost; actually exceeding it grows
+    // quadratically so a draw-2 at ten cards is not mistaken for pure value.
+    const handCount = (me.hand || []).length;
+    const nearCap = Math.max(0, handCount - 8);
+    const overCap = Math.max(0, handCount - 9);
+    const handCapRisk = nearCap * 0.65 + overCap * overCap * (5 + w.handValue * 1.6);
     const noResponseRisk = dangerRatio > 0.55 && ownResponses === 0 ? dangerRatio * w.responseValue * 2.2 : 0;
     const risk = -(overextension + lowLifeRisk + handCapRisk + noResponseRisk);
 
