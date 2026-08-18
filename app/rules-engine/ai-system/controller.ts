@@ -1,4 +1,4 @@
-import { buildAIActionCandidates, completeAIPlayCommand } from "../ai.mjs";
+import { buildAIActionCandidates, chooseAIHeroAbility, completeAIPlayCommand } from "../ai.mjs";
 import { executeCommand } from "../engine.mjs";
 import { legalPriorityResponses } from "../priority.mjs";
 import { BeliefModel } from "./belief";
@@ -23,6 +23,19 @@ const decisionOwner = (state: AIGameState, fallback: number): number => {
   return typeof state.active === "number" ? state.active : fallback;
 };
 
+const heroAbilityAction = (state: AIGameState, owner: number, difficulty: string): AIAction | null => {
+  const choice = chooseAIHeroAbility(state, owner, difficulty) as any;
+  if (!choice) return null;
+  const abilityId = choice.kind === "gimble-ready" ? "gimble-level-2"
+    : choice.kind === "saymon-lifesteal" ? "saymon-level-2"
+    : choice.kind === "saymon-damage" ? "saymon-level-1"
+    : choice.kind === "ngoro-stealth" ? "ngoro-level-3"
+    : choice.kind === "ngoro-clue-action" ? "ngoro-level-2"
+    : choice.kind === "nature-markers" ? "natureza-level-1"
+    : "";
+  return abilityId ? { type: "activateHero", owner, abilityId, targetIds: choice.targetId ? [choice.targetId] : [] } : null;
+};
+
 const generateEngineActions = (state: AIGameState, owner: number, difficulty: string): AIAction[] => {
   const response = state.pendingResponse as any;
   if (response?.responder === owner) {
@@ -41,7 +54,9 @@ const generateEngineActions = (state: AIGameState, owner: number, difficulty: st
     return pending.effect.choices.map((_: unknown, choiceIndex: number) => ({ type: "resolveDecision", owner, choiceIndex }));
   }
 
-  return buildAIActionCandidates(state, owner, difficulty) as AIAction[];
+  const actions = buildAIActionCandidates(state, owner, difficulty) as AIAction[];
+  const heroAction = state.active === owner && state.phase === "principal" ? heroAbilityAction(state, owner, difficulty) : null;
+  return heroAction ? [heroAction, ...actions] : actions;
 };
 
 const defaultAdapter: EngineAdapter = {
@@ -119,12 +134,8 @@ export class AIController {
 
     emitThinking(true, { difficulty: this.difficulty, personality: personality.id, expectedMs: config.thinkTimeMs });
     try {
-      // Any one-ply or post-search heuristic must evaluate a sampled hidden
-      // state, never the actual opponent hand stored by the local game model.
       const planningState = this.belief.determinize(state, owner);
 
-      // Easy deliberately avoids tree search. It ranks one ply, then occasionally
-      // picks a plausible inferior line instead of making obviously random plays.
       if (this.difficulty === "Easy") {
         const ranked = legal.map((action) => {
           try {
@@ -137,9 +148,6 @@ export class AIController {
         return { action: ranked[index]?.action || legal[0], stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: ranked[index]?.score || 0 }, personality: personality.id, difficulty: this.difficulty };
       }
 
-      // Hard+ first checks for a forced lethal line with exact authoritative
-      // action application. Expert/Master require the same root action to win
-      // across multiple hidden-state particles, preventing optimistic cheating.
       if (["Hard", "Expert", "Master"].includes(this.difficulty)) {
         const lethalAction = this.findRobustForcedLethal(state, owner, legal, legalDifficulty);
         if (lethalAction) {
@@ -150,8 +158,6 @@ export class AIController {
       const result = await this.mcts.search({ state, owner, config, personality, belief: this.belief, adapter: this.adapter, evaluator: this.evaluator, legacyDifficulty: legalDifficulty });
       let action = this.applyRiskPolicy(state, planningState, owner, personality, result.action, legal, config.evaluationNoise);
 
-      // Lower non-easy levels retain a small, controlled error model: choose a
-      // legal alternative, never an illegal move or information-cheating line.
       if (action && config.intentionalErrorRate > 0 && legal.length > 1 && Math.random() < config.intentionalErrorRate) {
         const alternatives = legal.filter((candidate) => actionKey(candidate) !== actionKey(action));
         action = alternatives[Math.floor(Math.random() * alternatives.length)] || action;
@@ -188,10 +194,6 @@ export class AIController {
     budget.remaining -= 1;
     if (state.winner === owner) return true;
     if (state.winner != null || depth <= 0 || budget.remaining <= 0) return false;
-
-    // A lethal line is scoped to this turn. Priority/decision windows can hand
-    // control to the opponent without changing active player, so those are still
-    // searched adversarially. Once the actual turn changes the line is not lethal.
     if (state.active !== owner && !state.pendingResponse && !state.pendingDecision) return false;
 
     const actor = decisionOwner(state, owner);
@@ -208,8 +210,6 @@ export class AIController {
       return false;
     }
 
-    // Forced means every legal opponent response still loses. One surviving
-    // branch is enough to disprove lethal.
     for (const action of actions) {
       let next: AIGameState;
       try { next = this.adapter.applyAction(state, action); } catch { continue; }
@@ -219,12 +219,6 @@ export class AIController {
     return true;
   }
 
-  /**
-   * A search can correctly value development but still choose a marginal extra
-   * permanent when a human Control/Combo player would respect a possible sweep.
-   * Risk uses only public counts; score comparisons use a belief determinization
-   * so this safety layer cannot accidentally inspect the true hidden hand.
-   */
   private applyRiskPolicy(publicState: AIGameState, planningState: AIGameState, owner: number, personality: PersonalityProfile, selected: AIAction | null, legal: AIAction[], noise: number): AIAction | null {
     if (!selected || selected.type !== "playCard" || this.risk.shouldOverextend(publicState, owner, personality)) return selected;
     if (this.combat.findLethal(publicState, owner)) return selected;
@@ -245,7 +239,6 @@ export class AIController {
     return best && best.score + patience >= selectedScore ? best.action : selected;
   }
 
-  /** Intelligent whole-hand mulligan for the current Hemsfell mulligan model. */
   shouldKeepMulligan(state: AIGameState, owner: number): boolean {
     const player = state.players[owner], hand = player.hand || [];
     if (hand.length <= 1) return true;
