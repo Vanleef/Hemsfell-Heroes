@@ -12,6 +12,17 @@ import type { AIAction, AIChoiceResult, AIDifficulty, AIGameState, AIObservation
 
 const cloneState = <T,>(state: T): T => structuredClone(state);
 
+const decisionOwner = (state: AIGameState, fallback: number): number => {
+  const decision = state.pendingDecision as any;
+  if (decision) {
+    if (typeof decision.context?.decisionOwner === "number") return decision.context.decisionOwner;
+    if (typeof decision.owner === "number") return decision.owner;
+  }
+  const response = state.pendingResponse as any;
+  if (response && typeof response.responder === "number") return response.responder;
+  return typeof state.active === "number" ? state.active : fallback;
+};
+
 const generateEngineActions = (state: AIGameState, owner: number, difficulty: string): AIAction[] => {
   const response = state.pendingResponse as any;
   if (response?.responder === owner) {
@@ -24,6 +35,12 @@ const generateEngineActions = (state: AIGameState, owner: number, difficulty: st
     });
     return [...priority, { type: "passPriority", owner }];
   }
+
+  const pending = state.pendingDecision as any;
+  if (pending && decisionOwner(state, owner) === owner && ["choice", "repeat-choice"].includes(String(pending.kind)) && Array.isArray(pending.effect?.choices)) {
+    return pending.effect.choices.map((_: unknown, choiceIndex: number) => ({ type: "resolveDecision", owner, choiceIndex }));
+  }
+
   return buildAIActionCandidates(state, owner, difficulty) as AIAction[];
 };
 
@@ -50,6 +67,7 @@ const emitThinking = (thinking: boolean, detail: Record<string, unknown> = {}) =
 };
 
 const actionKey = (action: AIAction | null) => action ? JSON.stringify(action) : "";
+const actionPriority = (action: AIAction) => action.type === "attack" ? 0 : action.type === "activate" || action.type === "activateHero" ? 1 : action.type === "playCard" ? 2 : action.type === "resolveDecision" ? 3 : action.type === "passPriority" ? 4 : 5;
 
 export class AIController {
   private difficulty: AIDifficulty;
@@ -119,6 +137,16 @@ export class AIController {
         return { action: ranked[index]?.action || legal[0], stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: ranked[index]?.score || 0 }, personality: personality.id, difficulty: this.difficulty };
       }
 
+      // Hard+ first checks for a forced lethal line with exact authoritative
+      // action application. Expert/Master require the same root action to win
+      // across multiple hidden-state particles, preventing optimistic cheating.
+      if (["Hard", "Expert", "Master"].includes(this.difficulty)) {
+        const lethalAction = this.findRobustForcedLethal(state, owner, legal, legalDifficulty);
+        if (lethalAction) {
+          return { action: lethalAction, stats: { iterations: 0, elapsedMs: 0, rootVisits: 1, selectedVisits: 1, selectedMeanValue: 1_000_000 }, personality: personality.id, difficulty: this.difficulty };
+        }
+      }
+
       const result = await this.mcts.search({ state, owner, config, personality, belief: this.belief, adapter: this.adapter, evaluator: this.evaluator, legacyDifficulty: legalDifficulty });
       let action = this.applyRiskPolicy(state, planningState, owner, personality, result.action, legal, config.evaluationNoise);
 
@@ -133,6 +161,62 @@ export class AIController {
     } finally {
       emitThinking(false, { difficulty: this.difficulty, personality: personality.id });
     }
+  }
+
+  private findRobustForcedLethal(publicState: AIGameState, owner: number, legal: AIAction[], difficulty: string): AIAction | null {
+    const samples = this.difficulty === "Master" ? 3 : this.difficulty === "Expert" ? 2 : 1;
+    const maxDepth = this.difficulty === "Master" ? 8 : this.difficulty === "Expert" ? 7 : 5;
+    const nodeBudget = this.difficulty === "Master" ? 900 : this.difficulty === "Expert" ? 420 : 180;
+    const candidates = [...legal].sort((a, b) => actionPriority(a) - actionPriority(b));
+
+    for (const candidate of candidates) {
+      let robust = true;
+      for (let sample = 0; sample < samples; sample += 1) {
+        const hypothesis = this.belief.determinize(publicState, owner);
+        let next: AIGameState;
+        try { next = this.adapter.applyAction(hypothesis, candidate); }
+        catch { robust = false; break; }
+        const budget = { remaining: nodeBudget };
+        if (!this.canForceWinThisTurn(next, owner, difficulty, maxDepth - 1, budget)) { robust = false; break; }
+      }
+      if (robust) return candidate;
+    }
+    return null;
+  }
+
+  private canForceWinThisTurn(state: AIGameState, owner: number, difficulty: string, depth: number, budget: { remaining: number }): boolean {
+    budget.remaining -= 1;
+    if (state.winner === owner) return true;
+    if (state.winner != null || depth <= 0 || budget.remaining <= 0) return false;
+
+    // A lethal line is scoped to this turn. Priority/decision windows can hand
+    // control to the opponent without changing active player, so those are still
+    // searched adversarially. Once the actual turn changes the line is not lethal.
+    if (state.active !== owner && !state.pendingResponse && !state.pendingDecision) return false;
+
+    const actor = decisionOwner(state, owner);
+    const actions = this.adapter.generateLegalActions(state, actor, difficulty).sort((a, b) => actionPriority(a) - actionPriority(b));
+    if (!actions.length) return false;
+
+    if (actor === owner) {
+      for (const action of actions) {
+        let next: AIGameState;
+        try { next = this.adapter.applyAction(state, action); } catch { continue; }
+        if (this.canForceWinThisTurn(next, owner, difficulty, depth - 1, budget)) return true;
+        if (budget.remaining <= 0) return false;
+      }
+      return false;
+    }
+
+    // Forced means every legal opponent response still loses. One surviving
+    // branch is enough to disprove lethal.
+    for (const action of actions) {
+      let next: AIGameState;
+      try { next = this.adapter.applyAction(state, action); } catch { continue; }
+      if (!this.canForceWinThisTurn(next, owner, difficulty, depth - 1, budget)) return false;
+      if (budget.remaining <= 0) return false;
+    }
+    return true;
   }
 
   /**
