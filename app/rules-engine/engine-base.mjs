@@ -300,7 +300,7 @@ function abilityTargetSteps(ability, sourceId = null) {
     if (effect.reusePreviousTarget) return [];
     const selections = effect.selections ?? (scope === TargetScope.NONE ? 0 : 1);
     const minimum = effect.minimumSelections ?? selections;
-    return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: [...new Set([...(effect.excludeIds || []), ...(effect.excludeSource && sourceId ? [sourceId] : [])])], allowedIds: effect.allowedIds, requiresMarker: !!effect.requiresMarker, requiresEffectAppliedThisTurn: !!effect.requiresEffectAppliedThisTurn }));
+    return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, requiredTrigger: effect.type === "replaySelectedAbility" ? effect.trigger : effect.requiredTrigger, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: [...new Set([...(effect.excludeIds || []), ...(effect.excludeSource && sourceId ? [sourceId] : [])])], allowedIds: effect.allowedIds, requiresMarker: !!effect.requiresMarker, requiresEffectAppliedThisTurn: !!effect.requiresEffectAppliedThisTurn }));
   }).filter((step) => step.scope !== TargetScope.NONE);
 }
 function targetMatchesStep(state, target, id, step) {
@@ -308,6 +308,7 @@ function targetMatchesStep(state, target, id, step) {
   if (step.allowedIds?.length && !step.allowedIds.includes(id)) return false;
   if (step.requiredSubtype && !subtype(target, step.requiredSubtype)) return false;
   if (step.requiredName && String(target?.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() !== String(step.requiredName).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()) return false;
+  if (step.requiredTrigger && !(target?.abilities || []).some((ability) => ability.trigger === step.requiredTrigger)) return false;
   if (step.imageOnly && !(target?.generatedImage || target?.imageCard)) return false;
   if (step.maxCost != null && (target?.cost || 0) > step.maxCost) return false;
   if (step.requiresMarker && markerTotalForEngine(target) < 1) return false;
@@ -455,7 +456,7 @@ function activeAbilities(state, event) {
     const effects = (event.card.abilities || []).filter((ability) => ability.trigger === "onEnter").flatMap((ability) => ability.effects || []);
     if (effects.length) result.push({ source: chief, owner, ability: { id: `${chief.uid}-recruit-enter-copy`, effects, replaySourceId: event.card.uid || event.card.id } });
   });
-  if ((event.type === "onDestroyed" || event.type === "onPermanentLeaves") && event.card && subtype(event.card, "Recruta")) state.players.forEach((entry, owner) => {
+  if (event.type === "onPermanentLeaves" && event.card && subtype(event.card, "Recruta")) state.players.forEach((entry, owner) => {
     if (event.owner !== owner) return;
     const saideiras = permanentUnits(entry).filter((source) => !source.suffocated && (source.staticModifiers || []).some((modifier) => modifier.type === "recruitFirstActOnLeave"));
     if (!saideiras.length) return;
