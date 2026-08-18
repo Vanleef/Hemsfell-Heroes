@@ -1,11 +1,15 @@
-export { AIController } from "./controller";
+export { AIController, defaultAIAdapter } from "./controller";
 export { BrowserAIDriver } from "./driver";
 export { MCTS } from "./mcts";
 export { BeliefModel, ParticleFilter } from "./belief";
 export { Evaluator } from "./evaluator";
 export { CombatPlanner } from "./combat";
 export { RiskManager } from "./risk";
-export { PERSONALITIES, personalityForHero, adaptivePersonality } from "./personality";
+export { PERSONALITIES, personalityForHero, adaptivePersonality, blendPersonality } from "./personality";
 export { DIFFICULTY_CONFIG, normalizeDifficulty, legacyDifficultyLabel } from "./config";
+export { AITelemetryCollector, stableActionKey } from "./telemetry";
+export { CALIBRATION_CORPUS, calibrationAdapter } from "./calibration";
+export { runCalibrationCorpus } from "./calibration-runner";
+export { runSelfPlayBatch } from "./selfplay";
 export { chooseAdvancedAIAction, chooseAdvancedAIDecision, planAdvancedAIAttacks, chooseAdvancedAIBlock, chooseAdvancedAIResponse, shouldKeepAdvancedMulligan, resetAdvancedAI } from "./runtime";
 export type * from "./types";
