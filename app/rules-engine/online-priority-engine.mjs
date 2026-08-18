@@ -2,6 +2,15 @@ import { executeCommand as executeRulesCommand } from "./engine.mjs";
 import { RulesViolation } from "./effects.mjs";
 import { legalPriorityResponses } from "./priority.mjs";
 import {
+  OnlineCombatStage,
+  declareOnlineAttackers,
+  declareOnlineBlockers,
+  finishAfterAttackersCheckpoint,
+  finishAfterBlockersCheckpoint,
+  finishCombatStartCheckpoint,
+} from "./online-combat.mjs";
+import { completeOnlineCombatCheckpoint, continueOnlineCombatResolution } from "./online-combat-resolution.mjs";
+import {
   PriorityWindow,
   handOffFirstPass,
   inferPriorityWindow,
@@ -43,6 +52,7 @@ function canOpenPhaseTransition(state, command) {
   if (command.type !== "advancePhase") return false;
   if (command.owner !== state.active) throw new RulesViolation("not-your-turn");
   if (state.pendingResponse || state.pendingAction || state.pendingDecision || state.pendingReposition || state.combatAction) throw new RulesViolation("interaction-pending");
+  if (state.phase === "combate" && state.onlineCombat?.stage === OnlineCombatStage.COMPLETE) return false;
   return state.phase === "principal" || state.phase === "combate";
 }
 
@@ -63,6 +73,31 @@ function openPhaseTransition(state, command) {
   return { state: next, trace: ["online-priority:phase-transition-open"], steps: 0 };
 }
 
+function checkpointAtRoot(state) {
+  return (state.priorityStack?.length || 0) <= 1 && state.pendingAction?.type === "onlineCheckpoint"
+    ? state.pendingAction.checkpoint
+    : null;
+}
+
+function resolveOnlineCheckpoint(state) {
+  const checkpoint = checkpointAtRoot(state);
+  if (!checkpoint) throw new RulesViolation("online-checkpoint-missing");
+  let next;
+  if (checkpoint === OnlineCombatStage.COMBAT_START) next = finishCombatStartCheckpoint(state);
+  else if (checkpoint === OnlineCombatStage.AFTER_ATTACKERS) {
+    next = finishAfterAttackersCheckpoint(state);
+    if (next.onlineCombat?.stage === OnlineCombatStage.COMBAT_END) {
+      next.onlineCombat.stage = OnlineCombatStage.RESOLVING;
+      next = continueOnlineCombatResolution(next);
+    }
+  } else if (checkpoint === OnlineCombatStage.AFTER_BLOCKERS) {
+    next = finishAfterBlockersCheckpoint(state);
+    next = continueOnlineCombatResolution(next);
+  } else if (checkpoint === OnlineCombatStage.COMBAT_END) next = completeOnlineCombatCheckpoint(state);
+  else throw new RulesViolation("unknown-online-checkpoint");
+  return { state: next, trace: [`online-priority:checkpoint:${checkpoint}`], steps: 0 };
+}
+
 function normalizeAfterResolution(before, result, command) {
   const state = result.state;
   const wasNestedStack = command.type === "passPriority" && Number(before.pendingResponse?.passes || 0) > 0 && (before.priorityStack?.length || 0) > 1;
@@ -79,8 +114,8 @@ function normalizeAfterResolution(before, result, command) {
  *
  * The legacy engine remains the deterministic rules resolver. This wrapper owns
  * only Online timing semantics: one priority owner, explicit phase-transition
- * windows, legal Acelerado/hero responses, consecutive passes and fresh
- * priority after resolving one stack item.
+ * windows, legal Acelerado/hero responses, consecutive passes, grouped combat
+ * checkpoints and fresh priority after resolving one stack item.
  */
 export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   const state = syncPriorityMetadata(clone(inputState));
@@ -94,6 +129,7 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
         const passed = handOffFirstPass(state, command.owner);
         return { state: passed, trace: ["online-priority:first-pass"], steps: 0 };
       }
+      if (checkpointAtRoot(state)) return resolveOnlineCheckpoint(state);
       const result = executeRulesCommand(state, command, { ...options, priority: true });
       normalizeAfterResolution(state, result, command);
       result.trace = [...(result.trace || []), "online-priority:resolve-after-two-passes"];
@@ -109,9 +145,23 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
 
   if (command.type === "passPriority") throw new RulesViolation("no-priority-window");
 
+  if (command.type === "declareAttackers") {
+    const next = declareOnlineAttackers(state, command.owner, command.attackerIds || []);
+    return { state: next, trace: ["online-combat:attackers-declared"], steps: 0 };
+  }
+
+  if (command.type === "declareBlockers") {
+    const next = declareOnlineBlockers(state, command.owner, command.assignments || []);
+    return { state: next, trace: ["online-combat:blockers-declared"], steps: 0 };
+  }
+
   if (canOpenPhaseTransition(state, command)) return openPhaseTransition(state, command);
 
   const result = executeRulesCommand(state, command, { ...options, priority: true });
+  if (command.type === "resolveDecision" && result.state.onlineCombat?.stage === OnlineCombatStage.RESOLVING && !result.state.pendingDecision && !result.state.pendingReposition) {
+    result.state = continueOnlineCombatResolution(result.state);
+    result.trace = [...(result.trace || []), "online-combat:resume-after-decision"];
+  }
   syncPriorityMetadata(result.state, {
     window: result.state.pendingResponse
       ? command.type === "declareAttack"
@@ -129,5 +179,6 @@ export function onlinePriorityView(state) {
   return {
     ...snapshot.priority,
     stack: snapshot.stack,
+    combat: snapshot.onlineCombat ? clone(snapshot.onlineCombat) : null,
   };
 }
