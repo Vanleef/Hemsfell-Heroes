@@ -85,6 +85,40 @@ jobs:
           patch('app/rules-engine/engine-base.mjs',old,new,'dynamic subtype stats')
 
           patch('app/rules-engine/engine-base.mjs',
+          '''function cleanupLethal(state, stack) {
+            state.players.forEach((entry, owner) => {
+              for (const unit of [...entry.board]) {
+                const modifiers = (unit.modifiers || []).filter((item) => modifierApplies(state, owner, item)).reduce((sum, item) => sum + (item.health || 0), 0);
+                const lethal = (unit.damage || 0) >= (unit.hp || 1) + modifiers;''',
+          '''function cleanupLethal(state, stack) {
+            const boardCountBefore = state.players.reduce((sum, entry) => sum + (entry.board || []).length, 0);
+            state.players.forEach((entry, owner) => {
+              for (const unit of [...entry.board]) {
+                const lethalHealth = effectiveHealth(state, unit, owner);
+                const lethal = (unit.damage || 0) >= lethalHealth;''',
+          'dynamic lethal health')
+          patch('app/rules-engine/engine-base.mjs',
+          '      if (protector) { unit.damage = Math.max(0, (unit.hp || 1) + modifiers - 1); claimUsage(state, protector, owner, { id: "dragon-lethal-protection", usageLimit: { count: 1, period: "turn" } }); continue; }',
+          '      if (protector) { unit.damage = Math.max(0, lethalHealth - 1); claimUsage(state, protector, owner, { id: "dragon-lethal-protection", usageLimit: { count: 1, period: "turn" } }); continue; }',
+          'dynamic lethal dragon protection')
+          patch('app/rules-engine/engine-base.mjs',
+          '      if (!state.pendingDecision && zayanReplacements.length) { unit.damage = Math.max(0, (unit.hp || 1) + modifiers - 1); state.pendingDecision = { kind: "zayan-destruction-replacement", owner, effect: { type: "zayanDestructionReplacement", originalId: unit.uid || unit.id, lethal: true, choices: zayanReplacements.map((card) => card.uid || card.id) }, context: { owner, decisionOwner: owner, sourceId: unit.lastDamagedBy?.sourceId }, sourceName: "Zayan II" }; continue; }',
+          '      if (!state.pendingDecision && zayanReplacements.length) { unit.damage = Math.max(0, lethalHealth - 1); state.pendingDecision = { kind: "zayan-destruction-replacement", owner, effect: { type: "zayanDestructionReplacement", originalId: unit.uid || unit.id, lethal: true, choices: zayanReplacements.map((card) => card.uid || card.id) }, context: { owner, decisionOwner: owner, sourceId: unit.lastDamagedBy?.sourceId }, sourceName: "Zayan II" }; continue; }',
+          'dynamic lethal zayan replacement')
+          patch('app/rules-engine/engine-base.mjs',
+          '''  });
+          }
+
+          function resetCardForZone(state, card) {''',
+          '''  });
+            const boardCountAfter = state.players.reduce((sum, entry) => sum + (entry.board || []).length, 0);
+            if (!state.pendingDecision && boardCountAfter < boardCountBefore) cleanupLethal(state, stack);
+          }
+
+          function resetCardForZone(state, card) {''',
+          'dynamic lethal fixed point')
+
+          patch('app/rules-engine/engine-base.mjs',
           '    if (item.kind === "command") {\n      if (item.command.type === "passPriority") {',
           '    if (item.kind === "command") {\n      if (item.command.type === "evolveHero") {\n        if (state.pendingResponse || state.pendingAction || state.pendingDecision) throw new RulesViolation("hero-evolution-window-busy");\n        if (!canEvolveHero(state, item.command.owner) || !evolveHero(state, item.command.owner)) throw new RulesViolation("hero-evolution-unavailable");\n        const evolved = state.players[item.command.owner];\n        actionLabel = `evolve-${evolved.heroId}-level-${evolved.level}`;\n      } else if (item.command.type === "passPriority") {',
           'engine evolve command')
