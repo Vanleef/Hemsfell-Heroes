@@ -4,6 +4,7 @@ import type { AIAction, AIGameState, DifficultyConfig, GameAdapter, PlayerId, Pl
 
 const now = (): number => typeof performance !== "undefined" && typeof performance.now === "function" ? performance.now() : Date.now();
 const yieldToBrowser = (): Promise<void> => new Promise(resolve => setTimeout(resolve, 0));
+const hasKnownResponse = (state: AIGameState, actor: PlayerId): boolean => state.players[actor].hand.some(card => /acelerado|instant/i.test(`${card.text ?? ""} ${(card.tags ?? []).join(" ")}`) && Number(card.cost ?? 0) <= Number(state.players[actor].reserve ?? 0));
 
 interface SearchNode<A> {
   action: A | null;
@@ -168,9 +169,14 @@ export class MCTS<S extends AIGameState, A extends AIAction> {
       let value = this.evaluator.evaluate(result.state, owner, profile).total;
       if (action.type === "advancePhase") {
         const reserve = Number(state.players[actor].reserve ?? 0) + Number(state.players[actor].energy ?? 0);
-        value += (profile.holdResponseBias - .5) * Math.min(3, reserve) * .015 * (maximizing ? 1 : -1);
+        const hold = (profile.holdResponseBias - .5) * Math.min(3, reserve) * .015;
+        const bluff = !hasKnownResponse(state, actor) && reserve > 0 ? profile.bluffFrequency * Math.min(3, reserve) * .012 : 0;
+        value += (hold + bluff) * (maximizing ? 1 : -1);
       }
-      if (action.type === "attack") value += (profile.attackAggression - .5) * .08 * (maximizing ? 1 : -1);
+      if (action.type === "attack") {
+        const aggression = (profile.attackAggression - .5) * .08 + (profile.riskTolerance - .5) * .035;
+        value += aggression * (maximizing ? 1 : -1);
+      }
       return { action, value: (maximizing ? value : -value) + random() * 1e-6 };
     });
     return scored.sort((a, b) => b.value - a.value).map(item => item.action);

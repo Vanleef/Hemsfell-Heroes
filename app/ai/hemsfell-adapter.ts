@@ -10,6 +10,7 @@ const sorted = (value: unknown): unknown => {
 };
 
 const legacyDifficulty = (difficulty: string): string => difficulty === "Easy" ? "Fácil" : difficulty === "Normal" ? "Normal" : "Difícil";
+const objectOwner = (owner: PlayerId): PlayerId => owner === 0 ? 1 : 0;
 
 function heroIntentToCommand(intent: Record<string, unknown> | null | undefined, owner: PlayerId): AIAction | null {
   if (!intent) return null;
@@ -47,7 +48,7 @@ export class HemsfellGameAdapter implements GameAdapter<AIGameState, AIAction> {
         } else candidates.push(command);
       }
       candidates.push({ type: "passPriority", owner: actor, auto: true });
-      return this.uniqueLegal(state, candidates);
+      return this.uniqueLegal(state, this.expandTargetVariants(state, actor, candidates));
     }
 
     if (state.pendingDecision && (state.pendingDecision.owner === actor || state.pendingDecision.context?.decisionOwner === actor)) {
@@ -57,7 +58,7 @@ export class HemsfellGameAdapter implements GameAdapter<AIGameState, AIAction> {
       if (Array.isArray(choices) && ["choice", "draw-position", "repeat-choice"].includes(state.pendingDecision.kind)) {
         choices.forEach((_, choiceIndex) => candidates.push({ type: "resolveDecision", owner: actor, choiceIndex }));
       }
-      return this.uniqueLegal(state, candidates);
+      return this.uniqueLegal(state, this.expandTargetVariants(state, actor, candidates));
     }
 
     if (state.pendingReposition?.activeOwner === actor) return this.uniqueLegal(state, [{ type: "confirmReposition", owner: actor }]);
@@ -67,7 +68,7 @@ export class HemsfellGameAdapter implements GameAdapter<AIGameState, AIAction> {
     const hero = heroIntentToCommand(chooseAIHeroAbility(state, actor, difficulty) as Record<string, unknown> | null, actor);
     if (hero) candidates.unshift(hero);
 
-    return this.uniqueLegal(state, candidates);
+    return this.uniqueLegal(state, this.expandTargetVariants(state, actor, candidates));
   }
 
   apply(state: AIGameState, action: AIAction): AppliedAction<AIGameState> {
@@ -113,6 +114,37 @@ export class HemsfellGameAdapter implements GameAdapter<AIGameState, AIAction> {
     });
   }
 
+  private expandTargetVariants(state: AIGameState, actor: PlayerId, source: AIAction[]): AIAction[] {
+    const out: AIAction[] = [...source];
+    const opponent = state.players[objectOwner(actor)];
+    const publicTargets = state.players.flatMap((player, owner) => [
+      ...player.board.map(card => card.uid),
+      ...player.support.map(card => card.uid),
+      ...(player.terrain ? [player.terrain.uid] : []),
+      owner === actor ? "ally-hero" : "enemy-hero",
+    ]).filter((id): id is string => !!id);
+
+    for (const action of source) {
+      if (action.type === "attack" && typeof action.attackerId === "string") {
+        out.push({ ...action, defenderId: undefined });
+        for (const defender of opponent.board.slice(0, 5)) out.push({ ...action, defenderId: defender.uid });
+        continue;
+      }
+      if (!["playCard", "activate", "activateHero", "resolveDecision"].includes(action.type)) continue;
+      const ids = Array.isArray(action.targetIds) ? action.targetIds.filter((id): id is string => typeof id === "string") : [];
+      if (ids.length === 1) {
+        for (const targetId of publicTargets.slice(0, 14)) out.push({ ...action, targetIds: [targetId] });
+      } else if (ids.length === 2) {
+        const pool = publicTargets.slice(0, 8);
+        for (let first = 0; first < pool.length; first += 1) for (let second = first + 1; second < pool.length; second += 1) {
+          out.push({ ...action, targetIds: [pool[first], pool[second]] });
+          if (out.length >= source.length + 40) break;
+        }
+      }
+    }
+    return out;
+  }
+
   private uniqueLegal(state: AIGameState, actions: AIAction[]): AIAction[] {
     const seen = new Set<string>();
     const legal: AIAction[] = [];
@@ -121,6 +153,7 @@ export class HemsfellGameAdapter implements GameAdapter<AIGameState, AIAction> {
       if (seen.has(key)) continue;
       seen.add(key);
       if (this.apply(state, action).legal) legal.push(action);
+      if (legal.length >= 48) break;
     }
     return legal;
   }

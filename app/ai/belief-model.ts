@@ -45,6 +45,8 @@ export class ParticleFilter {
     const hidden = state.players[this.opponent];
     this.handSize = hidden.hand.length;
     this.deckSize = hidden.deck.length;
+    // The remaining decklist composition is allowed knowledge. We intentionally
+    // destroy the real hand/deck partition before producing any hypothesis.
     const unknownPool = [...hidden.hand, ...hidden.deck].map(cloneCard);
     const revealedHand = hidden.hand.filter(card => card.revealed || card.revealedTo?.includes(this.observer)).map(cloneCard);
 
@@ -141,17 +143,16 @@ export class ParticleFilter {
 
   private enforceCounts(revealed: AICard[]): void {
     for (const particle of this.particles) {
-      const pool = [...particle.hand, ...particle.deck];
-      for (const known of revealed) {
-        const inHand = particle.hand.some(card => identityKey(card) === identityKey(known));
-        if (!inHand && removeOne(pool, known)) particle.hand.push(cloneCard(known));
+      const remaining = [...particle.hand, ...particle.deck].map(cloneCard);
+      const known: AICard[] = [];
+      for (const revealedCard of revealed) {
+        if (removeOne(remaining, revealedCard)) known.push(cloneCard(revealedCard));
+        else particle.weight *= 0.08;
       }
-      const all = shuffle([...particle.hand, ...particle.deck], this.random);
-      const knownKeys = new Set(revealed.map(identityKey));
-      const known = all.filter(card => knownKeys.has(identityKey(card))).slice(0, revealed.length);
-      const unknown = all.filter(card => !knownKeys.has(identityKey(card)));
-      particle.hand = [...known, ...unknown.slice(0, Math.max(0, this.handSize - known.length))];
-      particle.deck = unknown.slice(Math.max(0, this.handSize - known.length), Math.max(0, this.handSize - known.length) + this.deckSize);
+      const unknown = shuffle(remaining, this.random);
+      const hiddenHandSlots = Math.max(0, this.handSize - known.length);
+      particle.hand = [...known, ...unknown.slice(0, hiddenHandSlots)];
+      particle.deck = unknown.slice(hiddenHandSlots, hiddenHandSlots + this.deckSize);
     }
     this.normalizeAndResample();
   }
