@@ -17,6 +17,7 @@ const stackHas = (state, predicate) => (state.priorityStack || []).some((frame) 
 const heroUsageKey = (state, source, ability) => `${source.uid || source.id}:${ability.id}${ability?.condition?.firstEachTurn ? `:round-${state.round}` : ""}`;
 const normalizedSubtype = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const hasSubtype = (card, subtype) => !subtype || (card?.subtypes || card?.tags || []).some((value) => normalizedSubtype(value) === normalizedSubtype(subtype));
+const usesOnlinePriorityModel = (state) => state?.priority?.model === "online-v2";
 function heroAbilityTargetsAvailable(state, owner, ability) {
   for (const effect of ability.effects || []) {
     const target = effect.target;
@@ -50,9 +51,10 @@ function spellCost(state, owner, card) {
 export function legalPriorityResponses(state, owner) {
   const pending = state?.pendingResponse;
   if (!pending || pending.responder !== owner) return [];
-  /* The player who currently owns priority may add another legal response even
-     after one pass. Playing that response resets the pass sequence; only two
-     actual consecutive passes resolve the current top item. */
+  /* Online v2 allows a legal response after one pass; playing it resets the
+     pass sequence. Offline/Bot keeps the previous guard until those modes are
+     intentionally migrated, preventing the old AI priority loop from returning. */
+  if (!usesOnlinePriorityModel(state) && pending.actor === owner && (pending.passes || 0) > 0) return [];
   const player = state.players[owner];
   const responseEnergy = state.active === owner ? player.energy + player.reserve : player.reserve;
   const cards = player.hand.flatMap((card, handIndex) => isAccelerated(card) && canExecuteCard(card) && responseEnergy >= spellCost(state, owner, card) && !stackHas(state, command => command.type === "playCard" && command.owner === owner && command.cardId === card.id)
@@ -75,6 +77,9 @@ export const shouldAutoPass = (state, owner, control = "assisted") =>
   control === "assisted" && !!state?.pendingResponse && state.pendingResponse.responder === owner && legalPriorityResponses(state, owner).length === 0;
 
 export function chooseAIResponse(state, owner, random = Math.random) {
+  const pending = state?.pendingResponse;
+  if (!usesOnlinePriorityModel(state) && pending?.responder === owner && pending?.actor === owner && (pending.passes || 0) > 0)
+    return { type: "passPriority", owner, auto: true };
   const legal = legalPriorityResponses(state, owner);
   if (!legal.length) return { type: "passPriority", owner, auto: true };
   const scored = legal.map((command) => {
