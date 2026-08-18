@@ -8,7 +8,7 @@ export const hasActivatableEffect = (card) => activatedAbilities(card).length > 
 export const activationEnergyCost = (text = "") => activatedAbilities(text).flatMap((ability) => ability.costs).filter((cost) => cost.type === "energy").reduce((highest, cost) => Math.max(highest, Number(cost.amount) || 0), 0);
 
 export function canActivateCard(card, context) {
-  if (card?.activatedThisTurn || card?.suffocated) return false;
+  if (card?.activatedThisTurn || card?.suffocated || card?.activationLockedOnEntry) return false;
   const ability = activatedAbilities(card)[0]; if (!ability) return false;
   if (card?.summoning) return false;
   if (card.type !== "Criatura" && card.exhausted) return false;
