@@ -4,7 +4,7 @@ import "./globals.css";
 import "./command-bar-fixes.css";
 import "./match-ui-guard.css";
 import "./setup-heading-fixes.css";
-import "./response-hover-layer.css";
+import "./response-window.css";
 import "./card-list-scrollviews.css";
 import "./card-list-grid-layout.css";
 import "./card-list-grid-fit.css";
@@ -13,7 +13,6 @@ import "./target-banner-anchor.css";
 import "./hero-inspector-fix.css";
 import "./hero-inspector-cleanup.css";
 import "./match-result-enhancer.css";
-import "./response-window-side.css";
 import MatchUiGuard from "./match-ui-guard";
 import MatchUiRuntime from "./match-ui-runtime";
 
