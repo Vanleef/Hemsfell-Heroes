@@ -125,11 +125,29 @@ const syncEntryTurnActivationLocks = (state) => {
     }
   }
 };
+const normalizeGeneratedHandImages = (state) => {
+  for (const entry of state.players || []) {
+    entry.hand = (entry.hand || []).map((card) => {
+      if (!card?.generatedImage || !card?.imageCard || !card?.uid) return card;
+      const uniqueId = card.uid;
+      const {
+        uid, slot, enteredRound, attackedThisTurn, attacksThisTurn, summoning, exhausted,
+        damage, bonusAtk, bonusHp, frozen, stunned, suffocated, immobilized, defenseUses,
+        markers, modifiers, grantedKeywords, staticModifiers, activationLockedOnEntry, ...handCard
+      } = card;
+      return { ...handCard, id: uniqueId, generatedImage: true, imageCard: true };
+    });
+    /* Created Images are copies of Extra Deck cards; after a generated spell
+       resolves the copy dissipates instead of becoming a normal grave card. */
+    entry.grave = (entry.grave || []).filter((card) => !card?.generatedImage);
+  }
+};
 const postProcess = (before, after, command) => {
   const snapshot = combatSnapshot(before, command);
   consumeElementalPromise(before, after, command);
   expireElementalPromises(before, after, command);
   recordCombatDamage(after, snapshot);
+  normalizeGeneratedHandImages(after);
   syncEntryTurnActivationLocks(after);
   propagateWeddingRingLinks(before, after);
 };
