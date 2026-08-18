@@ -58,25 +58,31 @@ export function cardPlayTargetPolicy(card) {
   const sacrificeSteps = abilities.flatMap((ability) => (ability.costs || []).flatMap((cost) => cost.type === "sacrifice"
     ? Array.from({ length: Number(cost.amount) || 1 }, () => ({ scope: TargetScope.ALLY_CREATURE, role: "sacrifice" }))
     : []));
-  const effectSteps = abilities.flatMap((ability) => (ability.effects || []).flatMap((effect) => {
-    const scope = effectScope(effect.target);
-    /* Compound effects may apply multiple consequences to one chosen target.
-       Follow-up effects marked reusePreviousTarget do not create another UI target step. */
-    if (scope === TargetScope.NONE || effect.global || effect.reusePreviousTarget) return [];
-    const selections = Number(effect.selections) || 1;
-    const minimum = effect.minimumSelections == null ? selections : Number(effect.minimumSelections);
-    return Array.from({ length: selections }, (_, index) => ({
-      scope,
-      role: "effect",
-      optional: index >= minimum,
-      requireExhausted: !!effect.requireExhausted,
-      requiredSubtype: effect.requiredSubtype,
-      requiresDamagedOwnerThisTurn: effect.type === "destroyIfDamagedControllerThisTurn" || !!effect.requiresDamagedOwnerThisTurn,
-      requiresEffectAppliedThisTurn: !!effect.requiresEffectAppliedThisTurn,
-      requiresMarker: !!effect.requiresMarker,
-      allowedIds: effect.allowedIds,
-    }));
-  }));
+  const effectSteps = abilities.flatMap((ability) => {
+    /* Keep UI targeting in lock-step with engine-base: some explicit wrapper
+       abilities (for example controllerChoice) describe their target through
+       sourceText instead of a top-level effect.target. */
+    if (ability.sourceText) return (targetPolicy(ability.sourceText).steps || []).filter((step) => step.role !== "sacrifice");
+    return (ability.effects || []).flatMap((effect) => {
+      const scope = effectScope(effect.target);
+      /* Compound effects may apply multiple consequences to one chosen target.
+         Follow-up effects marked reusePreviousTarget do not create another UI target step. */
+      if (scope === TargetScope.NONE || effect.global || effect.reusePreviousTarget) return [];
+      const selections = Number(effect.selections) || 1;
+      const minimum = effect.minimumSelections == null ? selections : Number(effect.minimumSelections);
+      return Array.from({ length: selections }, (_, index) => ({
+        scope,
+        role: "effect",
+        optional: index >= minimum,
+        requireExhausted: !!effect.requireExhausted,
+        requiredSubtype: effect.requiredSubtype,
+        requiresDamagedOwnerThisTurn: effect.type === "destroyIfDamagedControllerThisTurn" || !!effect.requiresDamagedOwnerThisTurn,
+        requiresEffectAppliedThisTurn: !!effect.requiresEffectAppliedThisTurn,
+        requiresMarker: !!effect.requiresMarker,
+        allowedIds: effect.allowedIds,
+      }));
+    });
+  });
   const steps = [...sacrificeSteps, ...effectSteps];
   return {
     scope: steps[0]?.scope || TargetScope.NONE,
