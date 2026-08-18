@@ -7,4 +7,5 @@ export { CombatPlanner } from "./combat";
 export { RiskManager } from "./risk";
 export { PERSONALITIES, personalityForHero, adaptivePersonality } from "./personality";
 export { DIFFICULTY_CONFIG, normalizeDifficulty, legacyDifficultyLabel } from "./config";
+export { chooseAdvancedAIAction, chooseAdvancedAIDecision, planAdvancedAIAttacks, chooseAdvancedAIBlock, chooseAdvancedAIResponse, shouldKeepAdvancedMulligan, resetAdvancedAI } from "./runtime";
 export type * from "./types";
