@@ -1,0 +1,141 @@
+name: Integrate advanced AI runtime once
+
+on:
+  push:
+    branches: [ai/advanced-opponent-system]
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ai/advanced-opponent-system
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.13.0'
+          cache: npm
+      - run: npm ci
+      - name: Wire advanced AI into match runtime
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text, old, new, label):
+              count = text.count(old)
+              assert count == 1, f"{label}: expected exactly one match, got {count}"
+              return text.replace(old, new, 1)
+
+          # Let the search compare the currently useful hero power against card
+          # plays/activations instead of forcing a separate legacy pre-step.
+          controller = Path('app/rules-engine/ai-system/controller.ts')
+          text = controller.read_text()
+          text = replace_once(
+              text,
+              'import { buildAIActionCandidates, completeAIPlayCommand } from "../ai.mjs";',
+              'import { buildAIActionCandidates, chooseAIHeroAbility, completeAIPlayCommand } from "../ai.mjs";',
+              'controller AI import',
+          )
+          helper = '''const normalizedHeroAbilityAction = (state: AIGameState, owner: number, difficulty: string): AIAction | null => {
+            const choice = chooseAIHeroAbility(state, owner, difficulty) as any;
+            if (!choice) return null;
+            const abilityId = choice.kind === "gimble-ready" ? "gimble-level-2"
+              : choice.kind === "saymon-lifesteal" ? "saymon-level-2"
+              : choice.kind === "saymon-damage" ? "saymon-level-1"
+              : choice.kind === "ngoro-stealth" ? "ngoro-level-3"
+              : choice.kind === "ngoro-clue-action" ? "ngoro-level-2"
+              : choice.kind === "nature-markers" ? "natureza-level-1"
+              : "";
+            return abilityId ? { type: "activateHero", owner, abilityId, targetIds: choice.targetId ? [choice.targetId] : [] } : null;
+          };
+
+          '''
+          anchor = 'const generateEngineActions = (state: AIGameState, owner: number, difficulty: string): AIAction[] => {'
+          assert helper.strip() not in text, 'hero helper already present unexpectedly'
+          text = replace_once(text, anchor, helper + anchor, 'controller generator anchor')
+          text = replace_once(
+              text,
+              '  return buildAIActionCandidates(state, owner, difficulty) as AIAction[];\n};',
+              '  const actions = buildAIActionCandidates(state, owner, difficulty) as AIAction[];\n  const heroAction = state.active === owner && state.phase === "principal" ? normalizedHeroAbilityAction(state, owner, difficulty) : null;\n  return heroAction ? [heroAction, ...actions] : actions;\n};',
+              'controller root actions',
+          )
+          controller.write_text(text)
+
+          page = Path('app/page.tsx')
+          text = page.read_text()
+
+          legacy_import = 'import { aiDifficultyProfile, buildAIActionCandidates, chooseAIDecision, chooseAIHeroAbility, completeAIPlayCommand, orderAIAttackers } from "./rules-engine/ai.mjs";'
+          runtime_import = 'import { chooseAdvancedAIAction, chooseAdvancedAIDecision, chooseAdvancedAIBlock, chooseAdvancedAIResponse, planAdvancedAIAttacks, resetAdvancedAI } from "./rules-engine/ai-system/runtime";'
+          text = replace_once(text, legacy_import, 'import { orderAIAttackers } from "./rules-engine/ai.mjs";\n' + runtime_import, 'page AI imports')
+
+          old_decision = '''  const timer=window.setTimeout(()=>{const command=chooseAIDecision(game,1,difficulty);if(command)void runRulesCommand(command,1)},260);'''
+          new_decision = '''  const decisionKey=`${game.round}:${game.events}:${decision.kind}`;
+          const timer=window.setTimeout(()=>{void chooseAdvancedAIDecision(game,1,difficulty).then(command=>{const current=currentGameRef.current,currentDecision=current?.pendingDecision;if(!command||!current||`${current.round}:${current.events}:${currentDecision?.kind||""}`!==decisionKey)return;void runRulesCommand(command as any,1)})},120);'''
+          text = replace_once(text, old_decision, new_decision, 'pending decision driver')
+
+          old_main = '''   const heroAction=chooseAIHeroAbility(game,1,difficulty);if(heroAction){if(heroAction.kind==="gimble-ready"){void runRulesCommand({type:"activateHero",owner:1,abilityId:"gimble-level-2",targetIds:heroAction.targetId?[heroAction.targetId]:[]},1)}else{const abilityId=heroAction.kind==="saymon-lifesteal"?"saymon-level-2":heroAction.kind==="saymon-damage"?"saymon-level-1":heroAction.kind==="ngoro-stealth"?"ngoro-level-3":heroAction.kind==="ngoro-clue-action"?"ngoro-level-2":heroAction.kind==="nature-markers"?"natureza-level-1":"";if(abilityId)void runRulesCommand({type:"activateHero",owner:1,abilityId,targetIds:heroAction.targetId?[heroAction.targetId]:[]},1)}return}
+           const player=game.players[1],profile=aiDifficultyProfile(difficulty),candidates=buildAIActionCandidates(game,1,difficulty).filter(command=>player.turnCardsPlayed<profile.cardBudget||command.type!=="playCard");
+           const command=candidates.find(candidate=>{try{executeCommand(structuredClone(game),candidate,{priority:true});return true}catch{return false}})??(game.phase!=="principal"?{type:"advancePhase",owner:1}:null);
+           if(!command)return;
+           if(command.type==="playCard"){const card=player.hand.find(item=>item.id===command.cardId);if(card){const kind:VisualFx["kind"]=card.type==="Criatura"?"summon":card.type==="Feitiço"?"spell":card.type==="Terreno"?"terrain":"artifact";showFx(kind,"AÇÃO DO OPONENTE",card.name,card)}}
+           void runRulesCommand(command,1)'''
+          new_main = '''   const player=game.players[1],searchKey=`${game.round}:${game.events}:${game.phase}:${player.hand.length}:${player.energy}:${player.reserve}`;
+           void chooseAdvancedAIAction(game,1,difficulty).then(command=>{
+            const current=currentGameRef.current,currentPlayer=current?.players?.[1],currentKey=current&&currentPlayer?`${current.round}:${current.events}:${current.phase}:${currentPlayer.hand.length}:${currentPlayer.energy}:${currentPlayer.reserve}`:"";
+            if(!command||currentKey!==searchKey||current?.winner!=null||current?.pendingDecision||current?.pendingResponse)return;
+            try{executeCommand(structuredClone(current),command,{priority:true})}catch{return}
+            if(command.type==="playCard"){const card=currentPlayer.hand.find(item=>item.id===command.cardId);if(card){const kind:VisualFx["kind"]=card.type==="Criatura"?"summon":card.type==="Feitiço"?"spell":card.type==="Terreno"?"terrain":"artifact";showFx(kind,"AÇÃO DO OPONENTE",card.name,card)}}
+            void runRulesCommand(command as any,1)
+           })'''
+          text = replace_once(text, old_main, new_main, 'main bot driver')
+
+          old_attack = '''   const legal=orderAIAttackers(game.players[1],difficulty) as Unit[],legalIds=new Set(legal.map(unit=>unit.uid));
+           const queued=aiAttackQueue.find(uid=>legalIds.has(uid));
+           if(queued){setAiAttackQueue(aiAttackQueue.filter(uid=>uid!==queued));beginAttack(1,queued);return}
+           const ready=legal.map(unit=>unit.uid);
+           if(ready.length){setAiAttackQueue(ready.slice(1));beginAttack(1,ready[0]);return}'''
+          new_attack = '''   const legal=orderAIAttackers(game.players[1],difficulty) as Unit[],legalIds=new Set(legal.map(unit=>unit.uid));
+           const planned=planAdvancedAIAttacks(game,1,difficulty).filter(uid=>legalIds.has(uid));
+           const queued=aiAttackQueue.find(uid=>legalIds.has(uid)&&planned.includes(uid));
+           if(queued){setAiAttackQueue(aiAttackQueue.filter(uid=>uid!==queued));beginAttack(1,queued);return}
+           const ready=planned;
+           if(ready.length){setAiAttackQueue(ready.slice(1));beginAttack(1,ready[0]);return}'''
+          text = replace_once(text, old_attack, new_attack, 'combat attack planner')
+
+          old_block = '''    const safest=currentAtk(attacker,attackingPlayer)<defendingPlayer.life-5,direct=difficulty==="Fácil"?Math.random()<.45:safest&&blockers.every(unit=>currentHp(unit,defendingPlayer)<=currentAtk(attacker,attackingPlayer));if(direct){setSharedCombat({...action,targetHero:true,stage:"charging"});return}const defender=[...blockers].sort((a,b)=>currentHp(a,defendingPlayer)-currentHp(b,defendingPlayer))[0];setSharedCombat({...action,targetHero:false,defenderUid:defender.uid,defenderCard:baseCard(defender),stage:"charging"});return'''
+          new_block = '''    const blockPlan=chooseAdvancedAIBlock(game,defenderOwner,attacker,difficulty);if(blockPlan.takeDamage||!blockPlan.defenderId){setSharedCombat({...action,targetHero:true,stage:"charging"});return}const defender=blockers.find(unit=>unit.uid===blockPlan.defenderId)||[...blockers].sort((a,b)=>currentHp(a,defendingPlayer)-currentHp(b,defendingPlayer))[0];setSharedCombat({...action,targetHero:false,defenderUid:defender.uid,defenderCard:baseCard(defender),stage:"charging"});return'''
+          text = replace_once(text, old_block, new_block, 'combat block planner')
+
+          response_pattern = re.compile(r' useEffect\(\(\)=>\{const authoritativePending=game\?\.pendingResponse;.*?\},\[game\?\.pendingResponse\?\.actor,game\?\.pendingResponse\?\.responder,game\?\.pendingResponse\?\.passes,game\?\.pendingResponse\?\.action,mode,difficulty\]\);', re.S)
+          new_response = ''' useEffect(()=>{const authoritativePending=game?.pendingResponse;if(authoritativePending?.responder!==1||mode!=="bot")return;const pendingKey=`${authoritativePending.actor}:${authoritativePending.responder}:${authoritativePending.passes??0}:${authoritativePending.action}`;const snapshot=currentGameRef.current;if(!snapshot||snapshot.winner!==null||snapshot.pendingResponse?.responder!==1)return;const delay=(authoritativePending.passes??0)>0?40:legalPriorityResponses(snapshot,1).length?90:40;const act=()=>{const current=currentGameRef.current;if(!current||current.winner!==null||mode!=="bot")return;const pending=current.pendingResponse;if(!pending||pending.responder!==1)return;const currentKey=`${pending.actor}:${pending.responder}:${pending.passes??0}:${pending.action}`;if(currentKey!==pendingKey)return;const fallback=async()=>{await passPriorityWindow(1,true)};void chooseAdvancedAIResponse(current,1,difficulty).then(command=>{const latest=currentGameRef.current,latestPending=latest?.pendingResponse;if(!latest||!latestPending||latestPending.responder!==1)return;const latestKey=`${latestPending.actor}:${latestPending.responder}:${latestPending.passes??0}:${latestPending.action}`;if(latestKey!==pendingKey)return;if(command.type==="passPriority"){void fallback();return}void runRulesCommand(command as any,1).then(accepted=>{if(!accepted)void fallback()})})};const t=setTimeout(act,delay);const watchdog=setTimeout(()=>{const current=currentGameRef.current,pending=current?.pendingResponse;if(!current||pending?.responder!==1)return;const currentKey=`${pending.actor}:${pending.responder}:${pending.passes??0}:${pending.action}`;if(currentKey===pendingKey)void passPriorityWindow(1,true)},3200);return()=>{clearTimeout(t);clearTimeout(watchdog)}},[game?.pendingResponse?.actor,game?.pendingResponse?.responder,game?.pendingResponse?.passes,game?.pendingResponse?.action,mode,difficulty]);'''
+          text, count = response_pattern.subn(new_response, text, count=1)
+          assert count == 1, f'priority response driver: expected 1 match, got {count}'
+
+          text = replace_once(
+              text,
+              '{["Fácil","Normal","Difícil"].map(x=><button key={x} className={difficulty===x?"active":""} onClick={()=>setDifficulty(x)}>{x}</button>)}',
+              '{["Fácil","Normal","Difícil","Expert","Master"].map(x=><button key={x} className={difficulty===x?"active":""} onClick={()=>setDifficulty(x)}>{x}</button>)}',
+              'difficulty selector',
+          )
+
+          text, count = re.subn(r'(const begin\s*=\s*\(\)=>\{)', r'\1resetAdvancedAI(1);', text, count=1)
+          assert count == 1, f'new-match AI reset: expected 1 match, got {count}'
+
+          page.write_text(text)
+          PY
+      - name: Verify advanced runtime integration
+        run: npm run vercel-build
+      - name: Commit integrated runtime and remove one-shot workflow
+        run: |
+          rm .github/workflows/ai-runtime-integrate-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx app/rules-engine/ai-system/controller.ts .github/workflows/ai-runtime-integrate-once.yml
+          git commit -m "feat: drive bot matches with advanced AI runtime"
+          git push origin HEAD:ai/advanced-opponent-system
