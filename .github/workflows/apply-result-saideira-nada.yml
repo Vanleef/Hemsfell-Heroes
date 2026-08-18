@@ -1,9 +1,11 @@
 name: Apply result Saideira Nada fixes
 
 on:
-  pull_request:
+  push:
     branches:
       - ai/advanced-opponent-system
+    paths:
+      - '.github/result-saideira-nada-run.txt'
   workflow_dispatch:
 
 permissions:
@@ -19,202 +21,19 @@ jobs:
         with:
           ref: ai/advanced-opponent-system
           fetch-depth: 0
-
-      - name: Apply fixes
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          def replace_once(path, old, new, label):
-              p = Path(path)
-              text = p.read_text()
-              count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f"{label}: expected one anchor, found {count}")
-              p.write_text(text.replace(old, new, 1))
-
-          replace_once(
-              'app/rules-engine/card-rules.mjs',
-              'p151: [ability("onPlay", [effect("replaySelectedAbility", { selector: { controller: "self", type: "Criatura", hasTrigger: "onEnter" }, trigger: "onEnter" })], [], { playCondition: { alliedPermanentHasTrigger: "onEnter" } })],',
-              'p151: [ability("onPlay", [effect("replaySelectedAbility", { selector: { controller: "self", type: "Criatura", hasTrigger: "onEnter" }, trigger: "onEnter", target: "allyCreature", selections: 1 })], [], { playCondition: { alliedPermanentHasTrigger: "onEnter" } })],',
-              'Nada source selection target'
-          )
-
-          replace_once(
-              'app/rules-engine/engine-base.mjs',
-              'if ((event.type === "onDestroyed" || event.type === "onPermanentLeaves") && event.card && subtype(event.card, "Recruta")) state.players.forEach((entry, owner) => {',
-              'if (event.type === "onPermanentLeaves" && event.card && subtype(event.card, "Recruta")) state.players.forEach((entry, owner) => {',
-              'Saideira single leave event'
-          )
-
-          old_step = 'return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: [...new Set([...(effect.excludeIds || []), ...(effect.excludeSource && sourceId ? [sourceId] : [])])], allowedIds: effect.allowedIds, requiresMarker: !!effect.requiresMarker, requiresEffectAppliedThisTurn: !!effect.requiresEffectAppliedThisTurn }));'
-          new_step = 'return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, requiredTrigger: effect.type === "replaySelectedAbility" ? effect.trigger : effect.requiredTrigger, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: [...new Set([...(effect.excludeIds || []), ...(effect.excludeSource && sourceId ? [sourceId] : [])])], allowedIds: effect.allowedIds, requiresMarker: !!effect.requiresMarker, requiresEffectAppliedThisTurn: !!effect.requiresEffectAppliedThisTurn }));'
-          replace_once('app/rules-engine/engine-base.mjs', old_step, new_step, 'replay target trigger metadata')
-
-          replace_once(
-              'app/rules-engine/engine-base.mjs',
-              'if (step.requiredName && String(target?.name || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase() !== String(step.requiredName).normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase()) return false;',
-              'if (step.requiredName && String(target?.name || "").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase() !== String(step.requiredName).normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase()) return false;\n  if (step.requiredTrigger && !(target?.abilities || []).some((ability) => ability.trigger === step.requiredTrigger)) return false;',
-              'replay target trigger validation'
-          )
-
-          old_replay = '''  replaySelectedAbility(state, effect, context) {
-            const candidates = (player(state, context.owner).board || []).filter((card) => (!context.replayCandidateIds || context.replayCandidateIds.includes(card.uid || card.id)) && (!effect.selector?.type || card.type === effect.selector.type) && (card.abilities || []).some((ability) => ability.trigger === effect.trigger));
-            if (!candidates.length) throw new RulesViolation("ability-not-available");
-            queueDecision(state, { ...effect, choices: candidates.map((card) => [{ type: "selectFirstAct", id: card.uid || card.id, name: card.name }]) }, context, "replay-ability");
-          },'''
-          new_replay = '''  replaySelectedAbility(state, effect, context) {
-            const candidates = (player(state, context.owner).board || []).filter((card) => (!context.replayCandidateIds || context.replayCandidateIds.includes(card.uid || card.id)) && (!effect.selector?.type || card.type === effect.selector.type) && (card.abilities || []).some((ability) => ability.trigger === effect.trigger));
-            if (!candidates.length) throw new RulesViolation("ability-not-available");
-            const chosenId = selectedIds(context)[0];
-            const selected = chosenId ? candidates.find((card) => (card.uid || card.id) === chosenId) : null;
-            if (!selected) {
-              queueDecision(state, { ...effect, choices: candidates.map((card) => [{ type: "selectFirstAct", id: card.uid || card.id, name: card.name }]) }, context, "replay-ability");
-              return;
-            }
-            const copied = selected.abilities.find((ability) => ability.trigger === effect.trigger);
-            if (!copied) throw new RulesViolation("ability-not-available");
-            const replayContext = { ...context, sourceId: selected.uid || selected.id, effectSource: selected, targetIds: [], targetId: undefined };
-            const targetSteps = targetStepsForEffects(copied.effects || []);
-            if (targetSteps.length) {
-              if (!canSelectReplayTargets(state, context.owner, targetSteps)) throw new RulesViolation("ability-not-available");
-              state.pendingDecision = { kind: "targets", owner: context.owner, effect: { replayEffects: copied.effects || [] }, context: replayContext, targetSteps, sourceName: `Primeiro Ato · ${selected.name || "criatura"}` };
-              return;
-            }
-            const sequence = copied.effects || [];
-            for (let index = 0; index < sequence.length; index++) {
-              applyEffect(state, sequence[index], replayContext);
-              if (state.pendingDecision) {
-                state.pendingDecision.continuation = [...(state.pendingDecision.continuation || []), ...sequence.slice(index + 1).reverse().map((nested) => ({ kind: "effect", effect: nested, context: replayContext }))];
-                break;
-              }
-            }
-          },'''
-          replace_once('app/rules-engine/effects.mjs', old_replay, new_replay, 'Nada direct field replay')
-
-          css = Path('app/match-ui-guard.css')
-          css_text = css.read_text()
-          marker = '/* Canonical match-result seal: keep the complete result card centered and self-contained. */'
-          if marker not in css_text:
-              css_text += '''\n\n/* Canonical match-result seal: keep the complete result card centered and self-contained. */
-          .screen-game .hs-board > .match-result-overlay,
-          .match-result-overlay {
-            position: fixed !important;
-            inset: 0 !important;
-            width: 100dvw !important;
-            height: 100dvh !important;
-            min-width: 0 !important;
-            min-height: 0 !important;
-            grid-column: auto !important;
-            grid-row: auto !important;
-            grid-area: auto !important;
-            display: grid !important;
-            place-items: center !important;
-            box-sizing: border-box !important;
-            padding: clamp(.75rem, 2.5vmin, 2rem) !important;
-            overflow: auto !important;
-          }
-
-          .screen-game .match-result-overlay > .maintenance,
-          .match-result-overlay > .maintenance {
-            position: relative !important;
-            inset: auto !important;
-            width: min(94vw, 62rem) !important;
-            height: auto !important;
-            max-width: 62rem !important;
-            max-height: min(92dvh, 48rem) !important;
-            margin: auto !important;
-            padding: clamp(1.1rem, 2.5vmin, 2rem) !important;
-            display: grid !important;
-            grid-template-columns: minmax(12rem, .8fr) minmax(0, 1.25fr) !important;
-            grid-template-areas:
-              "art eyebrow"
-              "art title"
-              "art summary"
-              "art meta"
-              "art actions" !important;
-            align-items: center !important;
-            gap: clamp(.45rem, 1.2vh, .9rem) clamp(1.2rem, 3vw, 2.8rem) !important;
-            overflow: hidden !important;
-            text-align: left !important;
-            border-radius: clamp(.8rem, 1.4vmin, 1.2rem) !important;
-            box-shadow: 0 clamp(1rem, 3vh, 2rem) clamp(2rem, 7vh, 5rem) rgba(0,0,0,.55) !important;
-          }
-
-          .match-result-overlay .result-hero-art { grid-area: art !important; align-self: center !important; }
-          .match-result-overlay > .maintenance > p { grid-area: eyebrow !important; align-self: end !important; }
-          .match-result-overlay > .maintenance > h2 { grid-area: title !important; align-self: center !important; }
-          .match-result-overlay > .maintenance > span { grid-area: summary !important; align-self: start !important; }
-          .match-result-overlay .result-match-meta {
-            grid-area: meta !important;
-            display: flex !important;
-            flex-wrap: wrap !important;
-            justify-content: flex-start !important;
-          }
-          .match-result-overlay > .maintenance > div:last-child {
-            grid-area: actions !important;
-            display: flex !important;
-            flex-wrap: wrap !important;
-            justify-content: flex-start !important;
-            align-items: center !important;
-            margin: clamp(.35rem, 1vh, .8rem) 0 0 !important;
-          }
-          .match-result-overlay > .maintenance > div:last-child button {
-            flex: 0 1 auto !important;
-            width: auto !important;
-            min-width: clamp(8.5rem, 13vw, 11.5rem) !important;
-          }
-
-          @media (max-width: 46rem), (max-height: 38rem) {
-            .screen-game .match-result-overlay > .maintenance,
-            .match-result-overlay > .maintenance {
-              width: min(95vw, 36rem) !important;
-              max-height: 94dvh !important;
-              grid-template-columns: 1fr !important;
-              grid-template-areas: "eyebrow" "title" "art" "summary" "meta" "actions" !important;
-              gap: clamp(.35rem, 1vh, .65rem) !important;
-              text-align: center !important;
-              overflow: auto !important;
-            }
-            .match-result-overlay .result-hero-art {
-              width: min(42vw, 10rem) !important;
-              max-height: 30dvh !important;
-            }
-            .match-result-overlay .result-match-meta,
-            .match-result-overlay > .maintenance > div:last-child { justify-content: center !important; }
-          }
-          '''
-              css.write_text(css_text)
-
-          tests = Path('tests/quarion-authoritative.test.mjs')
-          test_text = tests.read_text()
-          marker = 'test("Saideira handles a destroyed Recruit exactly once before Chefe copies it"'
-          if marker not in test_text:
-              test_text += '''\n
-test("Saideira handles a destroyed Recruit exactly once before Chefe copies it",()=>{let game=state();game.players[0].terrain={uid:"saideira",id:"saideira",name:"Saideira",page:181,type:"Terreno",slot:0,suffocated:false,staticModifiers:[{type:"recruitFirstActOnLeave"}],abilities:[]};game.players[0].board.push(unit("chief",{page:182,slot:0,subtypes:["Recruta"],staticModifiers:[{type:"doubleRecruitEffects"}]}),unit("leaver",{slot:1,hp:1,subtypes:["Recruta"],tags:["Primeiro Ato"],abilities:[{id:"first",trigger:"onEnter",costs:[],effects:[{type:"draw",amount:1}]}]}));game.players[0].deck.push({id:"a"},{id:"b"},{id:"c"},{id:"d"});game.players[0].hand.push({id:"lethal",name:"Lethal",type:"Feitiço",cost:0,tags:[],abilities:[{id:"hit",trigger:"onPlay",costs:[],effects:[{type:"damage",amount:2,target:"anyCreature",selections:1}]}]});game=executeCommand(game,{type:"playCard",owner:0,cardId:"lethal",targetIds:["leaver"],skipPriority:true}).state;assert.equal(game.players[0].hand.length,2,"one Saideira replay doubled once by Chefe; onDestroyed must not replay it again")});
-
-test("Nada se cria selects the First Act source on the battlefield and uses normal target selection",()=>{let game=state();const source=unit("source",{slot:0,tags:["Primeiro Ato"],abilities:[{id:"first",trigger:"onEnter",costs:[],effects:[{type:"damage",amount:2,target:"anyCreature",selections:1}]}]});const enemy=unit("enemy",{slot:0,hp:5});game.players[0].board.push(source);game.players[1].board.push(enemy);game.players[0].hand.push({...printed(151),id:"copy",cost:0});game=executeCommand(game,{type:"playCard",owner:0,cardId:"copy",targetIds:["source"],skipPriority:true}).state;assert.equal(game.pendingDecision?.kind,"targets");assert.notEqual(game.pendingDecision?.kind,"replay-ability");game=executeCommand(game,{type:"resolveDecision",owner:0,targetIds:["enemy"]}).state;assert.equal(game.players[1].board.find((card)=>card.uid==="enemy").damage,2)});
-
-test("Nada se cria resolves a targetless First Act immediately after field selection",()=>{let game=state();game.players[0].board.push(unit("source",{slot:0,tags:["Primeiro Ato"],abilities:[{id:"first",trigger:"onEnter",costs:[],effects:[{type:"draw",amount:1}]}]}));game.players[0].deck.push({id:"drawn"});game.players[0].hand.push({...printed(151),id:"copy",cost:0});game=executeCommand(game,{type:"playCard",owner:0,cardId:"copy",targetIds:["source"],skipPriority:true}).state;assert.equal(game.pendingDecision,null);assert.equal(game.players[0].hand.length,1)});
-          '''
-              tests.write_text(test_text)
-          PY
-
+      - name: Apply canonical source changes
+        run: python .github/scripts/apply-result-saideira-nada.py
       - name: Install dependencies
         run: npm ci
-
       - name: Validate AI types
         run: npm run typecheck:ai
-
       - name: Run regression suite
         run: npm run test:node
-
-      - name: Remove one-shot workflow
-        run: git rm .github/workflows/apply-result-saideira-nada.yml
-
-      - name: Commit canonical fixes
+      - name: Commit canonical integration
         run: |
+          rm -f .github/result-saideira-nada-run.txt
+          rm -f .github/scripts/apply-result-saideira-nada.py
+          rm -f .github/workflows/apply-result-saideira-nada.yml
           git config user.name "Hemsfell CI"
           git config user.email "actions@users.noreply.github.com"
           git add -A
