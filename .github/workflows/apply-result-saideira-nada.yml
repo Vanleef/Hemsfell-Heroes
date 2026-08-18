@@ -6,6 +6,9 @@ on:
       - ai/advanced-opponent-system
     paths:
       - '.github/result-saideira-nada-run.txt'
+  pull_request:
+    branches:
+      - ai/advanced-opponent-system
   workflow_dispatch:
 
 permissions:
