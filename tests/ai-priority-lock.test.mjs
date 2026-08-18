@@ -31,7 +31,10 @@ test("AI response timer is keyed only to the authoritative pending priority wind
   const marker=page.match(/useEffect\(\(\)=>\{const authoritativePending=game\?\.pendingResponse[\s\S]*?\},\[game\?\.pendingResponse\?\.actor,game\?\.pendingResponse\?\.responder,game\?\.pendingResponse\?\.passes,game\?\.pendingResponse\?\.action,mode,difficulty\]\);/)?.[0]||"";
   assert.ok(marker);
   assert.match(marker,/currentGameRef\.current/);
-  assert.match(marker,/chooseAIResponse/);
-  assert.match(marker,/command\.type==="activateHero"/);
+  assert.match(marker,/chooseAdvancedAIResponse/);
+  assert.match(marker,/latestKey!==pendingKey/);
+  assert.match(marker,/command\.type==="passPriority"/);
+  assert.match(marker,/runRulesCommand\(command,1\)/);
+  assert.match(marker,/watchdog/);
   assert.doesNotMatch(marker,/\[game,responseWindow,mode,difficulty\]/);
 });
