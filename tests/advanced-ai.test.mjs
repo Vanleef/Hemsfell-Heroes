@@ -26,7 +26,9 @@ test("difficulty ladder contains five distinct search budgets", async () => {
   for (const level of ["Easy", "Normal", "Hard", "Expert", "Master"]) assert.match(source, new RegExp(`\\b${level}:`));
   assert.match(source, /iterations:\s*1500/);
   assert.match(source, /particleCount:\s*160/);
-  assert.match(source, /intentionalErrorRate:\s*0\.28/);
+  assert.match(source, /Easy:[\s\S]*?intentionalErrorRate:\s*0\.2/);
+  assert.match(source, /Normal:[\s\S]*?intentionalErrorRate:\s*0\.06/);
+  assert.match(source, /Hard:[\s\S]*?intentionalErrorRate:\s*0\.035/);
 });
 
 test("all five playstyle personalities are represented and smoothly adaptive", async () => {
