@@ -5,6 +5,7 @@ const now = () => globalThis.performance?.now?.() ?? Date.now();
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const cardId = (card) => card?.uid || card?.id;
 const permanents = (player) => [...(player?.board || []), ...(player?.support || []), ...(player?.terrain ? [player.terrain] : [])];
+const visibleTo = (card, viewer) => !!card?.revealed || (card?.revealedTo || []).includes(viewer);
 
 const CONFIG = Object.freeze({
   Easy: { id:"Easy", cardBudget:1, responseBias:.25, attackBias:.68, particleCount:6, runtimeIterations:0, runtimeMs:0, rolloutDepth:1, errorRate:.28, noise:.22 },
@@ -77,6 +78,10 @@ function cardValue(card) {
   if (/primeiro ato|ultimo suspiro|fura-fila/.test(text)) value += .65;
   return value;
 }
+function publicOpponentView(state, owner) {
+  const raw=state.players[1-owner], hand=(raw.hand||[]).filter(card=>visibleTo(card,owner));
+  return { player:{...raw,hand}, unknownHand:Math.max(0,(raw.hand||[]).length-hand.length) };
+}
 function boardValue(player) {
   return permanents(player).reduce((sum, unit) => {
     let value = attack(unit) * 1.2 + health(unit) * .72 + cardValue(unit) * .25;
@@ -96,13 +101,14 @@ function readyPressure(player) {
 }
 function knownOpponentHandValue(state, owner) {
   const opponent = state.players[1-owner];
-  const revealed = (opponent.hand || []).filter(card => card.revealed || (card.revealedTo || []).includes(owner));
+  const revealed = (opponent.hand || []).filter(card => visibleTo(card,owner));
   const unknown = Math.max(0, opponent.hand.length - revealed.length);
   return revealed.reduce((sum, card) => sum + cardValue(card), 0) + unknown * 3.15;
 }
 function ownHandValue(player) { return (player.hand || []).reduce((sum, card) => sum + cardValue(card), 0); }
-function responseValue(player) {
-  return (player.hand || []).filter(card => /acelerado|instant/.test(cardText(card)) && Number(card.cost || 0) <= Number(player.reserve || 0)).reduce((sum, card) => sum + 1 + cardValue(card) * .2, 0) + Number(player.reserve || 0) * .28;
+function responseValue(player, unknown=0) {
+  const known=(player.hand || []).filter(card => /acelerado|instant/.test(cardText(card)) && Number(card.cost || 0) <= Number(player.reserve || 0)).reduce((sum, card) => sum + 1 + cardValue(card) * .2, 0);
+  return known + (Number(player.reserve||0)>0 ? Math.min(unknown,4)*.3 : 0) + Number(player.reserve || 0) * .28;
 }
 function synergy(player) {
   const text = [...(player.hand||[]), ...permanents(player)].map(cardText).join(" ");
@@ -123,15 +129,16 @@ function synergy(player) {
 
 export function competitiveStateValue(state, owner, requested = "Normal") {
   const difficulty = effectiveAIDifficulty(requested);
-  const self = state.players[owner], foe = state.players[1-owner];
-  if (!self || !foe) return 0;
-  if (state.winner === owner || foe.life <= 0) return 1;
+  const self = state.players[owner], rawFoe = state.players[1-owner];
+  if (!self || !rawFoe) return 0;
+  if (state.winner === owner || rawFoe.life <= 0) return 1;
   if (state.winner === 1-owner || self.life <= 0) return -1;
+  const {player:foe,unknownHand}=publicOpponentView(state,owner);
   const persona = PERSONALITY[adaptivePersonality(state, owner, difficulty)];
   const selfBoard = boardValue(self), foeBoard = boardValue(foe), selfPressure = readyPressure(self), foePressure = readyPressure(foe);
   const handDiff = ownHandValue(self) - knownOpponentHandValue(state, owner);
   const resourceDiff = Number(self.energy||0)+Number(self.reserve||0)-Number(foe.energy||0)-Number(foe.reserve||0);
-  const responseDiff = responseValue(self) - responseValue(foe);
+  const responseDiff = responseValue(self) - responseValue(foe,unknownHand);
   const lifeDiff = (Number(self.life||0)-Number(foe.life||0))/30;
   const danger = clamp((Number(self.life||0)-foePressure)/30,-1,1), lethal = selfPressure >= Number(foe.life||0) ? 1 : selfPressure/Math.max(8,Number(foe.life||30));
   const raw = lifeDiff*persona.life + ((selfBoard-foeBoard)/22)*persona.board + ((selfPressure-foePressure)/16 + lethal*.45)*persona.pressure + (handDiff/26)*persona.hand + (resourceDiff/10)*persona.resource + (responseDiff/7)*persona.response + danger*persona.risk + (synergy(self)-synergy(foe))/8;
@@ -143,7 +150,7 @@ function shuffled(source, random) {
 }
 function determinize(state, owner, random) {
   const next=structuredClone(state), opponent=next.players[1-owner], handSize=opponent.hand.length;
-  const revealed=opponent.hand.filter(card=>card.revealed||(card.revealedTo||[]).includes(owner));
+  const revealed=opponent.hand.filter(card=>visibleTo(card,owner));
   const revealedIds=new Set(revealed.map(cardId));
   const pool=shuffled([...opponent.hand,...opponent.deck].filter(card=>!revealedIds.has(cardId(card))),random);
   opponent.hand=[...revealed,...pool.slice(0,Math.max(0,handSize-revealed.length))];
@@ -193,11 +200,7 @@ function rollout(state, owner, requested, config, generate, random) {
   return competitiveStateValue(current,owner,requested);
 }
 
-/**
- * Browser compatibility search. The production page still calls the historical
- * synchronous candidate API, so this layer runs a tightly time-boxed open-loop
- * root MCTS. The full async IS-MCTS implementation lives in app/ai/mcts.ts.
- */
+/** Browser compatibility search: tightly time-boxed open-loop root IS-MCTS. */
 export function rankCompetitiveCandidates(state, owner, candidates, requested="Normal", options={}) {
   if(!Array.isArray(candidates)||candidates.length<2)return candidates||[];
   const difficulty=effectiveAIDifficulty(requested), config=CONFIG[difficulty], random=options.random||Math.random;

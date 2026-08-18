@@ -6,6 +6,7 @@ const units = (player: AIPlayerState): AIUnit[] => [...player.board, ...player.s
 const effectiveAttack = (unit: AIUnit): number => unit.frozen ? 0 : Math.max(0, Number(unit.atk ?? 0) + Number(unit.bonusAtk ?? 0) + Number(unit.temporaryAtk ?? 0));
 const effectiveHealth = (unit: AIUnit): number => Math.max(0, Number(unit.hp ?? 0) + Number(unit.bonusHp ?? 0) + Number(unit.temporaryHp ?? 0) - Number(unit.damage ?? 0));
 const keywordText = (card: AICard): string => fold(`${card.text ?? ""} ${(card.tags ?? []).join(" ")} ${(card.subtypes ?? []).join(" ")}`);
+const visibleTo = (card: AICard, viewer: PlayerId): boolean => !!card.revealed || !!card.revealedTo?.includes(viewer);
 
 const KEYWORD_VALUE: ReadonlyArray<[RegExp, number]> = [
   [/roubo de vida/, 1.5], [/toque da morte/, 1.75], [/indestrutivel/, 2.1], [/barreira magica/, 1.55],
@@ -22,6 +23,11 @@ export function intrinsicCardValue(card: AICard): number {
   if (/cure|restaure|recupere/.test(text)) value += .9;
   for (const [pattern, bonus] of KEYWORD_VALUE) if (pattern.test(text)) value += bonus;
   return value;
+}
+
+function publicOpponentView(player: AIPlayerState, viewer: PlayerId): { player: AIPlayerState; unknownHand: number } {
+  const visibleHand = player.hand.filter(card => visibleTo(card, viewer));
+  return { player: { ...player, hand: visibleHand }, unknownHand: Math.max(0, player.hand.length - visibleHand.length) };
 }
 
 function boardScore(player: AIPlayerState): number {
@@ -46,10 +52,13 @@ function attackPressure(player: AIPlayerState): number {
   }, 0);
 }
 
-function responsePotential(player: AIPlayerState): number {
+function responsePotential(player: AIPlayerState, unknownCards = 0): number {
   const fast = player.hand.filter(card => /acelerado|instantaneo|instantâneo/.test(keywordText(card)));
   const affordable = fast.filter(card => Number(card.cost ?? 0) <= Number(player.reserve ?? 0));
-  return affordable.reduce((sum, card) => sum + 1 + intrinsicCardValue(card) * .28, 0) + Number(player.reserve ?? 0) * .35;
+  const known = affordable.reduce((sum, card) => sum + 1 + intrinsicCardValue(card) * .28, 0);
+  // Hidden cards contribute only an expectation based on public hand size and Reserve.
+  const expectedHidden = Number(player.reserve ?? 0) > 0 ? Math.min(unknownCards, 4) * .32 : 0;
+  return known + expectedHidden + Number(player.reserve ?? 0) * .35;
 }
 
 function synergyScore(player: AIPlayerState): number {
@@ -79,44 +88,48 @@ function markerCount(card: AIUnit): number {
   return Object.values(card.markers ?? {}).reduce((sum, value) => sum + Number(value ?? 0), 0);
 }
 
-function directDamageInHand(player: AIPlayerState): number {
-  return player.hand.reduce((sum, card) => {
+function directDamageInHand(player: AIPlayerState, unknownCards = 0): number {
+  const known = player.hand.reduce((sum, card) => {
     if (Number(card.cost ?? 0) > Number(player.energy ?? 0) + Number(player.reserve ?? 0)) return sum;
-    const text = fold(card.text);
-    const damage = text.match(/cause\s+(\d+)\s+de dano/);
+    const damage = fold(card.text).match(/cause\s+(\d+)\s+de dano/);
     return sum + (damage ? Number(damage[1]) : 0);
   }, 0);
+  // Expected burst from hidden cards is deliberately conservative; determinizations
+  // provide concrete possibilities during MCTS without consulting the real hand.
+  return known + (Number(player.energy ?? 0) + Number(player.reserve ?? 0) >= 2 ? Math.min(unknownCards, 3) * .18 : 0);
 }
 
-function overextension(player: AIPlayerState, opponent: AIPlayerState): number {
+function overextension(player: AIPlayerState, opponentPublic: AIPlayerState): number {
   const board = player.board.length + player.support.length;
   const hand = player.hand.length;
-  const opponentSweep = opponent.hand.some(card => /todas.*criaturas|cada criatura|terremoto|destrua todas|dano a cada/.test(fold(card.text)));
-  return Math.max(0, board - 3) * (hand <= 3 ? .85 : .42) * (opponentSweep ? 1.45 : 1);
+  const knownSweep = opponentPublic.hand.some(card => /todas.*criaturas|cada criatura|terremoto|destrua todas|dano a cada/.test(fold(card.text)));
+  return Math.max(0, board - 3) * (hand <= 3 ? .85 : .42) * (knownSweep ? 1.45 : 1);
 }
 
-function resourceEfficiency(player: AIPlayerState): number {
+function resourceEfficiency(player: AIPlayerState, unknownCards = 0): number {
   const total = Math.max(1, Number(player.maxEnergy ?? 0) + 3);
   const unused = Number(player.energy ?? 0) + Number(player.reserve ?? 0);
-  const playable = player.hand.filter(card => Number(card.cost ?? 0) <= unused).length;
-  return playable * .32 - Math.max(0, Number(player.energy ?? 0) - 2) / total;
+  const playableKnown = player.hand.filter(card => Number(card.cost ?? 0) <= unused).length;
+  const expectedPlayable = unused > 0 ? Math.min(unknownCards, 4) * .2 : 0;
+  return (playableKnown + expectedPlayable) * .32 - Math.max(0, Number(player.energy ?? 0) - 2) / total;
 }
 
 export class Evaluator {
   evaluate(state: AIGameState, owner: PlayerId, profile: PlaystyleProfile): EvaluationBreakdown {
-    const self = state.players[owner], foe = state.players[owner === 0 ? 1 : 0];
-    if (state.winner === owner || foe.life <= 0) return this.terminal(1);
+    const self = state.players[owner], rawFoe = state.players[owner === 0 ? 1 : 0];
+    if (state.winner === owner || rawFoe.life <= 0) return this.terminal(1);
     if (state.winner === (owner === 0 ? 1 : 0) || self.life <= 0) return this.terminal(-1);
 
+    const foeView = publicOpponentView(rawFoe, owner), foe = foeView.player, unknownFoeHand = foeView.unknownHand;
     const selfPressure = attackPressure(self), foePressure = attackPressure(foe);
-    const selfBurst = directDamageInHand(self), foeBurst = directDamageInHand(foe);
+    const selfBurst = directDamageInHand(self), foeBurst = directDamageInHand(foe, unknownFoeHand);
     const lethalMargin = selfPressure + selfBurst - foe.life;
     const dangerMargin = foePressure + foeBurst - self.life;
     const resourcesSelf = Number(self.energy ?? 0) + Number(self.reserve ?? 0);
     const resourcesFoe = Number(foe.energy ?? 0) + Number(foe.reserve ?? 0);
     const boardSelf = boardScore(self), boardFoe = boardScore(foe);
     const handSelf = self.hand.reduce((sum, card) => sum + intrinsicCardValue(card), 0);
-    const handFoe = foe.hand.reduce((sum, card) => sum + intrinsicCardValue(card), 0);
+    const handFoe = foe.hand.reduce((sum, card) => sum + intrinsicCardValue(card), 0) + unknownFoeHand * 3.15;
 
     const features: Record<keyof EvaluationWeights, number> = {
       life: clamp((self.life - foe.life) / 30, -1.5, 1.5),
@@ -128,8 +141,8 @@ export class Evaluator {
       pressure: clamp((selfPressure + selfBurst - foePressure * .55) / 18, -1.2, 1.4),
       synergy: clamp((synergyScore(self) - synergyScore(foe)) / 10, -1.2, 1.2),
       overextension: clamp(overextension(foe, self) - overextension(self, foe), -1, 1),
-      responseValue: clamp((responsePotential(self) - responsePotential(foe)) / 8, -1.2, 1.2),
-      resourceEfficiency: clamp(resourceEfficiency(self) - resourceEfficiency(foe), -1, 1),
+      responseValue: clamp((responsePotential(self) - responsePotential(foe, unknownFoeHand)) / 8, -1.2, 1.2),
+      resourceEfficiency: clamp(resourceEfficiency(self) - resourceEfficiency(foe, unknownFoeHand), -1, 1),
       initiative: state.active === owner ? .35 : -.18,
       risk: clamp((self.life - Math.max(0, foePressure + foeBurst)) / 30 - (foe.life - Math.max(0, selfPressure + selfBurst)) / 30, -1, 1),
     };
