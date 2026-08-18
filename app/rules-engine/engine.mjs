@@ -110,11 +110,25 @@ const validateVengeance = (state, command) => {
   const target = targetId ? unitById(state, targetId) : null;
   if (!target || !(target.damagedOwnersThisTurn || []).includes(command.owner)) throw new RulesViolation("vengeance-target-must-have-damaged-controller-this-turn");
 };
+const hasActivatedAbility = (state, unit) => {
+  if ((unit?.abilities || []).some((ability) => ability.trigger === "activated")) return true;
+  const printed = (state.cardCatalog || []).find((card) => card.page === unit?.page || card.id === unit?.id);
+  return !!printed?.abilities?.some((ability) => ability.trigger === "activated");
+};
+const lockFreshActivatedPermanents = (state) => {
+  for (const entry of state.players || []) {
+    for (const unit of [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])]) {
+      if (unit.type === "Criatura" || unit.enteredRound !== state.round || !hasActivatedAbility(state, unit)) continue;
+      unit.summoning = true;
+    }
+  }
+};
 const postProcess = (before, after, command) => {
   const snapshot = combatSnapshot(before, command);
   consumeElementalPromise(before, after, command);
   expireElementalPromises(before, after, command);
   recordCombatDamage(after, snapshot);
+  lockFreshActivatedPermanents(after);
   propagateWeddingRingLinks(before, after);
 };
 const stackResult = (state, trace = [], steps = 0) => ({ state, trace, steps });
