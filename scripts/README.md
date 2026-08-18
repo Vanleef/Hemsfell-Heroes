@@ -1,19 +1,23 @@
-# Scripts policy
+# Scripts
 
-The runtime source under `app/`, the rules engine, tests and stylesheets are canonical. Development and build flows must never reconstruct the application by replaying historical patch scripts.
+This directory contains reusable project tooling only.
 
-## Maintenance model
+## Canonical policy
 
-- `project-maintenance.mjs` is the single pre-dev/pre-build integrity gate. It validates the committed canonical state and does not rewrite source files.
-- Bug fixes and gameplay changes go directly into `app/`, `app/rules-engine/`, tests and the existing stylesheet responsible for that UI surface.
-- Do not commit `repair-vNN`, `fix-*`, `apply-*`, `normalize-*` or similar one-off scripts. Git history already preserves migrations and previous implementations.
-- Do not create one-off GitHub Actions workflows that edit source code. `.github/workflows/ci.yml` is the canonical automation workflow.
-- Add a new executable script only for genuinely reusable tooling such as build, CI environment setup, audit, simulation or extraction. Prefer adding a command/mode to an existing tool when concerns belong together.
-- `card-tools.mjs` groups catalog extraction and manual-card analysis instead of keeping separate tiny scripts.
-- `audit-card-rules.mjs` and `export-card-implementation-audit.mjs` remain separate because one is a fast audit and the other exports a persistent implementation report.
+- Do not add one-off `fix-*`, `repair-*`, `apply-*`, `normalize-*`, `prepare-card*`, or `finalize-*` patch scripts.
+- Make durable changes directly in the canonical source files instead of layering source mutators.
+- Match UI DOM guards live in `app/match-ui-runtime.tsx` and `app/match-ui-guard.tsx`.
+- Match CSS is imported through the single `app/match-ui.css` entry point.
+- GitHub Actions should use the canonical CI workflow rather than accumulating temporary fix workflows.
+- `scripts/project-maintenance.mjs` enforces these rules and validates canonical CSS imports.
 
-## UI organization
+## Reusable commands
 
-Match UI runtime helpers are consolidated in `app/match-ui-runtime.tsx`, with `app/match-ui-guard.tsx` retained as the canonical lifecycle/integrity guard. Match-specific CSS is exposed through the single `app/match-ui.css` entry point; small fixes should be folded into an existing responsibility stylesheet instead of adding another import to `layout.tsx`.
-
-`npm run rules:migrate` remains only as a compatibility alias for `npm run prepare:project`; it does not mutate the repository.
+- `npm run prepare:project` — validate the canonical project state.
+- `npm run test:rules` — run rules and regression tests.
+- `npm run audit:cards:full` — export the card implementation audit.
+- `npm run simulate:headless` — run headless game simulations.
+- `npm run ai:calibrate` — run the full AI calibration corpus across all configured difficulties.
+- `npm run ai:calibrate:smoke` — run the deterministic AI calibration smoke subset.
+- `npm run ai:calibrate:benchmark` — run the deterministic 48-scenario benchmark for Easy, Normal and Hard.
+- `npm run ai:selfplay` — run AI-vs-AI self-play telemetry.
