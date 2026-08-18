@@ -5,7 +5,8 @@
   "engines": {"node": ">=22.13.0"},
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
-    "prepare:project": "node scripts/project-maintenance.mjs",
+    "verify:frontend-structure": "node scripts/verify-frontend-structure.mjs",
+    "prepare:project": "node scripts/project-maintenance.mjs && npm run verify:frontend-structure",
     "rules:migrate": "npm run prepare:project",
     "predev": "npm run prepare:project",
     "dev": "next dev -H 0.0.0.0",

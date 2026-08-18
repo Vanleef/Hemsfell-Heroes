@@ -1,0 +1,260 @@
+/*
+ * Decision UI rules.
+ * - Generic decision panels are always compact to their actual content and
+ *   remain in the right-side safe lane.
+ * - Card-list/search/tutor decisions are the only intentional exception: they
+ *   use a larger centered browser with internal scrolling.
+ * - Target-selection banners stay in the opposite left-side safe lane.
+ */
+.screen-game .engine-decision-backdrop {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 86 !important;
+  display: block !important;
+  padding: 0 !important;
+  pointer-events: none;
+  background: transparent !important;
+}
+
+/* Generic decisions: size strictly from their content. */
+.screen-game .engine-decision-backdrop > .engine-decision-panel {
+  --decision-side-gap: clamp(11.45rem, .7cqw, .8rem);
+  --decision-side-width: clamp(12rem, 22cqw, 22rem);
+  pointer-events: auto;
+  position: absolute !important;
+  left: auto !important;
+  right: var(--decision-side-gap) !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translateY(-50%) !important;
+
+  width: fit-content !important;
+  min-width: 0 !important;
+  max-width: var(--decision-side-width) !important;
+  height: fit-content !important;
+  min-height: 0 !important;
+  max-height: min(72cqh, 38rem) !important;
+
+  margin: 0 !important;
+  padding: clamp(.62rem, 1cqw, .9rem) !important;
+  box-sizing: border-box !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  contain: layout paint;
+}
+
+/*
+ * Prevent inherited/fixed layout rules from making a text decision wider or
+ * taller than its content. Children may wrap, but may not force a minimum
+ * dialog footprint.
+ */
+.screen-game .engine-decision-panel:not(:has(.visual-card-choice-grid)):not(:has(.card-choice-grid)):not(:has(.decision-card-grid))
+  > :is(header, section, div, article, form, p, ol, ul) {
+  width: fit-content !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+.screen-game .engine-decision-panel:not(:has(.visual-card-choice-grid)):not(:has(.card-choice-grid)):not(:has(.decision-card-grid))
+  :is(h1, h2, h3, h4, p, span, b, strong, small, label) {
+  max-width: 100% !important;
+  overflow-wrap: anywhere;
+}
+
+.screen-game .engine-decision-panel:not(:has(.visual-card-choice-grid)):not(:has(.card-choice-grid)):not(:has(.decision-card-grid))
+  :is(button, .decision-option, .effect-choice, .choice-option) {
+  width: fit-content !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+/*
+ * Effect-choice cards are intrinsically sized: a short option remains compact,
+ * while longer summaries gain width until the safe-lane cap and then grow in
+ * height. Typography scales with the board instead of being locked to px.
+ */
+.screen-game .engine-decision-panel:is([data-decision-kind="choice"],[data-decision-kind="choice-target"],[data-decision-kind="repeat-choice"],[data-decision-kind="replay-ability"])
+  > div:not(.visual-card-choice-grid):not(.card-choice-grid):not(.decision-card-grid) {
+  display: flex !important;
+  flex-flow: row wrap !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: clamp(.34rem, .62cqw, .62rem) !important;
+  inline-size: fit-content !important;
+  max-inline-size: 100% !important;
+}
+
+.screen-game .engine-decision-panel:is([data-decision-kind="choice"],[data-decision-kind="choice-target"],[data-decision-kind="repeat-choice"],[data-decision-kind="replay-ability"])
+  > div:not(.visual-card-choice-grid):not(.card-choice-grid):not(.decision-card-grid)
+  > button:has(> b:first-child + span) {
+  display: grid !important;
+  grid-template-columns: clamp(1.42rem, 2.15cqw, 1.95rem) minmax(0, 1fr) !important;
+  align-items: center !important;
+  column-gap: clamp(.34rem, .56cqw, .58rem) !important;
+  flex: 0 1 auto !important;
+  inline-size: fit-content !important;
+  min-inline-size: min(100%, clamp(8.5rem, 13cqw, 11.5rem)) !important;
+  max-inline-size: 100% !important;
+  block-size: auto !important;
+  min-block-size: clamp(2.05rem, 4.1cqh, 3rem) !important;
+  padding: clamp(.3rem, .5cqh, .48rem) clamp(.42rem, .68cqw, .7rem) !important;
+  box-sizing: border-box !important;
+  white-space: normal !important;
+  text-align: left !important;
+  line-height: 1.15 !important;
+}
+
+.screen-game .engine-decision-panel:is([data-decision-kind="choice"],[data-decision-kind="choice-target"],[data-decision-kind="repeat-choice"],[data-decision-kind="replay-ability"])
+  > div > button:has(> b:first-child + span) > b:first-child {
+  display: grid !important;
+  place-items: center !important;
+  inline-size: clamp(1.42rem, 2.15cqw, 1.95rem) !important;
+  block-size: clamp(1.42rem, 2.15cqw, 1.95rem) !important;
+  min-inline-size: 0 !important;
+  margin: 0 !important;
+  font-size: clamp(.68rem, .78cqw, .9rem) !important;
+  line-height: 1 !important;
+}
+
+.screen-game .engine-decision-panel:is([data-decision-kind="choice"],[data-decision-kind="choice-target"],[data-decision-kind="repeat-choice"],[data-decision-kind="replay-ability"])
+  > div > button:has(> b:first-child + span) > span {
+  display: block !important;
+  min-inline-size: 0 !important;
+  max-inline-size: min(27ch, 100%) !important;
+  margin: 0 !important;
+  font-size: clamp(.7rem, .82cqw, .95rem) !important;
+  line-height: clamp(1.12, 1.18, 1.24) !important;
+  white-space: normal !important;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.screen-game .engine-decision-panel > div > button[data-effect-density="compact"] > span {
+  font-size: clamp(.66rem, .76cqw, .88rem) !important;
+  max-inline-size: min(31ch, 100%) !important;
+}
+
+.screen-game .engine-decision-panel > div > button[data-effect-density="dense"] > span {
+  font-size: clamp(.62rem, .7cqw, .82rem) !important;
+  line-height: 1.12 !important;
+  max-inline-size: min(35ch, 100%) !important;
+}
+
+/* Search / tutor / card-list decisions: centered larger browser. */
+.screen-game .engine-decision-backdrop > .engine-decision-panel:has(.visual-card-choice-grid),
+.screen-game .engine-decision-backdrop > .engine-decision-panel:has(.card-choice-grid),
+.screen-game .engine-decision-backdrop > .engine-decision-panel:has(.decision-card-grid) {
+  left: 50% !important;
+  right: auto !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  width: min(82cqw, 66rem) !important;
+  min-width: min(60cqw, 38rem) !important;
+  max-width: min(86cqw, 70rem) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: min(78cqh, 44rem) !important;
+  padding: clamp(.75rem, 1.15cqw, 1.15rem) !important;
+  overflow: hidden !important;
+  contain: none;
+}
+
+.screen-game .engine-decision-panel :is(.visual-card-choice-grid, .card-choice-grid, .decision-card-grid) {
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: min(57cqh, 30rem) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.screen-game .engine-decision-panel :is(.visual-card-choice-grid, .card-choice-grid, .decision-card-grid)::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* Simple target-selection banner stays compact in the left safe lane. */
+.screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
+  --target-slot-gap: clamp(.28rem, .48cqw, .58rem);
+  position: absolute !important;
+  left: calc(var(--target-safe-right) - var(--target-slot-gap)) !important;
+  right: auto !important;
+  top: var(--target-safe-center-y) !important;
+  bottom: auto !important;
+  width: fit-content !important;
+  min-width: 0 !important;
+  max-width: calc(var(--target-safe-right) - var(--target-safe-left) - var(--target-slot-gap)) !important;
+  height: fit-content !important;
+  min-height: 0 !important;
+  max-height: calc(var(--target-safe-bottom) - var(--target-safe-top)) !important;
+  margin: 0 !important;
+  transform: translate(-100%, -50%) !important;
+  box-sizing: border-box !important;
+  z-index: 760 !important;
+  overflow: auto !important;
+}
+
+.screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] > :is(b, span, div, p) {
+  width: fit-content !important;
+  min-width: 0 !important;
+  max-width: min(28cqw, 30rem) !important;
+}
+
+@container hemsfell-board (max-width: 72rem) {
+  .screen-game .engine-decision-backdrop > .engine-decision-panel {
+    --decision-side-width: clamp(11rem, 24cqw, 20rem);
+  }
+
+  .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.visual-card-choice-grid),
+  .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.card-choice-grid),
+  .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.decision-card-grid) {
+    width: min(86cqw, 62rem) !important;
+    min-width: min(66cqw, 35rem) !important;
+    max-width: 89cqw !important;
+    max-height: 80cqh !important;
+  }
+
+  .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
+    --target-slot-gap: clamp(.22rem, .42cqw, .48rem);
+  }
+}
+
+@container hemsfell-board (max-width: 54rem) {
+  .screen-game .engine-decision-backdrop > .engine-decision-panel {
+    --decision-side-width: clamp(9.5rem, 28cqw, 17rem);
+    max-height: min(78cqh, 34rem) !important;
+    padding: clamp(.5rem, .9cqw, .72rem) !important;
+  }
+
+  .screen-game .engine-decision-panel:is([data-decision-kind="choice"],[data-decision-kind="choice-target"],[data-decision-kind="repeat-choice"],[data-decision-kind="replay-ability"])
+    > div:not(.visual-card-choice-grid):not(.card-choice-grid):not(.decision-card-grid) {
+    flex-direction: column !important;
+    inline-size: 100% !important;
+  }
+
+  .screen-game .engine-decision-panel:is([data-decision-kind="choice"],[data-decision-kind="choice-target"],[data-decision-kind="repeat-choice"],[data-decision-kind="replay-ability"])
+    > div > button:has(> b:first-child + span) {
+    inline-size: 100% !important;
+    min-inline-size: 0 !important;
+  }
+
+  .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.visual-card-choice-grid),
+  .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.card-choice-grid),
+  .screen-game .engine-decision-backdrop > .engine-decision-panel:has(.decision-card-grid) {
+    width: 89cqw !important;
+    min-width: 0 !important;
+    max-width: 89cqw !important;
+    max-height: 81cqh !important;
+    padding: clamp(.55rem, 1cqw, .8rem) !important;
+  }
+
+  .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
+    --target-slot-gap: clamp(.16rem, .34cqw, .36rem);
+    max-width: calc(var(--target-safe-right) - var(--target-safe-left) - var(--target-slot-gap)) !important;
+  }
+}

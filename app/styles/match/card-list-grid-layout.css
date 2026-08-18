@@ -1,0 +1,311 @@
+/* Responsive multi-row card-choice layout.
+   Search/procure and hand-limit decisions share one rule: cards fill rows,
+   shrink progressively as the list grows, and never enter the confirm lane. */
+
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) {
+  width: min(96vw, 80rem) !important;
+  max-width: min(96vw, 80rem) !important;
+  min-width: min(92vw, 38rem) !important;
+  min-height: min(72dvh, 34rem) !important;
+  max-height: min(92dvh, 48rem) !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* The final content block contains the card list plus Confirm. Reserve a real
+   lower lane for Confirm so rows can never overlap it. */
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) > div:last-child {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  height: clamp(18rem, 58dvh, 34rem) !important;
+  max-height: calc(92dvh - 10rem) !important;
+  display: grid !important;
+  grid-template-rows: minmax(0, 1fr) auto !important;
+  align-items: stretch !important;
+  gap: clamp(.65rem, 1.15cqh, 1rem) !important;
+  overflow: hidden !important;
+}
+
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) .visual-card-choice-grid {
+  --choice-card-width: clamp(4.9rem, 7.4cqw, 6.4rem);
+  --choice-gap-x: clamp(.42rem, .72cqw, .7rem);
+  --choice-gap-y: clamp(.4rem, .72cqh, .7rem);
+
+  min-width: 0 !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  box-sizing: border-box !important;
+
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(var(--choice-card-width), var(--choice-card-width))) !important;
+  grid-auto-flow: row !important;
+  grid-auto-rows: max-content !important;
+  align-content: start !important;
+  justify-content: center !important;
+  align-items: start !important;
+  gap: var(--choice-gap-y) var(--choice-gap-x) !important;
+
+  padding: clamp(.35rem, .7cqh, .65rem) clamp(.4rem, .7cqw, .75rem) !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  scroll-snap-type: none !important;
+}
+
+/* Progressive fit by list size. More cards => slightly smaller cards so the
+   last row remains above the reserved Confirm lane. */
+.screen-game .engine-decision-panel .visual-card-choice-grid:has(> .visual-card-choice:nth-child(9)) {
+  --choice-card-width: clamp(4.55rem, 6.9cqw, 5.9rem);
+}
+.screen-game .engine-decision-panel .visual-card-choice-grid:has(> .visual-card-choice:nth-child(17)) {
+  --choice-card-width: clamp(4.2rem, 6.25cqw, 5.35rem);
+  --choice-gap-x: clamp(.34rem, .58cqw, .56rem);
+  --choice-gap-y: clamp(.32rem, .55cqh, .52rem);
+}
+.screen-game .engine-decision-panel .visual-card-choice-grid:has(> .visual-card-choice:nth-child(25)) {
+  --choice-card-width: clamp(3.9rem, 5.7cqw, 4.9rem);
+  --choice-gap-x: clamp(.3rem, .5cqw, .48rem);
+  --choice-gap-y: clamp(.28rem, .48cqh, .46rem);
+}
+.screen-game .engine-decision-panel .visual-card-choice-grid:has(> .visual-card-choice:nth-child(33)) {
+  --choice-card-width: clamp(3.65rem, 5.25cqw, 4.5rem);
+}
+.screen-game .engine-decision-panel .visual-card-choice-grid:has(> .visual-card-choice:nth-child(41)) {
+  --choice-card-width: clamp(3.35rem, 4.85cqw, 4.1rem);
+  --choice-gap-x: clamp(.24rem, .42cqw, .4rem);
+  --choice-gap-y: clamp(.22rem, .4cqh, .38rem);
+}
+
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) .visual-card-choice-grid > .visual-card-choice {
+  position: relative !important;
+  display: block !important;
+  width: var(--choice-card-width) !important;
+  min-width: 0 !important;
+  max-width: var(--choice-card-width) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+  transform: none !important;
+  justify-self: center !important;
+  align-self: start !important;
+}
+
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) .visual-card-choice > .card-frame,
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) .visual-card-choice > .card-frame > .original-card {
+  position: relative !important;
+  inset: auto !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  overflow: visible !important;
+}
+
+/* The card is the button. Remove redundant captions such as Selecionar. */
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) .visual-card-choice > span:not(.card-frame) {
+  display: none !important;
+}
+
+/* Confirm owns the bottom lane and is never part of the card grid. */
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) > div:last-child > button {
+  position: relative !important;
+  z-index: 5 !important;
+  justify-self: center !important;
+  align-self: end !important;
+  margin: 0 !important;
+}
+
+/* Legacy hand-limit dialog gets the same wrapping/fitting behaviour. */
+.screen-game .hand-limit-dialog {
+  width: min(96vw, 80rem) !important;
+  max-width: min(96vw, 80rem) !important;
+  min-height: min(72dvh, 34rem) !important;
+  max-height: min(92dvh, 48rem) !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] {
+  --choice-card-width: clamp(4.9rem, 7.4cqw, 6.4rem);
+  --choice-gap-x: clamp(.42rem, .72cqw, .7rem);
+  --choice-gap-y: clamp(.4rem, .72cqh, .7rem);
+
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(var(--choice-card-width), var(--choice-card-width))) !important;
+  grid-auto-flow: row !important;
+  grid-auto-rows: max-content !important;
+  align-content: start !important;
+  justify-content: center !important;
+  gap: var(--choice-gap-y) var(--choice-gap-x) !important;
+
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: min(56dvh, 32rem) !important;
+  max-height: min(56dvh, 32rem) !important;
+  min-height: 0 !important;
+  padding: clamp(.35rem, .7cqh, .65rem) clamp(.4rem, .7cqw, .75rem) !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"]:has(> :nth-child(9)) {
+  --choice-card-width: clamp(4.55rem, 6.9cqw, 5.9rem);
+}
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"]:has(> :nth-child(17)) {
+  --choice-card-width: clamp(4.2rem, 6.25cqw, 5.35rem);
+}
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"]:has(> :nth-child(25)) {
+  --choice-card-width: clamp(3.9rem, 5.7cqw, 4.9rem);
+}
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"]:has(> :nth-child(33)) {
+  --choice-card-width: clamp(3.65rem, 5.25cqw, 4.5rem);
+}
+
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] > * {
+  width: var(--choice-card-width) !important;
+  min-width: 0 !important;
+  max-width: var(--choice-card-width) !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: none !important;
+  justify-self: center !important;
+  align-self: start !important;
+}
+
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] :is(.card-frame,.original-card,.remote-card-art,img,canvas) {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  transform: none !important;
+}
+
+@media (max-width: 52rem), (max-height: 42rem) {
+  .screen-game .engine-decision-panel:is(
+    [data-decision-kind="search"],
+    [data-decision-kind="zone-card"],
+    [data-decision-kind="grave-resurrect"],
+    [data-decision-kind="grave-to-hand-many"],
+    [data-decision-kind="grave-to-hand-and-banish"],
+    [data-decision-kind="hand-discard-one"],
+    [data-decision-kind="hand-to-deck-bottom"],
+    [data-decision-kind="hand-limit-discard"],
+    [data-decision-kind="investigate-selection"]
+  ) {
+    width: min(97vw, 72rem) !important;
+    max-width: min(97vw, 72rem) !important;
+    min-width: 0 !important;
+    min-height: min(76dvh, 31rem) !important;
+  }
+
+  .screen-game .engine-decision-panel:is(
+    [data-decision-kind="search"],
+    [data-decision-kind="zone-card"],
+    [data-decision-kind="grave-resurrect"],
+    [data-decision-kind="grave-to-hand-many"],
+    [data-decision-kind="grave-to-hand-and-banish"],
+    [data-decision-kind="hand-discard-one"],
+    [data-decision-kind="hand-to-deck-bottom"],
+    [data-decision-kind="hand-limit-discard"],
+    [data-decision-kind="investigate-selection"]
+  ) > div:last-child {
+    height: clamp(16rem, 60dvh, 29rem) !important;
+  }
+}

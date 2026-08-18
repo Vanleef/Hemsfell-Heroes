@@ -6,14 +6,16 @@ This directory contains reusable project tooling only.
 
 - Do not add one-off `fix-*`, `repair-*`, `apply-*`, `normalize-*`, `prepare-card*`, or `finalize-*` patch scripts.
 - Make durable changes directly in the canonical source files instead of layering source mutators.
-- Match UI DOM guards live in `app/match-ui-runtime.tsx` and `app/match-ui-guard.tsx`.
+- Match UI DOM guards remain at the compatibility entrypoints `app/match-ui-runtime.tsx` and `app/match-ui-guard.tsx`; `app/ui/runtime/` groups them without changing lifecycle order.
 - Match CSS is imported through the single `app/match-ui.css` entry point.
+- `app/styles/` mirrors CSS by responsibility while the historical root paths remain byte-identical compatibility contracts.
 - GitHub Actions should use the canonical CI workflow rather than accumulating temporary fix workflows.
-- `scripts/project-maintenance.mjs` enforces these rules and validates canonical CSS imports.
+- `scripts/project-maintenance.mjs` validates the canonical project state; `scripts/verify-frontend-structure.mjs` additionally protects stylesheet bytes, cascade order and match runtime order.
 
 ## Reusable commands
 
-- `npm run prepare:project` — validate the canonical project state.
+- `npm run prepare:project` — validate the canonical project state and frontend structural invariants.
+- `npm run verify:frontend-structure` — verify stylesheet mirrors and UI/cascade ordering without mutating source.
 - `npm run test:rules` — run rules and regression tests.
 - `npm run audit:cards:full` — export the card implementation audit.
 - `npm run simulate:headless` — run headless game simulations.
