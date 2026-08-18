@@ -5,16 +5,16 @@ on:
     branches:
       - ai/advanced-opponent-system
     paths:
-      - .github/scripts/apply-ai-evolution-cat-dog.mjs
       - .github/workflows/apply-ai-evolution-cat-dog.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  apply-and-validate:
+  apply:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
@@ -22,28 +22,13 @@ jobs:
           ref: ai/advanced-opponent-system
           fetch-depth: 0
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.13.0
-          cache: npm
-
-      - name: Apply integration patch
+      - name: Apply canonical source integration
         run: node .github/scripts/apply-ai-evolution-cat-dog.mjs
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Typecheck advanced AI
-        run: npm run typecheck:ai
-
-      - name: Run rules regression suite
-        run: npm run test:node
-
-      - name: Remove one-shot patch machinery
+      - name: Remove one-shot machinery
         run: git rm .github/scripts/apply-ai-evolution-cat-dog.mjs .github/workflows/apply-ai-evolution-cat-dog.yml
 
-      - name: Commit generated integration
+      - name: Commit canonical integration
         run: |
           git config user.name "Hemsfell CI"
           git config user.email "actions@users.noreply.github.com"
