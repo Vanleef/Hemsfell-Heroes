@@ -17,9 +17,14 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
 
   const activeChanged = Number(before?.active) !== Number(after.active);
   if (activeChanged) {
-    delete after.turnTimeRemainingMs;
-    after.turnDeadline = now + settings.turnSeconds * 1000;
-    if (after.pendingResponse) after.pendingResponse.deadline = now + settings.responseSeconds * 1000;
+    if (after.pendingResponse) {
+      after.turnTimeRemainingMs = settings.turnSeconds * 1000;
+      after.turnDeadline = null;
+      after.pendingResponse.deadline = now + settings.responseSeconds * 1000;
+    } else {
+      delete after.turnTimeRemainingMs;
+      after.turnDeadline = now + settings.turnSeconds * 1000;
+    }
     return after;
   }
 
