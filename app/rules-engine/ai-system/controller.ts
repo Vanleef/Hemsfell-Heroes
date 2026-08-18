@@ -92,18 +92,21 @@ const adaptationStrength = (difficulty: AIDifficulty) => difficulty === "Master"
 
 export class AIController {
   private difficulty: AIDifficulty;
-  private belief = new BeliefModel();
+  private belief: BeliefModel;
   private evaluator = new Evaluator();
   private combat = new CombatPlanner();
   private risk = new RiskManager();
   private mcts = new MCTS();
   private adapter: EngineAdapter;
+  private random: () => number;
   private initializedFor = "";
   private opponentMemory: OpponentMemory = { aggression: 0.5, patience: 0.5, interaction: 0.5, samples: 0 };
 
-  constructor(difficulty: string = "Normal", adapter: EngineAdapter = defaultAIAdapter) {
+  constructor(difficulty: string = "Normal", adapter: EngineAdapter = defaultAIAdapter, random: () => number = Math.random) {
     this.difficulty = normalizeDifficulty(difficulty);
     this.adapter = adapter;
+    this.random = random;
+    this.belief = new BeliefModel(random);
   }
 
   setDifficulty(value: string): void {
@@ -118,7 +121,8 @@ export class AIController {
   }
 
   async chooseAction(state: AIGameState, owner: number): Promise<AIChoiceResult> {
-    const config = DIFFICULTY_CONFIG[this.difficulty];
+    const baseConfig = DIFFICULTY_CONFIG[this.difficulty];
+    const config = state.__calibrationSeed != null ? { ...baseConfig, evaluationNoise: 0 } : baseConfig;
     const key = `${state.players[owner]?.heroId}:${owner}:${state.players[1 - owner]?.deck?.length ?? 0}:${state.round}`;
     if (!this.initializedFor || this.initializedFor.split(":").slice(0, 2).join(":") !== key.split(":").slice(0, 2).join(":")) {
       this.belief.initialize(state, owner, config.particleCount);
@@ -150,19 +154,17 @@ export class AIController {
         const ranked = legal.map((action) => {
           try {
             const next = this.adapter.applyAction(planningState, action);
-            const score = this.evaluator.evaluate(next, owner, personality, config.evaluationNoise) + this.risk.actionBias(planningState, next, owner, personality, action) * 0.35;
+            const score = this.evaluator.evaluate(next, owner, personality, config.evaluationNoise) + this.risk.actionBias(planningState, next, owner, personality, action, this.random) * 0.35;
             return { action, score, next };
           } catch { return { action, score: -Infinity, next: null as AIGameState | null }; }
         }).sort((a, b) => b.score - a.score);
-        const mistake = Math.random() < config.intentionalErrorRate;
-        const index = mistake ? Math.min(ranked.length - 1, 1 + Math.floor(Math.random() * Math.min(2, ranked.length - 1))) : 0;
+        const mistake = this.random() < config.intentionalErrorRate;
+        const index = mistake ? Math.min(ranked.length - 1, 1 + Math.floor(this.random() * Math.min(2, ranked.length - 1))) : 0;
         const picked = ranked[index] || ranked[0];
         const lethalMargin = picked?.next ? this.evaluator.estimateLethal(picked.next, owner).margin : this.evaluator.estimateLethal(planningState, owner).margin;
         return { action: picked?.action || legal[0], stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: picked?.score || 0, beliefEntropy: entropy }, personality: personality.id, difficulty: this.difficulty, evaluation: picked?.score || 0, lethalMargin, beliefEntropy: entropy };
       }
 
-      // Keep the forced-lethal solver only as a safety early-out. Strategic
-      // lethal pressure and risk now live inside Evaluator/MCTS.
       if (["Hard", "Expert", "Master"].includes(this.difficulty)) {
         const lethalAction = this.findRobustForcedLethal(state, owner, legal, legalDifficulty);
         if (lethalAction) {
@@ -170,12 +172,12 @@ export class AIController {
         }
       }
 
-      const result = await this.mcts.search({ state, owner, config, personality, belief: this.belief, adapter: this.adapter, evaluator: this.evaluator, riskManager: this.risk, legacyDifficulty: legalDifficulty });
+      const result = await this.mcts.search({ state, owner, config, personality, belief: this.belief, adapter: this.adapter, evaluator: this.evaluator, riskManager: this.risk, legacyDifficulty: legalDifficulty, random: this.random });
       let action = result.action;
 
-      if (action && config.intentionalErrorRate > 0 && legal.length > 1 && Math.random() < config.intentionalErrorRate) {
+      if (action && config.intentionalErrorRate > 0 && legal.length > 1 && this.random() < config.intentionalErrorRate) {
         const alternatives = legal.filter((candidate) => actionKey(candidate) !== actionKey(action));
-        action = alternatives[Math.floor(Math.random() * alternatives.length)] || action;
+        action = alternatives[Math.floor(this.random() * alternatives.length)] || action;
       }
 
       let evaluation = result.stats.selectedMeanValue;
@@ -280,7 +282,7 @@ export class AIController {
     if (profile.id === "Control") score += hand.filter((card) => /destrua|dano|acelerado|compre/.test(cardText(card))).length * 0.7;
 
     const threshold = hand.length * (this.difficulty === "Easy" ? 2.3 : this.difficulty === "Normal" ? 2.8 : 3.15);
-    if (this.difficulty === "Easy" && Math.random() < 0.2) return Math.random() < 0.5;
+    if (this.difficulty === "Easy" && this.random() < 0.2) return this.random() < 0.5;
     return score >= threshold;
   }
 
