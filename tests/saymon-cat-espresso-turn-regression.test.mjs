@@ -57,6 +57,29 @@ test("AI sees Saymon I as used after the authoritative activation", () => {
   assert.notEqual(after?.kind, "saymon-damage", "the AI must not schedule Saymon I twice in one turn");
 });
 
+test("playing Máquina de Expresso keeps its activated effect locked on the entry turn", () => {
+  let game = state(); game.active = 0; game.round = 3;
+  const machineCard = byPage(229);
+  game.players[0].energy = machineCard.cost;
+  game.players[0].maxEnergy = machineCard.cost;
+  game.players[0].hand = [machineCard];
+
+  game = executeCommand(game, {
+    type: "playCard", owner: 0, cardId: machineCard.id, slot: 0, skipPriority: true,
+  }).state;
+
+  const fresh = game.players[0].support.find((card) => Number(card.page) === 229);
+  assert.ok(fresh, "Máquina de Expresso must enter the support zone");
+  assert.equal(fresh.enteredRound, 3);
+  assert.equal(fresh.summoning, true, "fresh non-creature permanents with activated effects stay activation-locked on entry");
+
+  const ability = fresh.abilities.find((candidate) => candidate.trigger === "activated");
+  assert.ok(ability);
+  assert.throws(() => executeCommand(game, {
+    type: "activate", owner: 0, sourceId: fresh.uid, abilityId: ability.id,
+  }), /cannot-tap|summoning-sickness/);
+});
+
 test("Máquina de Expresso cannot tap on entry, then creates Café Expresso in hand on a later round", () => {
   let game = state(); game.active = 0; game.round = 3;
   const machineCard = byPage(229), espressoImage = byPage(230);
