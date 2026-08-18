@@ -70,7 +70,11 @@ export class RiskManager {
       const before = (me.board || []).length;
       const after = (next.players[owner]?.board || []).length;
       if (after > before) {
-        const knownSweepMultiplier = representedSweep(foe) ? 4.25 : 1;
+        // Once a sweeper is actually represented, developing another body is a
+        // tactical punt, not a normal style preference. The stronger multiplier
+        // keeps Easy human-like without letting its one-ply evaluator ignore a
+        // known board clear just because the creature itself has high value.
+        const knownSweepMultiplier = representedSweep(foe) ? 8.5 : 1;
         score -= (after - before) * (1.4 + profile.weights.overextensionPenalty * 2.1) * knownSweepMultiplier;
       }
     }
