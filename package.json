@@ -30,8 +30,8 @@
     "simulate:headless": "node scripts/simulate-games.mjs",
     "ai:runtime:build": "node -e \"require('node:fs').rmSync('.ai-runtime',{recursive:true,force:true})\" && tsc -p tsconfig.ai.runtime.json && node -e \"require('node:fs').writeFileSync('.ai-runtime/package.json','{\\\"type\\\":\\\"commonjs\\\"}')\"",
     "ai:calibrate": "npm run ai:runtime:build && node .ai-runtime/scripts/ai-calibration.js",
-    "ai:calibrate:smoke": "npm run ai:runtime:build && node .ai-runtime/scripts/ai-calibration.js --difficulty=Easy,Normal,Hard --seed=20260818 --scenarios=lethal-1,trade-1,overextension-1,hold-response-1,development-1,low-life-1,resources-1,hand-cap-1 --out=/tmp/hemsfell-ai-smoke",
-    "ai:calibrate:benchmark": "npm run ai:runtime:build && node .ai-runtime/scripts/ai-calibration.js --difficulty=Easy,Normal,Hard --seed=20260818 --out=/tmp/hemsfell-ai-benchmark",
+    "ai:calibrate:smoke": "npm run ai:runtime:build && node .ai-runtime/scripts/ai-calibration.js --difficulty=Easy,Normal,Hard --seed=20260818 --scenarios=lethal-1,trade-1,overextension-1,hold-response-1,development-1,low-life-1,resources-1,hand-cap-1 --require=Easy:overextension:1,Normal:low-life:1,Hard:*:1 --out=/tmp/hemsfell-ai-smoke",
+    "ai:calibrate:benchmark": "npm run ai:runtime:build && node .ai-runtime/scripts/ai-calibration.js --difficulty=Easy,Normal,Hard --seed=20260818 --require=Easy:overextension:0.8,Normal:low-life:0.8 --out=/tmp/hemsfell-ai-benchmark",
     "ai:selfplay": "npm run ai:runtime:build && node .ai-runtime/scripts/ai-selfplay.js"
   },
   "dependencies": {"@vercel/blob":"2.7.0","drizzle-orm":"0.45.2","next":"16.2.6","pdfjs-dist":"6.2.108","react":"19.2.6","react-dom":"19.2.6"},
