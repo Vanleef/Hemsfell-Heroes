@@ -10,7 +10,7 @@ const fold = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u0
 const accelerated = (card) => (card?.tags || []).some((tag) => /acelerado/i.test(String(tag))) || /\bacelerado\b/i.test(String(card?.text || ""));
 const cardInHand = (state, command) => state.players?.[command.owner]?.hand?.find((card) => card.id === command.cardId || card.uid === command.cardId);
 const unitById = (state, id) => state.players.flatMap((entry) => [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])]).find((unit) => unit.uid === id || unit.id === id);
-const unitOwner = (state, id) => state.players.findIndex((entry) => [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])]).some((unit) => unit.uid === id || unit.id === id));
+const unitOwner = (state, id) => state.players.findIndex((entry) => [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])].some((unit) => unit.uid === id || unit.id === id));
 const spellElement = (card, command) => {
   if (command?.chosenElement) return command.chosenElement;
   const exact = ["Fogo", "Água", "Terra", "Ar"].find((element) => (card?.tags || []).some((tag) => fold(tag) === fold(element)));
