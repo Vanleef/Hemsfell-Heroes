@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import ts from "typescript";
 
 const root = new URL("../app/rules-engine/ai-system/", import.meta.url);
-const files = ["types.ts", "config.ts", "personality.ts", "belief.ts", "evaluator.ts", "combat.ts", "risk.ts", "mcts.ts", "controller.ts", "driver.ts", "index.ts"];
+const files = ["types.ts", "config.ts", "personality.ts", "belief.ts", "evaluator.ts", "combat.ts", "risk.ts", "mcts.ts", "controller.ts", "driver.ts", "runtime.ts", "index.ts"];
 
 const read = (name) => readFile(new URL(name, root), "utf8");
 
@@ -59,4 +59,13 @@ test("controller exposes mulligan, lethal, combat and evaluation diagnostics", a
   assert.match(source, /chooseBlock/);
   assert.match(source, /debugEvaluation/);
   assert.match(source, /hemsfell:ai-thinking/);
+});
+
+test("runtime bridge covers main decisions, combat, responses and mulligan", async () => {
+  const source = await read("runtime.ts");
+  for (const symbol of ["chooseAdvancedAIAction", "chooseAdvancedAIDecision", "planAdvancedAIAttacks", "chooseAdvancedAIBlock", "chooseAdvancedAIResponse", "shouldKeepAdvancedMulligan"]) {
+    assert.match(source, new RegExp(`export (?:async )?function ${symbol}`));
+  }
+  assert.match(source, /data-hemsfell-ai-thinking/);
+  assert.match(source, /executeCommand\(structuredClone\(state\)/);
 });
