@@ -41,6 +41,8 @@ next-env.d.ts
 .sites-runtime/
 /outputs/
 /work/
+/.ai-runtime/
+/reports/ai/
 
 # local editor files
 .vscode/
