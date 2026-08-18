@@ -72,6 +72,7 @@ test("playing Máquina de Expresso keeps its activated effect locked on the entr
   assert.ok(fresh, "Máquina de Expresso must enter the support zone");
   assert.equal(fresh.enteredRound, 3);
   assert.equal(fresh.summoning, true, "fresh non-creature permanents with activated effects stay activation-locked on entry");
+  assert.equal(fresh.activationLockedOnEntry, true, "the UI activation guard must remain locked on the entry turn");
 
   const ability = fresh.abilities.find((candidate) => candidate.trigger === "activated");
   assert.ok(ability);
