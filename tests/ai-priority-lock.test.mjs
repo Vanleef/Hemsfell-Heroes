@@ -39,6 +39,8 @@ test("advanced priority search is bounded and repeated windows are deduplicated"
   assert.match(runtime,/priorityInFlight/);
   assert.match(runtime,/recentlySettledPriority/);
   assert.match(runtime,/prioritySignature/);
+  assert.match(runtime,/PRIORITY_HARD_TIMEOUT_MS = 850/);
+  assert.match(runtime,/boundedPrioritySearch/);
   assert.match(runtime,/legalPriorityResponses\(state, owner\)\.length === 0/);
   assert.match(runtime,/settledAt != null && clock\(\) - settledAt < 2500/);
   assert.match(controller,/prioritySearchBudget/);
