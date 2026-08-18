@@ -1,14 +1,7 @@
-import { completeAIPlayCommand } from "../ai.mjs";
-import { executeCommand } from "../engine.mjs";
-import { legalPriorityResponses } from "../priority.mjs";
 import { AIController } from "./controller";
-import { Evaluator } from "./evaluator";
-import { normalizeDifficulty } from "./config";
-import { personalityForHero } from "./personality";
 import type { AIAction, AIGameState } from "./types";
 
 const controllers = new Map<number, AIController>();
-const evaluator = new Evaluator();
 let thinkingIndicatorInstalled = false;
 
 function controllerFor(owner: number, difficulty: string): AIController {
@@ -81,50 +74,14 @@ export function chooseAdvancedAIBlock(state: AIGameState, owner: number, attacke
 }
 
 /**
- * Priority windows are intentionally evaluated outside the normal MCTS root:
- * the legacy candidate generator suppresses main-phase actions while priority
- * is open. We still use the same evaluator/personality and validate every
- * response through the authoritative engine before ranking it against pass.
+ * Priority is searched by the same imperfect-information controller used for
+ * normal turns. While a response window is open the controller exposes only
+ * legal responses plus pass, so it can compare "answer now" versus "hold"
+ * without evaluating the player's real hidden hand.
  */
 export async function chooseAdvancedAIResponse(state: AIGameState, owner: number, difficulty: string): Promise<AIAction> {
-  const profile = personalityForHero(state.players[owner]?.heroId);
-  const level = normalizeDifficulty(difficulty);
-  const commands = legalPriorityResponses(state, owner) as AIAction[];
-  const legal: Array<{ action: AIAction; score: number }> = [];
-
-  for (const raw of commands) {
-    let command: AIAction | null = raw;
-    if (raw.type === "playCard") {
-      const rawCardId = typeof raw.cardId === "string" ? raw.cardId : "";
-      const card = state.players[owner]?.hand?.find((candidate: any) => candidate.id === rawCardId);
-      command = card ? completeAIPlayCommand(state, owner, card, difficulty, { hasPriority: true }) as AIAction | null : null;
-    }
-    if (!command) continue;
-    try {
-      const next = executeCommand(structuredClone(state), command, { priority: true }).state as AIGameState;
-      let score = evaluator.evaluate(next, owner, profile, level === "Easy" ? .12 : level === "Normal" ? .05 : .01);
-      const interactionWeight = profile.weights.responseValue;
-      if (command.type === "activateHero") score += interactionWeight * .35;
-      if (command.type === "playCard") score += interactionWeight * .5;
-      legal.push({ action: command, score });
-    } catch {
-      // Invalid candidates are ignored rather than leaking into the UI driver.
-    }
-  }
-
-  const pass: AIAction = { type: "passPriority", owner };
-  if (!legal.length) return pass;
-  legal.sort((a, b) => b.score - a.score);
-
-  // Human-like response discipline: control/combo profiles are more willing to
-  // keep interaction hidden when the current window is not sufficiently valuable.
-  const holdThreshold = profile.holdResponses * 2.2 + profile.riskTolerance * .6;
-  const currentScore = evaluator.evaluate(state, owner, profile, 0);
-  if (legal[0].score < currentScore + holdThreshold) return pass;
-
-  if (level === "Easy" && legal.length > 1 && Math.random() < .25) return legal[Math.min(1, legal.length - 1)].action;
-  if (level === "Normal" && legal.length > 1 && Math.random() < .08) return legal[Math.min(1, legal.length - 1)].action;
-  return legal[0].action;
+  const action = await chooseAdvancedAIAction(state, owner, difficulty);
+  return action || { type: "passPriority", owner };
 }
 
 export function shouldKeepAdvancedMulligan(state: AIGameState, owner: number, difficulty: string): boolean {
