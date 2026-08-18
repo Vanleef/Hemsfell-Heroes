@@ -6,6 +6,7 @@ const controllers = new Map<number, AIController>();
 const lastObservedState = new Map<number, AIGameState>();
 const priorityInFlight = new Map<string, Promise<AIAction>>();
 const recentlySettledPriority = new Map<string, number>();
+const PRIORITY_HARD_TIMEOUT_MS = 850;
 let thinkingIndicatorInstalled = false;
 let debugTelemetryInstalled = false;
 
@@ -44,6 +45,18 @@ const prioritySignature = (state: AIGameState, owner: number) => {
 const prunePriorityGuards = (now = clock()) => {
   for (const [key, settledAt] of recentlySettledPriority) if (now - settledAt > 5000) recentlySettledPriority.delete(key);
 };
+
+const boundedPrioritySearch = (search: Promise<AIAction | null>, owner: number): Promise<AIAction> => new Promise((resolve) => {
+  let settled = false;
+  const finish = (action: AIAction | null | undefined) => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timer);
+    resolve(action || passPriority(owner));
+  };
+  const timer = setTimeout(() => finish(passPriority(owner)), PRIORITY_HARD_TIMEOUT_MS);
+  void search.then(finish).catch(() => finish(passPriority(owner)));
+});
 
 function controllerFor(owner: number, difficulty: string): AIController {
   let controller = controllers.get(owner);
@@ -207,8 +220,9 @@ export function chooseAdvancedAIBlock(state: AIGameState, owner: number, attacke
 /**
  * Priority uses the same imperfect-information controller, but the runtime owns
  * progress guarantees: forced second-pass resolution, zero-response fast-pass,
- * in-flight de-duplication, and a short-lived stale-window guard. A repeated
- * authoritative priority signature is passed instead of being searched again.
+ * in-flight de-duplication, a short-lived stale-window guard, and a hard async
+ * deadline. A repeated authoritative priority signature is passed instead of
+ * being searched again.
  */
 export async function chooseAdvancedAIResponse(state: AIGameState, owner: number, difficulty: string): Promise<AIAction> {
   const pending = state.pendingResponse as any;
@@ -223,9 +237,7 @@ export async function chooseAdvancedAIResponse(state: AIGameState, owner: number
   const settledAt = recentlySettledPriority.get(signature);
   if (settledAt != null && clock() - settledAt < 2500) return passPriority(owner);
 
-  const task = chooseAdvancedAIAction(state, owner, difficulty)
-    .then((action) => action || passPriority(owner))
-    .catch(() => passPriority(owner))
+  const task = boundedPrioritySearch(chooseAdvancedAIAction(state, owner, difficulty), owner)
     .finally(() => {
       priorityInFlight.delete(signature);
       recentlySettledPriority.set(signature, clock());
