@@ -2,6 +2,7 @@ import type { AIGameState, AIObservation, Particle } from "./types";
 
 const idOf = (card: any) => String(card?.id ?? card?.uid ?? "");
 const cloneCards = (cards: any[]) => cards.map((card) => ({ ...card }));
+const visibleTo = (card: any, viewer: number) => !!card?.revealed || (Array.isArray(card?.revealedTo) && card.revealedTo.includes(viewer));
 const shuffle = <T,>(input: T[], random: () => number): T[] => {
   const out = [...input];
   for (let i = out.length - 1; i > 0; i -= 1) {
@@ -26,10 +27,13 @@ export class BeliefModel {
 
   initialize(state: AIGameState, viewer: number, particleCount: number): void {
     const opponent = state.players[1 - viewer];
-    const publicKnownHand = (opponent.hand || []).filter((card: any) => card?.revealed);
+    const publicKnownHand = (opponent.hand || []).filter((card: any) => visibleTo(card, viewer));
     const hiddenHandCount = Math.max(0, (opponent.hand || []).length - publicKnownHand.length);
-    const pool = [...(opponent.deck || []), ...(opponent.hand || []).filter((card: any) => !card?.revealed)];
 
+    // Hemsfell currently uses known fixed decklists. The model is allowed to
+    // know the deck composition, but never the exact hidden hand/deck split or
+    // order. Every particle therefore reshuffles the unseen pool.
+    const pool = [...(opponent.deck || []), ...(opponent.hand || []).filter((card: any) => !visibleTo(card, viewer))];
     this.particles = Array.from({ length: Math.max(1, particleCount) }, () => {
       const permuted = shuffle(cloneCards(pool), this.random);
       return {
@@ -55,14 +59,18 @@ export class BeliefModel {
         }
         if (index >= 0) particle.hiddenHand.splice(index, 1);
       } else if (observation.type === "draw") {
-        for (let i = 0; i < count && particle.hiddenDeck.length; i += 1) particle.hiddenHand.push(particle.hiddenDeck.shift());
+        for (let i = 0; i < count && particle.hiddenDeck.length; i += 1) {
+          const next = particle.hiddenDeck.shift();
+          if (next) particle.hiddenHand.push(next);
+        }
       } else if (observation.type === "shuffle") {
         particle.hiddenDeck = shuffle(particle.hiddenDeck, this.random);
       } else if (observation.type === "mulligan") {
+        const handSize = particle.hiddenHand.length;
         const merged = [...particle.hiddenHand, ...particle.hiddenDeck];
         const next = shuffle(merged, this.random);
-        particle.hiddenHand = next.slice(0, particle.hiddenHand.length);
-        particle.hiddenDeck = next.slice(particle.hiddenHand.length);
+        particle.hiddenHand = next.slice(0, handSize);
+        particle.hiddenDeck = next.slice(handSize);
       }
     }
 
@@ -85,7 +93,7 @@ export class BeliefModel {
     if (!particle) return structuredClone(state);
     const result = structuredClone(state);
     const opponent = result.players[1 - viewer];
-    const publicKnownHand = (opponent.hand || []).filter((card: any) => card?.revealed);
+    const publicKnownHand = (opponent.hand || []).filter((card: any) => visibleTo(card, viewer));
     opponent.hand = [...publicKnownHand, ...cloneCards(particle.hiddenHand)];
     opponent.deck = cloneCards(particle.hiddenDeck);
     return result;
@@ -105,7 +113,9 @@ export class BeliefModel {
   }
 
   private resampleIfDegenerate(): void {
-    const effective = 1 / this.particles.reduce((sum, particle) => sum + particle.weight * particle.weight, 0);
+    const denominator = this.particles.reduce((sum, particle) => sum + particle.weight * particle.weight, 0);
+    if (!denominator) return;
+    const effective = 1 / denominator;
     if (effective >= this.particles.length * 0.45) return;
     const old = [...this.particles];
     const next: Particle[] = [];
