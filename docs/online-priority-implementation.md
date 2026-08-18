@@ -31,14 +31,17 @@ This file tracks the staged migration of Online mode to the timing model specifi
 - `combat-end` is an explicit response checkpoint.
 - The `combat-start` checkpoint/state exists in the combat module but is not yet activated by the current client path; it will be enabled together with the grouped-combat UI so the existing Online screen is not left in an unrenderable declaration state.
 
-## Phase 3 — Finalization ordering implemented, clock/UI migration pending
+## Phase 3 — Finalization ordering and response-clock separation implemented
 
-- Online Combat→Finalization now banks remaining main Energy before end-turn processing, respecting Reserve max 3 and `noReserveStorageThisTurn`.
+- Online Combat→Finalization banks remaining main Energy before end-turn processing, respecting Reserve max 3 and `noReserveStorageThisTurn`.
 - Energy is zeroed before the Finalization response checkpoint, so response spending observes the resources that actually exist after banking.
 - Existing end-turn rule processing still comes from the shared deterministic engine.
 - Finalization exposes an explicit response checkpoint before cleanup and turn handoff.
 - After two passes, the shared engine performs hand-limit handling, cleanup and transition to the opponent's Maintenance.
 - If end-turn processing creates a pending decision, Finalization waits for that decision and opens its response checkpoint only after the decision chain is complete.
+- The active player's action clock is paused whenever a response window opens and resumes with the exact stored remainder when the stack returns to action priority.
+- Every priority handoff receives a fresh response deadline without refilling the action clock.
+- Ordinary actions no longer reset the turn timer; a newly active player receives a fresh turn clock.
 
 ## Compatibility fields retained during migration
 
@@ -49,13 +52,13 @@ This file tracks the staged migration of Online mode to the timing model specifi
 
 They remain compatibility inputs for the existing UI while the server also exposes canonical `priority`, `stack`, `onlineCombat` and `onlineFinalization` state.
 
-## Remaining client/clock work
+## Remaining client work
 
 - Migrate the Online battlefield UI from `declareAttack`/single-lane combat to `declareAttackers` + `declareBlockers`.
 - Enable the `combat-start` response checkpoint once the grouped declaration UI is active.
 - Mirror canonical `priority.owner`, canonical stack controllers and grouped combat ownership for the guest-side local orientation.
 - Render the current priority owner/window and readable stack contents directly in the Online UI.
-- Split action-clock and response-clock accounting so opponent response time never consumes or refreshes the active player's action clock.
+- Give the defender's grouped blocker-declaration step its own visible interaction deadline in the client.
 - Add browser-level multiplayer tests for reconnection during each checkpoint and stale-revision retries during nested response chains.
 
 No Offline/Bot game flow is routed through the new Online command kernel; only shared deterministic card/rule resolution remains common underneath it.
