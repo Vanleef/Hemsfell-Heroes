@@ -25,7 +25,9 @@ jobs:
           ref: ai/advanced-opponent-system
           fetch-depth: 0
       - name: Apply canonical source changes
-        run: python .github/scripts/apply-result-saideira-nada.py
+        run: |
+          python .github/scripts/apply-result-saideira-nada.py
+          python .github/scripts/update-result-saideira-tests.py
       - name: Install dependencies
         run: npm ci
       - name: Validate AI types
@@ -36,6 +38,7 @@ jobs:
         run: |
           rm -f .github/result-saideira-nada-run.txt
           rm -f .github/scripts/apply-result-saideira-nada.py
+          rm -f .github/scripts/update-result-saideira-tests.py
           rm -f .github/workflows/apply-result-saideira-nada.yml
           git config user.name "Hemsfell CI"
           git config user.email "actions@users.noreply.github.com"
