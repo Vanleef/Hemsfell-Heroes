@@ -10,6 +10,7 @@ async function main() {
   const requested = (arg("difficulty") || allowed.join(",")).split(",").filter((item): item is AIDifficulty => allowed.includes(item as AIDifficulty));
   const scenarioIds = arg("scenarios")?.split(",").filter(Boolean);
   const repeats = Math.max(1, Number(arg("repeats") || 1));
+  const seed = Number(arg("seed") || 20260818);
   const outDir = resolve(arg("out") || "reports/ai");
   const started = Date.now();
   let lastPercent = -1;
@@ -18,6 +19,7 @@ async function main() {
     difficulties: requested,
     scenarioIds,
     repeats,
+    seed,
     onProgress: (completed, total) => {
       const percent = Math.floor(completed * 100 / Math.max(1, total));
       if (percent !== lastPercent && (percent % 5 === 0 || completed === total)) {
@@ -32,6 +34,7 @@ async function main() {
   const summary = {
     generatedAt: new Date().toISOString(),
     elapsedMs: Date.now() - started,
+    seed: report.seed,
     scenarios: new Set(report.results.map((item) => item.scenarioId)).size,
     runs: report.results.length,
     accuracy: report.accuracy,
