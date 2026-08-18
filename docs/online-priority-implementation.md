@@ -17,8 +17,10 @@ This file tracks the staged migration of Online mode to the timing model specifi
 - Turn timeout no longer teleports across a live stack, combat exchange or pending decision.
 - `activateHero` is part of the authoritative Online command allow-list.
 
-## Phase 2 — server combat kernel implemented, client migration pending
+## Phase 2 — server combat kernel implemented, grouped client declaration pending
 
+- After Main has closed through priority, entering Combat now opens an explicit `combat-start` response checkpoint with the active player receiving priority first.
+- The existing client can pass/respond through that checkpoint; if it then uses the legacy one-attacker flow, the temporary grouped declaration state is discarded safely before the legacy `declareAttack` command.
 - `declareAttackers` commits an ordered attacker group instead of resolving one attacker at a time.
 - Attack legality is preflighted through the existing authoritative `declareAttack` rule path; Tessália, statuses, attack limits and card-specific permissions therefore remain shared with the current engine.
 - Omitted `Indomável` attacks are rejected through the engine's own combat→Finalization legality check.
@@ -29,7 +31,6 @@ This file tracks the staged migration of Online mode to the timing model specifi
 - Combat lanes resolve in declared left-to-right order through the existing synchronous damage resolver; Veloz, Atropelar, Robusto, Roubo de Vida, Toque da Morte and card triggers remain engine-owned.
 - A real pending decision pauses lane resolution and `resolveDecision` resumes at the stored `resolutionIndex`.
 - `combat-end` is an explicit response checkpoint.
-- The `combat-start` checkpoint/state exists in the combat module but is not yet activated by the current client path; it will be enabled together with the grouped-combat UI so the existing Online screen is not left in an unrenderable declaration state.
 
 ## Phase 3 — Finalization ordering and response-clock separation implemented
 
@@ -54,8 +55,7 @@ They remain compatibility inputs for the existing UI while the server also expos
 
 ## Remaining client work
 
-- Migrate the Online battlefield UI from `declareAttack`/single-lane combat to `declareAttackers` + `declareBlockers`.
-- Enable the `combat-start` response checkpoint once the grouped declaration UI is active.
+- Migrate the Online battlefield UI from `declareAttack`/single-lane combat to `declareAttackers` + `declareBlockers` so several attackers can be committed before the defender assigns blocks.
 - Mirror canonical `priority.owner`, canonical stack controllers and grouped combat ownership for the guest-side local orientation.
 - Render the current priority owner/window and readable stack contents directly in the Online UI.
 - Give the defender's grouped blocker-declaration step its own visible interaction deadline in the client.
