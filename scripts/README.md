@@ -19,5 +19,5 @@ This directory contains reusable project tooling only.
 - `npm run simulate:headless` — run headless game simulations.
 - `npm run ai:calibrate` — run the full AI calibration corpus across all configured difficulties.
 - `npm run ai:calibrate:smoke` — run the deterministic AI calibration smoke subset.
-- `npm run ai:calibrate:benchmark` — run the deterministic 48-scenario benchmark for Easy, Normal and Hard.
+- `npm run ai:calibrate:benchmark` — run the deterministic 48-scenario benchmark for Easy, Normal and Hard; CI uses this command for strategic regression measurement.
 - `npm run ai:selfplay` — run AI-vs-AI self-play telemetry.
