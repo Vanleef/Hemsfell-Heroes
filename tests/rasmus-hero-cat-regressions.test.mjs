@@ -10,20 +10,20 @@ const printed=(page,overrides={})=>({...compileCard(cards.find(card=>card.page==
 const state=()=>({active:0,phase:'principal',round:1,cardCatalog:catalog,players:[0,1].map(owner=>({heroId:owner?'gimble':'rasmus',level:1,heroXP:0,markers:{},abilityUses:{},life:30,maxLife:30,energy:10,maxEnergy:10,reserve:0,deck:[],extraDeck:[],hand:[],board:[],support:[],terrain:null,grave:[],obscuro:[],turnCardsPlayed:0,turnSpellsPlayed:0,spellsPlayed:0}))});
 const unit=(page,uid,slot=0,overrides={})=>({...printed(page),uid,slot,enteredRound:0,damage:0,exhausted:false,summoning:false,attackedThisTurn:false,defenseUses:0,modifiers:[],markers:0,...overrides});
 
-test('Rasmus evolution counts Cats across both players fields in engine and UI',()=>{
+test('Rasmus evolution counts Cats across both players fields in engine and UI guide',()=>{
  const engine=fs.readFileSync(new URL('../app/rules-engine/engine-base.mjs',import.meta.url),'utf8');
- const page=fs.readFileSync(new URL('../app/page.tsx',import.meta.url),'utf8');
- assert.match(engine,/catsInAllFieldsAtLeast[^\n]+flatMap\(\(candidate\) => permanentUnits\(candidate\)\)/);
- assert.match(page,/heroEvolutionProgress=\(player:Player,allPlayers:Player\[\]=\[player\]\)/);
- assert.match(page,/somando os campos dos dois jogadores/);
+ const runtime=fs.readFileSync(new URL('../app/match-ui-runtime.tsx',import.meta.url),'utf8');
+ assert.match(engine,/catsInAllFieldsAtLeast[^\n]+state\.players\.flatMap\(\(candidate\) => candidate\.board\)/);
+ assert.match(runtime,/Controle simultaneamente a quantidade indicada de Gatos considerando ambos os campos/);
+ assert.match(runtime,/Existam \$\{n\} Gatos simultaneamente somando os dois campos/);
 });
 
-test('Gato Cachorro uses names for separate Gato attack and Cachorro health bonuses',()=>{
+test('Gato Cachorro uses subtypes for separate Gato attack and Cachorro health bonuses',()=>{
  const rules=fs.readFileSync(new URL('../app/rules-engine/card-rules.mjs',import.meta.url),'utf8');
  const engine=fs.readFileSync(new URL('../app/rules-engine/engine-base.mjs',import.meta.url),'utf8');
- assert.match(rules,/p245:[^\n]+attackNameIncludes: "Gato", healthNameIncludes: "Cachorro"/);
- assert.match(engine,/dynamicStats\?\.attackNameIncludes/);
- assert.match(engine,/dynamicStats\?\.healthNameIncludes/);
+ assert.match(rules,/p245:[^\n]+attackSubtype: "Gato", healthSubtype: "Cachorro"/);
+ assert.match(engine,/dynamicStats\?\.attackSubtype/);
+ assert.match(engine,/dynamicStats\?\.healthSubtype/);
 });
 
 test('Gato Afeiçoado creates a symmetric connection',()=>{
@@ -32,8 +32,9 @@ test('Gato Afeiçoado creates a symmetric connection',()=>{
  g.players[0].board=[unit(214,'partner',1)];
  g=executeCommand(g,{type:'playCard',owner:0,cardId:'affectionate-card',slot:0,targetIds:['partner'],skipPriority:true}).state;
  const linked=g.players[0].board.find(card=>card.page===221);
+ const partner=g.players[0].board.find(card=>card.uid==='partner');
  assert.equal(linked.linkedDestroyId,'partner');
- assert.deepEqual(new Set(linked.linkedCreatures),new Set([linked.uid,'partner']));
+ assert.equal(partner.linkedDestroyId,linked.uid);
 });
 
 test('Café Descafeinado applies real Sufocado state',()=>{
@@ -63,6 +64,15 @@ test('Café Especial keeps its four canonical choices',()=>{
  assert.equal(choice.choices[3][0].type,'levelHero');
 });
 
+test('Café Expresso choice popup derives concise summaries from canonical effects',()=>{
+ const guard=fs.readFileSync(new URL('../app/match-ui-guard.tsx',import.meta.url),'utf8');
+ assert.match(guard,/case "modifyStats"/);
+ assert.match(guard,/Ofensividade/);
+ assert.match(guard,/Vitalidade/);
+ assert.match(guard,/button\.dataset\.effectSummary = "true"/);
+ assert.match(guard,/enhanceDecisionChoiceSummaries\(\)/);
+});
+
 test('Gato Multidimensional cannot be replaced by another played creature',()=>{
  const g=state();
  g.players[0].board=[unit(213,'multi-cat',2,{cannotBeDestroyedForSpace:true,generatedImage:true,imageCard:true})];
@@ -74,7 +84,9 @@ test('Gato Multidimensional cannot be replaced by another played creature',()=>{
 test('hero inspector uses one normal-flow structured guide for all heroes',()=>{
  const css=fs.readFileSync(new URL('../app/hero-inspector-fix.css',import.meta.url),'utf8');
  const page=fs.readFileSync(new URL('../app/page.tsx',import.meta.url),'utf8');
- assert.match(css,/hero-abilities-guide>div:last-child/);
- assert.match(css,/grid-template-columns:1fr!important/);
- assert.match(page,/showInspector\.hero&&deckByHeroPage\(showInspector\.page\)/);
+ const runtime=fs.readFileSync(new URL('../app/match-ui-runtime.tsx',import.meta.url),'utf8');
+ assert.match(css,/hero-abilities-guide\s*>\s*div:last-child/);
+ assert.match(css,/flex-direction:\s*column!important/);
+ assert.match(page,/deckByHeroPage\(showInspector\.page\)\?<div className="inspector-hero-guide"/);
+ assert.match(runtime,/canonical-runtime-guide/);
 });
