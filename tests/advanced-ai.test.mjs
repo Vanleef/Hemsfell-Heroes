@@ -67,5 +67,6 @@ test("runtime bridge covers main decisions, combat, responses and mulligan", asy
     assert.match(source, new RegExp(`export (?:async )?function ${symbol}`));
   }
   assert.match(source, /data-hemsfell-ai-thinking/);
-  assert.match(source, /executeCommand\(structuredClone\(state\)/);
+  assert.match(source, /chooseAdvancedAIAction\(state, owner, difficulty\)/);
+  assert.doesNotMatch(source, /new Evaluator\(\)/);
 });
