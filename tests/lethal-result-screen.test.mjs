@@ -35,3 +35,13 @@ test('match result has responsive dedicated styling',()=>{
  assert.match(css,/\.match-result-hero-art\{/);
  assert.match(css,/@media \(max-width:760px\),\(max-height:620px\)/);
 });
+
+test('match result overlay remains centered and self-contained above board layout rules',()=>{
+ const css=fs.readFileSync(new URL('../app/match-ui-guard.css',import.meta.url),'utf8');
+ assert.match(css,/Canonical match-result seal/);
+ assert.match(css,/\.screen-game \.hs-board > \.match-result-overlay/);
+ assert.match(css,/position:\s*fixed\s*!important/);
+ assert.match(css,/place-items:\s*center\s*!important/);
+ assert.match(css,/grid-template-areas:[\s\S]*"art eyebrow"[\s\S]*"art actions"/);
+ assert.match(css,/@media \(max-width: 46rem\), \(max-height: 38rem\)/);
+});
