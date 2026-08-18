@@ -40,6 +40,7 @@ async function main() {
     accuracy: report.accuracy,
     accuracyByDifficulty: report.accuracyByDifficulty,
     accuracyByCategory: report.accuracyByCategory,
+    accuracyByDifficultyAndCategory: report.accuracyByDifficultyAndCategory,
     telemetry: report.telemetry.summary(),
   };
 
