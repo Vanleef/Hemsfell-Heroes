@@ -24,7 +24,7 @@ export function reconcileOnlineClocks(before: any, after: any, settings: OnlineC
   if (activeChanged) {
     delete after.turnTimeRemainingMs;
     after.turnDeadline = now + settings.turnSeconds * 1000;
-    if (after.pendingResponse && !after.pendingResponse.deadline) after.pendingResponse.deadline = now + settings.responseSeconds * 1000;
+    if (after.pendingResponse) after.pendingResponse.deadline = now + settings.responseSeconds * 1000;
     return after;
   }
 
@@ -34,7 +34,8 @@ export function reconcileOnlineClocks(before: any, after: any, settings: OnlineC
     else if (before?.turnDeadline) after.turnTimeRemainingMs = remaining(before.turnDeadline, now);
     else if (!Number.isFinite(Number(after.turnTimeRemainingMs))) after.turnTimeRemainingMs = settings.turnSeconds * 1000;
     after.turnDeadline = null;
-    if (!after.pendingResponse.deadline) after.pendingResponse.deadline = now + settings.responseSeconds * 1000;
+    const responderChanged = Number(before?.pendingResponse?.responder) !== Number(after.pendingResponse.responder);
+    if (responderChanged || !after.pendingResponse.deadline) after.pendingResponse.deadline = now + settings.responseSeconds * 1000;
     return after;
   }
 
