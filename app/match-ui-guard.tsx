@@ -105,6 +105,18 @@ const cardChoiceSummaries: CardChoiceSummary[] = (rawCards as Array<{ id: string
   return sets.length ? [{ name: card.name, normalizedName: normalizeChoiceText(card.name), sets }] : [];
 }).sort((a, b) => b.normalizedName.length - a.normalizedName.length);
 
+let recentChoiceSourceName = "";
+
+function rememberChoiceSource(event: Event) {
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target?.closest(".screen-game")) return;
+  const directCard = target.closest<HTMLElement>(".original-card");
+  const activationCard = target.closest<HTMLElement>(".card-frame-activation")?.closest<HTMLElement>(".card-frame")?.querySelector<HTMLElement>(".original-card");
+  const source = directCard || activationCard;
+  const name = source?.getAttribute("aria-label")?.trim();
+  if (name) recentChoiceSourceName = name;
+}
+
 function enhanceDecisionChoiceSummaries() {
   document.querySelectorAll<HTMLElement>(".engine-decision-panel").forEach((panel) => {
     const buttons = Array.from(panel.querySelectorAll<HTMLButtonElement>("button")).filter((button) => {
@@ -114,11 +126,14 @@ function enhanceDecisionChoiceSummaries() {
     if (!buttons.length) return;
 
     const panelText = normalizeChoiceText(panel.textContent);
-    const card = cardChoiceSummaries.find((candidate) => candidate.normalizedName && panelText.includes(candidate.normalizedName));
+    const recentSource = normalizeChoiceText(recentChoiceSourceName);
+    const card = cardChoiceSummaries.find((candidate) => candidate.normalizedName && panelText.includes(candidate.normalizedName))
+      || cardChoiceSummaries.find((candidate) => recentSource && candidate.normalizedName === recentSource);
     if (!card) return;
     const set = card.sets.find((candidate) => candidate.choices.length === buttons.length);
     if (!set) return;
 
+    panel.dataset.choiceSource = card.name;
     buttons.forEach((button, index) => {
       const explicit = set.labels?.[index]?.trim();
       const generated = (set.choices[index] || []).map(summarizeChoiceEffect).filter(Boolean).join(" · ");
@@ -127,6 +142,7 @@ function enhanceDecisionChoiceSummaries() {
       setTextIfChanged(button.querySelector<HTMLElement>(":scope > span"), summary);
       button.title = summary;
       button.dataset.effectSummary = "true";
+      button.dataset.effectDensity = summary.length > 78 ? "dense" : summary.length > 44 ? "compact" : "normal";
     });
   });
 }
@@ -270,13 +286,8 @@ function layoutTargetBannerInSafeLane() {
 
   if (!commandBars.length || !creatureSlots.length || terrains.length < 2) return;
 
-  // Horizontal safe lane: begins immediately after the command bars and ends
-  // at the outer edge of the creature-space group. Because this lives in the
-  // center row, it never covers the creature cards themselves.
   const leftPx = Math.max(...commandBars.map((rect) => rect.right));
   const rightPx = Math.max(...creatureSlots.map((rect) => rect.right));
-
-  // Vertical safe lane: exactly the free interval between both Cruel Terrains.
   const topPx = terrains[0].bottom;
   const bottomPx = terrains[terrains.length - 1].top;
 
@@ -318,7 +329,7 @@ function layoutHandLimitChoices() {
   const availableHeight = Math.max(1, (confirmRect ? confirmRect.top : dialogRect.bottom) - gridRect.top - Math.max(8, dialogRect.height * .025));
   const count = items.length;
   const gap = Math.max(6, Math.min(14, availableWidth * .018));
-  const itemAspect = .64; // selectable tile width / height (card art + caption/padding)
+  const itemAspect = .64;
 
   let bestColumns = 1;
   let bestWidth = 0;
@@ -378,6 +389,8 @@ export default function MatchUiGuard() {
       if (event.target instanceof HTMLSelectElement && event.target.closest(".deck-picker")) scheduleSync();
     };
     document.addEventListener("change", onChange, true);
+    document.addEventListener("pointerdown", rememberChoiceSource, true);
+    document.addEventListener("dragstart", rememberChoiceSource, true);
     window.addEventListener("resize", scheduleSync);
     const observer = new MutationObserver(scheduleSync);
     observer.observe(document.body, { childList: true, subtree: true });
@@ -386,6 +399,8 @@ export default function MatchUiGuard() {
     return () => {
       window.clearInterval(responseTimeoutTimer);
       document.removeEventListener("change", onChange, true);
+      document.removeEventListener("pointerdown", rememberChoiceSource, true);
+      document.removeEventListener("dragstart", rememberChoiceSource, true);
       window.removeEventListener("resize", scheduleSync);
       observer.disconnect();
       delete document.body.dataset.matchActive;
