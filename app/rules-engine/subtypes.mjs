@@ -4,6 +4,7 @@ const subtypePages = Object.freeze({
   "Dragão": [3, 5, 6, 7, 8, 9, 10, 11, 23, 24, 25, 216],
   Goblin: [27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 296, 299, 300, 301],
   Gato: [213, 214, 215, 216, 217, 218, 219, 220, 221, 233, 244, 245, 246, 247],
+  Cachorro: [245],
   Vampiro: [130, 131, 133, 134, 135, 136, 137, 138, 139, 140],
   Recruta: [182, 183, 184, 185, 186, 187, 188, 189, 190],
   "Fênix": [82, 83],
@@ -17,10 +18,19 @@ for (const [subtype, pages] of Object.entries(subtypePages)) for (const page of 
   pageSubtypes.set(page, values);
 }
 
+function inferredCreatureSubtypes(card) {
+  if (card?.type !== "Criatura") return [];
+  const name = normalize(card?.name);
+  const inferred = [];
+  if (/\bgatos?\b/.test(name)) inferred.push("Gato");
+  if (/\bcachorros?\b/.test(name)) inferred.push("Cachorro");
+  return inferred;
+}
+
 export function subtypesFor(card) {
   const explicit = Array.isArray(card?.subtypes) ? card.subtypes : [];
   const temporary = Array.isArray(card?.temporarySubtypes) ? card.temporarySubtypes : [];
-  return [...new Set([...explicit, ...temporary, ...(pageSubtypes.get(Number(card?.page)) || [])])];
+  return [...new Set([...explicit, ...temporary, ...(pageSubtypes.get(Number(card?.page)) || []), ...inferredCreatureSubtypes(card)])];
 }
 
 export function hasSubtype(card, subtype) {
@@ -33,4 +43,3 @@ export function withDerivedSubtypes(card) {
 }
 
 export { subtypePages };
-
