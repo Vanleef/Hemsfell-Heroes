@@ -8,10 +8,12 @@ export const hasActivatableEffect = (card) => activatedAbilities(card).length > 
 export const activationEnergyCost = (text = "") => activatedAbilities(text).flatMap((ability) => ability.costs).filter((cost) => cost.type === "energy").reduce((highest, cost) => Math.max(highest, Number(cost.amount) || 0), 0);
 
 export function canActivateCard(card, context) {
-  if (card?.activatedThisTurn || card?.suffocated || card?.activationLockedOnEntry) return false;
+  /* Virada is a global activation lock for battlefield permanents: an activated
+     effect cannot be used again until its source is desvirada, regardless of
+     whether that particular printed ability has Vire as an explicit cost. */
+  if (card?.activatedThisTurn || card?.suffocated || card?.activationLockedOnEntry || card?.exhausted) return false;
   const ability = activatedAbilities(card)[0]; if (!ability) return false;
   if (card?.summoning) return false;
-  if (card.type !== "Criatura" && card.exhausted) return false;
   if (ability.availability?.reserveBelow != null && (context.reserve || 0) >= ability.availability.reserveBelow) return false;
   if (ability.availability?.topGraveHasTrigger) { const top = context.topGrave; if (!top || top.type !== "Criatura" || !compileCard(top).abilities.some((candidate) => candidate.trigger === ability.availability.topGraveHasTrigger)) return false; }
   return ability.costs.every((cost) => {

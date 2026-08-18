@@ -247,6 +247,7 @@ export function executeCommand(rawInputState, rawCommand, options = {}) {
 
   if (command.type === "activate") {
     const source = unitById(inputState, command.sourceId);
+    if (source?.exhausted && hasActivatedAbility(inputState, source)) throw new RulesViolation("cannot-tap");
     if (source?.enteredRound === inputState.round && hasActivatedAbility(inputState, source)) throw new RulesViolation(source.type === "Criatura" ? "summoning-sickness" : "cannot-tap");
   }
   validateVengeance(inputState, command);
