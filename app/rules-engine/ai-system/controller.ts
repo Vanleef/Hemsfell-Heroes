@@ -1,5 +1,6 @@
-import { buildAIActionCandidates } from "../ai.mjs";
+import { buildAIActionCandidates, completeAIPlayCommand } from "../ai.mjs";
 import { executeCommand } from "../engine.mjs";
+import { legalPriorityResponses } from "../priority.mjs";
 import { BeliefModel } from "./belief";
 import { CombatPlanner } from "./combat";
 import { DIFFICULTY_CONFIG, legacyDifficultyLabel, normalizeDifficulty } from "./config";
@@ -11,8 +12,23 @@ import type { AIAction, AIChoiceResult, AIDifficulty, AIGameState, AIObservation
 
 const cloneState = <T,>(state: T): T => structuredClone(state);
 
+const generateEngineActions = (state: AIGameState, owner: number, difficulty: string): AIAction[] => {
+  const response = state.pendingResponse as any;
+  if (response?.responder === owner) {
+    const priority = (legalPriorityResponses(state, owner) as AIAction[]).flatMap((raw) => {
+      if (raw.type !== "playCard") return [raw];
+      const rawCardId = typeof raw.cardId === "string" ? raw.cardId : "";
+      const card = state.players[owner]?.hand?.find((candidate: any) => candidate.id === rawCardId);
+      const completed = card ? completeAIPlayCommand(state, owner, card, difficulty, { hasPriority: true }) as AIAction | null : null;
+      return completed ? [completed] : [];
+    });
+    return [...priority, { type: "passPriority", owner }];
+  }
+  return buildAIActionCandidates(state, owner, difficulty) as AIAction[];
+};
+
 const defaultAdapter: EngineAdapter = {
-  generateLegalActions: (state, owner, difficulty) => buildAIActionCandidates(state, owner, difficulty) as AIAction[],
+  generateLegalActions: generateEngineActions,
   applyAction: (state, action) => executeCommand(structuredClone(state), action, { priority: true }).state as AIGameState,
   cloneState,
 };
