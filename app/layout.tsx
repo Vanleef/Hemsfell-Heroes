@@ -1,18 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import "./command-bar-fixes.css";
-import "./match-ui-guard.css";
-import "./setup-heading-fixes.css";
-import "./response-window.css";
-import "./card-list-scrollviews.css";
-import "./card-list-grid-layout.css";
-import "./card-list-grid-fit.css";
-import "./decision-lane-position.css";
-import "./target-banner-anchor.css";
-import "./hero-inspector-fix.css";
-import "./hero-inspector-cleanup.css";
-import "./match-result-enhancer.css";
+import "./match-ui.css";
 import MatchUiGuard from "./match-ui-guard";
 import MatchUiRuntime from "./match-ui-runtime";
 
