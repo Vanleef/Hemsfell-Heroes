@@ -48,6 +48,9 @@ jobs:
       - name: Run rules tests
         run: npm run test:rules
 
+      - name: Run AI calibration smoke suite
+        run: npm run ai:calibrate:smoke
+
       - name: Lint changed application surfaces
         run: npx eslint app/layout.tsx app/match-ui-guard.tsx app/match-ui-runtime.tsx app/hero-faction-normalizer.tsx app/rules-engine/engine.mjs app/rules-engine/match-integrity.mjs tests/priority-wedding-ring-regressions.test.mjs
 
