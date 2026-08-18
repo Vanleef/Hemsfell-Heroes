@@ -1,4 +1,4 @@
-import type { EvaluationWeights, PersonalityProfile, Playstyle } from "./types";
+import type { EvaluationWeights, OpponentMemory, PersonalityProfile, Playstyle } from "./types";
 
 const BASE: EvaluationWeights = {
   life: 1.5,
@@ -84,12 +84,70 @@ const HERO_STYLE: Record<string, Playstyle> = {
 
 export const personalityForHero = (heroId: string): PersonalityProfile => PERSONALITIES[HERO_STYLE[heroId] || "Midrange"];
 
-/** Master can softly adapt to the current game without becoming omniscient. */
-export function adaptivePersonality(base: PersonalityProfile, ownLife: number, enemyLife: number, ownCards: number, enemyCards: number): PersonalityProfile {
-  const behindOnLife = ownLife + 7 < enemyLife;
-  const aheadOnCards = ownCards > enemyCards + 2;
-  if (behindOnLife && !aheadOnCards) return PERSONALITIES.Control;
-  if (enemyLife <= 10) return PERSONALITIES.Aggro;
-  if (aheadOnCards && base.id !== "Aggro") return PERSONALITIES.ComboValue;
-  return base;
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const blendNumber = (a: number, b: number, amount: number) => a + (b - a) * clamp01(amount);
+
+/**
+ * Blend two profiles instead of hard switching. The returned id remains the
+ * base identity so telemetry can still group results by the deck's intended
+ * personality while the numeric behavior drifts with the match.
+ */
+export function blendPersonality(base: PersonalityProfile, target: PersonalityProfile, amount: number): PersonalityProfile {
+  const t = clamp01(amount);
+  const blendedWeights = Object.fromEntries(Object.keys(base.weights).map((key) => {
+    const typed = key as keyof EvaluationWeights;
+    return [typed, blendNumber(base.weights[typed], target.weights[typed], t)];
+  })) as unknown as EvaluationWeights;
+  return {
+    id: base.id,
+    aggression: blendNumber(base.aggression, target.aggression, t),
+    riskTolerance: blendNumber(base.riskTolerance, target.riskTolerance, t),
+    holdResponses: blendNumber(base.holdResponses, target.holdResponses, t),
+    tradePreference: blendNumber(base.tradePreference, target.tradePreference, t),
+    bluffFrequency: blendNumber(base.bluffFrequency, target.bluffFrequency, t),
+    weights: blendedWeights,
+  };
+}
+
+/**
+ * Smooth public-state adaptation. `strength` is difficulty-controlled: lower
+ * levels retain more of their base identity while Expert/Master react more.
+ * Short-term opponent memory nudges the blend without revealing hidden info.
+ */
+export function adaptivePersonality(
+  base: PersonalityProfile,
+  ownLife: number,
+  enemyLife: number,
+  ownCards: number,
+  enemyCards: number,
+  memory?: OpponentMemory,
+  strength = 1,
+): PersonalityProfile {
+  let current = base;
+  const lifeDelta = enemyLife - ownLife;
+  const cardDelta = ownCards - enemyCards;
+  const lowOwnLife = clamp01((12 - ownLife) / 12);
+  const enemyInRange = clamp01((13 - enemyLife) / 13);
+
+  if (lifeDelta >= 5 || lowOwnLife > 0.35) {
+    const amount = clamp01((0.16 + lowOwnLife * 0.44 + Math.max(0, lifeDelta - 4) * 0.025) * strength);
+    current = blendPersonality(current, PERSONALITIES.Control, amount);
+  }
+  if (enemyInRange > 0.2) {
+    const amount = clamp01((0.1 + enemyInRange * 0.48) * strength);
+    current = blendPersonality(current, PERSONALITIES.Aggro, amount);
+  }
+  if (cardDelta >= 2 && base.id !== "Aggro") {
+    const amount = clamp01((0.1 + Math.min(0.3, cardDelta * 0.055)) * strength);
+    current = blendPersonality(current, PERSONALITIES.ComboValue, amount);
+  }
+
+  if (memory && memory.samples > 0) {
+    const confidence = clamp01(memory.samples / 3) * strength;
+    if (memory.aggression > 0.62) current = blendPersonality(current, PERSONALITIES.Control, (memory.aggression - 0.5) * 0.38 * confidence);
+    if (memory.patience > 0.65) current = blendPersonality(current, PERSONALITIES.Tempo, (memory.patience - 0.5) * 0.28 * confidence);
+    if (memory.interaction > 0.62) current = blendPersonality(current, PERSONALITIES.ComboValue, (memory.interaction - 0.5) * 0.24 * confidence);
+  }
+
+  return current;
 }
