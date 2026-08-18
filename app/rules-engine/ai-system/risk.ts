@@ -62,7 +62,8 @@ export class RiskManager {
   actionBias(state: AIGameState, next: AIGameState, owner: number, profile: PersonalityProfile, action: AIAction, random: () => number = Math.random): number {
     const me = state.players[owner];
     const foe = state.players[1 - owner];
-    const danger = Math.min(1, ((foe.board || []).reduce((sum: number, card: any) => sum + currentAttack(card), 0)) / Math.max(1, Number(me.life || 1)));
+    const ownLife = Number(me.life || 0);
+    const danger = Math.min(1, ((foe.board || []).reduce((sum: number, card: any) => sum + currentAttack(card), 0)) / Math.max(1, ownLife));
     let score = 0;
 
     if (action.type === "playCard" && !this.shouldOverextend(state, owner, profile)) {
@@ -72,6 +73,20 @@ export class RiskManager {
         const knownSweepMultiplier = representedSweep(foe) ? 4.25 : 1;
         score -= (after - before) * (1.4 + profile.weights.overextensionPenalty * 2.1) * knownSweepMultiplier;
       }
+    }
+
+    // At genuinely low life, a human opponent stops treating healing/prevention
+    // and pure greed as equivalent value plays. This bias lives inside search,
+    // so Normal+ can naturally stabilize without a post-MCTS emergency rule.
+    if (action.type === "playCard" && ownLife <= 8) {
+      const cardId = typeof action.cardId === "string" ? action.cardId : "";
+      const played = (me.hand || []).find((card: any) => String(card?.id ?? card?.uid ?? "") === cardId);
+      const source = text(played);
+      const stabilizes = /cure|previna|barreira|roubo de vida/.test(source);
+      const pureGreed = /compre|busque|procure|investigue/.test(source) && !stabilizes;
+      const urgency = Math.max(0, 9 - ownLife);
+      if (stabilizes) score += urgency * 0.9 + danger * 2.6 + profile.weights.life * 0.35;
+      if (pureGreed) score -= urgency * 0.5 + danger * 1.35;
     }
 
     if (state.pendingResponse && responseCards(me).length) {
