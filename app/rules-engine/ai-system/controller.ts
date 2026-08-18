@@ -6,6 +6,7 @@ import { DIFFICULTY_CONFIG, legacyDifficultyLabel, normalizeDifficulty } from ".
 import { Evaluator } from "./evaluator";
 import { MCTS } from "./mcts";
 import { adaptivePersonality, personalityForHero } from "./personality";
+import { RiskManager } from "./risk";
 import type { AIAction, AIChoiceResult, AIDifficulty, AIGameState, AIObservation, EngineAdapter, PersonalityProfile } from "./types";
 
 const cloneState = <T,>(state: T): T => structuredClone(state);
@@ -32,11 +33,14 @@ const emitThinking = (thinking: boolean, detail: Record<string, unknown> = {}) =
   window.dispatchEvent(new CustomEvent("hemsfell:ai-thinking", { detail: { thinking, ...detail } }));
 };
 
+const actionKey = (action: AIAction | null) => action ? JSON.stringify(action) : "";
+
 export class AIController {
   private difficulty: AIDifficulty;
   private belief = new BeliefModel();
   private evaluator = new Evaluator();
   private combat = new CombatPlanner();
+  private risk = new RiskManager();
   private mcts = new MCTS();
   private adapter: EngineAdapter;
   private initializedFor = "";
@@ -96,12 +100,12 @@ export class AIController {
       }
 
       const result = await this.mcts.search({ state, owner, config, personality, belief: this.belief, adapter: this.adapter, evaluator: this.evaluator, legacyDifficulty: legalDifficulty });
-      let action = result.action;
+      let action = this.applyRiskPolicy(state, owner, personality, result.action, legal, config.evaluationNoise);
 
       // Lower non-easy levels retain a small, controlled error model: choose a
       // legal alternative, never an illegal move or information-cheating line.
       if (action && config.intentionalErrorRate > 0 && legal.length > 1 && Math.random() < config.intentionalErrorRate) {
-        const alternatives = legal.filter((candidate) => JSON.stringify(candidate) !== JSON.stringify(action));
+        const alternatives = legal.filter((candidate) => actionKey(candidate) !== actionKey(action));
         action = alternatives[Math.floor(Math.random() * alternatives.length)] || action;
       }
 
@@ -109,6 +113,33 @@ export class AIController {
     } finally {
       emitThinking(false, { difficulty: this.difficulty, personality: personality.id });
     }
+  }
+
+  /**
+   * A search can correctly value development but still choose a marginal extra
+   * permanent when a human Control/Combo player would respect a possible sweep.
+   * This post-search policy only overrides a play when (a) the risk model says
+   * not to overextend, (b) we do not have immediate lethal and (c) a validated
+   * non-play alternative is strategically close. It never fabricates an action.
+   */
+  private applyRiskPolicy(state: AIGameState, owner: number, personality: PersonalityProfile, selected: AIAction | null, legal: AIAction[], noise: number): AIAction | null {
+    if (!selected || selected.type !== "playCard" || this.risk.shouldOverextend(state, owner, personality)) return selected;
+    if (this.combat.findLethal(state, owner)) return selected;
+
+    const alternatives = legal.filter((action) => action.type !== "playCard");
+    if (!alternatives.length) return selected;
+
+    let selectedScore = -Infinity;
+    try { selectedScore = this.evaluator.evaluate(this.adapter.applyAction(state, selected), owner, personality, 0); } catch { return alternatives[0]; }
+
+    const ranked = alternatives.map((action) => {
+      try { return { action, score: this.evaluator.evaluate(this.adapter.applyAction(state, action), owner, personality, noise * .25) }; }
+      catch { return { action, score: -Infinity }; }
+    }).sort((a, b) => b.score - a.score);
+
+    const best = ranked[0];
+    const patience = personality.holdResponses * 1.5 + personality.weights.setupProtection * .08;
+    return best && best.score + patience >= selectedScore ? best.action : selected;
   }
 
   /** Intelligent whole-hand mulligan for the current Hemsfell mulligan model. */
