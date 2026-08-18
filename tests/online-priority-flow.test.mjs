@@ -174,10 +174,47 @@ test("grouped Online combat declares attackers, blockers and resolves left to ri
   assert.equal(game.players[1].life, 27, "unblocked right lane deals direct damage after the left lane");
   assert.equal(game.pendingResponse.responder, 0, "active player receives the combat-end response window first");
 
+  game.players[0].energy = 2;
+  game.players[0].reserve = 2;
   game = executeOnlineCommand(game, { type: "passPriority", owner: 0 }).state;
   game = executeOnlineCommand(game, { type: "passPriority", owner: 1 }).state;
-  assert.equal(game.onlineCombat.stage, "complete");
-  assert.equal(game.pendingResponse, null);
+  assert.equal(game.phase, "fim");
+  assert.equal(game.onlineCombat, undefined);
+  assert.equal(game.onlineFinalization.stage, "finalization-priority");
+  assert.equal(game.players[0].energy, 0, "remaining main Energy is banked before end-turn priority");
+  assert.equal(game.players[0].reserve, 3, "Reserve remains capped at three");
+  assert.equal(game.pendingResponse.responder, 0);
+
+  game = executeOnlineCommand(game, { type: "passPriority", owner: 0 }).state;
+  game = executeOnlineCommand(game, { type: "passPriority", owner: 1 }).state;
+  assert.equal(game.phase, "manutencao");
+  assert.equal(game.active, 1);
+  assert.equal(game.onlineFinalization, undefined);
+});
+
+test("legacy combat end also banks Energy before the Finalization response window", () => {
+  const game0 = combatState();
+  game0.players[0].board = [];
+  game0.players[1].board = [];
+  game0.players[0].energy = 2;
+  game0.players[0].reserve = 2;
+
+  let game = executeOnlineCommand(game0, { type: "advancePhase", owner: 0 }).state;
+  assert.equal(game.phase, "combate");
+  assert.equal(game.priority.window, "combat-end");
+  game = executeOnlineCommand(game, { type: "passPriority", owner: 1 }).state;
+  game = executeOnlineCommand(game, { type: "passPriority", owner: 0 }).state;
+
+  assert.equal(game.phase, "fim");
+  assert.equal(game.players[0].energy, 0);
+  assert.equal(game.players[0].reserve, 3);
+  assert.equal(game.priority.window, "finalization");
+  assert.equal(game.pendingResponse.responder, 0);
+
+  game = executeOnlineCommand(game, { type: "passPriority", owner: 0 }).state;
+  game = executeOnlineCommand(game, { type: "passPriority", owner: 1 }).state;
+  assert.equal(game.phase, "manutencao");
+  assert.equal(game.active, 1);
 });
 
 test("a normal defender cannot be assigned beyond Defensor capacity", () => {
