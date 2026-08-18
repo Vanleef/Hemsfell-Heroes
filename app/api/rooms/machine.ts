@@ -160,7 +160,7 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
   const pending = room.game.pendingResponse;
   const roleIndex = role === "host" ? 0 : 1;
   if (pending) {
-    if (pending.responder !== roleIndex) return { ok: false, status: 403, error: "response belongs to opponent" };
+    if (pending.responder !== roleIndex) return { ok: false, status: 403, error: pending.actor === roleIndex ? "waiting for opponent response" : "response belongs to opponent" };
     if (nextGame.pendingResponse && nextGame.pendingResponse.responder === pending.responder) {
       return { ok: false, status: 400, error: "response must resolve, add to stack, or pass priority" };
     }
