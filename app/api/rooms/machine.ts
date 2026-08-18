@@ -160,7 +160,7 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
   return { ok: true, status: 200, error: "" };
 }
 
-const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "declareAttack", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
+const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "declareAttack", "declareAttackers", "declareBlockers", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
 
 /** Server-authoritative command path. The server owns the player index,
  * validates room revision and routes Online timing through one priority kernel. */
