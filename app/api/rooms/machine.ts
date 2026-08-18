@@ -1,4 +1,5 @@
 import { ROOM_LIMITS } from "./constants";
+import { reconcileOnlineClocks } from "./online-clock";
 import { executeOnlineCommand } from "../../rules-engine/online-priority-engine.mjs";
 import { shouldAutoPass } from "../../rules-engine/priority.mjs";
 
@@ -104,9 +105,13 @@ export function applyTimeout(room: Room) {
     return true;
   }
   if (room.game.pendingResponse?.deadline && room.game.pendingResponse.deadline <= now) {
-    const pending = room.game.pendingResponse; const owner = pending.responder;
-    try { const result = executeOnlineCommand(room.game, { type: "passPriority", owner, auto: true }, { priority: true }); room.game = result.state; } catch { return false; }
-    if (room.game.pendingResponse) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
+    const before = room.game;
+    const owner = before.pendingResponse.responder;
+    try {
+      const result = executeOnlineCommand(before, { type: "passPriority", owner, auto: true }, { priority: true });
+      room.game = result.state;
+      reconcileOnlineClocks(before, room.game, room.settings, now);
+    } catch { return false; }
     room.game.events = (room.game.events ?? 0) + 1;
     room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de resposta terminou; a prioridade foi passada automaticamente.", tone: "response" }, ...(room.game.log ?? [])];
     return true;
@@ -118,11 +123,11 @@ export function applyTimeout(room: Room) {
        are handled by their own response/decision flow. */
     if (!room.game.pendingDecision && !room.game.pendingReposition && !room.game.combatAction && ["principal", "combate", "fim"].includes(room.game.phase)) {
       try {
-        const owner = room.game.active;
-        const result = executeOnlineCommand(room.game, { type: "advancePhase", owner, auto: true }, { priority: true });
+        const before = room.game;
+        const owner = before.active;
+        const result = executeOnlineCommand(before, { type: "advancePhase", owner, auto: true }, { priority: true });
         room.game = result.state;
-        if (room.game.pendingResponse) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
-        else room.game.turnDeadline = deadline(room.settings.turnSeconds);
+        reconcileOnlineClocks(before, room.game, room.settings, now);
         room.game.events = (room.game.events ?? 0) + 1;
         room.game.log = [{ id: crypto.randomUUID(), text: "O tempo da etapa terminou; foi solicitada a passagem pelo fluxo normal de prioridade.", tone: "phase" }, ...(room.game.log ?? [])];
         return true;
@@ -137,9 +142,10 @@ export function applySafeAutoPass(room: Room, role: RoomRole, control: "assisted
   if (!room.game || room.status !== "started") return false;
   const owner = role === "host" ? 0 : 1;
   if (!shouldAutoPass(room.game, owner, control)) return false;
-  const result = executeOnlineCommand(room.game, { type: "passPriority", owner, auto: true }, { priority: true });
+  const before = room.game;
+  const result = executeOnlineCommand(before, { type: "passPriority", owner, auto: true }, { priority: true });
   room.game = result.state;
-  if (room.game.pendingResponse) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
+  reconcileOnlineClocks(before, room.game, room.settings);
   room.revision++;
   return true;
 }
@@ -176,10 +182,10 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
       if (!combat || combat.stage !== "charging" || combat.attackerOwner !== owner || combat.attackerUid !== command.attackerId || (!!combat.targetHero !== !command.defenderId) || (combat.defenderUid || undefined) !== (command.defenderId || undefined)) return { ok: false, status: 409, error: "combat state mismatch" };
       command.skipPriority = true;
     }
-    const result = executeOnlineCommand(room.game, command, { priority: true });
+    const before = room.game;
+    const result = executeOnlineCommand(before, command, { priority: true });
     room.game = result.state;
-    if (room.game.pendingResponse && !room.game.pendingResponse.deadline) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
-    room.game.turnDeadline = deadline(room.settings.turnSeconds);
+    reconcileOnlineClocks(before, room.game, room.settings);
     room.revision++;
     return { ok: true, status: 200, error: "", trace: result.trace };
   } catch (error) {
