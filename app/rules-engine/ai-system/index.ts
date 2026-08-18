@@ -1,4 +1,5 @@
 export { AIController } from "./controller";
+export { BrowserAIDriver } from "./driver";
 export { MCTS } from "./mcts";
 export { BeliefModel, ParticleFilter } from "./belief";
 export { Evaluator } from "./evaluator";
