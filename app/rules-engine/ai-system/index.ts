@@ -11,5 +11,5 @@ export { AITelemetryCollector, stableActionKey } from "./telemetry";
 export { CALIBRATION_CORPUS, calibrationAdapter } from "./calibration";
 export { runCalibrationCorpus } from "./calibration-runner";
 export { runSelfPlayBatch } from "./selfplay";
-export { chooseAdvancedAIAction, chooseAdvancedAIDecision, planAdvancedAIAttacks, chooseAdvancedAIBlock, chooseAdvancedAIResponse, shouldKeepAdvancedMulligan, resetAdvancedAI } from "./runtime";
+export { chooseAdvancedAIAction, chooseAdvancedAIDecision, planAdvancedAIAttacks, chooseAdvancedAIBlock, chooseAdvancedAIResponse, shouldKeepAdvancedMulligan, observeAdvancedAI, resetAdvancedAI } from "./runtime";
 export type * from "./types";
