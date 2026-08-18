@@ -42,7 +42,7 @@ export function heroEvolutionProgress(state, owner) {
   if (entry.heroId === "gimble") return (entry.board || []).filter((card) => hasSubtype(card, "Dragão")).length;
   if (entry.heroId === "goblin") return Number(entry.turnCardsPlayed || 0);
   if (entry.heroId === "quarion") return new Set((entry.board || []).map((unit) => fold(effectiveCreatureName(entry, unit))).filter(Boolean)).size;
-  if (entry.heroId === "rasmus") return [...(entry.board || []), ...(entry.support || [])].filter((card) => hasSubtype(card, "Gato")).length;
+  if (entry.heroId === "rasmus") return (state.players || []).flatMap((candidate) => candidate.board || []).filter((card) => hasSubtype(card, "Gato")).length;
   if (entry.heroId === "zayan") return permanents(entry).filter((card) => !String(card.text || "").trim()).length;
   if (entry.heroId === "natureza") return permanents(entry).reduce((sum, card) => sum + markerTotal(card), 0);
   return Number(entry.heroXP || 0);
