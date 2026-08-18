@@ -4,6 +4,7 @@ import "./globals.css";
 import "./match-ui.css";
 import MatchUiGuard from "./match-ui-guard";
 import MatchUiRuntime from "./match-ui-runtime";
+import AIUiBridge from "./ai/ai-ui-bridge";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,6 +46,7 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <MatchUiGuard />
         <MatchUiRuntime />
+        <AIUiBridge />
         {children}
       </body>
     </html>
