@@ -3,6 +3,7 @@ import { RulesViolation } from "./effects.mjs";
 import { legalPriorityResponses } from "./priority.mjs";
 import {
   OnlineCombatStage,
+  beginOnlineCombat,
   declareOnlineAttackers,
   declareOnlineBlockers,
   finishAfterAttackersCheckpoint,
@@ -63,9 +64,6 @@ function canOpenPhaseTransition(state, command) {
 }
 
 function openPhaseTransition(state, command) {
-  /* Run the authoritative transition on a discarded clone as a preflight. This
-     preserves every existing legality check (notably Indomável) without
-     changing the live state before the opponent has received priority. */
   executeRulesCommand(clone(state), { ...command, skipPriority: true }, { priority: false });
   const next = clone(state);
   const window = phaseTransitionWindow(state.phase);
@@ -88,6 +86,13 @@ function checkpointAtRoot(state) {
 function combatTransitionAtRoot(state) {
   return (state.priorityStack?.length || 0) <= 1
     && state.phase === "combate"
+    && state.pendingAction?.type === "advancePhase"
+    && state.pendingAction?.__onlinePhaseTransition;
+}
+
+function mainTransitionAtRoot(state) {
+  return (state.priorityStack?.length || 0) <= 1
+    && state.phase === "principal"
     && state.pendingAction?.type === "advancePhase"
     && state.pendingAction?.__onlinePhaseTransition;
 }
@@ -117,22 +122,10 @@ function resolveOnlineCheckpoint(state) {
 function normalizeAfterResolution(before, result, command) {
   const state = result.state;
   const wasNestedStack = command.type === "passPriority" && Number(before.pendingResponse?.passes || 0) > 0 && (before.priorityStack?.length || 0) > 1;
-  if (wasNestedStack && state.pendingResponse && !state.pendingDecision) {
-    /* Two passes resolve one stack item. A new response cycle then starts with
-       the active player, regardless of who controlled the newly exposed item. */
-    state.pendingResponse = { ...state.pendingResponse, responder: state.active, passes: 0 };
-  }
+  if (wasNestedStack && state.pendingResponse && !state.pendingDecision) state.pendingResponse = { ...state.pendingResponse, responder: state.active, passes: 0 };
   return syncPriorityMetadata(state, { window: inferPriorityWindow(state) });
 }
 
-/**
- * Server-oriented command entry point for Online mode.
- *
- * The legacy engine remains the deterministic rules resolver. This wrapper owns
- * Online timing semantics: one priority owner, explicit phase checkpoints,
- * legal Acelerado/hero responses, consecutive passes, grouped combat and the
- * manual-required Finalization order.
- */
 export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   const state = syncPriorityMetadata(clone(inputState));
   const command = { ...rawCommand };
@@ -149,6 +142,15 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
       if (combatTransitionAtRoot(state)) {
         const next = enterOnlineFinalization(state, state.active);
         return { state: next, trace: ["online-finalization:entered-after-combat-passes"], steps: 0 };
+      }
+      if (mainTransitionAtRoot(state)) {
+        const resolved = executeRulesCommand(state, command, { ...options, priority: true });
+        normalizeAfterResolution(state, resolved, command);
+        if (resolved.state.phase === "combate" && !resolved.state.pendingDecision && !resolved.state.pendingReposition) {
+          resolved.state = beginOnlineCombat(resolved.state);
+          resolved.trace = [...(resolved.trace || []), "online-combat:combat-start-open"];
+        }
+        return resolved;
       }
       const result = executeRulesCommand(state, command, { ...options, priority: true });
       normalizeAfterResolution(state, result, command);
@@ -182,6 +184,7 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
 
   if (canOpenPhaseTransition(state, command)) return openPhaseTransition(state, command);
 
+  if (command.type === "declareAttack" && state.onlineCombat?.stage === OnlineCombatStage.DECLARE_ATTACKERS) state.onlineCombat = undefined;
   const result = executeRulesCommand(state, command, { ...options, priority: true });
   if (command.type === "resolveDecision" && result.state.onlineCombat?.stage === OnlineCombatStage.RESOLVING && !result.state.pendingDecision && !result.state.pendingReposition) {
     result.state = continueOnlineCombatResolution(result.state);
