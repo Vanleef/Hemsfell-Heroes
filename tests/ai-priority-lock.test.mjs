@@ -26,6 +26,13 @@ test("Accelerated cards remain legal priority responses",()=>{
   assert.equal(legal[0].cardId,"fast-1");
 });
 
+test("actor cannot extend the same priority window after the opponent passes",()=>{
+  const state=makeState();
+  state.pendingResponse={responder:1,actor:1,action:"Resposta Acelerada",passes:1};
+  state.players[1].hand=[{id:"fast-2",name:"Outra Resposta",type:"Feitiço",cost:1,tags:["Acelerado"],text:"",abilities:[]}];
+  assert.deepEqual(legalPriorityResponses(state,1),[]);
+});
+
 test("AI response timer is keyed only to the authoritative pending priority window",async()=>{
   const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
   const marker=page.match(/useEffect\(\(\)=>\{const authoritativePending=game\?\.pendingResponse[\s\S]*?\},\[game\?\.pendingResponse\?\.actor,game\?\.pendingResponse\?\.responder,game\?\.pendingResponse\?\.passes,game\?\.pendingResponse\?\.action,mode,difficulty\]\);/)?.[0]||"";
