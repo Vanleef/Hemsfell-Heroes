@@ -59,6 +59,8 @@ test("controller exposes mulligan, lethal, combat and evaluation diagnostics", a
   assert.match(source, /chooseBlock/);
   assert.match(source, /debugEvaluation/);
   assert.match(source, /hemsfell:ai-thinking/);
+  assert.match(source, /chooseAIHeroAbility/);
+  assert.match(source, /findRobustForcedLethal/);
 });
 
 test("runtime bridge covers main decisions, combat, responses and mulligan", async () => {
@@ -69,4 +71,25 @@ test("runtime bridge covers main decisions, combat, responses and mulligan", asy
   assert.match(source, /data-hemsfell-ai-thinking/);
   assert.match(source, /chooseAdvancedAIAction\(state, owner, difficulty\)/);
   assert.doesNotMatch(source, /new Evaluator\(\)/);
+});
+
+test("game client routes rules and bot decisions through authoritative advanced runtime", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /canExecuteCard\(snapshot\)/);
+  assert.match(page, /roomAction\("command"/);
+  assert.match(page, /executeCommand\(current,\{\.\.\.command,owner\},\{priority:true\}\)/);
+  assert.match(page, /role!=="attachment"/);
+  assert.match(page, /dragged!\.type!=="Artefato"\|\|!!creature/);
+  assert.match(page, /rules-engine\/ai-system\/runtime/);
+  assert.match(page, /chooseAdvancedAIAction/);
+  assert.match(page, /chooseAdvancedAIDecision/);
+  assert.match(page, /chooseAdvancedAIResponse/);
+  assert.match(page, /chooseAdvancedAIBlock/);
+  assert.match(page, /planAdvancedAIAttacks/);
+  assert.match(page, /resetAdvancedAI\(1\)/);
+  assert.match(page, /legalPriorityResponses/);
+  assert.match(page, /shouldAutoPass/);
+  assert.doesNotMatch(page, /\bbuildAIActionCandidates\b/);
+  assert.doesNotMatch(page, /\bchooseAIHeroAbility\b/);
+  assert.doesNotMatch(page, /\bchooseAIDecision\b/);
 });
