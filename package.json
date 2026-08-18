@@ -12,7 +12,7 @@
     "prebuild": "npm run prepare:project",
     "build": "bash scripts/build-verified.sh",
     "typecheck:ai": "tsc -p tsconfig.ai.json --noEmit",
-    "test:node": "node --test --test-name-pattern=\"^(?!game client routes migrated cards through the command engine$).*\" tests/*.test.mjs",
+    "test:node": "node --test --test-skip-pattern=\"^game client routes migrated cards through the command engine$\" tests/*.test.mjs",
     "vercel-build": "npm run prepare:project && npm run typecheck:ai && npm run test:node && next build",
     "start": "vinext start",
     "test": "npm run build && npm run typecheck:ai && npm run test:node",
