@@ -71,7 +71,6 @@ export function canonicalStack(state) {
 export function syncPriorityMetadata(state, overrides = {}) {
   if (!state) return state;
   const pending = state.pendingResponse;
-  const existing = state.priority || {};
   const stack = canonicalStack(state);
   const hasWinner = state.winner !== null && state.winner !== undefined;
   const mode = hasWinner
@@ -85,6 +84,7 @@ export function syncPriorityMetadata(state, overrides = {}) {
       ? pending.responder
       : overrides.owner ?? state.active ?? null;
   state.priority = {
+    model: "online-v2",
     mode,
     owner,
     window: overrides.window ?? (pending ? inferPriorityWindow(state) : null),
