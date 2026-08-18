@@ -32,8 +32,9 @@ const cardHandValue = (card: any) => {
   return value;
 };
 
-const responseCount = (player: any) => (player.hand || []).filter((card: any) => /acelerado/.test(textOf(card))).length;
+const responseCount = (player: any) => (player.hand || []).filter((card: any) => /acelerado|previna|barreira|retorne|destrua|cause .*dano/.test(textOf(card))).length;
 const removalCount = (player: any) => (player.hand || []).filter((card: any) => /destrua|bana|cause\s+\d+\s+de dano|retorne|sufocad|congelad|atordoad/.test(textOf(card))).length;
+const sweepCount = (player: any) => (player.hand || []).filter((card: any) => /todas? .*criaturas|cada criatura|todas? .*unidades/.test(textOf(card))).length;
 const synergyScore = (player: any) => {
   const cards = [...(player.hand || []), ...(player.board || []), ...(player.support || [])];
   const hero = player.heroId;
@@ -42,7 +43,7 @@ const synergyScore = (player: any) => {
   if (hero === "gimble") return cards.filter((card: any) => /dragao/.test(textOf(card))).length * 0.75;
   if (hero === "tifon") return cards.filter((card: any) => /ultimo suspiro|sacrif/.test(textOf(card))).length * 0.78;
   if (hero === "saymon") return cards.filter((card: any) => /vampiro|roubo de vida|perca .*vida|pague .*vida/.test(textOf(card))).length * 0.76;
-  if (hero === "rasmus") return cards.filter((card: any) => /gato|cafe/.test(textOf(card))).length * 0.72;
+  if (hero === "rasmus") return cards.filter((card: any) => /gato|cachorro|cafe/.test(textOf(card))).length * 0.72;
   if (hero === "quarion") return cards.filter((card: any) => /primeiro ato/.test(textOf(card))).length * 0.8;
   if (hero === "tessalia") return cards.filter((card: any) => /comandante|recruta|ataque/.test(textOf(card))).length * 0.55;
   if (hero === "ngoro") return cards.filter((card: any) => /investig|triture|pista|furtivo/.test(textOf(card))).length * 0.68;
@@ -60,6 +61,11 @@ const resourceScore = (player: any, phase: string, active: boolean, reserveWeigh
   const spentEfficiency = active && phase === "fim" && maxEnergy > 0 ? Math.min(maxEnergy, maxEnergy - energy) / maxEnergy : 0;
   return optionValue + spentEfficiency - severeWaste;
 };
+
+const boardEfficiency = (player: any) => (player.board || []).reduce((sum: number, card: any) => {
+  const cost = Math.max(1, Number(card?.cost || 1));
+  return sum + (currentAttack(card) * 0.62 + currentHealth(card) * 0.38 + keywordScore(card) * 0.5) / cost;
+}, 0);
 
 export interface EvaluationBreakdown {
   total: number;
@@ -94,11 +100,18 @@ export class Evaluator {
     const enemyKeywords = allPermanents(foe).reduce((sum: number, card: any) => sum + keywordScore(card), 0);
 
     const life = (Number(me.life || 0) - Number(foe.life || 0)) * w.life;
-    const immediateLethal = state.active === owner && ownReadyAttack >= Number(foe.life || 0) ? w.lethal : 0;
-    const exposedToLethal = state.active !== owner && enemyReadyAttack >= Number(me.life || 0) ? -w.lethal * 1.25 : 0;
-    const lethalPressure = Math.max(0, ownReadyAttack - Number(foe.life || 0) * 0.55) * w.lethal * 0.035;
-    const lethal = immediateLethal + exposedToLethal + lethalPressure;
-    const board = (ownAttack - enemyAttack) * w.boardAttack + (ownHealth - enemyHealth) * w.boardHealth + (ownKeywords - enemyKeywords) * w.keywords;
+    const foeLife = Math.max(1, Number(foe.life || 0));
+    const ownLife = Math.max(1, Number(me.life || 0));
+    const attackMargin = ownReadyAttack - foeLife;
+    const dangerMargin = enemyReadyAttack - ownLife;
+    const immediateLethal = state.active === owner && attackMargin >= 0 ? w.lethal * (1 + Math.min(0.55, attackMargin * 0.035)) : 0;
+    const exposedToLethal = dangerMargin >= 0 ? -w.lethal * (1.35 + Math.min(0.5, dangerMargin * 0.04)) : 0;
+    const lethalPressure = Math.max(0, ownReadyAttack / foeLife - 0.48) * w.lethal * 1.35;
+    const dangerPressure = Math.max(0, enemyReadyAttack / ownLife - 0.5) * w.lethal * 1.15;
+    const lethal = immediateLethal + exposedToLethal + lethalPressure - dangerPressure;
+
+    const tradeEfficiency = (boardEfficiency(me) - boardEfficiency(foe)) * w.tradeQuality;
+    const board = (ownAttack - enemyAttack) * w.boardAttack + (ownHealth - enemyHealth) * w.boardHealth + (ownKeywords - enemyKeywords) * w.keywords + tradeEfficiency;
     const hand = ((me.hand || []).reduce((sum: number, card: any) => sum + cardHandValue(card), 0) - (foe.hand || []).reduce((sum: number, card: any) => sum + cardHandValue(card), 0)) * w.handValue;
     const ownResource = resourceScore(me, state.phase, state.active === owner, w.reserveValue);
     const enemyResource = resourceScore(foe, state.phase, state.active === 1 - owner, w.reserveValue);
@@ -106,18 +119,28 @@ export class Evaluator {
     const boardDelta = (me.board || []).length - (foe.board || []).length;
     const initiative = state.active === owner ? (state.phase === "principal" ? 0.65 : state.phase === "combate" ? 0.9 : 0.25) : -0.2;
     const tempo = (boardDelta + initiative + (ownReadyAttack - enemyReadyAttack) * 0.12) * w.tempo;
-    const interaction = ((removalCount(me) - removalCount(foe)) * w.removal + (responseCount(me) - responseCount(foe)) * w.responseValue);
-    const heroLevelValue = (Number(me.level || 1) - Number(foe.level || 1)) * 4.5;
-    const synergy = (synergyScore(me) - synergyScore(foe)) * w.synergy + heroLevelValue;
 
+    const ownResponses = responseCount(me), enemyResponses = responseCount(foe);
+    const openResources = Number(me.energy || 0) + Number(me.reserve || 0);
+    const dangerRatio = Math.min(1.4, enemyReadyAttack / ownLife);
+    const holdResponseValue = ownResponses * Math.min(1.7, openResources * 0.22) * profile.holdResponses * Math.max(0.15, 1 - dangerRatio * 0.65) * w.responseValue;
+    const interaction = ((removalCount(me) - removalCount(foe)) * w.removal + (ownResponses - enemyResponses) * w.responseValue) + holdResponseValue;
+
+    const heroLevelValue = (Number(me.level || 1) - Number(foe.level || 1)) * 4.5;
+    const setupBodies = (me.board || []).filter((card: any) => /primeiro ato|ultimo suspiro|marcador|combo|cafe/.test(textOf(card))).length;
+    const setupProtection = setupBodies * profile.weights.setupProtection * Math.min(1.5, ownResponses * 0.3 + Number(me.reserve || 0) * 0.15);
+    const synergy = (synergyScore(me) - synergyScore(foe)) * w.synergy + heroLevelValue + setupProtection;
+
+    // This operates on a determinized state during search. Sweep signals are
+    // therefore beliefs, not privileged reads of the real hidden hand.
     const ownBoardCount = (me.board || []).length;
-    // This operates on a determinized state during search; callers that evaluate
-    // public root states must determinize first (enforced by AIController).
-    const enemySweepSignals = (foe.hand || []).filter((card: any) => /todas? .*criaturas|cada criatura/.test(textOf(card))).length;
-    const overextension = Math.max(0, ownBoardCount - 3) * enemySweepSignals * w.overextensionPenalty;
-    const lowLifeRisk = Number(me.life || 0) <= 8 ? (9 - Number(me.life || 0)) * (1 - profile.riskTolerance) * 1.2 : 0;
-    const handCapRisk = Math.max(0, (me.hand || []).length - 8) * 0.8;
-    const risk = -(overextension + lowLifeRisk + handCapRisk);
+    const enemySweepSignals = sweepCount(foe);
+    const sweepProbability = 1 - Math.pow(0.58, enemySweepSignals);
+    const overextension = Math.max(0, ownBoardCount - 3) * sweepProbability * w.overextensionPenalty * (1.25 - profile.riskTolerance * 0.55);
+    const lowLifeRisk = Number(me.life || 0) <= 8 ? (9 - Number(me.life || 0)) * (1 - profile.riskTolerance) * 1.35 : 0;
+    const handCapRisk = Math.max(0, (me.hand || []).length - 8) * (0.8 + w.handValue * 0.2);
+    const noResponseRisk = dangerRatio > 0.55 && ownResponses === 0 ? dangerRatio * w.responseValue * 2.2 : 0;
+    const risk = -(overextension + lowLifeRisk + handCapRisk + noResponseRisk);
 
     const randomNoise = noise > 0 ? (Math.random() * 2 - 1) * noise * Math.max(1, Math.abs(life + board + hand) * 0.1) : 0;
     const total = life + lethal + board + hand + resources + tempo + interaction + synergy + risk + randomNoise;
