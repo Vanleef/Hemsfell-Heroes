@@ -8,7 +8,9 @@
   },
   "include": [
     "app/rules-engine/ai-system/**/*.ts",
+    "scripts/ai-calibration.ts",
+    "scripts/ai-selfplay.ts",
     "types/**/*.d.ts"
   ],
-  "exclude": ["node_modules", ".next", "dist"]
+  "exclude": ["node_modules", ".next", "dist", ".ai-runtime"]
 }
