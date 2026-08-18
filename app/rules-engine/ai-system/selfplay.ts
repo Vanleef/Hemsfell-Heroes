@@ -24,11 +24,15 @@ export interface SelfPlayBatchResult {
   averagePlies: number;
 }
 
-const mulberry32 = (seed: number) => () => {
-  let value = seed += 0x6D2B79F5;
-  value = Math.imul(value ^ value >>> 15, value | 1);
-  value ^= value + Math.imul(value ^ value >>> 7, value | 61);
-  return ((value ^ value >>> 14) >>> 0) / 4294967296;
+const mulberry32 = (seed: number) => {
+  let current = seed >>> 0;
+  return () => {
+    current += 0x6D2B79F5;
+    let value = current;
+    value = Math.imul(value ^ value >>> 15, value | 1);
+    value ^= value + Math.imul(value ^ value >>> 7, value | 61);
+    return ((value ^ value >>> 14) >>> 0) / 4294967296;
+  };
 };
 
 const actorFor = (state: AIGameState): number => {
@@ -53,11 +57,13 @@ const publicObservations = (before: AIGameState, after: AIGameState, actor: numb
 
 /**
  * Headless AI-vs-AI runner using the same AIController and EngineAdapter as the
- * game client. It intentionally owns no card rules; the authoritative adapter
- * remains the only source of legal actions and state transitions.
+ * game client. State generation and each AI player receive deterministic RNG
+ * streams derived from the batch seed, which makes performance regressions
+ * reproducible across commits.
  */
 export async function runSelfPlayBatch(options: SelfPlayOptions): Promise<SelfPlayBatchResult> {
-  const random = mulberry32(options.seed ?? 20260818);
+  const seed = options.seed ?? 20260818;
+  const random = mulberry32(seed);
   const telemetry = new AITelemetryCollector();
   const wins: [number, number] = [0, 0];
   let draws = 0;
@@ -66,11 +72,13 @@ export async function runSelfPlayBatch(options: SelfPlayOptions): Promise<SelfPl
 
   for (let gameIndex = 0; gameIndex < options.games; gameIndex += 1) {
     let state = options.createState(gameIndex, random, options.players);
+    const player0Random = mulberry32((seed ^ Math.imul(gameIndex + 1, 0x9E3779B1) ^ 0xA341316C) >>> 0);
+    const player1Random = mulberry32((seed ^ Math.imul(gameIndex + 1, 0x85EBCA6B) ^ 0xC8013EA4) >>> 0);
     const controllers: [AIController, AIController] = [
-      new AIController(options.players[0].difficulty, options.adapter),
-      new AIController(options.players[1].difficulty, options.adapter),
+      new AIController(options.players[0].difficulty, options.adapter, player0Random),
+      new AIController(options.players[1].difficulty, options.adapter, player1Random),
     ];
-    const matchId = `selfplay-${options.seed ?? 20260818}-${gameIndex}`;
+    const matchId = `selfplay-${seed}-${gameIndex}`;
     let plies = 0;
 
     while (state.winner == null && plies < maxPlies) {
