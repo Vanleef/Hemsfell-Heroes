@@ -63,6 +63,20 @@ test("O Gato Cachorro adds Cat count to printed attack and Dog count to printed 
   assert.equal(liveDog.damage, 3, "1 printed attack + two Cats in play = 3 attack");
 });
 
+test("dynamic Dog health is rechecked when a Dog leaves play", () => {
+  let game = state();
+  const guard = unit({ id: "dog", name: "Cachorro Frágil", type: "Criatura", cost: 0, atk: 2, hp: 1, text: "", tags: [], subtypes: ["Cachorro"], abilities: [] }, "dog", 0);
+  game.players[1].board = [guard];
+  game.players[0].hand = [{ ...printed(245), id: "cat-dog-hand", cost: 0 }];
+  game = executeCommand(game, { type: "playCard", owner: 0, cardId: "cat-dog-hand", slot: 0, skipPriority: true }).state;
+  const catDog = game.players[0].board.find((card) => card.page === 245);
+  catDog.summoning = false;
+  game.phase = "combate";
+  game = executeCommand(game, { type: "attack", owner: 0, attackerId: catDog.uid, defenderId: "dog" }).state;
+  assert.equal(game.players[1].board.some((card) => card.uid === "dog"), false, "the fragile Dog dies first");
+  assert.equal(game.players[0].board.some((card) => card.page === 245), false, "after Dog count drops, 2 damage becomes lethal to Gato Cachorro");
+});
+
 test("hero evolution is an authoritative AI candidate instead of a page-level automatic action", () => {
   const game = state();
   game.active = 1;
