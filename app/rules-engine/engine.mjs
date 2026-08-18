@@ -87,7 +87,7 @@ const combatSnapshot = (state, command) => {
     attackerId, defenderId, attackerOwner, defenderOwner,
     attackerDamage: Number(attacker?.damage || 0), defenderDamage: Number(defender?.damage || 0),
     attackerLife: attackerOwner >= 0 ? Number(state.players[attackerOwner]?.life || 0) : 0,
-    defenderLife: defenderOwner >= 0 ? Number(state.players[defenderOwner]?.life || 0) : 0,
+    defenderLife: defenderOwner >= 0 ? Number(state.players[snapshot.defenderOwner]?.life || 0) : 0,
     attackerAtk: Number(attacker?.atk || 0), defenderAtk: Number(defender?.atk || 0),
   };
 };
@@ -225,6 +225,10 @@ export function executeCommand(rawInputState, rawCommand, options = {}) {
     return stackResult(state, [...(resolved.trace || []), "priority:resolve-top"], resolved.steps || 0);
   }
 
+  if (command.type === "activate") {
+    const source = unitById(inputState, command.sourceId);
+    if (source?.type !== "Criatura" && source?.summoning && source.enteredRound === inputState.round && hasActivatedAbility(inputState, source)) throw new RulesViolation("cannot-tap");
+  }
   validateVengeance(inputState, command);
   const before = clone(inputState);
   const pendingBefore = command.type === "passPriority" && before.pendingAction ? clone(before.pendingAction) : null;
