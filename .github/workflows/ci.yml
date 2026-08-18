@@ -48,8 +48,8 @@ jobs:
       - name: Run rules tests
         run: npm run test:rules
 
-      - name: Run AI calibration smoke suite
-        run: npm run ai:calibrate:smoke
+      - name: Run AI strategic benchmark
+        run: npm run ai:calibrate:benchmark
 
       - name: Lint advanced AI surfaces
         # The AI adapter deliberately bridges the typed controller to the legacy
