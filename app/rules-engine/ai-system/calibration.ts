@@ -70,7 +70,10 @@ const tradeScenarios = (): CalibrationScenario[] => Array.from({ length: 6 }, (_
 const overextensionScenarios = (): CalibrationScenario[] => Array.from({ length: 6 }, (_, i) => {
   const state = baseState(20 + i);
   state.players[0].board = [unit(`a-${i}`, 3, 3), unit(`b-${i}`, 4, 4), unit(`c-${i}`, 2, 5), unit(`d-${i}`, 3, 2)];
-  state.players[1].hand = [card(`sweep-${i}`, 5, "Cause 4 de dano a todas as criaturas.")];
+  // This specific corpus category tests decision quality against a represented,
+  // publicly known sweeper. Uncertain sweep risk is tested through the belief
+  // model and archetype priors rather than by leaking a hidden calibration card.
+  state.players[1].hand = [card(`sweep-${i}`, 5, "Cause 4 de dano a todas as criaturas.", { revealedTo: [0] })];
   const extend = { type: "playCard", owner: 0, cardId: `fifth-${i}` };
   const pass = { type: "advancePhase", owner: 0 };
   return scenario(`overextension-${i + 1}`, "overextension", "Do not add a marginal fifth body into a represented sweeper.", state, [
