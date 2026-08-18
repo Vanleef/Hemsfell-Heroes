@@ -14,13 +14,8 @@ import "./hero-inspector-fix.css";
 import "./hero-inspector-cleanup.css";
 import "./match-result-enhancer.css";
 import "./response-window-side.css";
-import CommandBarTextAutoFit from "./command-bar-text-autofit";
 import MatchUiGuard from "./match-ui-guard";
-import CardListTooltipPortal from "./card-list-tooltip-portal";
-import TargetBannerPositionGuard from "./target-banner-position-guard";
-import MatchResultEnhancer from "./match-result-enhancer";
-import HeroInspectorCanonicalizer from "./hero-inspector-canonicalizer";
-import ResponseWindowAnchor from "./response-window-anchor";
+import MatchUiRuntime from "./match-ui-runtime";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,16 +54,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <CommandBarTextAutoFit />
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <MatchUiGuard />
-        <TargetBannerPositionGuard />
-        <CardListTooltipPortal />
-        <MatchResultEnhancer />
-        <HeroInspectorCanonicalizer />
-        <ResponseWindowAnchor />
+        <MatchUiRuntime />
         {children}
       </body>
     </html>
