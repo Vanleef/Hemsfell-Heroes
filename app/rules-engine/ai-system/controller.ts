@@ -8,7 +8,7 @@ import { Evaluator } from "./evaluator";
 import { MCTS } from "./mcts";
 import { adaptivePersonality, personalityForHero } from "./personality";
 import { RiskManager } from "./risk";
-import type { AIAction, AIChoiceResult, AIDifficulty, AIGameState, AIObservation, EngineAdapter, PersonalityProfile } from "./types";
+import type { AIAction, AIChoiceResult, AIDifficulty, AIGameState, AIObservation, EngineAdapter, OpponentMemory, PersonalityProfile } from "./types";
 
 const cloneState = <T,>(state: T): T => structuredClone(state);
 
@@ -59,7 +59,7 @@ const generateEngineActions = (state: AIGameState, owner: number, difficulty: st
   return heroAction ? [heroAction, ...actions] : actions;
 };
 
-const defaultAdapter: EngineAdapter = {
+export const defaultAIAdapter: EngineAdapter = {
   generateLegalActions: generateEngineActions,
   applyAction: (state, action) => executeCommand(structuredClone(state), action, { priority: true }).state as AIGameState,
   cloneState,
@@ -81,8 +81,14 @@ const emitThinking = (thinking: boolean, detail: Record<string, unknown> = {}) =
   window.dispatchEvent(new CustomEvent("hemsfell:ai-thinking", { detail: { thinking, ...detail } }));
 };
 
+const emitDebug = (detail: Record<string, unknown>) => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("hemsfell:ai-debug", { detail }));
+};
+
 const actionKey = (action: AIAction | null) => action ? JSON.stringify(action) : "";
 const actionPriority = (action: AIAction) => action.type === "attack" ? 0 : action.type === "activate" || action.type === "activateHero" ? 1 : action.type === "playCard" ? 2 : action.type === "resolveDecision" ? 3 : action.type === "evolveHero" ? 4 : action.type === "passPriority" ? 5 : 6;
+const adaptationStrength = (difficulty: AIDifficulty) => difficulty === "Master" ? 1 : difficulty === "Expert" ? 0.78 : difficulty === "Hard" ? 0.55 : difficulty === "Normal" ? 0.28 : 0;
 
 export class AIController {
   private difficulty: AIDifficulty;
@@ -93,8 +99,9 @@ export class AIController {
   private mcts = new MCTS();
   private adapter: EngineAdapter;
   private initializedFor = "";
+  private opponentMemory: OpponentMemory = { aggression: 0.5, patience: 0.5, interaction: 0.5, samples: 0 };
 
-  constructor(difficulty: string = "Normal", adapter: EngineAdapter = defaultAdapter) {
+  constructor(difficulty: string = "Normal", adapter: EngineAdapter = defaultAIAdapter) {
     this.difficulty = normalizeDifficulty(difficulty);
     this.adapter = adapter;
   }
@@ -107,6 +114,7 @@ export class AIController {
 
   observe(observation: AIObservation): void {
     this.belief.observe(observation);
+    this.rememberOpponent(observation);
   }
 
   async chooseAction(state: AIGameState, owner: number): Promise<AIChoiceResult> {
@@ -115,24 +123,26 @@ export class AIController {
     if (!this.initializedFor || this.initializedFor.split(":").slice(0, 2).join(":") !== key.split(":").slice(0, 2).join(":")) {
       this.belief.initialize(state, owner, config.particleCount);
       this.initializedFor = key;
+      this.opponentMemory = { aggression: 0.5, patience: 0.5, interaction: 0.5, samples: 0 };
     }
 
-    let personality: PersonalityProfile = personalityForHero(state.players[owner]?.heroId);
-    if (this.difficulty === "Master") {
-      personality = adaptivePersonality(
-        personality,
-        state.players[owner]?.life || 0,
-        state.players[1 - owner]?.life || 0,
-        state.players[owner]?.hand?.length || 0,
-        state.players[1 - owner]?.hand?.length || 0,
-      );
-    }
+    const basePersonality = personalityForHero(state.players[owner]?.heroId);
+    const personality: PersonalityProfile = adaptivePersonality(
+      basePersonality,
+      state.players[owner]?.life || 0,
+      state.players[1 - owner]?.life || 0,
+      state.players[owner]?.hand?.length || 0,
+      state.players[1 - owner]?.hand?.length || 0,
+      this.opponentMemory,
+      adaptationStrength(this.difficulty),
+    );
 
     const legalDifficulty = legacyDifficultyLabel(this.difficulty);
     const legal = this.adapter.generateLegalActions(state, owner, legalDifficulty);
-    if (!legal.length) return { action: null, stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: 0 }, personality: personality.id, difficulty: this.difficulty };
+    const entropy = this.belief.entropy();
+    if (!legal.length) return { action: null, stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: 0, beliefEntropy: entropy }, personality: personality.id, difficulty: this.difficulty, beliefEntropy: entropy };
 
-    emitThinking(true, { difficulty: this.difficulty, personality: personality.id, expectedMs: config.thinkTimeMs });
+    emitThinking(true, { difficulty: this.difficulty, personality: personality.id, expectedMs: config.thinkTimeMs, beliefEntropy: entropy });
     try {
       const planningState = this.belief.determinize(state, owner);
 
@@ -140,33 +150,65 @@ export class AIController {
         const ranked = legal.map((action) => {
           try {
             const next = this.adapter.applyAction(planningState, action);
-            return { action, score: this.evaluator.evaluate(next, owner, personality, config.evaluationNoise) };
-          } catch { return { action, score: -Infinity }; }
+            const score = this.evaluator.evaluate(next, owner, personality, config.evaluationNoise) + this.risk.actionBias(planningState, next, owner, personality, action) * 0.35;
+            return { action, score, next };
+          } catch { return { action, score: -Infinity, next: null as AIGameState | null }; }
         }).sort((a, b) => b.score - a.score);
         const mistake = Math.random() < config.intentionalErrorRate;
         const index = mistake ? Math.min(ranked.length - 1, 1 + Math.floor(Math.random() * Math.min(2, ranked.length - 1))) : 0;
-        return { action: ranked[index]?.action || legal[0], stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: ranked[index]?.score || 0 }, personality: personality.id, difficulty: this.difficulty };
+        const picked = ranked[index] || ranked[0];
+        const lethalMargin = picked?.next ? this.evaluator.estimateLethal(picked.next, owner).margin : this.evaluator.estimateLethal(planningState, owner).margin;
+        return { action: picked?.action || legal[0], stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: picked?.score || 0, beliefEntropy: entropy }, personality: personality.id, difficulty: this.difficulty, evaluation: picked?.score || 0, lethalMargin, beliefEntropy: entropy };
       }
 
+      // Keep the forced-lethal solver only as a safety early-out. Strategic
+      // lethal pressure and risk now live inside Evaluator/MCTS.
       if (["Hard", "Expert", "Master"].includes(this.difficulty)) {
         const lethalAction = this.findRobustForcedLethal(state, owner, legal, legalDifficulty);
         if (lethalAction) {
-          return { action: lethalAction, stats: { iterations: 0, elapsedMs: 0, rootVisits: 1, selectedVisits: 1, selectedMeanValue: 1_000_000 }, personality: personality.id, difficulty: this.difficulty };
+          return { action: lethalAction, stats: { iterations: 0, elapsedMs: 0, rootVisits: 1, selectedVisits: 1, selectedMeanValue: 1_000_000, beliefEntropy: entropy }, personality: personality.id, difficulty: this.difficulty, evaluation: 1_000_000, lethalMargin: this.evaluator.estimateLethal(planningState, owner).margin, beliefEntropy: entropy };
         }
       }
 
-      const result = await this.mcts.search({ state, owner, config, personality, belief: this.belief, adapter: this.adapter, evaluator: this.evaluator, legacyDifficulty: legalDifficulty });
-      let action = this.applyRiskPolicy(state, planningState, owner, personality, result.action, legal, config.evaluationNoise);
+      const result = await this.mcts.search({ state, owner, config, personality, belief: this.belief, adapter: this.adapter, evaluator: this.evaluator, riskManager: this.risk, legacyDifficulty: legalDifficulty });
+      let action = result.action;
 
       if (action && config.intentionalErrorRate > 0 && legal.length > 1 && Math.random() < config.intentionalErrorRate) {
         const alternatives = legal.filter((candidate) => actionKey(candidate) !== actionKey(action));
         action = alternatives[Math.floor(Math.random() * alternatives.length)] || action;
       }
 
-      return { action, stats: result.stats, personality: personality.id, difficulty: this.difficulty };
+      let evaluation = result.stats.selectedMeanValue;
+      let lethalMargin = this.evaluator.estimateLethal(planningState, owner).margin;
+      if (action) {
+        try {
+          const next = this.adapter.applyAction(planningState, action);
+          evaluation = this.evaluator.evaluate(next, owner, personality, 0);
+          lethalMargin = this.evaluator.estimateLethal(next, owner).margin;
+        } catch { /* keep search telemetry */ }
+      }
+      emitDebug({ difficulty: this.difficulty, personality: personality.id, belief: this.belief.diagnostics(), opponentMemory: this.opponentMemory, action, evaluation, lethalMargin, stats: result.stats });
+      return { action, stats: result.stats, personality: personality.id, difficulty: this.difficulty, evaluation, lethalMargin, beliefEntropy: entropy };
     } finally {
       emitThinking(false, { difficulty: this.difficulty, personality: personality.id });
     }
+  }
+
+  private rememberOpponent(observation: AIObservation): void {
+    if (observation.type !== "play" && observation.type !== "discard") return;
+    const card = observation.card;
+    if (!card) return;
+    const source = cardText(card);
+    const aggressionSignal = /ataque|cause .*dano|veloz|investida|furtivo|atropelar/.test(source) || Number(card?.cost || 0) <= 2 ? 1 : 0.25;
+    const interactionSignal = /acelerado|destrua|retorne|previna|barreira|congel|atord|sufoc/.test(source) ? 1 : 0.2;
+    const patienceSignal = /compre|busque|investigue|marcador|ultimo suspiro|reserve/.test(source) || Number(card?.cost || 0) >= 5 ? 0.85 : 0.35;
+    const alpha = 0.42;
+    this.opponentMemory = {
+      aggression: this.opponentMemory.aggression * (1 - alpha) + aggressionSignal * alpha,
+      interaction: this.opponentMemory.interaction * (1 - alpha) + interactionSignal * alpha,
+      patience: this.opponentMemory.patience * (1 - alpha) + patienceSignal * alpha,
+      samples: Math.min(3, this.opponentMemory.samples + 1),
+    };
   }
 
   private findRobustForcedLethal(publicState: AIGameState, owner: number, legal: AIAction[], difficulty: string): AIAction | null {
@@ -219,26 +261,6 @@ export class AIController {
     return true;
   }
 
-  private applyRiskPolicy(publicState: AIGameState, planningState: AIGameState, owner: number, personality: PersonalityProfile, selected: AIAction | null, legal: AIAction[], noise: number): AIAction | null {
-    if (!selected || selected.type !== "playCard" || this.risk.shouldOverextend(publicState, owner, personality)) return selected;
-    if (this.combat.findLethal(publicState, owner)) return selected;
-
-    const alternatives = legal.filter((action) => action.type !== "playCard");
-    if (!alternatives.length) return selected;
-
-    let selectedScore = -Infinity;
-    try { selectedScore = this.evaluator.evaluate(this.adapter.applyAction(planningState, selected), owner, personality, 0); } catch { return alternatives[0]; }
-
-    const ranked = alternatives.map((action) => {
-      try { return { action, score: this.evaluator.evaluate(this.adapter.applyAction(planningState, action), owner, personality, noise * .25) }; }
-      catch { return { action, score: -Infinity }; }
-    }).sort((a, b) => b.score - a.score);
-
-    const best = ranked[0];
-    const patience = personality.holdResponses * 1.5 + personality.weights.setupProtection * .08;
-    return best && best.score + patience >= selectedScore ? best.action : selected;
-  }
-
   shouldKeepMulligan(state: AIGameState, owner: number): boolean {
     const player = state.players[owner], hand = player.hand || [];
     if (hand.length <= 1) return true;
@@ -275,8 +297,12 @@ export class AIController {
   }
 
   debugEvaluation(state: AIGameState, owner: number) {
-    return this.evaluator.breakdown(state, owner, personalityForHero(state.players[owner]?.heroId), 0);
+    const base = personalityForHero(state.players[owner]?.heroId);
+    const profile = adaptivePersonality(base, state.players[owner]?.life || 0, state.players[1 - owner]?.life || 0, state.players[owner]?.hand?.length || 0, state.players[1 - owner]?.hand?.length || 0, this.opponentMemory, adaptationStrength(this.difficulty));
+    return this.evaluator.breakdown(state, owner, profile, 0);
   }
 
   beliefEntropy(): number { return this.belief.entropy(); }
+  beliefDiagnostics() { return this.belief.diagnostics(); }
+  opponentModel(): OpponentMemory { return { ...this.opponentMemory }; }
 }
