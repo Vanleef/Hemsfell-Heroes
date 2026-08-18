@@ -1,0 +1,52 @@
+name: Apply AI evolution and Cat Dog patch
+
+on:
+  push:
+    branches:
+      - ai/advanced-opponent-system
+    paths:
+      - .github/scripts/apply-ai-evolution-cat-dog.mjs
+      - .github/workflows/apply-ai-evolution-cat-dog.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: ai/advanced-opponent-system
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Apply integration patch
+        run: node .github/scripts/apply-ai-evolution-cat-dog.mjs
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck advanced AI
+        run: npm run typecheck:ai
+
+      - name: Run rules regression suite
+        run: npm run test:node
+
+      - name: Remove one-shot patch machinery
+        run: git rm .github/scripts/apply-ai-evolution-cat-dog.mjs .github/workflows/apply-ai-evolution-cat-dog.yml
+
+      - name: Commit generated integration
+        run: |
+          git config user.name "Hemsfell CI"
+          git config user.email "actions@users.noreply.github.com"
+          git add app/page.tsx app/rules-engine tests/cat-dog-evolution-ai-regressions.test.mjs
+          git commit -m "feat: make AI evolution strategic and fix Cat Dog stats"
+          git push origin HEAD:ai/advanced-opponent-system
