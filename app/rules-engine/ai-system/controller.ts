@@ -1,6 +1,7 @@
 import { buildAIActionCandidates } from "../ai.mjs";
 import { executeCommand } from "../engine.mjs";
 import { BeliefModel } from "./belief";
+import { CombatPlanner } from "./combat";
 import { DIFFICULTY_CONFIG, legacyDifficultyLabel, normalizeDifficulty } from "./config";
 import { Evaluator } from "./evaluator";
 import { MCTS } from "./mcts";
@@ -26,10 +27,16 @@ const curveScore = (card: any) => {
   return -Math.max(0, cost - 5) * 1.6;
 };
 
+const emitThinking = (thinking: boolean, detail: Record<string, unknown> = {}) => {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("hemsfell:ai-thinking", { detail: { thinking, ...detail } }));
+};
+
 export class AIController {
   private difficulty: AIDifficulty;
   private belief = new BeliefModel();
   private evaluator = new Evaluator();
+  private combat = new CombatPlanner();
   private mcts = new MCTS();
   private adapter: EngineAdapter;
   private initializedFor = "";
@@ -72,31 +79,36 @@ export class AIController {
     const legal = this.adapter.generateLegalActions(state, owner, legalDifficulty);
     if (!legal.length) return { action: null, stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: 0 }, personality: personality.id, difficulty: this.difficulty };
 
-    // Easy deliberately avoids tree search. It ranks one ply, then occasionally
-    // picks a plausible inferior line instead of making obviously random plays.
-    if (this.difficulty === "Easy") {
-      const ranked = legal.map((action) => {
-        try {
-          const next = this.adapter.applyAction(state, action);
-          return { action, score: this.evaluator.evaluate(next, owner, personality, config.evaluationNoise) };
-        } catch { return { action, score: -Infinity }; }
-      }).sort((a, b) => b.score - a.score);
-      const mistake = Math.random() < config.intentionalErrorRate;
-      const index = mistake ? Math.min(ranked.length - 1, 1 + Math.floor(Math.random() * Math.min(2, ranked.length - 1))) : 0;
-      return { action: ranked[index]?.action || legal[0], stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: ranked[index]?.score || 0 }, personality: personality.id, difficulty: this.difficulty };
+    emitThinking(true, { difficulty: this.difficulty, personality: personality.id, expectedMs: config.thinkTimeMs });
+    try {
+      // Easy deliberately avoids tree search. It ranks one ply, then occasionally
+      // picks a plausible inferior line instead of making obviously random plays.
+      if (this.difficulty === "Easy") {
+        const ranked = legal.map((action) => {
+          try {
+            const next = this.adapter.applyAction(state, action);
+            return { action, score: this.evaluator.evaluate(next, owner, personality, config.evaluationNoise) };
+          } catch { return { action, score: -Infinity }; }
+        }).sort((a, b) => b.score - a.score);
+        const mistake = Math.random() < config.intentionalErrorRate;
+        const index = mistake ? Math.min(ranked.length - 1, 1 + Math.floor(Math.random() * Math.min(2, ranked.length - 1))) : 0;
+        return { action: ranked[index]?.action || legal[0], stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: ranked[index]?.score || 0 }, personality: personality.id, difficulty: this.difficulty };
+      }
+
+      const result = await this.mcts.search({ state, owner, config, personality, belief: this.belief, adapter: this.adapter, evaluator: this.evaluator, legacyDifficulty: legalDifficulty });
+      let action = result.action;
+
+      // Lower non-easy levels retain a small, controlled error model: choose a
+      // legal alternative, never an illegal move or information-cheating line.
+      if (action && config.intentionalErrorRate > 0 && legal.length > 1 && Math.random() < config.intentionalErrorRate) {
+        const alternatives = legal.filter((candidate) => JSON.stringify(candidate) !== JSON.stringify(action));
+        action = alternatives[Math.floor(Math.random() * alternatives.length)] || action;
+      }
+
+      return { action, stats: result.stats, personality: personality.id, difficulty: this.difficulty };
+    } finally {
+      emitThinking(false, { difficulty: this.difficulty, personality: personality.id });
     }
-
-    const result = await this.mcts.search({ state, owner, config, personality, belief: this.belief, adapter: this.adapter, evaluator: this.evaluator, legacyDifficulty: legalDifficulty });
-    let action = result.action;
-
-    // Lower non-easy levels retain a small, controlled error model: choose a
-    // legal alternative, never an illegal move or information-cheating line.
-    if (action && config.intentionalErrorRate > 0 && legal.length > 1 && Math.random() < config.intentionalErrorRate) {
-      const alternatives = legal.filter((candidate) => JSON.stringify(candidate) !== JSON.stringify(action));
-      action = alternatives[Math.floor(Math.random() * alternatives.length)] || action;
-    }
-
-    return { action, stats: result.stats, personality: personality.id, difficulty: this.difficulty };
   }
 
   /** Intelligent whole-hand mulligan for the current Hemsfell mulligan model. */
@@ -125,6 +137,14 @@ export class AIController {
 
   lethal(state: AIGameState, owner: number) {
     return this.evaluator.estimateLethal(state, owner);
+  }
+
+  planAttacks(state: AIGameState, owner: number) {
+    return this.combat.planAttacks(state, owner, personalityForHero(state.players[owner]?.heroId));
+  }
+
+  chooseBlock(state: AIGameState, owner: number, attacker: any) {
+    return this.combat.chooseBlock(state, owner, attacker, personalityForHero(state.players[owner]?.heroId));
   }
 
   debugEvaluation(state: AIGameState, owner: number) {
