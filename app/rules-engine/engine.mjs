@@ -115,11 +115,13 @@ const hasActivatedAbility = (state, unit) => {
   const printed = (state.cardCatalog || []).find((card) => card.page === unit?.page || card.id === unit?.id);
   return !!printed?.abilities?.some((ability) => ability.trigger === "activated");
 };
-const lockFreshActivatedPermanents = (state) => {
+const syncEntryTurnActivationLocks = (state) => {
   for (const entry of state.players || []) {
     for (const unit of [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])]) {
-      if (unit.type === "Criatura" || unit.enteredRound !== state.round || !hasActivatedAbility(state, unit)) continue;
-      unit.summoning = true;
+      const activated = hasActivatedAbility(state, unit);
+      if (!activated) { delete unit.activationLockedOnEntry; continue; }
+      unit.activationLockedOnEntry = unit.enteredRound === state.round;
+      if (unit.type !== "Criatura" && unit.activationLockedOnEntry) unit.summoning = true;
     }
   }
 };
@@ -128,7 +130,7 @@ const postProcess = (before, after, command) => {
   consumeElementalPromise(before, after, command);
   expireElementalPromises(before, after, command);
   recordCombatDamage(after, snapshot);
-  lockFreshActivatedPermanents(after);
+  syncEntryTurnActivationLocks(after);
   propagateWeddingRingLinks(before, after);
 };
 const stackResult = (state, trace = [], steps = 0) => ({ state, trace, steps });
@@ -227,7 +229,7 @@ export function executeCommand(rawInputState, rawCommand, options = {}) {
 
   if (command.type === "activate") {
     const source = unitById(inputState, command.sourceId);
-    if (source?.type !== "Criatura" && source?.summoning && source.enteredRound === inputState.round && hasActivatedAbility(inputState, source)) throw new RulesViolation("cannot-tap");
+    if (source?.enteredRound === inputState.round && hasActivatedAbility(inputState, source)) throw new RulesViolation(source.type === "Criatura" ? "summoning-sickness" : "cannot-tap");
   }
   validateVengeance(inputState, command);
   const before = clone(inputState);
