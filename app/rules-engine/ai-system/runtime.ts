@@ -72,13 +72,11 @@ export async function chooseAdvancedAIDecision(state: AIGameState, owner: number
 }
 
 export function planAdvancedAIAttacks(state: AIGameState, owner: number, difficulty: string): string[] {
-  const controller = controllerFor(owner, difficulty);
-  return controller.planAttacks(state, owner).map((plan) => plan.attackerId).filter(Boolean);
+  return controllerFor(owner, difficulty).planAttacks(state, owner).map((plan) => plan.attackerId).filter(Boolean);
 }
 
 export function chooseAdvancedAIBlock(state: AIGameState, owner: number, attacker: unknown, difficulty: string): { defenderId?: string; takeDamage: boolean } {
-  const controller = controllerFor(owner, difficulty);
-  const plan = controller.chooseBlock(state, owner, attacker);
+  const plan = controllerFor(owner, difficulty).chooseBlock(state, owner, attacker);
   return { defenderId: plan.defenderId, takeDamage: plan.takeDamage };
 }
 
@@ -97,15 +95,17 @@ export async function chooseAdvancedAIResponse(state: AIGameState, owner: number
   for (const raw of commands) {
     let command: AIAction | null = raw;
     if (raw.type === "playCard") {
-      const card = state.players[owner]?.hand?.find((candidate: any) => candidate.id === raw.cardId);
+      const rawCardId = typeof raw.cardId === "string" ? raw.cardId : "";
+      const card = state.players[owner]?.hand?.find((candidate: any) => candidate.id === rawCardId);
       command = card ? completeAIPlayCommand(state, owner, card, difficulty, { hasPriority: true }) as AIAction | null : null;
     }
     if (!command) continue;
     try {
       const next = executeCommand(structuredClone(state), command, { priority: true }).state as AIGameState;
       let score = evaluator.evaluate(next, owner, profile, level === "Easy" ? .12 : level === "Normal" ? .05 : .01);
-      if (command.type === "activateHero") score += profile.interaction * 1.5;
-      if (command.type === "playCard") score += profile.interaction * 2;
+      const interactionWeight = profile.weights.responseValue;
+      if (command.type === "activateHero") score += interactionWeight * .35;
+      if (command.type === "playCard") score += interactionWeight * .5;
       legal.push({ action: command, score });
     } catch {
       // Invalid candidates are ignored rather than leaking into the UI driver.
