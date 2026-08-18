@@ -1,8 +1,11 @@
 import { AIController } from "./controller";
+import { legalPriorityResponses } from "../priority.mjs";
 import type { AIAction, AIGameState, AIObservation } from "./types";
 
 const controllers = new Map<number, AIController>();
 const lastObservedState = new Map<number, AIGameState>();
+const priorityInFlight = new Map<string, Promise<AIAction>>();
+const recentlySettledPriority = new Map<string, number>();
 let thinkingIndicatorInstalled = false;
 let debugTelemetryInstalled = false;
 
@@ -14,6 +17,33 @@ const publicCards = (player: any) => [
   ...(player?.grave || []),
   ...(player?.obscuro || []),
 ];
+
+const clock = () => typeof performance !== "undefined" ? performance.now() : Date.now();
+const passPriority = (owner: number): AIAction => ({ type: "passPriority", owner, auto: true });
+const prioritySignature = (state: AIGameState, owner: number) => {
+  const pending = state.pendingResponse as any;
+  const pendingAction = state.pendingAction as any;
+  const priorityStack = Array.isArray(state.priorityStack) ? state.priorityStack : [];
+  const effectStack = Array.isArray(state.effectStack) ? state.effectStack : [];
+  return [
+    owner,
+    state.round,
+    state.phase,
+    state.active,
+    pending?.actor ?? "-",
+    pending?.responder ?? "-",
+    pending?.passes ?? 0,
+    pending?.action ?? "-",
+    pendingAction?.type ?? "-",
+    pendingAction?.cardId ?? pendingAction?.sourceId ?? pendingAction?.abilityId ?? "-",
+    priorityStack.length,
+    effectStack.length,
+  ].join("|");
+};
+
+const prunePriorityGuards = (now = clock()) => {
+  for (const [key, settledAt] of recentlySettledPriority) if (now - settledAt > 5000) recentlySettledPriority.delete(key);
+};
 
 function controllerFor(owner: number, difficulty: string): AIController {
   let controller = controllers.get(owner);
@@ -67,7 +97,7 @@ function installThinkingIndicator(): void {
   if (thinkingIndicatorInstalled || typeof window === "undefined") return;
   thinkingIndicatorInstalled = true;
   const onThinking = (event: Event) => {
-    const detail = (event as CustomEvent<{ thinking?: boolean; difficulty?: string; personality?: string; beliefEntropy?: number }>).detail || {};
+    const detail = (event as CustomEvent<{ thinking?: boolean; difficulty?: string; personality?: string; beliefEntropy?: number; context?: string }>).detail || {};
     let node = document.querySelector<HTMLElement>("[data-hemsfell-ai-thinking]");
     if (!detail.thinking) {
       node?.remove();
@@ -97,7 +127,8 @@ function installThinkingIndicator(): void {
       });
       document.body.appendChild(node);
     }
-    node.textContent = `IA pensando · ${detail.difficulty || "Normal"}${detail.personality ? ` · ${detail.personality}` : ""}`;
+    const label = detail.context === "priority" ? "IA avaliando prioridade" : "IA pensando";
+    node.textContent = `${label} · ${detail.difficulty || "Normal"}${detail.personality ? ` · ${detail.personality}` : ""}`;
   };
   window.addEventListener("hemsfell:ai-thinking", onThinking);
 }
@@ -174,14 +205,34 @@ export function chooseAdvancedAIBlock(state: AIGameState, owner: number, attacke
 }
 
 /**
- * Priority is searched by the same imperfect-information controller used for
- * normal turns. While a response window is open the controller exposes only
- * legal responses plus pass, so it can compare "answer now" versus "hold"
- * without evaluating the player's real hidden hand.
+ * Priority uses the same imperfect-information controller, but the runtime owns
+ * progress guarantees: forced second-pass resolution, zero-response fast-pass,
+ * in-flight de-duplication, and a short-lived stale-window guard. A repeated
+ * authoritative priority signature is passed instead of being searched again.
  */
 export async function chooseAdvancedAIResponse(state: AIGameState, owner: number, difficulty: string): Promise<AIAction> {
-  const action = await chooseAdvancedAIAction(state, owner, difficulty);
-  return action || { type: "passPriority", owner };
+  const pending = state.pendingResponse as any;
+  if (!pending || pending.responder !== owner) return passPriority(owner);
+  if (pending.actor === owner && Number(pending.passes || 0) > 0) return passPriority(owner);
+  if (legalPriorityResponses(state, owner).length === 0) return passPriority(owner);
+
+  prunePriorityGuards();
+  const signature = prioritySignature(state, owner);
+  const existing = priorityInFlight.get(signature);
+  if (existing) return existing;
+  const settledAt = recentlySettledPriority.get(signature);
+  if (settledAt != null && clock() - settledAt < 2500) return passPriority(owner);
+
+  const task = chooseAdvancedAIAction(state, owner, difficulty)
+    .then((action) => action || passPriority(owner))
+    .catch(() => passPriority(owner))
+    .finally(() => {
+      priorityInFlight.delete(signature);
+      recentlySettledPriority.set(signature, clock());
+      prunePriorityGuards();
+    });
+  priorityInFlight.set(signature, task);
+  return task;
 }
 
 export function shouldKeepAdvancedMulligan(state: AIGameState, owner: number, difficulty: string): boolean {
@@ -197,8 +248,12 @@ export function resetAdvancedAI(owner?: number): void {
   if (owner == null) {
     controllers.clear();
     lastObservedState.clear();
+    priorityInFlight.clear();
+    recentlySettledPriority.clear();
   } else {
     controllers.delete(owner);
     lastObservedState.delete(owner);
+    for (const key of priorityInFlight.keys()) if (key.startsWith(`${owner}|`)) priorityInFlight.delete(key);
+    for (const key of recentlySettledPriority.keys()) if (key.startsWith(`${owner}|`)) recentlySettledPriority.delete(key);
   }
 }
