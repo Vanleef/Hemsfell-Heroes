@@ -158,9 +158,19 @@ export class AIController {
             return { action, score, next };
           } catch { return { action, score: -Infinity, next: null as AIGameState | null }; }
         }).sort((a, b) => b.score - a.score);
+        const best = ranked[0];
         const mistake = this.random() < config.intentionalErrorRate;
-        const index = mistake ? Math.min(ranked.length - 1, 1 + Math.floor(this.random() * Math.min(2, ranked.length - 1))) : 0;
-        const picked = ranked[index] || ranked[0];
+        const beforeBoard = planningState.players[owner]?.board?.length || 0;
+        const mistakeWindow = Math.max(5, Math.abs(Number(best?.score || 0)) * 0.14);
+        const plausibleMistakes = ranked.slice(1).filter((entry) => {
+          if (!entry.next || !Number.isFinite(entry.score) || entry.score < Number(best?.score || -Infinity) - mistakeWindow) return false;
+          const afterBoard = entry.next.players[owner]?.board?.length || 0;
+          const recklessOverextension = afterBoard > beforeBoard && !this.risk.shouldOverextend(planningState, owner, personality);
+          return !recklessOverextension;
+        });
+        const picked = mistake && plausibleMistakes.length
+          ? plausibleMistakes[Math.floor(this.random() * plausibleMistakes.length)]
+          : best;
         const lethalMargin = picked?.next ? this.evaluator.estimateLethal(picked.next, owner).margin : this.evaluator.estimateLethal(planningState, owner).margin;
         return { action: picked?.action || legal[0], stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: picked?.score || 0, beliefEntropy: entropy }, personality: personality.id, difficulty: this.difficulty, evaluation: picked?.score || 0, lethalMargin, beliefEntropy: entropy };
       }
@@ -177,7 +187,17 @@ export class AIController {
 
       if (action && config.intentionalErrorRate > 0 && legal.length > 1 && this.random() < config.intentionalErrorRate) {
         const alternatives = legal.filter((candidate) => actionKey(candidate) !== actionKey(action));
-        action = alternatives[Math.floor(this.random() * alternatives.length)] || action;
+        if (this.difficulty === "Normal") {
+          const baselineScore = this.plausibilityScore(planningState, owner, personality, action);
+          const ownLife = Number(planningState.players[owner]?.life || 0);
+          const maxDrop = ownLife <= 8 ? 2.75 : 5.5;
+          const plausible = alternatives
+            .map((candidate) => ({ candidate, score: this.plausibilityScore(planningState, owner, personality, candidate) }))
+            .filter((entry) => Number.isFinite(entry.score) && entry.score >= baselineScore - maxDrop);
+          if (plausible.length) action = plausible[Math.floor(this.random() * plausible.length)].candidate;
+        } else {
+          action = alternatives[Math.floor(this.random() * alternatives.length)] || action;
+        }
       }
 
       let evaluation = result.stats.selectedMeanValue;
@@ -193,6 +213,15 @@ export class AIController {
       return { action, stats: result.stats, personality: personality.id, difficulty: this.difficulty, evaluation, lethalMargin, beliefEntropy: entropy };
     } finally {
       emitThinking(false, { difficulty: this.difficulty, personality: personality.id });
+    }
+  }
+
+  private plausibilityScore(state: AIGameState, owner: number, personality: PersonalityProfile, action: AIAction): number {
+    try {
+      const next = this.adapter.applyAction(state, action);
+      return this.evaluator.evaluate(next, owner, personality, 0) + this.risk.actionBias(state, next, owner, personality, action, () => 1) * 0.35;
+    } catch {
+      return -Infinity;
     }
   }
 
