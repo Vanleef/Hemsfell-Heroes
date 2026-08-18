@@ -1,5 +1,5 @@
 import { ROOM_LIMITS } from "./constants";
-import { reconcileOnlineClocks } from "./online-clock";
+import { reconcileOnlineClocks } from "./online-clock.mjs";
 import { executeOnlineCommand } from "../../rules-engine/online-priority-engine.mjs";
 import { shouldAutoPass } from "../../rules-engine/priority.mjs";
 
