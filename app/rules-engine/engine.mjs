@@ -87,7 +87,7 @@ const combatSnapshot = (state, command) => {
     attackerId, defenderId, attackerOwner, defenderOwner,
     attackerDamage: Number(attacker?.damage || 0), defenderDamage: Number(defender?.damage || 0),
     attackerLife: attackerOwner >= 0 ? Number(state.players[attackerOwner]?.life || 0) : 0,
-    defenderLife: defenderOwner >= 0 ? Number(state.players[snapshot.defenderOwner]?.life || 0) : 0,
+    defenderLife: defenderOwner >= 0 ? Number(state.players[defenderOwner]?.life || 0) : 0,
     attackerAtk: Number(attacker?.atk || 0), defenderAtk: Number(defender?.atk || 0),
   };
 };
