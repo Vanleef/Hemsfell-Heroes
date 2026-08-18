@@ -3,6 +3,7 @@ import type { AIAction, AIGameState } from "./types";
 
 const controllers = new Map<number, AIController>();
 let thinkingIndicatorInstalled = false;
+let debugTelemetryInstalled = false;
 
 function controllerFor(owner: number, difficulty: string): AIController {
   let controller = controllers.get(owner);
@@ -12,6 +13,7 @@ function controllerFor(owner: number, difficulty: string): AIController {
   }
   controller.setDifficulty(difficulty);
   installThinkingIndicator();
+  installDebugTelemetry();
   return controller;
 }
 
@@ -19,7 +21,7 @@ function installThinkingIndicator(): void {
   if (thinkingIndicatorInstalled || typeof window === "undefined") return;
   thinkingIndicatorInstalled = true;
   const onThinking = (event: Event) => {
-    const detail = (event as CustomEvent<{ thinking?: boolean; difficulty?: string; personality?: string }>).detail || {};
+    const detail = (event as CustomEvent<{ thinking?: boolean; difficulty?: string; personality?: string; beliefEntropy?: number }>).detail || {};
     let node = document.querySelector<HTMLElement>("[data-hemsfell-ai-thinking]");
     if (!detail.thinking) {
       node?.remove();
@@ -52,6 +54,55 @@ function installThinkingIndicator(): void {
     node.textContent = `IA pensando · ${detail.difficulty || "Normal"}${detail.personality ? ` · ${detail.personality}` : ""}`;
   };
   window.addEventListener("hemsfell:ai-thinking", onThinking);
+}
+
+function installDebugTelemetry(): void {
+  if (debugTelemetryInstalled || typeof window === "undefined") return;
+  debugTelemetryInstalled = true;
+  const enabled = () => {
+    try {
+      return window.localStorage.getItem("hemsfell-ai-debug") === "1" || new URLSearchParams(window.location.search).get("aiDebug") === "1";
+    } catch { return false; }
+  };
+  window.addEventListener("hemsfell:ai-debug", (event: Event) => {
+    if (!enabled()) return;
+    const detail = (event as CustomEvent<any>).detail || {};
+    let node = document.querySelector<HTMLElement>("[data-hemsfell-ai-debug]");
+    if (!node) {
+      node = document.createElement("pre");
+      node.dataset.hemsfellAiDebug = "true";
+      Object.assign(node.style, {
+        position: "fixed",
+        right: "clamp(.5rem,1vw,1rem)",
+        bottom: "clamp(.5rem,1vh,1rem)",
+        zIndex: "120001",
+        maxWidth: "min(34rem,46vw)",
+        maxHeight: "38vh",
+        overflow: "auto",
+        margin: "0",
+        padding: "clamp(.55rem,1vmin,.85rem)",
+        border: "1px solid rgba(113,190,204,.5)",
+        borderRadius: ".7rem",
+        background: "rgba(3,14,20,.94)",
+        color: "#bde8ee",
+        fontSize: "clamp(.62rem,.66vw,.78rem)",
+        lineHeight: "1.35",
+        pointerEvents: "none",
+        whiteSpace: "pre-wrap",
+      });
+      document.body.appendChild(node);
+    }
+    const entropy = Number(detail.belief?.entropy || 0);
+    const effective = Number(detail.belief?.effectiveParticles || 0);
+    const ips = Number(detail.stats?.iterationsPerSecond || 0);
+    node.textContent = [
+      `AI DEBUG · ${detail.difficulty || "?"} · ${detail.personality || "?"}`,
+      `belief entropy: ${entropy.toFixed(3)} · effective particles: ${effective.toFixed(1)}`,
+      `evaluation: ${Number(detail.evaluation || 0).toFixed(2)} · lethal margin: ${Number(detail.lethalMargin || 0).toFixed(1)}`,
+      `search: ${Number(detail.stats?.iterations || 0)} it · ${ips.toFixed(0)} it/s · ${Number(detail.stats?.elapsedMs || 0).toFixed(0)} ms`,
+      `opponent memory: aggro ${Number(detail.opponentMemory?.aggression || 0).toFixed(2)} · patience ${Number(detail.opponentMemory?.patience || 0).toFixed(2)} · interaction ${Number(detail.opponentMemory?.interaction || 0).toFixed(2)}`,
+    ].join("\n");
+  });
 }
 
 export async function chooseAdvancedAIAction(state: AIGameState, owner: number, difficulty: string): Promise<AIAction | null> {
