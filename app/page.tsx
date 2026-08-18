@@ -7,8 +7,9 @@ import { canActivateCard, hasActivatableEffect } from "./card-activation.mjs";
 import { compileCard } from "./rules-engine/compiler.mjs";
 import { hasIntrinsicKeyword, intrinsicKeywordNames } from "./card-keywords.mjs";
 import { canExecuteCard, executeCommand } from "./rules-engine/engine.mjs";
-import { chooseAIResponse, legalPriorityResponses, shouldAutoPass } from "./rules-engine/priority.mjs";
-import { aiDifficultyProfile, buildAIActionCandidates, chooseAIDecision, chooseAIHeroAbility, completeAIPlayCommand, orderAIAttackers } from "./rules-engine/ai.mjs";
+import { legalPriorityResponses, shouldAutoPass } from "./rules-engine/priority.mjs";
+import { orderAIAttackers } from "./rules-engine/ai.mjs";
+import { chooseAdvancedAIAction, chooseAdvancedAIDecision, chooseAdvancedAIBlock, chooseAdvancedAIResponse, planAdvancedAIAttacks, resetAdvancedAI } from "./rules-engine/ai-system/runtime";
 import { hasSubtype } from "./rules-engine/subtypes.mjs";
 import { cardPlayTargetPolicy, isValidTarget, targetPolicy, TargetScope } from "./rules-engine/targeting.mjs";
 import { applyCloneRetaliation, claimOncePerTurn, earthquakeDamage, elementalChainFrom as ruleElementalChainFrom } from "./game-rules.mjs";
@@ -505,7 +506,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
  useEffect(()=>{if(game?.active!==0||game.phase!=="manutencao"||game.winner!==null)return;setResponseWindow(null);setCombatAction(null);setAiAttackQueue([]);setMaintenanceOpen(true)},[game?.active,game?.phase,game?.winner]);
  const me=game?.players[0],foe=game?.players[1];
  const [visualFxQueue,setVisualFxQueue]=useState<VisualFx[]>([]);const [elementChoice,setElementChoice]=useState<{cardIndex:number;name:string}|null>(null);
- const begin=()=>{setTargeting(null);setImageChoice(null);setCafeChoice(null);setResponseWindow(null);setCombatAction(null);setAiAttackQueue([]);setVisualFx(null);setVisualFxQueue([]);setConfirmSurrender(false);setExtraView(null);setSearchChoice(null);setShufflingDeck(null);setDragging(null);setElementChoice(null);setMaintenanceOpen(true);setGame(start(mine,enemy));setScreen("game")};
+ const begin=()=>{resetAdvancedAI(1);setTargeting(null);setImageChoice(null);setCafeChoice(null);setResponseWindow(null);setCombatAction(null);setAiAttackQueue([]);setVisualFx(null);setVisualFxQueue([]);setConfirmSurrender(false);setExtraView(null);setSearchChoice(null);setShufflingDeck(null);setDragging(null);setElementChoice(null);setMaintenanceOpen(true);setGame(start(mine,enemy));setScreen("game")};
  useEffect(()=>{if(!isHost||!roomId||!roomToken||roomInfo?.status!=="mulligan"||roomInfo?.game||!roomInfo?.startingRole||!roomInfo?.host?.heroId||!roomInfo?.guest?.heroId)return;const active:0|1=roomInfo.startingRole==="host"?0:1;const initial=start(roomInfo.host.heroId,roomInfo.guest.heroId,active,roomInfo.settings?.startingLife??30);roomAction("initialize",{game:initial})},[isHost,roomId,roomToken,roomInfo?.status,roomInfo?.startingRole,roomInfo?.game]);
  /* Card moments are deliberately serialized: a new spell or summon waits for the previous
     animation to finish instead of replacing it halfway through. */
@@ -721,7 +722,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
     if(!attacker){setSharedCombat({...action,stage:"resolved",result:"O atacante deixou o campo durante a resposta.",winnerText:"ATAQUE CANCELADO",destroyed:["attacker"]});return}
     const blockers=legalDefenders(attacker,attackingPlayer,defendingPlayer);if(!blockers.length){setSharedCombat({...action,targetHero:true,stage:"charging"});return}
     if(action.attackerOwner===1){setSharedCombat({...action,stage:"choosing"});return}
-    const safest=currentAtk(attacker,attackingPlayer)<defendingPlayer.life-5,direct=difficulty==="Fácil"?Math.random()<.45:safest&&blockers.every(unit=>currentHp(unit,defendingPlayer)<=currentAtk(attacker,attackingPlayer));if(direct){setSharedCombat({...action,targetHero:true,stage:"charging"});return}const defender=[...blockers].sort((a,b)=>currentHp(a,defendingPlayer)-currentHp(b,defendingPlayer))[0];setSharedCombat({...action,targetHero:false,defenderUid:defender.uid,defenderCard:baseCard(defender),stage:"charging"});return
+    const blockPlan=chooseAdvancedAIBlock(game,defenderOwner,attacker,difficulty);if(blockPlan.takeDamage||!blockPlan.defenderId){setSharedCombat({...action,targetHero:true,stage:"charging"});return}const defender=blockers.find(unit=>unit.uid===blockPlan.defenderId)||[...blockers].sort((a,b)=>currentHp(a,defendingPlayer)-currentHp(b,defendingPlayer))[0];setSharedCombat({...action,targetHero:false,defenderUid:defender.uid,defenderCard:baseCard(defender),stage:"charging"});return
    }
    if(action.stage==="charging"){setSharedCombat({...action,stage:"impact"});return}
    if(action.stage==="impact"){
@@ -746,7 +747,8 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
 
  useEffect(()=>{
   const decision=game?.pendingDecision;if(!game||mode!=="bot"||!decision||(decision.owner!==1&&decision.context?.decisionOwner!==1))return;
-  const timer=window.setTimeout(()=>{const command=chooseAIDecision(game,1,difficulty);if(command)void runRulesCommand(command,1)},260);
+  const decisionKey=`${game.round}:${game.events}:${decision.kind}`;
+  const timer=window.setTimeout(()=>{void chooseAdvancedAIDecision(game,1,difficulty).then(command=>{const current=currentGameRef.current,currentDecision=current?.pendingDecision;if(!command||!current||`${current.round}:${current.events}:${currentDecision?.kind||""}`!==decisionKey)return;void runRulesCommand(command,1)})},120);
   return()=>window.clearTimeout(timer)
  },[game,mode,difficulty]);
 
@@ -758,13 +760,15 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
    }
    const evolutionTargets=levelTargets(game.players[1]),evolutionNeed=evolutionTargets[game.players[1].level-1]??999,evolutionCost=game.players[1].level===1?2:3;
    if(game.phase==="principal"&&game.players[1].level<3&&game.players[1].levelUpsThisTurn===0&&heroEvolutionProgress(game.players[1])>=evolutionNeed&&game.players[1].energy+game.players[1].reserve>=evolutionCost){update(g=>{const p=g.players[1],fromEnergy=Math.min(p.energy,evolutionCost);p.energy-=fromEnergy;p.reserve-=evolutionCost-fromEnergy;p.level++;p.levelUpsThisTurn++;log(g,`A IA evoluiu ${deckById(p.heroId).name} para o nível ${p.level}.`,"effect")});return}
-   const heroAction=chooseAIHeroAbility(game,1,difficulty);if(heroAction){if(heroAction.kind==="gimble-ready"){void runRulesCommand({type:"activateHero",owner:1,abilityId:"gimble-level-2",targetIds:heroAction.targetId?[heroAction.targetId]:[]},1)}else{const abilityId=heroAction.kind==="saymon-lifesteal"?"saymon-level-2":heroAction.kind==="saymon-damage"?"saymon-level-1":heroAction.kind==="ngoro-stealth"?"ngoro-level-3":heroAction.kind==="ngoro-clue-action"?"ngoro-level-2":heroAction.kind==="nature-markers"?"natureza-level-1":"";if(abilityId)void runRulesCommand({type:"activateHero",owner:1,abilityId,targetIds:heroAction.targetId?[heroAction.targetId]:[]},1)}return}
-   const player=game.players[1],profile=aiDifficultyProfile(difficulty),candidates=buildAIActionCandidates(game,1,difficulty).filter(command=>player.turnCardsPlayed<profile.cardBudget||command.type!=="playCard");
-   const command=candidates.find(candidate=>{try{executeCommand(structuredClone(game),candidate,{priority:true});return true}catch{return false}})??(game.phase!=="principal"?{type:"advancePhase",owner:1}:null);
-   if(!command)return;
-   if(command.type==="playCard"){const card=player.hand.find(item=>item.id===command.cardId);if(card){const kind:VisualFx["kind"]=card.type==="Criatura"?"summon":card.type==="Feitiço"?"spell":card.type==="Terreno"?"terrain":"artifact";showFx(kind,"AÇÃO DO OPONENTE",card.name,card)}}
-   void runRulesCommand(command,1)
-  },difficulty==="Difícil"?300:520);
+   const player=game.players[1],searchKey=`${game.round}:${game.events}:${game.phase}:${player.hand.length}:${player.energy}:${player.reserve}`;
+   void chooseAdvancedAIAction(game,1,difficulty).then(command=>{
+    const current=currentGameRef.current,currentPlayer=current?.players?.[1],currentKey=current&&currentPlayer?`${current.round}:${current.events}:${current.phase}:${currentPlayer.hand.length}:${currentPlayer.energy}:${currentPlayer.reserve}`:"";
+    if(!command||currentKey!==searchKey||current?.winner!=null||current?.pendingDecision||current?.pendingResponse)return;
+    try{executeCommand(structuredClone(current),command,{priority:true})}catch{return}
+    if(command.type==="playCard"){const card=currentPlayer.hand.find(item=>item.id===command.cardId);if(card){const kind:VisualFx["kind"]=card.type==="Criatura"?"summon":card.type==="Feitiço"?"spell":card.type==="Terreno"?"terrain":"artifact";showFx(kind,"AÇÃO DO OPONENTE",card.name,card)}}
+    void runRulesCommand(command,1)
+   })
+  },80);
   return()=>window.clearTimeout(timer)
  },[game,mode,difficulty,responseWindow,combatAction,visualFx,visualFxQueue.length]);
 
@@ -772,17 +776,17 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
   if(!game||mode!=="bot"||game.active!==1||game.phase!=="combate"||game.winner!==null||combatAction||responseWindow)return;
   const t=setTimeout(()=>{
    const legal=orderAIAttackers(game.players[1],difficulty) as Unit[],legalIds=new Set(legal.map(unit=>unit.uid));
-   const queued=aiAttackQueue.find(uid=>legalIds.has(uid));
+   const planned=planAdvancedAIAttacks(game,1,difficulty).filter(uid=>legalIds.has(uid));
+   const queued=aiAttackQueue.find(uid=>legalIds.has(uid)&&planned.includes(uid));
    if(queued){setAiAttackQueue(aiAttackQueue.filter(uid=>uid!==queued));beginAttack(1,queued);return}
-   const ready=legal.map(unit=>unit.uid);
+   const ready=planned;
    if(ready.length){setAiAttackQueue(ready.slice(1));beginAttack(1,ready[0]);return}
    setAiAttackQueue([]);update(g=>{if(g.active===1&&g.phase==="combate"){g.players.forEach(player=>player.board.forEach(unit=>{if(unit.defenseUses>0)unit.exhausted=true}));g.phase="fim";log(g,"A IA encerrou a etapa de combate.","phase")}});
-  },520);
+  },180);
   return()=>clearTimeout(t);
  },[game,mode,difficulty,combatAction,responseWindow,aiAttackQueue]);
 
- useEffect(()=>{const authoritativePending=game?.pendingResponse;if(authoritativePending?.responder!==1||mode!=="bot")return;const pendingKey=`${authoritativePending.actor}:${authoritativePending.responder}:${authoritativePending.passes??0}:${authoritativePending.action}`;const snapshot=currentGameRef.current;if(!snapshot||snapshot.winner!==null||snapshot.pendingResponse?.responder!==1)return;const delay=(authoritativePending.passes??0)>0?40:legalPriorityResponses(snapshot,1).length?420:50;const act=()=>{const current=currentGameRef.current;if(!current||current.winner!==null||mode!=="bot")return;const pending=current.pendingResponse;if(!pending||pending.responder!==1)return;const currentKey=`${pending.actor}:${pending.responder}:${pending.passes??0}:${pending.action}`;if(currentKey!==pendingKey)return;const command=chooseAIResponse(current,1,Math.random);const fallback=async()=>{await passPriorityWindow(1,true)};if(command.type==="passPriority"){void fallback();return}if(command.type==="activateHero"){void runRulesCommand(command,1).then(accepted=>{if(!accepted)void fallback()});return}const card=current.players[1].hand.find(c=>c.id===command.cardId),completed=card?completeAIPlayCommand(current,1,card,difficulty,{hasPriority:true}):null;if(!completed){void fallback();return}void runRulesCommand(completed,1).then(accepted=>{if(!accepted)void fallback()})};const t=setTimeout(act,delay);/* Last-resort progress guard: if the exact same bot-owned priority window survives
- for far longer than a normal decision, force a pass instead of leaving the match locked. */const watchdog=setTimeout(()=>{const current=currentGameRef.current,pending=current?.pendingResponse;if(!current||pending?.responder!==1)return;const currentKey=`${pending.actor}:${pending.responder}:${pending.passes??0}:${pending.action}`;if(currentKey===pendingKey)void passPriorityWindow(1,true)},1600);return()=>{clearTimeout(t);clearTimeout(watchdog)}},[game?.pendingResponse?.actor,game?.pendingResponse?.responder,game?.pendingResponse?.passes,game?.pendingResponse?.action,mode,difficulty]);
+ useEffect(()=>{const authoritativePending=game?.pendingResponse;if(authoritativePending?.responder!==1||mode!=="bot")return;const pendingKey=`${authoritativePending.actor}:${authoritativePending.responder}:${authoritativePending.passes??0}:${authoritativePending.action}`;const snapshot=currentGameRef.current;if(!snapshot||snapshot.winner!==null||snapshot.pendingResponse?.responder!==1)return;const delay=(authoritativePending.passes??0)>0?40:legalPriorityResponses(snapshot,1).length?90:40;const act=()=>{const current=currentGameRef.current;if(!current||current.winner!==null||mode!=="bot")return;const pending=current.pendingResponse;if(!pending||pending.responder!==1)return;const currentKey=`${pending.actor}:${pending.responder}:${pending.passes??0}:${pending.action}`;if(currentKey!==pendingKey)return;const fallback=async()=>{await passPriorityWindow(1,true)};if(pending.actor===1&&(pending.passes??0)>0){void fallback();return}void chooseAdvancedAIResponse(current,1,difficulty).then(command=>{const latest=currentGameRef.current,latestPending=latest?.pendingResponse;if(!latest||!latestPending||latestPending.responder!==1)return;const latestKey=`${latestPending.actor}:${latestPending.responder}:${latestPending.passes??0}:${latestPending.action}`;if(latestKey!==pendingKey)return;if(command.type==="passPriority"){void fallback();return}void runRulesCommand(command,1).then(accepted=>{if(!accepted)void fallback()})})};const t=setTimeout(act,delay);/* Last-resort progress guard: a failed search must never leave the match locked. */const watchdog=setTimeout(()=>{const current=currentGameRef.current,pending=current?.pendingResponse;if(!current||pending?.responder!==1)return;const currentKey=`${pending.actor}:${pending.responder}:${pending.passes??0}:${pending.action}`;if(currentKey===pendingKey)void passPriorityWindow(1,true)},3200);return()=>{clearTimeout(t);clearTimeout(watchdog)}},[game?.pendingResponse?.actor,game?.pendingResponse?.responder,game?.pendingResponse?.passes,game?.pendingResponse?.action,mode,difficulty]);
  const responseBudget=(state:Game,owner:0|1)=>state.active===owner?state.players[owner].energy+state.players[owner].reserve:state.players[owner].reserve;
  const hasUsableAcceleratedResponse=(state:Game,owner:0|1=0)=>{const player=state.players[owner],budget=responseBudget(state,owner);return player.hand.some(card=>{if(!isFast(card)||effectiveCost(card,player)>budget)return false;const policy=playTargetPolicy(card);return policy.selections<=0||canChooseAllTargets(card,policy.steps||[])})};
  const usableAcceleratedResponses=(state:Game,owner:0|1=0)=>{const player=state.players[owner],budget=responseBudget(state,owner);return player.hand.map((card,index)=>({card,index,cost:effectiveCost(card,player)})).filter(({card,cost})=>{if(!isFast(card)||cost>budget)return false;const policy=playTargetPolicy(card);return policy.selections<=0||canChooseAllTargets(card,policy.steps||[])})};
@@ -921,7 +925,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
     {screen==="setup"&&<section className="match-setup"><button className="back" onClick={()=>setScreen("menu")}>← Menu</button><div className="setup-head"><p>{mode==="online"?"SALA MULTIPLAYER":"PREPARE O TESTE"}</p><h2>{mode==="online"?"Crie ou entre em uma sala":"Selecione os dois decks"}</h2><span>{mode==="online"?"Compartilhe o link da sala; os dois jogadores escolhem seus decks antes de iniciar.":"As listas usam até três cópias e sempre totalizam 49 cartas."}</span></div>
         {mode!=="online"&&<>
             <div className="versus"><DeckPicker label="SEU DECK" value={mine} onChange={setMine}/><strong>VS</strong><DeckPicker label="OPONENTE" value={enemy} onChange={setEnemy}/></div>
-            <div className="difficulty"><span>Inteligência da IA</span>{["Fácil","Normal","Difícil"].map(x=><button key={x} className={difficulty===x?"active":""} onClick={()=>setDifficulty(x)}>{x}</button>)}</div>
+            <div className="difficulty"><span>Inteligência da IA</span>{["Fácil","Normal","Difícil","Expert","Master"].map(x=><button key={x} className={difficulty===x?"active":""} onClick={()=>setDifficulty(x)}>{x}</button>)}</div>
             <button className="gold start" onClick={begin}>Iniciar partida de teste</button>
         </>}
         {mode==="online"&&<>
