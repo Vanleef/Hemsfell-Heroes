@@ -38,9 +38,13 @@ function simulationCandidates(state, owner, requested) {
 export function buildAIActionCandidates(state, owner, difficulty = "Normal") {
   const requested = effectiveAIDifficulty(difficulty);
   const raw = legacy.buildAIActionCandidates(state, owner, legacyDifficulty(requested));
-  return rankCompetitiveCandidates(state, owner, raw, requested, {
+  const ranked = rankCompetitiveCandidates(state, owner, raw, requested, {
     generate: (next, actor) => simulationCandidates(next, actor, requested),
   });
+  /* Keep the historical invariant that callers always have a terminal phase exit
+     at the end of the list. A strategically ranked pass may still appear earlier. */
+  const exit = raw.find(command => command.type === "advancePhase");
+  return exit ? [...ranked, exit] : ranked;
 }
 
 export function chooseValidatedAIAction(state, owner, validate, difficulty = "Normal") {
