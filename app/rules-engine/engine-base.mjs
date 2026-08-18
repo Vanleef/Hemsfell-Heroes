@@ -2,6 +2,7 @@ import { applyEffect, defaultEffectHandlers, recordLifeLoss, RulesViolation } fr
 import { hasSubtype } from "./subtypes.mjs";
 import { isValidTarget, targetPolicy, TargetScope } from "./targeting.mjs";
 import { abilitiesForLevel, getExplicitCardRule } from "./card-rules.mjs";
+import { canEvolveHero, evolveHero } from "./hero-evolution.mjs";
 
 export class RulesLoopError extends Error {
   constructor(message, trace) { super(message); this.name = "RulesLoopError"; this.trace = trace; }
@@ -81,12 +82,15 @@ function adjacentSupportBonus(state, unit, owner) {
 }
 function subtypeAuraBonus(state, unit, owner) { if (unit?.suffocated) return { attack: 0, health: 0 }; let attack = 0, health = 0; for (const source of permanentUnits(state.players[owner])) { if (source.suffocated) continue; for (const aura of source.staticModifiers || []) if (aura.type === "subtypeAura" && subtype(unit, aura.subtype)) { attack += aura.attack || 0; health += aura.health || 0; } } return { attack, health }; }
 function strongestAlly(state, unit, owner) { const allies = state.players[owner].board.filter((candidate) => candidate !== unit && !candidate.dynamicStats?.copyStrongestAlly), maximum = Math.max(0, ...allies.map((candidate) => baseAttack(state, candidate, owner))), tied = allies.filter((candidate) => baseAttack(state, candidate, owner) === maximum); return tied.find((candidate) => (candidate.uid || candidate.id) === unit.dynamicStats?.preferredSourceId) || tied.sort((a, b) => String(a.uid || a.id).localeCompare(String(b.uid || b.id)))[0]; }
+function subtypeCountAcrossFields(state, subtypeName) { return state.players.flatMap(permanentUnits).filter((card) => subtype(card, subtypeName)).length; }
 function baseAttack(state, unit, owner) {
-  if (!unit?.suffocated && unit?.dynamicStats?.subtypeCountAcrossFields) return state.players.flatMap(permanentUnits).filter((card) => subtype(card, unit.dynamicStats.subtypeCountAcrossFields)).length;
-  if (!unit?.suffocated && unit?.dynamicStats?.attackSubtype) return state.players.flatMap(permanentUnits).filter((card) => subtype(card, unit.dynamicStats.attackSubtype)).length;
   if (!unit?.suffocated && unit?.dynamicStats?.cardsMilledThisTurn) return state.players[owner].cardsMilledThisTurn || 0;
   if (!unit?.suffocated && unit?.dynamicStats?.copyStrongestAlly) { const strongest = strongestAlly(state, unit, owner); return strongest ? baseAttack(state, strongest, owner) : 0; }
-  const support = unit?.suffocated ? {attack:0} : adjacentSupportBonus(state, unit, owner), aura = subtypeAuraBonus(state, unit, owner); return Math.max(0, (unit?.atk || 0) + support.attack + aura.attack + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value, unit)).reduce((sum, value) => sum + (value.attack || 0), 0));
+  let base = unit?.atk || 0;
+  if (!unit?.suffocated && unit?.dynamicStats?.subtypeCountAcrossFields) base = subtypeCountAcrossFields(state, unit.dynamicStats.subtypeCountAcrossFields);
+  else if (!unit?.suffocated && unit?.dynamicStats?.attackSubtype) base += subtypeCountAcrossFields(state, unit.dynamicStats.attackSubtype);
+  const support = unit?.suffocated ? {attack:0} : adjacentSupportBonus(state, unit, owner), aura = subtypeAuraBonus(state, unit, owner);
+  return Math.max(0, base + support.attack + aura.attack + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value, unit)).reduce((sum, value) => sum + (value.attack || 0), 0));
 }
 function effectiveAttack(state, unit, owner) {
   if (unit?.attackZeroUntilOwnerMaintenance != null || unit?.frozen || hasKeyword(unit, /congelado/i)) return 0;
@@ -94,12 +98,13 @@ function effectiveAttack(state, unit, owner) {
   return baseAttack(state, unit, owner);
 }
 function effectiveHealth(state, unit, owner) {
-  if (!unit?.suffocated && unit?.dynamicStats?.subtypeCountAcrossFields) return Math.max(1, state.players.flatMap(permanentUnits).filter((card) => subtype(card, unit.dynamicStats.subtypeCountAcrossFields)).length);
-  if (!unit?.suffocated && unit?.dynamicStats?.healthSubtype) return Math.max(1, state.players.flatMap(permanentUnits).filter((card) => subtype(card, unit.dynamicStats.healthSubtype)).length);
   if (!unit?.suffocated && unit?.dynamicStats?.copyStrongestAlly) { const strongest = strongestAlly(state, unit, owner); return strongest ? effectiveHealth(state, strongest, owner) : 1; }
   if (!unit?.suffocated && unit?.dynamicStats?.bothFromAttack) { const strongest = state.players[owner].board.filter((candidate) => candidate !== unit).reduce((best, candidate) => Math.max(best, baseAttack(state, candidate, owner)), 0); return Math.max(1, strongest); }
+  let base = unit?.hp || 1;
+  if (!unit?.suffocated && unit?.dynamicStats?.subtypeCountAcrossFields) base = Math.max(1, subtypeCountAcrossFields(state, unit.dynamicStats.subtypeCountAcrossFields));
+  else if (!unit?.suffocated && unit?.dynamicStats?.healthSubtype) base += subtypeCountAcrossFields(state, unit.dynamicStats.healthSubtype);
   const support = unit?.suffocated ? {health:0} : adjacentSupportBonus(state, unit, owner), aura = subtypeAuraBonus(state, unit, owner);
-  return Math.max(0, (unit?.hp || 1) + support.health + aura.health + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value, unit)).reduce((sum, value) => sum + (value.health || 0), 0));
+  return Math.max(0, base + support.health + aura.health + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value, unit)).reduce((sum, value) => sum + (value.health || 0), 0));
 }
 function dealCombatDamage(state, target, targetOwner, source, sourceOwner, amount) {
   const shield = (target.damageShields || []).find((item) => item.uses > 0); const shieldReduction = shield?.reduction ?? (shield ? Number.POSITIVE_INFINITY : 0);
@@ -392,15 +397,16 @@ function preflightPlay(state, command, handlers) {
   return { card, playAbilities, enterAbilities, cost };
 }
 function cleanupLethal(state, stack) {
+  const boardCountBefore = state.players.reduce((sum, entry) => sum + (entry.board || []).length, 0);
   state.players.forEach((entry, owner) => {
     for (const unit of [...entry.board]) {
-      const modifiers = (unit.modifiers || []).filter((item) => modifierApplies(state, owner, item)).reduce((sum, item) => sum + (item.health || 0), 0);
-      const lethal = (unit.damage || 0) >= (unit.hp || 1) + modifiers;
+      const lethalHealth = effectiveHealth(state, unit, owner);
+      const lethal = (unit.damage || 0) >= lethalHealth;
       const protector = permanentUnits(entry).find((source) => !source.suffocated && (source.staticModifiers || []).some((item) => item.type === "protectAlliedDragonsOncePerTurn") && subtype(unit, "Dragão") && usageAvailable(state, source, owner, { id: "dragon-lethal-protection", usageLimit: { count: 1, period: "turn" } }));
       if (!lethal || hasKeyword(unit, /indestrut[ií]vel/i)) continue;
-      if (protector) { unit.damage = Math.max(0, (unit.hp || 1) + modifiers - 1); claimUsage(state, protector, owner, { id: "dragon-lethal-protection", usageLimit: { count: 1, period: "turn" } }); continue; }
+      if (protector) { unit.damage = Math.max(0, lethalHealth - 1); claimUsage(state, protector, owner, { id: "dragon-lethal-protection", usageLimit: { count: 1, period: "turn" } }); continue; }
       const zayanReplacements = entry.heroId === "zayan" && (entry.level || 1) >= 2 && !(unit.text || "").trim() ? entry.board.filter((card) => card !== unit) : [];
-      if (!state.pendingDecision && zayanReplacements.length) { unit.damage = Math.max(0, (unit.hp || 1) + modifiers - 1); state.pendingDecision = { kind: "zayan-destruction-replacement", owner, effect: { type: "zayanDestructionReplacement", originalId: unit.uid || unit.id, lethal: true, choices: zayanReplacements.map((card) => card.uid || card.id) }, context: { owner, decisionOwner: owner, sourceId: unit.lastDamagedBy?.sourceId }, sourceName: "Zayan II" }; continue; }
+      if (!state.pendingDecision && zayanReplacements.length) { unit.damage = Math.max(0, lethalHealth - 1); state.pendingDecision = { kind: "zayan-destruction-replacement", owner, effect: { type: "zayanDestructionReplacement", originalId: unit.uid || unit.id, lethal: true, choices: zayanReplacements.map((card) => card.uid || card.id) }, context: { owner, decisionOwner: owner, sourceId: unit.lastDamagedBy?.sourceId }, sourceName: "Zayan II" }; continue; }
       if (unit.returnCombatPairOnDefeat && unit.lastDamagedBy?.combat) {
         const winnerOwner = unit.lastDamagedBy.sourceOwner, winnerEntry = state.players[winnerOwner], winner = winnerEntry?.board.find((card) => (card.uid || card.id) === unit.lastDamagedBy.sourceId);
         entry.board.splice(entry.board.indexOf(unit), 1); const defeatedAttachments = entry.support.filter((card) => card.attachedTo === unit.uid); entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid); for (const attachment of defeatedAttachments) if (!attachment.generatedImage && !attachment.imageCard) entry.grave.push(resetCardForZone(state, attachment)); if (!unit.generatedImage && !unit.imageCard) entry.hand.push({ ...resetCardForZone(state, unit), revealed: true, revealedTo: [0, 1] });
@@ -431,6 +437,8 @@ function cleanupLethal(state, stack) {
       stack.push({ kind: "event", event: { type: "onCreatureDestroyed", owner, cardId: unit.uid, card: unit, destroyedBySourceId: unit.lastDamagedBy?.sourceId, destroyedByOwner: unit.lastDamagedBy?.sourceOwner } });
     }
   });
+  const boardCountAfter = state.players.reduce((sum, entry) => sum + (entry.board || []).length, 0);
+  if (!state.pendingDecision && boardCountAfter < boardCountBefore) cleanupLethal(state, stack);
 }
 
 function resetCardForZone(state, card) {
@@ -521,7 +529,12 @@ export function executeCommand(inputState, command, options = {}) {
     const item = stack.pop(); trace.push({ step: steps, kind: item.kind, type: item.command?.type || item.effect?.type || item.event?.type });
     if (state.pendingDecision && !(item.kind === "command" && item.command?.type === "resolveDecision")) { state.pendingDecision.continuation = [item, ...stack.splice(0), ...(state.pendingDecision.continuation || [])]; continue; }
     if (item.kind === "command") {
-      if (item.command.type === "passPriority") {
+      if (item.command.type === "evolveHero") {
+        if (state.pendingResponse || state.pendingAction || state.pendingDecision) throw new RulesViolation("hero-evolution-window-busy");
+        if (!canEvolveHero(state, item.command.owner) || !evolveHero(state, item.command.owner)) throw new RulesViolation("hero-evolution-unavailable");
+        const evolved = state.players[item.command.owner];
+        actionLabel = `evolve-${evolved.heroId}-level-${evolved.level}`;
+      } else if (item.command.type === "passPriority") {
         const pending = state.pendingResponse;
         if (!pending || pending.responder !== item.command.owner) throw new RulesViolation("not-your-priority");
         if ((pending.passes || 0) === 0) state.pendingResponse = { ...pending, responder: pending.actor, passes: 1 };

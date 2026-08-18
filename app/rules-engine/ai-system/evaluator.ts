@@ -107,7 +107,8 @@ export class Evaluator {
     const initiative = state.active === owner ? (state.phase === "principal" ? 0.65 : state.phase === "combate" ? 0.9 : 0.25) : -0.2;
     const tempo = (boardDelta + initiative + (ownReadyAttack - enemyReadyAttack) * 0.12) * w.tempo;
     const interaction = ((removalCount(me) - removalCount(foe)) * w.removal + (responseCount(me) - responseCount(foe)) * w.responseValue);
-    const synergy = (synergyScore(me) - synergyScore(foe)) * w.synergy;
+    const heroLevelValue = (Number(me.level || 1) - Number(foe.level || 1)) * 4.5;
+    const synergy = (synergyScore(me) - synergyScore(foe)) * w.synergy + heroLevelValue;
 
     const ownBoardCount = (me.board || []).length;
     // This operates on a determinized state during search; callers that evaluate

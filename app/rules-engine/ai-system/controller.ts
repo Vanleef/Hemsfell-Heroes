@@ -82,7 +82,7 @@ const emitThinking = (thinking: boolean, detail: Record<string, unknown> = {}) =
 };
 
 const actionKey = (action: AIAction | null) => action ? JSON.stringify(action) : "";
-const actionPriority = (action: AIAction) => action.type === "attack" ? 0 : action.type === "activate" || action.type === "activateHero" ? 1 : action.type === "playCard" ? 2 : action.type === "resolveDecision" ? 3 : action.type === "passPriority" ? 4 : 5;
+const actionPriority = (action: AIAction) => action.type === "attack" ? 0 : action.type === "activate" || action.type === "activateHero" ? 1 : action.type === "playCard" ? 2 : action.type === "resolveDecision" ? 3 : action.type === "evolveHero" ? 4 : action.type === "passPriority" ? 5 : 6;
 
 export class AIController {
   private difficulty: AIDifficulty;
