@@ -52,7 +52,7 @@ jobs:
         run: npm run ai:calibrate:smoke
 
       - name: Lint changed application surfaces
-        run: npx eslint app/layout.tsx app/match-ui-guard.tsx app/match-ui-runtime.tsx app/hero-faction-normalizer.tsx app/rules-engine/engine.mjs app/rules-engine/match-integrity.mjs tests/priority-wedding-ring-regressions.test.mjs
+        run: npx eslint app/layout.tsx app/match-ui-guard.tsx app/match-ui-runtime.tsx app/rules-engine/engine.mjs app/rules-engine/match-integrity.mjs tests/priority-wedding-ring-regressions.test.mjs
 
       - name: Report repository-wide legacy lint debt
         continue-on-error: true
