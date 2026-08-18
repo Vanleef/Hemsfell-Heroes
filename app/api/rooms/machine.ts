@@ -3,6 +3,10 @@ import { reconcileOnlineClocks } from "./online-clock.mjs";
 import { executeOnlineCommand } from "../../rules-engine/online-priority-engine.mjs";
 import { shouldAutoPass } from "../../rules-engine/priority.mjs";
 
+/* `executeOnlineCommand` is the Online timing wrapper around the authoritative
+ * rules-engine executeCommand path; room clients still never mutate rules
+ * state directly. */
+
 export type RoomRole = "host" | "guest";
 export type RoomStatus = "waiting" | "deck-selection" | "coin-choice" | "mulligan" | "started" | "finished";
 
