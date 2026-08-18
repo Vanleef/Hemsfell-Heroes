@@ -8,7 +8,7 @@ import { Evaluator } from "./evaluator";
 import { MCTS } from "./mcts";
 import { adaptivePersonality, personalityForHero } from "./personality";
 import { RiskManager } from "./risk";
-import type { AIAction, AIChoiceResult, AIDifficulty, AIGameState, AIObservation, EngineAdapter, OpponentMemory, PersonalityProfile } from "./types";
+import type { AIAction, AIChoiceResult, AIDifficulty, AIGameState, AIObservation, DifficultyConfig, EngineAdapter, OpponentMemory, PersonalityProfile } from "./types";
 
 const cloneState = <T,>(state: T): T => structuredClone(state);
 
@@ -90,6 +90,21 @@ const actionKey = (action: AIAction | null) => action ? JSON.stringify(action) :
 const actionPriority = (action: AIAction) => action.type === "attack" ? 0 : action.type === "activate" || action.type === "activateHero" ? 1 : action.type === "playCard" ? 2 : action.type === "resolveDecision" ? 3 : action.type === "evolveHero" ? 4 : action.type === "passPriority" ? 5 : 6;
 const adaptationStrength = (difficulty: AIDifficulty) => difficulty === "Master" ? 1 : difficulty === "Expert" ? 0.78 : difficulty === "Hard" ? 0.55 : difficulty === "Normal" ? 0.28 : 0;
 
+const prioritySearchBudget = (base: DifficultyConfig, difficulty: AIDifficulty): DifficultyConfig => {
+  const cap = difficulty === "Master" ? { iterations: 240, thinkTimeMs: 380, rolloutDepth: 5 }
+    : difficulty === "Expert" ? { iterations: 160, thinkTimeMs: 300, rolloutDepth: 4 }
+    : difficulty === "Hard" ? { iterations: 96, thinkTimeMs: 220, rolloutDepth: 4 }
+    : difficulty === "Normal" ? { iterations: 48, thinkTimeMs: 140, rolloutDepth: 3 }
+    : { iterations: 0, thinkTimeMs: 70, rolloutDepth: 2 };
+  return {
+    ...base,
+    iterations: Math.min(base.iterations, cap.iterations),
+    thinkTimeMs: Math.min(base.thinkTimeMs, cap.thinkTimeMs),
+    rolloutDepth: Math.min(base.rolloutDepth, cap.rolloutDepth),
+    yieldEvery: Math.min(base.yieldEvery, 8),
+  };
+};
+
 export class AIController {
   private difficulty: AIDifficulty;
   private belief: BeliefModel;
@@ -122,7 +137,10 @@ export class AIController {
 
   async chooseAction(state: AIGameState, owner: number): Promise<AIChoiceResult> {
     const baseConfig = DIFFICULTY_CONFIG[this.difficulty];
-    const config = state.__calibrationSeed != null ? { ...baseConfig, evaluationNoise: 0 } : baseConfig;
+    const pendingPriority = state.pendingResponse as any;
+    const priorityWindow = !!pendingPriority && pendingPriority.responder === owner;
+    const tunedConfig = priorityWindow ? prioritySearchBudget(baseConfig, this.difficulty) : baseConfig;
+    const config = state.__calibrationSeed != null ? { ...tunedConfig, evaluationNoise: 0 } : tunedConfig;
     const key = `${state.players[owner]?.heroId}:${owner}:${state.players[1 - owner]?.deck?.length ?? 0}:${state.round}`;
     if (!this.initializedFor || this.initializedFor.split(":").slice(0, 2).join(":") !== key.split(":").slice(0, 2).join(":")) {
       this.belief.initialize(state, owner, config.particleCount);
@@ -146,7 +164,14 @@ export class AIController {
     const entropy = this.belief.entropy();
     if (!legal.length) return { action: null, stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: 0, beliefEntropy: entropy }, personality: personality.id, difficulty: this.difficulty, beliefEntropy: entropy };
 
-    emitThinking(true, { difficulty: this.difficulty, personality: personality.id, expectedMs: config.thinkTimeMs, beliefEntropy: entropy });
+    if (priorityWindow && pendingPriority.actor === owner && Number(pendingPriority.passes || 0) > 0) {
+      return { action: { type: "passPriority", owner, auto: true }, stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: 0, beliefEntropy: entropy }, personality: personality.id, difficulty: this.difficulty, beliefEntropy: entropy };
+    }
+    if (priorityWindow && legal.every((action) => action.type === "passPriority")) {
+      return { action: { type: "passPriority", owner, auto: true }, stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: 0, beliefEntropy: entropy }, personality: personality.id, difficulty: this.difficulty, beliefEntropy: entropy };
+    }
+
+    emitThinking(true, { difficulty: this.difficulty, personality: personality.id, expectedMs: config.thinkTimeMs, beliefEntropy: entropy, context: priorityWindow ? "priority" : "turn" });
     try {
       const planningState = this.belief.determinize(state, owner);
 
@@ -175,7 +200,7 @@ export class AIController {
         return { action: picked?.action || legal[0], stats: { iterations: 0, elapsedMs: 0, rootVisits: 0, selectedVisits: 0, selectedMeanValue: picked?.score || 0, beliefEntropy: entropy }, personality: personality.id, difficulty: this.difficulty, evaluation: picked?.score || 0, lethalMargin, beliefEntropy: entropy };
       }
 
-      if (["Hard", "Expert", "Master"].includes(this.difficulty)) {
+      if (!priorityWindow && ["Hard", "Expert", "Master"].includes(this.difficulty)) {
         const lethalAction = this.findRobustForcedLethal(state, owner, legal, legalDifficulty);
         if (lethalAction) {
           return { action: lethalAction, stats: { iterations: 0, elapsedMs: 0, rootVisits: 1, selectedVisits: 1, selectedMeanValue: 1_000_000, beliefEntropy: entropy }, personality: personality.id, difficulty: this.difficulty, evaluation: 1_000_000, lethalMargin: this.evaluator.estimateLethal(planningState, owner).margin, beliefEntropy: entropy };
@@ -185,7 +210,7 @@ export class AIController {
       const result = await this.mcts.search({ state, owner, config, personality, belief: this.belief, adapter: this.adapter, evaluator: this.evaluator, riskManager: this.risk, legacyDifficulty: legalDifficulty, random: this.random });
       let action = result.action;
 
-      if (action && config.intentionalErrorRate > 0 && legal.length > 1 && this.random() < config.intentionalErrorRate) {
+      if (!priorityWindow && action && config.intentionalErrorRate > 0 && legal.length > 1 && this.random() < config.intentionalErrorRate) {
         const alternatives = legal.filter((candidate) => actionKey(candidate) !== actionKey(action));
         if (this.difficulty === "Normal") {
           const baselineScore = this.plausibilityScore(planningState, owner, personality, action);
@@ -212,7 +237,7 @@ export class AIController {
       emitDebug({ difficulty: this.difficulty, personality: personality.id, belief: this.belief.diagnostics(), opponentMemory: this.opponentMemory, action, evaluation, lethalMargin, stats: result.stats });
       return { action, stats: result.stats, personality: personality.id, difficulty: this.difficulty, evaluation, lethalMargin, beliefEntropy: entropy };
     } finally {
-      emitThinking(false, { difficulty: this.difficulty, personality: personality.id });
+      emitThinking(false, { difficulty: this.difficulty, personality: personality.id, context: priorityWindow ? "priority" : "turn" });
     }
   }
 
