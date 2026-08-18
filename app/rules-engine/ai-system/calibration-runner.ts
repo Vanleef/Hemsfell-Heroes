@@ -17,6 +17,7 @@ export interface CalibrationRunReport {
   accuracy: number;
   accuracyByDifficulty: Record<string, number>;
   accuracyByCategory: Record<string, number>;
+  accuracyByDifficultyAndCategory: Record<string, Record<string, number>>;
   seed: number;
 }
 
@@ -31,6 +32,13 @@ const ratioMap = (results: CalibrationResult[], key: (result: CalibrationResult)
   }
   return Object.fromEntries([...buckets].map(([name, bucket]) => [name, bucket.total ? bucket.ok / bucket.total : 0]));
 };
+
+const matrixByDifficultyAndCategory = (results: CalibrationResult[]) => Object.fromEntries(
+  [...new Set(results.map((result) => result.difficulty))].map((difficulty) => {
+    const subset = results.filter((result) => result.difficulty === difficulty);
+    return [difficulty, ratioMap(subset, (result) => result.category)];
+  }),
+);
 
 const hash = (value: string): number => {
   let result = 2166136261;
@@ -102,5 +110,6 @@ export async function runCalibrationCorpus(options: CalibrationRunOptions = {}):
     accuracy: results.length ? results.filter((result) => result.acceptable).length / results.length : 0,
     accuracyByDifficulty: ratioMap(results, (result) => result.difficulty),
     accuracyByCategory: ratioMap(results, (result) => result.category),
+    accuracyByDifficultyAndCategory: matrixByDifficultyAndCategory(results),
   };
 }
