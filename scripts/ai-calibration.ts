@@ -6,12 +6,27 @@ import type { AIDifficulty } from "../app/rules-engine/ai-system/types";
 const arg = (name: string) => process.argv.find((item) => item.startsWith(`--${name}=`))?.slice(name.length + 3);
 const allowed: AIDifficulty[] = ["Easy", "Normal", "Hard", "Expert", "Master"];
 
+interface CalibrationRequirement {
+  difficulty: AIDifficulty;
+  category: string;
+  minimum: number;
+}
+
+const requirements = (raw?: string): CalibrationRequirement[] => (raw || "").split(",").filter(Boolean).map((entry) => {
+  const [difficulty, category, minimum] = entry.split(":");
+  if (!allowed.includes(difficulty as AIDifficulty) || !category || !Number.isFinite(Number(minimum))) {
+    throw new Error(`Invalid calibration requirement: ${entry}`);
+  }
+  return { difficulty: difficulty as AIDifficulty, category, minimum: Number(minimum) };
+});
+
 async function main() {
   const requested = (arg("difficulty") || allowed.join(",")).split(",").filter((item): item is AIDifficulty => allowed.includes(item as AIDifficulty));
   const scenarioIds = arg("scenarios")?.split(",").filter(Boolean);
   const repeats = Math.max(1, Number(arg("repeats") || 1));
   const seed = Number(arg("seed") || 20260818);
   const outDir = resolve(arg("out") || "reports/ai");
+  const required = requirements(arg("require"));
   const started = Date.now();
   let lastPercent = -1;
 
@@ -47,6 +62,16 @@ async function main() {
   await writeFile(resolve(outDir, `calibration-${stamp}.json`), JSON.stringify({ summary, results: report.results }, null, 2));
   await writeFile(resolve(outDir, `calibration-${stamp}.csv`), report.telemetry.toCSV());
   process.stdout.write(`${JSON.stringify(summary, null, 2)}\n`);
+
+  const failures = required.flatMap((rule) => {
+    const actual = rule.category === "*"
+      ? Number(report.accuracyByDifficulty[rule.difficulty] ?? 0)
+      : Number(report.accuracyByDifficultyAndCategory[rule.difficulty]?.[rule.category] ?? 0);
+    return actual + 1e-9 < rule.minimum
+      ? [`${rule.difficulty}:${rule.category} ${actual.toFixed(3)} < ${rule.minimum.toFixed(3)}`]
+      : [];
+  });
+  if (failures.length) throw new Error(`AI calibration gate failed: ${failures.join("; ")}`);
 }
 
 main().catch((error) => {
