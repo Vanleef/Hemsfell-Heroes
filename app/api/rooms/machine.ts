@@ -1,5 +1,5 @@
 import { ROOM_LIMITS } from "./constants";
-import { executeCommand } from "../../rules-engine/engine.mjs";
+import { executeOnlineCommand } from "../../rules-engine/online-priority-engine.mjs";
 import { shouldAutoPass } from "../../rules-engine/priority.mjs";
 
 export type RoomRole = "host" | "guest";
@@ -105,22 +105,30 @@ export function applyTimeout(room: Room) {
   }
   if (room.game.pendingResponse?.deadline && room.game.pendingResponse.deadline <= now) {
     const pending = room.game.pendingResponse; const owner = pending.responder;
-    try { const result = executeCommand(room.game, { type: "passPriority", owner, auto: true }, { priority: true }); room.game = result.state; } catch { return false; }
+    try { const result = executeOnlineCommand(room.game, { type: "passPriority", owner, auto: true }, { priority: true }); room.game = result.state; } catch { return false; }
     if (room.game.pendingResponse) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
     room.game.events = (room.game.events ?? 0) + 1;
     room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de resposta terminou; a prioridade foi passada automaticamente.", tone: "response" }, ...(room.game.log ?? [])];
     return true;
   }
   if (room.game.turnDeadline && room.game.turnDeadline <= now) {
-    room.game.active = room.game.active === 0 ? 1 : 0;
-    room.game.phase = "manutencao";
-    room.game.round = (room.game.round ?? 1) + 1;
-    room.game.pendingResponse = null;
-    room.game.combatAction = null;
-    room.game.turnDeadline = deadline(room.settings.turnSeconds);
-    room.game.events = (room.game.events ?? 0) + 1;
-    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo do turno terminou. O turno passou automaticamente.", tone: "phase" }, ...(room.game.log ?? [])];
-    return true;
+    /* A turn timeout may request a legal phase transition, but it must never
+       erase a live stack/decision/combat exchange by teleporting directly to
+       the opponent's Maintenance. Interactive checkpoints keep their state and
+       are handled by their own response/decision flow. */
+    if (!room.game.pendingDecision && !room.game.pendingReposition && !room.game.combatAction && ["principal", "combate", "fim"].includes(room.game.phase)) {
+      try {
+        const owner = room.game.active;
+        const result = executeOnlineCommand(room.game, { type: "advancePhase", owner, auto: true }, { priority: true });
+        room.game = result.state;
+        if (room.game.pendingResponse) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
+        else room.game.turnDeadline = deadline(room.settings.turnSeconds);
+        room.game.events = (room.game.events ?? 0) + 1;
+        room.game.log = [{ id: crypto.randomUUID(), text: "O tempo da etapa terminou; foi solicitada a passagem pelo fluxo normal de prioridade.", tone: "phase" }, ...(room.game.log ?? [])];
+        return true;
+      } catch { return false; }
+    }
+    return false;
   }
   return false;
 }
@@ -129,7 +137,7 @@ export function applySafeAutoPass(room: Room, role: RoomRole, control: "assisted
   if (!room.game || room.status !== "started") return false;
   const owner = role === "host" ? 0 : 1;
   if (!shouldAutoPass(room.game, owner, control)) return false;
-  const result = executeCommand(room.game, { type: "passPriority", owner, auto: true }, { priority: true });
+  const result = executeOnlineCommand(room.game, { type: "passPriority", owner, auto: true }, { priority: true });
   room.game = result.state;
   if (room.game.pendingResponse) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
   room.revision++;
@@ -142,10 +150,9 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
   const pending = room.game.pendingResponse;
   const roleIndex = role === "host" ? 0 : 1;
   if (pending) {
-    if (pending.actor === roleIndex) return { ok: false, status: 423, error: "waiting for opponent response" };
     if (pending.responder !== roleIndex) return { ok: false, status: 403, error: "response belongs to opponent" };
     if (nextGame.pendingResponse && nextGame.pendingResponse.responder === pending.responder) {
-      return { ok: false, status: 400, error: "response must resolve or pass priority" };
+      return { ok: false, status: 400, error: "response must resolve, add to stack, or pass priority" };
     }
   } else if (room.game.active !== roleIndex && !nextGame.pendingResponse) {
     return { ok: false, status: 403, error: "not your priority" };
@@ -153,11 +160,10 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
   return { ok: true, status: 200, error: "" };
 }
 
+const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "declareAttack", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
 
-const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "declareAttack", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
-
-/** Transitional server-authoritative command path. The server owns the player
- * index, validates the room revision and runs the deterministic rules engine. */
+/** Server-authoritative command path. The server owns the player index,
+ * validates room revision and routes Online timing through one priority kernel. */
 export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record<string, unknown>, baseRevision: unknown) {
   if (room.status !== "started" || !room.game) return { ok: false, status: 409, error: "room not started" };
   if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };
@@ -170,7 +176,7 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
       if (!combat || combat.stage !== "charging" || combat.attackerOwner !== owner || combat.attackerUid !== command.attackerId || (!!combat.targetHero !== !command.defenderId) || (combat.defenderUid || undefined) !== (command.defenderId || undefined)) return { ok: false, status: 409, error: "combat state mismatch" };
       command.skipPriority = true;
     }
-    const result = executeCommand(room.game, command, { priority: true });
+    const result = executeOnlineCommand(room.game, command, { priority: true });
     room.game = result.state;
     if (room.game.pendingResponse && !room.game.pendingResponse.deadline) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
     room.game.turnDeadline = deadline(room.settings.turnSeconds);
