@@ -3,6 +3,7 @@ import type { AIAction, AIGameState, PersonalityProfile } from "./types";
 const text = (card: any) => String(`${card?.text || ""} ${(card?.tags || []).join(" ")}`).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const currentAttack = (card: any) => Math.max(0, Number(card?.atk || 0) + Number(card?.bonusAtk || 0) + Number(card?.temporaryAtk || 0));
 const responseCards = (player: any) => (player.hand || []).filter((card: any) => /acelerado|destrua|dano|retorne|previna|barreira/.test(text(card)));
+const representedSweep = (player: any) => (player.hand || []).some((card: any) => /todas? .*criaturas|cada criatura|todas? .*unidades/.test(text(card)));
 
 export interface RiskDecision {
   hold: boolean;
@@ -46,13 +47,17 @@ export class RiskManager {
     if (boardSize < 3) return true;
     const lethalPressure = (me.board || []).reduce((sum: number, card: any) => sum + currentAttack(card), 0) >= Number(foe.life || 0);
     if (lethalPressure) return true;
+    // A revealed/represented sweeper is qualitatively different from generic
+    // hidden-hand risk. Even aggressive profiles should demand a real closing
+    // payoff before committing another body into it.
+    if (representedSweep(foe)) return false;
     const sweepRisk = Math.min(1, enemyCards / 7) * (boardSize - 2) / 3;
     return profile.riskTolerance > sweepRisk;
   }
 
   /**
-   * Search-time action bias. This is deliberately smaller than the evaluator's
-   * state value: it guides rollouts/UCT tie-breaking without replacing MCTS.
+   * Search-time action bias. This is deliberately smaller than terminal lethal
+   * values, but large enough to make timing/resource choices visible to MCTS.
    */
   actionBias(state: AIGameState, next: AIGameState, owner: number, profile: PersonalityProfile, action: AIAction, random: () => number = Math.random): number {
     const me = state.players[owner];
@@ -63,14 +68,26 @@ export class RiskManager {
     if (action.type === "playCard" && !this.shouldOverextend(state, owner, profile)) {
       const before = (me.board || []).length;
       const after = (next.players[owner]?.board || []).length;
-      if (after > before) score -= (after - before) * (1.2 + profile.weights.overextensionPenalty * 1.8);
+      if (after > before) {
+        const knownSweepMultiplier = representedSweep(foe) ? 4.25 : 1;
+        score -= (after - before) * (1.4 + profile.weights.overextensionPenalty * 2.1) * knownSweepMultiplier;
+      }
     }
 
-    if (action.type === "passPriority" && responseCards(me).length) {
+    if (state.pendingResponse && responseCards(me).length) {
       const openResources = Number(me.reserve || 0) + Number(me.energy || 0);
-      const holdValue = profile.holdResponses * (1 - danger) * Math.min(2.4, 0.45 + openResources * 0.18);
-      score += holdValue;
-      if (openResources > 0 && random() < profile.bluffFrequency * (1 - danger)) score += 0.45 + profile.bluffFrequency;
+      const responseCount = responseCards(me).length;
+      const patienceValue = (1 - danger) * (
+        1.6 + profile.holdResponses * 4.2 + Math.min(2.6, openResources * 0.28) + Math.min(1.1, responseCount * 0.35)
+      );
+      if (action.type === "passPriority") {
+        score += patienceValue;
+        if (openResources > 0 && random() < profile.bluffFrequency * (1 - danger)) score += 0.55 + profile.bluffFrequency * 1.4;
+      } else if (action.type === "playCard") {
+        // Spending interaction on a low-danger window has an opportunity cost.
+        // This fades rapidly as the board becomes threatening.
+        score -= patienceValue * Math.max(0, 0.72 - danger) * 0.58;
+      }
     }
 
     if (action.type === "attack") {
