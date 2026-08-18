@@ -1,9 +1,19 @@
 import { AIController } from "./controller";
-import type { AIAction, AIGameState } from "./types";
+import type { AIAction, AIGameState, AIObservation } from "./types";
 
 const controllers = new Map<number, AIController>();
+const lastObservedState = new Map<number, AIGameState>();
 let thinkingIndicatorInstalled = false;
 let debugTelemetryInstalled = false;
+
+const cardId = (card: any) => String(card?.uid ?? card?.id ?? "");
+const publicCards = (player: any) => [
+  ...(player?.board || []),
+  ...(player?.support || []),
+  ...(player?.terrain ? [player.terrain] : []),
+  ...(player?.grave || []),
+  ...(player?.obscuro || []),
+];
 
 function controllerFor(owner: number, difficulty: string): AIController {
   let controller = controllers.get(owner);
@@ -15,6 +25,42 @@ function controllerFor(owner: number, difficulty: string): AIController {
   installThinkingIndicator();
   installDebugTelemetry();
   return controller;
+}
+
+/**
+ * Derive only public observations between AI decisions. The runtime may hold a
+ * complete local game state, but the controller receives card identities only
+ * after those cards become public. Hidden draws are represented by count only.
+ */
+function observePublicDelta(controller: AIController, state: AIGameState, owner: number): void {
+  const previous = lastObservedState.get(owner);
+  if (!previous) {
+    lastObservedState.set(owner, structuredClone(state));
+    return;
+  }
+  const opponent = 1 - owner;
+  const before = previous.players[opponent];
+  const after = state.players[opponent];
+  if (!before || !after) return;
+
+  const previousPublicIds = new Set(publicCards(before).map(cardId).filter(Boolean));
+  const previousHandIds = new Set((before.hand || []).map(cardId).filter(Boolean));
+  const newlyPublic = publicCards(after).filter((card) => {
+    const id = cardId(card);
+    return id && !previousPublicIds.has(id);
+  });
+  const fromHand = newlyPublic.filter((card) => previousHandIds.has(cardId(card)));
+
+  for (const card of fromHand) {
+    controller.observe({ type: "play", player: opponent, cardId: cardId(card), card, round: state.round });
+  }
+
+  const deckDelta = Math.max(0, Number(before.deck?.length || 0) - Number(after.deck?.length || 0));
+  const handDelta = Number(after.hand?.length || 0) - Number(before.hand?.length || 0);
+  const inferredDraws = Math.min(deckDelta, Math.max(0, handDelta + fromHand.length));
+  if (inferredDraws > 0) controller.observe({ type: "draw", player: opponent, count: inferredDraws, round: state.round });
+
+  lastObservedState.set(owner, structuredClone(state));
 }
 
 function installThinkingIndicator(): void {
@@ -106,7 +152,10 @@ function installDebugTelemetry(): void {
 }
 
 export async function chooseAdvancedAIAction(state: AIGameState, owner: number, difficulty: string): Promise<AIAction | null> {
-  const result = await controllerFor(owner, difficulty).chooseAction(state, owner);
+  const controller = controllerFor(owner, difficulty);
+  observePublicDelta(controller, state, owner);
+  const result = await controller.chooseAction(state, owner);
+  lastObservedState.set(owner, structuredClone(state));
   return result.action;
 }
 
@@ -139,7 +188,17 @@ export function shouldKeepAdvancedMulligan(state: AIGameState, owner: number, di
   return controllerFor(owner, difficulty).shouldKeepMulligan(state, owner);
 }
 
+/** Optional explicit observation hook for server/online integrations. */
+export function observeAdvancedAI(owner: number, difficulty: string, observation: AIObservation): void {
+  controllerFor(owner, difficulty).observe(observation);
+}
+
 export function resetAdvancedAI(owner?: number): void {
-  if (owner == null) controllers.clear();
-  else controllers.delete(owner);
+  if (owner == null) {
+    controllers.clear();
+    lastObservedState.clear();
+  } else {
+    controllers.delete(owner);
+    lastObservedState.delete(owner);
+  }
 }
