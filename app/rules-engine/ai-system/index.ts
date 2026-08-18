@@ -4,6 +4,7 @@ export { MCTS } from "./mcts";
 export { BeliefModel, ParticleFilter } from "./belief";
 export { Evaluator } from "./evaluator";
 export { CombatPlanner } from "./combat";
+export { RiskManager } from "./risk";
 export { PERSONALITIES, personalityForHero, adaptivePersonality } from "./personality";
 export { DIFFICULTY_CONFIG, normalizeDifficulty, legacyDifficultyLabel } from "./config";
 export type * from "./types";
