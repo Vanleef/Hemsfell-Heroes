@@ -86,7 +86,7 @@ test('hero inspector uses one normal-flow structured guide for all heroes',()=>{
  const page=fs.readFileSync(new URL('../app/page.tsx',import.meta.url),'utf8');
  const runtime=fs.readFileSync(new URL('../app/match-ui-runtime.tsx',import.meta.url),'utf8');
  assert.match(css,/hero-abilities-guide\s*>\s*div:last-child/);
- assert.match(css,/flex-direction:\s*column!important/);
+ assert.match(css,/flex-direction:\s*column\s*!important/);
  assert.match(page,/deckByHeroPage\(showInspector\.page\)\?<div className="inspector-hero-guide"/);
  assert.match(runtime,/canonical-runtime-guide/);
 });
