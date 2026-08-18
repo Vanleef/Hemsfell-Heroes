@@ -126,7 +126,7 @@ test("two consecutive passes resolve only the top stack item then restart with a
   assert.ok(game.players[0].grave.some((card) => card.id === "root"));
 });
 
-test("requesting the end of Main opens a response checkpoint before Combat", () => {
+test("ending Main opens the end-step checkpoint and then Combat-start priority", () => {
   const clean = state();
   clean.players[0].hand = [];
   let game = executeOnlineCommand(clean, { type: "advancePhase", owner: 0 }).state;
@@ -139,7 +139,14 @@ test("requesting the end of Main opens a response checkpoint before Combat", () 
   assert.equal(game.phase, "principal");
   game = executeOnlineCommand(game, { type: "passPriority", owner: 0 }).state;
   assert.equal(game.phase, "combate");
+  assert.equal(game.priority.window, "combat-start");
+  assert.equal(game.pendingResponse.responder, 0, "active player receives Combat-start priority first");
+  assert.equal(game.onlineCombat.stage, "combat-start");
+
+  game = executeOnlineCommand(game, { type: "passPriority", owner: 0 }).state;
+  game = executeOnlineCommand(game, { type: "passPriority", owner: 1 }).state;
   assert.equal(game.pendingResponse, null);
+  assert.equal(game.onlineCombat.stage, "declare-attackers");
 });
 
 test("grouped Online combat declares attackers, blockers and resolves left to right", () => {
