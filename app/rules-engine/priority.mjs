@@ -53,7 +53,13 @@ function activationAvailable(state, owner, source, ability) {
 }
 
 export function legalPriorityResponses(state, owner) {
-  if (!state?.pendingResponse || state.pendingResponse.responder !== owner) return [];
+  const pending = state?.pendingResponse;
+  if (!pending || pending.responder !== owner) return [];
+  /* In Hemsfell two consecutive passes resolve the current top of the stack.
+     Once priority returns to the actor with passes=1, that actor can only pass;
+     exposing another response here lets both UI and search illegally extend the
+     same priority window instead of allowing the action to resolve. */
+  if (pending.actor === owner && (pending.passes || 0) > 0) return [];
   const player = state.players[owner];
   const responseEnergy = state.active === owner ? player.energy + player.reserve : player.reserve;
   const cards = player.hand.flatMap((card, handIndex) => isAccelerated(card) && canExecuteCard(card) && responseEnergy >= spellCost(state, owner, card) && !stackHas(state, command => command.type === "playCard" && command.owner === owner && command.cardId === card.id)
