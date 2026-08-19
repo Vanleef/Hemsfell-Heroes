@@ -6,6 +6,10 @@ on:
       - design/online-priority-flow-rework
     types: [synchronize, reopened, ready_for_review]
 
+concurrency:
+  group: online-local-e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   issues: write
@@ -14,18 +18,18 @@ permissions:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
           cache: npm
-      - name: Install dependencies and Chromium
+      - name: Install app and browser driver
         run: |
           npm ci
-          npm install --no-save --package-lock=false playwright@1.55.0
-          npx playwright install --with-deps chromium
+          npm install --no-save --package-lock=false playwright-core@1.55.0
+          google-chrome --version
       - name: Start Hemsfell server
         run: |
           (npm run dev > /tmp/hemsfell-dev.log 2>&1 & echo $! > /tmp/hemsfell-dev.pid)
@@ -41,10 +45,10 @@ jobs:
         run: |
           set +e
           node --input-type=module <<'NODE' > /tmp/online-local-e2e.log 2>&1
-          import { chromium } from 'playwright';
+          import { chromium } from 'playwright-core';
           import assert from 'node:assert/strict';
           const base='http://127.0.0.1:3000';
-          const browser=await chromium.launch({headless:true});
+          const browser=await chromium.launch({headless:true,channel:'chrome'});
           const hostContext=await browser.newContext({viewport:{width:1440,height:1000}});
           const guestContext=await browser.newContext({viewport:{width:1440,height:1000}});
           const host=await hostContext.newPage();
