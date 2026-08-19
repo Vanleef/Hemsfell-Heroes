@@ -3,7 +3,6 @@ import { RulesViolation } from "./effects.mjs";
 import { PriorityMode, PriorityWindow, openResponseWindow, syncPriorityMetadata } from "./priority-state.mjs";
 
 const clone = (value) => structuredClone(value);
-const fold = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const cardId = (card) => card?.uid || card?.id;
 const activeKeywords = (unit) => unit?.suffocated ? [] : [...(unit?.tags || []), ...(unit?.temporaryTags || []), ...(unit?.grantedKeywords || [])];
 const hasKeyword = (unit, pattern) => activeKeywords(unit).some((tag) => pattern.test(String(tag)));
@@ -86,6 +85,47 @@ function buildAttackInstances(state, owner, attackerIds) {
   return result.sort((a, b) => a.declaredSlot - b.declaredSlot || a.occurrence - b.occurrence || a.attackId.localeCompare(b.attackId));
 }
 
+function validateBlockPair(state, combat, instance, defenderId) {
+  const attacker = state.players[combat.attackerOwner].board.find((unit) => cardId(unit) === instance.attackerId);
+  const defenderOwner = 1 - combat.attackerOwner;
+  const defender = state.players[defenderOwner].board.find((unit) => cardId(unit) === defenderId);
+  if (!attacker || !defender) throw new RulesViolation("invalid-defender");
+  executeRulesCommand(clone(state), { type: "attack", owner: combat.attackerOwner, attackerId: instance.attackerId, defenderId }, { priority: false });
+}
+
+function buildAttackerInteraction(state, owner) {
+  const attackerOptions = [];
+  for (const unit of state.players[owner].board || []) {
+    const id = cardId(unit), maxUses = remainingAttacks(unit);
+    if (!id || maxUses <= 0) continue;
+    try { validateAttacker(state, owner, id); } catch { continue; }
+    attackerOptions.push({
+      attackerId: id,
+      slot: Number(unit.slot ?? 0),
+      maxUses,
+      mandatoryUses: hasKeyword(unit, /indom[aá]vel/i) ? maxUses : 0,
+    });
+  }
+  return { stage: OnlineCombatStage.DECLARE_ATTACKERS, owner, attackerOptions };
+}
+
+function buildBlockerInteraction(state, combat) {
+  const defenderOwner = 1 - combat.attackerOwner;
+  const defenders = state.players[defenderOwner].board || [];
+  const blockerOptions = (combat.attackers || []).map((instance) => {
+    const defenderIds = [];
+    for (const defender of defenders) {
+      const id = cardId(defender);
+      if (!id || Number(defender.defenseUses || 0) >= defenderCapacity(defender)) continue;
+      try { validateBlockPair(state, combat, instance, id); } catch { continue; }
+      defenderIds.push(id);
+    }
+    return { attackId: instance.attackId, defenderIds };
+  });
+  const defenderCapacities = Object.fromEntries(defenders.map((defender) => [cardId(defender), Math.max(0, defenderCapacity(defender) - Number(defender.defenseUses || 0))]).filter(([id]) => !!id));
+  return { stage: OnlineCombatStage.DECLARE_BLOCKERS, owner: defenderOwner, blockerOptions, defenderCapacities };
+}
+
 export function beginOnlineCombat(state) {
   if (state.phase !== "combate") throw new RulesViolation("wrong-combat-priority");
   if (state.pendingResponse || state.pendingAction || state.pendingDecision || state.pendingReposition || state.combatAction) throw new RulesViolation("interaction-pending");
@@ -114,6 +154,7 @@ export function finishCombatStartCheckpoint(state) {
   next.priorityStack = undefined;
   next.onlineCombat ||= { attackerOwner: next.active, attackers: [], blocks: [], resolutionIndex: 0 };
   next.onlineCombat.stage = OnlineCombatStage.DECLARE_ATTACKERS;
+  next.onlineCombat.interaction = buildAttackerInteraction(next, next.active);
   return syncPriorityMetadata(next, { mode: PriorityMode.ACTION, owner: next.active, window: null });
 }
 
@@ -122,11 +163,6 @@ export function declareOnlineAttackers(state, owner, attackerIds = []) {
   if (state.pendingResponse || state.pendingAction || state.pendingDecision || state.pendingReposition || state.combatAction) throw new RulesViolation("interaction-pending");
   const stage = state.onlineCombat?.stage;
   if (stage && stage !== OnlineCombatStage.DECLARE_ATTACKERS) throw new RulesViolation("attack-declaration-unavailable");
-  if (new Set((attackerIds || []).map(String)).size > (attackerIds || []).length) {
-    /* Duplicate creature ids are legal only for genuine additional attack uses;
-       buildAttackInstances validates the remaining attack limit. This branch is
-       intentionally not an error. */
-  }
   const instances = buildAttackInstances(state, owner, attackerIds);
   validateMandatoryAttackers(state, owner, instances);
   const next = clone(state);
@@ -157,19 +193,13 @@ export function finishAfterAttackersCheckpoint(state) {
   const liveAttackers = combat.attackers.filter((instance) => next.players[combat.attackerOwner].board.some((unit) => cardId(unit) === instance.attackerId));
   combat.attackers = liveAttackers;
   combat.stage = liveAttackers.length ? OnlineCombatStage.DECLARE_BLOCKERS : OnlineCombatStage.COMBAT_END;
+  if (liveAttackers.length) combat.interaction = buildBlockerInteraction(next, combat);
+  else delete combat.interaction;
   return syncPriorityMetadata(next, {
     mode: PriorityMode.ACTION,
     owner: liveAttackers.length ? 1 - combat.attackerOwner : combat.attackerOwner,
     window: null,
   });
-}
-
-function validateBlockPair(state, combat, instance, defenderId) {
-  const attacker = state.players[combat.attackerOwner].board.find((unit) => cardId(unit) === instance.attackerId);
-  const defenderOwner = 1 - combat.attackerOwner;
-  const defender = state.players[defenderOwner].board.find((unit) => cardId(unit) === defenderId);
-  if (!attacker || !defender) throw new RulesViolation("invalid-defender");
-  executeRulesCommand(clone(state), { type: "attack", owner: combat.attackerOwner, attackerId: instance.attackerId, defenderId }, { priority: false });
 }
 
 export function declareOnlineBlockers(state, owner, assignments = []) {
@@ -201,6 +231,7 @@ export function declareOnlineBlockers(state, owner, assignments = []) {
   const next = clone(state);
   next.onlineCombat.blocks = next.onlineCombat.attackers.map((instance) => chosen.get(instance.attackId));
   next.onlineCombat.stage = OnlineCombatStage.AFTER_BLOCKERS;
+  delete next.onlineCombat.interaction;
   openResponseWindow(next, {
     actor: owner,
     responder: combat.attackerOwner,
@@ -219,55 +250,35 @@ export function finishAfterBlockersCheckpoint(state) {
   if (!next.onlineCombat || next.onlineCombat.stage !== OnlineCombatStage.AFTER_BLOCKERS) throw new RulesViolation("combat-checkpoint-mismatch");
   next.onlineCombat.stage = OnlineCombatStage.RESOLVING;
   next.onlineCombat.resolutionIndex = 0;
+  delete next.onlineCombat.interaction;
   return syncPriorityMetadata(next, { mode: PriorityMode.RESOLVING, owner: null, window: null });
 }
 
 /**
- * Public, viewer-scoped interaction data for the grouped combat client. The
- * board is public information, so these ids reveal no hidden zones. Every id is
- * produced by the same authoritative preflight used when the declaration is
- * committed; the client may still keep lightweight presentation fallbacks, but
- * it never needs to reimplement card-specific attack/block legality.
+ * Return only the interaction options owned by the requesting viewer. New
+ * matches cache these options at the exact checkpoint where the board becomes
+ * frozen for declaration, avoiding repeated engine simulations on every poll.
+ * The fallback below supports old/recovered snapshots created before the cache
+ * field existed.
  */
 export function onlineCombatInteractionView(state, viewer) {
   const combat = state?.onlineCombat;
   if (!combat || ![0, 1].includes(viewer)) return null;
-
+  const cached = combat.interaction;
+  if (cached?.stage === combat.stage) {
+    if (cached.owner === viewer) return clone(cached);
+    if (combat.stage === OnlineCombatStage.DECLARE_ATTACKERS) return { stage: combat.stage, owner: cached.owner, attackerOptions: [] };
+    if (combat.stage === OnlineCombatStage.DECLARE_BLOCKERS) return { stage: combat.stage, owner: cached.owner, blockerOptions: [] };
+    return { stage: combat.stage, owner: null };
+  }
   if (combat.stage === OnlineCombatStage.DECLARE_ATTACKERS) {
-    if (viewer !== combat.attackerOwner) return { stage: combat.stage, owner: combat.attackerOwner, attackerOptions: [] };
-    const attackerOptions = [];
-    for (const unit of state.players[viewer].board || []) {
-      const id = cardId(unit), maxUses = remainingAttacks(unit);
-      if (!id || maxUses <= 0) continue;
-      try { validateAttacker(state, viewer, id); } catch { continue; }
-      attackerOptions.push({
-        attackerId: id,
-        slot: Number(unit.slot ?? 0),
-        maxUses,
-        mandatoryUses: hasKeyword(unit, /indom[aá]vel/i) ? maxUses : 0,
-      });
-    }
-    return { stage: combat.stage, owner: viewer, attackerOptions };
+    const fallback = buildAttackerInteraction(state, combat.attackerOwner);
+    return fallback.owner === viewer ? fallback : { stage: combat.stage, owner: fallback.owner, attackerOptions: [] };
   }
-
   if (combat.stage === OnlineCombatStage.DECLARE_BLOCKERS) {
-    const defenderOwner = 1 - combat.attackerOwner;
-    if (viewer !== defenderOwner) return { stage: combat.stage, owner: defenderOwner, blockerOptions: [] };
-    const defenders = state.players[defenderOwner].board || [];
-    const blockerOptions = (combat.attackers || []).map((instance) => {
-      const defenderIds = [];
-      for (const defender of defenders) {
-        const id = cardId(defender);
-        if (!id || Number(defender.defenseUses || 0) >= defenderCapacity(defender)) continue;
-        try { validateBlockPair(state, combat, instance, id); } catch { continue; }
-        defenderIds.push(id);
-      }
-      return { attackId: instance.attackId, defenderIds };
-    });
-    const defenderCapacities = Object.fromEntries(defenders.map((defender) => [cardId(defender), Math.max(0, defenderCapacity(defender) - Number(defender.defenseUses || 0))]).filter(([id]) => !!id));
-    return { stage: combat.stage, owner: defenderOwner, blockerOptions, defenderCapacities };
+    const fallback = buildBlockerInteraction(state, combat);
+    return fallback.owner === viewer ? fallback : { stage: combat.stage, owner: fallback.owner, blockerOptions: [] };
   }
-
   return { stage: combat.stage, owner: null };
 }
 
