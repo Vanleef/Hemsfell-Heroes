@@ -644,6 +644,30 @@ export const defaultEffectHandlers = Object.freeze({
     /* Prefer the authoritative compiled catalog so generated Images inherit\n       their canonical abilities (notably Primeiro Ato) before falling back to\n       the presentation-only extra deck copy. */
     const catalog = [...(state.cardCatalog || []), ...(entry.extraDeck || [])];
     const base = catalog.find((card) => card.name === effect.name) || { id: `image:${effect.name}`, name: effect.name, type: "Criatura", atk: 1, hp: 1, tags: [] };
+    const ignoredSupportIds = new Set(effect.ignoreSupportPage == null ? [] : (entry.support || []).filter((unit) => unit.page === effect.ignoreSupportPage).map((unit) => unit.uid || unit.id));
+    const supportSlotAvailable = (slot) => !(entry.support || []).some((unit) => unit.slot === slot && !ignoredSupportIds.has(unit.uid || unit.id));
+    let generatedAttachmentHost = null;
+    if (base.type === "Artefato" && effect.autoAttachSubtype) {
+      const candidates = (entry.board || []).filter((unit) => hasSubtype(unit, effect.autoAttachSubtype) && supportSlotAvailable(unit.slot));
+      const chosenAttachmentId = selectedIds(context)[0] || context.attachedTo;
+      if (chosenAttachmentId) {
+        generatedAttachmentHost = candidates.find((unit) => (unit.uid || unit.id) === chosenAttachmentId) || null;
+        if (!generatedAttachmentHost) { if (effect.skipIfNoValidPlacement) return; throw new RulesViolation("invalid-attachment-target"); }
+      } else if (candidates.length === 1) generatedAttachmentHost = candidates[0];
+      else if (candidates.length > 1 && effect.chooseAttachmentIfMultiple) {
+        if (state.pendingDecision) throw new RulesViolation("decision-pending");
+        state.pendingDecision = {
+          kind: "targets",
+          owner: context.owner,
+          effect: { replayEffects: [{ ...effect }] },
+          context: { ...context, targetIds: [] },
+          targetSteps: [{ scope: "allyCreature", role: "effect", requiredSubtype: effect.autoAttachSubtype, allowedIds: candidates.map((unit) => unit.uid || unit.id) }],
+          sourceName: context.effectSource?.name || effect.name,
+        };
+        return;
+      } else if (candidates.length) generatedAttachmentHost = candidates[0];
+      else { if (effect.skipIfNoValidPlacement) return; throw new RulesViolation("artifact-target-required"); }
+    }
     state.nextGeneratedId = (state.nextGeneratedId || 0) + 1;
     const copy = { ...structuredClone(base), uid: `${base.id}-image-${state.round}-${state.nextGeneratedId}`, generatedImage: true, imageCard: true, enteredRound: state.round, attackedThisTurn: false, summoning: base.type === "Artefato" || (base.type === "Criatura" && !(base.tags || []).some((tag) => /investida/i.test(String(tag)))), exhausted: false, damage: 0, slot: context.slot ?? 0, abilities: base.abilities || [] };
     if (effect.destination === "hand") { entry.hand.push({ ...copy, revealed: true, revealedTo: [0, 1] }); return; }
@@ -664,13 +688,14 @@ export const defaultEffectHandlers = Object.freeze({
         entry.board.push(copy);
       }
     } else {
-      const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => !entry.support.some((unit) => unit.slot === slot));
+      const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => supportSlotAvailable(slot));
       if (openSlot == null) throw new RulesViolation("support-zone-full");
       if (base.type === "Artefato" && base.page !== 304) {
-        const host = entry.board.find((unit) => unit.uid === context.attachedTo);
-        if (!host) throw new RulesViolation("artifact-target-required");
-        copy.attachedTo = host.uid; copy.slot = host.slot;
-      } else copy.slot = context.slot != null && !entry.support.some((unit) => unit.slot === context.slot) ? context.slot : openSlot;
+        const host = generatedAttachmentHost || entry.board.find((unit) => unit.uid === context.attachedTo || unit.id === context.attachedTo);
+        if (!host) { if (effect.skipIfNoValidPlacement) return; throw new RulesViolation("artifact-target-required"); }
+        if (!supportSlotAvailable(host.slot)) { if (effect.skipIfNoValidPlacement) return; throw new RulesViolation("support-zone-full"); }
+        copy.attachedTo = host.uid || host.id; copy.slot = host.slot;
+      } else copy.slot = context.slot != null && supportSlotAvailable(context.slot) ? context.slot : openSlot;
       entry.support.push(copy);
     }
     queueEvent(state, { type: "onEnter", owner, sourceId: copy.uid, cardId: copy.uid, card: copy });
