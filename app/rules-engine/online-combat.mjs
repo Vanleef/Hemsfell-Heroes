@@ -222,6 +222,55 @@ export function finishAfterBlockersCheckpoint(state) {
   return syncPriorityMetadata(next, { mode: PriorityMode.RESOLVING, owner: null, window: null });
 }
 
+/**
+ * Public, viewer-scoped interaction data for the grouped combat client. The
+ * board is public information, so these ids reveal no hidden zones. Every id is
+ * produced by the same authoritative preflight used when the declaration is
+ * committed; the client may still keep lightweight presentation fallbacks, but
+ * it never needs to reimplement card-specific attack/block legality.
+ */
+export function onlineCombatInteractionView(state, viewer) {
+  const combat = state?.onlineCombat;
+  if (!combat || ![0, 1].includes(viewer)) return null;
+
+  if (combat.stage === OnlineCombatStage.DECLARE_ATTACKERS) {
+    if (viewer !== combat.attackerOwner) return { stage: combat.stage, owner: combat.attackerOwner, attackerOptions: [] };
+    const attackerOptions = [];
+    for (const unit of state.players[viewer].board || []) {
+      const id = cardId(unit), maxUses = remainingAttacks(unit);
+      if (!id || maxUses <= 0) continue;
+      try { validateAttacker(state, viewer, id); } catch { continue; }
+      attackerOptions.push({
+        attackerId: id,
+        slot: Number(unit.slot ?? 0),
+        maxUses,
+        mandatoryUses: hasKeyword(unit, /indom[aá]vel/i) ? maxUses : 0,
+      });
+    }
+    return { stage: combat.stage, owner: viewer, attackerOptions };
+  }
+
+  if (combat.stage === OnlineCombatStage.DECLARE_BLOCKERS) {
+    const defenderOwner = 1 - combat.attackerOwner;
+    if (viewer !== defenderOwner) return { stage: combat.stage, owner: defenderOwner, blockerOptions: [] };
+    const defenders = state.players[defenderOwner].board || [];
+    const blockerOptions = (combat.attackers || []).map((instance) => {
+      const defenderIds = [];
+      for (const defender of defenders) {
+        const id = cardId(defender);
+        if (!id || Number(defender.defenseUses || 0) >= defenderCapacity(defender)) continue;
+        try { validateBlockPair(state, combat, instance, id); } catch { continue; }
+        defenderIds.push(id);
+      }
+      return { attackId: instance.attackId, defenderIds };
+    });
+    const defenderCapacities = Object.fromEntries(defenders.map((defender) => [cardId(defender), Math.max(0, defenderCapacity(defender) - Number(defender.defenseUses || 0))]).filter(([id]) => !!id));
+    return { stage: combat.stage, owner: defenderOwner, blockerOptions, defenderCapacities };
+  }
+
+  return { stage: combat.stage, owner: null };
+}
+
 export function combatDeclarationView(state) {
   const combat = state?.onlineCombat;
   if (!combat) return null;
