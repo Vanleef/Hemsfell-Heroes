@@ -172,18 +172,46 @@ async function writeBlob(room: Room) {
 
 export async function readRoom(id: string): Promise<Room | null> {
   if (useMemoryStore()) return cloneMemory(id);
+
+  const failures: unknown[] = [];
+  let attemptedStore = false;
+
   if (hasSupabaseStore()) {
-    try { return await readSupabase(id); }
-    catch (error) {
-      console.warn("[rooms] Supabase table unavailable; trying Supabase Storage fallback.", error);
-      try { return await readSupabaseStorageRoom(id); }
-      catch (storageError) {
-        if (!hasBlobStore()) throw storageError;
-        console.warn("[rooms] Supabase unavailable; reading from Blob fallback.", storageError);
-      }
+    try {
+      const room = await readSupabase(id);
+      attemptedStore = true;
+      if (room) return room;
+    } catch (error) {
+      failures.push(error);
+      console.warn("[rooms] Supabase table read unavailable; checking Supabase Storage fallback.", error);
+    }
+
+    try {
+      const room = await readSupabaseStorageRoom(id);
+      attemptedStore = true;
+      if (room) return room;
+    } catch (error) {
+      failures.push(error);
+      console.warn("[rooms] Supabase Storage read unavailable; checking Blob fallback.", error);
     }
   }
-  if (hasBlobStore()) return readBlob(id);
+
+  if (hasBlobStore()) {
+    try {
+      const room = await readBlob(id);
+      attemptedStore = true;
+      if (room) return room;
+    } catch (error) {
+      failures.push(error);
+      console.warn("[rooms] Blob room read unavailable.", error);
+    }
+  }
+
+  // A room may live only in a fallback store after a transient write failure.
+  // If any configured store could not be checked, returning 404 would be a
+  // false "not found" and would invalidate a still-valid invitation.
+  if (failures.length) throw failures[failures.length - 1];
+  if (attemptedStore) return null;
   throw unavailable();
 }
 export async function writeRoom(room: Room) {
