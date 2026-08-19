@@ -1,6 +1,7 @@
 import type { Room, RoomRole } from "./machine";
 export type { Room } from "./machine";
 import { get, put } from "@vercel/blob";
+import { onlineCombatInteractionView } from "../../rules-engine/online-combat.mjs";
 
 const memoryRooms = new Map<string, Room>();
 const useMemoryStore = () => process.env.NODE_ENV === "development";
@@ -217,6 +218,7 @@ function publicGameView(room: Room, role: RoomRole) {
     opponent.extraDeck = (opponent.extraDeck || []).map((_: unknown, index: number) => hiddenCard(index));
   }
   if (game.pendingDecision?.kind === "investigate-selection" && game.pendingDecision.owner !== viewer && game.pendingDecision.effect) delete game.pendingDecision.effect.cards;
+  if (game.onlineCombat) game.onlineCombat.interaction = onlineCombatInteractionView(game, viewer);
   return game;
 }
 export function preserveOpponentSecrets(room: Room, nextGame: any, role: RoomRole) {
