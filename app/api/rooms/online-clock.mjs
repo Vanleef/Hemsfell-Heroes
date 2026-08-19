@@ -1,5 +1,6 @@
 const remaining = (deadline, now) => Math.max(0, Number(deadline || 0) - now);
 const choosingBlocker = (game) => game?.combatAction?.stage === "choosing";
+const choosingDecision = (game) => !!game?.pendingDecision || !!game?.pendingReposition;
 const setPriorityDeadline = (game, deadline) => { if (game?.priority) game.priority.deadline = deadline ?? null; };
 const shiftDeadline = (target, key, milliseconds) => {
   if (target && Number.isFinite(Number(target[key]))) target[key] = Number(target[key]) + milliseconds;
@@ -18,10 +19,10 @@ export function shiftOnlineDeadlines(game, milliseconds) {
 }
 
 /**
- * Keep the active player's action clock independent from opponent response time.
- * The clock is paused while a response window or defender-only blocker choice
- * exists and resumes with exactly the stored remainder when action priority
- * returns. A new active player always receives a fresh turn clock.
+ * Keep the active player's action clock independent from interaction time.
+ * The action clock pauses while a response window, defender-only blocker choice,
+ * target/effect decision or reposition decision owns input. It resumes with
+ * exactly the stored remainder when normal action priority returns.
  */
 export function reconcileOnlineClocks(before, after, settings, now = Date.now()) {
   if (!after) return after;
@@ -36,6 +37,7 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
 
   const activeChanged = Number(before?.active) !== Number(after.active);
   const blockerChoice = choosingBlocker(after);
+  const decisionChoice = choosingDecision(after);
   if (after.combatAction && !blockerChoice) delete after.combatAction.deadline;
 
   if (activeChanged) {
@@ -49,6 +51,10 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
       after.turnDeadline = null;
       after.combatAction.deadline = now + settings.responseSeconds * 1000;
       setPriorityDeadline(after, after.combatAction.deadline);
+    } else if (decisionChoice) {
+      after.turnTimeRemainingMs = settings.turnSeconds * 1000;
+      after.turnDeadline = null;
+      setPriorityDeadline(after, null);
     } else {
       delete after.turnTimeRemainingMs;
       after.turnDeadline = now + settings.turnSeconds * 1000;
@@ -81,9 +87,19 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
     return after;
   }
 
+  if (decisionChoice) {
+    const stored = Number(before?.turnTimeRemainingMs);
+    if (Number.isFinite(stored)) after.turnTimeRemainingMs = Math.max(0, stored);
+    else if (before?.turnDeadline) after.turnTimeRemainingMs = remaining(before.turnDeadline, now);
+    else if (!Number.isFinite(Number(after.turnTimeRemainingMs))) after.turnTimeRemainingMs = settings.turnSeconds * 1000;
+    after.turnDeadline = null;
+    setPriorityDeadline(after, null);
+    return after;
+  }
+
   setPriorityDeadline(after, null);
   const paused = Number(before?.turnTimeRemainingMs ?? after.turnTimeRemainingMs);
-  if ((before?.pendingResponse || choosingBlocker(before)) && Number.isFinite(paused)) {
+  if ((before?.pendingResponse || choosingBlocker(before) || choosingDecision(before)) && Number.isFinite(paused)) {
     after.turnDeadline = now + Math.max(0, paused);
     delete after.turnTimeRemainingMs;
     return after;
