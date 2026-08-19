@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { reconcileOnlineClocks } from "../app/api/rooms/online-clock.mjs";
+import { reconcileOnlineClocks, shiftOnlineDeadlines } from "../app/api/rooms/online-clock.mjs";
 
 const settings = { turnSeconds: 120, responseSeconds: 30 };
 const now = 1_000_000;
@@ -133,4 +133,22 @@ test("leaving blocker declaration without a response resumes the exact attacker 
   assert.equal(after.turnDeadline, now + 37_777);
   assert.equal("turnTimeRemainingMs" in after, false);
   assert.equal(after.priority.deadline, null);
+});
+
+test("reconnect pause shifts every absolute Online interaction deadline together", () => {
+  const paused = game({
+    turnDeadline: now + 40_000,
+    priority: { deadline: now + 10_000 },
+    pendingResponse: { responder: 1, actor: 0, passes: 0, deadline: now + 10_000 },
+    onlineCombat: { stage: "declare-blockers", attackerOwner: 0, deadline: now + 15_000 },
+    pendingReposition: { deadline: now + 20_000 },
+    pendingDecision: { deadline: now + 25_000 },
+  });
+  shiftOnlineDeadlines(paused, 12_345);
+  assert.equal(paused.turnDeadline, now + 52_345);
+  assert.equal(paused.pendingResponse.deadline, now + 22_345);
+  assert.equal(paused.priority.deadline, now + 22_345);
+  assert.equal(paused.onlineCombat.deadline, now + 27_345);
+  assert.equal(paused.pendingReposition.deadline, now + 32_345);
+  assert.equal(paused.pendingDecision.deadline, now + 37_345);
 });
