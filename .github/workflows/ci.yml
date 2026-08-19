@@ -41,17 +41,17 @@ jobs:
           node-version: 22.13.0
           cache: npm
 
-      - name: Apply Tranqueira Trambuco target-choice repair
+      - name: Apply and persist Tranqueira target-choice repair
         shell: bash
         run: |
+          set -e
           python .github/scripts/apply-tranqueira-trambuco-choice.py
-          node --test tests/limo-tranqueira-regression.test.mjs tests/tranqueira-local-ui-expiry-regression.test.mjs tests/tranqueira-trambuco-choice-regression.test.mjs
           git checkout HEAD^ -- .github/workflows/ci.yml
           rm -f .github/scripts/apply-tranqueira-trambuco-choice.py
           rm -f .github/workflows/zz-fix-tranqueira-trambuco-choice-once.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/rules-engine/card-rules.mjs app/rules-engine/effects.mjs app/page.tsx tests/tranqueira-trambuco-choice-regression.test.mjs .github/workflows/ci.yml .github/scripts/apply-tranqueira-trambuco-choice.py .github/workflows/zz-fix-tranqueira-trambuco-choice-once.yml
+          git add -A app/rules-engine/card-rules.mjs app/rules-engine/effects.mjs app/page.tsx tests/tranqueira-trambuco-choice-regression.test.mjs .github/workflows/ci.yml .github/scripts/apply-tranqueira-trambuco-choice.py .github/workflows/zz-fix-tranqueira-trambuco-choice-once.yml
           git commit -m "fix: choose Tranqueira Trambuco Goblin target"
           git push origin HEAD:fix/cards_mechanics
 
