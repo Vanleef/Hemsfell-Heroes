@@ -119,8 +119,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       /* Pre-authoritative clients uploaded a complete shuffled match here. That
          exposed the guest's opening hand/deck to the host and allowed arbitrary
          structurally-valid state injection. Match construction now happens in
-         choose_start on the server. */
-      return NextResponse.json({ error: "client game initialization disabled" }, { status: 410, ...noStore });
+         choose_start on the server. Historical preserveOpponentSecrets and
+         isBoundedGame checks are intentionally superseded by not accepting a
+         client game snapshot at all. */
+      return NextResponse.json({ error: "client game initialization disabled", ...roomView(room, true, role) }, { status: 409, ...noStore });
     } else if (body.action === "mulligan") {
       if (room.status !== "mulligan" || !room.game) return NextResponse.json({ error: "mulligan unavailable" }, { status: 409, ...noStore });
       const current = room[role];
@@ -153,8 +155,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!resolution.ok) return NextResponse.json({ error: resolution.error, ...roomView(room, true, role) }, { status: resolution.status, ...noStore });
       if (resolution.duplicate) return NextResponse.json(roomView(room, true, role), noStore);
     } else if (body.action === "sync") {
-      /* Full client snapshots are never accepted once gameplay is authoritative. */
-      return NextResponse.json({ error: "legacy state sync disabled; use authoritative commands" }, { status: 410, ...noStore });
+      /* Full client snapshots are never accepted. Returning the current
+         authoritative view also snaps pre-migration clients back to server
+         truth after any legacy local mutation instead of letting them diverge. */
+      return NextResponse.json({ error: "legacy state sync disabled; use authoritative commands", ...roomView(room, true, role) }, { status: 410, ...noStore });
     } else if (body.action === "timeout") {
       /* The pre-request timeout pass normally handled this already. Crossing a
          deadline during request parsing is still possible, so check once more.
