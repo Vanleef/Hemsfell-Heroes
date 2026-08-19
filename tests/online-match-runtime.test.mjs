@@ -3,81 +3,85 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
 
-const [runtime, layout, css, machine, clock, store, packageJson] = await Promise.all([
+const [runtime, layout, css, machine, clock, page, packageJson] = await Promise.all([
   readFile(new URL("../app/online-match-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/online-match-runtime.css", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/online-clock.mjs", import.meta.url), "utf8"),
-  readFile(new URL("../app/api/rooms/store.ts", import.meta.url), "utf8"),
+  readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
   readFile(new URL("../package.json", import.meta.url), "utf8"),
 ]);
 
-test("staged Online runtime and room store are syntactically valid TypeScript", () => {
-  for (const [name, source, jsx] of [["runtime", runtime, true], ["store", store, false]]) {
-    const result = ts.transpileModule(source, {
-      fileName: jsx ? `${name}.tsx` : `${name}.ts`,
-      compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, jsx: ts.JsxEmit.ReactJSX },
-      reportDiagnostics: true,
-    });
-    const errors = (result.diagnostics || []).filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
-    assert.deepEqual(errors.map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n")), [], `${name} must transpile without syntax errors`);
-  }
+test("staged Online runtime is syntactically valid TypeScript", () => {
+  const result = ts.transpileModule(runtime, {
+    fileName: "online-match-runtime.tsx",
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, jsx: ts.JsxEmit.ReactJSX },
+    reportDiagnostics: true,
+  });
+  const errors = (result.diagnostics || []).filter((diagnostic) => diagnostic.category === ts.DiagnosticCategory.Error);
+  assert.deepEqual(errors.map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n")), []);
 });
 
-test("root layout mounts the staged Online runtime after the canonical match UI runtime", () => {
+test("root layout mounts the Online HUD after the canonical match UI runtime", () => {
   assert.match(layout, /import OnlineMatchRuntime from "\.\/online-match-runtime"/);
   assert.match(layout, /import "\.\/online-match-runtime\.css"/);
   assert.match(layout, /<MatchUiRuntime \/>[\s\S]*?<OnlineMatchRuntime \/>/);
 });
 
-test("Online runtime consumes the pure canonical guest orientation instead of duplicating mirror logic", () => {
+test("Online runtime consumes canonical guest orientation instead of duplicating mirror logic", () => {
   assert.match(runtime, /orientOnlineGameForRole/);
   assert.match(runtime, /currentSession\.isHost \? "host" : "guest"/);
   assert.doesNotMatch(runtime, /mirrored\.players\s*=/);
 });
 
-test("grouped combat client consumes viewer-scoped authoritative choices and emits only grouped commands", () => {
-  assert.match(runtime, /combat\.interaction\?\.attackerOptions/);
-  assert.match(runtime, /combat\.interaction\?\.blockerOptions/);
-  assert.match(runtime, /authoritativeCapacities/);
-  assert.match(store, /onlineCombatInteractionView\(game, viewer\)/);
-  assert.match(runtime, /type: "declareAttackers", attackerIds: orderedAttackIds/);
-  assert.match(runtime, /type: "declareBlockers", assignments/);
-  assert.match(runtime, /combat\?\.stage === "declare-attackers"/);
-  assert.match(runtime, /combat\?\.stage === "declare-blockers"/);
+test("grouped combat declaration UI and commands are gone", () => {
+  assert.doesNotMatch(runtime, /Escolha todos os atacantes/);
+  assert.doesNotMatch(runtime, /DECLARAÇÃO EM GRUPO/);
+  assert.doesNotMatch(runtime, /declareAttackers/);
+  assert.doesNotMatch(runtime, /declareBlockers/);
+  assert.doesNotMatch(runtime, /AttackerDeclaration/);
+  assert.doesNotMatch(runtime, /BlockerDeclaration/);
+  assert.doesNotMatch(runtime, /online-combat-blocker/);
+  assert.doesNotMatch(machine, /"declareAttackers"\s*,/);
+  assert.doesNotMatch(machine, /"declareBlockers"\s*,/);
 });
 
-test("grouped combat overlay blocks the legacy single-lane board while a declaration is pending", () => {
-  assert.match(runtime, /online-combat-blocker/);
-  assert.match(css, /\.online-combat-blocker\{[\s\S]*?position:fixed[\s\S]*?inset:0[\s\S]*?z-index:9900/);
-  assert.match(machine, /grouped combat declaration requires authoritative command/);
+test("canonical board UI keeps per-creature attacker, blocker and no-block actions", () => {
+  assert.match(page, /const chooseAttacker=\(uid:string\)=>/);
+  assert.match(page, /type:"declareAttack",attackerId:action\.attackerUid/);
+  assert.match(page, /type:"selectDefender",attackerId:combatAction\.attackerUid,defenderId:uid,targetHero:false/);
+  assert.match(page, /type:"selectDefender",attackerId:combatAction\.attackerUid,targetHero:true/);
+  assert.match(page, /combat-attack-ready/);
+  assert.match(page, /const finishCombat=\(\)=>/);
+  assert.match(page, /mandatoryIndomitableAttacker/);
 });
 
-test("canonical priority HUD renders owner, timing window and readable stack frames", () => {
-  assert.match(runtime, /priority\?\.model !== "online-v2"/);
-  assert.match(runtime, /game\.stack/);
+test("canonical priority HUD reports the current single attack without replacing board interaction", () => {
+  assert.match(runtime, /game\.combatAction/);
+  assert.match(runtime, /Defenda-se de/);
+  assert.match(runtime, /Aguardando o oponente escolher o bloqueio/);
+  assert.match(runtime, /Escolha uma criatura para atacar ou encerre o combate/);
   assert.match(runtime, /ONLINE · PRIORIDADE/);
-  assert.match(runtime, /frame\.controller === 0 \? "VOCÊ"/);
-  assert.match(runtime, /WINDOW_NAMES/);
+  assert.match(runtime, /game\.stack/);
 });
 
-test("blocker choice owns a response-sized deadline without consuming the attacker action clock", () => {
-  assert.match(clock, /declaringBlockers/);
-  assert.match(clock, /after\.onlineCombat\.deadline = now \+ settings\.responseSeconds \* 1000/);
-  assert.match(machine, /onlineCombat\?\.stage === "declare-blockers"/);
-  assert.match(machine, /type: "declareBlockers", owner, assignments: \[\], auto: true/);
-  assert.match(runtime, /combat\.deadline/);
-  assert.match(runtime, /Seu relógio de ação permanece pausado/);
+test("unitary blocker choice owns a response deadline without consuming attacker action time", () => {
+  assert.match(clock, /choosingBlocker/);
+  assert.match(clock, /after\.combatAction\.deadline = now \+ settings\.responseSeconds \* 1000/);
+  assert.match(machine, /combatAction\?\.stage === "choosing"/);
+  assert.match(machine, /type: "selectDefender", owner, targetHero: true, auto: true/);
 });
 
-test("revision-safe client retry uses the server revision instead of replaying stale local state", () => {
-  assert.match(runtime, /let baseRevision = roomRef\.current\?\.revision/);
-  assert.match(runtime, /response\.status === 409[\s\S]*?baseRevision = result\.revision/);
-  assert.match(runtime, /busyRef\.current/);
+test("final impact command is server-bound to the blocker selection already stored in combatAction", () => {
+  assert.match(machine, /AUTHORITATIVE_COMMANDS[\s\S]*"attack"/);
+  assert.match(machine, /combat\.stage !== "charging"/);
+  assert.match(machine, /combat\.attackerUid !== command\.attackerId/);
+  assert.match(machine, /combat state mismatch/);
+  assert.match(machine, /command\.skipPriority = true/);
 });
 
-test("room discovery prefers the URL room and can recover from stale finished sessions", () => {
+test("room discovery still prefers URL room and recovers from stale finished sessions", () => {
   assert.match(runtime, /const DISCOVERY_MS = 3_500/);
   assert.match(runtime, /statusRank: Record<string, number> = \{ started: 3, mulligan: 2, finished: 1 \}/);
   assert.match(runtime, /found\.session\.id === preferred/);
@@ -85,16 +89,14 @@ test("room discovery prefers the URL room and can recover from stale finished se
   assert.match(runtime, /game\.winner != null/);
 });
 
-test("strict Online client typecheck is part of every validation path", () => {
+test("strict Online typecheck remains in every validation path", () => {
   const pkg = JSON.parse(packageJson);
   assert.equal(pkg.scripts["typecheck:online"], "tsc -p tsconfig.online.json --noEmit");
   assert.match(pkg.scripts["vercel-build"], /typecheck:online/);
   assert.match(pkg.scripts["test:rules"], /typecheck:online/);
 });
 
-test("grouped combat UI remains responsive instead of relying on fixed board coordinates", () => {
-  assert.match(css, /width:min\(72rem,96vw\)/);
-  assert.match(css, /grid-template-columns:repeat\(auto-fit/);
-  assert.match(css, /@media\(max-width:48rem\)/);
+test("remaining Online HUD CSS is responsive and contains no fixed board coordinates", () => {
+  assert.match(css, /online-priority-hud/);
   assert.doesNotMatch(css, /(?:^|[;{])\s*(?:left|top):\s*\d+px/m);
 });
