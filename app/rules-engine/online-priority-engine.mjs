@@ -20,31 +20,20 @@ import {
 
 const clone = (value) => structuredClone(value);
 const SINGLE_COMBAT_START = "single-combat-start";
-const LEGACY_GROUPED_CHECKPOINTS = new Set([
-  "combat-start",
-  "after-attackers",
-  "after-blockers",
-  "combat-end",
-]);
+const LEGACY_GROUPED_CHECKPOINTS = new Set(["combat-start", "after-attackers", "after-blockers", "combat-end"]);
 
 const responseIdentity = (command) => {
   if (command.type === "playCard") return `playCard:${command.cardId ?? command.handIndex ?? ""}`;
   if (command.type === "activateHero") return `activateHero:${command.abilityId ?? ""}`;
   return `${command.type}:${command.sourceId ?? ""}:${command.abilityId ?? ""}`;
 };
-
-const legalResponseIdentity = (command) => {
-  if (command.type === "playCard") return `playCard:${command.cardId ?? command.handIndex ?? ""}`;
-  if (command.type === "activateHero") return `activateHero:${command.abilityId ?? ""}`;
-  return `${command.type}:${command.sourceId ?? ""}:${command.abilityId ?? ""}`;
-};
+const legalResponseIdentity = responseIdentity;
 
 function validateOnlineResponse(state, command) {
   const pending = state.pendingResponse;
   if (!pending || pending.responder !== command.owner) throw new RulesViolation("not-your-priority");
-  const legal = legalPriorityResponses(state, command.owner);
   const wanted = responseIdentity(command);
-  if (!legal.some((candidate) => legalResponseIdentity(candidate) === wanted)) throw new RulesViolation("illegal-priority-response");
+  if (!legalPriorityResponses(state, command.owner).some((candidate) => legalResponseIdentity(candidate) === wanted)) throw new RulesViolation("illegal-priority-response");
 }
 
 function phaseAdvanceLabel(phase) {
@@ -62,8 +51,8 @@ function canOpenPhaseTransition(state, command) {
 }
 
 function openPhaseTransition(state, command) {
-  /* Preflight on a clone is important: the shared engine is the only authority
-     for Indomável and every other reason a phase transition may be illegal. */
+  /* The engine preflight is the single authority for Indomável and every other
+     reason combat may not legally end. */
   executeRulesCommand(clone(state), { ...command, skipPriority: true }, { priority: false });
   const next = clone(state);
   const window = phaseTransitionWindow(state.phase);
@@ -94,19 +83,11 @@ function checkpointAtRoot(state) {
     ? state.pendingAction.checkpoint
     : null;
 }
-
 function combatTransitionAtRoot(state) {
-  return (state.priorityStack?.length || 0) <= 1
-    && state.phase === "combate"
-    && state.pendingAction?.type === "advancePhase"
-    && state.pendingAction?.__onlinePhaseTransition;
+  return (state.priorityStack?.length || 0) <= 1 && state.phase === "combate" && state.pendingAction?.type === "advancePhase" && state.pendingAction?.__onlinePhaseTransition;
 }
-
 function mainTransitionAtRoot(state) {
-  return (state.priorityStack?.length || 0) <= 1
-    && state.phase === "principal"
-    && state.pendingAction?.type === "advancePhase"
-    && state.pendingAction?.__onlinePhaseTransition;
+  return (state.priorityStack?.length || 0) <= 1 && state.phase === "principal" && state.pendingAction?.type === "advancePhase" && state.pendingAction?.__onlinePhaseTransition;
 }
 
 function finishSingleCombatStart(state) {
@@ -124,14 +105,8 @@ function resolveOnlineCheckpoint(state) {
   let next;
   if (checkpoint === SINGLE_COMBAT_START) next = finishSingleCombatStart(state);
   else if (checkpoint === OnlineFinalizationStage.PRIORITY) next = completeOnlineFinalization(state);
-  else if (LEGACY_GROUPED_CHECKPOINTS.has(checkpoint)) {
-    /* A room recovered from the retired grouped combat may still contain one
-       of its checkpoints. No declaration in those stages mutates combat until
-       resolution, so returning to single-combat idle is the safest migration.
-       Any lanes already resolved remain represented by normal attacked/exhausted
-       fields on their cards and therefore cannot be repeated illegally. */
-    next = finishSingleCombatStart(state);
-  } else throw new RulesViolation("unknown-online-checkpoint");
+  else if (LEGACY_GROUPED_CHECKPOINTS.has(checkpoint)) next = finishSingleCombatStart(state);
+  else throw new RulesViolation("unknown-online-checkpoint");
   return { state: next, trace: [`online-priority:checkpoint:${checkpoint}`], steps: 0 };
 }
 
@@ -140,26 +115,6 @@ function normalizeAfterResolution(before, result, command) {
   const wasNestedStack = command.type === "passPriority" && Number(before.pendingResponse?.passes || 0) > 0 && (before.priorityStack?.length || 0) > 1;
   if (wasNestedStack && state.pendingResponse && !state.pendingDecision) state.pendingResponse = { ...state.pendingResponse, responder: state.active, passes: 0 };
   return syncPriorityMetadata(state, { window: inferPriorityWindow(state) });
-}
-
-function resolveSelectedSingleAttack(inputState, trace = []) {
-  const combat = inputState.combatAction;
-  if (!combat || combat.stage !== "charging") return { state: inputState, trace, steps: 0 };
-  const command = {
-    type: "attack",
-    owner: combat.attackerOwner,
-    attackerId: combat.attackerUid,
-    ...(combat.defenderUid ? { defenderId: combat.defenderUid } : {}),
-    skipPriority: true,
-  };
-  const result = executeRulesCommand(inputState, command, { priority: false });
-  syncPriorityMetadata(result.state, {
-    mode: result.state.pendingDecision || result.state.pendingReposition ? PriorityMode.RESOLVING : PriorityMode.ACTION,
-    owner: result.state.pendingDecision?.owner ?? result.state.pendingReposition?.activeOwner ?? result.state.active,
-    window: null,
-  });
-  result.trace = [...trace, ...(result.trace || []), "online-combat:single-attack-resolved"];
-  return result;
 }
 
 export function executeOnlineCommand(inputState, rawCommand, options = {}) {
@@ -204,17 +159,10 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   if (command.type === "passPriority") throw new RulesViolation("no-priority-window");
   if (command.type === "declareAttackers" || command.type === "declareBlockers") throw new RulesViolation("grouped-combat-removed");
 
-  /* Old serialized rooms can safely discard the now-unused declaration shell
-     once they are back at an action point. Combat facts live on the cards. */
+  /* Retired grouped-combat metadata from recovered rooms never owns legality. */
   if (state.onlineCombat && !state.pendingDecision && !state.pendingReposition && !state.combatAction) delete state.onlineCombat;
 
   if (canOpenPhaseTransition(state, command)) return openPhaseTransition(state, command);
-
-  if (command.type === "selectDefender") {
-    const selected = executeRulesCommand(state, command, { ...options, priority: true });
-    if (selected.state.combatAction?.stage !== "charging") return selected;
-    return resolveSelectedSingleAttack(selected.state, [...(selected.trace || []), "online-combat:blocker-selected"]);
-  }
 
   const result = executeRulesCommand(state, command, { ...options, priority: true });
   if (command.type === "resolveDecision" && result.state.onlineFinalization?.stage === OnlineFinalizationStage.EFFECTS && !result.state.pendingDecision && !result.state.pendingReposition) {
@@ -240,9 +188,7 @@ export function onlinePriorityView(state) {
     ...snapshot.priority,
     stack: snapshot.stack,
     combat: snapshot.combatAction ? clone(snapshot.combatAction) : null,
-    combatIdle: snapshot.phase === "combate" && !snapshot.combatAction && !snapshot.pendingResponse
-      ? combatIdleView(snapshot, snapshot.active)
-      : null,
+    combatIdle: snapshot.phase === "combate" && !snapshot.combatAction && !snapshot.pendingResponse ? combatIdleView(snapshot, snapshot.active) : null,
     finalization: snapshot.onlineFinalization ? clone(snapshot.onlineFinalization) : null,
   };
 }
