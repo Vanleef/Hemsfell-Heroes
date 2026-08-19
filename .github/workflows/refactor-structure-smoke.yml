@@ -1,0 +1,11 @@
+name: Structural refactor smoke
+on:
+  push:
+    branches:
+      - refactor/visual-structure-consolidation
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo structural-refactor-ready
