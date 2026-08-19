@@ -331,8 +331,11 @@ export default function OnlineMatchRuntime() {
       const player = game.players[0];
       const mandatory: Record<string, number> = {};
       if (combat.attackerOwner === 0) {
-        if (combat.interaction?.attackerOptions) for (const option of combat.interaction.attackerOptions) if (option.mandatoryUses > 0) mandatory[option.attackerId] = option.mandatoryUses;
-        else for (const unit of player.board || []) if (obviousAttackReady(player, unit) && hasKeyword(unit, /indom[aá]vel/i)) mandatory[unitId(unit)] = remainingAttackUses(unit);
+        if (combat.interaction?.attackerOptions) {
+          for (const option of combat.interaction.attackerOptions) if (option.mandatoryUses > 0) mandatory[option.attackerId] = option.mandatoryUses;
+        } else {
+          for (const unit of player.board || []) if (obviousAttackReady(player, unit) && hasKeyword(unit, /indom[aá]vel/i)) mandatory[unitId(unit)] = remainingAttackUses(unit);
+        }
       }
       setAttackerCounts(mandatory);
     } else setAttackerCounts({});
