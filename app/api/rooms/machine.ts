@@ -85,12 +85,15 @@ export function deadline(seconds: number) {
   return Date.now() + seconds * 1000;
 }
 
+function earliestDisconnected(room: Room): { role: RoomRole; at: number } | null {
+  const candidates: Array<{ role: RoomRole; at: number }> = [];
+  if (room.host.disconnectedAt) candidates.push({ role: "host", at: room.host.disconnectedAt });
+  if (room.guest?.disconnectedAt) candidates.push({ role: "guest", at: room.guest.disconnectedAt });
+  return candidates.sort((a, b) => a.at - b.at)[0] ?? null;
+}
+
 export function reconnectPause(room: Room, now = Date.now()): { role: RoomRole; until: number } | null {
-  const disconnected = room.host.disconnectedAt
-    ? { role: "host" as RoomRole, at: room.host.disconnectedAt }
-    : room.guest?.disconnectedAt
-      ? { role: "guest" as RoomRole, at: room.guest.disconnectedAt }
-      : null;
+  const disconnected = earliestDisconnected(room);
   if (!disconnected) return null;
   const until = disconnected.at + 60_000;
   return until > now ? { role: disconnected.role, until } : null;
@@ -142,7 +145,7 @@ export function applyTimeout(room: Room) {
   }
   if (!room.game || room.status !== "started") return false;
   const now = Date.now();
-  const disconnected = room.host.disconnectedAt ? { role: "host" as RoomRole, at: room.host.disconnectedAt } : room.guest?.disconnectedAt ? { role: "guest" as RoomRole, at: room.guest.disconnectedAt } : null;
+  const disconnected = earliestDisconnected(room);
   if (disconnected) {
     if (disconnected.at + 60_000 > now) return false;
     const loser = (disconnected.role === "host" ? 0 : 1) as 0 | 1;
@@ -152,34 +155,59 @@ export function applyTimeout(room: Room) {
     logOnlineDiagnostic(room, "reconnect-expired", { role: disconnected.role });
     return true;
   }
-  if (room.game.pendingResponse?.deadline && room.game.pendingResponse.deadline <= now) {
+
+  /* Recovered legacy rooms can contain an interaction with no absolute
+     deadline. Seed it once on the server so a refresh cannot create an
+     immortal priority/blocker window. */
+  let seededDeadline = false;
+  if (room.game.pendingResponse && !Number.isFinite(Number(room.game.pendingResponse.deadline))) {
+    room.game.pendingResponse.deadline = now + room.settings.responseSeconds * 1000;
+    if (room.game.priority) room.game.priority.deadline = room.game.pendingResponse.deadline;
+    seededDeadline = true;
+  }
+  if (room.game.combatAction?.stage === "choosing" && !Number.isFinite(Number(room.game.combatAction.deadline))) {
+    room.game.combatAction.deadline = now + room.settings.responseSeconds * 1000;
+    if (room.game.priority) room.game.priority.deadline = room.game.combatAction.deadline;
+    seededDeadline = true;
+  }
+
+  if (room.game.pendingResponse) {
+    if (room.game.pendingResponse.deadline > now) return seededDeadline;
     const before = room.game;
     const owner = before.pendingResponse.responder;
     try {
       const result = executeOnlineCommand(before, { type: "passPriority", owner, auto: true }, { priority: true });
       room.game = result.state;
       reconcileOnlineClocks(before, room.game, room.settings, now);
-    } catch { return false; }
+    } catch { return seededDeadline; }
     room.game.events = (room.game.events ?? 0) + 1;
     room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de resposta terminou; a prioridade foi passada automaticamente.", tone: "response" }, ...(room.game.log ?? [])];
     logOnlineDiagnostic(room, "response-timeout", { role: owner === 0 ? "host" : "guest", commandType: "passPriority", auto: true });
     return true;
   }
-  if (room.game.combatAction?.stage === "choosing" && room.game.combatAction.deadline && room.game.combatAction.deadline <= now) {
+
+  if (room.game.combatAction?.stage === "choosing") {
+    if (room.game.combatAction.deadline > now) return seededDeadline;
     const before = room.game;
     const owner = 1 - before.combatAction.attackerOwner;
     try {
       const result = executeOnlineCommand(before, { type: "selectDefender", owner, targetHero: true, auto: true }, { priority: true });
       room.game = result.state;
       reconcileOnlineClocks(before, room.game, room.settings, now);
-    } catch { return false; }
+    } catch { return seededDeadline; }
     room.game.events = (room.game.events ?? 0) + 1;
     room.game.log = [{ id: crypto.randomUUID(), text: "O tempo para bloquear terminou; este ataque seguiu sem bloqueio.", tone: "combat" }, ...(room.game.log ?? [])];
     logOnlineDiagnostic(room, "blocker-timeout", { role: owner === 0 ? "host" : "guest", commandType: "selectDefender", auto: true });
     return true;
   }
+
+  /* Interactive target/effect decisions intentionally pause the action clock.
+     They are never allowed to fall through to a phase timeout underneath the
+     decision that owns input. */
+  if (room.game.pendingDecision || room.game.pendingReposition) return seededDeadline;
+
   if (room.game.turnDeadline && room.game.turnDeadline <= now) {
-    if (!room.game.pendingDecision && !room.game.pendingReposition && !room.game.combatAction && ["principal", "combate", "fim"].includes(room.game.phase)) {
+    if (!room.game.combatAction && ["principal", "combate", "fim"].includes(room.game.phase)) {
       try {
         const before = room.game;
         const owner = before.active;
@@ -195,11 +223,11 @@ export function applyTimeout(room: Room) {
         room.game.log = [{ id: crypto.randomUUID(), text: forcedAttack ? "O tempo da etapa terminou; uma criatura com Indomável iniciou seu ataque obrigatório." : "O tempo da etapa terminou; foi solicitada a passagem pelo fluxo normal de prioridade.", tone: forcedAttack ? "combat" : "phase" }, ...(room.game.log ?? [])];
         logOnlineDiagnostic(room, "turn-timeout", { role: owner === 0 ? "host" : "guest", commandType: command.type, auto: true });
         return true;
-      } catch { return false; }
+      } catch { return seededDeadline; }
     }
-    return false;
+    return seededDeadline;
   }
-  return false;
+  return seededDeadline;
 }
 
 export function applySafeAutoPass(room: Room, role: RoomRole, control: "assisted" | "full-control" = "assisted") {
@@ -287,7 +315,7 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
     room.revision++;
     if (currentParticipant) {
       const recent = currentParticipant.recentCommandIds || [];
-      currentParticipant.recentCommandIds = [...recent.filter((value) => value !== normalizedCommandId), normalizedCommandId].slice(-32);
+      currentParticipant.recentCommandIds = [...recent.filter((value) => value !== normalizedCommandId), normalizedCommandId].slice(-128);
     }
     return { ok: true, status: 200, error: "", trace: result.trace, duplicate: false };
   } catch (error) {
