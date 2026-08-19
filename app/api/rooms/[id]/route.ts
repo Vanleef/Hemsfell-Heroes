@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { preserveOpponentSecrets, readRoom, roleFor, roomView, writeRoom } from "../store";
 import { applyRulesCommand, applyTimeout, bothDecksLocked, canSync, deadline, participant, prepareCoin, sanitizeSettings } from "../machine";
+import { shiftOnlineDeadlines } from "../online-clock.mjs";
 import { isBoundedGame, isPlainRecord, isRoomId, readSafeJson } from "../validation";
 
 export const dynamic = "force-dynamic";
@@ -49,11 +50,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     if (body.action === "resume") {
       const awaySince = activeParticipant.disconnectedAt;
-      if (awaySince && room.game && Date.now() < awaySince + 60_000) {
-        const pausedFor = Date.now() - awaySince;
-        if (room.game.turnDeadline) room.game.turnDeadline += pausedFor;
-        if (room.game.pendingResponse?.deadline) room.game.pendingResponse.deadline += pausedFor;
-      }
+      const resumedAt = Date.now();
+      if (awaySince && room.game && resumedAt < awaySince + 60_000) shiftOnlineDeadlines(room.game, resumedAt - awaySince);
       activeParticipant.disconnectedAt = null;
       room.revision++;
       await writeRoom(room);
