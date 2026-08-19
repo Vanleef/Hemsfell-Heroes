@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - fix/online-single-attack-combat
+  pull_request:
+    branches:
+      - design/online-priority-flow-rework
+    types: [synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
