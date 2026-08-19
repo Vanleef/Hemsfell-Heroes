@@ -56,6 +56,6 @@ replace_once(
 
 replace_once(
     "docs/online-priority-implementation.md",
-    "- Legacy `sync` is rejected during `declare-attackers` and `declare-blockers`, preventing either player from bypassing the grouped authoritative command path with an older full-state synchronization.\n",
-    "- Legacy `sync` is rejected during `declare-attackers` and `declare-blockers`, preventing either player from bypassing the grouped authoritative command path with an older full-state synchronization.\n- Every modern Online command may carry a stable client command id; the server remembers the last 32 accepted ids per participant and acknowledges a retransmission before stale-revision validation, preventing a lost HTTP response or retry from applying the same action twice.\n",
+    "- Legacy full-state `sync` is rejected during grouped attacker/blocker declaration so an older client cannot bypass the authoritative declaration commands.\n",
+    "- Legacy full-state `sync` is rejected during grouped attacker/blocker declaration so an older client cannot bypass the authoritative declaration commands.\n- Every modern Online command may carry a stable client command id; the server remembers the last 32 accepted ids per participant and acknowledges a retransmission before stale-revision validation, preventing a lost HTTP response or retry from applying the same action twice.\n",
 )
