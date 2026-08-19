@@ -60,10 +60,18 @@ const suppliedDeckPages: Partial<Record<DeckId, Array<[number, number]>>> = {
 };
 
 const uid = () => globalThis.crypto.randomUUID();
+const secureIndex = (maxExclusive: number) => {
+  if (!Number.isInteger(maxExclusive) || maxExclusive <= 0) return 0;
+  const range = 0x1_0000_0000;
+  const limit = range - (range % maxExclusive);
+  const value = new Uint32Array(1);
+  do globalThis.crypto.getRandomValues(value); while (value[0] >= limit);
+  return value[0] % maxExclusive;
+};
 const shuffle = <T,>(source: T[]) => {
   const output = [...source];
   for (let index = output.length - 1; index > 0; index--) {
-    const swap = Math.floor(Math.random() * (index + 1));
+    const swap = secureIndex(index + 1);
     [output[index], output[swap]] = [output[swap], output[index]];
   }
   return output;
