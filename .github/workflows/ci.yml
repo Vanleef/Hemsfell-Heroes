@@ -12,7 +12,6 @@ on:
       - refactor/consolidate-css
       - codex/optimization-cleanup
       - ui/fixed-board-composition
-      - fix/online-single-attack-combat
   pull_request:
     branches:
       - main
