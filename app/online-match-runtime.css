@@ -4,7 +4,7 @@
  left:50%;
  transform:translateX(-50%);
  z-index:78;
- display:grid;
+ display:none;
  grid-template-columns:minmax(8rem,auto) minmax(8rem,18rem);
  gap:clamp(.35rem,.8vw,.75rem);
  width:min(36rem,calc(100vw - 1rem));
