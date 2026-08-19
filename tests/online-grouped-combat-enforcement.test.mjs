@@ -76,7 +76,7 @@ test("one attacker opens one defender decision and blocks further attacker actio
   game = passAttackPriority(game);
   assert.equal(game.combatAction.stage, "choosing");
   assert.equal(game.pendingResponse, null);
-  assert.throws(() => executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "next-attacker" }), /combat-in-progress/);
+  assert.throws(() => executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "next-attacker" }), /combat-action-pending/);
   assert.throws(() => executeOnlineCommand(game, { type: "selectDefender", owner: 0, attackerId: "attacker", targetHero: true }), /not-defender/);
 });
 
