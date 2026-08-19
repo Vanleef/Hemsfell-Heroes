@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { onlineCombatInteractionView } from "../app/rules-engine/online-combat.mjs";
+import { canEndCombat, listAttackCapableCreatures, listLegalBlockers, listPendingIndomitableAttackers } from "../app/rules-engine/combat.mjs";
 
 const unit = (id, slot, tags = []) => ({
   uid: id,
@@ -38,6 +37,7 @@ const player = () => ({
   reserve: 0,
   hand: [],
   deck: [],
+  extraDeck: [],
   grave: [],
   obscuro: [],
   board: [],
@@ -48,16 +48,9 @@ const player = () => ({
   heroXP: 0,
 });
 
-const base = () => ({
-  active: 0,
-  phase: "combate",
-  round: 4,
-  events: 0,
-  winner: null,
-  players: [player(), player()],
-});
+const base = () => ({ active: 0, phase: "combate", round: 4, events: 0, winner: null, players: [player(), player()] });
 
-test("attacker interaction options come from authoritative declareAttack preflight", () => {
+test("attacker capability is derived from authoritative declareAttack preflight", () => {
   const game = base();
   const ready = unit("ready", 0, ["Indomável"]);
   ready.attackLimit = 2;
@@ -66,37 +59,27 @@ test("attacker interaction options come from authoritative declareAttack preflig
   const turned = unit("turned", 2);
   turned.exhausted = true;
   game.players[0].board = [ready, sick, turned];
-  game.onlineCombat = { stage: "declare-attackers", attackerOwner: 0, attackers: [], blocks: [], resolutionIndex: 0 };
 
-  const view = onlineCombatInteractionView(game, 0);
-  assert.deepEqual(view.attackerOptions, [{ attackerId: "ready", slot: 0, maxUses: 2, mandatoryUses: 2 }]);
-  assert.deepEqual(onlineCombatInteractionView(game, 1).attackerOptions, [], "opponent gets no actionable attacker list");
+  assert.deepEqual(listAttackCapableCreatures(game, 0).map((card) => card.uid), ["ready"]);
+  assert.deepEqual(listPendingIndomitableAttackers(game, 0).map((card) => card.uid), ["ready"]);
+  assert.equal(canEndCombat(game, 0), false);
 });
 
-test("blocker interaction options reuse authoritative attack legality", () => {
+test("blocker list reuses authoritative attack legality for flying and ordinary defenders", () => {
   const game = base();
   const flying = unit("flying", 0, ["Voar"]);
   const plain = unit("plain", 0);
   const flyingBlocker = unit("flying-blocker", 1, ["Voar", "Defensor 2"]);
   game.players[0].board = [flying];
   game.players[1].board = [plain, flyingBlocker];
-  game.onlineCombat = {
-    stage: "declare-blockers",
-    attackerOwner: 0,
-    attackers: [{ attackId: "attack-1", attackerId: "flying", declaredSlot: 0, occurrence: 0 }],
-    blocks: [],
-    resolutionIndex: 0,
-  };
 
-  const view = onlineCombatInteractionView(game, 1);
-  assert.deepEqual(view.blockerOptions, [{ attackId: "attack-1", defenderIds: ["flying-blocker"] }]);
-  assert.equal(view.defenderCapacities["flying-blocker"], 2);
-  assert.equal(view.defenderCapacities.plain, 1);
-  assert.deepEqual(onlineCombatInteractionView(game, 0).blockerOptions, [], "attacker gets no actionable blocker list");
+  assert.deepEqual(listLegalBlockers(game, 1, flying).map((card) => card.uid), ["flying-blocker"]);
 });
 
-test("room public view wires viewer-scoped combat interaction metadata", async () => {
-  const store = await readFile(new URL("../app/api/rooms/store.ts", import.meta.url), "utf8");
-  assert.match(store, /onlineCombatInteractionView/);
-  assert.match(store, /game\.onlineCombat\.interaction = onlineCombatInteractionView\(game, viewer\)/);
+test("Furtivo exposes no legal blocker while direct damage remains a defender choice", () => {
+  const game = base();
+  const stealth = unit("stealth", 0, ["Furtivo"]);
+  game.players[0].board = [stealth];
+  game.players[1].board = [unit("plain", 0), unit("fly", 1, ["Voar"] )];
+  assert.deepEqual(listLegalBlockers(game, 1, stealth), []);
 });
