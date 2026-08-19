@@ -79,6 +79,34 @@ export function deadline(seconds: number) {
   return Date.now() + seconds * 1000;
 }
 
+function finishDisconnectedMatch(room: Room, loser: 0 | 1) {
+  const game = room.game;
+  if (!game) return;
+  game.winner = loser === 0 ? 1 : 0;
+  game.pendingResponse = null;
+  game.pendingAction = undefined;
+  game.priorityStack = undefined;
+  game.stack = [];
+  game.combatAction = null;
+  game.onlineCombat = undefined;
+  game.onlineFinalization = undefined;
+  game.pendingDecision = null;
+  game.pendingReposition = null;
+  game.turnDeadline = null;
+  delete game.turnTimeRemainingMs;
+  game.priority = {
+    ...(game.priority || {}),
+    model: game.priority?.model || "online-v2",
+    mode: "none",
+    owner: null,
+    window: null,
+    consecutivePasses: 0,
+    deadline: null,
+    stackDepth: 0,
+  };
+  room.status = "finished";
+}
+
 export function applyTimeout(room: Room) {
   if (room.game && room.status === "mulligan") {
     const now = Date.now(); let changed = false;
@@ -99,11 +127,8 @@ export function applyTimeout(room: Room) {
   const disconnected = room.host.disconnectedAt ? { role: "host" as RoomRole, at: room.host.disconnectedAt } : room.guest?.disconnectedAt ? { role: "guest" as RoomRole, at: room.guest.disconnectedAt } : null;
   if (disconnected) {
     if (disconnected.at + 60_000 > now) return false;
-    const loser = disconnected.role === "host" ? 0 : 1;
-    room.game.winner = loser === 0 ? 1 : 0;
-    room.game.pendingResponse = null;
-    room.game.combatAction = null;
-    room.status = "finished";
+    const loser = (disconnected.role === "host" ? 0 : 1) as 0 | 1;
+    finishDisconnectedMatch(room, loser);
     room.game.events = (room.game.events ?? 0) + 1;
     room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de reconexão terminou. A partida foi encerrada.", tone: "danger" }, ...(room.game.log ?? [])];
     return true;
