@@ -14,7 +14,7 @@ const fixture = () => ({
   pendingDecision: { owner: 1, context: { owner: 0, decisionOwner: 1, targetOwner: 0 }, effect: { targetOwner: 1 } },
   pendingReposition: { owners: [0, 1], confirmed: [1], activeOwner: 0 },
   combatAction: { attackerOwner: 0, attackerUid: "a" },
-  onlineCombat: { attackerOwner: 0, stage: "after-attackers", attackers: [] },
+  onlineCombat: { attackerOwner: 0, stage: "after-attackers", attackers: [], interaction: { stage: "declare-blockers", owner: 1, blockerOptions: [{ attackId: "a", defenderIds: ["d"] }] } },
   onlineFinalization: { owner: 0, stage: "finalization-priority" },
 });
 
@@ -49,6 +49,8 @@ test("guest orientation flips every canonical player index exactly once", () => 
   assert.equal(game.pendingReposition.activeOwner, 1);
   assert.equal(game.combatAction.attackerOwner, 1);
   assert.equal(game.onlineCombat.attackerOwner, 1);
+  assert.equal(game.onlineCombat.interaction.owner, 0);
+  assert.deepEqual(game.onlineCombat.interaction.blockerOptions, [{ attackId: "a", defenderIds: ["d"] }], "card ids are perspective-independent");
   assert.equal(game.onlineFinalization.owner, 1);
   assert.equal(source.active, 0, "authoritative source is never mutated");
 });
