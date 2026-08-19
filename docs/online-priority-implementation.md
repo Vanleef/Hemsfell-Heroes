@@ -36,7 +36,7 @@ This file tracks the staged migration of Online mode to the timing model specifi
 - Blocker selection displays every committed attack lane, allows repeated Defensor use up to visible capacity and sends one frozen assignment set to the server.
 - A compact canonical Online HUD now displays current priority owner, timing window and readable stack frames from `priority` / `stack` instead of reconstructing them from local UI state.
 - The pure `orientOnlineGameForRole` path flips canonical priority, stack, combat/finalization and decision ownership for the guest without mutating the server snapshot.
-- Legacy `declareAttack` compatibility remains in the engine temporarily as a recovery path for clients that do not mount the staged runtime yet; it can be removed after browser validation of the new client path.
+- Once `onlineCombat` reaches `declare-attackers`, the server requires the grouped command path: a legacy single `declareAttack` is rejected and `advancePhase` cannot skip a live grouped combat. Older/recovered snapshots that never entered canonical grouped combat may still use legacy combat compatibility outside that state.
 
 ## Phase 3 — Finalization ordering and response/blocker-clock separation implemented
 
@@ -52,6 +52,7 @@ This file tracks the staged migration of Online mode to the timing model specifi
 - The defender-only `declare-blockers` step now also pauses the attacker's action clock and receives its own response-sized deadline.
 - If the blocker deadline expires, the server authoritatively submits an empty blocker set and continues into the normal `after-blockers` response checkpoint; the client cannot extend the active player's clock by waiting.
 - Legacy `sync` is rejected during `declare-attackers` and `declare-blockers`, preventing either player from bypassing the grouped authoritative command path with an older full-state synchronization.
+- `priority.deadline` is reconciled together with the authoritative response/blocker deadline so the canonical UI snapshot cannot display a stale timeout value.
 
 ## Compatibility fields retained during migration
 
@@ -66,7 +67,7 @@ They remain compatibility inputs for the existing large match page while the ser
 
 - Run browser-level host/guest tests through the complete grouped combat sequence, including Combat-start, nested responses, reconnect during attacker/blocker checkpoints and stale-revision retries.
 - Validate the staged runtime at multiple viewport sizes and browser zoom levels against the existing battlefield composition.
-- After browser validation, fold the staged Online runtime into the canonical match client state flow and remove the temporary legacy `declareAttack` escape path.
+- After browser validation, fold the staged Online runtime into the canonical match client state flow and retire redundant legacy client combat/polling code without reintroducing a second rules path.
 - Expand multiplayer telemetry/debug output for rejected stale commands and checkpoint timeouts so live-match desynchronization is diagnosable without exposing hidden zones.
 
 No Offline/Bot game flow is routed through the new Online command kernel; only shared deterministic card/rule resolution remains common underneath it.
