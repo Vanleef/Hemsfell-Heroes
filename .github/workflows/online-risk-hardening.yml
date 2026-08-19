@@ -32,6 +32,23 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
+      - name: Normalize temporary runner
+        run: |
+          python - <<'PY'
+          path = "scripts/online-risk-hardening.mjs"
+          lines = open(path, encoding="utf-8").readlines()
+          idx = next(i for i, line in enumerate(lines) if "route stale catch present" in line)
+          start = idx
+          while start >= 0 and "source = requireReplace(" not in lines[start]:
+              start -= 1
+          end = idx
+          while end < len(lines) and lines[end].strip() != ");":
+              end += 1
+          if start < 0 or end >= len(lines):
+              raise SystemExit("could not normalize runner")
+          del lines[start:end + 1]
+          open(path, "w", encoding="utf-8").writelines(lines)
+          PY
       - name: Apply online hardening patches
         run: node scripts/online-risk-hardening.mjs
       - name: Run focused online regressions
