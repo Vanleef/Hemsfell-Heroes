@@ -34,6 +34,7 @@ test("grouped combat client emits the two authoritative declaration commands", (
 test("grouped combat overlay blocks the legacy single-lane board while a declaration is pending", () => {
   assert.match(runtime, /online-combat-blocker/);
   assert.match(css, /\.online-combat-blocker\{[\s\S]*?position:fixed[\s\S]*?inset:0[\s\S]*?z-index:9900/);
+  assert.match(machine, /grouped combat declaration requires authoritative command/);
 });
 
 test("canonical priority HUD renders owner, timing window and readable stack frames", () => {
@@ -53,9 +54,15 @@ test("blocker choice owns a response-sized deadline without consuming the attack
   assert.match(runtime, /Seu relógio de ação permanece pausado/);
 });
 
+test("revision-safe client retry uses the server revision instead of replaying stale local state", () => {
+  assert.match(runtime, /let baseRevision = roomRef\.current\?\.revision/);
+  assert.match(runtime, /response\.status === 409[\s\S]*?baseRevision = result\.revision/);
+  assert.match(runtime, /busyRef\.current/);
+});
+
 test("grouped combat UI remains responsive instead of relying on fixed board coordinates", () => {
   assert.match(css, /width:min\(72rem,96vw\)/);
   assert.match(css, /grid-template-columns:repeat\(auto-fit/);
   assert.match(css, /@media\(max-width:48rem\)/);
-  assert.doesNotMatch(css, /left:\s*\d+px|top:\s*\d+px/);
+  assert.doesNotMatch(css, /(?:^|[;{])\s*(?:left|top):\s*\d+px/m);
 });
