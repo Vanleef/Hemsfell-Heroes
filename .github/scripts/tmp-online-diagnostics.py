@@ -50,8 +50,8 @@ replace_once(
 )
 replace_once(
     "app/api/rooms/machine.ts",
-    '  if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };',
-    '  if (Number(baseRevision) !== room.revision) { logOnlineDiagnostic(room, "command-stale", { role, commandType: String(rawCommand.type || ""), reason: "stale revision", baseRevision }); return { ok: false, status: 409, error: "stale revision" }; }',
+    '  if (room.status !== "started" || !room.game) return { ok: false, status: 409, error: "room not started" };\n  if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };\n  if (reconnectPause(room)) return { ok: false, status: 409, error: "match paused for reconnect" };',
+    '  if (room.status !== "started" || !room.game) return { ok: false, status: 409, error: "room not started" };\n  if (Number(baseRevision) !== room.revision) { logOnlineDiagnostic(room, "command-stale", { role, commandType: String(rawCommand.type || ""), reason: "stale revision", baseRevision }); return { ok: false, status: 409, error: "stale revision" }; }\n  if (reconnectPause(room)) return { ok: false, status: 409, error: "match paused for reconnect" };',
 )
 replace_once(
     "app/api/rooms/machine.ts",
