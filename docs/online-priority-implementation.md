@@ -30,15 +30,17 @@ This file tracks the staged migration of Online mode to the timing model specifi
 - Combat lanes resolve in declared left-to-right order through the existing synchronous damage resolver; Veloz, Atropelar, Robusto, Roubo de Vida, Toque da Morte and card triggers remain engine-owned.
 - A real pending decision pauses lane resolution and `resolveDecision` resumes at the stored `resolutionIndex`.
 - `combat-end` is an explicit response checkpoint.
-- `online-match-runtime.tsx` is mounted globally as the staged Online client bridge. It discovers the authenticated local room, reads only the server public game view, uses the pure guest-orientation helper and submits `declareAttackers` / `declareBlockers` through the authoritative room command API.
+- `online-match-runtime.tsx` is mounted globally as the staged Online client bridge. It discovers and periodically reconciles the authenticated local room, reads only the server public game view, uses the pure guest-orientation helper and submits `declareAttackers` / `declareBlockers` through the authoritative room command API.
 - While grouped attacker or blocker declaration is pending, a full-screen interaction layer blocks the legacy single-lane battlefield controls so both systems cannot mutate the same combat simultaneously.
-- Attacker selection supports real extra attack uses, preselects obvious `Indomável` requirements and keeps the server as the final legality authority.
-- Blocker selection displays every committed attack lane, allows repeated Defensor use up to visible capacity and sends one frozen assignment set to the server.
-- A compact canonical Online HUD now displays current priority owner, timing window and readable stack frames from `priority` / `stack` instead of reconstructing them from local UI state.
-- The pure `orientOnlineGameForRole` path flips canonical priority, stack, combat/finalization and decision ownership for the guest without mutating the server snapshot.
+- The server computes viewer-scoped legal attacker and blocker interaction data from the same authoritative engine preflight used on commit. Those choices are cached at the frozen declaration checkpoint so normal room polling does not repeatedly simulate every combat pair.
+- Attacker selection supports real extra attack uses and preselects the authoritative mandatory `Indomável` count.
+- Blocker selection displays every committed attack lane and consumes authoritative legal defender ids plus remaining `Defensor X` capacity.
+- A compact canonical Online HUD displays current priority owner, timing window and readable stack frames from `priority` / `stack` instead of reconstructing them from local UI state.
+- The pure `orientOnlineGameForRole` path flips canonical priority, stack, combat/finalization, grouped-interaction and decision ownership for the guest without mutating the server snapshot. Card/creature ids remain stable between perspectives.
 - Once `onlineCombat` reaches `declare-attackers`, the server requires the grouped command path: a legacy single `declareAttack` is rejected and `advancePhase` cannot skip a live grouped combat. Older/recovered snapshots that never entered canonical grouped combat may still use legacy combat compatibility outside that state.
+- Legacy full-state `sync` is rejected during grouped attacker/blocker declaration so an older client cannot bypass the authoritative declaration commands.
 
-## Phase 3 — Finalization ordering and response/blocker-clock separation implemented
+## Phase 3 — Finalization, clocks and reconnect semantics implemented
 
 - Online Combat→Finalization banks remaining main Energy before end-turn processing, respecting Reserve max 3 and `noReserveStorageThisTurn`.
 - Energy is zeroed before the Finalization response checkpoint, so response spending observes the resources that actually exist after banking.
@@ -49,10 +51,17 @@ This file tracks the staged migration of Online mode to the timing model specifi
 - The active player's action clock is paused whenever a response window opens and resumes with the exact stored remainder when the stack returns to action priority.
 - Every priority handoff receives a fresh response deadline without refilling the action clock.
 - Ordinary actions no longer reset the turn timer; a newly active player receives a fresh turn clock.
-- The defender-only `declare-blockers` step now also pauses the attacker's action clock and receives its own response-sized deadline.
+- The defender-only `declare-blockers` step also pauses the attacker's action clock and receives its own response-sized deadline.
 - If the blocker deadline expires, the server authoritatively submits an empty blocker set and continues into the normal `after-blockers` response checkpoint; the client cannot extend the active player's clock by waiting.
-- Legacy `sync` is rejected during `declare-attackers` and `declare-blockers`, preventing either player from bypassing the grouped authoritative command path with an older full-state synchronization.
 - `priority.deadline` is reconciled together with the authoritative response/blocker deadline so the canonical UI snapshot cannot display a stale timeout value.
+- Reconnecting inside the 60-second grace period shifts every absolute Online interaction deadline by the exact time spent disconnected: action turn, response, canonical priority, grouped blocker declaration, reposition and pending decision deadlines all remain paused together.
+- If the 60-second reconnect grace expires, the server finishes the match and clears every interactive compatibility/canonical checkpoint (`pendingResponse`, `pendingAction`, priority stack, canonical stack, grouped/legacy combat, Finalization, decision/reposition and timers). The final priority view is `mode: none`, `owner: null`, `stackDepth: 0`.
+
+## Validation status
+
+The latest fully validated deployment ancestor is commit `d26c4594fc3dcf8145f18bc08b7cd0512dddee7b`. Its Vercel preview reached `READY`; project-maintenance and frontend-structure checks passed, `typecheck:ai` and `typecheck:online` passed, all 472 Node tests passed, AI smoke calibration was 24/24 and the Next.js production build completed successfully.
+
+Later commits add the full two-perspective Host/Guest flow regression, reconnect deadline preservation/expiry cleanup, reconnect source regressions and expand `tsconfig.online.json` so strict Online typechecking also covers room-server and Online timing modules. Those later commits have not yet received a fresh Vercel build because the account hit the Vercel build-rate limit; that rate-limit status must not be treated as a code failure.
 
 ## Compatibility fields retained during migration
 
@@ -65,9 +74,10 @@ They remain compatibility inputs for the existing large match page while the ser
 
 ## Remaining work
 
-- Run browser-level host/guest tests through the complete grouped combat sequence, including Combat-start, nested responses, reconnect during attacker/blocker checkpoints and stale-revision retries.
-- Validate the staged runtime at multiple viewport sizes and browser zoom levels against the existing battlefield composition.
-- After browser validation, fold the staged Online runtime into the canonical match client state flow and retire redundant legacy client combat/polling code without reintroducing a second rules path.
+- Obtain one fresh green build for the post-`d26c459` head, especially the expanded room-server `typecheck:online` surface and reconnect regressions.
+- Perform manual/two-browser Host/Guest interaction validation through Combat-start, nested responses, grouped attack/block declaration, reconnect during each checkpoint and stale-revision retries. The current tool environment can validate server/perspective state and deployed HTML but cannot drive two authenticated browser sessions interactively.
+- Inspect the staged runtime at multiple viewport sizes and browser zoom levels against the existing battlefield composition.
+- After that validation, fold the staged Online runtime into the canonical match client state flow and retire redundant legacy client combat/polling code without reintroducing a second rules path.
 - Expand multiplayer telemetry/debug output for rejected stale commands and checkpoint timeouts so live-match desynchronization is diagnosable without exposing hidden zones.
 
 No Offline/Bot game flow is routed through the new Online command kernel; only shared deterministic card/rule resolution remains common underneath it.
