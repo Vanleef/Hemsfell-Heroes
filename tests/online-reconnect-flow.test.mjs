@@ -1,0 +1,50 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+const [route, machine, clock] = await Promise.all([
+  readFile(new URL("../app/api/rooms/[id]/route.ts", import.meta.url), "utf8"),
+  readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
+  readFile(new URL("../app/api/rooms/online-clock.mjs", import.meta.url), "utf8"),
+]);
+
+test("resume shifts every Online deadline through the shared clock helper", () => {
+  assert.match(route, /import \{ shiftOnlineDeadlines \} from "\.\.\/online-clock\.mjs"/);
+  assert.match(route, /const awaySince = activeParticipant\.disconnectedAt/);
+  assert.match(route, /const resumedAt = Date\.now\(\)/);
+  assert.match(route, /shiftOnlineDeadlines\(room\.game, resumedAt - awaySince\)/);
+
+  assert.match(clock, /export function shiftOnlineDeadlines/);
+  for (const target of [
+    /shiftDeadline\(game, "turnDeadline", milliseconds\)/,
+    /shiftDeadline\(game\.pendingResponse, "deadline", milliseconds\)/,
+    /shiftDeadline\(game\.priority, "deadline", milliseconds\)/,
+    /shiftDeadline\(game\.onlineCombat, "deadline", milliseconds\)/,
+    /shiftDeadline\(game\.pendingReposition, "deadline", milliseconds\)/,
+    /shiftDeadline\(game\.pendingDecision, "deadline", milliseconds\)/,
+  ]) assert.match(clock, target);
+});
+
+test("disconnect grace expiry clears every canonical interactive checkpoint", () => {
+  assert.match(machine, /function finishDisconnectedMatch\(room: Room, loser: 0 \| 1\)/);
+  assert.match(machine, /game\.pendingResponse = null/);
+  assert.match(machine, /game\.pendingAction = undefined/);
+  assert.match(machine, /game\.priorityStack = undefined/);
+  assert.match(machine, /game\.stack = \[\]/);
+  assert.match(machine, /game\.combatAction = null/);
+  assert.match(machine, /game\.onlineCombat = undefined/);
+  assert.match(machine, /game\.onlineFinalization = undefined/);
+  assert.match(machine, /game\.pendingDecision = null/);
+  assert.match(machine, /game\.pendingReposition = null/);
+  assert.match(machine, /game\.turnDeadline = null/);
+  assert.match(machine, /delete game\.turnTimeRemainingMs/);
+  assert.match(machine, /mode: "none"/);
+  assert.match(machine, /owner: null/);
+  assert.match(machine, /stackDepth: 0/);
+  assert.match(machine, /room\.status = "finished"/);
+});
+
+test("reconnect grace continues to be exactly sixty seconds", () => {
+  assert.match(machine, /disconnected\.at \+ 60_000 > now/);
+  assert.match(route, /resumedAt < awaySince \+ 60_000/);
+});
