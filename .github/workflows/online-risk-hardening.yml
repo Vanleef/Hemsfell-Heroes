@@ -7,6 +7,7 @@ on:
     paths:
       - scripts/online-risk-hardening.mjs
       - .github/workflows/online-risk-hardening.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
