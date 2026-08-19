@@ -18,7 +18,7 @@ test("root layout mounts the staged Online runtime after the canonical match UI 
 
 test("Online runtime consumes the pure canonical guest orientation instead of duplicating mirror logic", () => {
   assert.match(runtime, /orientOnlineGameForRole/);
-  assert.match(runtime, /session\.isHost \? "host" : "guest"/);
+  assert.match(runtime, /currentSession\.isHost \? "host" : "guest"/);
   assert.doesNotMatch(runtime, /mirrored\.players\s*=/);
 });
 
