@@ -69,7 +69,6 @@ type RoomSnapshot = {
   settings?: { responseSeconds?: number; turnSeconds?: number };
   game?: OnlineGame | null;
 };
-
 type CommandResult = RoomSnapshot & { error?: string };
 
 const SESSION_PREFIX = "hemsfell-room-";
@@ -124,9 +123,7 @@ function readSessions(): Session[] {
 }
 
 async function fetchRoom(session: Session): Promise<RoomSnapshot | null> {
-  const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}?token=${encodeURIComponent(session.token)}`, {
-    cache: "no-store",
-  });
+  const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}?token=${encodeURIComponent(session.token)}`, { cache: "no-store" });
   if (!response.ok) return null;
   const room = await response.json() as RoomSnapshot;
   return room.game ? room : null;
@@ -252,8 +249,11 @@ export default function OnlineMatchRuntime() {
   const [error, setError] = useState("");
   const [now, setNow] = useState(() => Date.now());
   const stageKeyRef = useRef("");
+  const roomRef = useRef<RoomSnapshot | null>(null);
+  const busyRef = useRef(false);
 
   const applySnapshot = (currentSession: Session, snapshot: RoomSnapshot) => {
+    roomRef.current = snapshot;
     setRoom(snapshot);
     setGame(snapshot.game ? orientOnlineGameForRole(snapshot.game, currentSession.isHost ? "host" : "guest") as OnlineGame : null);
   };
@@ -310,31 +310,39 @@ export default function OnlineMatchRuntime() {
     else setBlockAssignments({});
   }, [stageKey]);
 
-  const command = async (payload: Record<string, unknown>, retry = true): Promise<boolean> => {
-    if (!session || !room || busy) return false;
+  const command = async (payload: Record<string, unknown>): Promise<boolean> => {
+    if (!session || busyRef.current) return false;
+    busyRef.current = true;
     setBusy(true);
     setError("");
     try {
-      const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}`, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ action: "command", token: session.token, command: payload, baseRevision: room.revision }),
-      });
-      const result = await response.json() as CommandResult;
-      if (result.game) applySnapshot(session, result);
-      if (response.status === 409 && retry && result.revision != null) {
-        setBusy(false);
-        return command(payload, false);
+      let baseRevision = roomRef.current?.revision;
+      if (baseRevision == null) return false;
+      for (let attempt = 0; attempt < 2; attempt += 1) {
+        const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ action: "command", token: session.token, command: payload, baseRevision }),
+        });
+        const result = await response.json() as CommandResult;
+        if (result.game) applySnapshot(session, result);
+        if (response.status === 409 && attempt === 0 && result.revision != null) {
+          baseRevision = result.revision;
+          continue;
+        }
+        if (!response.ok) {
+          setError(result.error || "O servidor recusou esta declaração.");
+          return false;
+        }
+        return true;
       }
-      if (!response.ok) {
-        setError(result.error || "O servidor recusou esta declaração.");
-        return false;
-      }
-      return true;
+      setError("A sala mudou enquanto a declaração era enviada. Revise o estado atual e tente novamente.");
+      return false;
     } catch {
       setError("Conexão instável. A declaração não foi enviada; tente novamente.");
       return false;
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   };
