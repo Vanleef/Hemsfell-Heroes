@@ -1,11 +1,39 @@
-name: Tranqueira smoke
+name: Tranqueira patch runner
 on:
   push:
     branches:
       - fix/cards_mechanics
+permissions:
+  contents: write
 jobs:
-  smoke:
+  patch:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - run: echo ok
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - name: Apply source patch
+        run: |
+          python scripts/tranqueira_trambuco_choice_patch.py
+          git diff --check
+      - name: Publish clean functional commit
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -f .github/workflows/tranqueira-smoke.yml scripts/tranqueira_trambuco_choice_patch.py
+          git add app/rules-engine/card-rules.mjs app/rules-engine/effects.mjs app/page.tsx tests/tranqueira-trambuco-choice-regression.test.mjs
+          git commit -m 'fix: choose Tranqueira Trambuco Goblin target'
+          git push origin HEAD:fix/cards_mechanics
+      - name: Install dependencies
+        run: npm ci
+      - name: Focused Tranqueira regressions
+        run: node --test tests/limo-tranqueira-regression.test.mjs tests/tranqueira-local-ui-expiry-regression.test.mjs tests/tranqueira-trambuco-choice-regression.test.mjs
+      - name: Full authoritative rules suite
+        run: npm run test:rules
