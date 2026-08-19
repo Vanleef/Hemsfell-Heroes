@@ -96,6 +96,17 @@ test("blocker selection is unitary and the selected attack resolves through the 
   assert.deepEqual(listAttackCapableCreatures(game, 0).map((card) => card.uid), ["next-attacker"]);
 });
 
+test("illegal blocker is rejected before combat enters charging", () => {
+  let game = combatState();
+  game.players[0].board = [unit("flying-attacker", 0, ["Voar"])];
+  game.players[1].board = [unit("ground-blocker", 0)];
+  game = executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "flying-attacker" }).state;
+  game = passAttackPriority(game);
+  assert.deepEqual(listLegalBlockers(game, 1, "flying-attacker"), []);
+  assert.throws(() => executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "flying-attacker", defenderId: "ground-blocker", targetHero: false }), /invalid-defender/);
+  assert.equal(game.combatAction.stage, "choosing");
+});
+
 test("no block sends only that attack to the defending hero", () => {
   let game = executeOnlineCommand(combatState(), { type: "declareAttack", owner: 0, attackerId: "attacker" }).state;
   game = passAttackPriority(game);
