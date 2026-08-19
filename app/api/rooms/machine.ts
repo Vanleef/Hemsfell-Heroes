@@ -79,6 +79,17 @@ export function deadline(seconds: number) {
   return Date.now() + seconds * 1000;
 }
 
+export function reconnectPause(room: Room, now = Date.now()): { role: RoomRole; until: number } | null {
+  const disconnected = room.host.disconnectedAt
+    ? { role: "host" as RoomRole, at: room.host.disconnectedAt }
+    : room.guest?.disconnectedAt
+      ? { role: "guest" as RoomRole, at: room.guest.disconnectedAt }
+      : null;
+  if (!disconnected) return null;
+  const until = disconnected.at + 60_000;
+  return until > now ? { role: disconnected.role, until } : null;
+}
+
 function finishDisconnectedMatch(room: Room, loser: 0 | 1) {
   const game = room.game;
   if (!game) return;
@@ -158,10 +169,6 @@ export function applyTimeout(room: Room) {
     return true;
   }
   if (room.game.turnDeadline && room.game.turnDeadline <= now) {
-    /* A turn timeout may request a legal phase transition, but it must never
-       erase a live stack/decision/combat exchange by teleporting directly to
-       the opponent's Maintenance. Interactive checkpoints keep their state and
-       are handled by their own response/decision flow. */
     if (!room.game.pendingDecision && !room.game.pendingReposition && !room.game.combatAction && ["principal", "combate", "fim"].includes(room.game.phase)) {
       try {
         const before = room.game;
@@ -180,7 +187,7 @@ export function applyTimeout(room: Room) {
 }
 
 export function applySafeAutoPass(room: Room, role: RoomRole, control: "assisted" | "full-control" = "assisted") {
-  if (!room.game || room.status !== "started") return false;
+  if (!room.game || room.status !== "started" || reconnectPause(room)) return false;
   const owner = role === "host" ? 0 : 1;
   if (!shouldAutoPass(room.game, owner, control)) return false;
   const before = room.game;
@@ -194,6 +201,7 @@ export function applySafeAutoPass(room: Room, role: RoomRole, control: "assisted
 export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision: unknown) {
   if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };
   if (!room.game || !nextGame) return { ok: false, status: 409, error: "room not started" };
+  if (reconnectPause(room)) return { ok: false, status: 409, error: "match paused for reconnect" };
   if (["declare-attackers", "declare-blockers"].includes(String(room.game.onlineCombat?.stage || ""))) {
     return { ok: false, status: 409, error: "grouped combat declaration requires authoritative command" };
   }
@@ -217,6 +225,7 @@ const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", 
 export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record<string, unknown>, baseRevision: unknown) {
   if (room.status !== "started" || !room.game) return { ok: false, status: 409, error: "room not started" };
   if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };
+  if (reconnectPause(room)) return { ok: false, status: 409, error: "match paused for reconnect" };
   if (!AUTHORITATIVE_COMMANDS.has(String(rawCommand.type || ""))) return { ok: false, status: 400, error: "unsupported command" };
   const owner = role === "host" ? 0 : 1;
   try {
