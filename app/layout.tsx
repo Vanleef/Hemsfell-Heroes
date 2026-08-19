@@ -6,6 +6,7 @@ import "./online-match-runtime.css";
 import MatchUiGuard from "./match-ui-guard";
 import MatchUiRuntime from "./match-ui-runtime";
 import OnlineMatchRuntime from "./online-match-runtime";
+import OnlineReconnectRuntime from "./online-reconnect-runtime";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -48,6 +49,7 @@ export default function RootLayout({
         <MatchUiGuard />
         <MatchUiRuntime />
         <OnlineMatchRuntime />
+        <OnlineReconnectRuntime />
         {children}
       </body>
     </html>
