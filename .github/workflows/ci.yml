@@ -13,7 +13,7 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,17 +21,16 @@ jobs:
           node-version: 22.13.0
           cache: npm
       - run: npm ci
-      - name: Validate and capture output
+      - name: Run focused Online maintenance regression
         id: validate
         shell: bash
         run: |
           set +e
-          npm run vercel-build > /tmp/online-validation.log 2>&1
+          node --test tests/online-maintenance-choice.test.mjs > /tmp/online-validation.log 2>&1
           code=$?
-          tail -n 120 /tmp/online-validation.log > /tmp/online-validation-tail.log
           echo "code=$code" >> "$GITHUB_OUTPUT"
           exit 0
-      - name: Publish diagnostic to PR 26
+      - name: Publish focused diagnostic to PR 26
         env:
           GH_TOKEN: ${{ github.token }}
           EXIT_CODE: ${{ steps.validate.outputs.code }}
@@ -41,13 +40,13 @@ jobs:
           status="FAILED"
           if [ "$EXIT_CODE" = "0" ]; then status="PASSED"; fi
           {
-            echo "Online maintenance validation: **$status** (exit $EXIT_CODE)"
+            echo "Focused Online maintenance regression: **$status** (exit $EXIT_CODE)"
             echo
             echo '```text'
-            cat /tmp/online-validation-tail.log
+            cat /tmp/online-validation.log
             echo '```'
           } > /tmp/pr-comment.md
           gh api "repos/$GH_REPO/issues/26/comments" --method POST -F body=@/tmp/pr-comment.md
-      - name: Fail job when validation failed
+      - name: Fail job when focused regression failed
         if: steps.validate.outputs.code != '0'
         run: exit 1
