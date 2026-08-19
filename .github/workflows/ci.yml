@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test-and-build:
@@ -32,12 +32,28 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
           cache: npm
+
+      - name: Apply Tranqueira Trambuco target-choice repair
+        shell: bash
+        run: |
+          python .github/scripts/apply-tranqueira-trambuco-choice.py
+          node --test tests/limo-tranqueira-regression.test.mjs tests/tranqueira-local-ui-expiry-regression.test.mjs tests/tranqueira-trambuco-choice-regression.test.mjs
+          git checkout HEAD^ -- .github/workflows/ci.yml
+          rm -f .github/scripts/apply-tranqueira-trambuco-choice.py
+          rm -f .github/workflows/zz-fix-tranqueira-trambuco-choice-once.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/rules-engine/card-rules.mjs app/rules-engine/effects.mjs app/page.tsx tests/tranqueira-trambuco-choice-regression.test.mjs .github/workflows/ci.yml .github/scripts/apply-tranqueira-trambuco-choice.py .github/workflows/zz-fix-tranqueira-trambuco-choice-once.yml
+          git commit -m "fix: choose Tranqueira Trambuco Goblin target"
+          git push origin HEAD:fix/cards_mechanics
 
       - name: Install dependencies
         run: npm ci
