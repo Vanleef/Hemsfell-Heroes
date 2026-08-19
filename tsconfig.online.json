@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false,
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true
+  },
+  "include": [
+    "app/online-match-runtime.tsx",
+    "app/online-state-orientation.mjs",
+    "app/remote-card-art.tsx",
+    "next-env.d.ts",
+    "types/**/*.d.ts"
+  ],
+  "exclude": ["node_modules", ".next", "dist"]
+}
