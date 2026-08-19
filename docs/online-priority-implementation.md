@@ -46,6 +46,7 @@ This file tracks the staged migration of Online mode to the timing model specifi
 - Energy is zeroed before the Finalization response checkpoint, so response spending observes the resources that actually exist after banking.
 - Existing end-turn rule processing still comes from the shared deterministic engine.
 - Finalization exposes an explicit response checkpoint before cleanup and turn handoff.
+- `remainUntilTurnEnd` support spells are defensively expired when Finalization is left, so interrupted/legacy snapshots cannot carry Tranqueira-Mática or similar temporary spell-permanents into the next turn.
 - After two passes, the shared engine performs hand-limit handling, cleanup and transition to the opponent's Maintenance.
 - If end-turn processing creates a pending decision, Finalization waits for that decision and opens its response checkpoint only after the decision chain is complete.
 - The active player's action clock is paused whenever a response window opens and resumes with the exact stored remainder when the stack returns to action priority.
