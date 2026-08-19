@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { executeOnlineCommand } from "../app/rules-engine/online-priority-engine.mjs";
+import { canEndCombat, listAttackCapableCreatures, listLegalBlockers } from "../app/rules-engine/combat.mjs";
 
-const unit = (id, slot) => ({
+const unit = (id, slot, tags = []) => ({
   uid: id,
   id,
   name: id,
@@ -11,7 +12,7 @@ const unit = (id, slot) => ({
   atk: 2,
   hp: 3,
   text: "",
-  tags: [],
+  tags,
   abilities: [],
   modifiers: [],
   damage: 0,
@@ -37,6 +38,7 @@ const player = () => ({
   reserve: 0,
   hand: [],
   deck: [],
+  extraDeck: [],
   grave: [],
   obscuro: [],
   board: [],
@@ -47,45 +49,78 @@ const player = () => ({
   heroXP: 0,
 });
 
-const groupedState = () => {
+const combatState = () => {
   const players = [player(), player()];
-  players[0].board = [unit("attacker", 0)];
-  return {
-    active: 0,
-    phase: "combate",
-    round: 3,
-    events: 0,
-    winner: null,
-    players,
-    onlineCombat: {
-      stage: "declare-attackers",
-      attackerOwner: 0,
-      attackers: [],
-      blocks: [],
-      resolutionIndex: 0,
-    },
-  };
+  players[0].board = [unit("attacker", 0), unit("next-attacker", 1)];
+  players[1].board = [unit("blocker", 0)];
+  return { active: 0, phase: "combate", round: 3, events: 0, winner: null, players };
 };
 
-test("legacy single-attacker declaration cannot escape Online v2 grouped combat", () => {
-  const game = groupedState();
-  assert.throws(
-    () => executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "attacker" }),
-    /grouped-attack-declaration-required/,
-  );
+const passAttackPriority = (game) => {
+  game = executeOnlineCommand(game, { type: "passPriority", owner: 1 }).state;
+  return executeOnlineCommand(game, { type: "passPriority", owner: 0 }).state;
+};
+
+test("Online rejects the retired grouped combat commands", () => {
+  const game = combatState();
+  assert.throws(() => executeOnlineCommand(game, { type: "declareAttackers", owner: 0, attackerIds: ["attacker"] }), /grouped-combat-removed/);
+  assert.throws(() => executeOnlineCommand(game, { type: "declareBlockers", owner: 1, assignments: [] }), /grouped-combat-removed/);
 });
 
-test("legacy phase advance cannot skip a pending grouped attacker declaration", () => {
-  const game = groupedState();
-  assert.throws(
-    () => executeOnlineCommand(game, { type: "advancePhase", owner: 0 }),
-    /grouped-combat-in-progress/,
-  );
-});
-
-test("authoritative grouped declaration remains legal in the same state", () => {
-  const game = executeOnlineCommand(groupedState(), { type: "declareAttackers", owner: 0, attackerIds: ["attacker"] }).state;
-  assert.equal(game.onlineCombat.stage, "after-attackers");
+test("one attacker opens one defender decision and blocks further attacker actions", () => {
+  let game = executeOnlineCommand(combatState(), { type: "declareAttack", owner: 0, attackerId: "attacker" }).state;
+  assert.equal(game.combatAction.attackerUid, "attacker");
+  assert.equal(game.combatAction.stage, "priority");
   assert.equal(game.pendingResponse.responder, 1);
-  assert.deepEqual(game.onlineCombat.attackers.map((entry) => entry.attackerId), ["attacker"]);
+
+  game = passAttackPriority(game);
+  assert.equal(game.combatAction.stage, "choosing");
+  assert.equal(game.pendingResponse, null);
+  assert.throws(() => executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "next-attacker" }), /combat-in-progress/);
+  assert.throws(() => executeOnlineCommand(game, { type: "selectDefender", owner: 0, attackerId: "attacker", targetHero: true }), /not-defender/);
+});
+
+test("blocker selection is unitary and the selected attack resolves through the shared engine", () => {
+  let game = executeOnlineCommand(combatState(), { type: "declareAttack", owner: 0, attackerId: "attacker" }).state;
+  game = passAttackPriority(game);
+  assert.deepEqual(listLegalBlockers(game, 1, "attacker").map((card) => card.uid), ["blocker"]);
+
+  game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "attacker", defenderId: "blocker", targetHero: false }).state;
+  assert.equal(game.combatAction.stage, "charging");
+  assert.equal(game.combatAction.defenderUid, "blocker");
+
+  game = executeOnlineCommand(game, { type: "attack", owner: 0, attackerId: "attacker", defenderId: "blocker", skipPriority: true }).state;
+  assert.equal(game.combatAction, null);
+  assert.equal(game.players[0].board.find((card) => card.uid === "attacker").attacksThisTurn, 1);
+  assert.equal(game.players[1].board.find((card) => card.uid === "blocker").damage, 2);
+  assert.deepEqual(listAttackCapableCreatures(game, 0).map((card) => card.uid), ["next-attacker"]);
+});
+
+test("no block sends only that attack to the defending hero", () => {
+  let game = executeOnlineCommand(combatState(), { type: "declareAttack", owner: 0, attackerId: "attacker" }).state;
+  game = passAttackPriority(game);
+  game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "attacker", targetHero: true }).state;
+  assert.equal(game.combatAction.targetHero, true);
+  game = executeOnlineCommand(game, { type: "attack", owner: 0, attackerId: "attacker", skipPriority: true }).state;
+  assert.equal(game.players[1].life, 28);
+  assert.equal(game.combatAction, null);
+});
+
+test("summoning sickness removes an attacker from the authoritative capability list", () => {
+  const game = combatState();
+  game.players[0].board[0].summoning = true;
+  assert.deepEqual(listAttackCapableCreatures(game, 0).map((card) => card.uid), ["next-attacker"]);
+});
+
+test("Indomável keeps endCombat illegal until its legal attack is spent", () => {
+  let game = combatState();
+  game.players[0].board = [unit("must-attack", 0, ["Indomável"])];
+  assert.equal(canEndCombat(game, 0), false);
+  assert.throws(() => executeOnlineCommand(game, { type: "advancePhase", owner: 0 }), /indomitable-must-attack/);
+
+  game = executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "must-attack" }).state;
+  game = passAttackPriority(game);
+  game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "must-attack", targetHero: true }).state;
+  game = executeOnlineCommand(game, { type: "attack", owner: 0, attackerId: "must-attack", skipPriority: true }).state;
+  assert.equal(canEndCombat(game, 0), true);
 });
