@@ -53,7 +53,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm .github/scripts/tmp-online-diagnostics.py .github/workflows/tmp-online-diagnostics.yml
+          git rm -f .github/scripts/tmp-online-diagnostics.py .github/workflows/tmp-online-diagnostics.yml
           git add app/api/rooms/online-diagnostics.mjs app/api/rooms/machine.ts app/api/rooms/[id]/route.ts docs/online-priority-implementation.md tests/online-diagnostics.test.mjs tests/online-command-idempotency.test.mjs
           git commit -m "fix: make Online retries observable and write-safe"
           git fetch origin design/online-priority-flow-rework
