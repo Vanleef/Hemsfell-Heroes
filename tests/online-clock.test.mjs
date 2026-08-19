@@ -61,3 +61,57 @@ test("a new turn that immediately opens response priority keeps its full action 
   assert.equal(after.turnTimeRemainingMs, 120_000);
   assert.equal(after.pendingResponse.deadline, now + 30_000);
 });
+
+test("blocker declaration pauses the attacker's action clock and receives its own deadline", () => {
+  const before = game({
+    turnDeadline: null,
+    turnTimeRemainingMs: 63_500,
+    pendingResponse: { responder: 0, actor: 0, passes: 1, deadline: now + 2_000 },
+    onlineCombat: { stage: "after-attackers", attackerOwner: 0 },
+  });
+  const after = game({
+    turnDeadline: null,
+    turnTimeRemainingMs: 63_500,
+    pendingResponse: null,
+    onlineCombat: { stage: "declare-blockers", attackerOwner: 0 },
+  });
+  reconcileOnlineClocks(before, after, settings, now);
+  assert.equal(after.turnDeadline, null);
+  assert.equal(after.turnTimeRemainingMs, 63_500);
+  assert.equal(after.onlineCombat.deadline, now + 30_000);
+});
+
+test("submitting blockers keeps the same paused action time through after-blockers priority", () => {
+  const before = game({
+    turnDeadline: null,
+    turnTimeRemainingMs: 48_250,
+    onlineCombat: { stage: "declare-blockers", attackerOwner: 0, deadline: now + 8_000 },
+  });
+  const after = game({
+    turnDeadline: null,
+    turnTimeRemainingMs: 48_250,
+    pendingResponse: { responder: 0, actor: 1, passes: 0 },
+    onlineCombat: { stage: "after-blockers", attackerOwner: 0, deadline: now + 8_000 },
+  });
+  reconcileOnlineClocks(before, after, settings, now);
+  assert.equal(after.turnDeadline, null);
+  assert.equal(after.turnTimeRemainingMs, 48_250);
+  assert.equal(after.pendingResponse.deadline, now + 30_000);
+  assert.equal("deadline" in after.onlineCombat, false);
+});
+
+test("leaving blocker declaration without a response resumes the exact attacker clock", () => {
+  const before = game({
+    turnDeadline: null,
+    turnTimeRemainingMs: 37_777,
+    onlineCombat: { stage: "declare-blockers", attackerOwner: 0, deadline: now + 1_000 },
+  });
+  const after = game({
+    turnDeadline: null,
+    turnTimeRemainingMs: 37_777,
+    onlineCombat: { stage: "resolving", attackerOwner: 0 },
+  });
+  reconcileOnlineClocks(before, after, settings, now);
+  assert.equal(after.turnDeadline, now + 37_777);
+  assert.equal("turnTimeRemainingMs" in after, false);
+});
