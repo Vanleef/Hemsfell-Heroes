@@ -1,10 +1,11 @@
 const remaining = (deadline, now) => Math.max(0, Number(deadline || 0) - now);
+const declaringBlockers = (game) => game?.onlineCombat?.stage === "declare-blockers";
 
 /**
  * Keep the active player's action clock independent from opponent response time.
- * The clock is paused while a response window exists and resumed with exactly
- * the stored remainder when the stack returns to action priority. A new active
- * player always receives a fresh turn clock.
+ * The clock is paused while a response window or defender-only blocker choice
+ * exists and resumes with exactly the stored remainder when action priority
+ * returns. A new active player always receives a fresh turn clock.
  */
 export function reconcileOnlineClocks(before, after, settings, now = Date.now()) {
   if (!after) return after;
@@ -12,19 +13,38 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
     after.turnDeadline = null;
     delete after.turnTimeRemainingMs;
     if (after.pendingResponse) delete after.pendingResponse.deadline;
+    if (after.onlineCombat) delete after.onlineCombat.deadline;
     return after;
   }
 
   const activeChanged = Number(before?.active) !== Number(after.active);
+  const blockerChoice = declaringBlockers(after);
+  if (after.onlineCombat && !blockerChoice) delete after.onlineCombat.deadline;
+
   if (activeChanged) {
     if (after.pendingResponse) {
       after.turnTimeRemainingMs = settings.turnSeconds * 1000;
       after.turnDeadline = null;
       after.pendingResponse.deadline = now + settings.responseSeconds * 1000;
+    } else if (blockerChoice) {
+      after.turnTimeRemainingMs = settings.turnSeconds * 1000;
+      after.turnDeadline = null;
+      after.onlineCombat.deadline = now + settings.responseSeconds * 1000;
     } else {
       delete after.turnTimeRemainingMs;
       after.turnDeadline = now + settings.turnSeconds * 1000;
     }
+    return after;
+  }
+
+  if (blockerChoice) {
+    const stored = Number(before?.turnTimeRemainingMs);
+    if (Number.isFinite(stored)) after.turnTimeRemainingMs = Math.max(0, stored);
+    else if (before?.turnDeadline) after.turnTimeRemainingMs = remaining(before.turnDeadline, now);
+    else if (!Number.isFinite(Number(after.turnTimeRemainingMs))) after.turnTimeRemainingMs = settings.turnSeconds * 1000;
+    after.turnDeadline = null;
+    const wasBlockerChoice = declaringBlockers(before);
+    if (!wasBlockerChoice || !after.onlineCombat.deadline) after.onlineCombat.deadline = now + settings.responseSeconds * 1000;
     return after;
   }
 
@@ -40,7 +60,7 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
   }
 
   const paused = Number(before?.turnTimeRemainingMs ?? after.turnTimeRemainingMs);
-  if (before?.pendingResponse && Number.isFinite(paused)) {
+  if ((before?.pendingResponse || declaringBlockers(before)) && Number.isFinite(paused)) {
     after.turnDeadline = now + Math.max(0, paused);
     delete after.turnTimeRemainingMs;
     return after;
