@@ -27,7 +27,15 @@ jobs:
           cache: npm
 
       - name: Apply diagnostics patch
-        run: python .github/scripts/tmp-online-diagnostics.py
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('.github/scripts/tmp-online-diagnostics.py')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace('reason: "match paused for reconnect"', 'reason: "reconnect pause"')
+          path.write_text(text, encoding='utf-8')
+          PY
+          python .github/scripts/tmp-online-diagnostics.py
 
       - name: Install dependencies
         run: npm ci
