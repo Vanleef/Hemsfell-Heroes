@@ -33,6 +33,13 @@ type Unit = {
 };
 type Player = { heroId?: string; board?: Unit[] };
 type AttackInstance = { attackId: string; attackerId: string; declaredSlot: number; occurrence?: number };
+type OnlineCombatInteraction = {
+  stage?: string;
+  owner?: 0 | 1 | null;
+  attackerOptions?: Array<{ attackerId: string; slot: number; maxUses: number; mandatoryUses: number }>;
+  blockerOptions?: Array<{ attackId: string; defenderIds: string[] }>;
+  defenderCapacities?: Record<string, number>;
+};
 type OnlineCombat = {
   stage: string;
   attackerOwner: 0 | 1;
@@ -40,6 +47,7 @@ type OnlineCombat = {
   blocks?: Array<{ attackId: string; defenderId: string | null }>;
   resolutionIndex?: number;
   deadline?: number;
+  interaction?: OnlineCombatInteraction | null;
 };
 type PriorityView = {
   model?: string;
@@ -73,6 +81,7 @@ type CommandResult = RoomSnapshot & { error?: string };
 
 const SESSION_PREFIX = "hemsfell-room-";
 const POLL_MS = 760;
+const DISCOVERY_MS = 3_500;
 const fold = (value: unknown) => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const unitId = (unit: Unit) => String(unit.uid || unit.id || "");
 const keywords = (unit: Unit) => unit.suffocated ? [] : [...(unit.tags || []), ...(unit.temporaryTags || []), ...(unit.grantedKeywords || [])];
@@ -130,10 +139,12 @@ async function fetchRoom(session: Session): Promise<RoomSnapshot | null> {
 }
 
 async function discoverSession(): Promise<{ session: Session; room: RoomSnapshot } | null> {
+  const preferred = new URLSearchParams(window.location.search).get("room");
   const candidates = await Promise.all(readSessions().map(async (session) => ({ session, room: await fetchRoom(session) })));
+  const statusRank: Record<string, number> = { started: 3, mulligan: 2, finished: 1 };
   return candidates
     .filter((entry): entry is { session: Session; room: RoomSnapshot } => !!entry.room && ["mulligan", "started", "finished"].includes(entry.room.status))
-    .sort((a, b) => Number(b.room.createdAt || 0) - Number(a.room.createdAt || 0) || Number(b.room.revision || 0) - Number(a.room.revision || 0))[0] || null;
+    .sort((a, b) => Number(b.session.id === preferred) - Number(a.session.id === preferred) || (statusRank[b.room.status] || 0) - (statusRank[a.room.status] || 0) || Number(b.room.createdAt || 0) - Number(a.room.createdAt || 0) || Number(b.room.revision || 0) - Number(a.room.revision || 0))[0] || null;
 }
 
 function obviousAttackReady(player: Player, unit: Unit) {
@@ -179,21 +190,23 @@ function AttackerDeclaration({ game, counts, setCounts, busy, error, onConfirm }
   const localAttacker = combat.attackerOwner === 0;
   const player = game.players[0];
   const units = [...(player.board || [])].sort((a, b) => Number(a.slot || 0) - Number(b.slot || 0));
+  const authoritativeOptions = combat.interaction?.attackerOptions;
+  const optionById = authoritativeOptions ? new Map(authoritativeOptions.map((option) => [option.attackerId, option])) : null;
   if (!localAttacker) return <div className="online-combat-blocker online-combat-wait"><div className="online-combat-wait-card"><i>⚔</i><span>COMBATE ONLINE</span><h2>O oponente está declarando os atacantes</h2><p>As escolhas serão confirmadas em grupo antes da janela de resposta.</p></div></div>;
   const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
   return <div className="online-combat-blocker"><section className="online-group-combat-dialog attacker-dialog" role="dialog" aria-modal="true" aria-labelledby="online-attack-title">
     <header><div><span>COMBATE · DECLARAÇÃO EM GRUPO</span><h2 id="online-attack-title">Escolha todos os atacantes</h2></div><strong>{total} ataque(s)</strong></header>
     <p>Selecione quantas vezes cada criatura apta atacará. A ordem de resolução segue os espaços da esquerda para a direita.</p>
     <div className="online-combat-card-grid">{units.map((unit) => {
-      const id = unitId(unit), ready = obviousAttackReady(player, unit), remaining = remainingAttackUses(unit), selected = counts[id] || 0, mandatory = ready && hasKeyword(unit, /indom[aá]vel/i);
+      const id = unitId(unit), authoritative = optionById?.get(id), ready = optionById ? !!authoritative : obviousAttackReady(player, unit), remaining = authoritative?.maxUses ?? remainingAttackUses(unit), mandatoryUses = authoritative?.mandatoryUses ?? (ready && hasKeyword(unit, /indom[aá]vel/i) ? remaining : 0), selected = counts[id] || 0, mandatory = mandatoryUses > 0;
       return <article className={`${selected ? "selected" : ""} ${!ready ? "disabled" : ""}`} key={id || unit.name}>
         <div className="online-combat-card-art">{unit.page && unit.name ? <RemoteCardArt page={unit.page} name={unit.name} priority /> : <span>⚔</span>}</div>
         <div className="online-combat-card-copy"><b>{unit.name || "Criatura"}</b><small>Espaço {Number(unit.slot || 0) + 1} · {remaining} ataque(s) disponível(is)</small>{mandatory && <em>INDOMÁVEL · obrigatório</em>}</div>
-        <div className="online-count-stepper"><button disabled={!ready || selected <= (mandatory ? remaining : 0)} onClick={() => setCounts((current) => ({ ...current, [id]: Math.max(mandatory ? remaining : 0, (current[id] || 0) - 1) }))}>−</button><strong>{selected}</strong><button disabled={!ready || selected >= remaining} onClick={() => setCounts((current) => ({ ...current, [id]: Math.min(remaining, (current[id] || 0) + 1) }))}>+</button></div>
+        <div className="online-count-stepper"><button disabled={!ready || selected <= mandatoryUses} onClick={() => setCounts((current) => ({ ...current, [id]: Math.max(mandatoryUses, (current[id] || 0) - 1) }))}>−</button><strong>{selected}</strong><button disabled={!ready || selected >= remaining} onClick={() => setCounts((current) => ({ ...current, [id]: Math.min(remaining, (current[id] || 0) + 1) }))}>+</button></div>
       </article>;
     })}</div>
     {error && <div className="online-combat-error">{error}</div>}
-    <footer><span>Depois da confirmação, o defensor recebe prioridade para responder antes de escolher bloqueadores.</span><button className="online-combat-confirm" disabled={busy} onClick={onConfirm}>{busy ? "Confirmando…" : total ? `DECLARAR ${total} ATAQUE(S)` : "NÃO DECLARAR ATAQUES"}</button></footer>
+    <footer><span>As opções válidas vêm do mesmo preflight autoritativo do servidor. Depois da confirmação, o defensor recebe prioridade antes de escolher bloqueadores.</span><button className="online-combat-confirm" disabled={busy} onClick={onConfirm}>{busy ? "Confirmando…" : total ? `DECLARAR ${total} ATAQUE(S)` : "NÃO DECLARAR ATAQUES"}</button></footer>
   </section></div>;
 }
 
@@ -213,25 +226,31 @@ function BlockerDeclaration({ game, assignments, setAssignments, busy, error, no
   const attacks = [...(combat.attackers || [])].sort((a, b) => a.declaredSlot - b.declaredSlot || a.attackId.localeCompare(b.attackId));
   const deadline = Number(combat.deadline || 0);
   const time = deadline ? formatSeconds(deadline - now) : "--:--";
+  const blockerOptions = combat.interaction?.blockerOptions;
+  const blockerIdsByAttack = blockerOptions ? new Map(blockerOptions.map((option) => [option.attackId, new Set(option.defenderIds)])) : null;
+  const authoritativeCapacities = combat.interaction?.defenderCapacities;
   if (!localDefender) return <div className="online-combat-blocker online-combat-wait"><div className="online-combat-wait-card"><i>🛡</i><span>DEFESA ADVERSÁRIA</span><h2>O oponente está declarando os bloqueadores</h2><p>Seu relógio de ação permanece pausado enquanto o defensor decide.</p><strong>⏱ {time}</strong></div></div>;
 
   const selectedUsage = (defenderId: string, exceptAttackId?: string) => Object.entries(assignments).filter(([attackId, chosen]) => attackId !== exceptAttackId && chosen === defenderId).length;
   return <div className="online-combat-blocker"><section className="online-group-combat-dialog blocker-dialog" role="dialog" aria-modal="true" aria-labelledby="online-block-title">
     <header><div><span>COMBATE · BLOQUEIOS EM GRUPO</span><h2 id="online-block-title">Escolha todos os bloqueadores</h2></div><strong className={deadline && deadline - now <= 5_000 ? "urgent" : ""}>⏱ {time}</strong></header>
-    <p>Cada ataque pode receber um bloqueador ou seguir direto ao herói. Uma criatura com Defensor X pode ser usada até sua capacidade.</p>
+    <p>Cada ataque pode receber um bloqueador ou seguir direto ao herói. As opções vêm da validação autoritativa e Defensor X pode ser usado até a capacidade restante.</p>
     <div className="online-block-lanes">{attacks.map((instance, laneIndex) => {
       const attacker = (attackerPlayer.board || []).find((unit) => unitId(unit) === instance.attackerId);
       if (!attacker) return null;
       const current = assignments[instance.attackId] || "";
+      const authoritativeIds = blockerIdsByAttack?.get(instance.attackId);
       const options = (defenderPlayer.board || []).filter((defender) => {
-        if (!obviousBlockLegal(attacker, defender)) return false;
         const id = unitId(defender);
-        return Number(defender.defenseUses || 0) + selectedUsage(id, instance.attackId) < defenderCapacity(defender) || current === id;
+        const legalPair = blockerIdsByAttack ? !!authoritativeIds?.has(id) : obviousBlockLegal(attacker, defender);
+        if (!legalPair) return false;
+        const remainingCapacity = authoritativeCapacities?.[id] ?? Math.max(0, defenderCapacity(defender) - Number(defender.defenseUses || 0));
+        return selectedUsage(id, instance.attackId) < remainingCapacity || current === id;
       });
       return <article key={instance.attackId} className={current ? "blocked" : "direct"}>
         <div className="online-lane-number">{laneIndex + 1}</div>
         <div className="online-lane-attacker"><div>{attacker.page && attacker.name ? <RemoteCardArt page={attacker.page} name={attacker.name} priority /> : <span>⚔</span>}</div><span><b>{attacker.name || "Atacante"}</b><small>Espaço {instance.declaredSlot + 1}{hasKeyword(attacker, /furtivo/i) ? " · Furtivo" : hasKeyword(attacker, /voar/i) ? " · Voar" : ""}</small></span></div>
-        <label><span>BLOQUEADOR</span><select value={current} onChange={(event) => setAssignments((value) => ({ ...value, [instance.attackId]: event.target.value || null }))}><option value="">Não bloquear · dano ao herói</option>{options.map((defender) => <option value={unitId(defender)} key={unitId(defender)}>{defender.name || "Criatura"} · espaço {Number(defender.slot || 0) + 1} · {Number(defender.defenseUses || 0) + selectedUsage(unitId(defender), instance.attackId)}/{defenderCapacity(defender)} defesa(s)</option>)}</select></label>
+        <label><span>BLOQUEADOR</span><select value={current} onChange={(event) => setAssignments((value) => ({ ...value, [instance.attackId]: event.target.value || null }))}><option value="">Não bloquear · dano ao herói</option>{options.map((defender) => { const id = unitId(defender), capacity = authoritativeCapacities?.[id] ?? Math.max(0, defenderCapacity(defender) - Number(defender.defenseUses || 0)); return <option value={id} key={id}>{defender.name || "Criatura"} · espaço {Number(defender.slot || 0) + 1} · {selectedUsage(id, instance.attackId)}/{capacity} uso(s) nesta declaração</option>; })}</select></label>
       </article>;
     })}</div>
     {error && <div className="online-combat-error">{error}</div>}
@@ -250,9 +269,11 @@ export default function OnlineMatchRuntime() {
   const [now, setNow] = useState(() => Date.now());
   const stageKeyRef = useRef("");
   const roomRef = useRef<RoomSnapshot | null>(null);
+  const sessionRef = useRef<Session | null>(null);
   const busyRef = useRef(false);
 
   const applySnapshot = (currentSession: Session, snapshot: RoomSnapshot) => {
+    sessionRef.current = currentSession;
     roomRef.current = snapshot;
     setRoom(snapshot);
     setGame(snapshot.game ? orientOnlineGameForRole(snapshot.game, currentSession.isHost ? "host" : "guest") as OnlineGame : null);
@@ -260,23 +281,29 @@ export default function OnlineMatchRuntime() {
 
   useEffect(() => {
     let cancelled = false;
-    let retry = 0;
-    const discover = async () => {
+    let timer = 0;
+    const reconcile = async () => {
       const found = await discoverSession().catch(() => null);
       if (cancelled) return;
       if (found) {
-        setSession(found.session);
-        applySnapshot(found.session, found.room);
-        return;
+        const currentSession = sessionRef.current;
+        const currentRoom = roomRef.current;
+        const preferred = new URLSearchParams(window.location.search).get("room");
+        const shouldSwitch = !currentSession || currentSession.id !== found.session.id && (found.session.id === preferred || currentRoom?.status === "finished" || Number(found.room.createdAt || 0) > Number(currentRoom?.createdAt || 0));
+        if (shouldSwitch || currentSession?.id === found.session.id) {
+          if (shouldSwitch) setSession(found.session);
+          applySnapshot(found.session, found.room);
+        }
       }
-      retry = window.setTimeout(discover, 1500);
+      timer = window.setTimeout(reconcile, DISCOVERY_MS);
     };
-    void discover();
-    return () => { cancelled = true; if (retry) window.clearTimeout(retry); };
+    void reconcile();
+    return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
   }, []);
 
   useEffect(() => {
     if (!session) return;
+    sessionRef.current = session;
     let cancelled = false;
     let timer = 0;
     const poll = async () => {
@@ -303,15 +330,19 @@ export default function OnlineMatchRuntime() {
     if (combat.stage === "declare-attackers") {
       const player = game.players[0];
       const mandatory: Record<string, number> = {};
-      if (combat.attackerOwner === 0) for (const unit of player.board || []) if (obviousAttackReady(player, unit) && hasKeyword(unit, /indom[aá]vel/i)) mandatory[unitId(unit)] = remainingAttackUses(unit);
+      if (combat.attackerOwner === 0) {
+        if (combat.interaction?.attackerOptions) for (const option of combat.interaction.attackerOptions) if (option.mandatoryUses > 0) mandatory[option.attackerId] = option.mandatoryUses;
+        else for (const unit of player.board || []) if (obviousAttackReady(player, unit) && hasKeyword(unit, /indom[aá]vel/i)) mandatory[unitId(unit)] = remainingAttackUses(unit);
+      }
       setAttackerCounts(mandatory);
     } else setAttackerCounts({});
     if (combat.stage === "declare-blockers") setBlockAssignments(Object.fromEntries((combat.attackers || []).map((instance) => [instance.attackId, null])));
     else setBlockAssignments({});
-  }, [stageKey]);
+  }, [stageKey, combat?.interaction]);
 
   const command = async (payload: Record<string, unknown>): Promise<boolean> => {
-    if (!session || busyRef.current) return false;
+    const currentSession = sessionRef.current;
+    if (!currentSession || busyRef.current) return false;
     busyRef.current = true;
     setBusy(true);
     setError("");
@@ -319,13 +350,13 @@ export default function OnlineMatchRuntime() {
       let baseRevision = roomRef.current?.revision;
       if (baseRevision == null) return false;
       for (let attempt = 0; attempt < 2; attempt += 1) {
-        const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}`, {
+        const response = await fetch(`/api/rooms/${encodeURIComponent(currentSession.id)}`, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ action: "command", token: session.token, command: payload, baseRevision }),
+          body: JSON.stringify({ action: "command", token: currentSession.token, command: payload, baseRevision }),
         });
         const result = await response.json() as CommandResult;
-        if (result.game) applySnapshot(session, result);
+        if (result.game) applySnapshot(currentSession, result);
         if (response.status === 409 && attempt === 0 && result.revision != null) {
           baseRevision = result.revision;
           continue;
@@ -354,7 +385,7 @@ export default function OnlineMatchRuntime() {
       .flatMap((unit) => Array.from({ length: attackerCounts[unitId(unit)] || 0 }, () => unitId(unit)));
   }, [game, attackerCounts]);
 
-  if (!session || !room || !game || room.status !== "started") return null;
+  if (!session || !room || !game || room.status !== "started" || game.winner != null) return null;
 
   const confirmAttackers = () => { void command({ type: "declareAttackers", attackerIds: orderedAttackIds }); };
   const confirmBlockers = () => {
