@@ -21,7 +21,7 @@ test("resume shifts every Online deadline through the shared clock helper", () =
     /shiftDeadline\(game, "turnDeadline", milliseconds\)/,
     /shiftDeadline\(game\.pendingResponse, "deadline", milliseconds\)/,
     /shiftDeadline\(game\.priority, "deadline", milliseconds\)/,
-    /shiftDeadline\(game\.onlineCombat, "deadline", milliseconds\)/,
+    /shiftDeadline\(game\.combatAction, "deadline", milliseconds\)/,
     /shiftDeadline\(game\.pendingReposition, "deadline", milliseconds\)/,
     /shiftDeadline\(game\.pendingDecision, "deadline", milliseconds\)/,
   ]) assert.match(clock, target);
