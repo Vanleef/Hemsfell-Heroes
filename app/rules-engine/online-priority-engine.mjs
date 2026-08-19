@@ -59,7 +59,10 @@ function canOpenPhaseTransition(state, command) {
   if (command.type !== "advancePhase") return false;
   if (command.owner !== state.active) throw new RulesViolation("not-your-turn");
   if (state.pendingResponse || state.pendingAction || state.pendingDecision || state.pendingReposition || state.combatAction) throw new RulesViolation("interaction-pending");
-  if (state.phase === "combate" && state.onlineCombat?.stage === OnlineCombatStage.COMPLETE) return false;
+  if (state.phase === "combate" && state.onlineCombat) {
+    if (state.onlineCombat.stage === OnlineCombatStage.COMPLETE) return false;
+    throw new RulesViolation("grouped-combat-in-progress");
+  }
   return state.phase === "principal" || state.phase === "combate";
 }
 
@@ -184,7 +187,7 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
 
   if (canOpenPhaseTransition(state, command)) return openPhaseTransition(state, command);
 
-  if (command.type === "declareAttack" && state.onlineCombat?.stage === OnlineCombatStage.DECLARE_ATTACKERS) state.onlineCombat = undefined;
+  if (command.type === "declareAttack" && state.onlineCombat?.stage === OnlineCombatStage.DECLARE_ATTACKERS) throw new RulesViolation("grouped-attack-declaration-required");
   const result = executeRulesCommand(state, command, { ...options, priority: true });
   if (command.type === "resolveDecision" && result.state.onlineCombat?.stage === OnlineCombatStage.RESOLVING && !result.state.pendingDecision && !result.state.pendingReposition) {
     result.state = continueOnlineCombatResolution(result.state);
