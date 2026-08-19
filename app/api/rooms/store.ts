@@ -192,7 +192,7 @@ export async function readRoom(id: string): Promise<Room | null> {
       if (room) return room;
     } catch (error) {
       failures.push(error);
-      console.warn("[rooms] Supabase Storage read unavailable; checking Blob fallback.", error);
+      console.warn("[rooms] Supabase unavailable; reading from Blob fallback.", error);
     }
   }
 
