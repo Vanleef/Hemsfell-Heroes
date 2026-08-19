@@ -350,13 +350,14 @@ export default function OnlineMatchRuntime() {
     setBusy(true);
     setError("");
     try {
+      const commandId = crypto.randomUUID();
       let baseRevision = roomRef.current?.revision;
       if (baseRevision == null) return false;
       for (let attempt = 0; attempt < 2; attempt += 1) {
         const response = await fetch(`/api/rooms/${encodeURIComponent(currentSession.id)}`, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ action: "command", token: currentSession.token, command: payload, baseRevision }),
+          body: JSON.stringify({ action: "command", token: currentSession.token, command: payload, baseRevision, commandId }),
         });
         const result = await response.json() as CommandResult;
         if (result.game) applySnapshot(currentSession, result);

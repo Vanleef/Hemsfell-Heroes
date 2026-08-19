@@ -39,6 +39,7 @@ This file tracks the staged migration of Online mode to the timing model specifi
 - The pure `orientOnlineGameForRole` path flips canonical priority, stack, combat/finalization, grouped-interaction and decision ownership for the guest without mutating the server snapshot. Card/creature ids remain stable between perspectives.
 - Once `onlineCombat` reaches `declare-attackers`, the server requires the grouped command path: a legacy single `declareAttack` is rejected and `advancePhase` cannot skip a live grouped combat. Older/recovered snapshots that never entered canonical grouped combat may still use legacy combat compatibility outside that state.
 - Legacy full-state `sync` is rejected during grouped attacker/blocker declaration so an older client cannot bypass the authoritative declaration commands.
+- Every modern Online command may carry a stable client command id; the server remembers the last 32 accepted ids per participant and acknowledges a retransmission before stale-revision validation, preventing a lost HTTP response or retry from applying the same action twice.
 
 ## Phase 3 — Finalization, clocks and reconnect semantics implemented
 

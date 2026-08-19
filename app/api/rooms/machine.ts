@@ -25,6 +25,7 @@ export type Participant = {
   mulliganCount: number;
   mulliganDeadline?: number | null;
   disconnectedAt?: number | null;
+  recentCommandIds?: string[];
 };
 
 export type Room = {
@@ -57,7 +58,7 @@ export function sanitizeSettings(value: Partial<MatchSettings> | Record<string, 
 }
 
 export function participant(token: string, accepted = true): Participant {
-  return { heroId: null, token, accepted, deckLocked: false, mulliganDone: false, mulliganCount: 0, disconnectedAt: null };
+  return { heroId: null, token, accepted, deckLocked: false, mulliganDone: false, mulliganCount: 0, disconnectedAt: null, recentCommandIds: [] };
 }
 
 export function bothDecksLocked(room: Room) {
@@ -222,7 +223,14 @@ const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", 
 
 /** Server-authoritative command path. The server owns the player index,
  * validates room revision and routes Online timing through one priority kernel. */
-export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record<string, unknown>, baseRevision: unknown) {
+export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record<string, unknown>, baseRevision: unknown, commandId: unknown = undefined) {
+  const currentParticipant = room[role];
+  const normalizedCommandId = typeof commandId === "string" ? commandId.trim() : "";
+  if (commandId != null && (!normalizedCommandId || normalizedCommandId.length > 128 || !/^[a-zA-Z0-9._:-]+$/.test(normalizedCommandId))) return { ok: false, status: 400, error: "invalid command id" };
+  /* A network retry may arrive with the pre-command revision after the first
+     request already committed. Recognize the logical command before checking
+     baseRevision so it can never resolve twice. */
+  if (normalizedCommandId && currentParticipant?.recentCommandIds?.includes(normalizedCommandId)) return { ok: true, status: 200, error: "", duplicate: true };
   if (room.status !== "started" || !room.game) return { ok: false, status: 409, error: "room not started" };
   if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };
   if (reconnectPause(room)) return { ok: false, status: 409, error: "match paused for reconnect" };
@@ -240,7 +248,11 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
     room.game = result.state;
     reconcileOnlineClocks(before, room.game, room.settings);
     room.revision++;
-    return { ok: true, status: 200, error: "", trace: result.trace };
+    if (normalizedCommandId && currentParticipant) {
+      const recent = currentParticipant.recentCommandIds || [];
+      currentParticipant.recentCommandIds = [...recent.filter((value) => value !== normalizedCommandId), normalizedCommandId].slice(-32);
+    }
+    return { ok: true, status: 200, error: "", trace: result.trace, duplicate: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : "invalid command";
     return { ok: false, status: 400, error: message };
