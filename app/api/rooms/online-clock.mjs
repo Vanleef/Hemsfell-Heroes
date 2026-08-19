@@ -1,6 +1,21 @@
 const remaining = (deadline, now) => Math.max(0, Number(deadline || 0) - now);
 const declaringBlockers = (game) => game?.onlineCombat?.stage === "declare-blockers";
 const setPriorityDeadline = (game, deadline) => { if (game?.priority) game.priority.deadline = deadline ?? null; };
+const shiftDeadline = (target, key, milliseconds) => {
+  if (target && Number.isFinite(Number(target[key]))) target[key] = Number(target[key]) + milliseconds;
+};
+
+/** Shift every absolute Online interaction deadline by a reconnect pause. */
+export function shiftOnlineDeadlines(game, milliseconds) {
+  if (!game || !Number.isFinite(Number(milliseconds)) || milliseconds <= 0) return game;
+  shiftDeadline(game, "turnDeadline", milliseconds);
+  shiftDeadline(game.pendingResponse, "deadline", milliseconds);
+  shiftDeadline(game.priority, "deadline", milliseconds);
+  shiftDeadline(game.onlineCombat, "deadline", milliseconds);
+  shiftDeadline(game.pendingReposition, "deadline", milliseconds);
+  shiftDeadline(game.pendingDecision, "deadline", milliseconds);
+  return game;
+}
 
 /**
  * Keep the active player's action clock independent from opponent response time.
