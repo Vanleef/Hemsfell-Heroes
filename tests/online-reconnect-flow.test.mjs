@@ -25,6 +25,15 @@ test("resume shifts every Online deadline through the shared clock helper", () =
   ]) assert.match(clock, target);
 });
 
+test("the whole match is frozen while either participant is inside reconnect grace", () => {
+  assert.match(machine, /export function reconnectPause\(room: Room, now = Date\.now\(\)\)/);
+  assert.match(machine, /const until = disconnected\.at \+ 60_000/);
+  assert.match(machine, /if \(reconnectPause\(room\)\) return \{ ok: false, status: 409, error: "match paused for reconnect" \}/);
+  assert.match(machine, /if \(!room\.game \|\| room\.status !== "started" \|\| reconnectPause\(room\)\) return false/);
+  const pauseGuards = machine.match(/match paused for reconnect/g) || [];
+  assert.equal(pauseGuards.length, 2, "both authoritative commands and legacy sync are blocked during reconnect grace");
+});
+
 test("disconnect grace expiry clears every canonical interactive checkpoint", () => {
   assert.match(machine, /function finishDisconnectedMatch\(room: Room, loser: 0 \| 1\)/);
   assert.match(machine, /game\.pendingResponse = null/);
