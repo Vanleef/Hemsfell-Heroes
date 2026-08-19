@@ -14,7 +14,7 @@ test("advanced AI planner returns at most one attacker and re-evaluates after ea
   assert.match(combatPlanner, /return chosen \? \[chosen\] : \[\]/);
   assert.match(combatPlanner, /const mandatory = attackers\.filter/);
   assert.match(combatPlanner, /mandatoryIds\.has\(plan\.attackerId\)/);
-  assert.match(runtime, /controller\.planAttacks\(state, owner\)\.map/);
+  assert.match(runtime, /controllerFor\(owner, difficulty\)\.planAttacks\(state, owner\)\.map/);
 });
 
 test("advanced AI defender evaluates one legal blocker for the current attacker", () => {
