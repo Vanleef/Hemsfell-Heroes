@@ -47,9 +47,6 @@ let resolvedSupabaseConfig: Promise<SupabaseConfig> | null = null;
 
 function authHeaders(key: string, extra: HeadersInit = {}) {
   const base: Record<string, string> = { apikey: key };
-  // Legacy service_role keys are JWTs and can be used as bearer tokens. New
-  // sb_secret_* keys authenticate through the apikey header and must not be
-  // forced into an invalid Bearer token.
   if (key.split(".").length === 3) base.Authorization = `Bearer ${key}`;
   return { ...base, ...extra };
 }
@@ -101,9 +98,6 @@ async function readSupabase(id: string) {
   return rows[0] ? JSON.parse(rows[0].payload) as Room : null;
 }
 async function writeSupabase(room: Room) {
-  // Room revisions are compared by PostgREST in the database. This prevents
-  // two serverless requests that read the same revision from silently
-  // overwriting each other (lost-update race).
   if (room.revision === 0) {
     await supabase("multiplayer_rooms?on_conflict=id", { method: "POST", headers: { Prefer: "resolution=ignore-duplicates,return=minimal" }, body: JSON.stringify({ id: room.id, payload: JSON.stringify(room), revision: room.revision, updated_at: new Date().toISOString() }) });
     return;
@@ -177,7 +171,6 @@ async function writeBlob(room: Room) {
 
 export async function readRoom(id: string): Promise<Room | null> {
   if (useMemoryStore()) return cloneMemory(id);
-
   const failures: unknown[] = [];
   const candidates: Array<{ source: "table" | "storage" | "blob"; priority: number; room: Room }> = [];
   let attemptedStore = false;
@@ -196,7 +189,7 @@ export async function readRoom(id: string): Promise<Room | null> {
       if (room) candidates.push({ source: "storage", priority: 2, room });
     } catch (error) {
       failures.push(error);
-      console.warn("[rooms] Supabase Storage room read unavailable; checking Blob fallback.", error);
+      console.warn("[rooms] Supabase unavailable; reading from Blob fallback.", error);
     }
   }
 
@@ -212,8 +205,6 @@ export async function readRoom(id: string): Promise<Room | null> {
   }
 
   if (candidates.length) {
-    /* A fallback can legitimately be newer after a transient primary outage.
-       Never return the first copy found: that can roll a live room backwards. */
     candidates.sort((a, b) => Number(b.room.revision || 0) - Number(a.room.revision || 0) || b.priority - a.priority);
     const winner = candidates[0];
     const sameRevision = candidates.filter((candidate) => Number(candidate.room.revision) === Number(winner.room.revision));
@@ -223,8 +214,6 @@ export async function readRoom(id: string): Promise<Room | null> {
     return winner.room;
   }
 
-  // If a configured backend could not be checked, a 404 would be a false
-  // negative for a room that may still exist there.
   if (failures.length) throw failures[failures.length - 1];
   if (attemptedStore) return null;
   throw unavailable();
@@ -242,10 +231,6 @@ export async function writeRoom(room: Room) {
       return await writeSupabase(room);
     } catch (error) {
       if (isStaleRevision(error)) {
-        /* A stale primary can be an old copy left behind after a previous
-           fallback write. Only fall through when it is provably behind the
-           revision this write was based on. A primary at/above the expected
-           revision means another request won the race and must be preserved. */
         const expectedRevision = room.revision - 1;
         let primary: Room | null = null;
         try { primary = await readSupabase(room.id); } catch { throw error; }
@@ -257,7 +242,7 @@ export async function writeRoom(room: Room) {
       } catch (storageError) {
         if (isStaleRevision(storageError)) throw storageError;
         if (!hasBlobStore()) throw storageError;
-        console.warn("[rooms] Supabase Storage unavailable; writing to Blob fallback.", storageError);
+        console.warn("[rooms] Supabase unavailable; writing to Blob fallback.", storageError);
       }
     }
   }
@@ -282,9 +267,6 @@ function publicGameView(room: Room, role: RoomRole) {
   }
   const pendingDecisionOwner = Number(game.pendingDecision?.owner ?? game.pendingDecision?.context?.decisionOwner);
   if (game.pendingDecision && pendingDecisionOwner !== viewer) {
-    /* A future decision type may carry hand/deck candidates, marker metadata or
-       other private context. The non-owner only needs to know that the opponent
-       is choosing; whitelist that minimal shape instead of chasing every kind. */
     game.pendingDecision = {
       kind: "opponent-choice",
       owner: pendingDecisionOwner,
