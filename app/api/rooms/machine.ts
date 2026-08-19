@@ -120,6 +120,18 @@ export function applyTimeout(room: Room) {
     room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de resposta terminou; a prioridade foi passada automaticamente.", tone: "response" }, ...(room.game.log ?? [])];
     return true;
   }
+  if (room.game.onlineCombat?.stage === "declare-blockers" && room.game.onlineCombat.deadline && room.game.onlineCombat.deadline <= now) {
+    const before = room.game;
+    const owner = 1 - before.onlineCombat.attackerOwner;
+    try {
+      const result = executeOnlineCommand(before, { type: "declareBlockers", owner, assignments: [], auto: true }, { priority: true });
+      room.game = result.state;
+      reconcileOnlineClocks(before, room.game, room.settings, now);
+    } catch { return false; }
+    room.game.events = (room.game.events ?? 0) + 1;
+    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo para declarar bloqueadores terminou; os ataques seguirão sem novos bloqueios.", tone: "combat" }, ...(room.game.log ?? [])];
+    return true;
+  }
   if (room.game.turnDeadline && room.game.turnDeadline <= now) {
     /* A turn timeout may request a legal phase transition, but it must never
        erase a live stack/decision/combat exchange by teleporting directly to
