@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - refactor/visual-structure-consolidation
+  pull_request:
+    branches:
+      - design/online-priority-flow-rework
 permissions:
   contents: write
 jobs:
