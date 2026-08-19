@@ -227,7 +227,7 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
   return { ok: true, status: 200, error: "" };
 }
 
-const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "declareAttack", "selectDefender", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
+const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "declareAttack", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
 
 /** Server-authoritative command path. The server owns the player index,
  * validates room revision and routes Online timing through one priority kernel. */
@@ -235,9 +235,6 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
   const currentParticipant = room[role];
   const normalizedCommandId = typeof commandId === "string" ? commandId.trim() : "";
   if (commandId != null && (!normalizedCommandId || normalizedCommandId.length > 128 || !/^[a-zA-Z0-9._:-]+$/.test(normalizedCommandId))) { logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: "invalid command id", baseRevision }); return { ok: false, status: 400, error: "invalid command id" }; }
-  /* A network retry may arrive with the pre-command revision after the first
-     request already committed. Recognize the logical command before checking
-     baseRevision so it can never resolve twice. */
   if (normalizedCommandId && currentParticipant?.recentCommandIds?.includes(normalizedCommandId)) { logOnlineDiagnostic(room, "command-duplicate", { role, commandType: String(rawCommand.type || ""), baseRevision, duplicate: true }); return { ok: true, status: 200, error: "", duplicate: true }; }
   if (room.status !== "started" || !room.game) return { ok: false, status: 409, error: "room not started" };
   if (Number(baseRevision) !== room.revision) { logOnlineDiagnostic(room, "command-stale", { role, commandType: String(rawCommand.type || ""), reason: "stale revision", baseRevision }); return { ok: false, status: 409, error: "stale revision" }; }
@@ -246,6 +243,13 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
   const owner = role === "host" ? 0 : 1;
   try {
     const command: Record<string, any> = { ...rawCommand, owner };
+    if (command.type === "attack") {
+      const combat = room.game.combatAction;
+      if (!combat || combat.stage !== "charging" || combat.attackerOwner !== owner || combat.attackerUid !== command.attackerId || (!!combat.targetHero !== !command.defenderId) || (combat.defenderUid || undefined) !== (command.defenderId || undefined)) {
+        return { ok: false, status: 409, error: "combat state mismatch" };
+      }
+      command.skipPriority = true;
+    }
     const before = room.game;
     const result = executeOnlineCommand(before, command, { priority: true });
     room.game = result.state;
