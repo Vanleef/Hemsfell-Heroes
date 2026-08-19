@@ -139,7 +139,7 @@ const cleanCardForHiddenZone = (card, metadata = {}) => {
     "temporaryAtk", "temporaryHp", "temporaryTags", "temporarySubtypes", "combatRestrictions", "damageShields",
     "attachedTo", "linkedCreatures", "lastDamagedBy", "damagedOwnersThisTurn", "killedByRepeatSourceId",
     "costModifier", "costModifierExpires", "costModifierExpiresRound", "cardsPlayedAfterSelf", "targetClass", "selected",
-    "effectAppliedRound", "effectAppliedSourceId", "staysExhaustedUntilSpellEffect", "skipNextUntap"
+    "effectAppliedRound", "effectAppliedSourceId", "staysExhaustedUntilSpellEffect", "skipNextUntap", "remainUntilTurnEnd"
   ]) delete copy[key];
   return copy;
 };

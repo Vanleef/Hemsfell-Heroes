@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false,
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true
+  },
+  "include": [
+    "app/online-match-runtime.tsx",
+    "app/online-reconnect-runtime.tsx",
+    "app/online-state-orientation.mjs",
+    "app/remote-card-art.tsx",
+    "app/api/rooms/**/*.ts",
+    "app/api/rooms/**/*.mjs",
+    "app/rules-engine/online-*.mjs",
+    "app/rules-engine/priority*.mjs",
+    "next-env.d.ts",
+    "types/**/*.d.ts"
+  ],
+  "exclude": ["node_modules", ".next", "dist"]
+}

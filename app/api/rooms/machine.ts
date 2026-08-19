@@ -1,6 +1,12 @@
 import { ROOM_LIMITS } from "./constants";
-import { executeCommand } from "../../rules-engine/engine.mjs";
+import { reconcileOnlineClocks } from "./online-clock.mjs";
+import { executeOnlineCommand } from "../../rules-engine/online-priority-engine.mjs";
 import { shouldAutoPass } from "../../rules-engine/priority.mjs";
+import { logOnlineDiagnostic } from "./online-diagnostics.mjs";
+
+/* `executeOnlineCommand` is the Online timing wrapper around the authoritative
+ * rules-engine executeCommand path; room clients still never mutate rules
+ * state directly. */
 
 export type RoomRole = "host" | "guest";
 export type RoomStatus = "waiting" | "deck-selection" | "coin-choice" | "mulligan" | "started" | "finished";
@@ -20,6 +26,7 @@ export type Participant = {
   mulliganCount: number;
   mulliganDeadline?: number | null;
   disconnectedAt?: number | null;
+  recentCommandIds?: string[];
 };
 
 export type Room = {
@@ -52,7 +59,7 @@ export function sanitizeSettings(value: Partial<MatchSettings> | Record<string, 
 }
 
 export function participant(token: string, accepted = true): Participant {
-  return { heroId: null, token, accepted, deckLocked: false, mulliganDone: false, mulliganCount: 0, disconnectedAt: null };
+  return { heroId: null, token, accepted, deckLocked: false, mulliganDone: false, mulliganCount: 0, disconnectedAt: null, recentCommandIds: [] };
 }
 
 export function bothDecksLocked(room: Room) {
@@ -72,6 +79,45 @@ export function orientIndex(role: RoomRole, canonicalIndex: 0 | 1): 0 | 1 {
 
 export function deadline(seconds: number) {
   return Date.now() + seconds * 1000;
+}
+
+export function reconnectPause(room: Room, now = Date.now()): { role: RoomRole; until: number } | null {
+  const disconnected = room.host.disconnectedAt
+    ? { role: "host" as RoomRole, at: room.host.disconnectedAt }
+    : room.guest?.disconnectedAt
+      ? { role: "guest" as RoomRole, at: room.guest.disconnectedAt }
+      : null;
+  if (!disconnected) return null;
+  const until = disconnected.at + 60_000;
+  return until > now ? { role: disconnected.role, until } : null;
+}
+
+function finishDisconnectedMatch(room: Room, loser: 0 | 1) {
+  const game = room.game;
+  if (!game) return;
+  game.winner = loser === 0 ? 1 : 0;
+  game.pendingResponse = null;
+  game.pendingAction = undefined;
+  game.priorityStack = undefined;
+  game.stack = [];
+  game.combatAction = null;
+  game.onlineCombat = undefined;
+  game.onlineFinalization = undefined;
+  game.pendingDecision = null;
+  game.pendingReposition = null;
+  game.turnDeadline = null;
+  delete game.turnTimeRemainingMs;
+  game.priority = {
+    ...(game.priority || {}),
+    model: game.priority?.model || "online-v2",
+    mode: "none",
+    owner: null,
+    window: null,
+    consecutivePasses: 0,
+    deadline: null,
+    stackDepth: 0,
+  };
+  room.status = "finished";
 }
 
 export function applyTimeout(room: Room) {
@@ -94,44 +140,66 @@ export function applyTimeout(room: Room) {
   const disconnected = room.host.disconnectedAt ? { role: "host" as RoomRole, at: room.host.disconnectedAt } : room.guest?.disconnectedAt ? { role: "guest" as RoomRole, at: room.guest.disconnectedAt } : null;
   if (disconnected) {
     if (disconnected.at + 60_000 > now) return false;
-    const loser = disconnected.role === "host" ? 0 : 1;
-    room.game.winner = loser === 0 ? 1 : 0;
-    room.game.pendingResponse = null;
-    room.game.combatAction = null;
-    room.status = "finished";
+    const loser = (disconnected.role === "host" ? 0 : 1) as 0 | 1;
+    finishDisconnectedMatch(room, loser);
     room.game.events = (room.game.events ?? 0) + 1;
     room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de reconexão terminou. A partida foi encerrada.", tone: "danger" }, ...(room.game.log ?? [])];
+    logOnlineDiagnostic(room, "reconnect-expired", { role: disconnected.role });
     return true;
   }
   if (room.game.pendingResponse?.deadline && room.game.pendingResponse.deadline <= now) {
-    const pending = room.game.pendingResponse; const owner = pending.responder;
-    try { const result = executeCommand(room.game, { type: "passPriority", owner, auto: true }, { priority: true }); room.game = result.state; } catch { return false; }
-    if (room.game.pendingResponse) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
+    const before = room.game;
+    const owner = before.pendingResponse.responder;
+    try {
+      const result = executeOnlineCommand(before, { type: "passPriority", owner, auto: true }, { priority: true });
+      room.game = result.state;
+      reconcileOnlineClocks(before, room.game, room.settings, now);
+    } catch { return false; }
     room.game.events = (room.game.events ?? 0) + 1;
     room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de resposta terminou; a prioridade foi passada automaticamente.", tone: "response" }, ...(room.game.log ?? [])];
+    logOnlineDiagnostic(room, "response-timeout", { role: owner === 0 ? "host" : "guest", commandType: "passPriority", auto: true });
+    return true;
+  }
+  if (room.game.onlineCombat?.stage === "declare-blockers" && room.game.onlineCombat.deadline && room.game.onlineCombat.deadline <= now) {
+    const before = room.game;
+    const owner = 1 - before.onlineCombat.attackerOwner;
+    try {
+      const result = executeOnlineCommand(before, { type: "declareBlockers", owner, assignments: [], auto: true }, { priority: true });
+      room.game = result.state;
+      reconcileOnlineClocks(before, room.game, room.settings, now);
+    } catch { return false; }
+    room.game.events = (room.game.events ?? 0) + 1;
+    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo para declarar bloqueadores terminou; os ataques seguirão sem novos bloqueios.", tone: "combat" }, ...(room.game.log ?? [])];
+    logOnlineDiagnostic(room, "blocker-timeout", { role: owner === 0 ? "host" : "guest", commandType: "declareBlockers", auto: true });
     return true;
   }
   if (room.game.turnDeadline && room.game.turnDeadline <= now) {
-    room.game.active = room.game.active === 0 ? 1 : 0;
-    room.game.phase = "manutencao";
-    room.game.round = (room.game.round ?? 1) + 1;
-    room.game.pendingResponse = null;
-    room.game.combatAction = null;
-    room.game.turnDeadline = deadline(room.settings.turnSeconds);
-    room.game.events = (room.game.events ?? 0) + 1;
-    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo do turno terminou. O turno passou automaticamente.", tone: "phase" }, ...(room.game.log ?? [])];
-    return true;
+    if (!room.game.pendingDecision && !room.game.pendingReposition && !room.game.combatAction && ["principal", "combate", "fim"].includes(room.game.phase)) {
+      try {
+        const before = room.game;
+        const owner = before.active;
+        const result = executeOnlineCommand(before, { type: "advancePhase", owner, auto: true }, { priority: true });
+        room.game = result.state;
+        reconcileOnlineClocks(before, room.game, room.settings, now);
+        room.game.events = (room.game.events ?? 0) + 1;
+        room.game.log = [{ id: crypto.randomUUID(), text: "O tempo da etapa terminou; foi solicitada a passagem pelo fluxo normal de prioridade.", tone: "phase" }, ...(room.game.log ?? [])];
+        logOnlineDiagnostic(room, "turn-timeout", { role: owner === 0 ? "host" : "guest", commandType: "advancePhase", auto: true });
+        return true;
+      } catch { return false; }
+    }
+    return false;
   }
   return false;
 }
 
 export function applySafeAutoPass(room: Room, role: RoomRole, control: "assisted" | "full-control" = "assisted") {
-  if (!room.game || room.status !== "started") return false;
+  if (!room.game || room.status !== "started" || reconnectPause(room)) return false;
   const owner = role === "host" ? 0 : 1;
   if (!shouldAutoPass(room.game, owner, control)) return false;
-  const result = executeCommand(room.game, { type: "passPriority", owner, auto: true }, { priority: true });
+  const before = room.game;
+  const result = executeOnlineCommand(before, { type: "passPriority", owner, auto: true }, { priority: true });
   room.game = result.state;
-  if (room.game.pendingResponse) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
+  reconcileOnlineClocks(before, room.game, room.settings);
   room.revision++;
   return true;
 }
@@ -139,13 +207,16 @@ export function applySafeAutoPass(room: Room, role: RoomRole, control: "assisted
 export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision: unknown) {
   if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };
   if (!room.game || !nextGame) return { ok: false, status: 409, error: "room not started" };
+  if (reconnectPause(room)) return { ok: false, status: 409, error: "match paused for reconnect" };
+  if (["declare-attackers", "declare-blockers"].includes(String(room.game.onlineCombat?.stage || ""))) {
+    return { ok: false, status: 409, error: "grouped combat declaration requires authoritative command" };
+  }
   const pending = room.game.pendingResponse;
   const roleIndex = role === "host" ? 0 : 1;
   if (pending) {
-    if (pending.actor === roleIndex) return { ok: false, status: 423, error: "waiting for opponent response" };
-    if (pending.responder !== roleIndex) return { ok: false, status: 403, error: "response belongs to opponent" };
+    if (pending.responder !== roleIndex) return { ok: false, status: 403, error: pending.actor === roleIndex ? "waiting for opponent response" : "response belongs to opponent" };
     if (nextGame.pendingResponse && nextGame.pendingResponse.responder === pending.responder) {
-      return { ok: false, status: 400, error: "response must resolve or pass priority" };
+      return { ok: false, status: 400, error: "response must resolve, add to stack, or pass priority" };
     }
   } else if (room.game.active !== roleIndex && !nextGame.pendingResponse) {
     return { ok: false, status: 403, error: "not your priority" };
@@ -153,15 +224,22 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
   return { ok: true, status: 200, error: "" };
 }
 
+const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "declareAttack", "declareAttackers", "declareBlockers", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
 
-const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "declareAttack", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
-
-/** Transitional server-authoritative command path. The server owns the player
- * index, validates the room revision and runs the deterministic rules engine. */
-export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record<string, unknown>, baseRevision: unknown) {
+/** Server-authoritative command path. The server owns the player index,
+ * validates room revision and routes Online timing through one priority kernel. */
+export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record<string, unknown>, baseRevision: unknown, commandId: unknown = undefined) {
+  const currentParticipant = room[role];
+  const normalizedCommandId = typeof commandId === "string" ? commandId.trim() : "";
+  if (commandId != null && (!normalizedCommandId || normalizedCommandId.length > 128 || !/^[a-zA-Z0-9._:-]+$/.test(normalizedCommandId))) { logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: "invalid command id", baseRevision }); return { ok: false, status: 400, error: "invalid command id" }; }
+  /* A network retry may arrive with the pre-command revision after the first
+     request already committed. Recognize the logical command before checking
+     baseRevision so it can never resolve twice. */
+  if (normalizedCommandId && currentParticipant?.recentCommandIds?.includes(normalizedCommandId)) { logOnlineDiagnostic(room, "command-duplicate", { role, commandType: String(rawCommand.type || ""), baseRevision, duplicate: true }); return { ok: true, status: 200, error: "", duplicate: true }; }
   if (room.status !== "started" || !room.game) return { ok: false, status: 409, error: "room not started" };
-  if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };
-  if (!AUTHORITATIVE_COMMANDS.has(String(rawCommand.type || ""))) return { ok: false, status: 400, error: "unsupported command" };
+  if (Number(baseRevision) !== room.revision) { logOnlineDiagnostic(room, "command-stale", { role, commandType: String(rawCommand.type || ""), reason: "stale revision", baseRevision }); return { ok: false, status: 409, error: "stale revision" }; }
+  if (reconnectPause(room)) { logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: "reconnect pause", baseRevision }); return { ok: false, status: 409, error: "match paused for reconnect" }; }
+  if (!AUTHORITATIVE_COMMANDS.has(String(rawCommand.type || ""))) { logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: "unsupported command", baseRevision }); return { ok: false, status: 400, error: "unsupported command" }; }
   const owner = role === "host" ? 0 : 1;
   try {
     const command: Record<string, any> = { ...rawCommand, owner };
@@ -170,14 +248,19 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
       if (!combat || combat.stage !== "charging" || combat.attackerOwner !== owner || combat.attackerUid !== command.attackerId || (!!combat.targetHero !== !command.defenderId) || (combat.defenderUid || undefined) !== (command.defenderId || undefined)) return { ok: false, status: 409, error: "combat state mismatch" };
       command.skipPriority = true;
     }
-    const result = executeCommand(room.game, command, { priority: true });
+    const before = room.game;
+    const result = executeOnlineCommand(before, command, { priority: true });
     room.game = result.state;
-    if (room.game.pendingResponse && !room.game.pendingResponse.deadline) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
-    room.game.turnDeadline = deadline(room.settings.turnSeconds);
+    reconcileOnlineClocks(before, room.game, room.settings);
     room.revision++;
-    return { ok: true, status: 200, error: "", trace: result.trace };
+    if (normalizedCommandId && currentParticipant) {
+      const recent = currentParticipant.recentCommandIds || [];
+      currentParticipant.recentCommandIds = [...recent.filter((value) => value !== normalizedCommandId), normalizedCommandId].slice(-32);
+    }
+    return { ok: true, status: 200, error: "", trace: result.trace, duplicate: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : "invalid command";
+    logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: message, baseRevision });
     return { ok: false, status: 400, error: message };
   }
 }
