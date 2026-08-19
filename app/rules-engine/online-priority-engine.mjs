@@ -1,5 +1,5 @@
 import { executeCommand as executeRulesCommand } from "./engine.mjs";
-import { combatIdleView } from "./combat.mjs";
+import { combatIdleView, listLegalBlockers } from "./combat.mjs";
 import { RulesViolation } from "./effects.mjs";
 import { legalPriorityResponses } from "./priority.mjs";
 import {
@@ -34,6 +34,15 @@ function validateOnlineResponse(state, command) {
   if (!pending || pending.responder !== command.owner) throw new RulesViolation("not-your-priority");
   const wanted = responseIdentity(command);
   if (!legalPriorityResponses(state, command.owner).some((candidate) => legalResponseIdentity(candidate) === wanted)) throw new RulesViolation("illegal-priority-response");
+}
+
+function validateSingleBlockerChoice(state, command) {
+  if (command.type !== "selectDefender" || command.targetHero) return;
+  const combat = state.combatAction;
+  const defenderId = command.defenderId;
+  if (!combat || combat.stage !== "choosing" || 1 - combat.attackerOwner !== command.owner) return;
+  const legal = listLegalBlockers(state, command.owner, combat.attackerUid).some((unit) => (unit.uid || unit.id) === defenderId);
+  if (!legal) throw new RulesViolation("invalid-defender");
 }
 
 function phaseAdvanceLabel(phase) {
@@ -162,6 +171,7 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   /* Retired grouped-combat metadata from recovered rooms never owns legality. */
   if (state.onlineCombat && !state.pendingDecision && !state.pendingReposition && !state.combatAction) delete state.onlineCombat;
 
+  validateSingleBlockerChoice(state, command);
   if (canOpenPhaseTransition(state, command)) return openPhaseTransition(state, command);
 
   const result = executeRulesCommand(state, command, { ...options, priority: true });
