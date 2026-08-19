@@ -1,4 +1,4 @@
-name: Online two-session E2E
+name: Online preview two-session E2E
 
 on:
   push:
@@ -20,233 +20,198 @@ jobs:
         with:
           node-version: 22.13.0
           cache: npm
-      - name: Install app dependencies
-        run: npm ci
-      - name: Install Playwright Chromium
+      - name: Install dependencies and Chromium
         run: |
+          npm ci
           npm install --no-save --package-lock=false playwright@1.55.0
           npx playwright install --with-deps chromium
-      - name: Start development server
-        run: |
-          (npm run dev > /tmp/hemsfell-dev.log 2>&1 & echo $! > /tmp/hemsfell-dev.pid)
-          for i in $(seq 1 90); do
-            if curl -fsS http://127.0.0.1:3000/ >/dev/null; then exit 0; fi
-            sleep 1
-          done
-          cat /tmp/hemsfell-dev.log
-          exit 1
-      - name: Run two-session browser match
+      - name: Run two-session match against READY preview
         id: e2e
         shell: bash
+        env:
+          BASE_URL: https://hemsfell-heroes-ghk90a5qp-duduroque08-2993s-projects.vercel.app
+          SHARE_URL: https://hemsfell-heroes-ghk90a5qp-duduroque08-2993s-projects.vercel.app/?_vercel_share=xo2qjvMWRG60XgVNBsAD4VkFYvovSuCi
         run: |
           set +e
-          node --input-type=module <<'NODE' > /tmp/online-e2e.log 2>&1
+          node --input-type=module <<'NODE' > /tmp/online-preview-e2e.log 2>&1
           import { chromium } from 'playwright';
           import assert from 'node:assert/strict';
 
-          const base = 'http://127.0.0.1:3000';
+          const base = process.env.BASE_URL;
+          const share = process.env.SHARE_URL;
           const browser = await chromium.launch({headless:true});
           const hostContext = await browser.newContext({viewport:{width:1440,height:1000}});
           const guestContext = await browser.newContext({viewport:{width:1440,height:1000}});
           const host = await hostContext.newPage();
           const guest = await guestContext.newPage();
-          const notes = [];
-          const log = (msg) => { notes.push(msg); console.log(msg); };
+          const log = (msg) => console.log(msg);
 
           async function visibleButtonTexts(page) {
             return (await page.locator('button:visible').allTextContents()).map(x=>x.replace(/\s+/g,' ').trim()).filter(Boolean);
           }
+          async function authenticatePreview(page) {
+            await page.goto(share,{waitUntil:'networkidle',timeout:30000});
+            await page.goto(base,{waitUntil:'networkidle',timeout:30000});
+            assert.equal(new URL(page.url()).hostname,new URL(base).hostname,'Preview authentication did not persist.');
+          }
           async function clickOnlineEntry(page) {
-            await page.goto(base, {waitUntil:'networkidle'});
             const patterns = [/jogar online/i,/online/i,/multiplayer/i,/sala privada/i,/batalha online/i];
             for (const pattern of patterns) {
-              const matches = page.getByRole('button', {name:pattern});
+              const matches = page.getByRole('button',{name:pattern});
               if (await matches.count()) { await matches.first().click(); return; }
             }
-            const texts = await visibleButtonTexts(page);
-            throw new Error(`Entrada Online não encontrada. Botões: ${texts.join(' | ')}`);
+            throw new Error(`Entrada Online não encontrada. Botões: ${(await visibleButtonTexts(page)).join(' | ')}`);
           }
-          async function waitButton(page, name, timeout=15000) {
-            const loc = page.getByRole('button', {name});
-            await loc.waitFor({state:'visible',timeout});
-            return loc;
+          async function phaseButton(page,label) {
+            const button=page.locator('.phase-orb > button').filter({hasText:label}).first();
+            await button.waitFor({state:'visible',timeout:15000});
+            return button;
           }
           async function setFullControl(page) {
-            const assisted = page.getByRole('button',{name:/Resposta: Assistido/i});
-            if (await assisted.count() && await assisted.first().isVisible()) await assisted.first().click();
+            const assisted=page.getByRole('button',{name:/Resposta: Assistido/i});
+            if(await assisted.count()&&await assisted.first().isVisible())await assisted.first().click();
             await page.getByRole('button',{name:/Resposta: Full Control/i}).waitFor({state:'visible',timeout:5000});
           }
-          async function passPriority(responder, actor) {
-            await responder.getByRole('button',{name:'Passar prioridade'}).waitFor({state:'visible',timeout:12000});
-            await responder.getByRole('button',{name:'Passar prioridade'}).click();
-            await actor.getByRole('button',{name:'Passar prioridade'}).waitFor({state:'visible',timeout:12000});
-            await actor.getByRole('button',{name:'Passar prioridade'}).click();
+          async function passPriority(responder,actor) {
+            const first=responder.getByRole('button',{name:'Passar prioridade'});
+            await first.waitFor({state:'visible',timeout:15000});
+            await first.click();
+            const second=actor.getByRole('button',{name:'Passar prioridade'});
+            await second.waitFor({state:'visible',timeout:15000});
+            await second.click();
           }
           async function expandEnergy(page) {
-            await page.getByRole('button',{name:/Expandir energia/i}).waitFor({state:'visible',timeout:15000});
-            await page.getByRole('button',{name:/Expandir energia/i}).click();
-            await page.getByRole('button',{name:/Combate/i}).waitFor({state:'visible',timeout:12000});
+            const choice=page.getByRole('button',{name:/Expandir energia/i});
+            await choice.waitFor({state:'visible',timeout:18000});
+            await choice.click();
+            await (await phaseButton(page,'Combate')).waitFor({state:'visible',timeout:15000});
+            const active=((await page.locator('.phase-track .active').textContent())||'').trim();
+            assert.match(active,/Principal/i,'Maintenance did not enter Principal.');
           }
           async function endQuietTurn(page) {
-            await page.getByRole('button',{name:/^Combate/}).click();
-            await page.getByRole('button',{name:/Encerrar combate/}).waitFor({state:'visible',timeout:8000});
-            await page.getByRole('button',{name:/Encerrar combate/}).click();
-            await page.getByRole('button',{name:/Encerrar turno/}).waitFor({state:'visible',timeout:8000});
-            await page.getByRole('button',{name:/Encerrar turno/}).click();
+            await (await phaseButton(page,'Combate')).click();
+            await (await phaseButton(page,'Encerrar combate')).click();
+            await (await phaseButton(page,'Encerrar turno')).click();
           }
           async function findPlayableCreature(page) {
-            const cards = page.locator('.player-hand .original-card:not([disabled])');
-            for (let i=0;i<await cards.count();i++) {
-              const card = cards.nth(i);
-              const type = (await card.locator('.card-tooltip em').textContent().catch(()=>'')) || '';
-              const text = (await card.textContent().catch(()=>'')) || '';
-              const drag = await card.getAttribute('draggable');
-              if (/Criatura/i.test(type) && drag === 'true' && !/(selecione|escolha|alvo|destrua uma criatura|cause \d+ de dano a uma criatura)/i.test(text)) return card;
+            const cards=page.locator('.player-hand .original-card:not([disabled])');
+            for(let i=0;i<await cards.count();i++){
+              const card=cards.nth(i),type=(await card.locator('.card-tooltip em').textContent().catch(()=>''))||'',text=(await card.textContent().catch(()=>''))||'',drag=await card.getAttribute('draggable');
+              if(/Criatura/i.test(type)&&drag==='true'&&!/(selecione|escolha|alvo|destrua uma criatura|cause \d+ de dano a uma criatura)/i.test(text))return card;
             }
-            for (let i=0;i<await cards.count();i++) {
-              const card = cards.nth(i);
-              const type = (await card.locator('.card-tooltip em').textContent().catch(()=>'')) || '';
-              const drag = await card.getAttribute('draggable');
-              if (/Criatura/i.test(type) && drag === 'true') return card;
+            for(let i=0;i<await cards.count();i++){
+              const card=cards.nth(i),type=(await card.locator('.card-tooltip em').textContent().catch(()=>''))||'',drag=await card.getAttribute('draggable');
+              if(/Criatura/i.test(type)&&drag==='true')return card;
             }
             return null;
           }
 
           try {
-            log('1. Abrindo duas sessões independentes.');
+            log('1. Autenticando duas sessões independentes no preview Vercel READY.');
+            await Promise.all([authenticatePreview(host),authenticatePreview(guest)]);
             await clickOnlineEntry(host);
-            await waitButton(host,/Criar sala e gerar convite/i);
+            await host.getByRole('button',{name:/Criar sala e gerar convite/i}).waitFor({state:'visible',timeout:15000});
             await host.getByRole('button',{name:/Criar sala e gerar convite/i}).click();
-            const inviteInput = host.locator('.room-link input');
-            await inviteInput.waitFor({state:'visible',timeout:12000});
-            const invite = await inviteInput.inputValue();
+            const inviteInput=host.locator('.room-link input');
+            await inviteInput.waitFor({state:'visible',timeout:18000});
+            const invite=await inviteInput.inputValue();
             assert.match(invite,/room=/);
-            log(`2. Sala criada e convite obtido: ${invite}`);
+            log(`2. Sala real do preview criada: ${invite}`);
 
-            await guest.goto(invite,{waitUntil:'networkidle'});
-            await waitButton(guest,/Aceitar convite/i);
+            await guest.goto(invite,{waitUntil:'networkidle',timeout:30000});
+            await guest.getByRole('button',{name:/Aceitar convite/i}).waitFor({state:'visible',timeout:15000});
             await guest.getByRole('button',{name:/Aceitar convite/i}).click();
-            await host.getByText(/2 jogadores conectados/i).waitFor({state:'visible',timeout:12000});
-            log('3. Segundo navegador entrou na mesma sala.');
+            await host.getByText(/2 jogadores conectados/i).waitFor({state:'visible',timeout:18000});
+            log('3. Guest entrou e ambos enxergam a mesma sala hospedada.');
 
-            await host.locator('.room-deck-row select').waitFor({state:'visible',timeout:12000});
-            await guest.locator('.room-deck-row select').waitFor({state:'visible',timeout:12000});
+            await host.locator('.room-deck-row select').waitFor({state:'visible',timeout:18000});
+            await guest.locator('.room-deck-row select').waitFor({state:'visible',timeout:18000});
             await host.locator('.room-deck-row select').selectOption('zayan');
             await guest.locator('.room-deck-row select').selectOption('zayan');
-            await Promise.all([
-              host.getByRole('button',{name:/Confirmar este deck/i}).click(),
-              guest.getByRole('button',{name:/Confirmar este deck/i}).click(),
-            ]);
-            log('4. Ambos confirmaram Zayan para privilegiar criaturas simples no teste.');
+            await host.getByRole('button',{name:/Confirmar este deck/i}).click();
+            await guest.getByRole('button',{name:/Confirmar este deck/i}).click();
+            log('4. Ambos confirmaram Zayan.');
 
-            let starter, defender, starterName;
-            for (let i=0;i<40;i++) {
-              const hb=host.getByRole('button',{name:'Eu começo'}), gb=guest.getByRole('button',{name:'Eu começo'});
-              if (await hb.count() && await hb.isVisible()) { starter=host; defender=guest; starterName='host'; await hb.click(); break; }
-              if (await gb.count() && await gb.isVisible()) { starter=guest; defender=host; starterName='guest'; await gb.click(); break; }
+            let starter,defender,starterName;
+            for(let i=0;i<60;i++){
+              const hb=host.getByRole('button',{name:'Eu começo'}),gb=guest.getByRole('button',{name:'Eu começo'});
+              if(await hb.count()&&await hb.isVisible()){starter=host;defender=guest;starterName='host';await hb.click();break;}
+              if(await gb.count()&&await gb.isVisible()){starter=guest;defender=host;starterName='guest';await gb.click();break;}
               await host.waitForTimeout(250);
             }
-            assert.ok(starter && defender,'Nenhum vencedor da moeda recebeu a escolha de início.');
-            log(`5. ${starterName} venceu a moeda e escolheu começar.`);
+            assert.ok(starter&&defender,'Coin winner did not receive starter choice.');
+            log(`5. ${starterName} escolheu começar.`);
 
-            await starter.getByRole('button',{name:/^Manter \d+/}).waitFor({state:'visible',timeout:15000});
-            await defender.getByRole('button',{name:/^Manter \d+/}).waitFor({state:'visible',timeout:15000});
-            await Promise.all([
-              starter.getByRole('button',{name:/^Manter \d+/}).click(),
-              defender.getByRole('button',{name:/^Manter \d+/}).click(),
-            ]);
+            await starter.getByRole('button',{name:/^Manter \d+/}).waitFor({state:'visible',timeout:18000});
+            await defender.getByRole('button',{name:/^Manter \d+/}).waitFor({state:'visible',timeout:18000});
+            await starter.getByRole('button',{name:/^Manter \d+/}).click();
+            await defender.getByRole('button',{name:/^Manter \d+/}).click();
             log('6. Mulligan confirmado nas duas sessões.');
 
             await expandEnergy(starter);
-            const activePhase = ((await starter.locator('.phase-track .active').textContent())||'').trim();
-            assert.match(activePhase,/Principal/i);
-            log('7. Manutenção autoritativa concluída e cliente entrou em Principal.');
+            log('7. Manutenção autoritativa → Principal confirmada no preview.');
+            await setFullControl(starter);await setFullControl(defender);
+            log('8. Full Control ativo nos dois navegadores.');
 
-            await setFullControl(starter);
-            await setFullControl(defender);
-            log('8. Full Control ativado nas duas sessões para validar prioridade explicitamente.');
-
-            let creature = await findPlayableCreature(starter);
-            for (let cycle=0; !creature && cycle<3; cycle++) {
-              log(`   Nenhuma criatura jogável ainda; avançando um ciclo para aumentar energia (${cycle+1}/3).`);
-              await endQuietTurn(starter);
-              await expandEnergy(defender);
-              await endQuietTurn(defender);
-              await expandEnergy(starter);
-              creature = await findPlayableCreature(starter);
+            let creature=await findPlayableCreature(starter);
+            for(let cycle=0;!creature&&cycle<3;cycle++){
+              log(`   Sem criatura jogável; ciclo de energia ${cycle+1}/3.`);
+              await endQuietTurn(starter);await expandEnergy(defender);await endQuietTurn(defender);await expandEnergy(starter);
+              creature=await findPlayableCreature(starter);
             }
-            assert.ok(creature,'Não foi encontrada criatura jogável após quatro manutenções.');
-            const creatureName = await creature.getAttribute('aria-label');
-            const handBefore = await starter.locator('.player-hand .original-card').count();
-            log(`9. Carta jogável escolhida: ${creatureName}.`);
-
+            assert.ok(creature,'No playable creature after four maintenances.');
+            const creatureName=await creature.getAttribute('aria-label'),handBefore=await starter.locator('.player-hand .original-card').count();
+            log(`9. Jogando ${creatureName}.`);
             await creature.dragTo(starter.locator('.player-field .creature-slot[data-slot="1"]'));
-            const targetBanner = starter.locator('.target-banner');
-            if (await targetBanner.count() && await targetBanner.isVisible().catch(()=>false)) throw new Error(`A criatura ${creatureName} exigiu alvo; escolha automática não é segura para este E2E.`);
-            await passPriority(defender, starter);
-            await starter.locator('.player-field .creature-slot[data-slot="1"] .original-card').waitFor({state:'visible',timeout:15000});
-            const handAfter = await starter.locator('.player-hand .original-card').count();
-            assert.equal(handAfter,handBefore-1);
-            log('10. playCard passou pela prioridade de ambos os jogadores e a criatura entrou em campo.');
+            if(await starter.locator('.target-banner').isVisible().catch(()=>false))throw new Error(`Unexpected target requirement for ${creatureName}.`);
+            await passPriority(defender,starter);
+            await starter.locator('.player-field .creature-slot[data-slot="1"] .original-card').waitFor({state:'visible',timeout:18000});
+            assert.equal(await starter.locator('.player-hand .original-card').count(),handBefore-1);
+            log('10. playCard resolveu após os dois passes de prioridade.');
 
             await starter.waitForTimeout(2600);
-            await endQuietTurn(starter);
-            await expandEnergy(defender);
-            await endQuietTurn(defender);
-            await expandEnergy(starter);
-            log('11. Turno passou para o oponente e voltou ao jogador inicial; a criatura perdeu enjoo de invocação.');
+            await endQuietTurn(starter);await expandEnergy(defender);await endQuietTurn(defender);await expandEnergy(starter);
+            log('11. Troca de turno completa; criatura pronta no turno seguinte.');
 
-            await starter.getByRole('button',{name:/^Combate/}).click();
-            const attackReady = starter.locator('.player-field .original-card.combat-attack-ready').first();
-            await attackReady.waitFor({state:'visible',timeout:10000});
-            const defenderLifeBefore = await defender.locator('.player-hero .hero-life, .hero-life').first().textContent().catch(()=>null);
-            await attackReady.click();
-            await passPriority(defender, starter);
-            await defender.getByRole('button',{name:/NÃO BLOQUEAR/i}).waitFor({state:'visible',timeout:15000});
-            await defender.getByRole('button',{name:/NÃO BLOQUEAR/i}).click();
-            await starter.locator('.combat-cinematic.stage-resolved').waitFor({state:'visible',timeout:15000});
-            await starter.waitForTimeout(900);
-            log(`12. Ataque declarado, prioridade resolvida e defensor escolheu não bloquear${defenderLifeBefore?` (vida antes: ${defenderLifeBefore.trim()})`:''}.`);
+            await (await phaseButton(starter,'Combate')).click();
+            const attacker=starter.locator('.player-field .original-card.combat-attack-ready').first();
+            await attacker.waitFor({state:'visible',timeout:12000});
+            await attacker.click();
+            await passPriority(defender,starter);
+            const noBlock=defender.getByRole('button',{name:/NÃO BLOQUEAR/i});
+            await noBlock.waitFor({state:'visible',timeout:18000});
+            await noBlock.click();
+            await starter.locator('.combat-cinematic.stage-resolved').waitFor({state:'visible',timeout:18000});
+            log('12. Ataque, prioridade, escolha de não bloquear e resolução concluídos.');
 
-            const roomErrorTexts = [...await starter.locator('.room-error:visible').allTextContents(), ...await defender.locator('.room-error:visible').allTextContents()];
-            assert.equal(roomErrorTexts.length,0,`Erros de sala: ${roomErrorTexts.join(' | ')}`);
-            log('13. E2E Online concluído sem erro de sala. PASSOU.');
-          } catch (error) {
-            console.error('E2E FAILED:', error?.stack || error);
-            console.error('HOST BUTTONS:', await visibleButtonTexts(host).catch(()=>[]));
-            console.error('GUEST BUTTONS:', await visibleButtonTexts(guest).catch(()=>[]));
-            console.error('HOST URL:', host.url());
-            console.error('GUEST URL:', guest.url());
+            const errors=[...await starter.locator('.room-error:visible').allTextContents(),...await defender.locator('.room-error:visible').allTextContents()];
+            assert.deepEqual(errors,[],`Room errors: ${errors.join(' | ')}`);
+            log('13. PREVIEW ONLINE E2E PASSOU sem erro de sala.');
+          }catch(error){
+            console.error('PREVIEW E2E FAILED:',error?.stack||error);
+            console.error('HOST BUTTONS:',await visibleButtonTexts(host).catch(()=>[]));
+            console.error('GUEST BUTTONS:',await visibleButtonTexts(guest).catch(()=>[]));
+            console.error('HOST URL:',host.url());console.error('GUEST URL:',guest.url());
             throw error;
-          } finally {
-            await browser.close();
-          }
+          }finally{await browser.close();}
           NODE
           code=$?
           echo "code=$code" >> "$GITHUB_OUTPUT"
           exit 0
-      - name: Publish E2E result to PR 26
+      - name: Publish preview E2E result to PR 26
         env:
           GH_TOKEN: ${{ github.token }}
           EXIT_CODE: ${{ steps.e2e.outputs.code }}
           GH_REPO: ${{ github.repository }}
         shell: bash
         run: |
-          status="FAILED"
-          if [ "$EXIT_CODE" = "0" ]; then status="PASSED"; fi
+          status="FAILED"; if [ "$EXIT_CODE" = "0" ]; then status="PASSED"; fi
           {
-            echo "Two-session browser Online E2E: **$status** (exit $EXIT_CODE)"
+            echo "Vercel preview two-session Online E2E: **$status** (exit $EXIT_CODE)"
             echo
             echo '```text'
-            tail -n 220 /tmp/online-e2e.log
+            tail -n 240 /tmp/online-preview-e2e.log
             echo '```'
-            if [ "$EXIT_CODE" != "0" ]; then
-              echo
-              echo 'Dev server tail:'
-              echo '```text'
-              tail -n 100 /tmp/hemsfell-dev.log
-              echo '```'
-            fi
           } > /tmp/pr-comment.md
           gh api "repos/$GH_REPO/issues/26/comments" --method POST -F body=@/tmp/pr-comment.md
       - name: Fail when E2E failed
