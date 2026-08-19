@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [route, machine, clock] = await Promise.all([
+const [route, machine, clock, runtime, layout] = await Promise.all([
   readFile(new URL("../app/api/rooms/[id]/route.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/online-clock.mjs", import.meta.url), "utf8"),
+  readFile(new URL("../app/online-reconnect-runtime.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
 ]);
 
 test("resume shifts every Online deadline through the shared clock helper", () => {
@@ -23,6 +25,22 @@ test("resume shifts every Online deadline through the shared clock helper", () =
     /shiftDeadline\(game\.pendingReposition, "deadline", milliseconds\)/,
     /shiftDeadline\(game\.pendingDecision, "deadline", milliseconds\)/,
   ]) assert.match(clock, target);
+});
+
+test("resume is idempotent and gameplay cannot silently clear a disconnected participant", () => {
+  assert.match(route, /if \(!awaySince\) return NextResponse\.json\(roomView\(room, true, role\), noStore\)/);
+  assert.match(route, /if \(activeParticipant\.disconnectedAt\) return NextResponse\.json\(\{ error: "resume required"/);
+  assert.doesNotMatch(route, /activeParticipant\.disconnectedAt = null;\s*if \(body\.action === "select"\)/);
+});
+
+test("bfcache restoration and network recovery explicitly resume the authenticated room", () => {
+  assert.match(layout, /<OnlineReconnectRuntime \/>/);
+  assert.match(runtime, /window\.addEventListener\("pageshow", onPageShow\)/);
+  assert.match(runtime, /window\.addEventListener\("online", onOnline\)/);
+  assert.match(runtime, /document\.addEventListener\("visibilitychange", onVisibility\)/);
+  assert.match(runtime, /action: "resume", token: session\.token/);
+  assert.match(runtime, /navigator|document\.visibilityState/);
+  assert.match(runtime, /inFlight\.current/);
 });
 
 test("the whole match is frozen while either participant is inside reconnect grace", () => {
