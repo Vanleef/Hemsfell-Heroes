@@ -169,6 +169,9 @@ export function applySafeAutoPass(room: Room, role: RoomRole, control: "assisted
 export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision: unknown) {
   if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };
   if (!room.game || !nextGame) return { ok: false, status: 409, error: "room not started" };
+  if (["declare-attackers", "declare-blockers"].includes(String(room.game.onlineCombat?.stage || ""))) {
+    return { ok: false, status: 409, error: "grouped combat declaration requires authoritative command" };
+  }
   const pending = room.game.pendingResponse;
   const roleIndex = role === "host" ? 0 : 1;
   if (pending) {
