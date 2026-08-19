@@ -4,7 +4,7 @@
  *   remain in the right-side safe lane.
  * - Card-list/search/tutor decisions are the only intentional exception: they
  *   use a larger centered browser with internal scrolling.
- * - Target-selection banners stay in the opposite left-side safe lane.
+ * - Target-selection banner geometry lives only in target-banner-anchor.css.
  */
 .screen-game .engine-decision-backdrop {
   position: absolute !important;
@@ -43,11 +43,9 @@
   contain: layout paint;
 }
 
-/*
- * Prevent inherited/fixed layout rules from making a text decision wider or
- * taller than its content. Children may wrap, but may not force a minimum
- * dialog footprint.
- */
+/* Prevent inherited/fixed layout rules from making a text decision wider or
+   taller than its content. Children may wrap, but may not force a minimum
+   dialog footprint. */
 .screen-game .engine-decision-panel:not(:has(.visual-card-choice-grid)):not(:has(.card-choice-grid)):not(:has(.decision-card-grid))
   > :is(header, section, div, article, form, p, ol, ul) {
   width: fit-content !important;
@@ -71,11 +69,9 @@
   height: auto !important;
 }
 
-/*
- * Effect-choice cards are intrinsically sized: a short option remains compact,
- * while longer summaries gain width until the safe-lane cap and then grow in
- * height. Typography scales with the board instead of being locked to px.
- */
+/* Effect-choice cards are intrinsically sized: a short option remains compact,
+   while longer summaries gain width until the safe-lane cap and then grow in
+   height. Typography scales with the board instead of being locked to px. */
 .screen-game .engine-decision-panel:is([data-decision-kind="choice"],[data-decision-kind="choice-target"],[data-decision-kind="repeat-choice"],[data-decision-kind="replay-ability"])
   > div:not(.visual-card-choice-grid):not(.card-choice-grid):not(.decision-card-grid) {
   display: flex !important;
@@ -178,33 +174,6 @@
   height: 0;
 }
 
-/* Simple target-selection banner stays compact in the left safe lane. */
-.screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
-  --target-slot-gap: clamp(.28rem, .48cqw, .58rem);
-  position: absolute !important;
-  left: calc(var(--target-safe-right) - var(--target-slot-gap)) !important;
-  right: auto !important;
-  top: var(--target-safe-center-y) !important;
-  bottom: auto !important;
-  width: fit-content !important;
-  min-width: 0 !important;
-  max-width: calc(var(--target-safe-right) - var(--target-safe-left) - var(--target-slot-gap)) !important;
-  height: fit-content !important;
-  min-height: 0 !important;
-  max-height: calc(var(--target-safe-bottom) - var(--target-safe-top)) !important;
-  margin: 0 !important;
-  transform: translate(-100%, -50%) !important;
-  box-sizing: border-box !important;
-  z-index: 760 !important;
-  overflow: auto !important;
-}
-
-.screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] > :is(b, span, div, p) {
-  width: fit-content !important;
-  min-width: 0 !important;
-  max-width: min(28cqw, 30rem) !important;
-}
-
 @container hemsfell-board (max-width: 72rem) {
   .screen-game .engine-decision-backdrop > .engine-decision-panel {
     --decision-side-width: clamp(11rem, 24cqw, 20rem);
@@ -217,10 +186,6 @@
     min-width: min(66cqw, 35rem) !important;
     max-width: 89cqw !important;
     max-height: 80cqh !important;
-  }
-
-  .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
-    --target-slot-gap: clamp(.22rem, .42cqw, .48rem);
   }
 }
 
@@ -251,10 +216,5 @@
     max-width: 89cqw !important;
     max-height: 81cqh !important;
     padding: clamp(.55rem, 1cqw, .8rem) !important;
-  }
-
-  .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
-    --target-slot-gap: clamp(.16rem, .34cqw, .36rem);
-    max-width: calc(var(--target-safe-right) - var(--target-safe-left) - var(--target-slot-gap)) !important;
   }
 }
