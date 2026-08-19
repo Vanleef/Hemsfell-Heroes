@@ -518,6 +518,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
  const completeSearch=(selectedIds:string[])=>{if(!searchChoice)return;const request=searchChoice;update(g=>applySearchSelection(g,request,selectedIds));setSearchChoice(null);animateDeckShuffle(request.owner)};
  const doMaintenance=(two=false)=>{
   if(!game||game.active!==0||game.phase!=="manutencao"||game.winner!==null)return;
+  if(mode==="online"){void runRulesCommand({type:"maintenanceChoice",drawTwo:two},0).then(accepted=>{if(accepted)setMaintenanceOpen(false)});return}
   update(g=>{
    const p=g.players[0];
    if(!p.deck.length){p.life=0;log(g,`${deckById(p.heroId).name} iniciou a Manutenção com o Deck vazio e perdeu a partida.`,"danger");return}

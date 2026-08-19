@@ -523,7 +523,7 @@ function activeAbilities(state, event) {
     }
     /* The maintenance phase becomes visible before its resource decision. Ngoro
        must wait for that decision instead of opening a competing/duplicate UI. */
-    if (entry.heroId === "ngoro" && event.type === "onMaintenance" && event.owner === owner && event.afterResourceChoice === true) result.push({ source: heroSource, owner, ability: { id: "ngoro-level-1-maintenance", trigger: "onMaintenance", effects: [{ type: "chooseDeckAndInvestigate", amount: 1 }] } });
+    if (entry.heroId === "ngoro" && event.type === "onMaintenanceResourceChoice" && event.owner === owner) result.push({ source: heroSource, owner, ability: { id: "ngoro-level-1-maintenance", trigger: "onMaintenanceResourceChoice", effects: [{ type: "chooseDeckAndInvestigate", amount: 1 }] } });
     if (entry.heroId === "zayan" && event.type === "onCombatStart" && event.owner === owner && (entry.board || []).some((card) => !(card.text || "").trim())) result.push({ source: heroSource, owner, ability: { id: "zayan-level-1", trigger: "onCombatStart", effects: [{ type: "modifyStats", target: "allyCreature", vanillaOnly: true, attack: 1, health: 1, duration: "turn", selections: 1 }] } });
   });
   return result.sort((a, b) => a.owner - b.owner || (a.source.slot ?? 99) - (b.source.slot ?? 99) || String(a.ability.id).localeCompare(String(b.ability.id)));
@@ -971,6 +971,30 @@ export function executeCommand(inputState, command, options = {}) {
         const next = pending.owners.find((owner) => !pending.confirmed.includes(owner));
         if (next == null) state.pendingReposition = null;
         else { pending.activeOwner = next; pending.deadline = Date.now() + 30000; }
+      } else if (item.command.type === "maintenanceChoice") {
+        if (state.phase !== "manutencao" || state.active !== item.command.owner) throw new RulesViolation("maintenance-choice-unavailable");
+        if (state.pendingResponse || state.pendingAction || state.pendingDecision || state.pendingReposition || state.combatAction) throw new RulesViolation("interaction-pending");
+        const entry = state.players[item.command.owner];
+        if (!entry.deck?.length) {
+          entry.life = 0;
+          state.winner = 1 - item.command.owner;
+          state.pendingResponse = null;
+          delete state.pendingAction;
+          state.pendingDecision = null;
+          state.pendingReposition = null;
+          state.combatAction = null;
+          continue;
+        }
+        const drawTwo = !!item.command.drawTwo && state.round > 1;
+        if (!drawTwo) entry.maxEnergy = Math.min(10, Number(entry.maxEnergy || 0) + 1);
+        entry.energy = entry.maxEnergy;
+        stack.push({ kind: "command", command: { type: "completeMaintenanceChoice", owner: item.command.owner } });
+        stack.push({ kind: "effect", effect: { type: "draw", amount: drawTwo ? 2 : 1 }, context: { owner: item.command.owner, sourceId: `maintenance-${state.round}` } });
+      } else if (item.command.type === "completeMaintenanceChoice") {
+        if (state.phase !== "manutencao" || state.active !== item.command.owner) throw new RulesViolation("maintenance-choice-unavailable");
+        state.phase = "principal";
+        stack.push({ kind: "event", event: { type: "onMaintenanceExit", owner: item.command.owner } });
+        stack.push({ kind: "event", event: { type: "onMaintenanceResourceChoice", owner: item.command.owner, afterResourceChoice: true } });
       } else if (item.command.type === "emit") stack.push({ kind: "event", event: item.command.event });
       else if (item.command.type === "advancePhase") {
         if (state.phase === "fim") expireTurnEndSupport(state, stack);
