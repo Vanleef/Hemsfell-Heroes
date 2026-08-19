@@ -1,5 +1,6 @@
 import { executeCommand as executeBase } from "./engine-base.mjs";
 import { RulesViolation } from "./effects.mjs";
+import { getExplicitCardRule } from "./card-rules.mjs";
 import { propagateWeddingRingLinks, reservePriorityPayment, restorePriorityPayment } from "./match-integrity.mjs";
 
 export * from "./engine-base.mjs";
@@ -11,6 +12,32 @@ const accelerated = (card) => (card?.tags || []).some((tag) => /acelerado/i.test
 const cardInHand = (state, command) => state.players?.[command.owner]?.hand?.find((card) => card.id === command.cardId || card.uid === command.cardId);
 const unitById = (state, id) => state.players.flatMap((entry) => [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])]).find((unit) => unit.uid === id || unit.id === id);
 const unitOwner = (state, id) => state.players.findIndex((entry) => [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])].some((unit) => unit.uid === id || unit.id === id));
+const criticalTriggeredPages = new Set([10, 46]);
+const criticalAbilityMatches = (page, ability) => {
+  if (page === 10) return ability?.trigger === "onDestroyed" && (ability.effects || []).some((effect) => effect.type === "damageAll");
+  if (page === 46) return ability?.trigger === "onTurnEnd" && (ability.effects || []).some((effect) => effect.type === "moveSelf");
+  return false;
+};
+const restoreCriticalTriggeredRules = (inputState) => {
+  const liveUnits = (inputState.players || []).flatMap((entry) => [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])]);
+  if (!liveUnits.some((unit) => criticalTriggeredPages.has(Number(unit?.page)))) return inputState;
+  const state = clone(inputState);
+  for (const entry of state.players || []) {
+    for (const unit of [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])]) {
+      const page = Number(unit?.page);
+      if (!criticalTriggeredPages.has(page)) continue;
+      const rule = getExplicitCardRule(`p${page}`);
+      if (!Array.isArray(rule)) continue;
+      const canonical = rule.find((ability) => criticalAbilityMatches(page, ability));
+      if (!canonical) continue;
+      const current = (unit.abilities || []).find((ability) => criticalAbilityMatches(page, ability));
+      const hydrated = { ...clone(canonical), id: current?.id || canonical.id || `${unit.id || `p${page}`}-${page === 10 ? "last-breath" : "turn-end"}` };
+      if (page === 46) hydrated.condition = { ...(hydrated.condition || {}), eventOwnerIsController: true };
+      unit.abilities = [...(unit.abilities || []).filter((ability) => !criticalAbilityMatches(page, ability)), hydrated];
+    }
+  }
+  return state;
+};
 const spellElement = (card, command) => {
   if (command?.chosenElement) return command.chosenElement;
   const exact = ["Fogo", "Água", "Terra", "Ar"].find((element) => (card?.tags || []).some((tag) => fold(tag) === fold(element)));
@@ -138,6 +165,7 @@ const restoreRootPaymentBeforeResolution = (inputState, command) => {
 export function executeCommand(rawInputState, rawCommand, options = {}) {
   const restored = restoreCommandPayment(rawInputState, rawCommand);
   let inputState = restoreRootPaymentBeforeResolution(restored.state, restored.command);
+  inputState = restoreCriticalTriggeredRules(inputState);
   let command = restored.command;
   const priorityEnabled = !!options.priority;
 
