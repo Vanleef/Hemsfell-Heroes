@@ -1,14 +1,11 @@
 /*
- * Hemsfell Heroes — match UI stylesheet entry point
- *
- * Keep layout.tsx importing this single match stylesheet. New visual fixes
- * should be added to the existing responsibility file below (or consolidated
- * here when small) instead of creating another top-level layout import.
+ * Hemsfell Heroes — canonical match UI stylesheet entry point.
+ * Small terminal patches are consolidated below while the remaining larger
+ * responsibility files stay imported in their historical cascade order.
  */
 
 @import "./command-bar-fixes.css";
 @import "./match-ui-guard.css";
-@import "./setup-heading-fixes.css";
 @import "./response-window.css";
 @import "./card-list-scrollviews.css";
 @import "./card-list-grid-layout.css";
@@ -16,7 +13,295 @@
 @import "./decision-lane-position.css";
 @import "./target-banner-anchor.css";
 @import "./hero-inspector-fix.css";
-@import "./hero-inspector-cleanup.css";
-@import "./match-result-enhancer.css";
-@import "./match-log.css";
-@import "./styles/match/combat-attack-highlight.css";
+
+/* === HERO INSPECTOR CLEANUP === */
+/* Final authority for the in-match hero inspector.
+   Keep only the canonical structured HeroGuide and suppress any legacy
+   identity/evolution/ability presentation that can leak from older styles. */
+
+.card-focus-layer .inspector-hero-guide > :not(.hero-guide):not(small) {
+  display: none !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-guide::before,
+.card-focus-layer .inspector-hero-guide .hero-guide::after,
+.card-focus-layer .inspector-hero-guide .hero-guide > header::before,
+.card-focus-layer .inspector-hero-guide .hero-guide > header::after,
+.card-focus-layer .inspector-hero-guide .hero-guide > section::before,
+.card-focus-layer .inspector-hero-guide .hero-guide > section::after,
+.card-focus-layer .inspector-hero-guide .hero-guide article::before,
+.card-focus-layer .inspector-hero-guide .hero-guide article::after,
+.card-focus-layer .inspector-hero-guide .hero-guide li::before,
+.card-focus-layer .inspector-hero-guide .hero-guide li::after {
+  content: none !important;
+  display: none !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-guide {
+  display: flex !important;
+  flex-direction: column !important;
+  grid-template-columns: none !important;
+  grid-auto-flow: row !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-guide > header,
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide,
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  float: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide > ol,
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child {
+  display: flex !important;
+  flex-direction: column !important;
+  grid-template-columns: none !important;
+  grid-auto-flow: row !important;
+  width: 100% !important;
+  gap: clamp(.35rem,.7cqw,.65rem) !important;
+}
+
+.card-focus-layer .inspector-hero-guide .hero-evolution-guide > ol > li,
+.card-focus-layer .inspector-hero-guide .hero-abilities-guide > div:last-child > article {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  float: none !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+}
+
+.card-focus-layer .inspector-hero-guide :is(
+  .hero-identity,
+  .hero-identity-card,
+  .hero-identity-panel,
+  .hero-evolution-card,
+  .hero-evolution-panel,
+  .hero-levels-card,
+  .hero-levels-panel,
+  .hero-abilities-card,
+  .hero-abilities-panel,
+  .hero-legacy-guide,
+  .legacy-hero-guide,
+  .hero-guide-legacy
+) {
+  display: none !important;
+}
+
+/* === MATCH RESULT === */
+.enhanced-match-result{
+  position:relative!important;
+  width:min(92vw,58rem)!important;
+  min-height:clamp(22rem,62dvh,34rem)!important;
+  padding:clamp(2rem,4cqw,3.4rem) clamp(2rem,4cqw,3.5rem) clamp(2rem,4cqh,3rem) clamp(16rem,33cqw,24rem)!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+}
+
+.match-result-hero-art{
+  position:absolute;
+  left:clamp(1.2rem,2.8cqw,2.2rem);
+  top:50%;
+  width:clamp(11.5rem,23cqw,17.5rem);
+  transform:translateY(-50%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:clamp(.35rem,.75cqh,.6rem);
+  text-align:center;
+  z-index:2;
+}
+
+.match-result-hero-art .remote-card-art{
+  display:block;
+  width:100%!important;
+  height:auto!important;
+  max-height:min(58dvh,28rem)!important;
+  object-fit:contain;
+  border-radius:clamp(.55rem,1cqw,.9rem);
+  box-shadow:0 1rem 2.8rem rgba(0,0,0,.48),0 0 0 1px rgba(255,212,111,.28);
+}
+
+.match-result-hero-art small{
+  margin-top:.15rem;
+  font-size:clamp(.58rem,.76cqw,.76rem);
+  letter-spacing:.16em;
+  color:#d8ad55;
+  font-weight:800;
+}
+
+.match-result-hero-art b{
+  max-width:100%;
+  font-size:clamp(.82rem,1.25cqw,1.15rem);
+  line-height:1.12;
+  color:#f5efe4;
+}
+
+@media (max-width:760px),(max-height:620px){
+  .enhanced-match-result{
+    min-height:min(88dvh,39rem)!important;
+    padding:clamp(11rem,38dvh,16rem) clamp(1rem,4vw,2rem) clamp(1.5rem,4dvh,2.4rem)!important;
+  }
+  .match-result-hero-art{
+    left:50%;
+    top:clamp(1rem,3dvh,1.7rem);
+    width:clamp(8.5rem,27vw,12rem);
+    transform:translateX(-50%);
+  }
+  .match-result-hero-art .remote-card-art{max-height:clamp(8rem,30dvh,13rem)!important;}
+}
+
+/* === MATCH LOG === */
+/* Match history panel: compact, readable and responsive without changing game layout. */
+.test-log{
+  width:clamp(18rem,24vw,24rem)!important;
+  background:linear-gradient(180deg,rgba(5,14,21,.98),rgba(3,9,15,.96))!important;
+  border-left:1px solid rgba(216,174,87,.22)!important;
+  box-shadow:-1.2rem 0 2.8rem rgba(0,0,0,.34)!important;
+  container-type:inline-size;
+}
+.test-log header{
+  position:sticky;
+  top:0;
+  z-index:3;
+  align-items:center;
+  gap:clamp(.5rem,2cqw,.8rem);
+  padding:clamp(.75rem,3cqw,1rem)!important;
+  background:rgba(5,14,21,.97);
+  backdrop-filter:blur(.45rem);
+}
+.test-log header>div{min-width:0}
+.test-log header b{
+  font-size:0!important;
+  line-height:1.1;
+}
+.test-log header b::after{
+  content:"Registro da partida";
+  display:block;
+  color:#f2e3bd;
+  font:800 clamp(.78rem,4cqw,1rem)/1.1 Arial,sans-serif;
+  letter-spacing:.035em;
+}
+.test-log header span{
+  display:block;
+  margin-top:.2rem;
+  font-size:clamp(.58rem,2.7cqw,.72rem)!important;
+  color:#8495a6!important;
+}
+.test-log .metrics{
+  position:sticky;
+  top:clamp(3.45rem,14cqw,4.2rem);
+  z-index:2;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:clamp(.25rem,1.5cqw,.45rem)!important;
+  padding:clamp(.45rem,2cqw,.7rem)!important;
+  background:rgba(4,12,18,.94);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.test-log .metrics span{
+  min-width:0;
+  padding:clamp(.4rem,2cqw,.6rem) .15rem!important;
+  border:1px solid rgba(255,255,255,.055);
+  border-radius:.45rem;
+  background:rgba(15,28,39,.88)!important;
+  font-size:clamp(.5rem,2.35cqw,.64rem)!important;
+  line-height:1.2;
+}
+.test-log .metrics b{font-size:clamp(.86rem,4.3cqw,1.12rem)!important}
+.test-log .events{
+  flex:1;
+  min-height:0;
+  padding:clamp(.3rem,1.8cqw,.55rem) clamp(.55rem,2.5cqw,.85rem)!important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+.test-log .events p{
+  margin:0!important;
+  padding:clamp(.52rem,2.5cqw,.72rem) clamp(.4rem,2cqw,.65rem) clamp(.52rem,2.5cqw,.72rem) clamp(1.05rem,4.5cqw,1.35rem)!important;
+  border-bottom:1px solid rgba(255,255,255,.055)!important;
+  color:#b8c3cf!important;
+  font:500 clamp(.62rem,2.9cqw,.78rem)/1.42 Arial,sans-serif!important;
+  overflow-wrap:anywhere;
+}
+.test-log .events p i{
+  left:clamp(.25rem,1.2cqw,.4rem)!important;
+  top:50%!important;
+  transform:translateY(-50%);
+}
+.test-log .events p.phase{color:#e2c576!important;background:rgba(215,174,87,.055)}
+.test-log .events p.system{color:#9fc7d3!important}
+.test-log .events p.danger{color:#efa0a0!important;background:rgba(190,55,55,.055)}
+.test-log .events p.priority{color:#b7a8ec!important;background:rgba(106,83,170,.055)}
+.test-log .events p:last-child{border-bottom:0!important}
+
+@container (max-width:20rem){
+  .test-log .metrics{grid-template-columns:repeat(2,minmax(0,1fr));position:relative;top:auto}
+}
+
+@media (max-width:48rem){
+  .test-log{
+    width:min(100%,24rem)!important;
+    max-width:100vw!important;
+  }
+}
+
+@media (max-width:34rem){
+  .test-log{
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+  }
+}
+
+/* === COMBAT ATTACK HIGHLIGHT === */
+/* Combat attack availability — intentionally more prominent visual feedback. */
+.screen-game .original-card.combat-attack-ready {
+  outline: clamp(.13rem, .22cqw, .2rem) solid #ffd35a !important;
+  outline-offset: clamp(.08rem, .14cqw, .16rem) !important;
+  cursor: pointer !important;
+  filter: brightness(1.14) saturate(1.22) drop-shadow(0 0 .48rem #ff5a36) !important;
+  box-shadow:
+    0 0 0 clamp(.12rem, .2cqw, .18rem) #ffcf56,
+    0 0 clamp(1rem, 1.7cqw, 1.7rem) #ff6a36,
+    0 0 clamp(2rem, 3.2cqw, 3.2rem) #ff3c22b8,
+    inset 0 0 clamp(.7rem, 1.2cqw, 1.15rem) #ffb34722 !important;
+  animation: combat-attack-ready-emphasis .9s ease-in-out infinite !important;
+}
+
+@keyframes combat-attack-ready-emphasis {
+  0%, 100% {
+    outline-color: #ffd35a;
+    filter: brightness(1.12) saturate(1.2) drop-shadow(0 0 .42rem #ff5634);
+    box-shadow:
+      0 0 0 clamp(.1rem, .17cqw, .16rem) #ffc94f,
+      0 0 clamp(.9rem, 1.45cqw, 1.45rem) #ff6236,
+      0 0 clamp(1.7rem, 2.75cqw, 2.75rem) #ff34209c,
+      inset 0 0 clamp(.55rem, .95cqw, .9rem) #ffb3471f;
+  }
+
+  50% {
+    outline-color: #fff4b5;
+    filter: brightness(1.25) saturate(1.34) drop-shadow(0 0 .72rem #ff8b3d);
+    box-shadow:
+      0 0 0 clamp(.2rem, .32cqw, .28rem) #fff0a0,
+      0 0 clamp(1.45rem, 2.35cqw, 2.3rem) #ff8b3d,
+      0 0 clamp(2.8rem, 4.4cqw, 4.25rem) #ff3c22df,
+      inset 0 0 clamp(.95rem, 1.55cqw, 1.5rem) #ffc05a33;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-game .original-card.combat-attack-ready {
+    animation: none !important;
+    outline-color: #fff0a0 !important;
+    filter: brightness(1.18) saturate(1.25) drop-shadow(0 0 .58rem #ff6a36) !important;
+  }
+}

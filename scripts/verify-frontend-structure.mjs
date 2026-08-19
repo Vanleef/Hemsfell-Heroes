@@ -13,9 +13,10 @@ const assertOrdered = (source, tokens, label) => {
   }
 };
 
-const [lab, matchUi, layout] = await Promise.all([
+const [lab, matchUi, response, layout] = await Promise.all([
   read("app/lab.css"),
   read("app/match-ui.css"),
+  read("app/response-window.css"),
   read("app/layout.tsx"),
 ]);
 
@@ -30,7 +31,6 @@ assertOrdered(lab, [
 assertOrdered(matchUi, [
   '@import "./command-bar-fixes.css";',
   '@import "./match-ui-guard.css";',
-  '@import "./setup-heading-fixes.css";',
   '@import "./response-window.css";',
   '@import "./card-list-scrollviews.css";',
   '@import "./card-list-grid-layout.css";',
@@ -38,11 +38,16 @@ assertOrdered(matchUi, [
   '@import "./decision-lane-position.css";',
   '@import "./target-banner-anchor.css";',
   '@import "./hero-inspector-fix.css";',
-  '@import "./hero-inspector-cleanup.css";',
-  '@import "./match-result-enhancer.css";',
-  '@import "./match-log.css";',
-  '@import "./styles/match/combat-attack-highlight.css";',
+  '/* === HERO INSPECTOR CLEANUP === */',
+  '/* === MATCH RESULT === */',
+  '/* === MATCH LOG === */',
+  '/* === COMBAT ATTACK HIGHLIGHT === */',
 ], "app/match-ui.css cascade");
+
+assertOrdered(response, [
+  '/* === SETUP HEADING',
+  '/* === RESPONSE WINDOW === */',
+], "app/response-window.css cascade");
 
 assertOrdered(layout, [
   'import "./globals.css";',
@@ -59,4 +64,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log("Frontend structure verification passed: canonical runtime/cascade order is unchanged and no mirror tree is required.");
+console.log("Frontend structure verification passed: canonical runtime/cascade order is preserved without mirror or terminal patch files.");
