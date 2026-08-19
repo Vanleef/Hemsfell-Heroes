@@ -50,14 +50,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     if (body.action === "resume") {
       const awaySince = activeParticipant.disconnectedAt;
+      if (!awaySince) return NextResponse.json(roomView(room, true, role), noStore);
       const resumedAt = Date.now();
-      if (awaySince && room.game && resumedAt < awaySince + 60_000) shiftOnlineDeadlines(room.game, resumedAt - awaySince);
+      if (room.game && resumedAt < awaySince + 60_000) shiftOnlineDeadlines(room.game, resumedAt - awaySince);
       activeParticipant.disconnectedAt = null;
       room.revision++;
       await writeRoom(room);
       return NextResponse.json(roomView(room, true, role), noStore);
     }
-    activeParticipant.disconnectedAt = null;
+    if (activeParticipant.disconnectedAt) return NextResponse.json({ error: "resume required", ...roomView(room, true, role) }, { status: 409, ...noStore });
     if (body.action === "select") {
       if (room.status !== "deck-selection") return NextResponse.json({ error: "deck selection is closed" }, { status: 409 });
       const participant = room[role];
