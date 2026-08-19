@@ -54,6 +54,12 @@
 
 .online-combat-wait{pointer-events:auto}.online-combat-wait-card{display:grid;justify-items:center;width:min(30rem,92vw);padding:clamp(1.2rem,4vw,2.4rem);border:1px solid #d6ad5548;border-radius:1rem;background:#0b111cf5;box-shadow:0 1rem 4rem #000c;text-align:center}.online-combat-wait-card>i{display:grid;place-items:center;width:clamp(3rem,9vw,5rem);aspect-ratio:1;margin-bottom:.7rem;border:1px solid #d5ad5555;border-radius:50%;background:#d5ad5510;font-style:normal;font-size:clamp(1.4rem,4vw,2.4rem)}.online-combat-wait-card>span{color:#d6ad55;font-size:.7rem;font-weight:900;letter-spacing:.16em}.online-combat-wait-card h2{margin:.35rem 0;font-size:clamp(1.15rem,3vw,1.7rem)}.online-combat-wait-card p{margin:0;color:#97a4b5;line-height:1.5}.online-combat-wait-card>strong{margin-top:.8rem;color:#f2d88f;font-size:1.1rem}
 
+/* Target/effect choices own the interaction while they are open. Do not layer
+   response/waiting/stack chrome underneath a decision panel. */
+.hh-app:has(.engine-decision-backdrop) .response-overlay,
+.hh-app:has(.engine-decision-backdrop) .response-waiting,
+.hh-app:has(.engine-decision-backdrop) .priority-stack-indicator{display:none!important}
+
 @keyframes online-clock-pulse{to{transform:scale(1.04);box-shadow:0 0 1rem #d5444466}}
 
 @media(max-width:48rem){.online-priority-hud{top:auto;bottom:.45rem;grid-template-columns:1fr;width:calc(100vw - .8rem)}.online-priority-stack{display:none}.online-block-lanes article{grid-template-columns:auto 1fr}.online-block-lanes label{grid-column:1/-1}.online-group-combat-dialog>footer{align-items:stretch;flex-direction:column}.online-combat-confirm{width:100%}}
