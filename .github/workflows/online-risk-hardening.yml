@@ -7,6 +7,9 @@ on:
     paths:
       - scripts/online-risk-hardening.mjs
       - .github/workflows/online-risk-hardening.yml
+  pull_request:
+    branches:
+      - fix/cards_mechanics
   workflow_dispatch:
 
 permissions:
