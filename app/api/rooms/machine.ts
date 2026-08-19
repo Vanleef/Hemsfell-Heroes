@@ -41,6 +41,9 @@ export type Room = {
   coinWinner: RoomRole | null;
   startingRole: RoomRole | null;
   game: any | null;
+  /** Shared pause origin. If both tabs disconnect, deadlines are shifted once
+   * when the room becomes fully connected again instead of once per player. */
+  pauseStartedAt?: number | null;
 };
 
 export const defaultSettings: MatchSettings = {
@@ -118,6 +121,7 @@ function finishDisconnectedMatch(room: Room, loser: 0 | 1) {
     deadline: null,
     stackDepth: 0,
   };
+  room.pauseStartedAt = null;
   room.status = "finished";
 }
 
@@ -210,6 +214,9 @@ export function applySafeAutoPass(room: Room, role: RoomRole, control: "assisted
   return true;
 }
 
+/** Deprecated compatibility guard retained for old tests/tools. HTTP gameplay
+ * no longer accepts complete state snapshots; only applyRulesCommand mutates a
+ * started match. */
 export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision: unknown) {
   if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };
   if (!room.game || !nextGame) return { ok: false, status: 409, error: "room not started" };
@@ -234,14 +241,32 @@ const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", 
 export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record<string, unknown>, baseRevision: unknown, commandId: unknown = undefined) {
   const currentParticipant = room[role];
   const normalizedCommandId = typeof commandId === "string" ? commandId.trim() : "";
-  if (commandId != null && (!normalizedCommandId || normalizedCommandId.length > 128 || !/^[a-zA-Z0-9._:-]+$/.test(normalizedCommandId))) { logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: "invalid command id", baseRevision }); return { ok: false, status: 400, error: "invalid command id" }; }
-  if (normalizedCommandId && currentParticipant?.recentCommandIds?.includes(normalizedCommandId)) { logOnlineDiagnostic(room, "command-duplicate", { role, commandType: String(rawCommand.type || ""), baseRevision, duplicate: true }); return { ok: true, status: 200, error: "", duplicate: true }; }
+  if (!normalizedCommandId || normalizedCommandId.length > 128 || !/^[a-zA-Z0-9._:-]+$/.test(normalizedCommandId)) {
+    logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: "invalid command id", baseRevision });
+    return { ok: false, status: 400, error: "command id required" };
+  }
+  /* Idempotency is checked before revision. A retry of an already committed
+     command must succeed even though its baseRevision is now stale. */
+  if (currentParticipant?.recentCommandIds?.includes(normalizedCommandId)) {
+    logOnlineDiagnostic(room, "command-duplicate", { role, commandType: String(rawCommand.type || ""), baseRevision, duplicate: true });
+    return { ok: true, status: 200, error: "", duplicate: true };
+  }
   if (room.status !== "started" || !room.game) return { ok: false, status: 409, error: "room not started" };
-  if (Number(baseRevision) !== room.revision) { logOnlineDiagnostic(room, "command-stale", { role, commandType: String(rawCommand.type || ""), reason: "stale revision", baseRevision }); return { ok: false, status: 409, error: "stale revision" }; }
-  if (reconnectPause(room)) { logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: "reconnect pause", baseRevision }); return { ok: false, status: 409, error: "match paused for reconnect" }; }
-  if (!AUTHORITATIVE_COMMANDS.has(String(rawCommand.type || ""))) { logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: "unsupported command", baseRevision }); return { ok: false, status: 400, error: "unsupported command" }; }
+  if (Number(baseRevision) !== room.revision) {
+    logOnlineDiagnostic(room, "command-stale", { role, commandType: String(rawCommand.type || ""), reason: "stale revision", baseRevision });
+    return { ok: false, status: 409, error: "stale revision" };
+  }
+  if (reconnectPause(room)) {
+    logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: "reconnect pause", baseRevision });
+    return { ok: false, status: 409, error: "match paused for reconnect" };
+  }
+  if (!AUTHORITATIVE_COMMANDS.has(String(rawCommand.type || ""))) {
+    logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: "unsupported command", baseRevision });
+    return { ok: false, status: 400, error: "unsupported command" };
+  }
   const owner = role === "host" ? 0 : 1;
   try {
+    /* Never trust an owner sent by the browser. Authentication selects it. */
     const command: Record<string, any> = { ...rawCommand, owner };
     if (command.type === "attack") {
       const combat = room.game.combatAction;
@@ -250,12 +275,17 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
       }
       command.skipPriority = true;
     }
+    if (command.type === "selectDefender") {
+      const combat = room.game.combatAction;
+      if (!combat || combat.stage !== "choosing") return { ok: false, status: 409, error: "blocker choice unavailable" };
+      if (1 - combat.attackerOwner !== owner) return { ok: false, status: 403, error: "only defender may choose blocker" };
+    }
     const before = room.game;
     const result = executeOnlineCommand(before, command, { priority: true });
     room.game = result.state;
     reconcileOnlineClocks(before, room.game, room.settings);
     room.revision++;
-    if (normalizedCommandId && currentParticipant) {
+    if (currentParticipant) {
       const recent = currentParticipant.recentCommandIds || [];
       currentParticipant.recentCommandIds = [...recent.filter((value) => value !== normalizedCommandId), normalizedCommandId].slice(-32);
     }
