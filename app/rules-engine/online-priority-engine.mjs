@@ -121,10 +121,43 @@ function resolveOnlineCheckpoint(state) {
   return { state: next, trace: [`online-priority:checkpoint:${checkpoint}`], steps: 0 };
 }
 
+function interactiveDecisionHolder(state) {
+  return state?.pendingDecision || state?.pendingReposition || null;
+}
+
+function suspendPriorityWhileChoosing(state) {
+  const holder = interactiveDecisionHolder(state);
+  if (!holder || !state.pendingResponse) return state;
+  holder.onlinePriorityResume = {
+    pendingResponse: clone(state.pendingResponse),
+    pendingAction: state.pendingAction ? clone(state.pendingAction) : undefined,
+    priorityStack: state.priorityStack ? clone(state.priorityStack) : undefined,
+  };
+  state.pendingResponse = null;
+  state.pendingAction = undefined;
+  state.priorityStack = undefined;
+  return state;
+}
+
+function resumePriorityAfterChoice(before, state) {
+  const resume = interactiveDecisionHolder(before)?.onlinePriorityResume;
+  if (!resume) return state;
+  const nextHolder = interactiveDecisionHolder(state);
+  if (nextHolder) {
+    nextHolder.onlinePriorityResume ||= clone(resume);
+    return state;
+  }
+  if (!state.pendingResponse) state.pendingResponse = clone(resume.pendingResponse);
+  if (!state.pendingAction && resume.pendingAction) state.pendingAction = clone(resume.pendingAction);
+  if (!state.priorityStack && resume.priorityStack) state.priorityStack = clone(resume.priorityStack);
+  return state;
+}
+
 function normalizeAfterResolution(before, result, command) {
   const state = result.state;
   const wasNestedStack = command.type === "passPriority" && Number(before.pendingResponse?.passes || 0) > 0 && (before.priorityStack?.length || 0) > 1;
-  if (wasNestedStack && state.pendingResponse && !state.pendingDecision) state.pendingResponse = { ...state.pendingResponse, responder: state.active, passes: 0 };
+  if (wasNestedStack && state.pendingResponse && !state.pendingDecision && !state.pendingReposition) state.pendingResponse = { ...state.pendingResponse, responder: state.active, passes: 0 };
+  suspendPriorityWhileChoosing(state);
   return syncPriorityMetadata(state, { window: inferPriorityWindow(state) });
 }
 
@@ -177,6 +210,7 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   if (canOpenPhaseTransition(state, command)) return openPhaseTransition(state, command);
 
   const result = executeRulesCommand(state, command, { ...options, priority: true });
+  resumePriorityAfterChoice(state, result.state);
   if (command.type === "resolveDecision" && result.state.onlineFinalization?.stage === OnlineFinalizationStage.EFFECTS && !result.state.pendingDecision && !result.state.pendingReposition) {
     result.state = resumeOnlineFinalizationAfterDecision(result.state);
     result.trace = [...(result.trace || []), "online-finalization:resume-after-decision"];
