@@ -1,5 +1,5 @@
 const remaining = (deadline, now) => Math.max(0, Number(deadline || 0) - now);
-const declaringBlockers = (game) => game?.onlineCombat?.stage === "declare-blockers";
+const choosingBlocker = (game) => game?.combatAction?.stage === "choosing";
 const setPriorityDeadline = (game, deadline) => { if (game?.priority) game.priority.deadline = deadline ?? null; };
 const shiftDeadline = (target, key, milliseconds) => {
   if (target && Number.isFinite(Number(target[key]))) target[key] = Number(target[key]) + milliseconds;
@@ -11,7 +11,7 @@ export function shiftOnlineDeadlines(game, milliseconds) {
   shiftDeadline(game, "turnDeadline", milliseconds);
   shiftDeadline(game.pendingResponse, "deadline", milliseconds);
   shiftDeadline(game.priority, "deadline", milliseconds);
-  shiftDeadline(game.onlineCombat, "deadline", milliseconds);
+  shiftDeadline(game.combatAction, "deadline", milliseconds);
   shiftDeadline(game.pendingReposition, "deadline", milliseconds);
   shiftDeadline(game.pendingDecision, "deadline", milliseconds);
   return game;
@@ -29,14 +29,14 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
     after.turnDeadline = null;
     delete after.turnTimeRemainingMs;
     if (after.pendingResponse) delete after.pendingResponse.deadline;
-    if (after.onlineCombat) delete after.onlineCombat.deadline;
+    if (after.combatAction) delete after.combatAction.deadline;
     setPriorityDeadline(after, null);
     return after;
   }
 
   const activeChanged = Number(before?.active) !== Number(after.active);
-  const blockerChoice = declaringBlockers(after);
-  if (after.onlineCombat && !blockerChoice) delete after.onlineCombat.deadline;
+  const blockerChoice = choosingBlocker(after);
+  if (after.combatAction && !blockerChoice) delete after.combatAction.deadline;
 
   if (activeChanged) {
     if (after.pendingResponse) {
@@ -47,8 +47,8 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
     } else if (blockerChoice) {
       after.turnTimeRemainingMs = settings.turnSeconds * 1000;
       after.turnDeadline = null;
-      after.onlineCombat.deadline = now + settings.responseSeconds * 1000;
-      setPriorityDeadline(after, after.onlineCombat.deadline);
+      after.combatAction.deadline = now + settings.responseSeconds * 1000;
+      setPriorityDeadline(after, after.combatAction.deadline);
     } else {
       delete after.turnTimeRemainingMs;
       after.turnDeadline = now + settings.turnSeconds * 1000;
@@ -63,9 +63,9 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
     else if (before?.turnDeadline) after.turnTimeRemainingMs = remaining(before.turnDeadline, now);
     else if (!Number.isFinite(Number(after.turnTimeRemainingMs))) after.turnTimeRemainingMs = settings.turnSeconds * 1000;
     after.turnDeadline = null;
-    const wasBlockerChoice = declaringBlockers(before);
-    if (!wasBlockerChoice || !after.onlineCombat.deadline) after.onlineCombat.deadline = now + settings.responseSeconds * 1000;
-    setPriorityDeadline(after, after.onlineCombat.deadline);
+    const wasBlockerChoice = choosingBlocker(before);
+    if (!wasBlockerChoice || !after.combatAction.deadline) after.combatAction.deadline = now + settings.responseSeconds * 1000;
+    setPriorityDeadline(after, after.combatAction.deadline);
     return after;
   }
 
@@ -83,7 +83,7 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
 
   setPriorityDeadline(after, null);
   const paused = Number(before?.turnTimeRemainingMs ?? after.turnTimeRemainingMs);
-  if ((before?.pendingResponse || declaringBlockers(before)) && Number.isFinite(paused)) {
+  if ((before?.pendingResponse || choosingBlocker(before)) && Number.isFinite(paused)) {
     after.turnDeadline = now + Math.max(0, paused);
     delete after.turnTimeRemainingMs;
     return after;

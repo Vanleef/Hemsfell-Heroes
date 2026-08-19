@@ -114,16 +114,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       room.revision++;
     } else if (body.action === "command") {
       if (!isPlainRecord(body.command)) return NextResponse.json({ error: "invalid command" }, { status: 400 });
-      const resolution = applyRulesCommand(room, role, body.command, body.baseRevision);
+      const resolution = applyRulesCommand(room, role, body.command, body.baseRevision, body.commandId);
       if (!resolution.ok) return NextResponse.json({ error: resolution.error, ...roomView(room, true, role) }, { status: resolution.status });
+      if (resolution.duplicate) return NextResponse.json(roomView(room, true, role), noStore);
     } else if (body.action === "sync") {
-      if (room.status !== "started") return NextResponse.json({ error: "room not started" }, { status: 409 });
-      if (!isBoundedGame(body.game)) return NextResponse.json({ error: "invalid game state" }, { status: 400 });
-      const permission = canSync(room, role, body.game, body.baseRevision);
-      if (!permission.ok) return NextResponse.json({ error: permission.error, ...roomView(room, true, role) }, { status: permission.status });
-      room.game = preserveOpponentSecrets(room, body.game, role);
-      if (room.game.pendingResponse && !room.game.pendingResponse.deadline) room.game.pendingResponse.deadline = deadline(room.settings.responseSeconds);
-      room.revision++;
+      /* Legacy clients once uploaded a complete game snapshot here. That lets a
+         participant bypass the authoritative rules kernel, including combat
+         ownership and blocker windows. Started matches now accept intents only. */
+      return NextResponse.json({ error: "legacy state sync disabled; use authoritative commands" }, { status: 410, ...noStore });
     } else if (body.action === "timeout") {
       if (applyTimeout(room)) room.revision++;
     } else return NextResponse.json({ error: "unknown action" }, { status: 400 });

@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { compileCard } from "../app/rules-engine/compiler.mjs";
 import { canExecuteCard, executeCommand } from "../app/rules-engine/engine.mjs";
+import { canEndCombat, listAttackCapableCreatures, listLegalBlockers, listPendingIndomitableAttackers } from "../app/rules-engine/combat.mjs";
 import { runHeadlessGames } from "../app/rules-engine/simulator.mjs";
 import { isValidTarget, targetPolicy } from "../app/rules-engine/targeting.mjs";
 
@@ -63,6 +64,20 @@ function playCommand(state, owner, card, random) {
 const legal = (state, command) => { try { executeCommand(state, command); return true; } catch { return false; } };
 
 const chooseCommand = (state, random) => {
+  if (state.pendingResponse) return { type: "passPriority", owner: state.pendingResponse.responder };
+
+  if (state.combatAction?.stage === "choosing") {
+    const owner = 1 - state.combatAction.attackerOwner;
+    const blockers = listLegalBlockers(state, owner, state.combatAction.attackerUid);
+    const chosen = blockers.length && random() < .72 ? blockers[Math.floor(random() * blockers.length)] : null;
+    return { type: "selectDefender", owner, attackerId: state.combatAction.attackerUid, ...(chosen ? { defenderId: chosen.uid, targetHero: false } : { targetHero: true }) };
+  }
+
+  if (state.combatAction?.stage === "charging") {
+    const combat = state.combatAction;
+    return { type: "attack", owner: combat.attackerOwner, attackerId: combat.attackerUid, ...(combat.defenderUid ? { defenderId: combat.defenderUid } : {}), skipPriority: true };
+  }
+
   const owner = state.active; const entry = state.players[owner];
   if (state.phase === "principal") {
     const affordable = entry.hand.filter((card) => canExecuteCard(card) && card.cost <= entry.energy + (card.type === "Feitiço" ? entry.reserve : 0));
@@ -72,16 +87,14 @@ const chooseCommand = (state, random) => {
       if (command && legal(state, command) && random() < 0.75) return command;
     }
   }
+
   if (state.phase === "combate") {
-    const attackers = [...entry.board].filter((unit) => !unit.exhausted && !unit.attackedThisTurn && !unit.summoning && !unit.stunned).sort(() => random() - 0.5);
-    for (const attacker of attackers) {
-      const defenders = [...state.players[1 - owner].board].sort(() => random() - 0.5);
-      for (const defender of [...defenders, null]) {
-        const command = { type: "attack", owner, attackerId: attacker.uid, ...(defender ? { defenderId: defender.uid } : {}) };
-        if (legal(state, command)) return command;
-      }
-    }
+    const mandatory = listPendingIndomitableAttackers(state, owner);
+    const attackers = mandatory.length ? mandatory : listAttackCapableCreatures(state, owner).sort(() => random() - 0.5);
+    if (attackers.length && (mandatory.length || random() < .78)) return { type: "declareAttack", owner, attackerId: attackers[0].uid || attackers[0].id };
+    if (!canEndCombat(state, owner)) return attackers[0] ? { type: "declareAttack", owner, attackerId: attackers[0].uid || attackers[0].id } : null;
   }
+
   const advance = { type: "advancePhase", owner };
   return legal(state, advance) ? advance : null;
 };
@@ -97,4 +110,3 @@ const execute = (state, command) => {
 };
 
 console.log(JSON.stringify(runHeadlessGames({ games, maxTurns, seed, createGame, chooseCommand, execute }), null, 2));
-
