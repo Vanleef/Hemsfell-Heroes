@@ -1,6 +1,7 @@
 import { ROOM_LIMITS } from "./constants";
 import { reconcileOnlineClocks } from "./online-clock.mjs";
 import { executeOnlineCommand } from "../../rules-engine/online-priority-engine.mjs";
+import { listPendingIndomitableAttackers } from "../../rules-engine/combat.mjs";
 import { shouldAutoPass } from "../../rules-engine/priority.mjs";
 import { logOnlineDiagnostic } from "./online-diagnostics.mjs";
 
@@ -160,17 +161,17 @@ export function applyTimeout(room: Room) {
     logOnlineDiagnostic(room, "response-timeout", { role: owner === 0 ? "host" : "guest", commandType: "passPriority", auto: true });
     return true;
   }
-  if (room.game.onlineCombat?.stage === "declare-blockers" && room.game.onlineCombat.deadline && room.game.onlineCombat.deadline <= now) {
+  if (room.game.combatAction?.stage === "choosing" && room.game.combatAction.deadline && room.game.combatAction.deadline <= now) {
     const before = room.game;
-    const owner = 1 - before.onlineCombat.attackerOwner;
+    const owner = 1 - before.combatAction.attackerOwner;
     try {
-      const result = executeOnlineCommand(before, { type: "declareBlockers", owner, assignments: [], auto: true }, { priority: true });
+      const result = executeOnlineCommand(before, { type: "selectDefender", owner, targetHero: true, auto: true }, { priority: true });
       room.game = result.state;
       reconcileOnlineClocks(before, room.game, room.settings, now);
     } catch { return false; }
     room.game.events = (room.game.events ?? 0) + 1;
-    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo para declarar bloqueadores terminou; os ataques seguirão sem novos bloqueios.", tone: "combat" }, ...(room.game.log ?? [])];
-    logOnlineDiagnostic(room, "blocker-timeout", { role: owner === 0 ? "host" : "guest", commandType: "declareBlockers", auto: true });
+    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo para bloquear terminou; este ataque seguiu sem bloqueio.", tone: "combat" }, ...(room.game.log ?? [])];
+    logOnlineDiagnostic(room, "blocker-timeout", { role: owner === 0 ? "host" : "guest", commandType: "selectDefender", auto: true });
     return true;
   }
   if (room.game.turnDeadline && room.game.turnDeadline <= now) {
@@ -178,12 +179,17 @@ export function applyTimeout(room: Room) {
       try {
         const before = room.game;
         const owner = before.active;
-        const result = executeOnlineCommand(before, { type: "advancePhase", owner, auto: true }, { priority: true });
+        const mandatory = before.phase === "combate" ? listPendingIndomitableAttackers(before, owner) : [];
+        const command = mandatory.length
+          ? { type: "declareAttack", owner, attackerId: mandatory[0].uid || mandatory[0].id, auto: true }
+          : { type: "advancePhase", owner, auto: true };
+        const result = executeOnlineCommand(before, command, { priority: true });
         room.game = result.state;
         reconcileOnlineClocks(before, room.game, room.settings, now);
         room.game.events = (room.game.events ?? 0) + 1;
-        room.game.log = [{ id: crypto.randomUUID(), text: "O tempo da etapa terminou; foi solicitada a passagem pelo fluxo normal de prioridade.", tone: "phase" }, ...(room.game.log ?? [])];
-        logOnlineDiagnostic(room, "turn-timeout", { role: owner === 0 ? "host" : "guest", commandType: "advancePhase", auto: true });
+        const forcedAttack = command.type === "declareAttack";
+        room.game.log = [{ id: crypto.randomUUID(), text: forcedAttack ? "O tempo da etapa terminou; uma criatura com Indomável iniciou seu ataque obrigatório." : "O tempo da etapa terminou; foi solicitada a passagem pelo fluxo normal de prioridade.", tone: forcedAttack ? "combat" : "phase" }, ...(room.game.log ?? [])];
+        logOnlineDiagnostic(room, "turn-timeout", { role: owner === 0 ? "host" : "guest", commandType: command.type, auto: true });
         return true;
       } catch { return false; }
     }
@@ -208,9 +214,6 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
   if (Number(baseRevision) !== room.revision) return { ok: false, status: 409, error: "stale revision" };
   if (!room.game || !nextGame) return { ok: false, status: 409, error: "room not started" };
   if (reconnectPause(room)) return { ok: false, status: 409, error: "match paused for reconnect" };
-  if (["declare-attackers", "declare-blockers"].includes(String(room.game.onlineCombat?.stage || ""))) {
-    return { ok: false, status: 409, error: "grouped combat declaration requires authoritative command" };
-  }
   const pending = room.game.pendingResponse;
   const roleIndex = role === "host" ? 0 : 1;
   if (pending) {
@@ -224,7 +227,7 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
   return { ok: true, status: 200, error: "" };
 }
 
-const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "declareAttack", "declareAttackers", "declareBlockers", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
+const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "declareAttack", "selectDefender", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
 
 /** Server-authoritative command path. The server owns the player index,
  * validates room revision and routes Online timing through one priority kernel. */
@@ -243,11 +246,6 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
   const owner = role === "host" ? 0 : 1;
   try {
     const command: Record<string, any> = { ...rawCommand, owner };
-    if (command.type === "attack") {
-      const combat = room.game.combatAction;
-      if (!combat || combat.stage !== "charging" || combat.attackerOwner !== owner || combat.attackerUid !== command.attackerId || (!!combat.targetHero !== !command.defenderId) || (combat.defenderUid || undefined) !== (command.defenderId || undefined)) return { ok: false, status: 409, error: "combat state mismatch" };
-      command.skipPriority = true;
-    }
     const before = room.game;
     const result = executeOnlineCommand(before, command, { priority: true });
     room.game = result.state;
