@@ -1,11 +1,34 @@
-name: Structural refactor smoke
+name: Structural refactor runner
 on:
   push:
     branches:
       - refactor/visual-structure-consolidation
+permissions:
+  contents: write
 jobs:
-  smoke:
+  consolidate-and-validate:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo structural-refactor-ready
+        with:
+          ref: refactor/visual-structure-consolidation
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - name: Consolidate presentation structure
+        run: node scripts/frontend-structure-consolidation.mjs
+      - name: Install dependencies
+        run: npm ci
+      - name: Validate full Vercel build
+        run: npm run vercel-build
+      - name: Publish validated structural refactor
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm -f .github/workflows/refactor-structure-smoke.yml scripts/frontend-structure-consolidation.mjs
+          git add app scripts tests package.json package-lock.json
+          git commit -m 'refactor: consolidate match presentation structure'
+          git push origin HEAD:refactor/visual-structure-consolidation
