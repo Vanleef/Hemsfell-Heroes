@@ -16,22 +16,32 @@ test("opening a response pauses the active player's action clock", () => {
   assert.equal(after.pendingResponse.deadline, now + 30_000);
 });
 
+test("canonical priority deadline mirrors the authoritative response deadline", () => {
+  const before = game({ priority: { model: "online-v2", deadline: null } });
+  const after = game({ priority: { model: "online-v2", deadline: null }, pendingResponse: { responder: 1, actor: 0, passes: 0 } });
+  reconcileOnlineClocks(before, after, settings, now);
+  assert.equal(after.pendingResponse.deadline, now + 30_000);
+  assert.equal(after.priority.deadline, after.pendingResponse.deadline);
+});
+
 test("priority handoff refreshes only the response clock", () => {
-  const before = game({ turnDeadline: null, turnTimeRemainingMs: 71_000, pendingResponse: { responder: 1, actor: 0, passes: 0, deadline: now - 1 } });
+  const before = game({ turnDeadline: null, turnTimeRemainingMs: 71_000, priority: { deadline: now - 1 }, pendingResponse: { responder: 1, actor: 0, passes: 0, deadline: now - 1 } });
   const after = structuredClone(before);
   after.pendingResponse = { ...after.pendingResponse, responder: 0, passes: 1, deadline: now - 1 };
   reconcileOnlineClocks(before, after, settings, now);
   assert.equal(after.turnDeadline, null);
   assert.equal(after.turnTimeRemainingMs, 71_000);
   assert.equal(after.pendingResponse.deadline, now + 30_000);
+  assert.equal(after.priority.deadline, now + 30_000);
 });
 
 test("closing the response window resumes the exact action-clock remainder", () => {
-  const before = game({ turnDeadline: null, turnTimeRemainingMs: 54_321, pendingResponse: { responder: 0, actor: 0, passes: 1, deadline: now + 10_000 } });
-  const after = game({ turnDeadline: null, turnTimeRemainingMs: 54_321, pendingResponse: null });
+  const before = game({ turnDeadline: null, turnTimeRemainingMs: 54_321, priority: { deadline: now + 10_000 }, pendingResponse: { responder: 0, actor: 0, passes: 1, deadline: now + 10_000 } });
+  const after = game({ turnDeadline: null, turnTimeRemainingMs: 54_321, priority: { deadline: now + 10_000 }, pendingResponse: null });
   reconcileOnlineClocks(before, after, settings, now);
   assert.equal(after.turnDeadline, now + 54_321);
   assert.equal("turnTimeRemainingMs" in after, false);
+  assert.equal(after.priority.deadline, null);
 });
 
 test("ordinary actions do not refill the turn timer", () => {
@@ -66,12 +76,14 @@ test("blocker declaration pauses the attacker's action clock and receives its ow
   const before = game({
     turnDeadline: null,
     turnTimeRemainingMs: 63_500,
+    priority: { model: "online-v2", deadline: now + 2_000 },
     pendingResponse: { responder: 0, actor: 0, passes: 1, deadline: now + 2_000 },
     onlineCombat: { stage: "after-attackers", attackerOwner: 0 },
   });
   const after = game({
     turnDeadline: null,
     turnTimeRemainingMs: 63_500,
+    priority: { model: "online-v2", deadline: null },
     pendingResponse: null,
     onlineCombat: { stage: "declare-blockers", attackerOwner: 0 },
   });
@@ -79,17 +91,20 @@ test("blocker declaration pauses the attacker's action clock and receives its ow
   assert.equal(after.turnDeadline, null);
   assert.equal(after.turnTimeRemainingMs, 63_500);
   assert.equal(after.onlineCombat.deadline, now + 30_000);
+  assert.equal(after.priority.deadline, after.onlineCombat.deadline);
 });
 
 test("submitting blockers keeps the same paused action time through after-blockers priority", () => {
   const before = game({
     turnDeadline: null,
     turnTimeRemainingMs: 48_250,
+    priority: { deadline: now + 8_000 },
     onlineCombat: { stage: "declare-blockers", attackerOwner: 0, deadline: now + 8_000 },
   });
   const after = game({
     turnDeadline: null,
     turnTimeRemainingMs: 48_250,
+    priority: { deadline: null },
     pendingResponse: { responder: 0, actor: 1, passes: 0 },
     onlineCombat: { stage: "after-blockers", attackerOwner: 0, deadline: now + 8_000 },
   });
@@ -97,6 +112,7 @@ test("submitting blockers keeps the same paused action time through after-blocke
   assert.equal(after.turnDeadline, null);
   assert.equal(after.turnTimeRemainingMs, 48_250);
   assert.equal(after.pendingResponse.deadline, now + 30_000);
+  assert.equal(after.priority.deadline, now + 30_000);
   assert.equal("deadline" in after.onlineCombat, false);
 });
 
@@ -104,14 +120,17 @@ test("leaving blocker declaration without a response resumes the exact attacker 
   const before = game({
     turnDeadline: null,
     turnTimeRemainingMs: 37_777,
+    priority: { deadline: now + 1_000 },
     onlineCombat: { stage: "declare-blockers", attackerOwner: 0, deadline: now + 1_000 },
   });
   const after = game({
     turnDeadline: null,
     turnTimeRemainingMs: 37_777,
+    priority: { deadline: now + 1_000 },
     onlineCombat: { stage: "resolving", attackerOwner: 0 },
   });
   reconcileOnlineClocks(before, after, settings, now);
   assert.equal(after.turnDeadline, now + 37_777);
   assert.equal("turnTimeRemainingMs" in after, false);
+  assert.equal(after.priority.deadline, null);
 });
