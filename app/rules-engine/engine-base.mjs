@@ -523,7 +523,7 @@ function activeAbilities(state, event) {
     }
     /* The maintenance phase becomes visible before its resource decision. Ngoro
        must wait for that decision instead of opening a competing/duplicate UI. */
-    if (entry.heroId === "ngoro" && event.type === "onMaintenanceResourceChoice" && event.owner === owner) result.push({ source: heroSource, owner, ability: { id: "ngoro-level-1-maintenance", trigger: "onMaintenanceResourceChoice", effects: [{ type: "chooseDeckAndInvestigate", amount: 1 }] } });
+    if (entry.heroId === "ngoro" && event.owner === owner && (event.type === "onMaintenanceResourceChoice" || (event.type === "onMaintenance" && event.afterResourceChoice === true))) result.push({ source: heroSource, owner, ability: { id: "ngoro-level-1-maintenance", trigger: "onMaintenanceResourceChoice", effects: [{ type: "chooseDeckAndInvestigate", amount: 1 }] } });
     if (entry.heroId === "zayan" && event.type === "onCombatStart" && event.owner === owner && (entry.board || []).some((card) => !(card.text || "").trim())) result.push({ source: heroSource, owner, ability: { id: "zayan-level-1", trigger: "onCombatStart", effects: [{ type: "modifyStats", target: "allyCreature", vanillaOnly: true, attack: 1, health: 1, duration: "turn", selections: 1 }] } });
   });
   return result.sort((a, b) => a.owner - b.owner || (a.source.slot ?? 99) - (b.source.slot ?? 99) || String(a.ability.id).localeCompare(String(b.ability.id)));
