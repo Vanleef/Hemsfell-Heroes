@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - design/online-priority-flow-rework
+  pull_request:
+    branches:
+      - design/online-priority-flow-rework
 
 permissions:
   contents: write
