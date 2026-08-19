@@ -11,6 +11,10 @@
     "app/online-match-runtime.tsx",
     "app/online-state-orientation.mjs",
     "app/remote-card-art.tsx",
+    "app/api/rooms/**/*.ts",
+    "app/api/rooms/**/*.mjs",
+    "app/rules-engine/online-*.mjs",
+    "app/rules-engine/priority*.mjs",
     "next-env.d.ts",
     "types/**/*.d.ts"
   ],
