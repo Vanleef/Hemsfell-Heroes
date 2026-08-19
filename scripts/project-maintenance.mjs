@@ -16,6 +16,15 @@ const list = async (url) => {
     throw error;
   }
 };
+const assertOrdered = (source, tokens, label) => {
+  let cursor = -1;
+  for (const token of tokens) {
+    const index = source.indexOf(token);
+    if (index < 0) { fail(`${label} is missing ${token}`); continue; }
+    if (index <= cursor) fail(`${label} changed required order around ${token}`);
+    cursor = index;
+  }
+};
 
 const requiredFiles = [
   "app/page.tsx",
@@ -85,6 +94,52 @@ async function validateCssImports(path) {
 await validateCssImports("app/globals.css");
 await validateCssImports("app/match-ui.css");
 
+const [labStructure, matchStructure, responseStructure, layoutStructure] = await Promise.all([
+  read("app/lab.css"),
+  read("app/match-ui.css"),
+  read("app/response-window.css"),
+  read("app/layout.tsx"),
+]);
+
+assertOrdered(labStructure, [
+  '@import "./lab-legacy.css";',
+  '@import "./board-layout.css";',
+  '@import "./board-tuning.css";',
+  '@import "./lab-overrides.css";',
+  '@import "./lab-interaction-responsive.css";',
+], "app/lab.css cascade");
+
+assertOrdered(matchStructure, [
+  '@import "./command-bar-fixes.css";',
+  '@import "./match-ui-guard.css";',
+  '@import "./response-window.css";',
+  '@import "./card-list-scrollviews.css";',
+  '@import "./card-list-grid-layout.css";',
+  '@import "./card-list-grid-fit.css";',
+  '@import "./decision-lane-position.css";',
+  '@import "./target-banner-anchor.css";',
+  '@import "./hero-inspector-fix.css";',
+  '/* === HERO INSPECTOR CLEANUP === */',
+  '/* === MATCH RESULT === */',
+  '/* === MATCH LOG === */',
+  '/* === COMBAT ATTACK HIGHLIGHT === */',
+], "app/match-ui.css cascade");
+
+assertOrdered(responseStructure, [
+  '/* === SETUP HEADING',
+  '/* === RESPONSE WINDOW === */',
+], "app/response-window.css cascade");
+
+assertOrdered(layoutStructure, [
+  'import "./globals.css";',
+  'import "./match-ui.css";',
+  'import "./online-match-runtime.css";',
+  'import MatchUiGuard from "./match-ui-guard";',
+  'import MatchUiRuntime from "./match-ui-runtime";',
+  '<MatchUiGuard />',
+  '<MatchUiRuntime />',
+], "app/layout.tsx runtime order");
+
 for (const path of ["app/page.tsx", "app/rules-engine/effects.mjs", "app/rules-engine/engine.mjs"]) {
   const source = await read(path);
   if (/\.\.\.sourceId\b/.test(source)) fail(`${path} contains the malformed legacy ...sourceId shorthand.`);
@@ -92,7 +147,7 @@ for (const path of ["app/page.tsx", "app/rules-engine/effects.mjs", "app/rules-e
 
 notes.push(`${scriptFiles.length} reusable executable scripts remain under scripts/`);
 notes.push(`${workflowFiles.length} canonical GitHub workflow(s) remain`);
-notes.push("runtime/build source is canonical; no source-mutating migration or patch chain is executed");
+notes.push("runtime/build source and presentation cascade are canonical; no mirror or source-mutating patch chain is executed");
 
 if (failures.length) {
   console.error("Project maintenance checks failed:\n" + failures.map((item) => ` - ${item}`).join("\n"));

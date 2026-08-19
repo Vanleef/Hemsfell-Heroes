@@ -2,11 +2,12 @@
   "name": "hemsfell-heroes",
   "version": "0.1.0",
   "private": true,
-  "engines": {"node": ">=22.13.0"},
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "install:ci": "bash scripts/install-ci.sh",
-    "verify:frontend-structure": "node scripts/verify-frontend-structure.mjs",
-    "prepare:project": "node scripts/project-maintenance.mjs && npm run verify:frontend-structure",
+    "prepare:project": "node scripts/project-maintenance.mjs",
     "rules:migrate": "npm run prepare:project",
     "predev": "npm run prepare:project",
     "dev": "next dev -H 0.0.0.0",
@@ -36,8 +37,30 @@
     "ai:calibrate:benchmark": "npm run ai:runtime:build && node .ai-runtime/scripts/ai-calibration.js --difficulty=Easy,Normal,Hard --seed=20260818 --require=Easy:overextension:0.8,Normal:low-life:0.8 --out=/tmp/hemsfell-ai-benchmark",
     "ai:selfplay": "npm run ai:runtime:build && node .ai-runtime/scripts/ai-selfplay.js"
   },
-  "dependencies": {"@vercel/blob":"2.7.0","drizzle-orm":"0.45.2","next":"16.2.6","pdfjs-dist":"6.2.108","react":"19.2.6","react-dom":"19.2.6"},
-  "devDependencies": {"@cloudflare/vite-plugin":"1.37.1","@tailwindcss/postcss":"4.2.1","@types/node":"22.19.19","@types/react":"19.2.14","@types/react-dom":"19.2.3","@vitejs/plugin-react":"6.0.2","@vitejs/plugin-rsc":"0.5.26","drizzle-kit":"0.31.10","eslint":"9.39.4","eslint-config-next":"16.2.6","typescript":"5.9.3","vinext":"0.0.50","vite":"8.0.13","wrangler":"4.92.0"},
+  "dependencies": {
+    "@vercel/blob": "2.7.0",
+    "drizzle-orm": "0.45.2",
+    "next": "16.2.6",
+    "pdfjs-dist": "6.2.108",
+    "react": "19.2.6",
+    "react-dom": "19.2.6"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "1.37.1",
+    "@tailwindcss/postcss": "4.2.1",
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "@vitejs/plugin-rsc": "0.5.26",
+    "drizzle-kit": "0.31.10",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.2.6",
+    "typescript": "5.9.3",
+    "vinext": "0.0.50",
+    "vite": "8.0.13",
+    "wrangler": "4.92.0"
+  },
   "type": "module",
   "displayName": "Hemsfell Heroes"
 }
