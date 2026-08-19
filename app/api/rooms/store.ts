@@ -36,6 +36,8 @@ const hasSupabaseStore = () => Boolean(privateSupabaseKey() && supabaseUrlCandid
 const hasBlobStore = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 const cloneMemory = (id: string) => structuredClone(memoryRooms.get(id) ?? null);
 const unavailable = () => new Error("Multiplayer storage unavailable. Configure a valid Supabase project URL plus SUPABASE_SERVICE_ROLE_KEY/SUPABASE_SECRET_KEY, or a working BLOB_READ_WRITE_TOKEN.");
+const staleRevision = () => new Error("stale room revision");
+const isStaleRevision = (error: unknown) => error instanceof Error && error.message === "stale room revision";
 const roomPath = (id: string) => `multiplayer-rooms/${id}.json`;
 const SUPABASE_ROOM_BUCKET = "hemsfell-multiplayer-rooms";
 const supabaseRoomObjectPath = (id: string) => `rooms/${id}.json`;
@@ -62,9 +64,6 @@ async function resolveSupabaseConfig(): Promise<SupabaseConfig> {
     const failures: string[] = [];
     for (const url of candidates) {
       try {
-        // PostgREST root is a cheap project-health probe. A valid project/key
-        // combination responds here even if multiplayer_rooms is not created
-        // yet; that lets us distinguish a bad project URL from a missing table.
         const response = await fetch(`${url}/rest/v1/`, {
           method: "GET",
           cache: "no-store",
@@ -112,7 +111,7 @@ async function writeSupabase(room: Room) {
   const expectedRevision = room.revision - 1;
   const response = await supabase(`multiplayer_rooms?id=eq.${encodeURIComponent(room.id)}&revision=eq.${expectedRevision}`, { method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify({ payload: JSON.stringify(room), revision: room.revision, updated_at: new Date().toISOString() }) });
   const rows = await response.json() as unknown[];
-  if (!rows.length) throw new Error("stale room revision");
+  if (!rows.length) throw staleRevision();
 }
 
 async function supabaseStorage(path: string, init: RequestInit = {}) {
@@ -148,10 +147,12 @@ async function readSupabaseStorageRoom(id: string): Promise<Room | null> {
 
 async function writeSupabaseStorageRoom(room: Room) {
   await ensureSupabaseRoomBucket();
-  if (room.revision > 0) {
-    const current = await readSupabaseStorageRoom(room.id);
+  const current = await readSupabaseStorageRoom(room.id);
+  if (room.revision === 0) {
+    if (current) throw staleRevision();
+  } else {
     const expectedRevision = room.revision - 1;
-    if (!current || Number(current.revision) !== expectedRevision) throw new Error("stale room revision");
+    if (!current || Number(current.revision) !== expectedRevision) throw staleRevision();
   }
   const objectPath = supabaseRoomObjectPath(room.id).split("/").map(encodeURIComponent).join("/");
   const response = await supabaseStorage(`object/${encodeURIComponent(SUPABASE_ROOM_BUCKET)}/${objectPath}`, {
@@ -167,6 +168,10 @@ async function readBlob(id: string) {
   return result?.statusCode === 200 ? JSON.parse(await new Response(result.stream).text()) as Room : null;
 }
 async function writeBlob(room: Room) {
+  const current = await readBlob(room.id);
+  if (room.revision === 0) {
+    if (current) throw staleRevision();
+  } else if (!current || Number(current.revision) !== room.revision - 1) throw staleRevision();
   await put(roomPath(room.id), JSON.stringify(room), { access: "private", addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 0, contentType: "application/json" });
 }
 
@@ -174,56 +179,85 @@ export async function readRoom(id: string): Promise<Room | null> {
   if (useMemoryStore()) return cloneMemory(id);
 
   const failures: unknown[] = [];
+  const candidates: Array<{ source: "table" | "storage" | "blob"; priority: number; room: Room }> = [];
   let attemptedStore = false;
 
   if (hasSupabaseStore()) {
+    attemptedStore = true;
     try {
       const room = await readSupabase(id);
-      attemptedStore = true;
-      if (room) return room;
+      if (room) candidates.push({ source: "table", priority: 3, room });
     } catch (error) {
       failures.push(error);
-      console.warn("[rooms] Supabase table read unavailable; checking Supabase Storage fallback.", error);
+      console.warn("[rooms] Supabase table read unavailable; checking fallbacks.", error);
     }
-
     try {
       const room = await readSupabaseStorageRoom(id);
-      attemptedStore = true;
-      if (room) return room;
+      if (room) candidates.push({ source: "storage", priority: 2, room });
     } catch (error) {
       failures.push(error);
-      console.warn("[rooms] Supabase unavailable; reading from Blob fallback.", error);
+      console.warn("[rooms] Supabase Storage room read unavailable; checking Blob fallback.", error);
     }
   }
 
   if (hasBlobStore()) {
+    attemptedStore = true;
     try {
       const room = await readBlob(id);
-      attemptedStore = true;
-      if (room) return room;
+      if (room) candidates.push({ source: "blob", priority: 1, room });
     } catch (error) {
       failures.push(error);
       console.warn("[rooms] Blob room read unavailable.", error);
     }
   }
 
-  // A room may live only in a fallback store after a transient write failure.
-  // If any configured store could not be checked, returning 404 would be a
-  // false "not found" and would invalidate a still-valid invitation.
+  if (candidates.length) {
+    /* A fallback can legitimately be newer after a transient primary outage.
+       Never return the first copy found: that can roll a live room backwards. */
+    candidates.sort((a, b) => Number(b.room.revision || 0) - Number(a.room.revision || 0) || b.priority - a.priority);
+    const winner = candidates[0];
+    const sameRevision = candidates.filter((candidate) => Number(candidate.room.revision) === Number(winner.room.revision));
+    if (sameRevision.length > 1 && sameRevision.some((candidate) => JSON.stringify(candidate.room) !== JSON.stringify(winner.room))) {
+      console.warn(`[rooms] divergent room copies at revision ${winner.room.revision}; using ${winner.source} precedence.`);
+    }
+    return winner.room;
+  }
+
+  // If a configured backend could not be checked, a 404 would be a false
+  // negative for a room that may still exist there.
   if (failures.length) throw failures[failures.length - 1];
   if (attemptedStore) return null;
   throw unavailable();
 }
+
 export async function writeRoom(room: Room) {
-  if (useMemoryStore()) { memoryRooms.set(room.id, structuredClone(room)); return; }
+  if (useMemoryStore()) {
+    const current = memoryRooms.get(room.id);
+    if (room.revision === 0 ? !!current : !current || Number(current.revision) !== room.revision - 1) throw staleRevision();
+    memoryRooms.set(room.id, structuredClone(room));
+    return;
+  }
   if (hasSupabaseStore()) {
-    try { return await writeSupabase(room); }
-    catch (error) {
-      console.warn("[rooms] Supabase table unavailable; trying Supabase Storage fallback.", error);
-      try { return await writeSupabaseStorageRoom(room); }
-      catch (storageError) {
+    try {
+      return await writeSupabase(room);
+    } catch (error) {
+      if (isStaleRevision(error)) {
+        /* A stale primary can be an old copy left behind after a previous
+           fallback write. Only fall through when it is provably behind the
+           revision this write was based on. A primary at/above the expected
+           revision means another request won the race and must be preserved. */
+        const expectedRevision = room.revision - 1;
+        let primary: Room | null = null;
+        try { primary = await readSupabase(room.id); } catch { throw error; }
+        if (primary && Number(primary.revision) >= expectedRevision) throw error;
+        console.warn("[rooms] Supabase table is behind the fallback room; continuing with fallback CAS.");
+      } else console.warn("[rooms] Supabase table unavailable; trying Supabase Storage fallback.", error);
+      try {
+        return await writeSupabaseStorageRoom(room);
+      } catch (storageError) {
+        if (isStaleRevision(storageError)) throw storageError;
         if (!hasBlobStore()) throw storageError;
-        console.warn("[rooms] Supabase unavailable; writing to Blob fallback.", storageError);
+        console.warn("[rooms] Supabase Storage unavailable; writing to Blob fallback.", storageError);
       }
     }
   }
@@ -233,19 +267,34 @@ export async function writeRoom(room: Room) {
 
 type SecretZone = "hand" | "deck" | "extraDeck";
 const hiddenCard = (index: number) => ({ id: `hidden-${index}`, name: "Carta oculta", type: "Feitiço", cost: 0, text: "", tags: [], image: "", hero: false, imageCard: false, revealed: false });
+const visibleTo = (card: any, viewer: 0 | 1) => card?.revealed === true && (!Array.isArray(card.revealedTo) || card.revealedTo.includes(viewer));
 function publicGameView(room: Room, role: RoomRole) {
   if (!room.game) return null;
-  const game = structuredClone(room.game), viewer = role === "host" ? 0 : 1, opponent = game.players?.[1 - viewer];
+  const game = structuredClone(room.game), viewer = (role === "host" ? 0 : 1) as 0 | 1, opponent = game.players?.[1 - viewer];
   if (opponent) {
-    opponent.hand = (opponent.hand || []).map((card: any, index: number) => card?.revealed === true ? card : hiddenCard(index));
+    opponent.hand = (opponent.hand || []).map((card: any, index: number) => visibleTo(card, viewer) ? card : hiddenCard(index));
     let publicTop = true;
     opponent.deck = (opponent.deck || []).map((card: any, index: number) => {
-      publicTop = publicTop && card?.revealed === true;
+      publicTop = publicTop && visibleTo(card, viewer);
       return publicTop ? card : hiddenCard(index);
     });
     opponent.extraDeck = (opponent.extraDeck || []).map((_: unknown, index: number) => hiddenCard(index));
   }
-  if (game.pendingDecision?.kind === "investigate-selection" && game.pendingDecision.owner !== viewer && game.pendingDecision.effect) delete game.pendingDecision.effect.cards;
+  const pendingDecisionOwner = Number(game.pendingDecision?.owner ?? game.pendingDecision?.context?.decisionOwner);
+  if (game.pendingDecision && pendingDecisionOwner !== viewer) {
+    /* A future decision type may carry hand/deck candidates, marker metadata or
+       other private context. The non-owner only needs to know that the opponent
+       is choosing; whitelist that minimal shape instead of chasing every kind. */
+    game.pendingDecision = {
+      kind: "opponent-choice",
+      owner: pendingDecisionOwner,
+      effect: {},
+      context: {},
+      targetSteps: [],
+      sourceName: "Decisão do oponente",
+      ...(Number.isFinite(Number(game.pendingDecision.deadline)) ? { deadline: game.pendingDecision.deadline } : {}),
+    };
+  }
   if (game.onlineCombat) game.onlineCombat.interaction = onlineCombatInteractionView(game, viewer);
   return game;
 }
