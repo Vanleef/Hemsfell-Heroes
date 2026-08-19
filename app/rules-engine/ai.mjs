@@ -1,5 +1,6 @@
 import { cardPlayTargetPolicy, isValidTarget } from "./targeting.mjs";
 import { hasSubtype } from "./subtypes.mjs";
+import { canEvolveHero } from "./hero-evolution.mjs";
 
 const DIFFICULTY = Object.freeze({
   "Fácil": { cardBudget: 1, responseBias: 0.25, attackBias: 0.68 },
@@ -290,6 +291,7 @@ export function buildAIActionCandidates(state, owner, difficulty = "Normal") {
   if (state.active !== owner) return [];
   const entry = state.players[owner], candidates = [];
   if (state.phase === "principal") {
+    if (canEvolveHero(state, owner)) candidates.push({ type: "evolveHero", owner });
     for (const source of permanentUnits(entry)) {
       const abilities = (source.abilities || []).filter((ability) => ability.trigger === "activated");
       if (Number(source.page) === 134 || normalized(source.name) === "cobra dor") {

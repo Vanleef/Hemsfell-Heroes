@@ -1,0 +1,118 @@
+/* Responsive fit tuning for multi-row card choice popups.
+   Card art scales down progressively as list size grows so more cards remain
+   fully visible before internal scrolling is required. */
+
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) .visual-card-choice-grid:has(> .visual-card-choice:nth-child(9)) {
+  --choice-card-width: clamp(4.55rem, 6.65cqw, 5.55rem) !important;
+  --choice-gap-x: clamp(.34rem, .55cqw, .5rem) !important;
+  --choice-gap-y: clamp(.22rem, .38cqh, .34rem) !important;
+}
+
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) .visual-card-choice-grid:has(> .visual-card-choice:nth-child(13)) {
+  --choice-card-width: clamp(4.15rem, 6.05cqw, 5rem) !important;
+  --choice-gap-x: clamp(.3rem, .5cqw, .44rem) !important;
+  --choice-gap-y: clamp(.19rem, .32cqh, .29rem) !important;
+}
+
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) .visual-card-choice-grid:has(> .visual-card-choice:nth-child(17)) {
+  --choice-card-width: clamp(3.8rem, 5.55cqw, 4.55rem) !important;
+  --choice-gap-x: clamp(.26rem, .44cqw, .39rem) !important;
+  --choice-gap-y: clamp(.17rem, .28cqh, .25rem) !important;
+}
+
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) .visual-card-choice-grid:has(> .visual-card-choice:nth-child(25)) {
+  --choice-card-width: clamp(3.45rem, 5cqw, 4.05rem) !important;
+  --choice-gap-x: clamp(.22rem, .38cqw, .34rem) !important;
+  --choice-gap-y: clamp(.14rem, .24cqh, .22rem) !important;
+}
+
+.screen-game .engine-decision-panel:is(
+  [data-decision-kind="search"],
+  [data-decision-kind="zone-card"],
+  [data-decision-kind="grave-resurrect"],
+  [data-decision-kind="grave-to-hand-many"],
+  [data-decision-kind="grave-to-hand-and-banish"],
+  [data-decision-kind="hand-discard-one"],
+  [data-decision-kind="hand-to-deck-bottom"],
+  [data-decision-kind="hand-limit-discard"],
+  [data-decision-kind="investigate-selection"]
+) .visual-card-choice-grid:has(> .visual-card-choice:nth-child(33)) {
+  --choice-card-width: clamp(3.1rem, 4.45cqw, 3.65rem) !important;
+  --choice-gap-x: clamp(.18rem, .31cqw, .28rem) !important;
+  --choice-gap-y: clamp(.11rem, .2cqh, .18rem) !important;
+}
+
+/* Hand-limit list follows the same fit curve. */
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"]:has(> :nth-child(9)) {
+  --choice-card-width: clamp(4.55rem, 6.65cqw, 5.55rem) !important;
+}
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"]:has(> :nth-child(13)) {
+  --choice-card-width: clamp(4.15rem, 6.05cqw, 5rem) !important;
+}
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"]:has(> :nth-child(17)) {
+  --choice-card-width: clamp(3.8rem, 5.55cqw, 4.55rem) !important;
+}
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"]:has(> :nth-child(25)) {
+  --choice-card-width: clamp(3.45rem, 5cqw, 4.05rem) !important;
+}
+.screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"]:has(> :nth-child(33)) {
+  --choice-card-width: clamp(3.1rem, 4.45cqw, 3.65rem) !important;
+}
+
+@media (max-height: 42rem) {
+  .screen-game .engine-decision-panel:is(
+    [data-decision-kind="search"],
+    [data-decision-kind="zone-card"],
+    [data-decision-kind="grave-resurrect"],
+    [data-decision-kind="grave-to-hand-many"],
+    [data-decision-kind="grave-to-hand-and-banish"],
+    [data-decision-kind="hand-discard-one"],
+    [data-decision-kind="hand-to-deck-bottom"],
+    [data-decision-kind="hand-limit-discard"],
+    [data-decision-kind="investigate-selection"]
+  ) .visual-card-choice-grid:has(> .visual-card-choice:nth-child(13)),
+  .screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"]:has(> :nth-child(13)) {
+    --choice-card-width: clamp(3.55rem, 5.25cqw, 4.3rem) !important;
+    --choice-gap-y: clamp(.1rem, .18cqh, .17rem) !important;
+  }
+}

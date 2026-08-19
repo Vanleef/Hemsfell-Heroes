@@ -11,19 +11,25 @@ test("Xarqiroth has a targetless conditional First Act", () => {
   assert.deepEqual(enter.effects, [{ type: "draw", amount: 2 }]);
   assert.equal(enter.effects.some(effect => effect.target), false);
 });
+
 test("generated Images prefer compiled catalog and emit entry events", () => {
   const source = readFileSync(new URL("../app/rules-engine/effects.mjs", import.meta.url), "utf8");
   assert.match(source, /const catalog = \[\.\.\.\(state\.cardCatalog \|\| \[\]\), \.\.\.\(entry\.extraDeck \|\| \[\]\)\]/);
   assert.match(source, /queueEvent\(state, \{ type: "onEnter", owner, sourceId: copy\.uid/);
   assert.match(source, /if \(base\.type === "Criatura"\) queueEvent\(state, \{ type: "onCreatureEnter"/);
 });
+
 test("Gimble level-two UI remains visibly unlocked", () => {
   const page = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /unlockLevel=Math\.min\(3,slot\+1\),locked=player\.level<unlockLevel/);
   assert.match(page, /locked\?"":"is-unlocked"/);
 });
-test("response window uses dark backdrop and right side lane", () => {
-  const css = readFileSync(new URL("../app/response-window-side.css", import.meta.url), "utf8");
-  assert.match(css, /\.response-overlay\{[\s\S]*position:fixed!important;[\s\S]*inset:0!important;[\s\S]*background:rgba\(2,5,10,\.72\)!important;/);
-  assert.match(css, /\.response-dialog\{[\s\S]*right:clamp\([\s\S]*left:auto!important;[\s\S]*width:fit-content!important;/);
+
+test("response window uses dark backdrop and opponent upper-right rail", () => {
+  const css = readFileSync(new URL("../app/response-window.css", import.meta.url), "utf8");
+  const runtime = readFileSync(new URL("../app/match-ui-runtime.tsx", import.meta.url), "utf8");
+  assert.match(css, /\.screen-game \.response-overlay\{[\s\S]*position:fixed!important;[\s\S]*inset:0!important;[\s\S]*background:rgba\(2,5,10,\.72\)!important;/);
+  assert.match(css, /\.screen-game \.response-overlay \.response-dialog\{[\s\S]*right:var\(--response-opponent-piles-right[\s\S]*left:auto!important;[\s\S]*width:fit-content!important;/);
+  assert.match(runtime, /--response-opponent-piles-right/);
+  assert.match(runtime, /responseAnchor = anchorValid \? "opponent-upper-right-piles" : "upper-right-fallback"/);
 });

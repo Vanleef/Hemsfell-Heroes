@@ -88,3 +88,11 @@
     opacity: .9;
   }
 }
+
+/* Field interaction safeguard: a turned permanent must never offer an
+ * activated-effect control. This also covers legacy/special UI paths that do
+ * not route through canActivateCard yet. */
+.screen-game .card-frame:has(> .original-card.is-exhausted) > .card-frame-activation {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}

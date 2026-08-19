@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import rawCards from "./cards.generated.json";
+import { abilitiesForLevel, getExplicitCardRule } from "./rules-engine/card-rules.mjs";
 
 type HeroMeta = {
   faction: "Natureza" | "Caos" | "Divino" | "Ordem" | "Neutro";
@@ -35,6 +37,115 @@ const createText = (tag: string, className: string, text: string) => {
 const setTextIfChanged = (node: HTMLElement | null, text: string) => {
   if (node && node.textContent !== text) node.textContent = text;
 };
+
+const normalizeChoiceText = (value: unknown) => String(value ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-zA-Z0-9]+/g, " ").trim().toLowerCase();
+const signedStat = (value: number) => value > 0 ? `+${value}` : `${value}`;
+const durationSummary = (effect: any) => effect?.duration === "turn" ? " até o fim do turno" : effect?.duration === "permanent" ? " permanentemente" : effect?.duration === "untilNextTurn" ? " até o próximo turno" : "";
+
+const summarizeChoiceEffect = (effect: any): string => {
+  if (!effect || typeof effect !== "object") return "";
+  const amount = Number(effect.amount ?? 1);
+  switch (effect.type) {
+    case "modifyStats": {
+      const attack = Number(effect.attack || 0), health = Number(effect.health || 0), duration = durationSummary(effect);
+      if (attack && health) return `${signedStat(attack)} Ofensividade e ${signedStat(health)} Vitalidade${duration}`;
+      if (attack) return `${signedStat(attack)} Ofensividade${duration}`;
+      if (health) return `${signedStat(health)} Vitalidade${duration}`;
+      return "Ajustar atributos";
+    }
+    case "grantKeyword": return `Conceder ${effect.keyword || "palavra-chave"}${durationSummary(effect)}`;
+    case "draw": return `Comprar ${amount} carta${amount === 1 ? "" : "s"}`;
+    case "heal": return `Restaurar ${amount} de vida`;
+    case "damage": return `Causar ${amount} de dano`;
+    case "mill": return `Triturar ${amount} carta${amount === 1 ? "" : "s"}`;
+    case "investigate": return `Investigar ${amount} carta${amount === 1 ? "" : "s"} do ${effect.target === "opponentDeck" ? "deck adversário" : "seu deck"}`;
+    case "createImage": return `Criar ${effect.name || "uma Imagem"}`;
+    case "createImagesAcrossFields": return `Criar ${amount} ${effect.name || "Imagem"}${amount === 1 ? "" : "s"}`;
+    case "levelHero": return "Subir o herói de nível";
+    case "payLifeCost": return `Pagar ${amount} de vida`;
+    case "loseLife": return `Perder ${amount} de vida`;
+    case "search": {
+      const kind = effect.name || effect.subtype || (Array.isArray(effect.types) ? effect.types.join(" ou ") : "carta");
+      const cost = effect.minCost != null ? ` de custo ${effect.minCost} ou mais` : effect.maxCost != null ? ` de custo até ${effect.maxCost}` : "";
+      return `Buscar ${amount} ${kind}${cost}`;
+    }
+    case "gainEnergy": return `Ganhar ${amount} de energia${effect.destination === "reserve" ? " de Reserva" : ""}`;
+    case "fillReserve": return "Preencher a Reserva";
+    case "tap": return "Virar o alvo";
+    case "ready": return "Desvirar o alvo";
+    case "destroy": return effect.target === "self" ? "Destruir esta carta" : "Destruir o alvo";
+    case "returnToHand": return "Retornar o alvo à mão";
+    case "moveTopToBottom": return "Mover o topo para o fundo";
+    case "addMarker": return `Adicionar ${amount} marcador${amount === 1 ? "" : "es"}${effect.marker ? ` de ${effect.marker}` : ""}`;
+    case "removeMarker": return `Remover ${amount} marcador${amount === 1 ? "" : "es"}`;
+    case "selectFirstAct": return `Ativar Primeiro Ato${effect.name ? ` de ${effect.name}` : ""}`;
+    default: return "";
+  }
+};
+
+type ChoiceSet = { choices: any[][]; labels?: string[] };
+type CardChoiceSummary = { name: string; normalizedName: string; sets: ChoiceSet[] };
+
+const collectChoiceSets = (effects: any[] = [], output: ChoiceSet[] = []) => {
+  for (const effect of effects || []) {
+    if (!effect || typeof effect !== "object") continue;
+    if (Array.isArray(effect.choices) && effect.choices.length && effect.choices.every((choice: unknown) => Array.isArray(choice))) {
+      output.push({ choices: effect.choices, labels: Array.isArray(effect.labels) ? effect.labels : undefined });
+    }
+    if (Array.isArray(effect.effects)) collectChoiceSets(effect.effects, output);
+    for (const branch of effect.branches || []) if (Array.isArray(branch?.effects)) collectChoiceSets(branch.effects, output);
+  }
+  return output;
+};
+
+const cardChoiceSummaries: CardChoiceSummary[] = (rawCards as Array<{ id: string; name: string }>).flatMap((card) => {
+  const rule = getExplicitCardRule(card.id);
+  const abilities = abilitiesForLevel(rule, 3) || [];
+  const sets = abilities.flatMap((ability: any) => collectChoiceSets(ability?.effects || []));
+  return sets.length ? [{ name: card.name, normalizedName: normalizeChoiceText(card.name), sets }] : [];
+}).sort((a, b) => b.normalizedName.length - a.normalizedName.length);
+
+let recentChoiceSourceName = "";
+
+function rememberChoiceSource(event: Event) {
+  const target = event.target instanceof Element ? event.target : null;
+  if (!target?.closest(".screen-game")) return;
+  const directCard = target.closest<HTMLElement>(".original-card");
+  const activationCard = target.closest<HTMLElement>(".card-frame-activation")?.closest<HTMLElement>(".card-frame")?.querySelector<HTMLElement>(".original-card");
+  const source = directCard || activationCard;
+  const name = source?.getAttribute("aria-label")?.trim();
+  if (name) recentChoiceSourceName = name;
+}
+
+function enhanceDecisionChoiceSummaries() {
+  document.querySelectorAll<HTMLElement>(".engine-decision-panel").forEach((panel) => {
+    const buttons = Array.from(panel.querySelectorAll<HTMLButtonElement>("button")).filter((button) => {
+      const number = button.querySelector<HTMLElement>(":scope > b")?.textContent?.trim() || "";
+      return /^\d+$/.test(number) && !!button.querySelector<HTMLElement>(":scope > span");
+    });
+    if (!buttons.length) return;
+
+    const panelText = normalizeChoiceText(panel.textContent);
+    const recentSource = normalizeChoiceText(recentChoiceSourceName);
+    const card = cardChoiceSummaries.find((candidate) => candidate.normalizedName && panelText.includes(candidate.normalizedName))
+      || cardChoiceSummaries.find((candidate) => recentSource && candidate.normalizedName === recentSource);
+    if (!card) return;
+    const set = card.sets.find((candidate) => candidate.choices.length === buttons.length);
+    if (!set) return;
+
+    panel.dataset.choiceSource = card.name;
+    buttons.forEach((button, index) => {
+      const explicit = set.labels?.[index]?.trim();
+      const generated = (set.choices[index] || []).map(summarizeChoiceEffect).filter(Boolean).join(" · ");
+      const summary = explicit || generated;
+      if (!summary) return;
+      setTextIfChanged(button.querySelector<HTMLElement>(":scope > span"), summary);
+      button.title = summary;
+      button.dataset.effectSummary = "true";
+      button.dataset.effectDensity = summary.length > 78 ? "dense" : summary.length > 44 ? "compact" : "normal";
+    });
+  });
+}
 
 function ensureLandingGuide() {
   const copy = document.querySelector<HTMLElement>(".landing-copy");
@@ -175,13 +286,8 @@ function layoutTargetBannerInSafeLane() {
 
   if (!commandBars.length || !creatureSlots.length || terrains.length < 2) return;
 
-  // Horizontal safe lane: begins immediately after the command bars and ends
-  // at the outer edge of the creature-space group. Because this lives in the
-  // center row, it never covers the creature cards themselves.
   const leftPx = Math.max(...commandBars.map((rect) => rect.right));
   const rightPx = Math.max(...creatureSlots.map((rect) => rect.right));
-
-  // Vertical safe lane: exactly the free interval between both Cruel Terrains.
   const topPx = terrains[0].bottom;
   const bottomPx = terrains[terrains.length - 1].top;
 
@@ -223,7 +329,7 @@ function layoutHandLimitChoices() {
   const availableHeight = Math.max(1, (confirmRect ? confirmRect.top : dialogRect.bottom) - gridRect.top - Math.max(8, dialogRect.height * .025));
   const count = items.length;
   const gap = Math.max(6, Math.min(14, availableWidth * .018));
-  const itemAspect = .64; // selectable tile width / height (card art + caption/padding)
+  const itemAspect = .64;
 
   let bestColumns = 1;
   let bestWidth = 0;
@@ -268,6 +374,7 @@ export default function MatchUiGuard() {
       ensureLandingGuide();
       enhanceDeckPickers();
       enhanceMatchResult();
+      enhanceDecisionChoiceSummaries();
       layoutTargetBannerInSafeLane();
       layoutHandLimitChoices();
     };
@@ -282,6 +389,8 @@ export default function MatchUiGuard() {
       if (event.target instanceof HTMLSelectElement && event.target.closest(".deck-picker")) scheduleSync();
     };
     document.addEventListener("change", onChange, true);
+    document.addEventListener("pointerdown", rememberChoiceSource, true);
+    document.addEventListener("dragstart", rememberChoiceSource, true);
     window.addEventListener("resize", scheduleSync);
     const observer = new MutationObserver(scheduleSync);
     observer.observe(document.body, { childList: true, subtree: true });
@@ -290,6 +399,8 @@ export default function MatchUiGuard() {
     return () => {
       window.clearInterval(responseTimeoutTimer);
       document.removeEventListener("change", onChange, true);
+      document.removeEventListener("pointerdown", rememberChoiceSource, true);
+      document.removeEventListener("dragstart", rememberChoiceSource, true);
       window.removeEventListener("resize", scheduleSync);
       observer.disconnect();
       delete document.body.dataset.matchActive;

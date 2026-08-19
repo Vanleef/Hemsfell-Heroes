@@ -137,11 +137,81 @@ const validateVengeance = (state, command) => {
   const target = targetId ? unitById(state, targetId) : null;
   if (!target || !(target.damagedOwnersThisTurn || []).includes(command.owner)) throw new RulesViolation("vengeance-target-must-have-damaged-controller-this-turn");
 };
+const validateProtectedCreatureSlot = (state, command) => {
+  if (command.type !== "playCard" || command.placementZone === "support") return;
+  const card = cardInHand(state, command);
+  if (!card || card.type !== "Criatura" || !Number.isInteger(command.slot)) return;
+  const occupied = state.players?.[command.owner]?.board?.find((unit) => unit.slot === command.slot);
+  if (occupied?.cannotBeDestroyedForSpace) throw new RulesViolation("protected-space-occupant");
+};
+const hasActivatedAbility = (state, unit) => {
+  if ((unit?.abilities || []).some((ability) => ability.trigger === "activated")) return true;
+  const printed = (state.cardCatalog || []).find((card) => card.page === unit?.page || card.id === unit?.id);
+  return !!printed?.abilities?.some((ability) => ability.trigger === "activated");
+};
+const syncEntryTurnActivationLocks = (state) => {
+  for (const entry of state.players || []) {
+    for (const unit of [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])]) {
+      const activated = hasActivatedAbility(state, unit);
+      if (!activated) { delete unit.activationLockedOnEntry; continue; }
+      unit.activationLockedOnEntry = unit.enteredRound === state.round;
+      if (unit.type !== "Criatura" && unit.activationLockedOnEntry) unit.summoning = true;
+    }
+  }
+};
+const syncTemporarySuffocatedState = (state) => {
+  for (const entry of state.players || []) {
+    for (const unit of [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])]) {
+      const hasTemporarySuffocated = (unit.temporaryTags || []).some((tag) => fold(tag).includes("sufocado"));
+      if (hasTemporarySuffocated) {
+        unit.suffocated = true;
+        unit.suffocatedUntilTurnEnd = true;
+      } else if (unit.suffocatedUntilTurnEnd) {
+        delete unit.suffocatedUntilTurnEnd;
+        if (!(unit.suffocatedBySources || []).length) unit.suffocated = false;
+      }
+    }
+  }
+};
+const resolveRasmusCoffeeThreshold = (state) => {
+  for (const entry of state.players || []) {
+    if (entry.heroId !== "rasmus") continue;
+    const coffee = typeof entry.markers === "object" ? Number(entry.markers?.coffee || 0) : 0;
+    if (coffee < 10) continue;
+    const template = (entry.extraDeck || []).find((card) => Number(card.page) === 231 || fold(card.name) === "cafe especial") || (state.cardCatalog || []).find((card) => Number(card.page) === 231 || fold(card.name) === "cafe especial");
+    if (!template) continue;
+    entry.markers = { ...(typeof entry.markers === "object" ? entry.markers : {}), coffee: 0 };
+    state.nextGeneratedId = Number(state.nextGeneratedId || 0) + 1;
+    entry.hand ||= [];
+    entry.hand.push({ ...clone(template), id: `${template.id || "p231"}-generated-coffee-${state.round || 0}-${state.nextGeneratedId}`, generatedImage: true, imageCard: true });
+  }
+};
+const normalizeGeneratedHandImages = (state) => {
+  for (const entry of state.players || []) {
+    entry.hand = (entry.hand || []).map((card) => {
+      if (!card?.generatedImage || !card?.imageCard || !card?.uid) return card;
+      const uniqueId = card.uid;
+      const {
+        uid, slot, enteredRound, attackedThisTurn, attacksThisTurn, summoning, exhausted,
+        damage, bonusAtk, bonusHp, frozen, stunned, suffocated, immobilized, defenseUses,
+        markers, modifiers, grantedKeywords, staticModifiers, activationLockedOnEntry, ...handCard
+      } = card;
+      return { ...handCard, id: uniqueId, generatedImage: true, imageCard: true };
+    });
+    /* Created Images are copies of Extra Deck cards; after a generated spell
+       resolves the copy dissipates instead of becoming a normal grave card. */
+    entry.grave = (entry.grave || []).filter((card) => !card?.generatedImage);
+  }
+};
 const postProcess = (before, after, command) => {
   const snapshot = combatSnapshot(before, command);
   consumeElementalPromise(before, after, command);
   expireElementalPromises(before, after, command);
   recordCombatDamage(after, snapshot);
+  syncTemporarySuffocatedState(after);
+  resolveRasmusCoffeeThreshold(after);
+  normalizeGeneratedHandImages(after);
+  syncEntryTurnActivationLocks(after);
   propagateWeddingRingLinks(before, after);
 };
 const stackResult = (state, trace = [], steps = 0) => ({ state, trace, steps });
@@ -216,6 +286,7 @@ export function executeCommand(rawInputState, rawCommand, options = {}) {
     resolutionState.pendingAction = undefined;
     resolutionState.pendingResponse = null;
     validateVengeance(resolutionState, top.command);
+    validateProtectedCreatureSlot(resolutionState, top.command);
     const resolved = executeCommand(resolutionState, { ...top.command, skipPriority: true }, { ...options, priority: false });
     const state = resolved.state;
 
@@ -239,7 +310,13 @@ export function executeCommand(rawInputState, rawCommand, options = {}) {
     return stackResult(state, [...(resolved.trace || []), "priority:resolve-top"], resolved.steps || 0);
   }
 
+  if (command.type === "activate") {
+    const source = unitById(inputState, command.sourceId);
+    if (source?.exhausted && hasActivatedAbility(inputState, source)) throw new RulesViolation("cannot-tap");
+    if (source?.enteredRound === inputState.round && hasActivatedAbility(inputState, source)) throw new RulesViolation(source.type === "Criatura" ? "summoning-sickness" : "cannot-tap");
+  }
   validateVengeance(inputState, command);
+  validateProtectedCreatureSlot(inputState, command);
   const before = clone(inputState);
   const pendingBefore = command.type === "passPriority" && before.pendingAction ? clone(before.pendingAction) : null;
   const result = executeBase(inputState, command, options);

@@ -1,0 +1,22 @@
+/*
+ * Hemsfell Heroes — match UI stylesheet entry point
+ *
+ * Keep layout.tsx importing this single match stylesheet. New visual fixes
+ * should be added to the existing responsibility file below (or consolidated
+ * here when small) instead of creating another top-level layout import.
+ */
+
+@import "./command-bar-fixes.css";
+@import "./match-ui-guard.css";
+@import "./setup-heading-fixes.css";
+@import "./response-window.css";
+@import "./card-list-scrollviews.css";
+@import "./card-list-grid-layout.css";
+@import "./card-list-grid-fit.css";
+@import "./decision-lane-position.css";
+@import "./target-banner-anchor.css";
+@import "./hero-inspector-fix.css";
+@import "./hero-inspector-cleanup.css";
+@import "./match-result-enhancer.css";
+@import "./match-log.css";
+@import "./styles/match/combat-attack-highlight.css";

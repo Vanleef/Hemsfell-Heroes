@@ -18,16 +18,30 @@ test('authoritative engine declares defeat immediately when own action leaves he
  assert.equal(result.combatAction,null);
 });
 
-test('result screen renders winner hero art and menu actions',()=>{
- const page=fs.readFileSync(new URL('../app/page.tsx',import.meta.url),'utf8');
- assert.match(page,/match-result-art/);
- assert.match(page,/RemoteCardArt page=\{deckById\(game\.players\[game\.winner\]\.heroId\)\.heroPage\}/);
- assert.match(page,/FIM DA PARTIDA/);
- assert.match(page,/>Menu<\/button>/);
+test('result screen renders winner hero art and menu actions through consolidated UI runtime',()=>{
+ const runtime=fs.readFileSync(new URL('../app/match-ui-runtime.tsx',import.meta.url),'utf8');
+ const guard=fs.readFileSync(new URL('../app/match-ui-guard.tsx',import.meta.url),'utf8');
+ assert.match(runtime,/const RESULT_HEROES/);
+ assert.match(runtime,/className="match-result-hero-art"/);
+ assert.match(runtime,/<RemoteCardArt page=\{result\.page\} name=\{result\.name\} priority/);
+ assert.match(runtime,/enhanced-match-result/);
+ assert.match(guard,/result-menu-button/);
+ assert.match(guard,/Voltar ao menu/);
 });
 
 test('match result has responsive dedicated styling',()=>{
- const css=fs.readFileSync(new URL('../app/match-result.css',import.meta.url),'utf8');
- assert.match(css,/grid-template-columns:minmax\(12rem,19rem\) minmax\(0,1fr\)/);
- assert.match(css,/@media\(max-width:680px\)/);
+ const css=fs.readFileSync(new URL('../app/match-result-enhancer.css',import.meta.url),'utf8');
+ assert.match(css,/\.enhanced-match-result\{/);
+ assert.match(css,/\.match-result-hero-art\{/);
+ assert.match(css,/@media \(max-width:760px\),\(max-height:620px\)/);
+});
+
+test('match result overlay remains centered and self-contained above board layout rules',()=>{
+ const css=fs.readFileSync(new URL('../app/match-ui-guard.css',import.meta.url),'utf8');
+ assert.match(css,/Canonical match-result seal/);
+ assert.match(css,/\.screen-game \.hs-board > \.match-result-overlay/);
+ assert.match(css,/position:\s*fixed\s*!important/);
+ assert.match(css,/place-items:\s*center\s*!important/);
+ assert.match(css,/grid-template-areas:[\s\S]*"art eyebrow"[\s\S]*"art actions"/);
+ assert.match(css,/@media \(max-width: 46rem\), \(max-height: 38rem\)/);
 });

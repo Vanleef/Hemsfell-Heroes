@@ -139,7 +139,7 @@ const cleanCardForHiddenZone = (card, metadata = {}) => {
     "temporaryAtk", "temporaryHp", "temporaryTags", "temporarySubtypes", "combatRestrictions", "damageShields",
     "attachedTo", "linkedCreatures", "lastDamagedBy", "damagedOwnersThisTurn", "killedByRepeatSourceId",
     "costModifier", "costModifierExpires", "costModifierExpiresRound", "cardsPlayedAfterSelf", "targetClass", "selected",
-    "effectAppliedRound", "effectAppliedSourceId", "staysExhaustedUntilSpellEffect", "skipNextUntap"
+    "effectAppliedRound", "effectAppliedSourceId", "staysExhaustedUntilSpellEffect", "skipNextUntap", "remainUntilTurnEnd"
   ]) delete copy[key];
   return copy;
 };
@@ -700,7 +700,29 @@ export const defaultEffectHandlers = Object.freeze({
   replaySelectedAbility(state, effect, context) {
     const candidates = (player(state, context.owner).board || []).filter((card) => (!context.replayCandidateIds || context.replayCandidateIds.includes(card.uid || card.id)) && (!effect.selector?.type || card.type === effect.selector.type) && (card.abilities || []).some((ability) => ability.trigger === effect.trigger));
     if (!candidates.length) throw new RulesViolation("ability-not-available");
-    queueDecision(state, { ...effect, choices: candidates.map((card) => [{ type: "selectFirstAct", id: card.uid || card.id, name: card.name }]) }, context, "replay-ability");
+    const chosenId = selectedIds(context)[0];
+    const selected = chosenId ? candidates.find((card) => (card.uid || card.id) === chosenId) : null;
+    if (!selected) {
+      queueDecision(state, { ...effect, choices: candidates.map((card) => [{ type: "selectFirstAct", id: card.uid || card.id, name: card.name }]) }, context, "replay-ability");
+      return;
+    }
+    const copied = selected.abilities.find((ability) => ability.trigger === effect.trigger);
+    if (!copied) throw new RulesViolation("ability-not-available");
+    const replayContext = { ...context, sourceId: selected.uid || selected.id, effectSource: selected, targetIds: [], targetId: undefined };
+    const targetSteps = targetStepsForEffects(copied.effects || []);
+    if (targetSteps.length) {
+      if (!canSelectReplayTargets(state, context.owner, targetSteps)) throw new RulesViolation("ability-not-available");
+      state.pendingDecision = { kind: "targets", owner: context.owner, effect: { replayEffects: copied.effects || [] }, context: replayContext, targetSteps, sourceName: `Primeiro Ato · ${selected.name || "criatura"}` };
+      return;
+    }
+    const sequence = copied.effects || [];
+    for (let index = 0; index < sequence.length; index++) {
+      applyEffect(state, sequence[index], replayContext);
+      if (state.pendingDecision) {
+        state.pendingDecision.continuation = [...(state.pendingDecision.continuation || []), ...sequence.slice(index + 1).reverse().map((nested) => ({ kind: "effect", effect: nested, context: replayContext }))];
+        break;
+      }
+    }
   },
   replayTopGraveAbility(state, effect, context) { const entry = player(state, context.owner); const top = entry.grave.at(-1); const found = top?.abilities?.find((candidate) => candidate.trigger === effect.trigger); if (!found || top.type !== effect.requireType) throw new RulesViolation("ability-not-available"); const replayContext = { ...context, sourceId: top.uid || top.id, effectSource: top }; const copies = effect.doubledByTifon && entry.heroId === "tifon" && (entry.level || 1) >= 3 ? 2 : 1; const sequence = Array.from({ length: copies }, () => found.effects || []).flat(); for (let index = 0; index < sequence.length; index++) { applyEffect(state, sequence[index], replayContext); if (state.pendingDecision) { state.pendingDecision.continuation = [...(state.pendingDecision.continuation || []), ...sequence.slice(index + 1).reverse().map((nested) => ({ kind: "effect", effect: nested, context: replayContext }))]; break; } } },
   repeatDamageUntilDeaths(state, effect, context) { const ids = [...new Set(context.targetIds || [])]; if (ids.length < (effect.minimumSelections || 1) || ids.length > (effect.selections || ids.length)) throw new RulesViolation("invalid-target-count"); const owners = ids.map((id) => state.players.findIndex((entry) => entry.board.some((card) => (card.uid || card.id) === id))); if (owners.some((owner) => owner < 0) || owners.some((owner) => owners.filter((value) => value === owner).length > (effect.maximumPerPlayer || Infinity))) throw new RulesViolation("invalid-target-count"); let deaths = 0; for (let round = 0; round < 100 && deaths < effect.stopAfterDeaths; round++) { const alive = ids.map((id) => findUnit(state, id)).filter(Boolean); if (!alive.length) break; for (const target of alive) target.damage = (target.damage || 0) + effect.amount; for (const target of alive) { const hp = (target.hp || 1) + (target.modifiers || []).reduce((sum, item) => sum + (item.health || 0), 0); if (target.damage >= hp) { const removed = removeFromZones(state, target.uid || target.id); if (removed) { deaths++; if (!removed.card.generatedImage && !removed.card.imageCard) sendToPrintedGraveDestination(player(state, removed.owner), removed.card, { deathCause: "effect" }); } } } } },

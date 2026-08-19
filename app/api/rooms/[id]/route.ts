@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { preserveOpponentSecrets, readRoom, roleFor, roomView, writeRoom } from "../store";
 import { applyRulesCommand, applyTimeout, bothDecksLocked, canSync, deadline, participant, prepareCoin, sanitizeSettings } from "../machine";
+import { shiftOnlineDeadlines } from "../online-clock.mjs";
 import { isBoundedGame, isPlainRecord, isRoomId, readSafeJson } from "../validation";
 
 export const dynamic = "force-dynamic";
@@ -49,17 +50,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     if (body.action === "resume") {
       const awaySince = activeParticipant.disconnectedAt;
-      if (awaySince && room.game && Date.now() < awaySince + 60_000) {
-        const pausedFor = Date.now() - awaySince;
-        if (room.game.turnDeadline) room.game.turnDeadline += pausedFor;
-        if (room.game.pendingResponse?.deadline) room.game.pendingResponse.deadline += pausedFor;
-      }
+      if (!awaySince) return NextResponse.json(roomView(room, true, role), noStore);
+      const resumedAt = Date.now();
+      if (room.game && resumedAt < awaySince + 60_000) shiftOnlineDeadlines(room.game, resumedAt - awaySince);
       activeParticipant.disconnectedAt = null;
       room.revision++;
       await writeRoom(room);
       return NextResponse.json(roomView(room, true, role), noStore);
     }
-    activeParticipant.disconnectedAt = null;
+    if (activeParticipant.disconnectedAt) return NextResponse.json({ error: "resume required", ...roomView(room, true, role) }, { status: 409, ...noStore });
     if (body.action === "select") {
       if (room.status !== "deck-selection") return NextResponse.json({ error: "deck selection is closed" }, { status: 409 });
       const participant = room[role];

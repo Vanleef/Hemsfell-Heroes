@@ -1,0 +1,100 @@
+/* Match history panel: compact, readable and responsive without changing game layout. */
+.test-log{
+  width:clamp(18rem,24vw,24rem)!important;
+  background:linear-gradient(180deg,rgba(5,14,21,.98),rgba(3,9,15,.96))!important;
+  border-left:1px solid rgba(216,174,87,.22)!important;
+  box-shadow:-1.2rem 0 2.8rem rgba(0,0,0,.34)!important;
+  container-type:inline-size;
+}
+.test-log header{
+  position:sticky;
+  top:0;
+  z-index:3;
+  align-items:center;
+  gap:clamp(.5rem,2cqw,.8rem);
+  padding:clamp(.75rem,3cqw,1rem)!important;
+  background:rgba(5,14,21,.97);
+  backdrop-filter:blur(.45rem);
+}
+.test-log header>div{min-width:0}
+.test-log header b{
+  font-size:0!important;
+  line-height:1.1;
+}
+.test-log header b::after{
+  content:"Registro da partida";
+  display:block;
+  color:#f2e3bd;
+  font:800 clamp(.78rem,4cqw,1rem)/1.1 Arial,sans-serif;
+  letter-spacing:.035em;
+}
+.test-log header span{
+  display:block;
+  margin-top:.2rem;
+  font-size:clamp(.58rem,2.7cqw,.72rem)!important;
+  color:#8495a6!important;
+}
+.test-log .metrics{
+  position:sticky;
+  top:clamp(3.45rem,14cqw,4.2rem);
+  z-index:2;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:clamp(.25rem,1.5cqw,.45rem)!important;
+  padding:clamp(.45rem,2cqw,.7rem)!important;
+  background:rgba(4,12,18,.94);
+  border-bottom:1px solid rgba(255,255,255,.06);
+}
+.test-log .metrics span{
+  min-width:0;
+  padding:clamp(.4rem,2cqw,.6rem) .15rem!important;
+  border:1px solid rgba(255,255,255,.055);
+  border-radius:.45rem;
+  background:rgba(15,28,39,.88)!important;
+  font-size:clamp(.5rem,2.35cqw,.64rem)!important;
+  line-height:1.2;
+}
+.test-log .metrics b{font-size:clamp(.86rem,4.3cqw,1.12rem)!important}
+.test-log .events{
+  flex:1;
+  min-height:0;
+  padding:clamp(.3rem,1.8cqw,.55rem) clamp(.55rem,2.5cqw,.85rem)!important;
+  overscroll-behavior:contain;
+  scrollbar-gutter:stable;
+}
+.test-log .events p{
+  margin:0!important;
+  padding:clamp(.52rem,2.5cqw,.72rem) clamp(.4rem,2cqw,.65rem) clamp(.52rem,2.5cqw,.72rem) clamp(1.05rem,4.5cqw,1.35rem)!important;
+  border-bottom:1px solid rgba(255,255,255,.055)!important;
+  color:#b8c3cf!important;
+  font:500 clamp(.62rem,2.9cqw,.78rem)/1.42 Arial,sans-serif!important;
+  overflow-wrap:anywhere;
+}
+.test-log .events p i{
+  left:clamp(.25rem,1.2cqw,.4rem)!important;
+  top:50%!important;
+  transform:translateY(-50%);
+}
+.test-log .events p.phase{color:#e2c576!important;background:rgba(215,174,87,.055)}
+.test-log .events p.system{color:#9fc7d3!important}
+.test-log .events p.danger{color:#efa0a0!important;background:rgba(190,55,55,.055)}
+.test-log .events p.priority{color:#b7a8ec!important;background:rgba(106,83,170,.055)}
+.test-log .events p:last-child{border-bottom:0!important}
+
+@container (max-width:20rem){
+  .test-log .metrics{grid-template-columns:repeat(2,minmax(0,1fr));position:relative;top:auto}
+}
+
+@media (max-width:48rem){
+  .test-log{
+    width:min(100%,24rem)!important;
+    max-width:100vw!important;
+  }
+}
+
+@media (max-width:34rem){
+  .test-log{
+    left:0!important;
+    right:0!important;
+    width:100%!important;
+  }
+}
