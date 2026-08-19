@@ -163,6 +163,11 @@ function normalizeAfterResolution(before, result, command) {
 
 export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   const state = syncPriorityMetadata(clone(inputState));
+  /* Recover long-lived room snapshots that already contain both a target/choice
+     decision and a response window from the pre-fix flow. A player must finish
+     the interactive choice first; priority resumes only after that choice. */
+  suspendPriorityWhileChoosing(state);
+  syncPriorityMetadata(state, { window: state.pendingResponse ? inferPriorityWindow(state) : null });
   const command = { ...rawCommand };
   if (!Number.isInteger(command.owner) || ![0, 1].includes(command.owner)) throw new RulesViolation("invalid-owner");
 
