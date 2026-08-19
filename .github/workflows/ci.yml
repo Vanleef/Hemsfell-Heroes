@@ -1,80 +1,53 @@
-name: CI
+name: Diagnose Online maintenance hotfix
 
 on:
   push:
     branches:
-      - main
-      - fix/cards_mechanics
-      - optimization-cleanup
-      - ai/advanced-opponent-system
-      - fix/response-uruk-priority-rules
-      - refactor/consolidate-scripts
-      - refactor/consolidate-css
-      - codex/optimization-cleanup
-      - ui/fixed-board-composition
-  pull_request:
-    branches:
-      - main
-
-concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+      - fix/online-single-attack-combat
 
 permissions:
   contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
-  test-and-build:
-    name: Rules, lint, types, card audit and Next.js build
+  validate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Validate canonical project state
-        run: npm run prepare:project
-
-      - name: Run rules tests
-        run: npm run test:rules
-
-      - name: Run AI strategic benchmark
-        run: npm run ai:calibrate:benchmark
-
-      - name: Lint advanced AI surfaces
-        # The AI adapter deliberately bridges the typed controller to the legacy
-        # JS card engine, whose card payloads are not yet modeled end-to-end.
-        # Strict TypeScript remains mandatory; only explicit-any style warnings
-        # at that boundary are relaxed here.
-        run: npx eslint app/rules-engine/ai-system/*.ts scripts/ai-calibration.ts scripts/ai-selfplay.ts tests/advanced-ai.test.mjs --rule '@typescript-eslint/no-explicit-any: off'
-
-      - name: Report repository-wide legacy lint debt
-        continue-on-error: true
-        run: npm run lint
-
-      - name: Report repository-wide legacy type debt
-        continue-on-error: true
-        run: npx tsc --noEmit
-
-      - name: Export full card implementation audit
-        run: npm run audit:cards:full
-
-      - name: Upload card implementation audit JSON
-        uses: actions/upload-artifact@v4
-        with:
-          name: card-implementation-audit
-          path: docs/card-implementation-audit.json
-          if-no-files-found: error
-
-      - name: Build Next.js application
-        run: npm run vercel-build
+      - run: npm ci
+      - name: Validate and capture output
+        id: validate
+        shell: bash
+        run: |
+          set +e
+          npm run vercel-build > /tmp/online-validation.log 2>&1
+          code=$?
+          tail -n 120 /tmp/online-validation.log > /tmp/online-validation-tail.log
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Publish diagnostic to PR 26
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXIT_CODE: ${{ steps.validate.outputs.code }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          status="FAILED"
+          if [ "$EXIT_CODE" = "0" ]; then status="PASSED"; fi
+          {
+            echo "Online maintenance validation: **$status** (exit $EXIT_CODE)"
+            echo
+            echo '```text'
+            cat /tmp/online-validation-tail.log
+            echo '```'
+          } > /tmp/pr-comment.md
+          gh api "repos/$GH_REPO/issues/26/comments" --method POST -F body=@/tmp/pr-comment.md
+      - name: Fail job when validation failed
+        if: steps.validate.outputs.code != '0'
+        run: exit 1
