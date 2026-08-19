@@ -1,16 +1,7 @@
 import { executeCommand as executeRulesCommand } from "./engine.mjs";
+import { combatIdleView, listLegalBlockers } from "./combat.mjs";
 import { RulesViolation } from "./effects.mjs";
 import { legalPriorityResponses } from "./priority.mjs";
-import {
-  OnlineCombatStage,
-  beginOnlineCombat,
-  declareOnlineAttackers,
-  declareOnlineBlockers,
-  finishAfterAttackersCheckpoint,
-  finishAfterBlockersCheckpoint,
-  finishCombatStartCheckpoint,
-} from "./online-combat.mjs";
-import { completeOnlineCombatCheckpoint, continueOnlineCombatResolution } from "./online-combat-resolution.mjs";
 import {
   OnlineFinalizationStage,
   completeOnlineFinalization,
@@ -18,6 +9,7 @@ import {
   resumeOnlineFinalizationAfterDecision,
 } from "./online-finalization.mjs";
 import {
+  PriorityMode,
   PriorityWindow,
   handOffFirstPass,
   inferPriorityWindow,
@@ -27,25 +19,32 @@ import {
 } from "./priority-state.mjs";
 
 const clone = (value) => structuredClone(value);
+const SINGLE_COMBAT_START = "single-combat-start";
+const LEGACY_GROUPED_CHECKPOINTS = new Set(["combat-start", "after-attackers", "after-blockers", "combat-end"]);
 
 const responseIdentity = (command) => {
   if (command.type === "playCard") return `playCard:${command.cardId ?? command.handIndex ?? ""}`;
   if (command.type === "activateHero") return `activateHero:${command.abilityId ?? ""}`;
   return `${command.type}:${command.sourceId ?? ""}:${command.abilityId ?? ""}`;
 };
-
-const legalResponseIdentity = (command) => {
-  if (command.type === "playCard") return `playCard:${command.cardId ?? command.handIndex ?? ""}`;
-  if (command.type === "activateHero") return `activateHero:${command.abilityId ?? ""}`;
-  return `${command.type}:${command.sourceId ?? ""}:${command.abilityId ?? ""}`;
-};
+const legalResponseIdentity = responseIdentity;
 
 function validateOnlineResponse(state, command) {
   const pending = state.pendingResponse;
   if (!pending || pending.responder !== command.owner) throw new RulesViolation("not-your-priority");
-  const legal = legalPriorityResponses(state, command.owner);
   const wanted = responseIdentity(command);
-  if (!legal.some((candidate) => legalResponseIdentity(candidate) === wanted)) throw new RulesViolation("illegal-priority-response");
+  if (!legalPriorityResponses(state, command.owner).some((candidate) => legalResponseIdentity(candidate) === wanted)) throw new RulesViolation("illegal-priority-response");
+}
+
+function validateSingleBlockerChoice(state, command) {
+  if (command.type !== "selectDefender") return;
+  const combat = state.combatAction;
+  if (!combat || combat.stage !== "choosing" || 1 - combat.attackerOwner !== command.owner) return;
+  if (command.attackerId != null && command.attackerId !== combat.attackerUid) throw new RulesViolation("combat-state-mismatch");
+  if (command.targetHero) return;
+  const defenderId = command.defenderId;
+  const legal = listLegalBlockers(state, command.owner, combat.attackerUid).some((unit) => (unit.uid || unit.id) === defenderId);
+  if (!legal) throw new RulesViolation("invalid-defender");
 }
 
 function phaseAdvanceLabel(phase) {
@@ -59,14 +58,12 @@ function canOpenPhaseTransition(state, command) {
   if (command.type !== "advancePhase") return false;
   if (command.owner !== state.active) throw new RulesViolation("not-your-turn");
   if (state.pendingResponse || state.pendingAction || state.pendingDecision || state.pendingReposition || state.combatAction) throw new RulesViolation("interaction-pending");
-  if (state.phase === "combate" && state.onlineCombat) {
-    if (state.onlineCombat.stage === OnlineCombatStage.COMPLETE) return false;
-    throw new RulesViolation("grouped-combat-in-progress");
-  }
   return state.phase === "principal" || state.phase === "combate";
 }
 
 function openPhaseTransition(state, command) {
+  /* The engine preflight is the single authority for Indomável and every other
+     reason combat may not legally end. */
   executeRulesCommand(clone(state), { ...command, skipPriority: true }, { priority: false });
   const next = clone(state);
   const window = phaseTransitionWindow(state.phase);
@@ -80,44 +77,46 @@ function openPhaseTransition(state, command) {
   return { state: next, trace: ["online-priority:phase-transition-open"], steps: 0 };
 }
 
+function openCombatStartWindow(inputState) {
+  const state = clone(inputState);
+  openResponseWindow(state, {
+    actor: state.active,
+    responder: state.active,
+    action: "início da etapa de Combate",
+    window: PriorityWindow.COMBAT_START,
+    pendingAction: { type: "onlineCheckpoint", checkpoint: SINGLE_COMBAT_START, owner: state.active },
+  });
+  return syncPriorityMetadata(state, { window: PriorityWindow.COMBAT_START });
+}
+
 function checkpointAtRoot(state) {
   return (state.priorityStack?.length || 0) <= 1 && state.pendingAction?.type === "onlineCheckpoint"
     ? state.pendingAction.checkpoint
     : null;
 }
-
 function combatTransitionAtRoot(state) {
-  return (state.priorityStack?.length || 0) <= 1
-    && state.phase === "combate"
-    && state.pendingAction?.type === "advancePhase"
-    && state.pendingAction?.__onlinePhaseTransition;
+  return (state.priorityStack?.length || 0) <= 1 && state.phase === "combate" && state.pendingAction?.type === "advancePhase" && state.pendingAction?.__onlinePhaseTransition;
+}
+function mainTransitionAtRoot(state) {
+  return (state.priorityStack?.length || 0) <= 1 && state.phase === "principal" && state.pendingAction?.type === "advancePhase" && state.pendingAction?.__onlinePhaseTransition;
 }
 
-function mainTransitionAtRoot(state) {
-  return (state.priorityStack?.length || 0) <= 1
-    && state.phase === "principal"
-    && state.pendingAction?.type === "advancePhase"
-    && state.pendingAction?.__onlinePhaseTransition;
+function finishSingleCombatStart(state) {
+  const next = clone(state);
+  next.pendingAction = undefined;
+  next.pendingResponse = null;
+  next.priorityStack = undefined;
+  delete next.onlineCombat;
+  return syncPriorityMetadata(next, { mode: PriorityMode.ACTION, owner: next.active, window: null });
 }
 
 function resolveOnlineCheckpoint(state) {
   const checkpoint = checkpointAtRoot(state);
   if (!checkpoint) throw new RulesViolation("online-checkpoint-missing");
   let next;
-  if (checkpoint === OnlineCombatStage.COMBAT_START) next = finishCombatStartCheckpoint(state);
-  else if (checkpoint === OnlineCombatStage.AFTER_ATTACKERS) {
-    next = finishAfterAttackersCheckpoint(state);
-    if (next.onlineCombat?.stage === OnlineCombatStage.COMBAT_END) {
-      next.onlineCombat.stage = OnlineCombatStage.RESOLVING;
-      next = continueOnlineCombatResolution(next);
-    }
-  } else if (checkpoint === OnlineCombatStage.AFTER_BLOCKERS) {
-    next = finishAfterBlockersCheckpoint(state);
-    next = continueOnlineCombatResolution(next);
-  } else if (checkpoint === OnlineCombatStage.COMBAT_END) {
-    next = completeOnlineCombatCheckpoint(state);
-    next = enterOnlineFinalization(next, next.active);
-  } else if (checkpoint === OnlineFinalizationStage.PRIORITY) next = completeOnlineFinalization(state);
+  if (checkpoint === SINGLE_COMBAT_START) next = finishSingleCombatStart(state);
+  else if (checkpoint === OnlineFinalizationStage.PRIORITY) next = completeOnlineFinalization(state);
+  else if (LEGACY_GROUPED_CHECKPOINTS.has(checkpoint)) next = finishSingleCombatStart(state);
   else throw new RulesViolation("unknown-online-checkpoint");
   return { state: next, trace: [`online-priority:checkpoint:${checkpoint}`], steps: 0 };
 }
@@ -150,8 +149,8 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
         const resolved = executeRulesCommand(state, command, { ...options, priority: true });
         normalizeAfterResolution(state, resolved, command);
         if (resolved.state.phase === "combate" && !resolved.state.pendingDecision && !resolved.state.pendingReposition) {
-          resolved.state = beginOnlineCombat(resolved.state);
-          resolved.trace = [...(resolved.trace || []), "online-combat:combat-start-open"];
+          resolved.state = openCombatStartWindow(resolved.state);
+          resolved.trace = [...(resolved.trace || []), "online-combat:single-combat-start-open"];
         }
         return resolved;
       }
@@ -169,30 +168,15 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   }
 
   if (command.type === "passPriority") throw new RulesViolation("no-priority-window");
+  if (command.type === "declareAttackers" || command.type === "declareBlockers") throw new RulesViolation("grouped-combat-removed");
 
-  if (command.type === "declareAttackers") {
-    const next = declareOnlineAttackers(state, command.owner, command.attackerIds || []);
-    return { state: next, trace: ["online-combat:attackers-declared"], steps: 0 };
-  }
+  /* Retired grouped-combat metadata from recovered rooms never owns legality. */
+  if (state.onlineCombat && !state.pendingDecision && !state.pendingReposition && !state.combatAction) delete state.onlineCombat;
 
-  if (command.type === "declareBlockers") {
-    const next = declareOnlineBlockers(state, command.owner, command.assignments || []);
-    return { state: next, trace: ["online-combat:blockers-declared"], steps: 0 };
-  }
-
-  if (command.type === "advancePhase" && state.phase === "combate" && state.onlineCombat?.stage === OnlineCombatStage.COMPLETE) {
-    const next = enterOnlineFinalization(state, command.owner);
-    return { state: next, trace: ["online-finalization:entered-after-grouped-combat"], steps: 0 };
-  }
-
+  validateSingleBlockerChoice(state, command);
   if (canOpenPhaseTransition(state, command)) return openPhaseTransition(state, command);
 
-  if (command.type === "declareAttack" && state.onlineCombat?.stage === OnlineCombatStage.DECLARE_ATTACKERS) throw new RulesViolation("grouped-attack-declaration-required");
   const result = executeRulesCommand(state, command, { ...options, priority: true });
-  if (command.type === "resolveDecision" && result.state.onlineCombat?.stage === OnlineCombatStage.RESOLVING && !result.state.pendingDecision && !result.state.pendingReposition) {
-    result.state = continueOnlineCombatResolution(result.state);
-    result.trace = [...(result.trace || []), "online-combat:resume-after-decision"];
-  }
   if (command.type === "resolveDecision" && result.state.onlineFinalization?.stage === OnlineFinalizationStage.EFFECTS && !result.state.pendingDecision && !result.state.pendingReposition) {
     result.state = resumeOnlineFinalizationAfterDecision(result.state);
     result.trace = [...(result.trace || []), "online-finalization:resume-after-decision"];
@@ -215,7 +199,8 @@ export function onlinePriorityView(state) {
   return {
     ...snapshot.priority,
     stack: snapshot.stack,
-    combat: snapshot.onlineCombat ? clone(snapshot.onlineCombat) : null,
+    combat: snapshot.combatAction ? clone(snapshot.combatAction) : null,
+    combatIdle: snapshot.phase === "combate" && !snapshot.combatAction && !snapshot.pendingResponse ? combatIdleView(snapshot, snapshot.active) : null,
     finalization: snapshot.onlineFinalization ? clone(snapshot.onlineFinalization) : null,
   };
 }

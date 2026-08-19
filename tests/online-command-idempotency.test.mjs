@@ -2,10 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [machine, route, runtime, page] = await Promise.all([
+const [machine, route, page] = await Promise.all([
   readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/[id]/route.ts", import.meta.url), "utf8"),
-  readFile(new URL("../app/online-match-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
 ]);
 
@@ -28,7 +27,6 @@ test("duplicate command acknowledgement returns the persisted room without anoth
   assert.ok(duplicateIndex > 0 && writeIndex > duplicateIndex, "duplicate retry must return before the shared write path");
 });
 
-test("both staged and legacy Online clients attach one stable id per logical command", () => {
-  assert.match(runtime, /const commandId = crypto\.randomUUID\(\);[\s\S]*?for \(let attempt = 0; attempt < 2; attempt \+= 1\)[\s\S]*?commandId/);
+test("canonical Online client attaches one stable id per logical command", () => {
   assert.match(page, /const commandId=crypto\.randomUUID\(\);const result=await roomAction\("command",\{command,commandId/);
 });
