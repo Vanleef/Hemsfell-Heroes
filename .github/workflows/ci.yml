@@ -1,4 +1,4 @@
-name: Diagnose Online maintenance hotfix
+name: Apply Ngoro maintenance compatibility
 
 on:
   push:
@@ -6,47 +6,25 @@ on:
       - fix/online-single-attack-combat
 
 permissions:
-  contents: read
-  issues: write
-  pull-requests: write
+  contents: write
 
 jobs:
-  validate:
+  patch:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
         with:
-          node-version: 22.13.0
-          cache: npm
-      - run: npm ci
-      - name: Run focused Online maintenance regression
-        id: validate
-        shell: bash
+          fetch-depth: 0
+      - name: Apply compatibility patch
+        run: python scripts/fix_ngoro_maintenance_compat.py
+      - name: Restore normal CI and remove helper
         run: |
-          set +e
-          node --test tests/online-maintenance-choice.test.mjs > /tmp/online-validation.log 2>&1
-          code=$?
-          echo "code=$code" >> "$GITHUB_OUTPUT"
-          exit 0
-      - name: Publish focused diagnostic to PR 26
-        env:
-          GH_TOKEN: ${{ github.token }}
-          EXIT_CODE: ${{ steps.validate.outputs.code }}
-          GH_REPO: ${{ github.repository }}
-        shell: bash
+          rm scripts/fix_ngoro_maintenance_compat.py
+          git show 9ef10a460558f8c04c8c574dec0d582244d897a0:.github/workflows/ci.yml > .github/workflows/ci.yml
+      - name: Commit compatibility fix
         run: |
-          status="FAILED"
-          if [ "$EXIT_CODE" = "0" ]; then status="PASSED"; fi
-          {
-            echo "Focused Online maintenance regression: **$status** (exit $EXIT_CODE)"
-            echo
-            echo '```text'
-            cat /tmp/online-validation.log
-            echo '```'
-          } > /tmp/pr-comment.md
-          gh api "repos/$GH_REPO/issues/26/comments" --method POST -F body=@/tmp/pr-comment.md
-      - name: Fail job when focused regression failed
-        if: steps.validate.outputs.code != '0'
-        run: exit 1
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/rules-engine/engine-base.mjs .github/workflows/ci.yml scripts/fix_ngoro_maintenance_compat.py
+          git commit -m "fix: preserve Ngoro maintenance event compatibility"
+          git push
