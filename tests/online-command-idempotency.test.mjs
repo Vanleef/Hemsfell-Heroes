@@ -22,6 +22,12 @@ test("room route forwards the stable command id to the authoritative machine", (
   assert.match(route, /applyRulesCommand\(room, role, body\.command, body\.baseRevision, body\.commandId\)/);
 });
 
+test("duplicate command acknowledgement returns the persisted room without another storage write", () => {
+  const duplicateIndex = route.indexOf("if (resolution.duplicate) return NextResponse.json(roomView(room, true, role), noStore)");
+  const writeIndex = route.indexOf("await writeRoom(room)", duplicateIndex);
+  assert.ok(duplicateIndex > 0 && writeIndex > duplicateIndex, "duplicate retry must return before the shared write path");
+});
+
 test("both staged and legacy Online clients attach one stable id per logical command", () => {
   assert.match(runtime, /const commandId = crypto\.randomUUID\(\);[\s\S]*?for \(let attempt = 0; attempt < 2; attempt \+= 1\)[\s\S]*?commandId/);
   assert.match(page, /const commandId=crypto\.randomUUID\(\);const result=await roomAction\("command",\{command,commandId/);

@@ -116,6 +116,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!isPlainRecord(body.command)) return NextResponse.json({ error: "invalid command" }, { status: 400 });
       const resolution = applyRulesCommand(room, role, body.command, body.baseRevision, body.commandId);
       if (!resolution.ok) return NextResponse.json({ error: resolution.error, ...roomView(room, true, role) }, { status: resolution.status });
+      if (resolution.duplicate) return NextResponse.json(roomView(room, true, role), noStore);
     } else if (body.action === "sync") {
       if (room.status !== "started") return NextResponse.json({ error: "room not started" }, { status: 409 });
       if (!isBoundedGame(body.game)) return NextResponse.json({ error: "invalid game state" }, { status: 400 });
