@@ -77,7 +77,7 @@ test("one attacker opens one defender decision and blocks further attacker actio
   assert.equal(game.combatAction.stage, "choosing");
   assert.equal(game.pendingResponse, null);
   assert.throws(() => executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "next-attacker" }), /combat-action-pending/);
-  assert.throws(() => executeOnlineCommand(game, { type: "selectDefender", owner: 0, attackerId: "attacker", targetHero: true }), /not-defender/);
+  assert.throws(() => executeOnlineCommand(game, { type: "selectDefender", owner: 0, attackerId: "attacker", targetHero: true }), /defender-choice-unavailable/);
 });
 
 test("blocker selection is unitary and the selected attack resolves through the shared engine", () => {
