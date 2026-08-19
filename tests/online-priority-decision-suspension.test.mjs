@@ -43,6 +43,14 @@ const stateWithRootPriority = () => ({
   players: [player(), player()],
 });
 
+const reachSaymonTargetChoice = () => {
+  let state = stateWithRootPriority();
+  state = executeOnlineCommand(state, { type: "activateHero", owner: 1, abilityId: "saymon-level-1" }, { priority: true }).state;
+  state = executeOnlineCommand(state, { type: "passPriority", owner: 0 }, { priority: true }).state;
+  state = executeOnlineCommand(state, { type: "passPriority", owner: 1 }, { priority: true }).state;
+  return state;
+};
+
 test("online hero target choice suspends the response window and resumes it only after the target is chosen", () => {
   let state = stateWithRootPriority();
 
@@ -70,4 +78,22 @@ test("online hero target choice suspends the response window and resumes it only
   assert.equal(state.pendingResponse?.responder, 1);
   assert.equal(state.pendingResponse?.passes, 0);
   assert.equal(state.pendingAction?.type, "attack");
+});
+
+test("pre-fix online snapshots with decision and response open together recover on the next choice command", () => {
+  const correct = reachSaymonTargetChoice();
+  const resume = structuredClone(correct.pendingDecision.onlinePriorityResume);
+  const stale = structuredClone(correct);
+  delete stale.pendingDecision.onlinePriorityResume;
+  stale.pendingResponse = resume.pendingResponse;
+  stale.pendingAction = resume.pendingAction;
+  stale.priorityStack = resume.priorityStack;
+
+  const recovered = executeOnlineCommand(stale, { type: "resolveDecision", owner: 1, targetIds: ["enemy-hero"] }, { priority: true }).state;
+  assert.equal(recovered.pendingDecision, null);
+  assert.equal(recovered.players[1].life, 18);
+  assert.equal(recovered.players[0].life, 19);
+  assert.equal(recovered.pendingResponse?.actor, 0);
+  assert.equal(recovered.pendingResponse?.responder, 1);
+  assert.equal(recovered.pendingAction?.type, "attack");
 });
