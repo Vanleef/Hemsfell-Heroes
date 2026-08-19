@@ -1,5 +1,6 @@
 const remaining = (deadline, now) => Math.max(0, Number(deadline || 0) - now);
 const declaringBlockers = (game) => game?.onlineCombat?.stage === "declare-blockers";
+const setPriorityDeadline = (game, deadline) => { if (game?.priority) game.priority.deadline = deadline ?? null; };
 
 /**
  * Keep the active player's action clock independent from opponent response time.
@@ -14,6 +15,7 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
     delete after.turnTimeRemainingMs;
     if (after.pendingResponse) delete after.pendingResponse.deadline;
     if (after.onlineCombat) delete after.onlineCombat.deadline;
+    setPriorityDeadline(after, null);
     return after;
   }
 
@@ -26,13 +28,16 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
       after.turnTimeRemainingMs = settings.turnSeconds * 1000;
       after.turnDeadline = null;
       after.pendingResponse.deadline = now + settings.responseSeconds * 1000;
+      setPriorityDeadline(after, after.pendingResponse.deadline);
     } else if (blockerChoice) {
       after.turnTimeRemainingMs = settings.turnSeconds * 1000;
       after.turnDeadline = null;
       after.onlineCombat.deadline = now + settings.responseSeconds * 1000;
+      setPriorityDeadline(after, after.onlineCombat.deadline);
     } else {
       delete after.turnTimeRemainingMs;
       after.turnDeadline = now + settings.turnSeconds * 1000;
+      setPriorityDeadline(after, null);
     }
     return after;
   }
@@ -45,6 +50,7 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
     after.turnDeadline = null;
     const wasBlockerChoice = declaringBlockers(before);
     if (!wasBlockerChoice || !after.onlineCombat.deadline) after.onlineCombat.deadline = now + settings.responseSeconds * 1000;
+    setPriorityDeadline(after, after.onlineCombat.deadline);
     return after;
   }
 
@@ -56,9 +62,11 @@ export function reconcileOnlineClocks(before, after, settings, now = Date.now())
     after.turnDeadline = null;
     const responderChanged = Number(before?.pendingResponse?.responder) !== Number(after.pendingResponse.responder);
     if (responderChanged || !after.pendingResponse.deadline) after.pendingResponse.deadline = now + settings.responseSeconds * 1000;
+    setPriorityDeadline(after, after.pendingResponse.deadline);
     return after;
   }
 
+  setPriorityDeadline(after, null);
   const paused = Number(before?.turnTimeRemainingMs ?? after.turnTimeRemainingMs);
   if ((before?.pendingResponse || declaringBlockers(before)) && Number.isFinite(paused)) {
     after.turnDeadline = now + Math.max(0, paused);
