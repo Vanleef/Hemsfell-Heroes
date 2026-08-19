@@ -37,10 +37,12 @@ function validateOnlineResponse(state, command) {
 }
 
 function validateSingleBlockerChoice(state, command) {
-  if (command.type !== "selectDefender" || command.targetHero) return;
+  if (command.type !== "selectDefender") return;
   const combat = state.combatAction;
-  const defenderId = command.defenderId;
   if (!combat || combat.stage !== "choosing" || 1 - combat.attackerOwner !== command.owner) return;
+  if (command.attackerId != null && command.attackerId !== combat.attackerUid) throw new RulesViolation("combat-state-mismatch");
+  if (command.targetHero) return;
+  const defenderId = command.defenderId;
   const legal = listLegalBlockers(state, command.owner, combat.attackerUid).some((unit) => (unit.uid || unit.id) === defenderId);
   if (!legal) throw new RulesViolation("invalid-defender");
 }
