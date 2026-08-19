@@ -82,6 +82,9 @@ export function orientOnlineGameForRole(input, role = "host") {
     game.onlineCombat = {
       ...game.onlineCombat,
       attackerOwner: flip(game.onlineCombat.attackerOwner),
+      interaction: game.onlineCombat.interaction
+        ? { ...game.onlineCombat.interaction, owner: flip(game.onlineCombat.interaction.owner) }
+        : game.onlineCombat.interaction,
     };
   }
 
