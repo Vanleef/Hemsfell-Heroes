@@ -16,21 +16,21 @@ export class CombatPlanner {
   }
 
   findLethal(state: AIGameState, owner: number): AttackPlan[] | null {
-    const me = state.players[owner], foe = state.players[1 - owner];
+    const foe = state.players[1 - owner];
     const attackers = this.legalAttackers(state, owner).sort((a: any, b: any) => atk(b) - atk(a));
     if (!attackers.length) return null;
     const blockers = foe.board || [];
-    const unblockable = attackers.filter((card: any) => has(card, "furtivo") || !blockers.some((blocker: any) => listLegalBlockers(state as any, 1 - owner, card).some((candidate: any) => idOf(candidate) === idOf(blocker))));
+    const unblockable = attackers.filter((card: any) => has(card, "furtivo") || listLegalBlockers(state as any, 1 - owner, card).length === 0);
     const guaranteed = unblockable.reduce((sum: number, card: any) => sum + atk(card), 0);
     const trampleFloor = attackers.filter((card: any) => has(card, "atropelar")).reduce((sum: number, card: any) => sum + Math.max(0, atk(card) - Math.max(0, ...blockers.map((b: any) => hp(b)))), 0);
     if (guaranteed + trampleFloor < foe.life && blockers.length >= attackers.length) return null;
     return attackers.map((card: any) => ({ attackerId: idOf(card), directScore: atk(card) + (has(card, "furtivo") ? 6 : 0) + (has(card, "atropelar") ? 4 : 0) }));
   }
 
-  planAttacks(state: AIGameState, owner: number, profile: PersonalityProfile): AttackPlan[] {
+  private scoreAttacks(state: AIGameState, owner: number, profile: PersonalityProfile): AttackPlan[] {
     const lethal = this.findLethal(state, owner);
     if (lethal) return lethal;
-    const me = state.players[owner], foe = state.players[1 - owner], blockers = foe.board || [];
+    const foe = state.players[1 - owner], blockers = foe.board || [];
     return this.legalAttackers(state, owner).map((card: any) => {
       const power = atk(card), health = hp(card);
       const legalBlockerIds = new Set(listLegalBlockers(state as any, 1 - owner, card).map((unit: any) => idOf(unit)));
@@ -40,22 +40,24 @@ export class CombatPlanner {
     }).filter((plan) => plan.directScore > (1 - profile.aggression) * 4).sort((a, b) => b.directScore - a.directScore);
   }
 
-  /** Re-evaluate exactly one attack from the current post-resolution state. */
+  /** Compatibility surface now returns at most one action. Callers re-enter
+      after that attack resolves and evaluate the new board from scratch. */
+  planAttacks(state: AIGameState, owner: number, profile: PersonalityProfile): AttackPlan[] {
+    const chosen = this.chooseAttack(state, owner, profile);
+    return chosen ? [chosen] : [];
+  }
+
   chooseAttack(state: AIGameState, owner: number, profile: PersonalityProfile, difficulty = "Normal"): AttackPlan | null {
     const attackers = this.legalAttackers(state, owner);
     if (!attackers.length) return null;
     const mandatory = attackers.filter((card: any) => has(card, "indomavel") || has(card, "indomável"));
-    const plans = this.planAttacks(state, owner, profile);
+    const plans = this.scoreAttacks(state, owner, profile);
     if (mandatory.length) {
       const mandatoryIds = new Set(mandatory.map(idOf));
       return plans.find((plan) => mandatoryIds.has(plan.attackerId)) || { attackerId: idOf(mandatory[0]), directScore: Number.POSITIVE_INFINITY };
     }
     if (!plans.length) return null;
-    if (/facil|fácil|easy/i.test(difficulty) && plans.length > 1) {
-      /* Easy remains intentionally less precise, but still emits one legal
-         attack and can never bypass an Indomável obligation. */
-      return plans[Math.min(plans.length - 1, Math.floor(Math.random() * Math.min(3, plans.length)))] || plans[0];
-    }
+    if (/facil|fácil|easy/i.test(difficulty) && plans.length > 1) return plans[Math.min(plans.length - 1, Math.floor(Math.random() * Math.min(3, plans.length)))] || plans[0];
     return plans[0];
   }
 
