@@ -1,3 +1,26 @@
+/* === SETUP HEADING (merged from setup-heading-fixes.css; historical cascade order preserved) === */
+/* Shared setup header alignment for AI and multiplayer screens. */
+.match-setup .setup-head {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.match-setup .setup-head > p,
+.match-setup .setup-head > h2,
+.match-setup .setup-head > span {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.match-setup .setup-head > span {
+  width: min(100%, 46rem);
+  max-width: 46rem;
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+/* === RESPONSE WINDOW === */
 /* Canonical response-window styling.
    Geometry, horizontal card scrolling and tooltip-portal integration live in
    one place so later fixes do not fight through the cascade. */

@@ -29,8 +29,9 @@ test('result screen renders winner hero art and menu actions through consolidate
  assert.match(guard,/Voltar ao menu/);
 });
 
-test('match result has responsive dedicated styling',()=>{
- const css=fs.readFileSync(new URL('../app/match-result-enhancer.css',import.meta.url),'utf8');
+test('match result has responsive dedicated styling in the canonical match stylesheet',()=>{
+ const css=fs.readFileSync(new URL('../app/match-ui.css',import.meta.url),'utf8');
+ assert.match(css,/\/\* === MATCH RESULT === \*\//);
  assert.match(css,/\.enhanced-match-result\{/);
  assert.match(css,/\.match-result-hero-art\{/);
  assert.match(css,/@media \(max-width:760px\),\(max-height:620px\)/);
