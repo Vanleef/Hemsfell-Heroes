@@ -61,8 +61,26 @@ jobs:
           async function clickPriority(page){let last;for(let i=0;i<20;i++){try{const b=page.getByRole('button',{name:'Passar prioridade'}).first();await b.waitFor({state:'visible',timeout:2500});await b.click({timeout:2500});return}catch(error){last=error;await page.waitForTimeout(120)}}throw last}
           async function passPair(first,second){await clickPriority(first);await clickPriority(second)}
           async function maintenance(page){const b=page.getByRole('button',{name:/Expandir energia/i});await b.waitFor({state:'visible',timeout:18000});await b.click();await (await phase(page,'Combate')).waitFor({state:'visible',timeout:15000});const active=((await page.locator('.phase-track .active').textContent())||'').trim();assert.match(active,/Principal/i)}
-          async function enterCombat(actor,opponent){await (await phase(actor,'Combate')).click();await passPair(opponent,actor);await passPair(actor,opponent);await (await phase(actor,'Encerrar combate')).waitFor({state:'visible',timeout:15000})}
-          async function finishTurn(actor,opponent){await enterCombat(actor,opponent);await (await phase(actor,'Encerrar combate')).click();await passPair(opponent,actor);await passPair(actor,opponent)}
+          async function resolveCombatEntryDecision(actor){
+            await actor.waitForTimeout(350);
+            const backdrop=actor.locator('.engine-target-decision-backdrop');
+            if(!(await backdrop.isVisible().catch(()=>false)))return false;
+            const target=actor.locator('.player-field .creature-slot[data-slot="1"] .original-card');
+            await target.waitFor({state:'visible',timeout:10000});
+            await target.click();
+            await backdrop.waitFor({state:'hidden',timeout:15000});
+            log('   Escolha de alvo do início do Combate resolvida.');
+            return true;
+          }
+          async function enterCombat(actor,opponent){
+            await (await phase(actor,'Combate')).click();
+            await passPair(opponent,actor);
+            await resolveCombatEntryDecision(actor);
+            await actor.waitForTimeout(350);
+            if(await actor.getByRole('button',{name:'Passar prioridade'}).first().isVisible().catch(()=>false))await passPair(actor,opponent);
+            await (await phase(actor,'Encerrar combate')).waitFor({state:'visible',timeout:15000});
+          }
+          async function finishTurn(actor,opponent){await enterCombat(actor,opponent);await (await phase(actor,'Encerrar combate')).click();await passPair(opponent,actor);if(await actor.getByRole('button',{name:'Passar prioridade'}).first().isVisible().catch(()=>false))await passPair(actor,opponent)}
           const vanillaNames=new Set(['Cidadão de Sel Kanthar','Cidadão Enfurecido','Meretriz','Fazendeiro Irado']);
           async function creature(page){const cards=page.locator('.player-hand .original-card:not([disabled])');for(let i=0;i<await cards.count();i++){const c=cards.nth(i),name=await c.getAttribute('aria-label'),drag=await c.getAttribute('draggable');if(vanillaNames.has(name)&&drag==='true')return c}return null}
           try{
