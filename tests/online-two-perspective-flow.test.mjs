@@ -14,6 +14,7 @@ const initial = () => {
 const guest = (game) => orientOnlineGameForRole(game, "guest");
 const passTwice = (game, first, second) => {
   game = executeOnlineCommand(game, { type: "passPriority", owner: first }).state;
+  if (!game.pendingResponse) return game;
   return executeOnlineCommand(game, { type: "passPriority", owner: second }).state;
 };
 
