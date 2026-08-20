@@ -237,7 +237,6 @@ test("life-loss triggers use one event dispatcher",()=>{
  assert.match(page,/const g=structuredClone\(old\),before:\[number,number\]/);
 });
 
-
 test("global effects and Tessália's Commander lane stay deterministic",()=>{
  assert.match(page,/Global effects never request a target/);
  assert.match(page,/todas\?\\s\+\(\?:as\?\\s\+\)\?criaturas/);
@@ -260,8 +259,12 @@ test("room APIs reject unsafe input and never expose opponent hidden zones",()=>
  assert.match(roomApi,/isRoomId/);
  assert.match(roomApi,/request failed/);
  assert.match(roomMachine,/stale revision/);
- assert.match(roomStore,/card\?\.revealed === true \? card : hiddenCard/);
- assert.match(roomStore,/game\.pendingDecision\?\.kind === "investigate-selection"/);
+ assert.match(roomStore,/visibleTo\(card, viewer\) \? card : hiddenCard/);
+ assert.match(roomStore,/revealedTo\.includes\(viewer\)/);
+ assert.match(roomStore,/kind: "opponent-choice"/);
+ assert.match(roomStore,/effect: \{\}/);
+ assert.match(roomStore,/context: \{\}/);
+ assert.match(roomStore,/targetSteps: \[\]/);
 });
 
 test("public hand and deck information is rendered symmetrically",()=>{
