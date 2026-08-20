@@ -3,13 +3,14 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
 
-const [runtime, layout, css, machine, clock, page, packageJson] = await Promise.all([
+const [runtime, layout, css, machine, clock, page, priorityEngine, packageJson] = await Promise.all([
   readFile(new URL("../app/online-match-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/online-match-runtime.css", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/online-clock.mjs", import.meta.url), "utf8"),
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/rules-engine/online-priority-engine.mjs", import.meta.url), "utf8"),
   readFile(new URL("../package.json", import.meta.url), "utf8"),
 ]);
 
@@ -57,10 +58,12 @@ test("canonical board UI keeps per-creature attacker, blocker and no-block actio
   assert.match(page, /mandatoryIndomitableAttacker/);
 });
 
-test("canonical priority HUD reports the current single attack without replacing board interaction", () => {
+test("canonical priority HUD reports blocker ownership and committed-block response", () => {
   assert.match(runtime, /game\.combatAction/);
   assert.match(runtime, /Defenda-se de/);
   assert.match(runtime, /Aguardando o oponente escolher o bloqueio/);
+  assert.match(runtime, /bloqueio definido · resposta antes do dano/);
+  assert.match(runtime, /Sua decisão de bloqueio/);
   assert.match(runtime, /Escolha uma criatura para atacar ou encerre o combate/);
   assert.match(runtime, /ONLINE · PRIORIDADE/);
   assert.match(runtime, /game\.stack/);
@@ -68,17 +71,19 @@ test("canonical priority HUD reports the current single attack without replacing
 
 test("unitary blocker choice owns a response deadline without consuming attacker action time", () => {
   assert.match(clock, /choosingBlocker/);
+  assert.match(clock, /blockCommitted !== true/);
   assert.match(clock, /after\.combatAction\.deadline = now \+ settings\.responseSeconds \* 1000/);
   assert.match(machine, /combatAction\?\.stage === "choosing"/);
   assert.match(machine, /type: "selectDefender", owner, targetHero: true, auto: true/);
 });
 
-test("final impact command is server-bound to the blocker selection already stored in combatAction", () => {
-  assert.match(machine, /AUTHORITATIVE_COMMANDS[\s\S]*"attack"/);
-  assert.match(machine, /combat\.stage !== "charging"/);
-  assert.match(machine, /combat\.attackerUid !== command\.attackerId/);
-  assert.match(machine, /combat state mismatch/);
-  assert.match(machine, /command\.skipPriority = true/);
+test("final combat impact is server-owned and browser attack commands are not authoritative", () => {
+  assert.match(machine, /`attack` is deliberately absent/);
+  assert.doesNotMatch(machine, /AUTHORITATIVE_COMMANDS = new Set\([^\n]*"attack"/);
+  assert.doesNotMatch(machine, /command\.skipPriority = true/);
+  assert.match(priorityEngine, /server-resolves-combat/);
+  assert.match(priorityEngine, /__onlineCombatResolution: true/);
+  assert.match(priorityEngine, /resolveCombatRoot/);
 });
 
 test("room discovery still prefers URL room and recovers from stale finished sessions", () => {
