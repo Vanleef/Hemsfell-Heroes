@@ -47,6 +47,7 @@ const WINDOW_NAMES: Record<string, string> = {
   "maintenance-triggers": "Manutenção",
   "main-action-response": "Ação da Principal",
   "main-end": "Fim da Principal",
+  /* Legacy v2 labels remain readable for a room recovered during deployment. */
   "combat-start": "Início do Combate",
   "after-attackers": "Após declaração de ataque",
   "after-blockers": "Após escolha de bloqueio",
@@ -117,10 +118,11 @@ function combatStatus(game: OnlineGame) {
   const combat = game.combatAction;
   if (!combat) return null;
   const attacker = combat.attackerCard?.name || "A criatura";
-  if (combat.stage === "priority") return `${attacker} declarou ataque · janela de resposta`;
+  if (combat.stage === "priority") return `${attacker} declarou ataque · janela de resposta legada`;
   if (combat.stage === "choosing") return combat.attackerOwner === 1
     ? `Defenda-se de ${attacker}: escolha um bloqueador ou Não bloquear`
     : `Aguardando o oponente escolher o bloqueio de ${attacker}`;
+  if (combat.stage === "charging" && game.priority?.mode === "response") return `${attacker} · bloqueio definido · resposta antes do dano`;
   if (combat.stage === "charging" || combat.stage === "impact") return `${attacker} está resolvendo seu ataque`;
   return `${attacker} está em combate`;
 }
@@ -129,11 +131,13 @@ function OnlinePriorityHud({ game }: { game: OnlineGame }) {
   const priority = game.priority;
   const stack = game.stack || [];
   const combat = combatStatus(game);
-  if (priority?.model !== "online-v2" && !stack.length && !combat && !game.onlineFinalization) return null;
+  if (!priority?.model?.startsWith("online-v") && !stack.length && !combat && !game.onlineFinalization) return null;
   const owner = priority?.owner;
-  const ownerLabel = owner === 0 ? "Sua prioridade" : owner === 1 ? "Prioridade do oponente" : priority?.mode === "resolving" ? "Resolvendo" : "Sem prioridade pendente";
+  const ownerLabel = priority?.mode === "blocker"
+    ? owner === 0 ? "Sua decisão de bloqueio" : "Bloqueio do oponente"
+    : owner === 0 ? "Sua prioridade" : owner === 1 ? "Prioridade do oponente" : priority?.mode === "resolving" ? "Resolvendo" : "Sem prioridade pendente";
   const windowLabel = combat || (priority?.window ? WINDOW_NAMES[priority.window] || priority.window : game.phase === "combate" && game.active === 0 ? "Escolha uma criatura para atacar ou encerre o combate" : "Ação livre");
-  return <aside className="online-priority-hud" data-priority-owner={owner ?? "none"} aria-live="polite">
+  return <aside className="online-priority-hud" data-priority-owner={owner ?? "none"} data-priority-mode={priority?.mode ?? "none"} aria-live="polite">
     <div className="online-priority-heading"><span>ONLINE · PRIORIDADE</span><b>{ownerLabel}</b><small>{windowLabel}</small></div>
     <div className="online-priority-stack"><span>PILHA · {Math.max(Number(priority?.stackDepth || 0), stack.length)}</span>{stack.length ? <ol>{stack.slice().reverse().map((frame, index) => <li key={frame.id || `${frame.label}-${index}`}><i>{frame.controller === 0 ? "VOCÊ" : frame.controller === 1 ? "RIVAL" : "SISTEMA"}</i><b>{frame.label || frame.kind || "Ação"}</b></li>)}</ol> : <small>Nenhum efeito aguardando resolução.</small>}</div>
   </aside>;
@@ -209,12 +213,11 @@ export default function OnlineMatchRuntime() {
     return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
   }, [session?.id, session?.token, session?.isHost]);
 
-  /* The authoritative priority owner also gates the visible local controls.
-     This matters when Café do Tempo asks its controller to place a Cat during
-     the opponent's turn: the active opponent must wait instead of racing a
-     phase, attack or play-card click before the slot choice is persisted. */
+  /* Canonical priority ownership gates visible local controls. This now covers
+     both turns symmetrically: action/response input, the defender-only blocker
+     decision, and opponent-owned decisions all use the same server owner. */
   useEffect(() => {
-    const blocked = room?.status === "started" && game?.winner == null && game?.active === 0 && game?.priority?.owner === 1;
+    const blocked = room?.status === "started" && game?.winner == null && game?.priority?.owner !== 0;
     const selectors = [
       ".screen-game .phase-orb",
       ".screen-game .player-hand",
@@ -242,7 +245,7 @@ export default function OnlineMatchRuntime() {
       for (const selector of selectors) document.querySelectorAll<HTMLElement>(selector).forEach((element) => element.removeAttribute("inert"));
       document.querySelector<HTMLElement>(".screen-game .hs-board")?.removeAttribute("data-online-action-blocked");
     };
-  }, [room?.status, room?.revision, game?.active, game?.winner, game?.priority?.owner]);
+  }, [room?.status, room?.revision, game?.priority?.owner, game?.winner]);
 
   if (!session || !room || !game || room.status !== "started" || game.winner != null) return null;
   return <OnlinePriorityHud game={game} />;
