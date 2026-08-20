@@ -18,6 +18,7 @@ const combatState = () => {
 
 const passTwice = (game, first, second) => {
   game = executeOnlineCommand(game, { type: "passPriority", owner: first }).state;
+  if (!game.pendingResponse) return game;
   return executeOnlineCommand(game, { type: "passPriority", owner: second }).state;
 };
 
@@ -78,7 +79,7 @@ test("a response to End Main resolves and returns to Main instead of entering Co
   assert.equal(game.phase, "combate");
 });
 
-test("unitary combat asks for blocker first, then opens one response checkpoint before damage", () => {
+test("unitary combat asks for blocker only when one exists, then opens one response checkpoint before damage", () => {
   let game = combatState();
   game = executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "a-left" }).state;
   assert.equal(game.combatAction.stage, "choosing");
@@ -95,9 +96,10 @@ test("unitary combat asks for blocker first, then opens one response checkpoint 
   assert.ok(game.players[1].grave.some((card) => card.id === "blocker"));
 
   game = executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "a-right" }).state;
-  assert.equal(game.combatAction.stage, "choosing");
-  game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "a-right", targetHero: true }).state;
-  assert.equal(game.combatAction.stage, "priority");
+  assert.equal(game.combatAction.stage, "priority", "sem bloqueadores legais, não abra uma escolha vazia");
+  assert.equal(game.combatAction.targetHero, true);
+  assert.equal(game.priority.window, "after-blockers");
+  assert.equal(game.pendingResponse.responder, 0);
   game = passTwice(game, 0, 1);
   assert.equal(game.players[1].life, 27);
   assert.equal(game.combatAction, null);
