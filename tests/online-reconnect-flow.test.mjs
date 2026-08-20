@@ -14,7 +14,8 @@ test("resume shifts every Online deadline through the shared clock helper", () =
   assert.match(route, /import \{ shiftOnlineDeadlines \} from "\.\.\/online-clock\.mjs"/);
   assert.match(route, /const awaySince = activeParticipant\.disconnectedAt/);
   assert.match(route, /const resumedAt = Date\.now\(\)/);
-  assert.match(route, /shiftOnlineDeadlines\(room\.game, resumedAt - awaySince\)/);
+  assert.match(route, /const pauseStartedAt = room\.pauseStartedAt \?\? awaySince/);
+  assert.match(route, /shiftOnlineDeadlines\(room\.game, Math\.max\(0, resumedAt - pauseStartedAt\)\)/);
 
   assert.match(clock, /export function shiftOnlineDeadlines/);
   assert.match(clock, /shiftDeadline\(game, "turnDeadline", milliseconds\)/);
