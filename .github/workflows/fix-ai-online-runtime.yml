@@ -1,0 +1,64 @@
+name: Fix AI online runtime leakage
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    if: github.event.issue.title == '[bot] fix ai online runtime leakage'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Patch runtime/session discovery
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p=Path(path); text=p.read_text(encoding='utf-8')
+              if new in text:
+                  return
+              if old not in text:
+                  raise SystemExit(f'needle not found in {path}: {old[:180]!r}')
+              p.write_text(text.replace(old,new,1),encoding='utf-8')
+
+          replace_once('app/online-match-runtime.tsx',
+            '''function readSessions(): Session[] {\n  const result: Session[] = [];\n  const preferred = new URLSearchParams(window.location.search).get("room");\n  const keys: string[] = [];\n  if (preferred) keys.push(`${SESSION_PREFIX}${preferred}`);\n  for (let index = 0; index < localStorage.length; index += 1) {\n    const key = localStorage.key(index);\n    if (key?.startsWith(SESSION_PREFIX) && !keys.includes(key)) keys.push(key);\n  }''',
+            '''function readSessions(): Session[] {\n  const result: Session[] = [];\n  const preferred = new URLSearchParams(window.location.search).get("room");\n  // Online runtime must only inspect the room explicitly selected in the URL.\n  // Scanning every historical localStorage room leaks ONLINE polling into AI matches\n  // and repeatedly requests expired rooms.\n  const keys: string[] = preferred ? [`${SESSION_PREFIX}${preferred}`] : [];''')
+
+          replace_once('app/online-match-runtime.tsx',
+            '''async function fetchRoom(session: Session): Promise<RoomSnapshot | null> {\n  const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}?token=${encodeURIComponent(session.token)}`, { cache: "no-store" });\n  if (!response.ok) return null;''',
+            '''async function fetchRoom(session: Session): Promise<RoomSnapshot | null> {\n  const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}?token=${encodeURIComponent(session.token)}`, { cache: "no-store" });\n  if (response.status === 404) {\n    localStorage.removeItem(`${SESSION_PREFIX}${session.id}`);\n    return null;\n  }\n  if (!response.ok) return null;''')
+
+          replace_once('app/page.tsx',
+            '''    localStorage.setItem(`hemsfell-room-${id}`, JSON.stringify({ token: data.token, isHost: true }));\n    setMode("online");''',
+            '''    localStorage.setItem(`hemsfell-room-${id}`, JSON.stringify({ token: data.token, isHost: true }));\n    history.replaceState({}, "", `${location.pathname}?room=${encodeURIComponent(id)}`);\n    setMode("online");''')
+
+          replace_once('app/page.tsx',
+            '''        localStorage.setItem(`hemsfell-room-${id}`,JSON.stringify({token:data.token,isHost:false}));setMode('online'); setRoomId(id);''',
+            '''        localStorage.setItem(`hemsfell-room-${id}`,JSON.stringify({token:data.token,isHost:false}));history.replaceState({},"",`${location.pathname}?room=${encodeURIComponent(id)}`);setMode('online'); setRoomId(id);''')
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Relevant tests
+        run: node --test tests/online-*.test.mjs tests/*multiplayer*.test.mjs || true
+      - name: Commit validated fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/online-match-runtime.tsx app/page.tsx
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: isolate online room polling from AI matches"
+          git push origin HEAD:fix/cards_mechanics
