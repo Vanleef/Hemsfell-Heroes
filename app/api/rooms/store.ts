@@ -169,27 +169,32 @@ async function writeBlob(room: Room) {
   await put(roomPath(room.id), JSON.stringify(room), { access: "private", addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 0, contentType: "application/json" });
 }
 
+/** The table is the authoritative production store. The previous reader always
+ * read Supabase table + Supabase Storage + Blob before returning, even when the
+ * table had a perfectly valid room. That multiplied every poll/command by two or
+ * three remote round trips. Use fallbacks only when the primary is unavailable
+ * or has no room, preserving fallback recovery without putting it on the hot path. */
 export async function readRoom(id: string): Promise<Room | null> {
   if (useMemoryStore()) return cloneMemory(id);
   const failures: unknown[] = [];
-  const candidates: Array<{ source: "table" | "storage" | "blob"; priority: number; room: Room }> = [];
   let attemptedStore = false;
 
   if (hasSupabaseStore()) {
     attemptedStore = true;
     try {
       const room = await readSupabase(id);
-      if (room) candidates.push({ source: "table", priority: 3, room });
+      if (room) return room;
     } catch (error) {
       failures.push(error);
       console.warn("[rooms] Supabase table read unavailable; checking fallbacks.", error);
     }
+
     try {
       const room = await readSupabaseStorageRoom(id);
-      if (room) candidates.push({ source: "storage", priority: 2, room });
+      if (room) return room;
     } catch (error) {
       failures.push(error);
-      console.warn("[rooms] Supabase unavailable; reading from Blob fallback.", error);
+      console.warn("[rooms] Supabase Storage read unavailable; checking Blob fallback.", error);
     }
   }
 
@@ -197,21 +202,11 @@ export async function readRoom(id: string): Promise<Room | null> {
     attemptedStore = true;
     try {
       const room = await readBlob(id);
-      if (room) candidates.push({ source: "blob", priority: 1, room });
+      if (room) return room;
     } catch (error) {
       failures.push(error);
       console.warn("[rooms] Blob room read unavailable.", error);
     }
-  }
-
-  if (candidates.length) {
-    candidates.sort((a, b) => Number(b.room.revision || 0) - Number(a.room.revision || 0) || b.priority - a.priority);
-    const winner = candidates[0];
-    const sameRevision = candidates.filter((candidate) => Number(candidate.room.revision) === Number(winner.room.revision));
-    if (sameRevision.length > 1 && sameRevision.some((candidate) => JSON.stringify(candidate.room) !== JSON.stringify(winner.room))) {
-      console.warn(`[rooms] divergent room copies at revision ${winner.room.revision}; using ${winner.source} precedence.`);
-    }
-    return winner.room;
   }
 
   if (failures.length) throw failures[failures.length - 1];
