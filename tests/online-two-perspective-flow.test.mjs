@@ -43,9 +43,10 @@ test("host and guest keep consistent ownership through one complete unitary atta
   assert.equal(guest(game).priority.owner, 0, "guest locally owns the blocker decision");
 
   game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "attacker", defenderId: "blocker", targetHero: false }).state;
-  assert.equal(game.combatAction.stage, "charging");
+  assert.equal(game.combatAction.stage, "priority");
   assert.equal(game.combatAction.defenderUid, "blocker");
   assert.equal(game.pendingResponse.responder, 0);
+  assert.equal(game.priority.window, "after-blockers");
   assert.equal(guest(game).combatAction.defenderUid, "blocker");
   assert.equal(guest(game).pendingResponse.responder, 1);
 
