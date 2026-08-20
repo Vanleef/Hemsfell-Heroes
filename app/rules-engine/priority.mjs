@@ -1,6 +1,6 @@
 import { canExecuteCard, validateCosts } from "./engine.mjs";
 import { abilitiesForLevel, getExplicitCardRule } from "./card-rules.mjs";
-import { canonicalStack, inferPriorityWindow } from "./priority-state.mjs";
+import { OnlineInteractionState, canonicalStack, deriveOnlineInteractionState, inferPriorityWindow } from "./priority-state.mjs";
 
 export const PriorityState = Object.freeze({
   IDLE: "IDLE",
@@ -16,9 +16,24 @@ const heroSource = (entry, owner) => ({ uid: `${entry.heroId}-hero-${owner}`, id
 const stackHas = (state, predicate) => (state.priorityStack || []).some((frame) => frame?.kind === "command" && predicate(frame.command || {}));
 const heroUsageKey = (state, source, ability) => `${source.uid || source.id}:${ability.id}${ability?.condition?.firstEachTurn ? `:round-${state.round}` : ""}`;
 const normalizedSubtype = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const normalizedTiming = (value = "") => normalizedSubtype(value).replace(/[ _-]+/g, "");
 const hasSubtype = (card, subtype) => !subtype || (card?.subtypes || card?.tags || []).some((value) => normalizedSubtype(value) === normalizedSubtype(subtype));
 const usesOnlinePriorityModel = (state) => /^online-v\d+$/.test(String(state?.priority?.model || ""));
-function heroAbilityTargetsAvailable(state, owner, ability) {
+
+/**
+ * Response speed is opt-in for permanent abilities. The manual only defines
+ * Acelerado generically, so an ordinary activated card ability is never made
+ * usable in a response window by inference. Card data may explicitly opt in
+ * with responseAllowed/responseLegal or a response/accelerated timing token.
+ */
+export function isExplicitResponseAbility(ability) {
+  if (!ability || ability.trigger !== "activated") return false;
+  if (ability.responseAllowed === true || ability.responseLegal === true) return true;
+  const timing = normalizedTiming(ability.timing || ability.speed || ability.activationTiming || "");
+  return ["response", "responselegal", "accelerated", "acelerado"].includes(timing);
+}
+
+function abilityTargetsAvailable(state, owner, ability) {
   for (const effect of ability.effects || []) {
     const target = effect.target;
     if (!target || !/(?:Character|Creature|Permanent)$/.test(target)) continue;
@@ -38,6 +53,7 @@ function heroAbilityTargetsAvailable(state, owner, ability) {
   }
   return true;
 }
+
 export const isAccelerated = (card) => (card?.tags || []).some((tag) => /acelerado/i.test(String(tag))) || /(?:acelerado|instantâneo|instantaneo)/i.test(card?.text || "");
 
 function spellCost(state, owner, card) {
@@ -46,6 +62,24 @@ function spellCost(state, owner, card) {
     .filter((modifier) => modifier.type === "costModifier" && (!modifier.selector?.type || modifier.selector.type === card.type) && (!modifier.during || modifier.during !== "controllerTurn" || state.active === owner))
     .reduce((sum, modifier) => sum + (modifier.amount || 0), 0);
   return Math.max(0, (card.cost || 0) + (card.costModifier || 0) + discount);
+}
+
+function legalPermanentResponseAbilities(state, owner) {
+  const entry = state.players?.[owner];
+  if (!entry) return [];
+  return permanents(entry).flatMap((source) => {
+    if (!source || source.suffocated || source.exhausted || source.summoning || source.enteredRound === state.round) return [];
+    return (source.abilities || []).flatMap((ability) => {
+      if (!isExplicitResponseAbility(ability) || !ability.id || !abilityTargetsAvailable(state, owner, ability)) return [];
+      if (stackHas(state, command => command.type === "activate" && command.owner === owner && command.sourceId === (source.uid || source.id) && command.abilityId === ability.id)) return [];
+      /* Existing engine timing is still authoritative. At present permanent
+         activations are own-turn actions; this discovery layer does not invent
+         cross-turn permission where card rules have not defined it. */
+      if (state.active !== owner) return [];
+      try { validateCosts(state, ability, { owner, sourceId: source.uid || source.id }); } catch { return []; }
+      return [{ type: "activate", owner, sourceId: source.uid || source.id, abilityId: ability.id, hasPriority: true, label: `${source.name || source.id}: ${ability.id}` }];
+    });
+  });
 }
 
 export function legalPriorityResponses(state, owner) {
@@ -64,17 +98,20 @@ export function legalPriorityResponses(state, owner) {
   const rule = page ? getExplicitCardRule(`p${page}`) : null;
   const source = heroSource(player, owner);
   const heroAbilities = abilitiesForLevel(rule, player.level || 1).flatMap((ability) => {
-    if (ability.trigger !== "activated" || ability.responseAllowed === false || !ability.id || !heroAbilityTargetsAvailable(state, owner, ability)) return [];
+    if (ability.trigger !== "activated" || ability.responseAllowed === false || !ability.id || !abilityTargetsAvailable(state, owner, ability)) return [];
     if (player.abilityUses?.[heroUsageKey(state, source, ability)]) return [];
     if (stackHas(state, command => command.type === "activateHero" && command.owner === owner && command.abilityId === ability.id)) return [];
     try { validateCosts(state, ability, { owner, sourceId: source.uid }); } catch { return []; }
     return [{ type: "activateHero", owner, abilityId: ability.id, hasPriority: true, label: `${player.heroId}: ${ability.id}` }];
   });
-  return [...cards, ...heroAbilities];
+  return [...cards, ...legalPermanentResponseAbilities(state, owner), ...heroAbilities];
 }
 
-export const shouldAutoPass = (state, owner, control = "assisted") =>
-  control === "assisted" && !!state?.pendingResponse && state.pendingResponse.responder === owner && legalPriorityResponses(state, owner).length === 0;
+export const shouldAutoPass = (state, owner, control = "assisted") => {
+  const interaction = deriveOnlineInteractionState(state);
+  const responseState = interaction === OnlineInteractionState.RESPONSE_PRIORITY || interaction === OnlineInteractionState.FINALIZATION_RESPONSE;
+  return control === "assisted" && responseState && state?.pendingResponse?.responder === owner && legalPriorityResponses(state, owner).length === 0;
+};
 
 export function chooseAIResponse(state, owner, random = Math.random) {
   const pending = state?.pendingResponse;
