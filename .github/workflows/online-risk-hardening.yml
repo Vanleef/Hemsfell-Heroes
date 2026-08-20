@@ -56,8 +56,10 @@ jobs:
           source = open(path, encoding="utf-8").read()
           old = ''' assert.match(roomStore,/card\\?\\.revealed === true \\? card : hiddenCard/);\n assert.match(roomStore,/game\\.pendingDecision\\?\\.kind === "investigate-selection"/);'''
           new = ''' assert.match(roomStore,/visibleTo\\(card, viewer\\) \\? card : hiddenCard/);\n assert.match(roomStore,/revealedTo\\.includes\\(viewer\\)/);\n assert.match(roomStore,/kind: "opponent-choice"/);\n assert.match(roomStore,/effect: \\{\\}/);\n assert.match(roomStore,/context: \\{\\}/);\n assert.match(roomStore,/targetSteps: \\[\\]/);'''
+          if new in source:
+              raise SystemExit(0)
           if old not in source:
-              raise SystemExit("stale hidden-zone assertions not found")
+              raise SystemExit("hidden-zone assertions are in an unexpected state")
           open(path, "w", encoding="utf-8").write(source.replace(old, new, 1))
           PY
       - name: Apply online hardening patches
@@ -102,4 +104,4 @@ jobs:
           git commit -m "fix: close remaining online authority risks"
           git push origin HEAD:fix/cards_mechanics
 
-# manual retrigger 2026-08-20T09:40-03:00
+# manual retrigger after hidden-zone regression sync
