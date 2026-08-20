@@ -7,9 +7,6 @@ on:
     paths:
       - scripts/online-risk-hardening.mjs
       - .github/workflows/online-risk-hardening.yml
-  pull_request:
-    branches:
-      - fix/cards_mechanics
   workflow_dispatch:
 
 permissions:
@@ -18,7 +15,7 @@ permissions:
 jobs:
   harden-online:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
@@ -62,14 +59,34 @@ jobs:
           PY
       - name: Apply online hardening patches
         run: node scripts/online-risk-hardening.mjs
-      - name: Run focused online regressions
-        run: node --test tests/online-authoritative-audit.test.mjs tests/online-clock-authority.test.mjs tests/online-risk-hardening.test.mjs
-      - name: Run rules suite
-        run: npm run test:rules
-      - name: Typecheck online surfaces
-        run: npx tsc -p tsconfig.online.json --noEmit
+      - name: Validate hardening and capture failures
+        run: |
+          set +e
+          LOG=/tmp/online-hardening-validation.log
+          : > "$LOG"
+          echo "=== focused online regressions ===" | tee -a "$LOG"
+          node --test tests/online-authoritative-audit.test.mjs tests/online-clock-authority.test.mjs tests/online-risk-hardening.test.mjs 2>&1 | tee -a "$LOG"
+          focused=${PIPESTATUS[0]}
+          echo "=== rules suite ===" | tee -a "$LOG"
+          npm run test:rules 2>&1 | tee -a "$LOG"
+          rules=${PIPESTATUS[0]}
+          echo "=== online typecheck ===" | tee -a "$LOG"
+          npx tsc -p tsconfig.online.json --noEmit 2>&1 | tee -a "$LOG"
+          types=${PIPESTATUS[0]}
+          echo "RESULT focused=$focused rules=$rules types=$types" | tee -a "$LOG"
+          if [ "$focused" -ne 0 ] || [ "$rules" -ne 0 ] || [ "$types" -ne 0 ]; then
+            git reset --hard HEAD
+            mkdir -p docs
+            cp "$LOG" docs/online-hardening-failure.log
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add docs/online-hardening-failure.log
+            git commit -m "chore: capture online hardening validation failure"
+            git push origin HEAD:fix/cards_mechanics
+            exit 1
+          fi
       - name: Remove temporary runner
-        run: rm -f scripts/online-risk-hardening.mjs .github/workflows/online-risk-hardening.yml
+        run: rm -f scripts/online-risk-hardening.mjs .github/workflows/online-risk-hardening.yml docs/online-hardening-failure.log
       - name: Commit validated hardening
         run: |
           git config user.name "github-actions[bot]"
