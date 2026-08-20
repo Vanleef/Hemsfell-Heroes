@@ -264,6 +264,26 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
 
 const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "maintenanceChoice", "declareAttack", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
 
+/* Drain response windows that have no legal action immediately inside the same
+ * authoritative transaction. This is deliberately server-side: an Assisted
+ * client may render no modal at all when it has nothing usable, so relying on a
+ * React effect to send the pass can leave the other browser waiting forever.
+ * The guard covers phase-end checkpoints, post-block combat checkpoints and
+ * ordinary response handoffs without creating extra room revisions. */
+function drainEmptyAssistedPriority(room: Room, trace: string[] = []) {
+  let guard = 0;
+  while (room.game?.pendingResponse && guard++ < 4) {
+    const owner = room.game.pendingResponse.responder as 0 | 1;
+    if (!shouldAutoPass(room.game, owner, "assisted")) break;
+    const before = room.game;
+    const result = executeOnlineCommand(before, { type: "passPriority", owner, auto: true }, { priority: true });
+    room.game = result.state;
+    reconcileOnlineClocks(before, room.game, room.settings);
+    trace.push(...(result.trace || []), "online-priority:server-assisted-auto-pass");
+  }
+  return trace;
+}
+
 /** Server-authoritative command path. The server owns the player index,
  * validates room revision and routes Online timing through one priority kernel. */
 export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record<string, unknown>, baseRevision: unknown, commandId: unknown = undefined) {
@@ -312,12 +332,13 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
     const result = executeOnlineCommand(before, command, { priority: true });
     room.game = result.state;
     reconcileOnlineClocks(before, room.game, room.settings);
+    const trace = drainEmptyAssistedPriority(room, [...(result.trace || [])]);
     room.revision++;
     if (currentParticipant) {
       const recent = currentParticipant.recentCommandIds || [];
       currentParticipant.recentCommandIds = [...recent.filter((value) => value !== normalizedCommandId), normalizedCommandId].slice(-128);
     }
-    return { ok: true, status: 200, error: "", trace: result.trace, duplicate: false };
+    return { ok: true, status: 200, error: "", trace, duplicate: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : "invalid command";
     logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: message, baseRevision });
