@@ -2,8 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { orientOnlineGameForRole } from "./online-state-orientation.mjs";
+import { shouldAutoPass } from "./rules-engine/priority.mjs";
 
 type Session = { id: string; token: string; isHost: boolean };
+type ResponseControl = "assisted" | "full-control";
 type PriorityView = {
   model?: string;
   mode?: string;
@@ -13,6 +15,13 @@ type PriorityView = {
   commandTypes?: string[];
   consecutivePasses?: number;
   stackDepth?: number;
+};
+type PendingResponse = {
+  responder: 0 | 1;
+  actor: 0 | 1;
+  action?: string;
+  passes?: number;
+  deadline?: number;
 };
 type StackFrame = { id?: string; kind?: string; controller?: 0 | 1 | null; label?: string };
 type CombatAction = {
@@ -29,6 +38,10 @@ type OnlineGame = {
   phase?: string;
   round?: number;
   winner?: number | null;
+  players?: unknown[];
+  pendingResponse?: PendingResponse | null;
+  pendingAction?: Record<string, unknown>;
+  priorityStack?: unknown[];
   priority?: PriorityView;
   stack?: StackFrame[];
   combatAction?: CombatAction | null;
@@ -43,8 +56,12 @@ type RoomSnapshot = {
 };
 
 const SESSION_PREFIX = "hemsfell-room-";
-const POLL_MS = 760;
+/* Priority is a short-lived interaction. Poll it faster than ordinary lobby
+   discovery so Assisted mode feels like a continuous turn instead of a modal
+   round-trip. The server remains authoritative for every pass. */
+const POLL_MS = 320;
 const DISCOVERY_MS = 3_500;
+const ASSISTED_PASS_DELAY_MS = 45;
 const WINDOW_NAMES: Record<string, string> = {
   "maintenance-triggers": "Manutenção",
   "main-action-response": "Ação da Principal",
@@ -75,6 +92,11 @@ function onlineRuntimeIsRelevant() {
   const preferred = new URLSearchParams(window.location.search).get("room");
   if (preferred) return true;
   return !!document.querySelector(".match-clock");
+}
+
+function readResponseControl(): ResponseControl {
+  const toggle = document.querySelector<HTMLElement>(".screen-game .priority-control-toggle");
+  return /full\s*control/i.test(toggle?.textContent || "") ? "full-control" : "assisted";
 }
 
 function readSessions(): Session[] {
@@ -154,8 +176,11 @@ export default function OnlineMatchRuntime() {
   const [session, setSession] = useState<Session | null>(null);
   const [room, setRoom] = useState<RoomSnapshot | null>(null);
   const [game, setGame] = useState<OnlineGame | null>(null);
+  const [responseControl, setResponseControl] = useState<ResponseControl>("assisted");
   const roomRef = useRef<RoomSnapshot | null>(null);
   const sessionRef = useRef<Session | null>(null);
+  const assistedPassKeyRef = useRef("");
+  const assistedPassInFlightRef = useRef(false);
 
   const applySnapshot = (currentSession: Session, snapshot: RoomSnapshot) => {
     sessionRef.current = currentSession;
@@ -163,6 +188,20 @@ export default function OnlineMatchRuntime() {
     setRoom(snapshot);
     setGame(snapshot.game ? orientOnlineGameForRole(snapshot.game, currentSession.isHost ? "host" : "guest") as OnlineGame : null);
   };
+
+  /* `priorityControl` lives in the main match screen. Observe its rendered
+     toggle so this independent authoritative runtime honors Full Control too. */
+  useEffect(() => {
+    let frame = 0;
+    const sync = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => setResponseControl(readResponseControl()));
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    return () => { cancelAnimationFrame(frame); observer.disconnect(); };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -219,6 +258,52 @@ export default function OnlineMatchRuntime() {
     void poll();
     return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
   }, [session?.id, session?.token, session?.isHost]);
+
+  /* Assisted mode acts on the authoritative pendingResponse immediately. It
+     must not wait for the presentation layer's delayed response modal: when the
+     responder has no legal/payable action, the server receives Pass Priority
+     almost immediately and both clients advance to the same next snapshot. */
+  useEffect(() => {
+    if (!session || !room || !game || room.status !== "started" || game.winner != null || responseControl !== "assisted") {
+      assistedPassKeyRef.current = "";
+      return;
+    }
+    const pending = game.pendingResponse;
+    if (!pending || pending.responder !== 0 || !shouldAutoPass(game as any, 0, "assisted")) {
+      if (!pending || pending.responder !== 0) assistedPassKeyRef.current = "";
+      return;
+    }
+    const key = `${room.id}:${room.revision}:${pending.actor}:${pending.responder}:${pending.passes ?? 0}:${pending.action || ""}`;
+    if (assistedPassKeyRef.current === key || assistedPassInFlightRef.current) return;
+    assistedPassKeyRef.current = key;
+    let cancelled = false;
+    const timer = window.setTimeout(async () => {
+      if (assistedPassInFlightRef.current) return;
+      assistedPassInFlightRef.current = true;
+      try {
+        const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}`, {
+          method: "POST",
+          cache: "no-store",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            action: "command",
+            token: session.token,
+            baseRevision: room.revision,
+            commandId: `assisted-pass:${crypto.randomUUID()}`,
+            command: { type: "passPriority", auto: true },
+          }),
+        });
+        const snapshot = await response.json().catch(() => null) as RoomSnapshot | null;
+        if (!cancelled && snapshot?.game && Number.isFinite(Number(snapshot.revision))) applySnapshot(session, snapshot);
+      } catch {
+        /* Polling reconciles transient network failures; never manufacture a
+           local pass or mutate the authoritative snapshot optimistically. */
+      } finally {
+        assistedPassInFlightRef.current = false;
+      }
+    }, ASSISTED_PASS_DELAY_MS);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [session?.id, session?.token, room?.id, room?.revision, room?.status, game, responseControl]);
 
   /* Local player is always oriented as owner 0.  The canonical input owner
      therefore gates the entire normal action surface during opponent priority,
