@@ -14,12 +14,12 @@ import {
   handOffFirstPass,
   inferPriorityWindow,
   openResponseWindow,
-  phaseTransitionWindow,
   syncPriorityMetadata,
 } from "./priority-state.mjs";
 
 const clone = (value) => structuredClone(value);
 const SINGLE_COMBAT_START = "single-combat-start";
+const MAIN_END_REQUEST = "main-end-request";
 const LEGACY_GROUPED_CHECKPOINTS = new Set(["combat-start", "after-attackers", "after-blockers", "combat-end"]);
 
 const responseIdentity = (command) => {
@@ -54,51 +54,89 @@ function phaseAdvanceLabel(phase) {
   return "avançar etapa";
 }
 
-function canOpenPhaseTransition(state, command) {
-  if (command.type !== "advancePhase") return false;
-  if (command.owner !== state.active) throw new RulesViolation("not-your-turn");
-  if (state.pendingResponse || state.pendingAction || state.pendingDecision || state.pendingReposition || state.combatAction) throw new RulesViolation("interaction-pending");
-  return state.phase === "principal" || state.phase === "combate";
+function interactionClear(state) {
+  return !state.pendingResponse && !state.pendingAction && !state.pendingDecision && !state.pendingReposition && !state.combatAction;
 }
 
-function openPhaseTransition(state, command) {
-  /* The engine preflight is the single authority for Indomável and every other
-     reason combat may not legally end. */
+function canRequestMainEnd(state, command) {
+  if (command.type !== "advancePhase" || state.phase !== "principal") return false;
+  if (command.owner !== state.active) throw new RulesViolation("not-your-turn");
+  if (!interactionClear(state)) throw new RulesViolation("interaction-pending");
+  return true;
+}
+
+function openMainEndRequest(state, command) {
+  /* Preflight against the authoritative engine before offering the opponent a
+     final response. The phase itself is not committed yet. */
   executeRulesCommand(clone(state), { ...command, skipPriority: true }, { priority: false });
   const next = clone(state);
-  const window = phaseTransitionWindow(state.phase);
   openResponseWindow(next, {
     actor: command.owner,
     responder: 1 - command.owner,
     action: phaseAdvanceLabel(state.phase),
-    window,
-    pendingAction: { ...command, skipPriority: true, __onlinePhaseTransition: true },
+    window: PriorityWindow.MAIN_END,
+    pendingAction: {
+      type: "onlineCheckpoint",
+      checkpoint: MAIN_END_REQUEST,
+      owner: command.owner,
+      __onlineMainEndRequest: true,
+    },
   });
-  return { state: next, trace: ["online-priority:phase-transition-open"], steps: 0 };
+  /* Declaring End Main is the active player's first pass on an empty stack.
+     Therefore a single pass by the opponent accepts the transition. */
+  next.pendingResponse = { ...next.pendingResponse, passes: 1 };
+  return { state: syncPriorityMetadata(next, { window: PriorityWindow.MAIN_END }), trace: ["online-priority:main-end-request-open"], steps: 0 };
 }
 
-function openCombatStartWindow(inputState) {
-  const state = clone(inputState);
-  openResponseWindow(state, {
-    actor: state.active,
-    responder: state.active,
-    action: "início da etapa de Combate",
-    window: PriorityWindow.COMBAT_START,
-    pendingAction: { type: "onlineCheckpoint", checkpoint: SINGLE_COMBAT_START, owner: state.active },
-  });
-  return syncPriorityMetadata(state, { window: PriorityWindow.COMBAT_START });
+function isMainEndRoot(command) {
+  return command?.type === "onlineCheckpoint" && command?.checkpoint === MAIN_END_REQUEST;
+}
+
+function markMainEndInterrupted(state) {
+  if (isMainEndRoot(state.pendingAction)) state.pendingAction.__onlineInterrupted = true;
+  const root = state.priorityStack?.[0];
+  if (root?.kind === "command" && isMainEndRoot(root.command)) root.command.__onlineInterrupted = true;
+  return state;
+}
+
+function cancelInterruptedMainEndRequest(state) {
+  if (!state || state.pendingDecision || state.pendingReposition) return state;
+  const stack = state.priorityStack || [];
+  const rootCommand = stack[0]?.kind === "command" ? stack[0].command : state.pendingAction;
+  if (!isMainEndRoot(rootCommand) || !rootCommand.__onlineInterrupted || stack.length > 1) return state;
+  state.pendingAction = undefined;
+  state.pendingResponse = null;
+  state.priorityStack = undefined;
+  return syncPriorityMetadata(state, { mode: PriorityMode.ACTION, owner: state.active, window: null });
+}
+
+function finishMainEndRequest(state) {
+  const owner = state.pendingAction?.owner ?? state.active;
+  const next = clone(state);
+  next.pendingAction = undefined;
+  next.pendingResponse = null;
+  next.priorityStack = undefined;
+  const result = executeRulesCommand(next, { type: "advancePhase", owner, skipPriority: true }, { priority: false });
+  if (result.state.phase !== "combate") throw new RulesViolation("main-end-transition-failed");
+  /* Online v3 enters unitary COMBAT_IDLE directly. There is no redundant
+     generic combat-start click cycle in the documented Hemsfell turn flow. */
+  delete result.state.onlineCombat;
+  syncPriorityMetadata(result.state, { mode: PriorityMode.ACTION, owner: result.state.active, window: null });
+  result.trace = [...(result.trace || []), "online-priority:main-end-accepted"];
+  return result;
+}
+
+function canEndCombatNow(state, command) {
+  if (command.type !== "advancePhase" || state.phase !== "combate") return false;
+  if (command.owner !== state.active) throw new RulesViolation("not-your-turn");
+  if (!interactionClear(state)) throw new RulesViolation("interaction-pending");
+  return true;
 }
 
 function checkpointAtRoot(state) {
   return (state.priorityStack?.length || 0) <= 1 && state.pendingAction?.type === "onlineCheckpoint"
     ? state.pendingAction.checkpoint
     : null;
-}
-function combatTransitionAtRoot(state) {
-  return (state.priorityStack?.length || 0) <= 1 && state.phase === "combate" && state.pendingAction?.type === "advancePhase" && state.pendingAction?.__onlinePhaseTransition;
-}
-function mainTransitionAtRoot(state) {
-  return (state.priorityStack?.length || 0) <= 1 && state.phase === "principal" && state.pendingAction?.type === "advancePhase" && state.pendingAction?.__onlinePhaseTransition;
 }
 
 function finishSingleCombatStart(state) {
@@ -113,6 +151,7 @@ function finishSingleCombatStart(state) {
 function resolveOnlineCheckpoint(state) {
   const checkpoint = checkpointAtRoot(state);
   if (!checkpoint) throw new RulesViolation("online-checkpoint-missing");
+  if (checkpoint === MAIN_END_REQUEST) return finishMainEndRequest(state);
   let next;
   if (checkpoint === SINGLE_COMBAT_START) next = finishSingleCombatStart(state);
   else if (checkpoint === OnlineFinalizationStage.PRIORITY) next = completeOnlineFinalization(state);
@@ -170,7 +209,8 @@ function normalizeAfterResolution(before, result, command) {
   const wasNestedStack = command.type === "passPriority" && Number(before.pendingResponse?.passes || 0) > 0 && (before.priorityStack?.length || 0) > 1;
   if (wasNestedStack && state.pendingResponse && !state.pendingDecision && !state.pendingReposition) state.pendingResponse = { ...state.pendingResponse, responder: state.active, passes: 0 };
   suspendPriorityWhileChoosing(state);
-  return syncPriorityMetadata(state, { window: inferPriorityWindow(state) });
+  cancelInterruptedMainEndRequest(state);
+  return syncPriorityMetadata(state, { window: state.pendingResponse ? inferPriorityWindow(state) : null });
 }
 
 export function executeOnlineCommand(inputState, rawCommand, options = {}) {
@@ -192,19 +232,6 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
         return { state: passed, trace: ["online-priority:first-pass"], steps: 0 };
       }
       if (checkpointAtRoot(state)) return resolveOnlineCheckpoint(state);
-      if (combatTransitionAtRoot(state)) {
-        const next = enterOnlineFinalization(state, state.active);
-        return { state: next, trace: ["online-finalization:entered-after-combat-passes"], steps: 0 };
-      }
-      if (mainTransitionAtRoot(state)) {
-        const resolved = executeRulesCommand(state, command, { ...options, priority: true });
-        normalizeAfterResolution(state, resolved, command);
-        if (resolved.state.phase === "combate" && !resolved.state.pendingDecision && !resolved.state.pendingReposition) {
-          resolved.state = openCombatStartWindow(resolved.state);
-          resolved.trace = [...(resolved.trace || []), "online-combat:single-combat-start-open"];
-        }
-        return resolved;
-      }
       const result = executeRulesCommand(state, command, { ...options, priority: true });
       normalizeAfterResolution(state, result, command);
       result.trace = [...(result.trace || []), "online-priority:resolve-after-two-passes"];
@@ -212,6 +239,7 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
     }
 
     validateOnlineResponse(state, command);
+    markMainEndInterrupted(state);
     const result = executeRulesCommand(state, { ...command, hasPriority: true }, { ...options, priority: true });
     syncPriorityMetadata(result.state, { window: inferPriorityWindow(state) });
     result.trace = [...(result.trace || []), "online-priority:response-added"];
@@ -225,10 +253,15 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   if (state.onlineCombat && !state.pendingDecision && !state.pendingReposition && !state.combatAction) delete state.onlineCombat;
 
   validateSingleBlockerChoice(state, command);
-  if (canOpenPhaseTransition(state, command)) return openPhaseTransition(state, command);
+  if (canRequestMainEnd(state, command)) return openMainEndRequest(state, command);
+  if (canEndCombatNow(state, command)) {
+    const next = enterOnlineFinalization(state, command.owner);
+    return { state: next, trace: ["online-finalization:entered-from-combat-idle"], steps: 0 };
+  }
 
   const result = executeRulesCommand(state, command, { ...options, priority: true });
   resumePriorityAfterChoice(state, result.state);
+  cancelInterruptedMainEndRequest(result.state);
   if (command.type === "resolveDecision" && result.state.onlineFinalization?.stage === OnlineFinalizationStage.EFFECTS && !result.state.pendingDecision && !result.state.pendingReposition) {
     result.state = resumeOnlineFinalizationAfterDecision(result.state);
     result.trace = [...(result.trace || []), "online-finalization:resume-after-decision"];
