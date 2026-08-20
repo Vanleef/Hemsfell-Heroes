@@ -294,6 +294,27 @@ function normalizeAfterResolution(before, result, command) {
   return syncPriorityMetadata(state, { window: state.pendingResponse ? inferPriorityWindow(state) : null });
 }
 
+/* Once one player has passed, returning priority to a player with literally no
+   legal response is deterministic. Do that second empty pass on the server
+   instead of depending on a browser-side assisted-mode effect. This removes a
+   deadlock where both clients could display "waiting for opponent" while the
+   player who technically owned priority had no modal/action to perform. */
+function resolveEmptySecondPass(state, options = {}) {
+  const pending = state?.pendingResponse;
+  if (!pending || Number(pending.passes || 0) < 1) return null;
+  const owner = pending.responder;
+  if (legalPriorityResponses(state, owner).length > 0) return null;
+  if (checkpointAtRoot(state)) {
+    const resolved = resolveOnlineCheckpoint(state);
+    resolved.trace = [...(resolved.trace || []), "online-priority:auto-pass-empty-second-window"];
+    return resolved;
+  }
+  const result = executeRulesCommand(state, { type: "passPriority", owner, auto: true }, { ...options, priority: true });
+  normalizeAfterResolution(state, result, { type: "passPriority", owner, auto: true });
+  result.trace = [...(result.trace || []), "online-priority:auto-pass-empty-second-window"];
+  return result;
+}
+
 export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   const state = syncPriorityMetadata(clone(inputState));
   /* Recover long-lived room snapshots that already contain both a target/choice
@@ -310,11 +331,18 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
       if (state.pendingResponse.responder !== command.owner) throw new RulesViolation("not-your-priority");
       if (Number(state.pendingResponse.passes || 0) === 0) {
         const passed = handOffFirstPass(state, command.owner);
+        const autoResolved = resolveEmptySecondPass(passed, options);
+        if (autoResolved) return autoResolved;
         return { state: passed, trace: ["online-priority:first-pass"], steps: 0 };
       }
       if (checkpointAtRoot(state)) return resolveOnlineCheckpoint(state);
       const result = executeRulesCommand(state, command, { ...options, priority: true });
       normalizeAfterResolution(state, result, command);
+      const autoResolved = resolveEmptySecondPass(result.state, options);
+      if (autoResolved) {
+        autoResolved.trace = [...(result.trace || []), ...(autoResolved.trace || []), "online-priority:resolve-after-two-passes"];
+        return autoResolved;
+      }
       result.trace = [...(result.trace || []), "online-priority:resolve-after-two-passes"];
       return result;
     }
