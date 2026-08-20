@@ -67,7 +67,7 @@ test("canonical priority HUD reports the current single attack without replacing
 });
 
 test("unitary blocker choice owns a response deadline without consuming attacker action time", () => {
-  assert.match(clock, /choosingBlocker/);
+  assert.match(clock, /const blockerOwnsInput = \(game\) => interactionState\(game\) === OnlineInteractionState\.AWAITING_BLOCKER/);
   assert.match(clock, /after\.combatAction\.deadline = now \+ settings\.responseSeconds \* 1000/);
   assert.match(machine, /combatAction\?\.stage === "choosing"/);
   assert.match(machine, /type: "selectDefender", owner, targetHero: true, auto: true/);
