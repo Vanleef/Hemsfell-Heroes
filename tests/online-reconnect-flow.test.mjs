@@ -17,14 +17,9 @@ test("resume shifts every Online deadline through the shared clock helper", () =
   assert.match(route, /shiftOnlineDeadlines\(room\.game, resumedAt - awaySince\)/);
 
   assert.match(clock, /export function shiftOnlineDeadlines/);
-  for (const target of [
-    /shiftDeadline\(game, "turnDeadline", milliseconds\)/,
-    /shiftDeadline\(game\.pendingResponse, "deadline", milliseconds\)/,
-    /shiftDeadline\(game\.priority, "deadline", milliseconds\)/,
-    /shiftDeadline\(game\.combatAction, "deadline", milliseconds\)/,
-    /shiftDeadline\(game\.pendingReposition, "deadline", milliseconds\)/,
-    /shiftDeadline\(game\.pendingDecision, "deadline", milliseconds\)/,
-  ]) assert.match(clock, target);
+  assert.match(clock, /shiftDeadline\(game, "turnDeadline", milliseconds\)/);
+  assert.match(clock, /for \(const target of \[game\.pendingResponse, game\.priority, game\.combatAction, game\.pendingReposition, game\.pendingDecision\]\)/);
+  assert.match(clock, /shiftDeadline\(target, "deadline", milliseconds\)/);
 });
 
 test("resume is idempotent and gameplay cannot silently clear a disconnected participant", () => {
