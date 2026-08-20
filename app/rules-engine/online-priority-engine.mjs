@@ -193,8 +193,24 @@ function normalizeDeclaredAttack(state) {
   state.pendingResponse = null;
   state.pendingAction = undefined;
   state.priorityStack = undefined;
+  const defenderOwner = 1 - combat.attackerOwner;
+  const blockers = listLegalBlockers(state, defenderOwner, combat.attackerUid);
+  if (!blockers.length) {
+    /* Do not leave an attack waiting in a blocker-choice state when there is
+       literally no legal blocker. This was the main source of silent combat
+       locks: the attacker saw an inert attack while the defender had no useful
+       choice to make. Go straight to the post-block response checkpoint. */
+    state.combatAction = {
+      ...combat,
+      targetHero: true,
+      defenderUid: undefined,
+      defenderCard: undefined,
+      stage: "charging",
+    };
+    return openSingleAttackResponse(state);
+  }
   state.combatAction = { ...combat, stage: "choosing" };
-  return syncPriorityMetadata(state, { mode: PriorityMode.ACTION, owner: 1 - combat.attackerOwner, window: null });
+  return syncPriorityMetadata(state, { mode: PriorityMode.ACTION, owner: defenderOwner, window: null });
 }
 
 function openSingleAttackResponse(state) {
@@ -268,8 +284,11 @@ function validateDecisionPriority(state, command) {
 
 function normalizeAfterResolution(before, result, command) {
   const state = result.state;
-  const wasNestedStack = command.type === "passPriority" && Number(before.pendingResponse?.passes || 0) > 0 && (before.priorityStack?.length || 0) > 1;
-  if (wasNestedStack && state.pendingResponse && !state.pendingDecision && !state.pendingReposition) state.pendingResponse = { ...state.pendingResponse, responder: state.active, passes: 0 };
+  /* The core priority engine already reconstructs actor/responder after the top
+     stack item resolves. Overwriting responder with state.active here could
+     make responder === actor, forcing the same player to pass twice and leaving
+     the opponent without a usable response window. Preserve the authoritative
+     handoff exactly as rebuilt by engine.mjs. */
   suspendPriorityWhileChoosing(state);
   cancelInterruptedMainEndRequest(state);
   return syncPriorityMetadata(state, { window: state.pendingResponse ? inferPriorityWindow(state) : null });
