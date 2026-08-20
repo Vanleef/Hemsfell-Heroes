@@ -14,7 +14,7 @@ test("authoritative room commands deduplicate a previously accepted command id b
   const duplicateIndex = machine.indexOf("recentCommandIds?.includes(normalizedCommandId)");
   const staleIndex = machine.indexOf("Number(baseRevision) !== room.revision", machine.indexOf("export function applyRulesCommand"));
   assert.ok(duplicateIndex > 0 && staleIndex > duplicateIndex, "duplicate recognition must happen before the stale-revision rejection");
-  assert.match(machine, /recentCommandIds = \[\.\.\.recent\.filter\(\(value\) => value !== normalizedCommandId\), normalizedCommandId\]\.slice\(-32\)/);
+  assert.match(machine, /recentCommandIds = \[\.\.\.recent\.filter\(\(value\) => value !== normalizedCommandId\), normalizedCommandId\]\.slice\(-128\)/);
 });
 
 test("room route forwards the stable command id to the authoritative machine", () => {
