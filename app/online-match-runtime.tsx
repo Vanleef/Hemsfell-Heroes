@@ -56,14 +56,27 @@ const WINDOW_NAMES: Record<string, string> = {
   "activated-ability-response": "Habilidade ativada",
 };
 
+function onlineRuntimeIsRelevant() {
+  const preferred = new URLSearchParams(window.location.search).get("room");
+  if (preferred) return true;
+  // The turn clock only exists in an ONLINE game. This prevents historical
+  // localStorage room sessions from being probed while the user is playing AI.
+  return !!document.querySelector(".match-clock");
+}
+
 function readSessions(): Session[] {
   const result: Session[] = [];
+  if (!onlineRuntimeIsRelevant()) return result;
   const preferred = new URLSearchParams(window.location.search).get("room");
   const keys: string[] = [];
   if (preferred) keys.push(`${SESSION_PREFIX}${preferred}`);
-  for (let index = 0; index < localStorage.length; index += 1) {
-    const key = localStorage.key(index);
-    if (key?.startsWith(SESSION_PREFIX) && !keys.includes(key)) keys.push(key);
+  // Hosts currently do not always keep ?room= in the address bar after room
+  // creation, so an active ONLINE board may still discover its saved session.
+  if (!preferred) {
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (key?.startsWith(SESSION_PREFIX) && !keys.includes(key)) keys.push(key);
+    }
   }
   for (const key of keys) {
     try {
@@ -77,14 +90,23 @@ function readSessions(): Session[] {
 
 async function fetchRoom(session: Session): Promise<RoomSnapshot | null> {
   const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}?token=${encodeURIComponent(session.token)}`, { cache: "no-store" });
+  if (response.status === 404) {
+    // Expired/deleted room sessions are stale client metadata; remove them so
+    // they can never create a recurring polling loop again.
+    localStorage.removeItem(`${SESSION_PREFIX}${session.id}`);
+    return null;
+  }
   if (!response.ok) return null;
   const room = await response.json() as RoomSnapshot;
   return room.game ? room : null;
 }
 
 async function discoverSession(): Promise<{ session: Session; room: RoomSnapshot } | null> {
+  if (!onlineRuntimeIsRelevant()) return null;
   const preferred = new URLSearchParams(window.location.search).get("room");
-  const candidates = await Promise.all(readSessions().map(async (session) => ({ session, room: await fetchRoom(session) })));
+  const sessions = readSessions();
+  if (!sessions.length) return null;
+  const candidates = await Promise.all(sessions.map(async (session) => ({ session, room: await fetchRoom(session) })));
   const statusRank: Record<string, number> = { started: 3, mulligan: 2, finished: 1 };
   return candidates
     .filter((entry): entry is { session: Session; room: RoomSnapshot } => !!entry.room && ["mulligan", "started", "finished"].includes(entry.room.status))
@@ -135,6 +157,17 @@ export default function OnlineMatchRuntime() {
     let cancelled = false;
     let timer = 0;
     const reconcile = async () => {
+      if (!onlineRuntimeIsRelevant()) {
+        if (sessionRef.current) {
+          sessionRef.current = null;
+          roomRef.current = null;
+          setSession(null);
+          setRoom(null);
+          setGame(null);
+        }
+        timer = window.setTimeout(reconcile, DISCOVERY_MS);
+        return;
+      }
       const found = await discoverSession().catch(() => null);
       if (cancelled) return;
       if (found) {
@@ -159,6 +192,14 @@ export default function OnlineMatchRuntime() {
     let cancelled = false;
     let timer = 0;
     const poll = async () => {
+      if (!onlineRuntimeIsRelevant()) {
+        sessionRef.current = null;
+        roomRef.current = null;
+        setSession(null);
+        setRoom(null);
+        setGame(null);
+        return;
+      }
       const snapshot = await fetchRoom(session).catch(() => null);
       if (cancelled) return;
       if (snapshot) applySnapshot(session, snapshot);
