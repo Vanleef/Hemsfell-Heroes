@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { roomView, type Room, writeRoom } from "./store";
+import { roomView, type Room, writeRoom } from "./store-runtime";
 import { defaultSettings, participant, sanitizeSettings } from "./machine";
 import { isPlainRecord, readSafeJson } from "./validation";
 
@@ -23,4 +23,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "request failed" }, { status: 503 });
   }
 }
-
