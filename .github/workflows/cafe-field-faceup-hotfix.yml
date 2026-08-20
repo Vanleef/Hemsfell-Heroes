@@ -1,7 +1,7 @@
 name: Cafe field face-up hotfix
 
 on:
-  issues:
+  pull_request_target:
     types: [opened]
 
 permissions:
@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   patch-and-test:
-    if: github.event.issue.title == '[bot] cafe faceup hotfix'
+    if: github.event.pull_request.title == '[bot] cafe faceup hotfix'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
