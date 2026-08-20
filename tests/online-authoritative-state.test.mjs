@@ -13,8 +13,9 @@ test("started Online matches reject legacy full-state sync", () => {
   assert.doesNotMatch(block, /preserveOpponentSecrets\(/);
 });
 
-test("room command whitelist exposes only unitary combat intents", () => {
-  assert.match(machine, /"declareAttack", "selectDefender", "attack", "advancePhase"/);
+test("room command whitelist exposes only unitary combat intents and keeps impact server-only", () => {
+  assert.match(machine, /"declareAttack", "selectDefender", "advancePhase"/);
+  assert.doesNotMatch(machine, /AUTHORITATIVE_COMMANDS = new Set\([^\n]*"attack"/);
   assert.doesNotMatch(machine, /"declareAttackers"/);
   assert.doesNotMatch(machine, /"declareBlockers"/);
 });
