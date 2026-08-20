@@ -20,6 +20,7 @@ type CombatAction = {
   defenderUid?: string;
   defenderCard?: { name?: string };
   targetHero?: boolean;
+  blockCommitted?: boolean;
   stage?: "declared" | "priority" | "choosing" | "charging" | "impact" | "resolved" | string;
 };
 type OnlineGame = {
@@ -60,8 +61,6 @@ const WINDOW_NAMES: Record<string, string> = {
 function onlineRuntimeIsRelevant() {
   const preferred = new URLSearchParams(window.location.search).get("room");
   if (preferred) return true;
-  // The turn clock only exists in an ONLINE game. This prevents historical
-  // localStorage room sessions from being probed while the user is playing AI.
   return !!document.querySelector(".match-clock");
 }
 
@@ -71,8 +70,6 @@ function readSessions(): Session[] {
   const preferred = new URLSearchParams(window.location.search).get("room");
   const keys: string[] = [];
   if (preferred) keys.push(`${SESSION_PREFIX}${preferred}`);
-  // Hosts currently do not always keep ?room= in the address bar after room
-  // creation, so an active ONLINE board may still discover its saved session.
   if (!preferred) {
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index);
@@ -92,8 +89,6 @@ function readSessions(): Session[] {
 async function fetchRoom(session: Session): Promise<RoomSnapshot | null> {
   const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}?token=${encodeURIComponent(session.token)}`, { cache: "no-store" });
   if (response.status === 404) {
-    // Expired/deleted room sessions are stale client metadata; remove them so
-    // they can never create a recurring polling loop again.
     localStorage.removeItem(`${SESSION_PREFIX}${session.id}`);
     return null;
   }
@@ -118,11 +113,13 @@ function combatStatus(game: OnlineGame) {
   const combat = game.combatAction;
   if (!combat) return null;
   const attacker = combat.attackerCard?.name || "A criatura";
+  if (combat.blockCommitted) return game.priority?.mode === "response"
+    ? `${attacker} · bloqueio definido · resposta antes do dano`
+    : `${attacker} · bloqueio definido · aguardando resolução`;
   if (combat.stage === "priority") return `${attacker} declarou ataque · janela de resposta legada`;
   if (combat.stage === "choosing") return combat.attackerOwner === 1
     ? `Defenda-se de ${attacker}: escolha um bloqueador ou Não bloquear`
     : `Aguardando o oponente escolher o bloqueio de ${attacker}`;
-  if (combat.stage === "charging" && game.priority?.mode === "response") return `${attacker} · bloqueio definido · resposta antes do dano`;
   if (combat.stage === "charging" || combat.stage === "impact") return `${attacker} está resolvendo seu ataque`;
   return `${attacker} está em combate`;
 }
@@ -213,9 +210,6 @@ export default function OnlineMatchRuntime() {
     return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
   }, [session?.id, session?.token, session?.isHost]);
 
-  /* Canonical priority ownership gates visible local controls. This now covers
-     both turns symmetrically: action/response input, the defender-only blocker
-     decision, and opponent-owned decisions all use the same server owner. */
   useEffect(() => {
     const blocked = room?.status === "started" && game?.winner == null && game?.priority?.owner !== 0;
     const selectors = [
