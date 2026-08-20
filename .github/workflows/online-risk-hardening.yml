@@ -56,6 +56,7 @@ jobs:
               source = source.replace(old, new, 1)
           if old_hardened in source:
               source = source.replace(old_hardened, new_hardened, 1)
+          source = source.replace('await patchClock();', '// online-clock.mjs is patched against its current implementation by the workflow')
           open(path, "w", encoding="utf-8").write(source)
           PY
       - name: Expose transactional authority through runtime store
@@ -89,6 +90,31 @@ jobs:
           PY
       - name: Apply online hardening patches
         run: node scripts/online-risk-hardening.mjs
+      - name: Patch decision deadlines against current online clock
+        run: |
+          python - <<'PY'
+          path = "app/api/rooms/online-clock.mjs"
+          source = open(path, encoding="utf-8").read()
+          helper = '''const interactionKey = (game) => game?.pendingDecision\n  ? `decision:${game.pendingDecision.owner ?? game.pendingDecision.context?.decisionOwner ?? "?"}:${game.pendingDecision.kind ?? "?"}:${game.pendingDecision.context?.sourceId ?? game.pendingDecision.sourceName ?? ""}`\n  : game?.pendingReposition\n    ? `reposition:${game.pendingReposition.activeOwner ?? "?"}:${game.pendingReposition.sourceId ?? ""}`\n    : "";\nconst ensureInteractionDeadline = (before, after, settings, now) => {\n  const target = after?.pendingDecision || after?.pendingReposition;\n  if (!target) return;\n  const previous = before?.pendingDecision || before?.pendingReposition;\n  const sameInteraction = interactionKey(before) && interactionKey(before) === interactionKey(after);\n  if (sameInteraction && Number.isFinite(Number(previous?.deadline)) && Number(previous.deadline) > 0) target.deadline = Number(previous.deadline);\n  else if (!Number.isFinite(Number(target.deadline)) || Number(target.deadline) <= 0) target.deadline = now + settings.turnSeconds * 1000;\n};\n'''
+          marker = 'const choosingDecision = (game) => !!game?.pendingDecision || !!game?.pendingReposition;\n'
+          if 'const interactionKey = (game) =>' not in source:
+              if marker not in source:
+                  raise SystemExit("online clock decision marker not found")
+              source = source.replace(marker, marker + helper, 1)
+          winner_marker = '    if (after.combatAction) delete after.combatAction.deadline;\n    clearPriorityClock(after);'
+          winner_new = '    if (after.combatAction) delete after.combatAction.deadline;\n    if (after.pendingDecision) delete after.pendingDecision.deadline;\n    if (after.pendingReposition) delete after.pendingReposition.deadline;\n    clearPriorityClock(after);'
+          if winner_new not in source:
+              if winner_marker not in source:
+                  raise SystemExit("online clock winner cleanup marker not found")
+              source = source.replace(winner_marker, winner_new, 1)
+          decision_marker = '  const blockerChoice = choosingBlocker(after);\n  const decisionChoice = choosingDecision(after);\n'
+          decision_new = decision_marker + '  if (decisionChoice) ensureInteractionDeadline(before, after, settings, now);\n'
+          if decision_new not in source:
+              if decision_marker not in source:
+                  raise SystemExit("online clock decision reconciliation marker not found")
+              source = source.replace(decision_marker, decision_new, 1)
+          open(path, "w", encoding="utf-8").write(source)
+          PY
       - name: Validate hardening and capture failures
         run: |
           set +e
@@ -129,4 +155,4 @@ jobs:
           git commit -m "fix: close remaining online authority risks"
           git push origin HEAD:fix/cards_mechanics
 
-# manual retrigger after store-runtime compatibility
+# manual retrigger after current clock compatibility
