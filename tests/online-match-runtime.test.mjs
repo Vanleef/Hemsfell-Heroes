@@ -61,7 +61,7 @@ test("canonical priority HUD reports the current single attack without replacing
   assert.match(runtime, /game\.combatAction/);
   assert.match(runtime, /Defenda-se de/);
   assert.match(runtime, /Aguardando o oponente escolher o bloqueio/);
-  assert.match(runtime, /Escolha uma criatura para atacar ou encerre o combate/);
+  assert.match(runtime, /Escolha um ataque ou encerre o combate/);
   assert.match(runtime, /ONLINE · PRIORIDADE/);
   assert.match(runtime, /game\.stack/);
 });
