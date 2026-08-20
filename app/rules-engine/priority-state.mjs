@@ -19,9 +19,9 @@ export const PriorityWindow = Object.freeze({
 });
 
 /**
- * Canonical Online input states.  They deliberately describe who currently
- * owns input rather than mirroring every internal engine phase.  Clients may
- * render these values, but legality is still enforced by the server/motor.
+ * Canonical Online input states. They describe who currently owns input rather
+ * than mirroring every internal engine phase. Clients may render these values,
+ * but legality is still enforced by the server/motor.
  */
 export const OnlineInteractionState = Object.freeze({
   GAME_OVER: "game-over",
@@ -82,8 +82,10 @@ export function deriveOnlineInteractionState(state) {
 }
 
 /**
- * Coarse command surface for UI/diagnostics.  It is intentionally narrower
- * than the complete rules engine and never replaces per-card legality checks.
+ * Coarse command surface for UI/diagnostics. It is intentionally narrower than
+ * the complete rules engine and never replaces per-card legality checks.
+ * Deterministic attack resolution is server-owned and is therefore not exposed
+ * as a browser command in RESOLVING_ATTACK.
  */
 export function commandTypesForOnlineState(state) {
   switch (deriveOnlineInteractionState(state)) {
@@ -102,8 +104,6 @@ export function commandTypesForOnlineState(state) {
       return ["declareAttack", "advancePhase"];
     case OnlineInteractionState.AWAITING_BLOCKER:
       return ["selectDefender"];
-    case OnlineInteractionState.RESOLVING_ATTACK:
-      return state?.combatAction?.stage === "charging" ? ["attack"] : [];
     default:
       return [];
   }
@@ -111,12 +111,11 @@ export function commandTypesForOnlineState(state) {
 
 export function inputOwnerForOnlineState(state) {
   const interaction = deriveOnlineInteractionState(state);
-  if (interaction === OnlineInteractionState.GAME_OVER || interaction === OnlineInteractionState.RESOLVING || interaction === OnlineInteractionState.FINALIZATION_EFFECTS) return null;
+  if ([OnlineInteractionState.GAME_OVER, OnlineInteractionState.RESOLVING, OnlineInteractionState.FINALIZATION_EFFECTS, OnlineInteractionState.RESOLVING_ATTACK].includes(interaction)) return null;
   if (interaction === OnlineInteractionState.DECISION) return Number.isInteger(state.pendingDecision?.owner) ? state.pendingDecision.owner : null;
   if (interaction === OnlineInteractionState.REPOSITION) return Number.isInteger(state.pendingReposition?.activeOwner) ? state.pendingReposition.activeOwner : null;
   if (interaction === OnlineInteractionState.RESPONSE_PRIORITY || interaction === OnlineInteractionState.FINALIZATION_RESPONSE) return state.pendingResponse?.responder ?? null;
   if (interaction === OnlineInteractionState.AWAITING_BLOCKER) return Number.isInteger(state.combatAction?.attackerOwner) ? 1 - state.combatAction.attackerOwner : null;
-  if (interaction === OnlineInteractionState.RESOLVING_ATTACK && state.combatAction?.stage === "charging") return state.combatAction.attackerOwner ?? null;
   return state.active ?? null;
 }
 
