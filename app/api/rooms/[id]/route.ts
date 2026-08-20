@@ -112,6 +112,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json(roomView(room, true, role), noStore);
     }
     if (body.action === "resume") {
+      const awaySince = activeParticipant.disconnectedAt;
+      if (!awaySince) return NextResponse.json(roomView(room, true, role), noStore);
       room = await resumeParticipant(room, id, role);
       return NextResponse.json(roomView(room, true, role), noStore);
     }
