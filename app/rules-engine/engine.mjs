@@ -8,7 +8,9 @@ export { propagateWeddingRingLinks, priorityPlayCost } from "./match-integrity.m
 
 const clone = (value) => structuredClone(value);
 const fold = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const timingToken = (value = "") => fold(value).replace(/[ _-]+/g, "");
 const accelerated = (card) => (card?.tags || []).some((tag) => /acelerado/i.test(String(tag))) || /\bacelerado\b/i.test(String(card?.text || ""));
+const explicitResponseAbility = (ability) => !!ability && ability.trigger === "activated" && (ability.responseAllowed === true || ability.responseLegal === true || ["response", "responselegal", "accelerated", "acelerado"].includes(timingToken(ability.timing || ability.speed || ability.activationTiming || "")));
 const cardInHand = (state, command) => state.players?.[command.owner]?.hand?.find((card) => card.id === command.cardId || card.uid === command.cardId);
 const unitById = (state, id) => state.players.flatMap((entry) => [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])]).find((unit) => unit.uid === id || unit.id === id);
 const unitOwner = (state, id) => state.players.findIndex((entry) => [...(entry.board || []), ...(entry.support || []), ...(entry.terrain ? [entry.terrain] : [])].some((unit) => unit.uid === id || unit.id === id));
@@ -267,6 +269,27 @@ export function executeCommand(rawInputState, rawCommand, options = {}) {
     state.priorityStack.push(commandFrame(inputState, command));
     state.pendingResponse = { responder: 1 - command.owner, actor: command.owner, action: command.abilityId || "habilidade de herói", passes: 0 };
     return stackResult(state, ["priority:push-hero-ability"], 0);
+  }
+
+  if (priorityEnabled && command.type === "activate" && command.hasPriority && !command.skipPriority && inputState.pendingResponse) {
+    if (inputState.pendingResponse.responder !== command.owner) throw new RulesViolation("not-your-priority");
+    const source = unitById(inputState, command.sourceId);
+    const ability = source?.abilities?.find((candidate) => candidate.id === command.abilityId && candidate.trigger === "activated");
+    if (!source || !explicitResponseAbility(ability)) throw new RulesViolation("response-ability-required");
+    /* Permanent activations still obey their existing timing authority. No
+       cross-turn permission is fabricated merely because responseAllowed is
+       present in data; cards that need that timing require an explicit engine
+       rule before they can be offered by legalPriorityResponses. */
+    if (inputState.active !== command.owner) throw new RulesViolation("response-ability-timing-unavailable");
+    const existingStack = inputState.priorityStack || [];
+    if (existingStack.some((frame) => frame.kind === "command" && frame.command?.type === "activate" && frame.command?.owner === command.owner && frame.command?.sourceId === command.sourceId && frame.command?.abilityId === command.abilityId)) throw new RulesViolation("response-ability-already-on-stack");
+    const root = existingStack.length ? null : rootPriorityFrame(inputState);
+    if (!existingStack.length && !root) throw new RulesViolation("nothing-to-respond-to");
+    const state = clone(inputState);
+    state.priorityStack = existingStack.length ? clone(existingStack) : [root];
+    state.priorityStack.push(commandFrame(inputState, command));
+    state.pendingResponse = { responder: 1 - command.owner, actor: command.owner, action: source.name || command.abilityId || "habilidade ativada", passes: 0 };
+    return stackResult(state, ["priority:push-response-ability"], 0);
   }
 
   if (priorityEnabled && command.type === "passPriority" && (inputState.priorityStack?.length || 0) > 1) {
