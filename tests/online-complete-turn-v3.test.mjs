@@ -20,6 +20,7 @@ const initial = () => {
 };
 const passTwice = (game, first, second) => {
   game = executeOnlineCommand(game, { type: "passPriority", owner: first }).state;
+  if (!game.pendingResponse) return game;
   return executeOnlineCommand(game, { type: "passPriority", owner: second }).state;
 };
 
@@ -41,12 +42,13 @@ test("one Online v3 turn crosses Maintenance, Main, unitary Combat, Finalization
   assert.equal(game.phase, "combate");
   assert.equal(game.priority.interactionState, "combat-idle");
 
+  /* There is no defending creature, so declareAttack jumps directly to the
+     post-block response checkpoint instead of creating an empty blocker choice. */
   game = executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "host-attacker" }).state;
-  assert.equal(game.priority.interactionState, "awaiting-blocker");
-  assert.equal(game.priority.owner, 1);
-  game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "host-attacker", targetHero: true }).state;
   assert.equal(game.priority.interactionState, "response-priority");
   assert.equal(game.priority.window, "after-blockers");
+  assert.equal(game.combatAction.targetHero, true);
+  assert.equal(game.pendingResponse.responder, 0);
   game = passTwice(game, 0, 1);
   assert.equal(game.combatAction, null);
   assert.equal(game.players[1].life, 28);
