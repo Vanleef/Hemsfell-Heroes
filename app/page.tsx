@@ -37,7 +37,6 @@ type CombatAction={attackerOwner:0|1;attackerUid:string;attackerCard:CardDef;def
 type VisualFx={id:string;kind:"summon"|"spell"|"artifact"|"terrain"|"ability"|"damage";theme:"blood"|"dragon"|"goblin"|"recruit"|"divine"|"nature"|"arcane"|"chaos"|"order"|"neutral";card?:CardDef;target?:CardDef;label:string;detail:string};
 const VISUAL_FX_HOLD_MS=2280;
 const COMBAT_STAGE_DELAY_MS:Record<CombatStage,number>={declared:220,priority:180,choosing:0,charging:320,impact:550,resolved:450};
-const RESPONSE_REVEAL_DELAY_MS=2200;
 type SearchRequest={id:string;owner:0|1;sourceName:string;sourcePage:number;text:string;limit:number;filterLabel:string;destination:"hand"|"field";reveal:boolean;optional:boolean;maxCost?:number};
 
 const removedCatalogPages=new Set([149,200,201,203,204,205,207,209,210]);
@@ -362,14 +361,7 @@ const mirrorOnlineGame=(source:Game):Game=>{
  }
  return mirrored;
 };
-const toCanonicalGame=(source:Game)=>isHost?structuredClone(source):mirrorOnlineGame(source);
 const fromCanonicalGame=(source:Game)=>isHost?structuredClone(source):mirrorOnlineGame(source);
-
-const syncOnlineGame=(next:Game)=>{
- if(mode!=="online"||!roomId||!roomToken)return;
- const canonical=toCanonicalGame(next);
- syncQueueRef.current=syncQueueRef.current.then(async()=>{const baseRevision=roomRevisionRef.current;const res=await fetch(`/api/rooms/${roomId}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"sync",token:roomToken,game:canonical,baseRevision})});const data=await res.json();if(res.ok){roomRevisionRef.current=data.revision??roomRevisionRef.current;setRoomInfo(data)}else if(data?.game){const reconciled=fromCanonicalGame(data.game);roomRevisionRef.current=data.revision??roomRevisionRef.current;setRoomInfo(data);currentGameRef.current=reconciled;setGame(reconciled);setResponseWindow(reconciled.pendingResponse??null);setRoomError(data.error==="waiting for opponent response"?"Aguardando a resposta do oponente.":"O estado da sala foi atualizado; sua ação não foi aplicada.")}}).catch(()=>setRoomError("Conexão instável. Tentando sincronizar novamente…"));
-};
 
 const stopPolling = ()=>{if(pollRef.current){window.clearInterval(pollRef.current);pollRef.current=undefined}};
 
@@ -483,7 +475,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
    g.pendingDecision={kind:"image-placement",owner,effect:{name:"Gato Multidimensional",targetOwner,creatureSlots,supportSlots},context:{owner,sourceId:source.uid,decisionOwner:owner},sourceName:"Café do Tempo"};return;
   }
  };
- const update=(fn:(g:Game)=>void)=>setGame(old=>{if(!old)return old;const g=structuredClone(old),before:[number,number]=[g.players[0].life,g.players[1].life],cruelDamageBefore=new Map(g.players.flatMap(player=>player.board.filter(unit=>unit.page===165).map(unit=>[unit.uid,Number(unit.damage||0)] as const)));fn(g);syncDynamicFieldCounts(g);g.players.forEach(player=>player.board.filter(unit=>unit.page===165&&!unit.suffocated).forEach(unit=>{if(Number(unit.damage||0)>Number(cruelDamageBefore.get(unit.uid)||0)){unit.modifiers||=[];unit.modifiers.push({attack:1,health:0,duration:"permanent",sourceId:`escudeiro-cruel:${unit.uid}:${g.events}`});log(g,`${unit.name} recebeu +1 de Ofensividade permanente após sofrer dano.`,"effect")}}));resolveLifeLossTriggers(g,before);removeDead(g,(owner,card)=>resolveText(g,owner,card));syncDynamicFieldCounts(g);removeDead(g,(owner,card)=>resolveText(g,owner,card));syncDynamicFieldCounts(g);g.players.forEach((p,i)=>{if(p.life<=0)g.winner=i===0?1:0});queueMicrotask(()=>syncOnlineGame(g));return g});
+ const update=(fn:(g:Game)=>void)=>setGame(old=>{if(!old)return old;const g=structuredClone(old),before:[number,number]=[g.players[0].life,g.players[1].life],cruelDamageBefore=new Map(g.players.flatMap(player=>player.board.filter(unit=>unit.page===165).map(unit=>[unit.uid,Number(unit.damage||0)] as const)));fn(g);syncDynamicFieldCounts(g);g.players.forEach(player=>player.board.filter(unit=>unit.page===165&&!unit.suffocated).forEach(unit=>{if(Number(unit.damage||0)>Number(cruelDamageBefore.get(unit.uid)||0)){unit.modifiers||=[];unit.modifiers.push({attack:1,health:0,duration:"permanent",sourceId:`escudeiro-cruel:${unit.uid}:${g.events}`});log(g,`${unit.name} recebeu +1 de Ofensividade permanente após sofrer dano.`,"effect")}}));resolveLifeLossTriggers(g,before);removeDead(g,(owner,card)=>resolveText(g,owner,card));syncDynamicFieldCounts(g);removeDead(g,(owner,card)=>resolveText(g,owner,card));syncDynamicFieldCounts(g);g.players.forEach((p,i)=>{if(p.life<=0)g.winner=i===0?1:0});return g});
  const setSharedCombat=(action:CombatAction|null)=>{
   setCombatAction(action);
   // Combat animation/progress is local UI state. Persisting every transition
@@ -491,9 +483,11 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
   // passed priority window and alternate between defender/response modals.
  };
  const setSharedResponse=(response:PendingResponse|null,sharedAction:CombatAction|null=combatAction)=>{
+  /* Online response/combat checkpoints come only from authoritative room snapshots.
+     Local callers may animate, but must never manufacture or persist priority state. */
+  if(mode==="online")return;
   const timed=response?{...response,deadline:response.deadline??Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000}:null;
   setResponseWindow(timed);
-  if(mode==="online"){update(g=>{g.pendingResponse=timed?{...timed,passes:timed.passes??0}:null;g.combatAction=sharedAction});return}
   /* Bot priority must live in the authoritative game snapshot too. Keeping this
      only in responseWindow made the UI wait forever while the AI inspected a
      currentGameRef with no pendingResponse and therefore never passed. */
@@ -503,14 +497,13 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
      pre-action snapshot and silently undo the evolution. */
   setGame(old=>{if(!old)return old;const next=structuredClone(old);next.pendingResponse=timed?{...timed,passes:timed.passes??0}:null;next.combatAction=sharedAction;currentGameRef.current=next;return next});
  };
- useEffect(()=>{if(mode!=="online"||!game)return;setCombatAction(game.combatAction??null);const pending=game.pendingResponse??null;if(!pending){setResponseWindow(null);return}if(pending.responder!==0){setResponseWindow(pending);return}/* The responder first sees the opponent's serialized card animation. */const timer=window.setTimeout(()=>setResponseWindow(pending),RESPONSE_REVEAL_DELAY_MS);return()=>window.clearTimeout(timer)},[mode,game?.combatAction,game?.pendingResponse?.action,game?.pendingResponse?.deadline,game?.pendingResponse?.responder,game?.pendingResponse?.passes]);
+ useEffect(()=>{if(mode!=="online"||!game)return;/* Priority is interaction state, not presentation timing: expose the authoritative window immediately so pass/respond controls cannot lag behind server ownership. */setCombatAction(game.combatAction??null);setResponseWindow(game.pendingResponse??null)},[mode,game?.combatAction,game?.pendingResponse?.action,game?.pendingResponse?.deadline,game?.pendingResponse?.responder,game?.pendingResponse?.passes]);
  useEffect(()=>{currentGameRef.current=game},[game]);
  useEffect(()=>{if(!game){damageUiSnapshotRef.current=null;return}const units=[...game.players[0].board,...game.players[0].support,...(game.players[0].terrain?[game.players[0].terrain]:[]),...game.players[1].board,...game.players[1].support,...(game.players[1].terrain?[game.players[1].terrain]:[])],next={life:[game.players[0].life,game.players[1].life] as [number,number],damage:Object.fromEntries(units.map(unit=>[unit.uid,Number(unit.damage||0)]))},previous=damageUiSnapshotRef.current;const pulseDamageUi=(selector:string)=>{const node=document.querySelector<HTMLElement>(selector);if(!node)return;node.classList.remove("damage-hit");void node.offsetWidth;node.classList.add("damage-hit");window.setTimeout(()=>node.classList.remove("damage-hit"),540)};if(previous){if(next.life[0]<previous.life[0])pulseDamageUi('[data-hero-role="ally"]');if(next.life[1]<previous.life[1])pulseDamageUi('[data-hero-role="enemy"]');for(const [uid,amount] of Object.entries(next.damage))if(amount>Number(previous.damage[uid]||0))pulseDamageUi(`[data-unit-id="${CSS.escape(uid)}"]`)}damageUiSnapshotRef.current=next},[game]);
  useEffect(()=>{if(game?.active!==0||game.phase!=="manutencao"||game.winner!==null)return;setResponseWindow(null);setCombatAction(null);setAiAttackQueue([]);setMaintenanceOpen(true)},[game?.active,game?.phase,game?.winner]);
  const me=game?.players[0],foe=game?.players[1];
  const [visualFxQueue,setVisualFxQueue]=useState<VisualFx[]>([]);const [elementChoice,setElementChoice]=useState<{cardIndex:number;name:string}|null>(null);
  const begin=()=>{resetAdvancedAI(1);setTargeting(null);setImageChoice(null);setCafeChoice(null);setResponseWindow(null);setCombatAction(null);setAiAttackQueue([]);setVisualFx(null);setVisualFxQueue([]);setConfirmSurrender(false);setExtraView(null);setSearchChoice(null);setShufflingDeck(null);setDragging(null);setElementChoice(null);setMaintenanceOpen(true);setGame(start(mine,enemy));setScreen("game")};
- useEffect(()=>{if(!isHost||!roomId||!roomToken||roomInfo?.status!=="mulligan"||roomInfo?.game||!roomInfo?.startingRole||!roomInfo?.host?.heroId||!roomInfo?.guest?.heroId)return;const active:0|1=roomInfo.startingRole==="host"?0:1;const initial=start(roomInfo.host.heroId,roomInfo.guest.heroId,active,roomInfo.settings?.startingLife??30);roomAction("initialize",{game:initial})},[isHost,roomId,roomToken,roomInfo?.status,roomInfo?.startingRole,roomInfo?.game]);
  /* Card moments are deliberately serialized: a new spell or summon waits for the previous
     animation to finish instead of replacing it halfway through. */
  const showFx=(kind:VisualFx["kind"],label:string,detail:string,card?:CardDef,target?:CardDef,allowRepeat=false)=>{const signature=[kind,label,detail,card?.id||"",target?.id||""].join("|"),now=Date.now(),previous=visualFxDedupeRef.current.get(signature)||0;if(!allowRepeat&&now-previous<3600)return;visualFxDedupeRef.current.set(signature,now);setVisualFxQueue(queue=>[...queue,{id:uid(),kind,theme:effectTheme(card,target,kind,label,detail),label,detail,card,target}])};
@@ -621,6 +614,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
   const snapshot=game?.players[owner].hand[idx],snapshotPlayer=game?.players[owner],snapshotPolicy=snapshot?playTargetPolicy(snapshot):undefined,selectedIds=targetUids?.length?targetUids:targetUid?[targetUid]:[],effectIds=selectedIds.filter((_,index)=>snapshotPolicy?.steps?.[index]?.role!=="sacrifice"),primaryTargetUid=effectIds[0]??targetUid,antiMagicTarget=snapshot?.type==="Feitiço"&&game?.players.some(player=>player.board.some(unit=>unit.uid===primaryTargetUid&&unit.page===166));if(!game||!snapshot||!snapshotPlayer||mode==="online"&&!asResponse&&game.pendingResponse?.actor===owner)return;const cost=effectiveCost(snapshot,snapshotPlayer)+(antiMagicTarget?1:0),payLifeInstead=creaturePaysLife(snapshot,snapshotPlayer,asResponse),offTurnResponse=asResponse&&game.active!==owner,resource=playableResource(snapshot,snapshotPlayer,offTurnResponse);if(cost>resource||asResponse&&!isFast(snapshot))return;
   const fxKind:VisualFx["kind"]=snapshot.type==="Criatura"?"summon":snapshot.type==="Artefato"||snapshot.type==="Encanto"?"artifact":snapshot.type==="Terreno"?"terrain":"spell",fxLabel=snapshot.type==="Criatura"?"INVOCAÇÃO":snapshot.type==="Feitiço"?"FEITIÇO CONJURADO":snapshot.type==="Terreno"?"NOVA REALIDADE":"CONSTANTE EM CAMPO";
   if(canExecuteCard(snapshot)){const policy=playTargetPolicy(snapshot),allIds=targetUids?.length?targetUids:targetUid?[targetUid]:[],sacrificeIds=allIds.filter((_,index)=>policy.steps?.[index]?.role==="sacrifice"),effectTargetIds=allIds.filter((_,index)=>{const role=policy.steps?.[index]?.role;return role!=="sacrifice"&&role!=="attachment"}),slot=fieldSlot??(snapshot.type==="Criatura"?firstFreeSlot(snapshotPlayer.board):snapshot.type==="Terreno"?0:firstFreeSlot(snapshotPlayer.support));void runRulesCommand({type:"playCard",cardId:snapshot.id,instanceId:uid(),slot,attachedTo:snapshot.type==="Artefato"?targetUid:undefined,targetIds:effectTargetIds,sacrificeIds,hasPriority:asResponse,chosenElement,selectedImageName,cafeEffect,elementalTargetId,placementZone},owner).then(accepted=>{if(accepted)showFx(fxKind,fxLabel,snapshot.name,snapshot)});return}
+  if(mode==="online"){setRoomError(`${snapshot.name} ainda não possui uma execução autoritativa no modo Online.`);return}
   showFx(fxKind,fxLabel,snapshot.name,snapshot);
   update(g=>{
    const p = g.players[owner]; let c = p.hand[idx];

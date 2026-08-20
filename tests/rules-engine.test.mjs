@@ -1120,6 +1120,10 @@ test("online priority passes update the local response window from the authorita
   assert.match(page, /currentGameRef\.current=oriented;setResponseWindow\(oriented\.pendingResponse\?\?null\)/);
   assert.match(page, /game\?\.pendingResponse\?\.responder/);
   assert.match(page, /game\?\.pendingResponse\?\.passes/);
+  assert.doesNotMatch(page, /syncOnlineGame/);
+  assert.doesNotMatch(page, /action:\"sync\"/);
+  assert.doesNotMatch(page, /RESPONSE_REVEAL_DELAY_MS/);
+  assert.match(page, /setCombatAction\(game\.combatAction\?\?null\);setResponseWindow\(game\.pendingResponse\?\?null\)/);
 });
 
 test("game client routes migrated cards through the command engine", async () => {
