@@ -116,7 +116,7 @@ function finishDisconnectedMatch(room: Room, loser: 0 | 1) {
   delete game.turnTimeRemainingMs;
   game.priority = {
     ...(game.priority || {}),
-    model: game.priority?.model || "online-v2",
+    model: game.priority?.model || "online-v3",
     mode: "none",
     owner: null,
     window: null,
@@ -262,7 +262,10 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
   return { ok: true, status: 200, error: "" };
 }
 
-const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "maintenanceChoice", "declareAttack", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
+/* `attack` is deliberately absent: after block commitment the authoritative
+ * Online kernel owns damage resolution. Browsers may declare an attacker and a
+ * blocker choice, but can never submit the final combat result. */
+const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "maintenanceChoice", "declareAttack", "selectDefender", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
 
 /** Server-authoritative command path. The server owns the player index,
  * validates room revision and routes Online timing through one priority kernel. */
@@ -296,13 +299,6 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
   try {
     /* Never trust an owner sent by the browser. Authentication selects it. */
     const command: Record<string, any> = { ...rawCommand, owner };
-    if (command.type === "attack") {
-      const combat = room.game.combatAction;
-      if (!combat || combat.stage !== "charging" || combat.attackerOwner !== owner || combat.attackerUid !== command.attackerId || (!!combat.targetHero !== !command.defenderId) || (combat.defenderUid || undefined) !== (command.defenderId || undefined)) {
-        return { ok: false, status: 409, error: "combat state mismatch" };
-      }
-      command.skipPriority = true;
-    }
     if (command.type === "selectDefender") {
       const combat = room.game.combatAction;
       if (!combat || combat.stage !== "choosing") return { ok: false, status: 409, error: "blocker choice unavailable" };
