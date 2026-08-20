@@ -3,6 +3,7 @@ import test from "node:test";
 import cards from "../app/cards.generated.json" with { type: "json" };
 import { compileCard } from "../app/rules-engine/compiler.mjs";
 import { executeCommand } from "../app/rules-engine/engine.mjs";
+import { executeOnlineCommand } from "../app/rules-engine/online-priority-engine.mjs";
 import { chooseAIDecision } from "../app/rules-engine/ai.mjs";
 
 const catalog=cards.map(compileCard);
@@ -35,6 +36,21 @@ test("Café do Tempo controller chooses placement on the opponent active field",
  const placed=executeCommand(next,{type:"resolveDecision",owner:0,slot:3,placementZone:"creature"}).state;
  assert.equal(placed.players[0].board.length,0);
  const cat=placed.players[1].board.find(card=>card.name==="Gato Multidimensional");assert.ok(cat);assert.equal(cat.slot,3);assert.equal(cat.exhausted,false);assert.equal(cat.revealed,true);assert.deepEqual(cat.revealedTo,[0,1]);
+});
+
+test("Café do Tempo placement owns Online priority before the active opponent can continue",()=>{
+ const game=state(1);installCafe(game,0);
+ const next=executeOnlineCommand(game,{type:"advancePhase",owner:1},{priority:true}).state;
+ assert.equal(next.phase,"principal");
+ assert.equal(next.pendingDecision?.kind,"image-placement");
+ assert.equal(next.pendingDecision?.owner,0);
+ assert.equal(next.priority?.owner,0,"a prioridade Online deve pertencer ao controlador do Café");
+ assert.throws(()=>executeOnlineCommand(next,{type:"advancePhase",owner:1},{priority:true}),/image-placement-priority/);
+ assert.throws(()=>executeOnlineCommand(next,{type:"passPriority",owner:1},{priority:true}),/image-placement-priority/);
+ const placed=executeOnlineCommand(next,{type:"resolveDecision",owner:0,slot:4,placementZone:"creature"},{priority:true}).state;
+ assert.equal(placed.pendingDecision??null,null);
+ assert.ok(placed.players[1].board.some(card=>card.name==="Gato Multidimensional"&&card.slot===4));
+ assert.equal(placed.priority?.owner,1,"após posicionar o Gato, a prioridade normal volta ao jogador ativo");
 });
 
 test("Rasmus level 3 may place Café do Tempo cat in an available auxiliary slot of the active player",()=>{
