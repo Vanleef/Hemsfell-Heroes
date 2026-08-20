@@ -17,7 +17,7 @@ const stackHas = (state, predicate) => (state.priorityStack || []).some((frame) 
 const heroUsageKey = (state, source, ability) => `${source.uid || source.id}:${ability.id}${ability?.condition?.firstEachTurn ? `:round-${state.round}` : ""}`;
 const normalizedSubtype = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const hasSubtype = (card, subtype) => !subtype || (card?.subtypes || card?.tags || []).some((value) => normalizedSubtype(value) === normalizedSubtype(subtype));
-const usesOnlinePriorityModel = (state) => state?.priority?.model === "online-v2";
+const usesOnlinePriorityModel = (state) => /^online-v\d+$/.test(String(state?.priority?.model || ""));
 function heroAbilityTargetsAvailable(state, owner, ability) {
   for (const effect of ability.effects || []) {
     const target = effect.target;
@@ -51,8 +51,8 @@ function spellCost(state, owner, card) {
 export function legalPriorityResponses(state, owner) {
   const pending = state?.pendingResponse;
   if (!pending || pending.responder !== owner) return [];
-  /* Online v2 allows a legal response after one pass; playing it resets the
-     pass sequence. Offline/Bot keeps the previous guard until those modes are
+  /* Online allows a legal response after one pass; playing it resets the pass
+     sequence. Offline/Bot keeps the previous guard until those modes are
      intentionally migrated, preventing the old AI priority loop from returning. */
   if (!usesOnlinePriorityModel(state) && pending.actor === owner && (pending.passes || 0) > 0) return [];
   const player = state.players[owner];
