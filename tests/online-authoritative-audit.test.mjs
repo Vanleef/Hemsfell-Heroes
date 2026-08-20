@@ -111,7 +111,8 @@ test("two consecutive passes resolve the top accelerated response instead of dea
   state = executeOnlineCommand(state, { type: "passPriority", owner: 1 }, { priority: true }).state;
   assert.equal(state.players[1].hand.length, 0);
   assert.equal(state.players[1].grave.some((card) => card.id === "fast-1"), true);
-  assert.equal(state.pendingResponse?.responder, 0, "after the top response resolves, the active player regains priority over the remaining root action");
+  assert.equal(state.pendingResponse?.responder, 1, "after the top response resolves, preserve the canonical responder for the remaining root action");
+  assert.equal(state.pendingResponse?.actor, 0);
 });
 
 test("only the defending player can choose a blocker and the post-block response survives serialization", () => {
