@@ -108,6 +108,12 @@ export function syncPriorityMetadata(state, overrides = {}) {
     : pending
       ? pending.responder
       : blockerOwner ?? decisionOwner ?? overrides.owner ?? state.active ?? null;
+  const interactionOpenedAt = blockerOwner != null
+    ? state.combatAction?.openedAt ?? null
+    : state.pendingDecision?.openedAt ?? state.pendingReposition?.openedAt ?? null;
+  const interactionDeadline = blockerOwner != null
+    ? state.combatAction?.deadline ?? null
+    : state.pendingDecision?.deadline ?? state.pendingReposition?.deadline ?? null;
   state.priority = {
     model: "online-v3",
     mode,
@@ -115,8 +121,8 @@ export function syncPriorityMetadata(state, overrides = {}) {
     responder: pending?.responder ?? null,
     window: overrides.window ?? (pending ? inferPriorityWindow(state) : null),
     consecutivePasses: pending ? Number(pending.passes || 0) : 0,
-    openedAt: pending?.openedAt ?? state.combatAction?.deadline && blockerOwner != null ? state.combatAction.deadline : state.pendingDecision?.openedAt ?? state.pendingReposition?.openedAt ?? null,
-    deadline: pending?.deadline ?? (blockerOwner != null ? state.combatAction?.deadline ?? null : state.pendingDecision?.deadline ?? state.pendingReposition?.deadline ?? null),
+    openedAt: pending?.openedAt ?? interactionOpenedAt,
+    deadline: pending?.deadline ?? interactionDeadline,
     timerMode: pending?.timerMode ?? null,
     wallDeadline: pending?.wallDeadline ?? null,
     driftLevel: pending?.driftLevel ?? null,
