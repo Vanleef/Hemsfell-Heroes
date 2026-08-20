@@ -87,7 +87,7 @@ test("unitary combat asks for blocker first, then opens one response checkpoint 
   assert.equal(game.priority.owner, 1);
 
   game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "a-left", defenderId: "blocker", targetHero: false }).state;
-  assert.equal(game.combatAction.stage, "charging");
+  assert.equal(game.combatAction.stage, "priority");
   assert.equal(game.priority.window, "after-blockers");
   assert.equal(game.pendingResponse.responder, 0);
   game = passTwice(game, 0, 1);
@@ -97,6 +97,7 @@ test("unitary combat asks for blocker first, then opens one response checkpoint 
   game = executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "a-right" }).state;
   assert.equal(game.combatAction.stage, "choosing");
   game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "a-right", targetHero: true }).state;
+  assert.equal(game.combatAction.stage, "priority");
   game = passTwice(game, 0, 1);
   assert.equal(game.players[1].life, 27);
   assert.equal(game.combatAction, null);
