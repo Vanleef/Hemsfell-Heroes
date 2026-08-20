@@ -5,7 +5,9 @@ import {
 } from "./time.mjs";
 
 const remaining = (deadline, now) => Math.max(0, Number(deadline || 0) - now);
-const choosingBlocker = (game) => game?.combatAction?.stage === "choosing";
+/* A committed block keeps the presentation-compatible `choosing` stage while
+   response priority owns input. Only an uncommitted choice gets blocker time. */
+const choosingBlocker = (game) => game?.combatAction?.stage === "choosing" && game.combatAction.blockCommitted !== true && !game?.pendingResponse;
 const choosingDecision = (game) => !!game?.pendingDecision || !!game?.pendingReposition;
 const responseDuration = (settings) => Number(settings?.responseSeconds || 30) * 1000;
 
