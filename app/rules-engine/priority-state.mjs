@@ -71,6 +71,7 @@ export function canonicalStack(state) {
 export function syncPriorityMetadata(state, overrides = {}) {
   if (!state) return state;
   const pending = state.pendingResponse;
+  const decisionOwner = state.pendingDecision?.owner ?? state.pendingReposition?.activeOwner ?? null;
   const stack = canonicalStack(state);
   const hasWinner = state.winner !== null && state.winner !== undefined;
   const mode = hasWinner
@@ -82,14 +83,14 @@ export function syncPriorityMetadata(state, overrides = {}) {
     ? null
     : pending
       ? pending.responder
-      : overrides.owner ?? state.active ?? null;
+      : decisionOwner ?? overrides.owner ?? state.active ?? null;
   state.priority = {
     model: "online-v2",
     mode,
     owner,
     window: overrides.window ?? (pending ? inferPriorityWindow(state) : null),
     consecutivePasses: pending ? Number(pending.passes || 0) : 0,
-    deadline: pending?.deadline ?? null,
+    deadline: pending?.deadline ?? state.pendingDecision?.deadline ?? state.pendingReposition?.deadline ?? null,
     stackDepth: stack.length,
   };
   state.stack = stack;
