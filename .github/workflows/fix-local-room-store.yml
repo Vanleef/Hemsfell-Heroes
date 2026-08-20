@@ -1,7 +1,7 @@
 name: Fix local room store
 
 on:
-  pull_request:
+  issues:
     types: [opened]
 
 permissions:
@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   patch-and-test:
-    if: github.event.pull_request.title == '[bot] fix local room store'
+    if: github.event.issue.title == '[bot] fix local room store'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
