@@ -29,6 +29,8 @@
   position:fixed!important;
   inset:0!important;
   display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
   padding:0!important;
   overflow:visible!important;
   background:rgba(2,5,10,.72)!important;
@@ -40,6 +42,9 @@
    cluster. Clamp values are only fallbacks before DOM geometry is measured. */
 .screen-game .response-overlay .response-dialog{
   position:fixed!important;
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
   top:var(--response-opponent-piles-top,clamp(3rem,6.5cqh,4.75rem))!important;
   right:var(--response-opponent-piles-right,clamp(1rem,2.2cqw,2.25rem))!important;
   left:auto!important;
