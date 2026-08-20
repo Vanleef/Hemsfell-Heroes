@@ -41,6 +41,7 @@
 .screen-game .response-overlay .response-dialog{
   position:fixed!important;
   top:var(--response-opponent-piles-top,clamp(3rem,6.5cqh,4.75rem))!important;
+  right:var(--response-opponent-piles-right,clamp(1rem,2.2cqw,2.25rem))!important;
   left:auto!important;
   bottom:auto!important;
   translate:none!important;
