@@ -19,6 +19,7 @@ import {
 
 const clone = (value) => structuredClone(value);
 const SINGLE_COMBAT_START = "single-combat-start";
+const SINGLE_ATTACK_RESOLUTION = "single-attack-resolution";
 const MAIN_END_REQUEST = "main-end-request";
 const LEGACY_GROUPED_CHECKPOINTS = new Set(["combat-start", "after-attackers", "after-blockers", "combat-end"]);
 
@@ -148,16 +149,71 @@ function finishSingleCombatStart(state) {
   return syncPriorityMetadata(next, { mode: PriorityMode.ACTION, owner: next.active, window: null });
 }
 
+function resolveSingleAttack(state) {
+  const checkpoint = state.pendingAction;
+  const combat = state.combatAction;
+  if (!checkpoint || checkpoint.checkpoint !== SINGLE_ATTACK_RESOLUTION || !combat || combat.stage !== "charging") throw new RulesViolation("combat-checkpoint-mismatch");
+  const next = clone(state);
+  next.pendingAction = undefined;
+  next.pendingResponse = null;
+  next.priorityStack = undefined;
+  const command = {
+    type: "attack",
+    owner: combat.attackerOwner,
+    attackerId: combat.attackerUid,
+    ...(combat.targetHero ? {} : { defenderId: combat.defenderUid }),
+    skipPriority: true,
+  };
+  const result = executeRulesCommand(next, command, { priority: false });
+  syncPriorityMetadata(result.state, { mode: PriorityMode.ACTION, owner: result.state.active, window: null });
+  result.trace = [...(result.trace || []), "online-combat:single-attack-resolved"];
+  return result;
+}
+
 function resolveOnlineCheckpoint(state) {
   const checkpoint = checkpointAtRoot(state);
   if (!checkpoint) throw new RulesViolation("online-checkpoint-missing");
   if (checkpoint === MAIN_END_REQUEST) return finishMainEndRequest(state);
+  if (checkpoint === SINGLE_ATTACK_RESOLUTION) return resolveSingleAttack(state);
   let next;
   if (checkpoint === SINGLE_COMBAT_START) next = finishSingleCombatStart(state);
   else if (checkpoint === OnlineFinalizationStage.PRIORITY) next = completeOnlineFinalization(state);
   else if (LEGACY_GROUPED_CHECKPOINTS.has(checkpoint)) next = finishSingleCombatStart(state);
   else throw new RulesViolation("unknown-online-checkpoint");
   return { state: next, trace: [`online-priority:checkpoint:${checkpoint}`], steps: 0 };
+}
+
+function normalizeDeclaredAttack(state) {
+  const combat = state.combatAction;
+  if (!combat || combat.stage !== "priority") throw new RulesViolation("combat-declaration-failed");
+  /* Hemsfell unitary combat asks the defender for its blocker first. The single
+     generic response checkpoint comes after that blocker/no-block decision and
+     before damage, matching AWAITING_BLOCKER -> RESPONSE -> RESOLVE_ATTACK. */
+  state.pendingResponse = null;
+  state.pendingAction = undefined;
+  state.priorityStack = undefined;
+  state.combatAction = { ...combat, stage: "choosing" };
+  return syncPriorityMetadata(state, { mode: PriorityMode.ACTION, owner: 1 - combat.attackerOwner, window: null });
+}
+
+function openSingleAttackResponse(state) {
+  const combat = state.combatAction;
+  if (!combat || combat.stage !== "charging") throw new RulesViolation("combat-checkpoint-mismatch");
+  openResponseWindow(state, {
+    actor: 1 - combat.attackerOwner,
+    responder: combat.attackerOwner,
+    action: `resolução do ataque de ${combat.attackerCard?.name || combat.attackerUid || "criatura"}`,
+    window: PriorityWindow.AFTER_BLOCKERS,
+    pendingAction: {
+      type: "onlineCheckpoint",
+      checkpoint: SINGLE_ATTACK_RESOLUTION,
+      owner: combat.attackerOwner,
+      attackerId: combat.attackerUid,
+      defenderId: combat.defenderUid,
+      targetHero: !!combat.targetHero,
+    },
+  });
+  return syncPriorityMetadata(state, { window: PriorityWindow.AFTER_BLOCKERS });
 }
 
 function interactiveDecisionHolder(state) {
@@ -260,6 +316,16 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   }
 
   const result = executeRulesCommand(state, command, { ...options, priority: true });
+  if (command.type === "declareAttack") {
+    result.state = normalizeDeclaredAttack(result.state);
+    result.trace = [...(result.trace || []), "online-combat:awaiting-blocker"];
+    return result;
+  }
+  if (command.type === "selectDefender" && result.state.combatAction?.stage === "charging") {
+    result.state = openSingleAttackResponse(result.state);
+    result.trace = [...(result.trace || []), "online-combat:post-block-response-open"];
+    return result;
+  }
   resumePriorityAfterChoice(state, result.state);
   cancelInterruptedMainEndRequest(result.state);
   if (command.type === "resolveDecision" && result.state.onlineFinalization?.stage === OnlineFinalizationStage.EFFECTS && !result.state.pendingDecision && !result.state.pendingReposition) {
@@ -269,11 +335,9 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   if (result.state.phase === "manutencao" && result.state.onlineFinalization) result.state.onlineFinalization = undefined;
   syncPriorityMetadata(result.state, {
     window: result.state.pendingResponse
-      ? command.type === "declareAttack"
-        ? PriorityWindow.AFTER_ATTACKERS
-        : command.type === "activate" || command.type === "activateHero"
-          ? PriorityWindow.ACTIVATED_ABILITY
-          : inferPriorityWindow(result.state)
+      ? command.type === "activate" || command.type === "activateHero"
+        ? PriorityWindow.ACTIVATED_ABILITY
+        : inferPriorityWindow(result.state)
       : null,
   });
   return result;
