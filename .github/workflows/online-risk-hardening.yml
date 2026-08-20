@@ -49,6 +49,17 @@ jobs:
           del lines[start:end + 1]
           open(path, "w", encoding="utf-8").writelines(lines)
           PY
+      - name: Normalize legacy hidden-zone regression
+        run: |
+          python - <<'PY'
+          path = "tests/rules-and-multiplayer.test.mjs"
+          source = open(path, encoding="utf-8").read()
+          old = ''' assert.match(roomStore,/card\\?\\.revealed === true \\? card : hiddenCard/);\n assert.match(roomStore,/game\\.pendingDecision\\?\\.kind === "investigate-selection"/);'''
+          new = ''' assert.match(roomStore,/visibleTo\\(card, viewer\\) \\? card : hiddenCard/);\n assert.match(roomStore,/revealedTo\\.includes\\(viewer\\)/);\n assert.match(roomStore,/kind: "opponent-choice"/);\n assert.match(roomStore,/effect: \\{\\}/);\n assert.match(roomStore,/context: \\{\\}/);\n assert.match(roomStore,/targetSteps: \\[\\]/);'''
+          if old not in source:
+              raise SystemExit("stale hidden-zone assertions not found")
+          open(path, "w", encoding="utf-8").write(source.replace(old, new, 1))
+          PY
       - name: Apply online hardening patches
         run: node scripts/online-risk-hardening.mjs
       - name: Run focused online regressions
