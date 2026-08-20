@@ -58,6 +58,7 @@ const combatState = () => {
 
 const passPostBlockPriority = (game) => {
   game = executeOnlineCommand(game, { type: "passPriority", owner: 0 }).state;
+  if (!game.pendingResponse) return game;
   return executeOnlineCommand(game, { type: "passPriority", owner: 1 }).state;
 };
 
@@ -96,15 +97,19 @@ test("blocker selection is unitary and resolves after the post-block response ch
   assert.deepEqual(listAttackCapableCreatures(game, 0).map((card) => card.uid), ["next-attacker"]);
 });
 
-test("illegal blocker is rejected before the response checkpoint opens", () => {
+test("attack with no legal blocker skips the empty blocker decision", () => {
   let game = combatState();
   game.players[0].board = [unit("flying-attacker", 0, ["Voar"])];
   game.players[1].board = [unit("ground-blocker", 0)];
   game = executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "flying-attacker" }).state;
   assert.deepEqual(listLegalBlockers(game, 1, "flying-attacker"), []);
-  assert.throws(() => executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "flying-attacker", defenderId: "ground-blocker", targetHero: false }), /invalid-defender/);
-  assert.equal(game.combatAction.stage, "choosing");
-  assert.equal(game.pendingResponse, null);
+  assert.equal(game.combatAction.stage, "priority");
+  assert.equal(game.combatAction.targetHero, true);
+  assert.equal(game.pendingResponse.responder, 0);
+  assert.equal(game.priority.window, "after-blockers");
+  game = passPostBlockPriority(game);
+  assert.equal(game.players[1].life, 28);
+  assert.equal(game.combatAction, null);
 });
 
 test("no block sends only that attack to the defending hero after both response passes", () => {
