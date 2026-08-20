@@ -1,0 +1,58 @@
+name: One-shot online command retry fix
+
+on:
+  push:
+    branches: [fix/cards_mechanics]
+    paths: [.github/workflows/one-shot-online-command-retry.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - name: Patch client command retry loop
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/page.tsx')
+          s=p.read_text(encoding='utf-8')
+          old='''const roomAction=(action:string,extra:Record<string,unknown>={})=>{\n if(!roomId||!roomToken)return Promise.resolve(null);\n const execute=async(retry=true):Promise<any>=>{\n  const payload={action,token:roomToken,...extra,...(action==="command"?{baseRevision:roomRevisionRef.current}:{})};\n  const res=await fetch(`/api/rooms/${roomId}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});\n  const data=await res.json();\n  if(res.status===409&&data?.game){applyRoomSnapshot(data);if(retry&&action==="command")return execute(false)}\n  if(!res.ok){setRoomError(data?.error||"A sala recusou a ação.");return null}\n  setRoomError("");applyRoomSnapshot(data);return data;\n };\n const task=syncQueueRef.current.then(()=>execute()).catch(()=>{setRoomError("Conexão instável. A ação será reconciliada com a sala.");return null});\n syncQueueRef.current=task.then(()=>undefined,()=>undefined);\n return task;\n};'''
+          new='''const roomAction=(action:string,extra:Record<string,unknown>={})=>{\n if(!roomId||!roomToken)return Promise.resolve(null);\n /* Polling, timeout auto-passes and the other player can advance the room revision\n    between pointer-down and POST arrival. Recover those CAS races inside the same\n    user action instead of forcing the player to click the same control again. */\n const execute=async(staleRetries=0):Promise<any>=>{\n  const payload={action,token:roomToken,...extra,...(action==="command"?{baseRevision:roomRevisionRef.current}:{})};\n  const res=await fetch(`/api/rooms/${roomId}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});\n  const data=await res.json();\n  const staleCommand=action==="command"&&res.status===409&&data?.error==="stale revision"&&data?.game;\n  if(staleCommand){\n   applyRoomSnapshot(data);\n   if(staleRetries<3){await new Promise(resolve=>window.setTimeout(resolve,0));return execute(staleRetries+1)}\n  }\n  if(!res.ok){setRoomError(data?.error||"A sala recusou a ação.");return null}\n  setRoomError("");applyRoomSnapshot(data);return data;\n };\n const task=syncQueueRef.current.then(()=>execute()).catch(()=>{setRoomError("Conexão instável. A ação será reconciliada com a sala.");return null});\n syncQueueRef.current=task.then(()=>undefined,()=>undefined);\n return task;\n};'''
+          if s.count(old)!=1:
+              raise SystemExit(f'roomAction block match count={s.count(old)}')
+          s=s.replace(old,new,1)
+          p.write_text(s,encoding='utf-8')
+
+          t=Path('tests/rules-engine.test.mjs')
+          ts=t.read_text(encoding='utf-8')
+          marker='''test("online UI exposes authoritative priority metadata", async () => {'''
+          idx=ts.find(marker)
+          if idx<0:
+              raise SystemExit('online UI test marker not found')
+          end=ts.find('\n});',idx)
+          if end<0:
+              raise SystemExit('online UI test end not found')
+          insert='''\n  assert.match(page, /staleRetries<3/);\n  assert.match(page, /data\\?\\.error===\\"stale revision\\"/);\n'''
+          ts=ts[:end]+insert+ts[end:]
+          t.write_text(ts,encoding='utf-8')
+          PY
+      - name: Sanity check
+        run: |
+          grep -q 'staleRetries<3' app/page.tsx
+          grep -q 'data?.error==="stale revision"' app/page.tsx
+      - name: Commit and remove one-shot workflow
+        shell: bash
+        run: |
+          rm .github/workflows/one-shot-online-command-retry.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/page.tsx tests/rules-engine.test.mjs .github/workflows/one-shot-online-command-retry.yml
+          git commit -m 'fix online actions requiring repeated clicks'
+          git push origin HEAD:fix/cards_mechanics
