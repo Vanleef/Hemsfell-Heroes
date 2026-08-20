@@ -1,6 +1,8 @@
 import { canExecuteCard, validateCosts } from "./engine.mjs";
 import { abilitiesForLevel, getExplicitCardRule } from "./card-rules.mjs";
+import { reservePriorityPayment } from "./match-integrity.mjs";
 import { OnlineInteractionState, canonicalStack, deriveOnlineInteractionState, inferPriorityWindow } from "./priority-state.mjs";
+import { cardPlayTargetPolicy, isValidTarget } from "./targeting.mjs";
 
 export const PriorityState = Object.freeze({
   IDLE: "IDLE",
@@ -19,6 +21,9 @@ const normalizedSubtype = (value = "") => String(value).normalize("NFD").replace
 const normalizedTiming = (value = "") => normalizedSubtype(value).replace(/[ _-]+/g, "");
 const hasSubtype = (card, subtype) => !subtype || (card?.subtypes || card?.tags || []).some((value) => normalizedSubtype(value) === normalizedSubtype(subtype));
 const usesOnlinePriorityModel = (state) => /^online-v\d+$/.test(String(state?.priority?.model || ""));
+const cardId = (card) => card?.uid || card?.id;
+const markerTotal = (card) => typeof card?.markers === "number" ? Number(card.markers || 0) : Object.values(card?.markers || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+const hasMagicBarrier = (card) => [...(card?.tags || []), ...(card?.grantedKeywords || [])].some((value) => normalizedSubtype(value).includes("barreira magica"));
 
 /**
  * Response speed is opt-in for permanent abilities. The manual only defines
@@ -31,6 +36,78 @@ export function isExplicitResponseAbility(ability) {
   if (ability.responseAllowed === true || ability.responseLegal === true) return true;
   const timing = normalizedTiming(ability.timing || ability.speed || ability.activationTiming || "");
   return ["response", "responselegal", "accelerated", "acelerado"].includes(timing);
+}
+
+const targetMatchesResponseStep = (state, owner, card, target, targetId, step) => {
+  if ((step.excludeIds || []).includes(targetId)) return false;
+  if (step.allowedIds?.length && !step.allowedIds.includes(targetId)) return false;
+  if (step.requiredSubtype && !hasSubtype(target, step.requiredSubtype)) return false;
+  if (step.requiredName && normalizedSubtype(target?.name) !== normalizedSubtype(step.requiredName)) return false;
+  if (step.requiredTrigger && !(target?.abilities || []).some((ability) => ability.trigger === step.requiredTrigger)) return false;
+  if (step.imageOnly && !(target?.generatedImage || target?.imageCard)) return false;
+  if (step.maxCost != null && Number(target?.cost || 0) > Number(step.maxCost)) return false;
+  if (step.requireExhausted && !target?.exhausted) return false;
+  if (step.requiresMarker && markerTotal(target) < 1) return false;
+  if (step.requiresEffectAppliedThisTurn && target?.effectAppliedRound !== state.round) return false;
+  if (step.requiresDamagedOwnerThisTurn && !(target?.damagedOwnersThisTurn || []).includes(owner)) return false;
+  if (card?.type === "Feitiço" && hasMagicBarrier(target) && !/ignora.*barreira m[aá]gica/i.test(String(card?.text || ""))) return false;
+  return true;
+};
+
+function responseTargetCandidates(state, owner, card, step) {
+  const result = [];
+  state.players.forEach((entry, targetOwner) => {
+    for (const target of permanents(entry)) {
+      const id = cardId(target);
+      if (!id) continue;
+      const kind = (entry.board || []).includes(target) || target.type === "Criatura" ? "creature" : "permanent";
+      if (isValidTarget(step, owner, targetOwner, kind) && targetMatchesResponseStep(state, owner, card, target, id, step)) result.push(id);
+    }
+    const heroId = targetOwner === owner ? "ally-hero" : "enemy-hero";
+    const heroConstraints = step.requiredSubtype || step.requiredName || step.requiredTrigger || step.imageOnly || step.maxCost != null || step.requireExhausted || step.requiresMarker || step.requiresEffectAppliedThisTurn || step.requiresDamagedOwnerThisTurn;
+    if (!heroConstraints && !(step.excludeIds || []).includes(heroId) && (!step.allowedIds?.length || step.allowedIds.includes(heroId)) && isValidTarget(step, owner, targetOwner, "hero")) result.push(heroId);
+  });
+  return [...new Set(result)];
+}
+
+/**
+ * Determine whether an Acelerado can actually be declared now, not merely
+ * whether it exists in hand. Assisted priority must not stop for a card whose
+ * targets/costs make it impossible to use.
+ */
+function responseCardDeclarationAvailable(state, owner, card, handIndex) {
+  if (!card || card.type !== "Feitiço" || !isAccelerated(card) || !canExecuteCard(card)) return false;
+  const steps = cardPlayTargetPolicy(card).steps || [];
+  const candidates = steps.map((step) => responseTargetCandidates(state, owner, card, step));
+  const playAbilities = (card.abilities || []).filter((ability) => ability.trigger === "onPlay");
+
+  const canPayDeclaration = (selection) => {
+    const targetIds = selection.filter((choice) => choice.role !== "sacrifice" && choice.role !== "attachment").map((choice) => choice.id);
+    const sacrificeIds = selection.filter((choice) => choice.role === "sacrifice").map((choice) => choice.id);
+    const command = { type: "playCard", owner, cardId: card.id, handIndex, hasPriority: true, targetIds, sacrificeIds };
+    try {
+      const probe = structuredClone(state);
+      reservePriorityPayment(probe, command);
+      for (const ability of playAbilities) validateCosts(probe, ability, command);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const choose = (index, used, selection) => {
+    if (index >= steps.length) return canPayDeclaration(selection);
+    const step = steps[index];
+    if (step.optional && choose(index + 1, used, selection)) return true;
+    return candidates[index].some((id) => {
+      if (used.has(id)) return false;
+      const next = new Set(used);
+      next.add(id);
+      return choose(index + 1, next, [...selection, { id, role: step.role || "effect" }]);
+    });
+  };
+
+  return choose(0, new Set(), []);
 }
 
 function abilityTargetsAvailable(state, owner, ability) {
@@ -46,7 +123,13 @@ function abilityTargetsAvailable(state, owner, ability) {
     for (const targetOwner of owners) {
       const entry = state.players[targetOwner];
       const candidates = wantsCreature ? (entry.board || []) : wantsPermanent ? permanents(entry) : [];
-      count += candidates.filter((card) => hasSubtype(card, effect.requiredSubtype) && (!effect.requireExhausted || card.exhausted)).length;
+      count += candidates.filter((card) => hasSubtype(card, effect.requiredSubtype)
+        && (!effect.requireExhausted || card.exhausted)
+        && (!effect.requiresMarker || markerTotal(card) > 0)
+        && (!effect.requiresEffectAppliedThisTurn || card.effectAppliedRound === state.round)
+        && (!effect.requiresDamagedOwnerThisTurn || (card.damagedOwnersThisTurn || []).includes(owner))
+        && (!effect.allowedIds?.length || effect.allowedIds.includes(cardId(card)))
+        && !(effect.excludeIds || []).includes(cardId(card))).length;
       if (/Character$/.test(target) && targetOwner !== owner) count += 1;
     }
     if (count < minimum) return false;
@@ -55,14 +138,6 @@ function abilityTargetsAvailable(state, owner, ability) {
 }
 
 export const isAccelerated = (card) => (card?.tags || []).some((tag) => /acelerado/i.test(String(tag))) || /(?:acelerado|instantâneo|instantaneo)/i.test(card?.text || "");
-
-function spellCost(state, owner, card) {
-  const player = state.players[owner];
-  const discount = permanents(player).filter((source) => !source.suffocated).flatMap((source) => source.staticModifiers || [])
-    .filter((modifier) => modifier.type === "costModifier" && (!modifier.selector?.type || modifier.selector.type === card.type) && (!modifier.during || modifier.during !== "controllerTurn" || state.active === owner))
-    .reduce((sum, modifier) => sum + (modifier.amount || 0), 0);
-  return Math.max(0, (card.cost || 0) + (card.costModifier || 0) + discount);
-}
 
 function legalPermanentResponseAbilities(state, owner) {
   const entry = state.players?.[owner];
@@ -90,8 +165,7 @@ export function legalPriorityResponses(state, owner) {
      intentionally migrated, preventing the old AI priority loop from returning. */
   if (!usesOnlinePriorityModel(state) && pending.actor === owner && (pending.passes || 0) > 0) return [];
   const player = state.players[owner];
-  const responseEnergy = state.active === owner ? player.energy + player.reserve : player.reserve;
-  const cards = player.hand.flatMap((card, handIndex) => isAccelerated(card) && canExecuteCard(card) && responseEnergy >= spellCost(state, owner, card) && !stackHas(state, command => command.type === "playCard" && command.owner === owner && command.cardId === card.id)
+  const cards = player.hand.flatMap((card, handIndex) => responseCardDeclarationAvailable(state, owner, card, handIndex) && !stackHas(state, command => command.type === "playCard" && command.owner === owner && command.cardId === card.id)
     ? [{ type: "playCard", owner, cardId: card.id, handIndex, hasPriority: true, label: card.name || card.id }]
     : []);
   const page = HERO_RULE_PAGE[player.heroId];
