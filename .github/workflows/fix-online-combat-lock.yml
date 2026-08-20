@@ -7,6 +7,9 @@ on:
     paths:
       - scripts/fix-online-combat-lock.mjs
       - .github/workflows/fix-online-combat-lock.yml
+  pull_request:
+    branches:
+      - fix/cards_mechanics
   workflow_dispatch:
 
 permissions:
