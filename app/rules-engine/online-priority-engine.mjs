@@ -39,7 +39,7 @@ function validateOnlineResponse(state, command) {
 function validateSingleBlockerChoice(state, command) {
   if (command.type !== "selectDefender") return;
   const combat = state.combatAction;
-  if (!combat || combat.stage !== "choosing" || 1 - combat.attackerOwner !== command.owner) throw new RulesViolation("defender-choice-unavailable");
+  if (!combat || combat.stage !== "choosing" || combat.blockCommitted === true || 1 - combat.attackerOwner !== command.owner) throw new RulesViolation("defender-choice-unavailable");
   if (command.attackerId != null && command.attackerId !== combat.attackerUid) throw new RulesViolation("combat-state-mismatch");
   if (command.targetHero) return;
   const defenderId = command.defenderId;
@@ -61,8 +61,6 @@ function ensureIdlePhaseAdvance(state, command) {
 
 function openMainEndTransition(state, command) {
   ensureIdlePhaseAdvance(state, command);
-  /* Preflight against the authoritative engine before opening a response root.
-     No invalid phase transition is ever allowed to become an immortal window. */
   executeRulesCommand(clone(state), { ...command, skipPriority: true }, { priority: false });
   const next = clone(state);
   openResponseWindow(next, {
@@ -77,9 +75,9 @@ function openMainEndTransition(state, command) {
 
 function enterFinalizationFromCombat(state, command) {
   ensureIdlePhaseAdvance(state, command);
-  /* This preflight is the source of truth for Indomável and every other reason
-     Combat cannot end. There is no redundant empty combat-end response window:
-     EOT gets its own explicit response checkpoint in online-finalization. */
+  /* The phase-transition preflight is the one source of truth for Indomável.
+     Online v3 does not add a redundant empty combat-end window: EOT receives
+     the explicit finalization response checkpoint instead. */
   executeRulesCommand(clone(state), { ...command, skipPriority: true }, { priority: false });
   const next = enterOnlineFinalization(state, command.owner);
   return { state: assertOnlinePriorityInvariant(next), trace: ["online-v3:combat-end", "online-finalization:entered"], steps: 0 };
@@ -174,9 +172,9 @@ function normalizeAfterResolution(before, result, command) {
   return assertOnlinePriorityInvariant(syncPriorityMetadata(state, { window: state.pendingResponse ? inferPriorityWindow(state) : null }));
 }
 
-/** Once the opponent answers a request to end Main, that request is consumed.
- * The response chain still resolves normally, but its root becomes a no-op
- * checkpoint so the active player returns to Main and must ask to end it again. */
+/** A response consumes the current request to end Main. The response chain
+ * remains fully valid, but its root becomes a no-op checkpoint so the active
+ * player returns to Main and must request the transition again. */
 function cancelMainEndRootOnResponse(inputState) {
   if (!mainTransitionAtRoot(inputState)) return inputState;
   const state = clone(inputState);
@@ -193,13 +191,13 @@ function normalizeDeclaredAttack(result) {
   const state = result.state;
   const combat = state.combatAction;
   if (!combat || combat.stage !== "priority") throw new RulesViolation("combat-declaration-failed");
-  /* The base engine's historical attack-declaration window is intentionally
-     removed in Online v3. Declaration freezes one attacker and immediately
-     gives the defender the exclusive blocker decision. */
+  /* The historical pre-block attack-response window is removed. One declared
+     attacker immediately freezes input for the defending player's block/no-block
+     decision. */
   state.pendingResponse = null;
   state.pendingAction = undefined;
   state.priorityStack = undefined;
-  state.combatAction = { ...combat, stage: "choosing" };
+  state.combatAction = { ...combat, stage: "choosing", blockCommitted: false };
   syncPriorityMetadata(state, { mode: PriorityMode.BLOCKER, owner: 1 - combat.attackerOwner, window: null });
   assertOnlinePriorityInvariant(state);
   return result;
@@ -210,6 +208,12 @@ function openPostBlockResponse(result) {
   const combat = state.combatAction;
   if (!combat || combat.stage !== "charging") throw new RulesViolation("combat-blocker-commit-failed");
   delete combat.deadline;
+  /* Keep the presentation-compatible `choosing` stage while marking the choice
+     immutable. page.tsx already freezes its local combat driver in this stage;
+     `blockCommitted` prevents the server, clock and priority metadata from
+     treating it as another blocker decision. */
+  combat.stage = "choosing";
+  combat.blockCommitted = true;
   const attackCommand = {
     type: "attack",
     owner: combat.attackerOwner,
@@ -220,7 +224,7 @@ function openPostBlockResponse(result) {
   };
   /* Blocking is the defender's committed action. Priority then hands to the
      attacker first; a pass hands it back to the defender. Two consecutive
-     passes resolve exactly this one combat instance. */
+     passes resolve this one combat instance on the server. */
   openResponseWindow(state, {
     actor: 1 - combat.attackerOwner,
     responder: combat.attackerOwner,
@@ -269,11 +273,11 @@ function resolveCombatRoot(state) {
         steps: 0,
       };
     }
-    /* If a response made the chosen blocker illegal, resolve the same attack as
-       unblocked instead of leaving the serialized room in a charging deadlock. */
+    /* A response that invalidates the chosen blocker removes that block. The
+       same attack then resolves unblocked rather than deadlocking the room. */
     if (attack.defenderId && ["invalid-defender", "unblockable-attacker", "flying-blocker-required"].includes(message)) {
       const retryState = clone(prepared);
-      retryState.combatAction = combat ? { ...combat, targetHero: true, defenderUid: undefined, defenderCard: undefined, stage: "charging" } : null;
+      retryState.combatAction = combat ? { ...combat, targetHero: true, defenderUid: undefined, defenderCard: undefined, stage: "charging", blockCommitted: true } : null;
       const resolved = executeRulesCommand(retryState, { ...attack, defenderId: undefined }, { priority: false });
       syncPriorityMetadata(resolved.state, { mode: PriorityMode.ACTION, owner: resolved.state.active, window: null });
       assertOnlinePriorityInvariant(resolved.state);
@@ -305,8 +309,6 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
       if (mainTransitionAtRoot(state)) {
         const resolved = executeRulesCommand(state, command, { ...options, priority: true });
         normalizeAfterResolution(state, resolved, command);
-        /* A clean two-pass Main-end request enters unitary COMBAT_IDLE directly.
-           There is no empty combat-start response window in Online v3. */
         syncPriorityMetadata(resolved.state, { mode: PriorityMode.ACTION, owner: resolved.state.active, window: null });
         assertOnlinePriorityInvariant(resolved.state);
         resolved.trace = [...(resolved.trace || []), "online-v3:main-end-resolved"];
@@ -331,7 +333,6 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   if (command.type === "declareAttackers" || command.type === "declareBlockers") throw new RulesViolation("grouped-combat-removed");
   if (command.type === "attack") throw new RulesViolation("server-resolves-combat");
 
-  /* Retired grouped-combat metadata from recovered rooms never owns legality. */
   if (state.onlineCombat && !state.pendingDecision && !state.pendingReposition && !state.combatAction) delete state.onlineCombat;
 
   validateSingleBlockerChoice(state, command);
