@@ -21,6 +21,9 @@ test("Café do Tempo waits until maintenance is left and its controller chooses 
  const placed=executeCommand(next,{type:"resolveDecision",owner:0,slot:2,placementZone:"creature"}).state;
  const cat=placed.players[0].board.find(card=>card.name==="Gato Multidimensional");
  assert.ok(cat);assert.equal(cat.slot,2);assert.equal(placed.players[1].board.length,0);
+ assert.equal(cat.exhausted,false,"Gato Multidimensional deve entrar desvirado");
+ assert.equal(cat.revealed,true,"Gato Multidimensional criado em campo deve ficar com a face pública");
+ assert.deepEqual(cat.revealedTo,[0,1],"ambos os jogadores devem enxergar o Gato Multidimensional em campo");
 });
 
 test("Café do Tempo controller chooses placement on the opponent active field",()=>{
@@ -31,7 +34,7 @@ test("Café do Tempo controller chooses placement on the opponent active field",
  assert.throws(()=>executeCommand(next,{type:"resolveDecision",owner:1,slot:1,placementZone:"creature"}),/decision-not-owned/);
  const placed=executeCommand(next,{type:"resolveDecision",owner:0,slot:3,placementZone:"creature"}).state;
  assert.equal(placed.players[0].board.length,0);
- const cat=placed.players[1].board.find(card=>card.name==="Gato Multidimensional");assert.ok(cat);assert.equal(cat.slot,3);
+ const cat=placed.players[1].board.find(card=>card.name==="Gato Multidimensional");assert.ok(cat);assert.equal(cat.slot,3);assert.equal(cat.exhausted,false);assert.equal(cat.revealed,true);assert.deepEqual(cat.revealedTo,[0,1]);
 });
 
 test("Rasmus level 3 may place Café do Tempo cat in an available auxiliary slot of the active player",()=>{
@@ -39,7 +42,7 @@ test("Rasmus level 3 may place Café do Tempo cat in an available auxiliary slot
  const next=executeCommand(game,{type:"advancePhase",owner:1}).state;
  assert.ok(next.pendingDecision.effect.supportSlots.includes(1));
  const placed=executeCommand(next,{type:"resolveDecision",owner:0,slot:1,placementZone:"support"}).state;
- const cat=placed.players[1].support.find(card=>card.name==="Gato Multidimensional");assert.ok(cat);assert.equal(cat.slot,1);
+ const cat=placed.players[1].support.find(card=>card.name==="Gato Multidimensional");assert.ok(cat);assert.equal(cat.slot,1);assert.equal(cat.exhausted,false);assert.equal(cat.revealed,true);assert.deepEqual(cat.revealedTo,[0,1]);
 });
 
 test("AI resolves its own Café do Tempo placement through the same decision",()=>{
@@ -47,5 +50,5 @@ test("AI resolves its own Café do Tempo placement through the same decision",()
  const next=executeCommand(game,{type:"advancePhase",owner:0}).state;
  assert.equal(next.pendingDecision.owner,1);
  const command=chooseAIDecision(next,1,"Normal");assert.equal(command.type,"resolveDecision");assert.equal(command.owner,1);assert.ok(Number.isInteger(command.slot));
- const placed=executeCommand(next,command).state;assert.ok(placed.players[0].board.some(card=>card.name==="Gato Multidimensional"));
+ const placed=executeCommand(next,command).state;const cat=placed.players[0].board.find(card=>card.name==="Gato Multidimensional");assert.ok(cat);assert.equal(cat.revealed,true);assert.deepEqual(cat.revealedTo,[0,1]);
 });
