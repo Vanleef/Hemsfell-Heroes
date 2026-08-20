@@ -1,0 +1,87 @@
+name: Cafe placement priority hotfix
+
+on:
+  push:
+    branches: [fix/cards_mechanics]
+    paths:
+      - '.github/workflows/cafe-placement-priority-hotfix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Apply authoritative priority guard
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              if old not in text:
+                  raise SystemExit(f'needle not found in {path}: {old[:120]!r}')
+              p.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          replace_once(
+              'app/rules-engine/engine.mjs',
+              '  const priorityEnabled = !!options.priority;\n\n  if (priorityEnabled && command.type === "playCard"',
+              '  const priorityEnabled = !!options.priority;\n\n  /* Café do Tempo placement is an authoritative interaction window. While it\n     is pending, no phase, combat, activation or priority command may bypass\n     the controller\'s slot choice, even when it is the opponent\'s turn. */\n  const imagePlacementDecision = inputState.pendingDecision?.kind === "image-placement" ? inputState.pendingDecision : null;\n  if (imagePlacementDecision) {\n    if (command.type !== "resolveDecision") throw new RulesViolation("image-placement-priority");\n    if (Number(imagePlacementDecision.owner) !== Number(command.owner)) throw new RulesViolation("decision-not-owned");\n  }\n\n  if (priorityEnabled && command.type === "playCard"'
+          )
+
+          replace_once(
+              'app/api/rooms/machine.ts',
+              '    const command: Record<string, any> = { ...rawCommand, owner };\n    if (command.type === "attack") {',
+              '    const command: Record<string, any> = { ...rawCommand, owner };\n    /* A Café do Tempo placement temporarily owns Online input, independently\n       of whose turn it is. Reject every other intention at the room boundary\n       so the active opponent cannot race a phase/combat command around it. */\n    const placementDecision = room.game.pendingDecision?.kind === "image-placement" ? room.game.pendingDecision : null;\n    if (placementDecision) {\n      if (command.type !== "resolveDecision") return { ok: false, status: 409, error: "image placement decision has priority" };\n      if (Number(placementDecision.owner) !== owner) return { ok: false, status: 403, error: "image placement belongs to opponent" };\n    }\n    if (command.type === "attack") {'
+          )
+
+          replace_once(
+              'app/api/rooms/machine.ts',
+              '  const owner = role === "host" ? 0 : 1;\n  if (!shouldAutoPass(room.game, owner, control)) return false;',
+              '  const owner = role === "host" ? 0 : 1;\n  if (room.game.pendingDecision?.kind === "image-placement") return false;\n  if (!shouldAutoPass(room.game, owner, control)) return false;'
+          )
+
+          replace_once(
+              'app/page.tsx',
+              ' const priorityLocked=(mode==="online"&&game?.pendingResponse?.actor===0)||opponentReconnecting;',
+              ' const opponentCoffeePlacementPriority=mode==="online"&&game?.pendingDecision?.kind==="image-placement"&&game.pendingDecision.owner!==0;\n const priorityLocked=(mode==="online"&&game?.pendingResponse?.actor===0)||opponentCoffeePlacementPriority||opponentReconnecting;'
+          )
+
+          test_path = Path('tests/cafe-do-tempo-placement.test.mjs')
+          test_text = test_path.read_text(encoding='utf-8')
+          marker = 'test("Café do Tempo placement has priority over the active opponent"'
+          if marker not in test_text:
+              test_text += '''\n\ntest("Café do Tempo placement has priority over the active opponent",()=>{\n const game=state(1);installCafe(game,0);\n const next=executeCommand(game,{type:"advancePhase",owner:1}).state;\n assert.equal(next.phase,"principal");\n assert.equal(next.pendingDecision?.kind,"image-placement");\n assert.equal(next.pendingDecision?.owner,0);\n assert.throws(()=>executeCommand(next,{type:"advancePhase",owner:1}),/image-placement-priority/);\n assert.throws(()=>executeCommand(next,{type:"declareAttack",owner:1,attackerId:"missing"}),/image-placement-priority/);\n const placed=executeCommand(next,{type:"resolveDecision",owner:0,slot:4,placementZone:"creature"}).state;\n assert.equal(placed.pendingDecision??null,null);\n assert.ok(placed.players[1].board.some(card=>card.name==="Gato Multidimensional"&&card.slot===4));\n assert.doesNotThrow(()=>executeCommand(placed,{type:"advancePhase",owner:1}));\n});\n'''
+              test_path.write_text(test_text, encoding='utf-8')
+
+      - name: Focused Café tests
+        run: node --test tests/cafe-do-tempo-placement.test.mjs
+
+      - name: Rules regression
+        run: npm run test:rules
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Commit validated fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/rules-engine/engine.mjs app/api/rooms/machine.ts app/page.tsx tests/cafe-do-tempo-placement.test.mjs
+          git diff --cached --quiet && exit 0
+          git commit -m "fix: prioritize Café do Tempo placement"
+          git push origin HEAD:fix/cards_mechanics
