@@ -3,11 +3,18 @@ import {
   normalizePriorityClock,
   serverNowMs,
 } from "./time.mjs";
+import {
+  OnlineInteractionState,
+  deriveOnlineInteractionState,
+} from "../../rules-engine/priority-state.mjs";
 
 const remaining = (deadline, now) => Math.max(0, Number(deadline || 0) - now);
-const choosingBlocker = (game) => game?.combatAction?.stage === "choosing";
-const choosingDecision = (game) => !!game?.pendingDecision || !!game?.pendingReposition;
 const responseDuration = (settings) => Number(settings?.responseSeconds || 30) * 1000;
+const interactionState = (game) => game?.priority?.interactionState || deriveOnlineInteractionState(game);
+const responseOwnsInput = (game) => [OnlineInteractionState.RESPONSE_PRIORITY, OnlineInteractionState.FINALIZATION_RESPONSE].includes(interactionState(game));
+const blockerOwnsInput = (game) => interactionState(game) === OnlineInteractionState.AWAITING_BLOCKER;
+const decisionOwnsInput = (game) => [OnlineInteractionState.DECISION, OnlineInteractionState.REPOSITION].includes(interactionState(game));
+const actionClockRuns = (game) => [OnlineInteractionState.MAINTENANCE_DECISION, OnlineInteractionState.ACTION_PRIORITY, OnlineInteractionState.COMBAT_IDLE].includes(interactionState(game));
 
 const clearPriorityClock = (game) => {
   if (!game?.priority) return;
@@ -60,7 +67,7 @@ export function shiftOnlineDeadlines(game, milliseconds) {
  * bounded margin, and critical drift enters action_only until its wall ceiling.
  */
 export function ensureResponseClock(game, settings, now = serverNowMs()) {
-  if (!game?.pendingResponse) {
+  if (!game?.pendingResponse || !responseOwnsInput(game)) {
     clearPriorityClock(game);
     return { changed: false, expired: false, wallExpired: false, timerMode: "none", driftLevel: "ok" };
   }
@@ -69,15 +76,27 @@ export function ensureResponseClock(game, settings, now = serverNowMs()) {
   return result;
 }
 
+function preserveActionRemainder(before, after, settings, now) {
+  const stored = Number(before?.turnTimeRemainingMs);
+  if (Number.isFinite(stored)) after.turnTimeRemainingMs = Math.max(0, stored);
+  else if (before?.turnDeadline) after.turnTimeRemainingMs = remaining(before.turnDeadline, now);
+  else if (!Number.isFinite(Number(after.turnTimeRemainingMs))) after.turnTimeRemainingMs = settings.turnSeconds * 1000;
+  after.turnDeadline = null;
+}
+
 /**
- * Keep the active player's action clock independent from interaction time.
- * The action clock pauses while a response window, defender-only blocker choice,
- * target/effect decision or reposition decision owns input. It resumes with
- * exactly the stored remainder when normal action priority returns.
+ * One clock policy follows the canonical Online interaction state:
+ * - Maintenance decision / normal Action Priority / COMBAT_IDLE consume the
+ *   active player's turn clock.
+ * - Response Priority gets a server response deadline and pauses turn time.
+ * - AWAITING_BLOCKER gets a defender deadline and pauses turn time.
+ * - mandatory decisions/reposition and deterministic resolving states pause the
+ *   turn clock instead of allowing a hidden phase timeout underneath them.
  */
 export function reconcileOnlineClocks(before, after, settings, now = serverNowMs()) {
   if (!after) return after;
-  if (after.winner !== null && after.winner !== undefined) {
+  const afterInteraction = interactionState(after);
+  if (afterInteraction === OnlineInteractionState.GAME_OVER || (after.winner !== null && after.winner !== undefined)) {
     after.turnDeadline = null;
     delete after.turnTimeRemainingMs;
     if (after.pendingResponse) {
@@ -93,12 +112,15 @@ export function reconcileOnlineClocks(before, after, settings, now = serverNowMs
   }
 
   const activeChanged = Number(before?.active) !== Number(after.active);
-  const blockerChoice = choosingBlocker(after);
-  const decisionChoice = choosingDecision(after);
+  const wasPaused = before && !actionClockRuns(before);
+  const blockerChoice = blockerOwnsInput(after);
+  const responseChoice = responseOwnsInput(after);
+  const decisionChoice = decisionOwnsInput(after);
+
   if (after.combatAction && !blockerChoice) delete after.combatAction.deadline;
 
   if (activeChanged) {
-    if (after.pendingResponse) {
+    if (responseChoice) {
       after.turnTimeRemainingMs = settings.turnSeconds * 1000;
       after.turnDeadline = null;
       openResponseClock(after, settings, now);
@@ -107,7 +129,7 @@ export function reconcileOnlineClocks(before, after, settings, now = serverNowMs
       after.turnDeadline = null;
       after.combatAction.deadline = now + settings.responseSeconds * 1000;
       if (after.priority) after.priority.deadline = after.combatAction.deadline;
-    } else if (decisionChoice) {
+    } else if (!actionClockRuns(after)) {
       after.turnTimeRemainingMs = settings.turnSeconds * 1000;
       after.turnDeadline = null;
       clearPriorityClock(after);
@@ -120,43 +142,31 @@ export function reconcileOnlineClocks(before, after, settings, now = serverNowMs
   }
 
   if (blockerChoice) {
-    const stored = Number(before?.turnTimeRemainingMs);
-    if (Number.isFinite(stored)) after.turnTimeRemainingMs = Math.max(0, stored);
-    else if (before?.turnDeadline) after.turnTimeRemainingMs = remaining(before.turnDeadline, now);
-    else if (!Number.isFinite(Number(after.turnTimeRemainingMs))) after.turnTimeRemainingMs = settings.turnSeconds * 1000;
-    after.turnDeadline = null;
-    const wasBlockerChoice = choosingBlocker(before);
+    preserveActionRemainder(before, after, settings, now);
+    const wasBlockerChoice = blockerOwnsInput(before);
     if (!wasBlockerChoice || !Number.isFinite(Number(after.combatAction.deadline)) || Number(after.combatAction.deadline) <= 0) after.combatAction.deadline = now + settings.responseSeconds * 1000;
     if (after.priority) after.priority.deadline = after.combatAction.deadline;
     return after;
   }
 
-  if (after.pendingResponse) {
-    const stored = Number(before?.turnTimeRemainingMs);
-    if (Number.isFinite(stored)) after.turnTimeRemainingMs = Math.max(0, stored);
-    else if (before?.turnDeadline) after.turnTimeRemainingMs = remaining(before.turnDeadline, now);
-    else if (!Number.isFinite(Number(after.turnTimeRemainingMs))) after.turnTimeRemainingMs = settings.turnSeconds * 1000;
-    after.turnDeadline = null;
-    const responderChanged = Number(before?.pendingResponse?.responder) !== Number(after.pendingResponse.responder);
-    const newlyOpened = !before?.pendingResponse;
+  if (responseChoice) {
+    preserveActionRemainder(before, after, settings, now);
+    const responderChanged = Number(before?.pendingResponse?.responder) !== Number(after.pendingResponse?.responder);
+    const newlyOpened = !responseOwnsInput(before) || !before?.pendingResponse;
     if (newlyOpened || responderChanged) openResponseClock(after, settings, now);
     else ensureResponseClock(after, settings, now);
     return after;
   }
 
-  if (decisionChoice) {
-    const stored = Number(before?.turnTimeRemainingMs);
-    if (Number.isFinite(stored)) after.turnTimeRemainingMs = Math.max(0, stored);
-    else if (before?.turnDeadline) after.turnTimeRemainingMs = remaining(before.turnDeadline, now);
-    else if (!Number.isFinite(Number(after.turnTimeRemainingMs))) after.turnTimeRemainingMs = settings.turnSeconds * 1000;
-    after.turnDeadline = null;
+  if (decisionChoice || !actionClockRuns(after)) {
+    preserveActionRemainder(before, after, settings, now);
     clearPriorityClock(after);
     return after;
   }
 
   clearPriorityClock(after);
   const paused = Number(before?.turnTimeRemainingMs ?? after.turnTimeRemainingMs);
-  if ((before?.pendingResponse || choosingBlocker(before) || choosingDecision(before)) && Number.isFinite(paused)) {
+  if (wasPaused && Number.isFinite(paused)) {
     after.turnDeadline = now + Math.max(0, paused);
     delete after.turnTimeRemainingMs;
     return after;
