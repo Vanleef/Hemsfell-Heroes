@@ -168,6 +168,41 @@ export default function OnlineMatchRuntime() {
     return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
   }, [session?.id, session?.token, session?.isHost]);
 
+  /* The authoritative priority owner also gates the visible local controls.
+     This matters when Café do Tempo asks its controller to place a Cat during
+     the opponent's turn: the active opponent must wait instead of racing a
+     phase, attack or play-card click before the slot choice is persisted. */
+  useEffect(() => {
+    const blocked = room?.status === "started" && game?.winner == null && game?.active === 0 && game?.priority?.owner === 1;
+    const selectors = [
+      ".screen-game .phase-orb",
+      ".screen-game .player-hand",
+      ".screen-game .player-field",
+      ".screen-game .player-terrain",
+      ".screen-game .player-hero:not(.enemy)",
+      ".screen-game .hero-abilities:not(.enemy)",
+      ".screen-game .hero-command-bar:not(.enemy)",
+    ];
+    const apply = () => {
+      const board = document.querySelector<HTMLElement>(".screen-game .hs-board");
+      if (board) board.dataset.onlineActionBlocked = blocked ? "true" : "false";
+      for (const selector of selectors) {
+        document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
+          if (blocked) element.setAttribute("inert", "");
+          else element.removeAttribute("inert");
+        });
+      }
+    };
+    apply();
+    const observer = new MutationObserver(apply);
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      observer.disconnect();
+      for (const selector of selectors) document.querySelectorAll<HTMLElement>(selector).forEach((element) => element.removeAttribute("inert"));
+      document.querySelector<HTMLElement>(".screen-game .hs-board")?.removeAttribute("data-online-action-blocked");
+    };
+  }, [room?.status, room?.revision, game?.active, game?.winner, game?.priority?.owner]);
+
   if (!session || !room || !game || room.status !== "started" || game.winner != null) return null;
   return <OnlinePriorityHud game={game} />;
 }
