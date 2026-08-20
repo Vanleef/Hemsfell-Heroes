@@ -88,9 +88,14 @@ export function syncPriorityMetadata(state, overrides = {}) {
     model: "online-v2",
     mode,
     owner,
+    responder: pending?.responder ?? null,
     window: overrides.window ?? (pending ? inferPriorityWindow(state) : null),
     consecutivePasses: pending ? Number(pending.passes || 0) : 0,
+    openedAt: pending?.openedAt ?? state.pendingDecision?.openedAt ?? state.pendingReposition?.openedAt ?? null,
     deadline: pending?.deadline ?? state.pendingDecision?.deadline ?? state.pendingReposition?.deadline ?? null,
+    timerMode: pending?.timerMode ?? null,
+    wallDeadline: pending?.wallDeadline ?? null,
+    driftLevel: pending?.driftLevel ?? null,
     stackDepth: stack.length,
   };
   state.stack = stack;
@@ -115,7 +120,16 @@ export function handOffFirstPass(state, owner) {
   if (!pending || pending.responder !== owner) throw new Error("not-your-priority");
   if (Number(pending.passes || 0) !== 0) return null;
   const next = clone(state);
-  next.pendingResponse = { ...next.pendingResponse, responder: 1 - owner, passes: 1 };
+  next.pendingResponse = {
+    ...next.pendingResponse,
+    responder: 1 - owner,
+    passes: 1,
+    openedAt: null,
+    deadline: null,
+    wallDeadline: null,
+    timerMode: null,
+    driftLevel: null,
+  };
   return syncPriorityMetadata(next, { window: inferPriorityWindow(state) });
 }
 
