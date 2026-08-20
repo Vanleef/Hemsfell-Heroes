@@ -74,6 +74,10 @@ export function canonicalStack(state) {
   return [];
 }
 
+const blockerDecisionOwner = (state) => !state?.pendingResponse && !state?.pendingDecision && !state?.pendingReposition && state?.combatAction?.stage === "choosing" && state.combatAction.blockCommitted !== true
+  ? 1 - state.combatAction.attackerOwner
+  : null;
+
 export function assertOnlinePriorityInvariant(state) {
   if (!state) return state;
   const pending = state.pendingResponse;
@@ -82,17 +86,15 @@ export function assertOnlinePriorityInvariant(state) {
     if (state.priority?.mode !== PriorityMode.RESPONSE) throw new Error("online-priority-response-mode-mismatch");
     if (state.priority?.owner !== pending.responder || state.priority?.responder !== pending.responder) throw new Error("online-priority-response-owner-mismatch");
   } else if (state.priority?.responder != null) throw new Error("online-priority-stale-responder");
-  if (state?.combatAction?.stage === "choosing" && !pending) {
-    const defender = 1 - state.combatAction.attackerOwner;
-    if (state.priority?.mode !== PriorityMode.BLOCKER || state.priority?.owner !== defender) throw new Error("online-priority-blocker-owner-mismatch");
-  }
+  const defender = blockerDecisionOwner(state);
+  if (defender != null && (state.priority?.mode !== PriorityMode.BLOCKER || state.priority?.owner !== defender)) throw new Error("online-priority-blocker-owner-mismatch");
   return state;
 }
 
 export function syncPriorityMetadata(state, overrides = {}) {
   if (!state) return state;
   const pending = state.pendingResponse;
-  const blockerOwner = !pending && state.combatAction?.stage === "choosing" ? 1 - state.combatAction.attackerOwner : null;
+  const blockerOwner = blockerDecisionOwner(state);
   const decisionOwner = state.pendingDecision?.owner ?? state.pendingReposition?.activeOwner ?? null;
   const stack = canonicalStack(state);
   const hasWinner = state.winner !== null && state.winner !== undefined;
