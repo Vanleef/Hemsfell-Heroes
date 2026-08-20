@@ -101,3 +101,5 @@ jobs:
           fi
           git commit -m "fix: close remaining online authority risks"
           git push origin HEAD:fix/cards_mechanics
+
+# manual retrigger 2026-08-19T22:20-03:00
