@@ -1,6 +1,7 @@
 export const PriorityMode = Object.freeze({
   NONE: "none",
   ACTION: "action",
+  BLOCKER: "blocker",
   RESPONSE: "response",
   RESOLVING: "resolving",
 });
@@ -9,6 +10,8 @@ export const PriorityWindow = Object.freeze({
   MAINTENANCE: "maintenance-triggers",
   MAIN_ACTION: "main-action-response",
   MAIN_END: "main-end",
+  /* Kept for recovered online-v2 rooms. New unitary combat does not open an
+     empty combat-start window. */
   COMBAT_START: "combat-start",
   AFTER_ATTACKERS: "after-attackers",
   AFTER_BLOCKERS: "after-blockers",
@@ -57,6 +60,9 @@ export function canonicalStack(state) {
       command: clone(state.pendingAction),
     }];
   }
+  /* Legacy online-v2 snapshots could serialize an attack declaration as a
+     pseudo stack root. New matches move directly from declaration to the
+     defender-only blocker state. */
   if (state?.combatAction?.stage === "priority") {
     return [{
       id: "combat-root",
@@ -68,9 +74,25 @@ export function canonicalStack(state) {
   return [];
 }
 
+export function assertOnlinePriorityInvariant(state) {
+  if (!state) return state;
+  const pending = state.pendingResponse;
+  if (pending) {
+    if (![0, 1].includes(pending.responder)) throw new Error("online-priority-invalid-responder");
+    if (state.priority?.mode !== PriorityMode.RESPONSE) throw new Error("online-priority-response-mode-mismatch");
+    if (state.priority?.owner !== pending.responder || state.priority?.responder !== pending.responder) throw new Error("online-priority-response-owner-mismatch");
+  } else if (state.priority?.responder != null) throw new Error("online-priority-stale-responder");
+  if (state?.combatAction?.stage === "choosing" && !pending) {
+    const defender = 1 - state.combatAction.attackerOwner;
+    if (state.priority?.mode !== PriorityMode.BLOCKER || state.priority?.owner !== defender) throw new Error("online-priority-blocker-owner-mismatch");
+  }
+  return state;
+}
+
 export function syncPriorityMetadata(state, overrides = {}) {
   if (!state) return state;
   const pending = state.pendingResponse;
+  const blockerOwner = !pending && state.combatAction?.stage === "choosing" ? 1 - state.combatAction.attackerOwner : null;
   const decisionOwner = state.pendingDecision?.owner ?? state.pendingReposition?.activeOwner ?? null;
   const stack = canonicalStack(state);
   const hasWinner = state.winner !== null && state.winner !== undefined;
@@ -78,21 +100,23 @@ export function syncPriorityMetadata(state, overrides = {}) {
     ? PriorityMode.NONE
     : pending
       ? PriorityMode.RESPONSE
-      : overrides.mode || PriorityMode.ACTION;
+      : blockerOwner != null
+        ? PriorityMode.BLOCKER
+        : overrides.mode || PriorityMode.ACTION;
   const owner = hasWinner
     ? null
     : pending
       ? pending.responder
-      : decisionOwner ?? overrides.owner ?? state.active ?? null;
+      : blockerOwner ?? decisionOwner ?? overrides.owner ?? state.active ?? null;
   state.priority = {
-    model: "online-v2",
+    model: "online-v3",
     mode,
     owner,
     responder: pending?.responder ?? null,
     window: overrides.window ?? (pending ? inferPriorityWindow(state) : null),
     consecutivePasses: pending ? Number(pending.passes || 0) : 0,
-    openedAt: pending?.openedAt ?? state.pendingDecision?.openedAt ?? state.pendingReposition?.openedAt ?? null,
-    deadline: pending?.deadline ?? state.pendingDecision?.deadline ?? state.pendingReposition?.deadline ?? null,
+    openedAt: pending?.openedAt ?? state.combatAction?.deadline && blockerOwner != null ? state.combatAction.deadline : state.pendingDecision?.openedAt ?? state.pendingReposition?.openedAt ?? null,
+    deadline: pending?.deadline ?? (blockerOwner != null ? state.combatAction?.deadline ?? null : state.pendingDecision?.deadline ?? state.pendingReposition?.deadline ?? null),
     timerMode: pending?.timerMode ?? null,
     wallDeadline: pending?.wallDeadline ?? null,
     driftLevel: pending?.driftLevel ?? null,
@@ -104,6 +128,8 @@ export function syncPriorityMetadata(state, overrides = {}) {
 
 export function openResponseWindow(state, { actor, responder = 1 - actor, action, window, deadline = null, pendingAction }) {
   if (!state) return state;
+  if (![0, 1].includes(responder)) throw new Error("online-priority-invalid-responder");
+  if (state.pendingResponse) throw new Error("online-priority-window-already-open");
   if (pendingAction) state.pendingAction = { ...clone(pendingAction), __onlineWindow: window };
   state.pendingResponse = {
     responder,
