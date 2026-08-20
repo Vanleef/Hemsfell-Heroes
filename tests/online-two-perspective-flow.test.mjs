@@ -26,10 +26,6 @@ test("host and guest keep consistent ownership through one complete unitary atta
 
   game = passTwice(game, 1, 0);
   assert.equal(game.phase, "combate");
-  assert.equal(game.pendingResponse.responder, 0);
-  assert.equal(guest(game).pendingResponse.responder, 1);
-
-  game = passTwice(game, 0, 1);
   assert.equal(game.pendingResponse, null);
   assert.equal(game.active, 0);
   assert.equal(guest(game).active, 1);
@@ -37,20 +33,20 @@ test("host and guest keep consistent ownership through one complete unitary atta
   game = executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "attacker" }).state;
   assert.equal(game.combatAction.attackerOwner, 0);
   assert.equal(guest(game).combatAction.attackerOwner, 1);
-  assert.equal(game.pendingResponse.responder, 1);
-  assert.equal(guest(game).pendingResponse.responder, 0);
-
-  game = passTwice(game, 1, 0);
   assert.equal(game.combatAction.stage, "choosing");
-  assert.equal(guest(game).combatAction.stage, "choosing");
+  assert.equal(game.priority.owner, 1);
+  assert.equal(guest(game).priority.owner, 0);
   assert.equal(guest(game).combatAction.attackerOwner, 1, "guest sees opponent as the attacker and itself as defender");
 
   game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "attacker", defenderId: "blocker", targetHero: false }).state;
-  assert.equal(game.combatAction.stage, "charging");
+  assert.equal(game.combatAction.stage, "choosing");
+  assert.equal(game.combatAction.blockCommitted, true);
   assert.equal(game.combatAction.defenderUid, "blocker");
   assert.equal(guest(game).combatAction.defenderUid, "blocker");
+  assert.equal(game.pendingResponse.responder, 0);
+  assert.equal(guest(game).pendingResponse.responder, 1);
 
-  game = executeOnlineCommand(game, { type: "attack", owner: 0, attackerId: "attacker", defenderId: "blocker", skipPriority: true }).state;
+  game = passTwice(game, 0, 1);
   assert.equal(game.combatAction, null);
   assert.equal(game.players[0].board[0].damage, 1);
   assert.equal(game.players[1].board[0].damage, 2);
@@ -58,15 +54,12 @@ test("host and guest keep consistent ownership through one complete unitary atta
   assert.equal(guest(game).players[1].board[0].uid, "attacker");
 });
 
-test("ending unitary combat keeps finalization and orientation consistent", () => {
+test("ending unitary combat enters active-player EOT response immediately", () => {
   let game = initial();
   game.phase = "combate";
   game.players[0].board = [];
   game.players[1].board = [];
   game = executeOnlineCommand(game, { type: "advancePhase", owner: 0 }).state;
-  assert.equal(game.pendingResponse.responder, 1);
-  assert.equal(guest(game).pendingResponse.responder, 0);
-  game = passTwice(game, 1, 0);
   assert.equal(game.phase, "fim");
   assert.equal(game.pendingResponse.responder, 0);
   assert.equal(guest(game).pendingResponse.responder, 1);
