@@ -47,7 +47,32 @@ jobs:
           if start < 0 or end >= len(lines):
               raise SystemExit("could not normalize runner")
           del lines[start:end + 1]
-          open(path, "w", encoding="utf-8").writelines(lines)
+          source = "".join(lines)
+          old = 'import { readRoom, roleFor, roomView, writeRoom, type Room } from "../store";'
+          new = 'import { readRoom, roleFor, roomView, writeRoom, type Room } from "../store-runtime";'
+          old_hardened = 'import { hasTransactionalRoomStore, readRoom, roleFor, roomView, writeRoom, type Room } from "../store";'
+          new_hardened = 'import { hasTransactionalRoomStore, readRoom, roleFor, roomView, writeRoom, type Room } from "../store-runtime";'
+          if old in source:
+              source = source.replace(old, new, 1)
+          if old_hardened in source:
+              source = source.replace(old_hardened, new_hardened, 1)
+          open(path, "w", encoding="utf-8").write(source)
+          PY
+      - name: Expose transactional authority through runtime store
+        run: |
+          python - <<'PY'
+          path = "app/api/rooms/store-runtime.ts"
+          source = open(path, encoding="utf-8").read()
+          import_line = 'import { hasTransactionalRoomStore as hasPersistentTransactionalRoomStore } from "./store";\n'
+          export_line = 'export const hasTransactionalRoomStore = () => useDevelopmentStore() || hasPersistentTransactionalRoomStore();\n'
+          if import_line not in source:
+              source = import_line + source
+          marker = 'const useDevelopmentStore = () => process.env.NODE_ENV === "development";\n'
+          if export_line not in source:
+              if marker not in source:
+                  raise SystemExit("runtime store marker not found")
+              source = source.replace(marker, marker + export_line, 1)
+          open(path, "w", encoding="utf-8").write(source)
           PY
       - name: Normalize legacy hidden-zone regression
         run: |
@@ -104,4 +129,4 @@ jobs:
           git commit -m "fix: close remaining online authority risks"
           git push origin HEAD:fix/cards_mechanics
 
-# manual retrigger after hidden-zone regression sync
+# manual retrigger after store-runtime compatibility
