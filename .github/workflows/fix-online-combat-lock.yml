@@ -1,0 +1,51 @@
+name: Fix Online Combat Lock
+
+on:
+  push:
+    branches:
+      - fix/cards_mechanics
+    paths:
+      - scripts/fix-online-combat-lock.mjs
+      - .github/workflows/fix-online-combat-lock.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fix-online-combat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/cards_mechanics
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Apply combat lock fix
+        run: node scripts/fix-online-combat-lock.mjs
+      - name: Validate online typecheck
+        run: npx tsc -p tsconfig.online.json --noEmit
+      - name: Validate focused multiplayer tests
+        run: node --test tests/online-authoritative-audit.test.mjs tests/online-clock-authority.test.mjs tests/rules-and-multiplayer.test.mjs
+      - name: Validate rules suite
+        run: npm run test:rules
+      - name: Commit validated fix
+        run: |
+          rm -f scripts/fix-online-combat-lock.mjs .github/workflows/fix-online-combat-lock.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "fix: make online combat declaration authoritative"
+          git push origin HEAD:fix/cards_mechanics
