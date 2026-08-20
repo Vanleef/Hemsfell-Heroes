@@ -114,13 +114,13 @@ test("two consecutive passes resolve the top accelerated response instead of dea
   assert.equal(state.pendingResponse?.responder, 1);
 });
 
-test("only the defending player can choose a blocker and the pending combat survives serialization", () => {
+test("only the defending player can commit a blocker and the server immediately opens post-block response", () => {
   const state = baseState();
   state.pendingAction = undefined;
   state.pendingResponse = null;
   state.players[0].board = [unit("attacker")];
   state.players[1].board = [unit("blocker")];
-  state.combatAction = { attackerOwner: 0, attackerUid: "attacker", attackerCard: fastCard(), stage: "choosing" };
+  state.combatAction = { attackerOwner: 0, attackerUid: "attacker", attackerCard: fastCard(), stage: "choosing", blockCommitted: false };
 
   const refreshed = structuredClone(state);
   assert.equal(refreshed.combatAction.stage, "choosing");
@@ -128,8 +128,11 @@ test("only the defending player can choose a blocker and the pending combat surv
   assert.throws(() => executeOnlineCommand(refreshed, { type: "selectDefender", owner: 0, defenderId: "blocker" }, { priority: true }));
 
   const accepted = executeOnlineCommand(refreshed, { type: "selectDefender", owner: 1, defenderId: "blocker" }, { priority: true }).state;
-  assert.equal(accepted.combatAction?.stage, "charging");
+  assert.equal(accepted.combatAction?.stage, "choosing");
+  assert.equal(accepted.combatAction?.blockCommitted, true);
   assert.equal(accepted.combatAction?.defenderUid, "blocker");
+  assert.equal(accepted.pendingResponse?.responder, 0);
+  assert.equal(accepted.priority?.window, "after-blockers");
 });
 
 test("command retries are idempotent and revision conflicts fail closed", () => {
