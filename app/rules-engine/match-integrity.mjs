@@ -5,12 +5,18 @@ const fold = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u0
 const permanents = (player) => [...(player?.board || []), ...(player?.support || []), ...(player?.terrain ? [player.terrain] : [])];
 const subtype = (card, value) => [...(card?.subtypes || []), ...(card?.tags || [])].some((tag) => fold(tag) === fold(value));
 const unitOwner = (state, id) => state.players.findIndex((entry) => permanents(entry).some((unit) => unit.uid === id || unit.id === id));
-const revealPublicGeneratedImages = (state) => {
+const normalizePublicGeneratedImages = (state) => {
+  const templates = (state?.players || []).flatMap((entry) => entry?.extraDeck || []);
+  const printedKeys = ["page", "name", "type", "cost", "atk", "hp", "text", "tags", "subtypes", "abilities", "image", "hero", "imageCard"];
   for (const entry of state?.players || []) {
     for (const unit of permanents(entry)) {
-      if (Number(unit?.page) !== 213 || !unit?.generatedImage) continue;
-      unit.revealed = true;
-      unit.revealedTo = [0, 1];
+      if (!unit?.generatedImage) continue;
+      const template = templates.find((card) => fold(card?.name) === fold(unit?.name));
+      if (template) for (const key of printedKeys) if (template[key] !== undefined) unit[key] = clone(template[key]);
+      /* Campo é uma zona pública. `revealed`/`revealedTo` pertencem a cartas
+         em zonas ocultas e não devem acompanhar uma permanente já em jogo. */
+      delete unit.revealed;
+      delete unit.revealedTo;
     }
   }
   return state;
@@ -191,7 +197,7 @@ const moveLinkedCard = (state, owner, unit, destination) => {
 };
 
 export function propagateWeddingRingLinks(before, after) {
-  revealPublicGeneratedImages(after);
+  normalizePublicGeneratedImages(after);
   finalizeLethalLife(after);
   const links = before.players.flatMap((entry) => (entry.support || []).filter((card) => Number(card.page) === 150 && Array.isArray(card.linkedCreatures) && card.linkedCreatures.length >= 2).map((ring) => [...new Set(ring.linkedCreatures.map(String))].slice(0, 2))).filter((pair) => pair.length === 2);
   if (!links.length) return after;
@@ -231,7 +237,7 @@ export function propagateWeddingRingLinks(before, after) {
     }
   }
   finalizeLethalLife(after);
-  revealPublicGeneratedImages(after);
+  normalizePublicGeneratedImages(after);
   return after;
 }
 
