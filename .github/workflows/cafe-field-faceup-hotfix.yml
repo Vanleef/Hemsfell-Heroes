@@ -29,6 +29,8 @@ jobs:
 
           def replace_once(path, old, new):
               p=Path(path); text=p.read_text(encoding='utf-8')
+              if new in text:
+                  return
               if old not in text:
                   raise SystemExit(f'needle not found in {path}: {old[:160]!r}')
               p.write_text(text.replace(old,new,1),encoding='utf-8')
@@ -43,7 +45,7 @@ jobs:
 
           replace_once('app/rules-engine/engine-base.mjs',
             '          state.pendingDecision = null; stack.push(...continuation);\n          stack.push({ kind: "effect", effect: { type: "createImage", name: decision.effect.name, destination: "field" }, context: { ...decision.context, owner: targetOwner, decisionOwner: item.command.owner, slot, placementZone } });',
-            '          const source = permanentUnits(state.players[decision.context?.owner ?? item.command.owner]).find((unit) => (unit.uid || unit.id) === decision.context?.sourceId);\n          const imageName = decision.effect.name || decision.effect.imageName || (Number(source?.page) === 212 ? "Gato Multidimensional" : undefined);\n          if (!imageName) throw new RulesViolation("image-placement-missing-name");\n          state.pendingDecision = null; stack.push(...continuation);\n          stack.push({ kind: "effect", effect: { type: "createImage", name: imageName, destination: "field" }, context: { ...decision.context, owner: targetOwner, decisionOwner: item.command.owner, slot, placementZone } });')
+            '          const sourceOwner = Number.isInteger(decision.context?.owner) ? decision.context.owner : item.command.owner;\n          const source = permanentUnits(state.players[sourceOwner]).find((unit) => (unit.uid || unit.id) === decision.context?.sourceId);\n          const imageName = decision.effect.name || decision.effect.imageName || (Number(source?.page) === 212 ? "Gato Multidimensional" : undefined);\n          if (!imageName) throw new RulesViolation("image-placement-missing-name");\n          state.pendingDecision = null; stack.push(...continuation);\n          stack.push({ kind: "effect", effect: { type: "createImage", name: imageName, destination: "field" }, context: { ...decision.context, owner: targetOwner, decisionOwner: item.command.owner, slot, placementZone } });')
 
           replace_once('app/page.tsx',
             '{card.revealed&&<span className="revealed-badge" title="Carta revelada: ambos os jogadores podem vê-la" aria-label="Carta revelada">◉</span>}',
@@ -52,7 +54,6 @@ jobs:
           p=Path('tests/cafe-do-tempo-placement.test.mjs'); text=p.read_text(encoding='utf-8')
           text=text.replace('assert.equal(cat.revealed,true,"Gato Multidimensional criado em campo deve ficar com a face pública");\n assert.deepEqual(cat.revealedTo,[0,1],"ambos os jogadores devem enxergar o Gato Multidimensional em campo");','assert.equal(cat.revealed,undefined,"cartas em campo não usam flag de revelação de zona oculta");\n assert.equal(cat.revealedTo,undefined,"cartas em campo não carregam metadata de mão revelada");\n assert.equal(cat.page,213);assert.equal(cat.atk,0);assert.equal(cat.hp,1);')
           text=text.replace('assert.equal(cat.exhausted,false);assert.equal(cat.revealed,true);assert.deepEqual(cat.revealedTo,[0,1]);','assert.equal(cat.exhausted,false);assert.equal(cat.revealed,undefined);assert.equal(cat.revealedTo,undefined);assert.equal(cat.page,213);assert.equal(cat.atk,0);assert.equal(cat.hp,1);')
-          text=text.replace('assert.equal(cat.exhausted,false);assert.equal(cat.revealed,true);assert.deepEqual(cat.revealedTo,[0,1]);','assert.equal(cat.exhausted,false);assert.equal(cat.revealed,undefined);assert.equal(cat.revealedTo,undefined);assert.equal(cat.page,213);')
           text=text.replace('assert.ok(cat);assert.equal(cat.revealed,true);assert.deepEqual(cat.revealedTo,[0,1]);','assert.ok(cat);assert.equal(cat.revealed,undefined);assert.equal(cat.revealedTo,undefined);assert.equal(cat.page,213);')
           p.write_text(text,encoding='utf-8')
 
