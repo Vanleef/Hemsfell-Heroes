@@ -59,6 +59,11 @@ export function listPendingIndomitableAttackers(state, owner) {
   return listAttackCapableCreatures(state, owner).filter((unit) => hasCombatKeyword(unit, "Indomável"));
 }
 
+/** Semantic helper used by Online/AI/UI to explain why endCombat is disabled. */
+export function hasPendingIndomableAttack(state, owner) {
+  return listPendingIndomitableAttackers(state, owner).length > 0;
+}
+
 /**
  * The phase transition itself remains the legality oracle, including the
  * existing Indomável rule. The clone guarantees this query cannot advance the
@@ -78,10 +83,12 @@ export function canEndCombat(state, owner) {
 export function combatIdleView(state, owner = state?.active) {
   const attackers = listAttackCapableCreatures(state, owner);
   const mandatory = attackers.filter((unit) => hasCombatKeyword(unit, "Indomável"));
+  const mayEnd = canEndCombat(state, owner);
   return {
     owner,
     attackerIds: attackers.map(cardId),
     mandatoryAttackerIds: mandatory.map(cardId),
-    canEndCombat: canEndCombat(state, owner),
+    canEndCombat: mayEnd,
+    endCombatReason: mayEnd ? null : mandatory.length ? "indomitable-must-attack" : "combat-not-idle",
   };
 }
