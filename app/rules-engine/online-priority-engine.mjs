@@ -152,11 +152,12 @@ function finishSingleCombatStart(state) {
 function resolveSingleAttack(state) {
   const checkpoint = state.pendingAction;
   const combat = state.combatAction;
-  if (!checkpoint || checkpoint.checkpoint !== SINGLE_ATTACK_RESOLUTION || !combat || combat.stage !== "charging") throw new RulesViolation("combat-checkpoint-mismatch");
+  if (!checkpoint || checkpoint.checkpoint !== SINGLE_ATTACK_RESOLUTION || !combat || combat.stage !== "priority") throw new RulesViolation("combat-checkpoint-mismatch");
   const next = clone(state);
   next.pendingAction = undefined;
   next.pendingResponse = null;
   next.priorityStack = undefined;
+  next.combatAction = { ...combat, stage: "charging" };
   const command = {
     type: "attack",
     owner: combat.attackerOwner,
@@ -199,6 +200,11 @@ function normalizeDeclaredAttack(state) {
 function openSingleAttackResponse(state) {
   const combat = state.combatAction;
   if (!combat || combat.stage !== "charging") throw new RulesViolation("combat-checkpoint-mismatch");
+  /* Keep the persisted combat stage in `priority` while the post-block response
+     is open. The legacy board animation driver already treats that stage as a
+     hard pause, so it cannot race the server by sending an `attack` command.
+     Damage remains an internal server continuation after the response closes. */
+  state.combatAction = { ...combat, stage: "priority" };
   openResponseWindow(state, {
     actor: 1 - combat.attackerOwner,
     responder: combat.attackerOwner,
