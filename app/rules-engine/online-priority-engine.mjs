@@ -153,6 +153,18 @@ function resumePriorityAfterChoice(before, state) {
   return state;
 }
 
+function validateDecisionPriority(state, command) {
+  const decision = state?.pendingDecision;
+  if (!decision) return;
+  /* Café do Tempo placement is a real authoritative action window. The
+     controller of Café owns input until a legal slot is chosen, even during
+     the opponent's turn. No phase/combat/activation command may bypass it. */
+  if (decision.kind === "image-placement") {
+    if (command.type !== "resolveDecision") throw new RulesViolation("image-placement-priority");
+    if (Number(decision.owner) !== Number(command.owner)) throw new RulesViolation("decision-not-owned");
+  }
+}
+
 function normalizeAfterResolution(before, result, command) {
   const state = result.state;
   const wasNestedStack = command.type === "passPriority" && Number(before.pendingResponse?.passes || 0) > 0 && (before.priorityStack?.length || 0) > 1;
@@ -170,6 +182,7 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   syncPriorityMetadata(state, { window: state.pendingResponse ? inferPriorityWindow(state) : null });
   const command = { ...rawCommand };
   if (!Number.isInteger(command.owner) || ![0, 1].includes(command.owner)) throw new RulesViolation("invalid-owner");
+  validateDecisionPriority(state, command);
 
   if (state.pendingResponse) {
     if (command.type === "passPriority") {
