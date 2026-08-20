@@ -19,7 +19,7 @@
 /* Generic decisions: size strictly from their content. */
 .screen-game .engine-decision-backdrop > .engine-decision-panel {
   --decision-side-gap: clamp(11.45rem, .7cqw, .8rem);
-  --decision-side-width: clamp(12rem, 22cqw, 22rem);
+  --decision-side-width: clamp(12rem, 12cqw, 22rem);
   pointer-events: auto;
   position: absolute !important;
   left: auto !important;

@@ -8700,7 +8700,7 @@ html:has(.screen-game),body:has(.screen-game){height:100%;overflow:hidden!import
 }
 .screen-game .game-stage>.game-content.hs-board>.player-field{
   align-self:start!important;
-  margin:1cqh 7cqw 0 0!important;
+  margin:-1cqh 7cqw 0 0!important;
 }
 .screen-game .game-stage>.game-content.hs-board>.paired-field>.field-column{
   position:relative!important;

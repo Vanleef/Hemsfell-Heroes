@@ -905,7 +905,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
    case "targets":case "activation-targets":return{eyebrow:engineDecision.kind==="activation-targets"?"EFEITO ATIVÁVEL":"ESCOLHA DE ALVO",title:`Escolha o alvo de ${source}`,instruction:`Selecione no campo ${engineTargetStep?.optional?"até um alvo válido":"um alvo válido"} para ${engineTargetConsequence.toLocaleLowerCase("pt-BR")}.`};
    case "repeat-choice":return{eyebrow:"EFEITO REPETIDO",title:"Escolha o próximo efeito",instruction:`Escolha qual efeito de ${source} será aplicado nesta repetição.`};
    case "replay-ability":return{eyebrow:"REPETIR HABILIDADE",title:"Escolha a habilidade que será repetida",instruction:"Selecione uma das habilidades disponíveis para aplicá-la novamente."};
-   default:return{eyebrow:"ESCOLHA DE EFEITO",title:"Escolha como resolver o efeito",instruction:`Selecione uma das opções disponíveis para ${source}.`};
+   default:return{eyebrow:"RESOLVA O EFEITO", instruction:`Selecione uma das opções disponíveis para ${source}.`};
   }
  })();
  const repositionForLocal=!!game?.pendingReposition&&game.pendingReposition.activeOwner===0&&!game.pendingReposition.confirmed.includes(0);
