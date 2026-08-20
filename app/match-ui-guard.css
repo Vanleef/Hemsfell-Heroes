@@ -553,3 +553,73 @@ body[data-match-active="false"] .deck-shuffle-effect,
 body[data-match-active="false"] .combat-cinematic {
   display: none !important;
 }
+
+
+/* Canonical match-result seal: keep the complete result card centered and self-contained. */
+.screen-game .hs-board > .match-result-overlay,
+.match-result-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100dvw !important;
+  height: 100dvh !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  grid-area: auto !important;
+  display: grid !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  padding: clamp(.75rem, 2.5vmin, 2rem) !important;
+  overflow: auto !important;
+}
+
+.screen-game .match-result-overlay > .maintenance,
+.match-result-overlay > .maintenance {
+  position: relative !important;
+  inset: auto !important;
+  width: min(94vw, 62rem) !important;
+  height: auto !important;
+  max-width: 62rem !important;
+  max-height: min(92dvh, 48rem) !important;
+  margin: auto !important;
+  padding: clamp(1.1rem, 2.5vmin, 2rem) !important;
+  display: grid !important;
+  grid-template-columns: minmax(12rem, .8fr) minmax(0, 1.25fr) !important;
+  grid-template-areas:
+    "art eyebrow"
+    "art title"
+    "art summary"
+    "art meta"
+    "art actions" !important;
+  align-items: center !important;
+  gap: clamp(.45rem, 1.2vh, .9rem) clamp(1.2rem, 3vw, 2.8rem) !important;
+  overflow: hidden !important;
+  text-align: left !important;
+  border-radius: clamp(.8rem, 1.4vmin, 1.2rem) !important;
+  box-shadow: 0 clamp(1rem, 3vh, 2rem) clamp(2rem, 7vh, 5rem) rgba(0,0,0,.55) !important;
+}
+
+.match-result-overlay .result-hero-art { grid-area: art !important; align-self: center !important; }
+.match-result-overlay > .maintenance > p { grid-area: eyebrow !important; align-self: end !important; }
+.match-result-overlay > .maintenance > h2 { grid-area: title !important; align-self: center !important; }
+.match-result-overlay > .maintenance > span { grid-area: summary !important; align-self: start !important; }
+.match-result-overlay .result-match-meta { grid-area: meta !important; display: flex !important; flex-wrap: wrap !important; justify-content: flex-start !important; }
+.match-result-overlay > .maintenance > div:last-child { grid-area: actions !important; display: flex !important; flex-wrap: wrap !important; justify-content: flex-start !important; align-items: center !important; margin: clamp(.35rem, 1vh, .8rem) 0 0 !important; }
+.match-result-overlay > .maintenance > div:last-child button { flex: 0 1 auto !important; width: auto !important; min-width: clamp(8.5rem, 13vw, 11.5rem) !important; }
+
+@media (max-width: 46rem), (max-height: 38rem) {
+  .screen-game .match-result-overlay > .maintenance,
+  .match-result-overlay > .maintenance {
+    width: min(95vw, 36rem) !important;
+    max-height: 94dvh !important;
+    grid-template-columns: 1fr !important;
+    grid-template-areas: "eyebrow" "title" "art" "summary" "meta" "actions" !important;
+    gap: clamp(.35rem, 1vh, .65rem) !important;
+    text-align: center !important;
+    overflow: auto !important;
+  }
+  .match-result-overlay .result-hero-art { width: min(42vw, 10rem) !important; max-height: 30dvh !important; }
+  .match-result-overlay .result-match-meta,
+  .match-result-overlay > .maintenance > div:last-child { justify-content: center !important; }
+}

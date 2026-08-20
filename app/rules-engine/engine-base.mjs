@@ -2,6 +2,7 @@ import { applyEffect, defaultEffectHandlers, recordLifeLoss, RulesViolation } fr
 import { hasSubtype } from "./subtypes.mjs";
 import { isValidTarget, targetPolicy, TargetScope } from "./targeting.mjs";
 import { abilitiesForLevel, getExplicitCardRule } from "./card-rules.mjs";
+import { canEvolveHero, evolveHero } from "./hero-evolution.mjs";
 
 export class RulesLoopError extends Error {
   constructor(message, trace) { super(message); this.name = "RulesLoopError"; this.trace = trace; }
@@ -81,12 +82,15 @@ function adjacentSupportBonus(state, unit, owner) {
 }
 function subtypeAuraBonus(state, unit, owner) { if (unit?.suffocated) return { attack: 0, health: 0 }; let attack = 0, health = 0; for (const source of permanentUnits(state.players[owner])) { if (source.suffocated) continue; for (const aura of source.staticModifiers || []) if (aura.type === "subtypeAura" && subtype(unit, aura.subtype)) { attack += aura.attack || 0; health += aura.health || 0; } } return { attack, health }; }
 function strongestAlly(state, unit, owner) { const allies = state.players[owner].board.filter((candidate) => candidate !== unit && !candidate.dynamicStats?.copyStrongestAlly), maximum = Math.max(0, ...allies.map((candidate) => baseAttack(state, candidate, owner))), tied = allies.filter((candidate) => baseAttack(state, candidate, owner) === maximum); return tied.find((candidate) => (candidate.uid || candidate.id) === unit.dynamicStats?.preferredSourceId) || tied.sort((a, b) => String(a.uid || a.id).localeCompare(String(b.uid || b.id)))[0]; }
+function subtypeCountAcrossFields(state, subtypeName) { return state.players.flatMap(permanentUnits).filter((card) => subtype(card, subtypeName)).length; }
 function baseAttack(state, unit, owner) {
-  if (!unit?.suffocated && unit?.dynamicStats?.subtypeCountAcrossFields) return state.players.flatMap(permanentUnits).filter((card) => subtype(card, unit.dynamicStats.subtypeCountAcrossFields)).length;
-  if (!unit?.suffocated && unit?.dynamicStats?.attackSubtype) return state.players.flatMap(permanentUnits).filter((card) => subtype(card, unit.dynamicStats.attackSubtype)).length;
   if (!unit?.suffocated && unit?.dynamicStats?.cardsMilledThisTurn) return state.players[owner].cardsMilledThisTurn || 0;
   if (!unit?.suffocated && unit?.dynamicStats?.copyStrongestAlly) { const strongest = strongestAlly(state, unit, owner); return strongest ? baseAttack(state, strongest, owner) : 0; }
-  const support = unit?.suffocated ? {attack:0} : adjacentSupportBonus(state, unit, owner), aura = subtypeAuraBonus(state, unit, owner); return Math.max(0, (unit?.atk || 0) + support.attack + aura.attack + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value, unit)).reduce((sum, value) => sum + (value.attack || 0), 0));
+  let base = unit?.atk || 0;
+  if (!unit?.suffocated && unit?.dynamicStats?.subtypeCountAcrossFields) base = subtypeCountAcrossFields(state, unit.dynamicStats.subtypeCountAcrossFields);
+  else if (!unit?.suffocated && unit?.dynamicStats?.attackSubtype) base += subtypeCountAcrossFields(state, unit.dynamicStats.attackSubtype);
+  const support = unit?.suffocated ? {attack:0} : adjacentSupportBonus(state, unit, owner), aura = subtypeAuraBonus(state, unit, owner);
+  return Math.max(0, base + support.attack + aura.attack + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value, unit)).reduce((sum, value) => sum + (value.attack || 0), 0));
 }
 function effectiveAttack(state, unit, owner) {
   if (unit?.attackZeroUntilOwnerMaintenance != null || unit?.frozen || hasKeyword(unit, /congelado/i)) return 0;
@@ -94,12 +98,13 @@ function effectiveAttack(state, unit, owner) {
   return baseAttack(state, unit, owner);
 }
 function effectiveHealth(state, unit, owner) {
-  if (!unit?.suffocated && unit?.dynamicStats?.subtypeCountAcrossFields) return Math.max(1, state.players.flatMap(permanentUnits).filter((card) => subtype(card, unit.dynamicStats.subtypeCountAcrossFields)).length);
-  if (!unit?.suffocated && unit?.dynamicStats?.healthSubtype) return Math.max(1, state.players.flatMap(permanentUnits).filter((card) => subtype(card, unit.dynamicStats.healthSubtype)).length);
   if (!unit?.suffocated && unit?.dynamicStats?.copyStrongestAlly) { const strongest = strongestAlly(state, unit, owner); return strongest ? effectiveHealth(state, strongest, owner) : 1; }
   if (!unit?.suffocated && unit?.dynamicStats?.bothFromAttack) { const strongest = state.players[owner].board.filter((candidate) => candidate !== unit).reduce((best, candidate) => Math.max(best, baseAttack(state, candidate, owner)), 0); return Math.max(1, strongest); }
+  let base = unit?.hp || 1;
+  if (!unit?.suffocated && unit?.dynamicStats?.subtypeCountAcrossFields) base = Math.max(1, subtypeCountAcrossFields(state, unit.dynamicStats.subtypeCountAcrossFields));
+  else if (!unit?.suffocated && unit?.dynamicStats?.healthSubtype) base += subtypeCountAcrossFields(state, unit.dynamicStats.healthSubtype);
   const support = unit?.suffocated ? {health:0} : adjacentSupportBonus(state, unit, owner), aura = subtypeAuraBonus(state, unit, owner);
-  return Math.max(0, (unit?.hp || 1) + support.health + aura.health + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value, unit)).reduce((sum, value) => sum + (value.health || 0), 0));
+  return Math.max(0, base + support.health + aura.health + (unit?.modifiers || []).filter((value) => modifierApplies(state, owner, value, unit)).reduce((sum, value) => sum + (value.health || 0), 0));
 }
 function dealCombatDamage(state, target, targetOwner, source, sourceOwner, amount) {
   const shield = (target.damageShields || []).find((item) => item.uses > 0); const shieldReduction = shield?.reduction ?? (shield ? Number.POSITIVE_INFINITY : 0);
@@ -295,7 +300,7 @@ function abilityTargetSteps(ability, sourceId = null) {
     if (effect.reusePreviousTarget) return [];
     const selections = effect.selections ?? (scope === TargetScope.NONE ? 0 : 1);
     const minimum = effect.minimumSelections ?? selections;
-    return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: [...new Set([...(effect.excludeIds || []), ...(effect.excludeSource && sourceId ? [sourceId] : [])])], allowedIds: effect.allowedIds, requiresMarker: !!effect.requiresMarker, requiresEffectAppliedThisTurn: !!effect.requiresEffectAppliedThisTurn }));
+    return Array.from({ length: selections }, (_, index) => ({ scope, role: "effect", optional: index >= minimum, requiredSubtype: effect.requiredSubtype, requiredName: effect.requiredName, requiredTrigger: effect.type === "replaySelectedAbility" ? effect.trigger : effect.requiredTrigger, imageOnly: effect.imageOnly, maxCost: effect.maxCost, excludeIds: [...new Set([...(effect.excludeIds || []), ...(effect.excludeSource && sourceId ? [sourceId] : [])])], allowedIds: effect.allowedIds, requiresMarker: !!effect.requiresMarker, requiresEffectAppliedThisTurn: !!effect.requiresEffectAppliedThisTurn }));
   }).filter((step) => step.scope !== TargetScope.NONE);
 }
 function targetMatchesStep(state, target, id, step) {
@@ -303,6 +308,7 @@ function targetMatchesStep(state, target, id, step) {
   if (step.allowedIds?.length && !step.allowedIds.includes(id)) return false;
   if (step.requiredSubtype && !subtype(target, step.requiredSubtype)) return false;
   if (step.requiredName && String(target?.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase() !== String(step.requiredName).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()) return false;
+  if (step.requiredTrigger && !(target?.abilities || []).some((ability) => ability.trigger === step.requiredTrigger)) return false;
   if (step.imageOnly && !(target?.generatedImage || target?.imageCard)) return false;
   if (step.maxCost != null && (target?.cost || 0) > step.maxCost) return false;
   if (step.requiresMarker && markerTotalForEngine(target) < 1) return false;
@@ -392,15 +398,16 @@ function preflightPlay(state, command, handlers) {
   return { card, playAbilities, enterAbilities, cost };
 }
 function cleanupLethal(state, stack) {
+  const boardCountBefore = state.players.reduce((sum, entry) => sum + (entry.board || []).length, 0);
   state.players.forEach((entry, owner) => {
     for (const unit of [...entry.board]) {
-      const modifiers = (unit.modifiers || []).filter((item) => modifierApplies(state, owner, item)).reduce((sum, item) => sum + (item.health || 0), 0);
-      const lethal = (unit.damage || 0) >= (unit.hp || 1) + modifiers;
+      const lethalHealth = effectiveHealth(state, unit, owner);
+      const lethal = (unit.damage || 0) >= lethalHealth;
       const protector = permanentUnits(entry).find((source) => !source.suffocated && (source.staticModifiers || []).some((item) => item.type === "protectAlliedDragonsOncePerTurn") && subtype(unit, "Dragão") && usageAvailable(state, source, owner, { id: "dragon-lethal-protection", usageLimit: { count: 1, period: "turn" } }));
       if (!lethal || hasKeyword(unit, /indestrut[ií]vel/i)) continue;
-      if (protector) { unit.damage = Math.max(0, (unit.hp || 1) + modifiers - 1); claimUsage(state, protector, owner, { id: "dragon-lethal-protection", usageLimit: { count: 1, period: "turn" } }); continue; }
+      if (protector) { unit.damage = Math.max(0, lethalHealth - 1); claimUsage(state, protector, owner, { id: "dragon-lethal-protection", usageLimit: { count: 1, period: "turn" } }); continue; }
       const zayanReplacements = entry.heroId === "zayan" && (entry.level || 1) >= 2 && !(unit.text || "").trim() ? entry.board.filter((card) => card !== unit) : [];
-      if (!state.pendingDecision && zayanReplacements.length) { unit.damage = Math.max(0, (unit.hp || 1) + modifiers - 1); state.pendingDecision = { kind: "zayan-destruction-replacement", owner, effect: { type: "zayanDestructionReplacement", originalId: unit.uid || unit.id, lethal: true, choices: zayanReplacements.map((card) => card.uid || card.id) }, context: { owner, decisionOwner: owner, sourceId: unit.lastDamagedBy?.sourceId }, sourceName: "Zayan II" }; continue; }
+      if (!state.pendingDecision && zayanReplacements.length) { unit.damage = Math.max(0, lethalHealth - 1); state.pendingDecision = { kind: "zayan-destruction-replacement", owner, effect: { type: "zayanDestructionReplacement", originalId: unit.uid || unit.id, lethal: true, choices: zayanReplacements.map((card) => card.uid || card.id) }, context: { owner, decisionOwner: owner, sourceId: unit.lastDamagedBy?.sourceId }, sourceName: "Zayan II" }; continue; }
       if (unit.returnCombatPairOnDefeat && unit.lastDamagedBy?.combat) {
         const winnerOwner = unit.lastDamagedBy.sourceOwner, winnerEntry = state.players[winnerOwner], winner = winnerEntry?.board.find((card) => (card.uid || card.id) === unit.lastDamagedBy.sourceId);
         entry.board.splice(entry.board.indexOf(unit), 1); const defeatedAttachments = entry.support.filter((card) => card.attachedTo === unit.uid); entry.support = entry.support.filter((card) => card.attachedTo !== unit.uid); for (const attachment of defeatedAttachments) if (!attachment.generatedImage && !attachment.imageCard) entry.grave.push(resetCardForZone(state, attachment)); if (!unit.generatedImage && !unit.imageCard) entry.hand.push({ ...resetCardForZone(state, unit), revealed: true, revealedTo: [0, 1] });
@@ -431,6 +438,20 @@ function cleanupLethal(state, stack) {
       stack.push({ kind: "event", event: { type: "onCreatureDestroyed", owner, cardId: unit.uid, card: unit, destroyedBySourceId: unit.lastDamagedBy?.sourceId, destroyedByOwner: unit.lastDamagedBy?.sourceOwner } });
     }
   });
+  const boardCountAfter = state.players.reduce((sum, entry) => sum + (entry.board || []).length, 0);
+  if (!state.pendingDecision && boardCountAfter < boardCountBefore) cleanupLethal(state, stack);
+}
+
+function expireTurnEndSupport(state, stack) {
+  state.players.forEach((entry, owner) => {
+    const expired = (entry.support || []).filter((card) => card.remainUntilTurnEnd);
+    if (!expired.length) return;
+    entry.support = (entry.support || []).filter((card) => !card.remainUntilTurnEnd);
+    for (const card of expired) {
+      if (!card.generatedImage && !card.imageCard) entry.grave.push(resetCardForZone(state, card));
+      stack.push({ kind: "event", event: { type: "onPermanentLeaves", owner, sourceId: card.uid || card.id, card, zone: "support", destination: "grave", expiredAtTurnEnd: true } });
+    }
+  });
 }
 
 function resetCardForZone(state, card) {
@@ -447,7 +468,7 @@ function activeAbilities(state, event) {
     const effects = (event.card.abilities || []).filter((ability) => ability.trigger === "onEnter").flatMap((ability) => ability.effects || []);
     if (effects.length) result.push({ source: chief, owner, ability: { id: `${chief.uid}-recruit-enter-copy`, effects, replaySourceId: event.card.uid || event.card.id } });
   });
-  if ((event.type === "onDestroyed" || event.type === "onPermanentLeaves") && event.card && subtype(event.card, "Recruta")) state.players.forEach((entry, owner) => {
+  if (event.type === "onPermanentLeaves" && event.card && subtype(event.card, "Recruta")) state.players.forEach((entry, owner) => {
     if (event.owner !== owner) return;
     const saideiras = permanentUnits(entry).filter((source) => !source.suffocated && (source.staticModifiers || []).some((modifier) => modifier.type === "recruitFirstActOnLeave"));
     if (!saideiras.length) return;
@@ -502,7 +523,7 @@ function activeAbilities(state, event) {
     }
     /* The maintenance phase becomes visible before its resource decision. Ngoro
        must wait for that decision instead of opening a competing/duplicate UI. */
-    if (entry.heroId === "ngoro" && event.type === "onMaintenance" && event.owner === owner && event.afterResourceChoice === true) result.push({ source: heroSource, owner, ability: { id: "ngoro-level-1-maintenance", trigger: "onMaintenance", effects: [{ type: "chooseDeckAndInvestigate", amount: 1 }] } });
+    if (entry.heroId === "ngoro" && event.owner === owner && (event.type === "onMaintenanceResourceChoice" || (event.type === "onMaintenance" && event.afterResourceChoice === true))) result.push({ source: heroSource, owner, ability: { id: "ngoro-level-1-maintenance", trigger: "onMaintenanceResourceChoice", effects: [{ type: "chooseDeckAndInvestigate", amount: 1 }] } });
     if (entry.heroId === "zayan" && event.type === "onCombatStart" && event.owner === owner && (entry.board || []).some((card) => !(card.text || "").trim())) result.push({ source: heroSource, owner, ability: { id: "zayan-level-1", trigger: "onCombatStart", effects: [{ type: "modifyStats", target: "allyCreature", vanillaOnly: true, attack: 1, health: 1, duration: "turn", selections: 1 }] } });
   });
   return result.sort((a, b) => a.owner - b.owner || (a.source.slot ?? 99) - (b.source.slot ?? 99) || String(a.ability.id).localeCompare(String(b.ability.id)));
@@ -521,7 +542,12 @@ export function executeCommand(inputState, command, options = {}) {
     const item = stack.pop(); trace.push({ step: steps, kind: item.kind, type: item.command?.type || item.effect?.type || item.event?.type });
     if (state.pendingDecision && !(item.kind === "command" && item.command?.type === "resolveDecision")) { state.pendingDecision.continuation = [item, ...stack.splice(0), ...(state.pendingDecision.continuation || [])]; continue; }
     if (item.kind === "command") {
-      if (item.command.type === "passPriority") {
+      if (item.command.type === "evolveHero") {
+        if (state.pendingResponse || state.pendingAction || state.pendingDecision) throw new RulesViolation("hero-evolution-window-busy");
+        if (!canEvolveHero(state, item.command.owner) || !evolveHero(state, item.command.owner)) throw new RulesViolation("hero-evolution-unavailable");
+        const evolved = state.players[item.command.owner];
+        actionLabel = `evolve-${evolved.heroId}-level-${evolved.level}`;
+      } else if (item.command.type === "passPriority") {
         const pending = state.pendingResponse;
         if (!pending || pending.responder !== item.command.owner) throw new RulesViolation("not-your-priority");
         if ((pending.passes || 0) === 0) state.pendingResponse = { ...pending, responder: pending.actor, passes: 1 };
@@ -588,7 +614,8 @@ export function executeCommand(inputState, command, options = {}) {
         if (permanent) {
           if (card.type === "Criatura") entry.nextCreatureTaxes = (entry.nextCreatureTaxes || []).filter((tax) => !(tax.createdRound == null || state.round > tax.createdRound));
           state.nextInstanceId = (state.nextInstanceId || 0) + 1;
-          const unit = { ...card, _printedState: card._printedState ? structuredClone(card._printedState) : { name: card.name, type: card.type, cost: card.cost, atk: card.atk, hp: card.hp, text: card.text, tags: structuredClone(card.tags || []), subtypes: structuredClone(card.subtypes || []), abilities: structuredClone(card.abilities || []), page: card.page, id: card.id, image: card.image, hero: card.hero, imageCard: card.imageCard, generatedImage: card.generatedImage }, uid: item.command.instanceId || `${card.id}-${state.round}-${state.nextInstanceId}`, slot: item.command.slot ?? 0, enteredRound: state.round, attackedThisTurn: false, damage: 0, bonusAtk: 0, bonusHp: 0, exhausted: false, summoning: card.type === "Artefato" || (card.type === "Criatura" && !(entry.heroId === "zayan" && (entry.level || 1) >= 3 && !(card.text || "").trim()) && !((card.tags || []).some((tag) => /investida/i.test(String(tag))) && !(card.page === 29 && Math.max(0, (entry.turnCardsPlayed || 0) - 1) < 1))), frozen: false, stunned: false, suffocated: false, immobilized: false, defenseUses: 0, markers: card.markers ?? 0, modifiers: [] };
+          const { revealed: _revealed, revealedTo: _revealedTo, ...fieldCard } = card;
+          const unit = { ...fieldCard, _printedState: card._printedState ? structuredClone(card._printedState) : { name: card.name, type: card.type, cost: card.cost, atk: card.atk, hp: card.hp, text: card.text, tags: structuredClone(card.tags || []), subtypes: structuredClone(card.subtypes || []), abilities: structuredClone(card.abilities || []), page: card.page, id: card.id, image: card.image, hero: card.hero, imageCard: card.imageCard, generatedImage: card.generatedImage }, uid: item.command.instanceId || `${card.id}-${state.round}-${state.nextInstanceId}`, slot: item.command.slot ?? 0, enteredRound: state.round, attackedThisTurn: false, damage: 0, bonusAtk: 0, bonusHp: 0, exhausted: false, summoning: card.type === "Artefato" || (card.type === "Criatura" && !(entry.heroId === "zayan" && (entry.level || 1) >= 3 && !(card.text || "").trim()) && !((card.tags || []).some((tag) => /investida/i.test(String(tag))) && !(card.page === 29 && Math.max(0, (entry.turnCardsPlayed || 0) - 1) < 1))), frozen: false, stunned: false, suffocated: false, immobilized: false, defenseUses: 0, markers: card.markers ?? 0, modifiers: [] };
           if (card.type === "Criatura") { const catInSupport = item.command.placementZone === "support" && entry.heroId === "rasmus" && (entry.level || 1) >= 3 && subtype(card, "Gato"); if (catInSupport) { if (entry.support.length >= 5 || entry.support.some((existing) => existing.slot === unit.slot)) throw new RulesViolation("support-zone-full"); entry.support.push(unit); } else { const replaced = entry.board.find((existing) => existing.slot === unit.slot); if ((replaced && entry.board.length < 5) || (!replaced && entry.board.length >= 5)) throw new RulesViolation("creature-zone-full"); if (replaced) { entry.board = entry.board.filter((existing) => existing !== replaced); const attachments = entry.support.filter((attachment) => attachment.attachedTo === replaced.uid); entry.support = entry.support.filter((attachment) => attachment.attachedTo !== replaced.uid); for (const attachment of attachments) { if (attachment.generatedImage || attachment.imageCard) continue; if (attachment.page === 154) entry.obscuro.push(attachment); else entry.grave.push({ ...attachment, deathCause: "replaced" }); } if (!replaced.generatedImage && !replaced.imageCard) entry.obscuro.push({ ...replaced, lastZone: "board", deathCause: "replaced" }); stack.push({ kind: "event", event: { type: "onPermanentLeaves", owner: item.command.owner, sourceId: replaced.uid, cardId: replaced.uid, card: replaced, zone: "board" } }); } const preEntryControlledIds = entry.board.map((card) => card.uid || card.id); entry.board.push(unit); } entry.subtypesEnteredThisTurn ||= {}; for (const value of new Set([...(card.subtypes || []), ...(card.tags || [])])) entry.subtypesEnteredThisTurn[value] = (entry.subtypesEnteredThisTurn[value] || 0) + 1; stack.push({ kind: "event", event: { type: "onCreatureEnter", owner: item.command.owner, sourceId: unit.uid, cardId: unit.uid, card: unit, preEntryControlledIds: entry.board.filter((value) => value !== unit).map((value) => value.uid || value.id) } }); }
           else if (card.type === "Terreno") { if (entry.terrain && !entry.terrain.generatedImage) entry.grave.push(entry.terrain); entry.terrain = unit; }
           else { if (entry.support.length >= 5 || entry.support.some((existing) => existing.slot === unit.slot)) throw new RulesViolation("support-zone-full"); if (card.type === "Artefato") { const attached = entry.board.find((creature) => creature.uid === item.command.attachedTo); if (!attached && card.page !== 304) throw new RulesViolation("artifact-target-required"); if (attached) { if (entry.support.some((artifact) => artifact.attachedTo === attached.uid)) throw new RulesViolation("artifact-target-required"); unit.attachedTo = attached.uid; unit.slot = attached.slot; } } entry.support.push(unit); }
@@ -703,7 +730,8 @@ export function executeCommand(inputState, command, options = {}) {
           const selected = selectedIds.map((id) => { const index = entry.deck.findIndex((card) => card.uid === id || card.id === id); return entry.deck.splice(index, 1)[0]; });
           if (effect.destination === "hand") entry.hand.push(...selected.map((card) => effect.reveal || effect.name || effect.nameIncludes ? { ...card, revealed: true, revealedTo: [0, 1] } : card));
           else if (effect.destination === "field") for (const card of selected) {
-            const unit = { ...card, uid: `${card.id}-${state.round}-searched`, enteredRound: state.round, attackedThisTurn: false, damage: 0, exhausted: false, summoning: card.type === "Criatura", modifiers: [], abilities: card.abilities || [] };
+            const { revealed: _revealed, revealedTo: _revealedTo, ...fieldCard } = card;
+            const unit = { ...fieldCard, uid: `${card.id}-${state.round}-searched`, enteredRound: state.round, attackedThisTurn: false, damage: 0, exhausted: false, summoning: card.type === "Criatura", modifiers: [], abilities: card.abilities || [] };
             if (card.type === "Terreno") { if (entry.terrain && !entry.terrain.generatedImage) entry.grave.push(entry.terrain); entry.terrain = { ...unit, slot: 0 }; }
             else if (card.type === "Criatura") { const slot = Array.from({ length: 5 }, (_, value) => value).find((value) => !entry.board.some((existing) => existing.slot === value)); if (slot == null) throw new RulesViolation("creature-zone-full"); unit.slot = slot; entry.board.push(unit); stack.push({ kind: "event", event: { type: "onCreatureEnter", owner: item.command.owner, sourceId: unit.uid, card: unit } }); }
             else throw new RulesViolation("unsupported-search-destination");
@@ -945,8 +973,33 @@ export function executeCommand(inputState, command, options = {}) {
         const next = pending.owners.find((owner) => !pending.confirmed.includes(owner));
         if (next == null) state.pendingReposition = null;
         else { pending.activeOwner = next; pending.deadline = Date.now() + 30000; }
+      } else if (item.command.type === "maintenanceChoice") {
+        if (state.phase !== "manutencao" || state.active !== item.command.owner) throw new RulesViolation("maintenance-choice-unavailable");
+        if (state.pendingResponse || state.pendingAction || state.pendingDecision || state.pendingReposition || state.combatAction) throw new RulesViolation("interaction-pending");
+        const entry = state.players[item.command.owner];
+        if (!entry.deck?.length) {
+          entry.life = 0;
+          state.winner = 1 - item.command.owner;
+          state.pendingResponse = null;
+          delete state.pendingAction;
+          state.pendingDecision = null;
+          state.pendingReposition = null;
+          state.combatAction = null;
+          continue;
+        }
+        const drawTwo = !!item.command.drawTwo && state.round > 1;
+        if (!drawTwo) entry.maxEnergy = Math.min(10, Number(entry.maxEnergy || 0) + 1);
+        entry.energy = entry.maxEnergy;
+        stack.push({ kind: "command", command: { type: "completeMaintenanceChoice", owner: item.command.owner } });
+        stack.push({ kind: "effect", effect: { type: "draw", amount: drawTwo ? 2 : 1 }, context: { owner: item.command.owner, sourceId: `maintenance-${state.round}` } });
+      } else if (item.command.type === "completeMaintenanceChoice") {
+        if (state.phase !== "manutencao" || state.active !== item.command.owner) throw new RulesViolation("maintenance-choice-unavailable");
+        state.phase = "principal";
+        stack.push({ kind: "event", event: { type: "onMaintenanceExit", owner: item.command.owner } });
+        stack.push({ kind: "event", event: { type: "onMaintenanceResourceChoice", owner: item.command.owner, afterResourceChoice: true } });
       } else if (item.command.type === "emit") stack.push({ kind: "event", event: item.command.event });
       else if (item.command.type === "advancePhase") {
+        if (state.phase === "fim") expireTurnEndSupport(state, stack);
         if (state.phase === "fim" && (item.command.handLimitSatisfied || state.players[state.active].hand.length <= 9)) bankEndingEnergy(state);
         if (state.pendingDecision || state.pendingReposition) throw new RulesViolation("interaction-pending"); if (state.phase === "fim" && !item.command.handLimitSatisfied && state.players[state.active].hand.length > 9) { state.pendingDecision = { kind: "hand-limit-discard", owner: state.active, effect: { amount: state.players[state.active].hand.length - 9 }, context: { owner: state.active }, sourceName: "Limite de mão", continuation: [{ kind: "command", command: { ...item.command, handLimitSatisfied: true } }] }; continue; } const order = ["manutencao", "principal", "combate", "fim"]; const index = order.indexOf(state.phase); if (state.phase === "fim") state.players.forEach((entry) => { for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn"); unit.abilities = (unit.abilities || []).filter((ability) => !ability.temporary); unit.temporaryTags = []; unit.temporarySubtypes = []; unit.combatRestrictions = (unit.combatRestrictions || []).filter((rule) => rule.duration !== "turn"); unit.attackLimit = 1; unit.damageShields = (unit.damageShields || []).filter((shield) => shield.expires !== "turn" && shield.duration !== "turn"); } entry.nextElementEffects = (entry.nextElementEffects || []).filter((effect) => effect.expires !== "turn"); entry.damageShields = (entry.damageShields || []).filter((shield) => shield.expires !== "turn" && shield.duration !== "turn"); }); if (state.phase === "combate" && state.players[state.active].board.some((unit) => !unit.exhausted && !unit.attackedThisTurn && !unit.summoning && !unit.stunned && !hasKeyword(unit, /atordoado/i) && attackPermissionMet(unit) && hasKeyword(unit, /indom[aá]vel/i))) throw new RulesViolation("indomitable-must-attack"); if (state.phase === "combate") state.players.forEach((entry) => entry.board.forEach((unit) => { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "combat"); if ((unit.defenseUses || 0) > 0) unit.exhausted = true; })); const leavingPhase = state.phase; state.phase = order[(index + 1) % order.length]; if (leavingPhase === "manutencao" && state.phase === "principal") stack.push({ kind: "event", event: { type: "onMaintenanceExit", owner: state.active } }); if (state.phase === "fim") { stack.push({ kind: "event", event: { type: "onTurnEnd", owner: state.active } }); const due = (state.delayedEffects || []).filter((entry) => entry.timing === "turnEnd" && entry.owner === state.active); state.delayedEffects = (state.delayedEffects || []).filter((entry) => !due.includes(entry)); for (const delayed of due.reverse()) stack.push({ kind: "effect", effect: delayed.effect, context: delayed.context }); } if (state.phase === "combate") stack.push({ kind: "event", event: { type: "onCombatStart", owner: state.active } }); if (state.phase === "manutencao") { const previousActive = 1 - state.active; state.players[previousActive].goblinTurnCardsPlayed = 0; state.active = 1 - state.active; state.round += 1; state.players.forEach((candidate) => [...(candidate.hand || []), ...(candidate.deck || []), ...(candidate.grave || []), ...permanentUnits(candidate)].forEach((unit) => { if (unit.attackZeroUntilOwnerMaintenance === state.active) delete unit.attackZeroUntilOwnerMaintenance; })); state.players.forEach((candidate) => (candidate.board || []).forEach((unit) => { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.expiresOnMaintenanceOwner !== state.active); })); const entry = state.players[state.active]; entry.abilityUses = {}; entry.subtypesEnteredThisTurn = {}; entry.turnCardsPlayed = 0; entry.turnSpellsPlayed = 0; for (const unit of permanentUnits(entry)) { unit.modifiers = (unit.modifiers || []).filter((modifier) => modifier.duration !== "turn" && modifier.duration !== "combat"); unit.temporaryTags = []; unit.temporarySubtypes = []; unit.combatRestrictions = (unit.combatRestrictions || []).filter((rule) => rule.duration !== "turn"); unit.attackLimit = 1; unit.summoning = false; unit.attackedThisTurn = false; unit.attacksThisTurn = 0; unit.defenseUses = 0; const skipNextUntap = !!unit.skipNextUntap; const immobilized = unit.immobilized || hasKeyword(unit, /imobilizado/i); if (skipNextUntap) { unit.skipNextUntap = false; unit.exhausted = true; } else if (immobilized) { unit.immobilized = false; unit.tags = (unit.tags || []).filter((tag) => !/imobilizado/i.test(String(tag))); } else unit.exhausted = false; } for (const unit of entry.board || []) unit.damage = 0; stack.push({ kind: "event", event: { type: "onMaintenance", owner: state.active } }); }
       } else throw new RulesViolation("unknown-command");

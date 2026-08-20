@@ -1,5 +1,6 @@
 import { canExecuteCard, validateCosts } from "./engine.mjs";
 import { abilitiesForLevel, getExplicitCardRule } from "./card-rules.mjs";
+import { canonicalStack, inferPriorityWindow } from "./priority-state.mjs";
 
 export const PriorityState = Object.freeze({
   IDLE: "IDLE",
@@ -16,6 +17,7 @@ const stackHas = (state, predicate) => (state.priorityStack || []).some((frame) 
 const heroUsageKey = (state, source, ability) => `${source.uid || source.id}:${ability.id}${ability?.condition?.firstEachTurn ? `:round-${state.round}` : ""}`;
 const normalizedSubtype = (value = "") => String(value).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const hasSubtype = (card, subtype) => !subtype || (card?.subtypes || card?.tags || []).some((value) => normalizedSubtype(value) === normalizedSubtype(subtype));
+const usesOnlinePriorityModel = (state) => state?.priority?.model === "online-v2";
 function heroAbilityTargetsAvailable(state, owner, ability) {
   for (const effect of ability.effects || []) {
     const target = effect.target;
@@ -46,14 +48,13 @@ function spellCost(state, owner, card) {
   return Math.max(0, (card.cost || 0) + (card.costModifier || 0) + discount);
 }
 
-function activationAvailable(state, owner, source, ability) {
-  if (state.active !== owner || ability.trigger !== "activated" || ability.responseAllowed === false) return false;
-  if (state.players[owner].abilityUses?.[`${source.uid || source.id}:${ability.id}`]) return false;
-  try { validateCosts(state, ability, { owner, sourceId: source.uid || source.id }); return true; } catch { return false; }
-}
-
 export function legalPriorityResponses(state, owner) {
-  if (!state?.pendingResponse || state.pendingResponse.responder !== owner) return [];
+  const pending = state?.pendingResponse;
+  if (!pending || pending.responder !== owner) return [];
+  /* Online v2 allows a legal response after one pass; playing it resets the
+     pass sequence. Offline/Bot keeps the previous guard until those modes are
+     intentionally migrated, preventing the old AI priority loop from returning. */
+  if (!usesOnlinePriorityModel(state) && pending.actor === owner && (pending.passes || 0) > 0) return [];
   const player = state.players[owner];
   const responseEnergy = state.active === owner ? player.energy + player.reserve : player.reserve;
   const cards = player.hand.flatMap((card, handIndex) => isAccelerated(card) && canExecuteCard(card) && responseEnergy >= spellCost(state, owner, card) && !stackHas(state, command => command.type === "playCard" && command.owner === owner && command.cardId === card.id)
@@ -77,10 +78,7 @@ export const shouldAutoPass = (state, owner, control = "assisted") =>
 
 export function chooseAIResponse(state, owner, random = Math.random) {
   const pending = state?.pendingResponse;
-  /* Once the opponent has passed, priority returns to the actor with passes=1.
-     The bot must pass here so the current top of the stack resolves instead of
-     extending its own chain with more responses indefinitely. */
-  if (pending?.responder === owner && pending?.actor === owner && (pending.passes || 0) > 0)
+  if (!usesOnlinePriorityModel(state) && pending?.responder === owner && pending?.actor === owner && (pending.passes || 0) > 0)
     return { type: "passPriority", owner, auto: true };
   const legal = legalPriorityResponses(state, owner);
   if (!legal.length) return { type: "passPriority", owner, auto: true };
@@ -95,13 +93,16 @@ export function chooseAIResponse(state, owner, random = Math.random) {
 
 export function priorityView(state, viewer) {
   const pending = state?.pendingResponse;
-  if (!pending) return { state: PriorityState.IDLE, stackDepth: state?.effectStack?.length || (state?.pendingAction ? 1 : 0), legalResponses: [] };
+  const stackDepth = canonicalStack(state).length;
+  if (!pending) return { state: PriorityState.IDLE, stackDepth, priorityOwner: state?.active ?? null, window: null, legalResponses: [] };
   const mine = pending.responder === viewer;
   return {
     state: mine ? PriorityState.WAITING_FOR_PLAYER : PriorityState.WAITING_FOR_OPPONENT,
-    stackDepth: state?.effectStack?.length || (state?.pendingAction ? 1 : 0),
+    stackDepth,
     responder: pending.responder,
+    priorityOwner: pending.responder,
     passes: pending.passes || 0,
+    window: inferPriorityWindow(state),
     legalResponses: mine ? legalPriorityResponses(state, viewer) : [],
   };
 }

@@ -1,0 +1,25 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "noEmit": false,
+    "outDir": ".ai-runtime",
+    "rootDir": ".",
+    "incremental": false,
+    "isolatedModules": false,
+    "declaration": false,
+    "sourceMap": false,
+    "allowJs": true,
+    "checkJs": false,
+    "resolveJsonModule": true
+  },
+  "include": [
+    "app/rules-engine/ai-system/**/*.ts",
+    "scripts/ai-calibration.ts",
+    "scripts/ai-selfplay.ts",
+    "types/**/*.d.ts"
+  ],
+  "exclude": ["node_modules", ".next", "dist", ".ai-runtime"]
+}

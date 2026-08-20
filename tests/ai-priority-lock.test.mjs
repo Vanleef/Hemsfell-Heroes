@@ -26,12 +26,39 @@ test("Accelerated cards remain legal priority responses",()=>{
   assert.equal(legal[0].cardId,"fast-1");
 });
 
+test("actor cannot extend the same priority window after the opponent passes",()=>{
+  const state=makeState();
+  state.pendingResponse={responder:1,actor:1,action:"Resposta Acelerada",passes:1};
+  state.players[1].hand=[{id:"fast-2",name:"Outra Resposta",type:"Feitiço",cost:1,tags:["Acelerado"],text:"",abilities:[]}];
+  assert.deepEqual(legalPriorityResponses(state,1),[]);
+});
+
+test("advanced priority search is bounded and repeated windows are deduplicated",async()=>{
+  const runtime=await readFile(new URL("../app/rules-engine/ai-system/runtime.ts",import.meta.url),"utf8");
+  const controller=await readFile(new URL("../app/rules-engine/ai-system/controller.ts",import.meta.url),"utf8");
+  assert.match(runtime,/priorityInFlight/);
+  assert.match(runtime,/recentlySettledPriority/);
+  assert.match(runtime,/prioritySignature/);
+  assert.match(runtime,/PRIORITY_HARD_TIMEOUT_MS = 850/);
+  assert.match(runtime,/boundedPrioritySearch/);
+  assert.match(runtime,/legalPriorityResponses\(state, owner\)\.length === 0/);
+  assert.match(runtime,/settledAt != null && clock\(\) - settledAt < 2500/);
+  assert.match(controller,/prioritySearchBudget/);
+  assert.match(controller,/thinkTimeMs: 380/);
+  assert.match(controller,/thinkTimeMs: 140/);
+  assert.match(controller,/!priorityWindow && \["Hard", "Expert", "Master"\]\.includes/);
+  assert.match(controller,/!priorityWindow && action && config\.intentionalErrorRate/);
+});
+
 test("AI response timer is keyed only to the authoritative pending priority window",async()=>{
   const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
   const marker=page.match(/useEffect\(\(\)=>\{const authoritativePending=game\?\.pendingResponse[\s\S]*?\},\[game\?\.pendingResponse\?\.actor,game\?\.pendingResponse\?\.responder,game\?\.pendingResponse\?\.passes,game\?\.pendingResponse\?\.action,mode,difficulty\]\);/)?.[0]||"";
   assert.ok(marker);
   assert.match(marker,/currentGameRef\.current/);
-  assert.match(marker,/chooseAIResponse/);
-  assert.match(marker,/command\.type==="activateHero"/);
+  assert.match(marker,/chooseAdvancedAIResponse/);
+  assert.match(marker,/latestKey!==pendingKey/);
+  assert.match(marker,/command\.type==="passPriority"/);
+  assert.match(marker,/runRulesCommand\(command,1\)/);
+  assert.match(marker,/watchdog/);
   assert.doesNotMatch(marker,/\[game,responseWindow,mode,difficulty\]/);
 });

@@ -30,4 +30,5 @@ test("activation availability enforces tap, markers, sacrifice, energy and once-
   assert.equal(canActivateCard(card("Sacrifique uma criatura: compre 1 carta."), context({ hasSacrificeTarget: false })), false);
   assert.equal(canActivateCard(card("Pague 4 de energia e vire: compre 1 carta."), context({ energy: 3 })), false);
   assert.equal(canActivateCard(card("Vire: compre 1 carta.", { activatedThisTurn: true }), context()), false);
+  assert.equal(canActivateCard(card("Vire: compre 1 carta.", { activationLockedOnEntry: true }), context()), false);
 });

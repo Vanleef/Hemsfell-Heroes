@@ -1,0 +1,158 @@
+/* === SETUP HEADING (merged from setup-heading-fixes.css; historical cascade order preserved) === */
+/* Shared setup header alignment for AI and multiplayer screens. */
+.match-setup .setup-head {
+  display: grid;
+  justify-items: center;
+  text-align: center;
+}
+
+.match-setup .setup-head > p,
+.match-setup .setup-head > h2,
+.match-setup .setup-head > span {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.match-setup .setup-head > span {
+  width: min(100%, 46rem);
+  max-width: 46rem;
+  line-height: 1.45;
+  text-wrap: balance;
+}
+
+/* === RESPONSE WINDOW === */
+/* Canonical response-window styling.
+   Geometry, horizontal card scrolling and tooltip-portal integration live in
+   one place so later fixes do not fight through the cascade. */
+
+.screen-game .response-overlay{
+  position:fixed!important;
+  inset:0!important;
+  display:block!important;
+  padding:0!important;
+  overflow:visible!important;
+  background:rgba(2,5,10,.72)!important;
+  backdrop-filter:brightness(.48) saturate(.78)!important;
+  z-index:1800!important;
+}
+
+/* The response window is anchored at runtime to the actual opponent pile
+   cluster. Clamp values are only fallbacks before DOM geometry is measured. */
+.screen-game .response-overlay .response-dialog{
+  position:fixed!important;
+  top:var(--response-opponent-piles-top,clamp(3rem,6.5cqh,4.75rem))!important;
+  left:auto!important;
+  bottom:auto!important;
+  translate:none!important;
+  transform:none!important;
+  width:fit-content!important;
+  min-width:min(18rem,max(12rem,var(--response-opponent-piles-width,18rem)))!important;
+  max-width:min(24rem,max(17rem,calc(var(--response-opponent-piles-width,18rem) * 1.45)))!important;
+  height:fit-content!important;
+  max-height:min(72cqh,40rem)!important;
+  margin:0!important;
+  overflow:auto!important;
+  box-sizing:border-box!important;
+  z-index:1801!important;
+}
+
+.response-window,
+.response-panel,
+.response-options{
+  min-width:0;
+  max-width:100%;
+  box-sizing:border-box;
+  overflow:visible!important;
+}
+
+/* The cards rail is the only horizontal scrolling surface. */
+.screen-game .response-overlay .response-cards,
+.response-cards{
+  position:relative;
+  width:100%;
+  max-width:100%!important;
+  min-width:0;
+  box-sizing:border-box;
+  display:flex!important;
+  flex-wrap:nowrap!important;
+  align-items:flex-start;
+  justify-content:flex-start!important;
+  gap:clamp(.35rem,.75cqw,.65rem)!important;
+  padding:clamp(.25rem,.55cqh,.45rem) clamp(.3rem,.7cqw,.65rem) clamp(.55rem,1cqh,.85rem);
+  overflow-x:auto!important;
+  overflow-y:hidden!important;
+  overscroll-behavior-x:contain;
+  scroll-snap-type:x proximity;
+  scrollbar-gutter:stable;
+  -webkit-overflow-scrolling:touch;
+}
+
+.response-cards>*{
+  position:relative;
+  z-index:1;
+  flex:0 0 clamp(5rem,8.5cqw,7.25rem)!important;
+  width:clamp(5rem,8.5cqw,7.25rem)!important;
+  min-width:clamp(5rem,8.5cqw,7.25rem)!important;
+  max-width:clamp(5rem,8.5cqw,7.25rem)!important;
+  box-sizing:border-box;
+  scroll-snap-align:center;
+}
+
+.response-cards>*>button,
+.response-cards>*>.card,
+.response-cards>* .lab-card,
+.response-cards>* .game-card,
+.response-cards>* .card-shell,
+.response-cards>* .card-frame{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+  box-sizing:border-box;
+}
+
+.response-cards>* img:not(.card-tooltip img){
+  max-width:100%!important;
+  height:auto!important;
+}
+
+.response-cards>*:hover,
+.response-cards>*:focus-within{
+  z-index:120!important;
+}
+
+.screen-game .response-overlay .response-cards .original-card.is-small{
+  width:clamp(3.8rem,5.2cqw,5.4rem)!important;
+}
+
+/* The in-panel tooltip copy stays hidden. A fixed clone is mounted directly
+   under <body> by match-ui-runtime.tsx and can escape every popup boundary. */
+.response-cards .original-card>.card-tooltip{
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+
+body>.card-list-tooltip-portal{
+  visibility:visible!important;
+  display:flex!important;
+  max-width:min(16rem,42vw)!important;
+  z-index:100000!important;
+  pointer-events:none!important;
+}
+
+@container hemsfell-board (max-width:70rem){
+  .screen-game .response-overlay .response-dialog{
+    max-width:min(21rem,max(15rem,calc(var(--response-opponent-piles-width,16rem) * 1.4)))!important;
+    max-height:70cqh!important;
+  }
+}
+
+@media (max-width:760px){
+  .screen-game .response-overlay .response-dialog{
+    width:min(19rem,48vw)!important;
+    min-width:0!important;
+    max-width:48vw!important;
+    max-height:72vh!important;
+    translate:none!important;
+    transform:none!important;
+  }
+}

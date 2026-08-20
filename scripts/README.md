@@ -1,16 +1,24 @@
-# Scripts policy
+# Scripts
 
-The runtime source under `app/`, the rules engine, tests and stylesheets are canonical. Build/dev must not reconstruct the application by replaying a long chain of historical patch scripts.
+This directory contains reusable project tooling only.
 
-## Maintenance model
+## Canonical policy
 
-- `project-maintenance.mjs` is the single pre-dev/pre-build gate. It validates the committed canonical state and does not rewrite source files.
-- Bug fixes and gameplay changes should be made directly in `app/`, `app/rules-engine/`, tests and the relevant stylesheet.
-- Do not create `repair-vNN`, `fix-*`, `apply-*`, `normalize-*` or similar one-off scripts for ordinary changes. Git history already preserves migrations and previous implementations.
-- Add a new executable script only when the operation is genuinely reusable tooling (build, CI environment, audit, simulation, extraction, etc.). Prefer adding a command/mode to an existing tool when the concerns belong together.
-- `card-tools.mjs` groups catalog extraction and manual-card analysis instead of keeping separate tiny scripts.
-- `audit-card-rules.mjs` / `export-card-implementation-audit.mjs` remain separate because one is a fast CI check and the other generates persistent reports.
+- Do not add one-off `fix-*`, `repair-*`, `apply-*`, `normalize-*`, `prepare-card*`, or `finalize-*` patch scripts.
+- Make durable changes directly in the canonical source files instead of layering source mutators.
+- Match UI DOM guards remain at the compatibility entrypoints `app/match-ui-runtime.tsx` and `app/match-ui-guard.tsx`; no barrel-only facade is required.
+- Match CSS is imported through the single `app/match-ui.css` entry point. Board CSS continues through `app/lab.css` while the historical `lab-legacy.css` remains isolated from the modern geometry layers.
+- Do not add byte-identical CSS mirror trees; responsibility is documented by the canonical runtime files themselves.
+- GitHub Actions should use the canonical CI workflow rather than accumulating temporary fix workflows.
+- `scripts/project-maintenance.mjs` validates canonical files, stylesheet import/cascade order, match runtime order, card catalog invariants and the absence of one-off source mutators.
 
-Two legacy reference scripts (`repair-runtime-ai-cost-v18.mjs` and `repair-board-visual-polish-v20.mjs`) are intentionally preserved but are not part of dev/build execution. The actual v18/v20 runtime/style state remains committed in canonical files.
+## Reusable commands
 
-`npm run rules:migrate` is retained only as a compatibility alias for `npm run prepare:project`; it no longer mutates the repository.
+- `npm run prepare:project` — validate canonical project state and frontend structural invariants.
+- `npm run test:rules` — run rules and regression tests.
+- `npm run audit:cards:full` — export the card implementation audit.
+- `npm run simulate:headless` — run headless game simulations.
+- `npm run ai:calibrate` — run the full AI calibration corpus across all configured difficulties.
+- `npm run ai:calibrate:smoke` — run the deterministic AI calibration smoke subset.
+- `npm run ai:calibrate:benchmark` — run the deterministic benchmark for Easy, Normal and Hard.
+- `npm run ai:selfplay` — run AI-vs-AI self-play telemetry.

@@ -46,8 +46,8 @@
   text-wrap:pretty!important;
 }
 
-/* Never hide command descriptions with line-clamp. The dedicated client-side
-   fitter reduces font-size until the complete title + description fit inside
+/* Never hide command descriptions with line-clamp. The consolidated UI
+   runtime reduces font-size until the complete title + description fit inside
    the existing chip dimensions. */
 .screen-game .hero-command-bar .hero-ability-chip p,
 .screen-game .hero-command-bar .hero-ability-chip.copy-compact p,
@@ -65,6 +65,12 @@
 .screen-game .hero-command-bar .hero-ability-chip[data-command-text-fit="minimum"]>span{
   justify-content:center!important;
 }
+
+/* Ability availability belongs to the command bar, not the response popup. */
+.screen-game .hero-command-bar .hero-ability-chip.is-unlocked{filter:none!important;}
+.screen-game .hero-command-bar .hero-ability-chip.is-unlocked:not(.is-unavailable){opacity:1!important;}
+.screen-game .hero-command-bar .hero-ability-chip.is-unlocked.is-unavailable{opacity:.68!important;}
+.screen-game .hero-command-bar .hero-ability-chip.is-unlocked>i{filter:none!important;}
 
 @container hemsfell-board (max-height:36rem){
   .screen-game .hero-command-bar .hero-ability-chip{

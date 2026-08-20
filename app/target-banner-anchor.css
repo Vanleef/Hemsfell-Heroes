@@ -24,10 +24,8 @@
   transform-origin: 100% 50% !important;
   box-sizing: border-box !important;
   z-index: 760 !important;
-}
+  overflow: auto !important;
 
-/* Compact content layout: the safe lane controls position, never panel size. */
-.screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] {
   display: inline-grid !important;
   grid-template-columns: minmax(0, auto) auto !important;
   align-items: center !important;
@@ -42,6 +40,14 @@
   max-width: min(24cqw, 29rem) !important;
   margin: 0 !important;
   white-space: normal !important;
+}
+
+/* div/p inherited these effective bounds from decision-lane-position.css
+   before the consolidation; keep them here so the computed result is unchanged. */
+.screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] > :is(div, p) {
+  width: fit-content !important;
+  min-width: 0 !important;
+  max-width: min(28cqw, 30rem) !important;
 }
 
 .screen-game .game-content.hs-board > .target-banner[data-safe-lane-measured="true"] > button {

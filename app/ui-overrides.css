@@ -383,8 +383,8 @@
 
 .screen-game .game-stage > .game-content.hs-board > .defense-decision {
   position: absolute !important;
-  left: 27.7cqw !important;
-  top: 50cqh !important;
+  left: 26.7cqw !important;
+  top: 53cqh !important;
   right: auto !important;
   bottom: auto !important;
   transform: translate(-50%,-50%) !important;
@@ -409,7 +409,7 @@
   margin: 0 !important;
   min-width: 0 !important;
   font-size: clamp(.31rem,min(.51cqw,.99cqh),.55rem) !important;
-  line-height: 1.15 !important;
+  line-height: 1.5 !important;
   text-align: left !important;
   white-space: normal !important;
   overflow-wrap: anywhere !important;
@@ -426,11 +426,11 @@
   width: clamp(4.1rem,6.1cqw,6.3rem) !important;
   min-width: 0 !important;
   max-width: none !important;
-  min-height: 0 !important;
+  min-height: clamp(1.4rem,2.8cqh,2.2rem) !important;
   height: auto !important;
   margin: 0 !important;
   padding: clamp(.2rem,.38cqh,.32rem) clamp(.3rem,.48cqw,.46rem) !important;
-  font-size: clamp(.31rem,min(.45cqw,.74cqh),.48rem) !important;
+  font-size: clamp(.41rem,min(.45cqw,.74cqh),.48rem) !important;
   line-height: 1.08 !important;
   text-align: center !important;
   white-space: normal !important;
@@ -446,7 +446,7 @@
   }
 
   .screen-game .game-stage > .game-content.hs-board > .defense-decision {
-    left: 27.8cqw !important;
+    left: 25.8cqw !important;
     width: clamp(10rem,17.2cqw,15.8rem) !important;
     min-width: clamp(10rem,17.2cqw,15.8rem) !important;
     max-width: clamp(10rem,17.2cqw,15.8rem) !important;
@@ -859,7 +859,7 @@
 .screen-game .response-dialog>.priority-status span{min-width:0!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}
 .screen-game .response-dialog>p{margin:0!important;padding:.12rem clamp(.58rem,4cqi,.78rem) .48rem!important;font-size:clamp(.52rem,3.2cqi,.62rem)!important;line-height:1.24!important;overflow-wrap:anywhere!important}
 .screen-game .response-cards{box-sizing:border-box!important;display:flex!important;flex-wrap:nowrap!important;justify-content:flex-start!important;gap:clamp(.3rem,2.2cqi,.42rem)!important;padding:.2rem clamp(.48rem,3.4cqi,.68rem) .5rem!important;max-height:min(12rem,31dvh)!important;overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-inline:contain;scroll-snap-type:inline proximity;scrollbar-gutter:stable;scrollbar-width:thin;-webkit-overflow-scrolling:touch;touch-action:pan-x}
-.screen-game .response-cards>div{box-sizing:border-box!important;width:clamp(4.35rem,27cqi,4.9rem)!important;flex:0 0 clamp(4.35rem,27cqi,4.9rem)!important;padding:.22rem!important;gap:.2rem!important;scroll-snap-align:start}
+.screen-game .response-cards>div{box-sizing:border-box!important;width:clamp(4.35rem,27cqi,4.9rem)!important;flex:0 0 clamp(4.35rem,27cqi,4.9rem)!important;padding:.22rem!important;gap:1rem!important;scroll-snap-align:start}
 .screen-game .response-cards .original-card{width:100%!important;max-width:4.3rem!important}
 .screen-game .response-cards b{font-size:clamp(.43rem,2.8cqi,.53rem)!important;line-height:1.12!important}
 .screen-game .response-cards small{font-size:clamp(.38rem,2.45cqi,.47rem)!important;line-height:1.14!important}
