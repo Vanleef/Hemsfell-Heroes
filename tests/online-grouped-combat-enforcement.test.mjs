@@ -84,7 +84,7 @@ test("blocker selection is unitary and resolves after the post-block response ch
   assert.deepEqual(listLegalBlockers(game, 1, "attacker").map((card) => card.uid), ["blocker"]);
 
   game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "attacker", defenderId: "blocker", targetHero: false }).state;
-  assert.equal(game.combatAction.stage, "charging");
+  assert.equal(game.combatAction.stage, "priority");
   assert.equal(game.combatAction.defenderUid, "blocker");
   assert.equal(game.pendingResponse.responder, 0);
   assert.equal(game.priority.window, "after-blockers");
@@ -111,6 +111,7 @@ test("no block sends only that attack to the defending hero after both response 
   let game = executeOnlineCommand(combatState(), { type: "declareAttack", owner: 0, attackerId: "attacker" }).state;
   game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "attacker", targetHero: true }).state;
   assert.equal(game.combatAction.targetHero, true);
+  assert.equal(game.combatAction.stage, "priority");
   assert.equal(game.pendingResponse.responder, 0);
   game = passPostBlockPriority(game);
   assert.equal(game.players[1].life, 28);
