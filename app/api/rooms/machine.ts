@@ -165,7 +165,7 @@ export function applyTimeout(room: Room) {
     if (room.game.priority) room.game.priority.deadline = room.game.pendingResponse.deadline;
     seededDeadline = true;
   }
-  if (room.game.combatAction?.stage === "choosing" && !Number.isFinite(Number(room.game.combatAction.deadline))) {
+  if (room.game.combatAction?.stage === "choosing" && room.game.combatAction.blockCommitted !== true && !Number.isFinite(Number(room.game.combatAction.deadline))) {
     room.game.combatAction.deadline = now + room.settings.responseSeconds * 1000;
     if (room.game.priority) room.game.priority.deadline = room.game.combatAction.deadline;
     seededDeadline = true;
@@ -186,7 +186,7 @@ export function applyTimeout(room: Room) {
     return true;
   }
 
-  if (room.game.combatAction?.stage === "choosing") {
+  if (room.game.combatAction?.stage === "choosing" && room.game.combatAction.blockCommitted !== true) {
     if (room.game.combatAction.deadline > now) return seededDeadline;
     const before = room.game;
     const owner = 1 - before.combatAction.attackerOwner;
@@ -201,9 +201,6 @@ export function applyTimeout(room: Room) {
     return true;
   }
 
-  /* Interactive target/effect decisions intentionally pause the action clock.
-     They are never allowed to fall through to a phase timeout underneath the
-     decision that owns input. */
   if (room.game.pendingDecision || room.game.pendingReposition) return seededDeadline;
 
   if (room.game.turnDeadline && room.game.turnDeadline <= now) {
@@ -276,8 +273,6 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
     logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: "invalid command id", baseRevision });
     return { ok: false, status: 400, error: "command id required" };
   }
-  /* Idempotency is checked before revision. A retry of an already committed
-     command must succeed even though its baseRevision is now stale. */
   if (currentParticipant?.recentCommandIds?.includes(normalizedCommandId)) {
     logOnlineDiagnostic(room, "command-duplicate", { role, commandType: String(rawCommand.type || ""), baseRevision, duplicate: true });
     return { ok: true, status: 200, error: "", duplicate: true };
@@ -297,11 +292,10 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
   }
   const owner = role === "host" ? 0 : 1;
   try {
-    /* Never trust an owner sent by the browser. Authentication selects it. */
     const command: Record<string, any> = { ...rawCommand, owner };
     if (command.type === "selectDefender") {
       const combat = room.game.combatAction;
-      if (!combat || combat.stage !== "choosing") return { ok: false, status: 409, error: "blocker choice unavailable" };
+      if (!combat || combat.stage !== "choosing" || combat.blockCommitted === true) return { ok: false, status: 409, error: "blocker choice unavailable" };
       if (1 - combat.attackerOwner !== owner) return { ok: false, status: 403, error: "only defender may choose blocker" };
     }
     const before = room.game;
