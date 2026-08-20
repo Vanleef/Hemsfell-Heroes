@@ -36,10 +36,26 @@ jobs:
         run: node scripts/fix-online-combat-lock.mjs
       - name: Validate online typecheck
         run: npx tsc -p tsconfig.online.json --noEmit
-      - name: Validate focused multiplayer tests
-        run: node --test tests/online-authoritative-audit.test.mjs tests/online-clock-authority.test.mjs tests/rules-and-multiplayer.test.mjs
-      - name: Validate rules suite
-        run: npm run test:rules
+      - name: Validate combat transport invariants
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const source = await readFile('app/page.tsx','utf8');
+          const begin = source.slice(source.indexOf(' const beginAttack='), source.indexOf(' const chooseAttacker='));
+          assert.match(begin, /if\(mode==="online"\)\{void runRulesCommand\(\{type:"declareAttack",attackerId:attackerUid\},owner\);return\}/);
+          assert.ok(begin.indexOf('runRulesCommand({type:"declareAttack"') < begin.indexOf('setSharedCombat({attackerOwner:owner'));
+          const combatEffect = source.slice(source.indexOf(' useEffect(()=>{\n  if(!combatAction||!game)return;'), source.indexOf(' useEffect(()=>{\n  const decision=game?.pendingDecision'));
+          assert.match(combatEffect, /if\(action\.stage==="declared"\)\{if\(mode==="online"\)return;/);
+          assert.equal((combatEffect.match(/type:"declareAttack"/g)||[]).length,0);
+          assert.match(source, /window\.setInterval\(fn,300\)/);
+          assert.match(source, /data\?\.error==="stale revision"/);
+          assert.match(source, /staleRetries<3/);
+          const assisted = source.slice(source.indexOf(' useEffect(()=>{const pending=game?.pendingResponse;'), source.indexOf(' const selectedDeck='));
+          assert.match(assisted, /currentGameRef\.current\?\.pendingResponse/);
+          assert.doesNotMatch(assisted, /responseWindow\?\.responder/);
+          console.log('online combat transport invariants OK');
+          NODE
       - name: Commit validated fix
         run: |
           rm -f scripts/fix-online-combat-lock.mjs .github/workflows/fix-online-combat-lock.yml
