@@ -16,8 +16,8 @@ test("opening a response pauses the active player's action clock", () => {
 });
 
 test("canonical priority deadline mirrors the authoritative response deadline", () => {
-  const before = game({ priority: { model: "online-v2", deadline: null } });
-  const after = game({ priority: { model: "online-v2", deadline: null }, pendingResponse: { responder: 1, actor: 0, passes: 0 } });
+  const before = game({ priority: { model: "online-v3", deadline: null } });
+  const after = game({ priority: { model: "online-v3", deadline: null }, pendingResponse: { responder: 1, actor: 0, passes: 0 } });
   reconcileOnlineClocks(before, after, settings, now);
   assert.equal(after.pendingResponse.deadline, now + 30_000);
   assert.equal(after.priority.deadline, after.pendingResponse.deadline);
@@ -67,20 +67,17 @@ test("a new turn that immediately opens response priority keeps its full action 
   assert.equal(after.pendingResponse.deadline, now + 30_000);
 });
 
-test("unitary blocker choice pauses the attacker's action clock and gets a response deadline", () => {
+test("unitary blocker choice pauses the attacker's action clock and gets its own deadline", () => {
   const before = game({
-    turnDeadline: null,
-    turnTimeRemainingMs: 63_500,
-    priority: { model: "online-v2", deadline: now + 2_000 },
-    pendingResponse: { responder: 0, actor: 0, passes: 1, deadline: now + 2_000 },
-    combatAction: { stage: "priority", attackerOwner: 0, attackerUid: "attacker" },
+    turnDeadline: now + 63_500,
+    priority: { model: "online-v3", deadline: null },
+    combatAction: null,
   });
   const after = game({
-    turnDeadline: null,
-    turnTimeRemainingMs: 63_500,
-    priority: { model: "online-v2", deadline: null },
+    turnDeadline: now + 63_500,
+    priority: { model: "online-v3", mode: "blocker", owner: 1, deadline: null },
     pendingResponse: null,
-    combatAction: { stage: "choosing", attackerOwner: 0, attackerUid: "attacker" },
+    combatAction: { stage: "choosing", blockCommitted: false, attackerOwner: 0, attackerUid: "attacker" },
   });
   reconcileOnlineClocks(before, after, settings, now);
   assert.equal(after.turnDeadline, null);
@@ -89,23 +86,25 @@ test("unitary blocker choice pauses the attacker's action clock and gets a respo
   assert.equal(after.priority.deadline, after.combatAction.deadline);
 });
 
-test("selecting a blocker resumes exactly the attacker's paused clock through charging/impact", () => {
+test("committing a blocker opens response time and keeps the attacker's action clock paused", () => {
   const before = game({
     turnDeadline: null,
     turnTimeRemainingMs: 37_777,
-    priority: { deadline: now + 1_000 },
-    combatAction: { stage: "choosing", attackerOwner: 0, attackerUid: "attacker", deadline: now + 1_000 },
+    priority: { mode: "blocker", owner: 1, deadline: now + 1_000 },
+    combatAction: { stage: "choosing", blockCommitted: false, attackerOwner: 0, attackerUid: "attacker", deadline: now + 1_000 },
   });
   const after = game({
     turnDeadline: null,
     turnTimeRemainingMs: 37_777,
-    priority: { deadline: now + 1_000 },
-    combatAction: { stage: "charging", attackerOwner: 0, attackerUid: "attacker", targetHero: true },
+    priority: { mode: "response", owner: 0, responder: 0, deadline: null },
+    pendingResponse: { responder: 0, actor: 1, passes: 0 },
+    combatAction: { stage: "choosing", blockCommitted: true, attackerOwner: 0, attackerUid: "attacker", targetHero: true },
   });
   reconcileOnlineClocks(before, after, settings, now);
-  assert.equal(after.turnDeadline, now + 37_777);
-  assert.equal("turnTimeRemainingMs" in after, false);
-  assert.equal(after.priority.deadline, null);
+  assert.equal(after.turnDeadline, null);
+  assert.equal(after.turnTimeRemainingMs, 37_777);
+  assert.equal(after.pendingResponse.deadline, now + 30_000);
+  assert.equal(after.priority.deadline, after.pendingResponse.deadline);
   assert.equal("deadline" in after.combatAction, false);
 });
 
@@ -114,7 +113,7 @@ test("reconnect pause shifts every absolute unitary Online interaction deadline 
     turnDeadline: now + 40_000,
     priority: { deadline: now + 10_000 },
     pendingResponse: { responder: 1, actor: 0, passes: 0, deadline: now + 10_000 },
-    combatAction: { stage: "choosing", attackerOwner: 0, attackerUid: "attacker", deadline: now + 15_000 },
+    combatAction: { stage: "choosing", blockCommitted: false, attackerOwner: 0, attackerUid: "attacker", deadline: now + 15_000 },
     pendingReposition: { deadline: now + 20_000 },
     pendingDecision: { deadline: now + 25_000 },
   });
