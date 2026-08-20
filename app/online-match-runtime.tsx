@@ -9,6 +9,8 @@ type PriorityView = {
   mode?: string;
   owner?: 0 | 1 | null;
   window?: string | null;
+  interactionState?: string;
+  commandTypes?: string[];
   consecutivePasses?: number;
   stackDepth?: number;
 };
@@ -55,12 +57,23 @@ const WINDOW_NAMES: Record<string, string> = {
   finalization: "Finalização",
   "activated-ability-response": "Habilidade ativada",
 };
+const INTERACTION_NAMES: Record<string, string> = {
+  "maintenance-decision": "Escolha de Manutenção",
+  "action-priority": "Sua ação",
+  "response-priority": "Janela de resposta",
+  "combat-idle": "Escolha um ataque ou encerre o combate",
+  "awaiting-blocker": "Escolha de bloqueio",
+  "resolving-attack": "Resolvendo combate",
+  "finalization-effects": "Resolvendo fim de turno",
+  "finalization-response": "Resposta de fim de turno",
+  decision: "Escolha obrigatória",
+  reposition: "Reposicionamento obrigatório",
+  resolving: "Resolvendo",
+};
 
 function onlineRuntimeIsRelevant() {
   const preferred = new URLSearchParams(window.location.search).get("room");
   if (preferred) return true;
-  // The turn clock only exists in an ONLINE game. This prevents historical
-  // localStorage room sessions from being probed while the user is playing AI.
   return !!document.querySelector(".match-clock");
 }
 
@@ -70,8 +83,6 @@ function readSessions(): Session[] {
   const preferred = new URLSearchParams(window.location.search).get("room");
   const keys: string[] = [];
   if (preferred) keys.push(`${SESSION_PREFIX}${preferred}`);
-  // Hosts currently do not always keep ?room= in the address bar after room
-  // creation, so an active ONLINE board may still discover its saved session.
   if (!preferred) {
     for (let index = 0; index < localStorage.length; index += 1) {
       const key = localStorage.key(index);
@@ -91,8 +102,6 @@ function readSessions(): Session[] {
 async function fetchRoom(session: Session): Promise<RoomSnapshot | null> {
   const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}?token=${encodeURIComponent(session.token)}`, { cache: "no-store" });
   if (response.status === 404) {
-    // Expired/deleted room sessions are stale client metadata; remove them so
-    // they can never create a recurring polling loop again.
     localStorage.removeItem(`${SESSION_PREFIX}${session.id}`);
     return null;
   }
@@ -129,11 +138,13 @@ function OnlinePriorityHud({ game }: { game: OnlineGame }) {
   const priority = game.priority;
   const stack = game.stack || [];
   const combat = combatStatus(game);
-  if (priority?.model !== "online-v2" && !stack.length && !combat && !game.onlineFinalization) return null;
+  const onlineModel = /^online-v\d+$/.test(String(priority?.model || ""));
+  if (!onlineModel && !stack.length && !combat && !game.onlineFinalization) return null;
   const owner = priority?.owner;
   const ownerLabel = owner === 0 ? "Sua prioridade" : owner === 1 ? "Prioridade do oponente" : priority?.mode === "resolving" ? "Resolvendo" : "Sem prioridade pendente";
-  const windowLabel = combat || (priority?.window ? WINDOW_NAMES[priority.window] || priority.window : game.phase === "combate" && game.active === 0 ? "Escolha uma criatura para atacar ou encerre o combate" : "Ação livre");
-  return <aside className="online-priority-hud" data-priority-owner={owner ?? "none"} aria-live="polite">
+  const stateLabel = priority?.interactionState ? INTERACTION_NAMES[priority.interactionState] || priority.interactionState : null;
+  const windowLabel = combat || (priority?.window ? WINDOW_NAMES[priority.window] || priority.window : stateLabel || "Ação livre");
+  return <aside className="online-priority-hud" data-priority-owner={owner ?? "none"} data-interaction-state={priority?.interactionState || "unknown"} aria-live="polite">
     <div className="online-priority-heading"><span>ONLINE · PRIORIDADE</span><b>{ownerLabel}</b><small>{windowLabel}</small></div>
     <div className="online-priority-stack"><span>PILHA · {Math.max(Number(priority?.stackDepth || 0), stack.length)}</span>{stack.length ? <ol>{stack.slice().reverse().map((frame, index) => <li key={frame.id || `${frame.label}-${index}`}><i>{frame.controller === 0 ? "VOCÊ" : frame.controller === 1 ? "RIVAL" : "SISTEMA"}</i><b>{frame.label || frame.kind || "Ação"}</b></li>)}</ol> : <small>Nenhum efeito aguardando resolução.</small>}</div>
   </aside>;
@@ -209,12 +220,13 @@ export default function OnlineMatchRuntime() {
     return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
   }, [session?.id, session?.token, session?.isHost]);
 
-  /* The authoritative priority owner also gates the visible local controls.
-     This matters when Café do Tempo asks its controller to place a Cat during
-     the opponent's turn: the active opponent must wait instead of racing a
-     phase, attack or play-card click before the slot choice is persisted. */
+  /* Local player is always oriented as owner 0.  The canonical input owner
+     therefore gates the entire normal action surface during opponent priority,
+     blocker selection, server resolution and mandatory decisions. */
   useEffect(() => {
-    const blocked = room?.status === "started" && game?.winner == null && game?.active === 0 && game?.priority?.owner === 1;
+    const started = room?.status === "started" && game?.winner == null;
+    const owner = game?.priority?.owner;
+    const blocked = !!started && owner !== 0;
     const selectors = [
       ".screen-game .phase-orb",
       ".screen-game .player-hand",
@@ -226,7 +238,11 @@ export default function OnlineMatchRuntime() {
     ];
     const apply = () => {
       const board = document.querySelector<HTMLElement>(".screen-game .hs-board");
-      if (board) board.dataset.onlineActionBlocked = blocked ? "true" : "false";
+      if (board) {
+        board.dataset.onlineActionBlocked = blocked ? "true" : "false";
+        board.dataset.onlineInteractionState = game?.priority?.interactionState || "unknown";
+        board.dataset.onlineCommandTypes = (game?.priority?.commandTypes || []).join(",");
+      }
       for (const selector of selectors) {
         document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
           if (blocked) element.setAttribute("inert", "");
@@ -240,9 +256,12 @@ export default function OnlineMatchRuntime() {
     return () => {
       observer.disconnect();
       for (const selector of selectors) document.querySelectorAll<HTMLElement>(selector).forEach((element) => element.removeAttribute("inert"));
-      document.querySelector<HTMLElement>(".screen-game .hs-board")?.removeAttribute("data-online-action-blocked");
+      const board = document.querySelector<HTMLElement>(".screen-game .hs-board");
+      board?.removeAttribute("data-online-action-blocked");
+      board?.removeAttribute("data-online-interaction-state");
+      board?.removeAttribute("data-online-command-types");
     };
-  }, [room?.status, room?.revision, game?.active, game?.winner, game?.priority?.owner]);
+  }, [room?.status, room?.revision, game?.winner, game?.priority?.owner, game?.priority?.interactionState, game?.priority?.commandTypes?.join(",")]);
 
   if (!session || !room || !game || room.status !== "started" || game.winner != null) return null;
   return <OnlinePriorityHud game={game} />;
