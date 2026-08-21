@@ -2,6 +2,7 @@ import type { Room, RoomRole } from "./machine";
 export type { Room } from "./machine";
 import { get, put } from "@vercel/blob";
 import { onlineCombatInteractionView } from "../../rules-engine/online-combat.mjs";
+import { openRoom, sealRoom } from "./room-crypto.mjs";
 
 const memoryRooms = new Map<string, Room>();
 const useMemoryStore = () => process.env.NODE_ENV === "development";
@@ -41,6 +42,8 @@ const isStaleRevision = (error: unknown) => error instanceof Error && error.mess
 const roomPath = (id: string) => `multiplayer-rooms/${id}.json`;
 const SUPABASE_ROOM_BUCKET = "hemsfell-multiplayer-rooms";
 const supabaseRoomObjectPath = (id: string) => `rooms/${id}.json`;
+type BlobAccess = "private" | "public";
+let resolvedBlobAccess: BlobAccess | null = null;
 
 type SupabaseConfig = { url: string; key: string };
 let resolvedSupabaseConfig: Promise<SupabaseConfig> | null = null;
@@ -157,16 +160,28 @@ async function writeSupabaseStorageRoom(room: Room) {
   if (!response.ok) throw new Error(`Supabase Storage room write failed (${response.status})`);
 }
 
+const blobToken = () => process.env.BLOB_READ_WRITE_TOKEN || "";
+const blobAccessOrder = (): BlobAccess[] => resolvedBlobAccess ? [resolvedBlobAccess] : ["private", "public"];
+const accessMismatch = (error: unknown) => error instanceof Error && /403|forbidden|access/i.test(error.message);
+async function withBlobAccess<T>(operation: (access: BlobAccess) => Promise<T>) {
+  let firstError: unknown = null;
+  for (const access of blobAccessOrder()) {
+    try { const value = await operation(access); resolvedBlobAccess = access; return value; }
+    catch (error) { firstError ??= error; if (resolvedBlobAccess || !accessMismatch(error)) throw error; }
+  }
+  throw firstError;
+}
 async function readBlob(id: string) {
-  const result = await get(roomPath(id), { access: "private", useCache: false });
-  return result?.statusCode === 200 ? JSON.parse(await new Response(result.stream).text()) as Room : null;
+  const result = await withBlobAccess(access => get(roomPath(id), { access, useCache: false }));
+  return result?.statusCode === 200 ? openRoom(await new Response(result.stream).text(), blobToken()) as Room : null;
 }
 async function writeBlob(room: Room) {
-  const current = await readBlob(room.id);
-  if (room.revision === 0) {
-    if (current) throw staleRevision();
-  } else if (!current || Number(current.revision) !== room.revision - 1) throw staleRevision();
-  await put(roomPath(room.id), JSON.stringify(room), { access: "private", addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 0, contentType: "application/json" });
+  if (room.revision > 0) {
+    const current = await readBlob(room.id);
+    if (!current || Number(current.revision) !== room.revision - 1) throw staleRevision();
+  }
+  const payload = sealRoom(room, blobToken());
+  await withBlobAccess(access => put(roomPath(room.id), payload, { access, addRandomSuffix: false, allowOverwrite: true, cacheControlMaxAge: 60, contentType: "application/json" }));
 }
 
 /** Full reconciliation is intentionally kept for room discovery/invite lookup.
