@@ -31,7 +31,7 @@ test("root layout mounts the Online HUD after the canonical match UI runtime", (
 
 test("Online runtime consumes canonical guest orientation instead of duplicating mirror logic", () => {
   assert.match(runtime, /orientOnlineGameForRole/);
-  assert.match(runtime, /currentSession\.isHost \? "host" : "guest"/);
+  assert.match(runtime, /nextSession\.isHost \? "host" : "guest"/);
   assert.doesNotMatch(runtime, /mirrored\.players\s*=/);
 });
 
@@ -49,7 +49,7 @@ test("grouped combat declaration UI and commands are gone", () => {
 
 test("canonical board UI keeps per-creature attacker, blocker and no-block actions", () => {
   assert.match(page, /const chooseAttacker=\(uid:string\)=>/);
-  assert.match(page, /type:"declareAttack",attackerId:action\.attackerUid/);
+  assert.match(page, /type:"declareAttack",attackerId:attackerUid/);
   assert.match(page, /type:"selectDefender",attackerId:combatAction\.attackerUid,defenderId:uid,targetHero:false/);
   assert.match(page, /type:"selectDefender",attackerId:combatAction\.attackerUid,targetHero:true/);
   assert.match(page, /combat-attack-ready/);
@@ -81,12 +81,13 @@ test("final impact command is server-bound to the blocker selection already stor
   assert.match(machine, /command\.skipPriority = true/);
 });
 
-test("room discovery still prefers URL room and recovers from stale finished sessions", () => {
-  assert.match(runtime, /const DISCOVERY_MS = 3_500/);
-  assert.match(runtime, /statusRank: Record<string, number> = \{ started: 3, mulligan: 2, finished: 1 \}/);
-  assert.match(runtime, /found\.session\.id === preferred/);
-  assert.match(runtime, /currentRoom\?\.status === "finished"/);
-  assert.match(runtime, /game\.winner != null/);
+test("Online HUD reuses the board snapshot instead of opening a second polling loop", () => {
+  assert.match(runtime, /const ONLINE_ROOM_SNAPSHOT_EVENT = "hemsfell:online-room-snapshot"/);
+  assert.match(runtime, /window\.addEventListener\(ONLINE_ROOM_SNAPSHOT_EVENT, consume\)/);
+  assert.match(page, /announceOnlineSnapshot/);
+  assert.match(page, /window\.setTimeout\(fn,600\)/);
+  assert.doesNotMatch(runtime, /fetch\(`\/api\/rooms/);
+  assert.doesNotMatch(runtime, /POLL_MS|DISCOVERY_MS|setInterval|setTimeout\(poll/);
 });
 
 test("strict Online typecheck remains in every validation path", () => {

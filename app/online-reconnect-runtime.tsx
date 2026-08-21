@@ -44,7 +44,7 @@ export default function OnlineReconnectRuntime() {
           cache: "no-store",
         });
         if (!response.ok) {
-          await fetch(`${path}?token=${encodeURIComponent(session.token)}`, { cache: "no-store" });
+          await fetch(path, { cache: "no-store", headers: { authorization: `Bearer ${session.token}` } });
         }
       } catch {
         // The normal authenticated room poll is itself a heartbeat and retries.

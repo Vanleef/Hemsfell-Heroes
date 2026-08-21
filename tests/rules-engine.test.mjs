@@ -1491,8 +1491,8 @@ test("UI animation is presentation-only and cannot hide an unresolved ability re
 test("online actions share one serialized request queue and reconcile stale revisions", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /syncQueueRef\.current\.then\(\(\)=>execute\(\)\)/);
-  assert.match(page, /res\.status===409&&data\?\.game/);
-  assert.match(page, /if\(retry&&action==="command"\)return execute\(false\)/);
+  assert.match(page, /res\.status===409&&data\?\.error==="stale revision"&&data\?\.game/);
+  assert.match(page, /if\(staleRetries<3\)[\s\S]*?execute\(staleRetries\+1\)/);
   assert.match(page, /incomingRevision<=roomRevisionRef\.current/);
 });
 

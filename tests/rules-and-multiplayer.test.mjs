@@ -41,7 +41,9 @@ test("response window remains a compact responsive drawer",()=>{
 });
 
 test("multiplayer response polling and resource display stay fast and authoritative",()=>{
- assert.match(page,/window\.setInterval\(fn,600\)/);
+ assert.match(page,/pollGenerationRef/);
+ assert.match(page,/window\.setTimeout\(fn,600\)/);
+ assert.doesNotMatch(page,/setInterval\(fn,(?:300|600)\)/);
  assert.match(page,/const responseBudget=\(state:Game,owner:0\|1\)=>state\.active===owner\?state\.players\[owner\]\.energy\+state\.players\[owner\]\.reserve/);
  assert.match(page,/const usableAcceleratedResponses=[\s\S]*?!isFast\(card\)\|\|cost>budget[\s\S]*?canChooseAllTargets/);
  assert.doesNotMatch(page,/cost>budget\?"unavailable"/);
@@ -99,7 +101,8 @@ test("multiplayer uses durable shared state and authenticated room participants"
  assert.match(roomApi,/action === "sync"/);
  assert.match(roomApi,/invalid participant/);
  assert.match(page,/mirrorOnlineGame/);
- assert.match(page,/setInterval\(fn,600\)/);
+ assert.match(page,/headers:\{authorization:`Bearer \$\{token\}`\}/);
+ assert.match(page,/setTimeout\(fn,600\)/);
 });
 
 test("multiplayer lobby runs invitation, coin choice and one mulligan before play",()=>{

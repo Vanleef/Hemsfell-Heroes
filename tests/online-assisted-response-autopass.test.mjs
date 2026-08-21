@@ -78,12 +78,15 @@ test("a genuinely executable Acelerado keeps the response window open", () => {
   assert.equal(shouldAutoPass(game, 1, "assisted"), false);
 });
 
-test("Online runtime auto-passes from authoritative pendingResponse instead of waiting for the modal", async () => {
-  const runtime = await readFile(new URL("../app/online-match-runtime.tsx", import.meta.url), "utf8");
-  assert.match(runtime, /import \{ shouldAutoPass \} from "\.\/rules-engine\/priority\.mjs"/);
-  assert.match(runtime, /pending\.responder !== 0 \|\| !shouldAutoPass\(game as any, 0, "assisted"\)/);
-  assert.match(runtime, /command: \{ type: "passPriority", auto: true \}/);
-  assert.match(runtime, /responseControl !== "assisted"/);
-  assert.match(runtime, /const ASSISTED_PASS_DELAY_MS = 45/);
-  assert.match(runtime, /const POLL_MS = 320/);
+test("Assisted auto-pass has one client recovery path and one authoritative server drain", async () => {
+  const [runtime, page, machine] = await Promise.all([
+    readFile(new URL("../app/online-match-runtime.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(page, /priorityControl!=="assisted"/);
+  assert.match(page, /void passPriorityWindow\(0,true\)/);
+  assert.match(machine, /function drainEmptyAssistedPriority/);
+  assert.match(machine, /online-priority:server-assisted-auto-pass/);
+  assert.doesNotMatch(runtime, /shouldAutoPass|passPriority|ASSISTED_PASS_DELAY_MS|POLL_MS/);
 });

@@ -7,7 +7,7 @@ import { canActivateCard, hasActivatableEffect } from "./card-activation.mjs";
 import { compileCard } from "./rules-engine/compiler.mjs";
 import { hasIntrinsicKeyword, intrinsicKeywordNames } from "./card-keywords.mjs";
 import { canExecuteCard, executeCommand } from "./rules-engine/engine.mjs";
-import { legalPriorityResponses, shouldAutoPass } from "./rules-engine/priority.mjs";
+import { legalPriorityResponses } from "./rules-engine/priority.mjs";
 import { orderAIAttackers } from "./rules-engine/ai.mjs";
 import { chooseAdvancedAIAction, chooseAdvancedAIDecision, chooseAdvancedAIBlock, chooseAdvancedAIResponse, planAdvancedAIAttacks, resetAdvancedAI } from "./rules-engine/ai-system/runtime";
 import { hasSubtype } from "./rules-engine/subtypes.mjs";
@@ -324,6 +324,7 @@ const [settings,setSettings]=useState<MatchSettings>({startingLife:30,responseSe
 const [clockNow,setClockNow]=useState(()=>Date.now());
 const timeoutSentRef=useRef("");
 const pollRef = useRef<number|undefined>(undefined);
+const pollGenerationRef = useRef(0);
 const roomRevisionRef=useRef(-1);
 const syncQueueRef=useRef<Promise<void>>(Promise.resolve());
 const currentGameRef=useRef<Game|null>(null);
@@ -362,8 +363,9 @@ const mirrorOnlineGame=(source:Game):Game=>{
  return mirrored;
 };
 const fromCanonicalGame=(source:Game)=>isHost?structuredClone(source):mirrorOnlineGame(source);
+const announceOnlineSnapshot=(sessionId:string,hostRole:boolean,snapshot:any)=>window.dispatchEvent(new CustomEvent("hemsfell:online-room-snapshot",{detail:{session:{id:sessionId,isHost:hostRole},room:snapshot}}));
 
-const stopPolling = ()=>{if(pollRef.current){window.clearInterval(pollRef.current);pollRef.current=undefined}};
+const stopPolling = ()=>{pollGenerationRef.current++;if(pollRef.current){window.clearTimeout(pollRef.current);pollRef.current=undefined}};
 
 /** Create a room with a compact, readable request boundary. */
 const createRoom = async () => {
@@ -411,7 +413,7 @@ const selectHeroInRoom = async (heroId:string)=>{
     }catch(e){const message=e instanceof Error?e.message:"Não foi possível confirmar o deck.";console.error("Could not confirm multiplayer deck",e);setRoomError(message);}
 };
 
-const applyRoomSnapshot=(data:any)=>{setRoomInfo(data);roomRevisionRef.current=data.revision??roomRevisionRef.current;if(data.game){const next=fromCanonicalGame(data.game);currentGameRef.current=next;setGame(next);setResponseWindow(next.pendingResponse??null);setScreen("game")}};
+const applyRoomSnapshot=(data:any)=>{setRoomInfo(data);if(roomId)announceOnlineSnapshot(roomId,isHost,data);roomRevisionRef.current=data.revision??roomRevisionRef.current;if(data.game){const next=fromCanonicalGame(data.game);currentGameRef.current=next;setGame(next);setResponseWindow(next.pendingResponse??null);setScreen("game")}};
 const roomAction=(action:string,extra:Record<string,unknown>={})=>{
  if(!roomId||!roomToken)return Promise.resolve(null);
  const execute=async(staleRetries=0):Promise<any>=>{
@@ -431,11 +433,11 @@ const chooseStarter=(startSelf:boolean)=>roomAction("choose_start",{startSelf});
 const confirmMulligan=async(keep:boolean)=>{if(mulliganPendingRef.current)return;mulliganPendingRef.current=true;try{await roomAction("mulligan",{keep})}finally{mulliganPendingRef.current=false}};
 
 const pollRoom = (id:string,token:string,hostRole:boolean)=>{
-    if(pollRef.current) window.clearInterval(pollRef.current);
-    const fn = async ()=>{ try{ const res = await fetch(`/api/rooms/${id}?token=${encodeURIComponent(token)}`); if(!res.ok) return; const r = await res.json(); const incomingRevision=Number(r.revision??-1);if(incomingRevision<=roomRevisionRef.current)return; setRoomInfo(r);setSettings(r.settings??settings); if((r.status==='mulligan'||r.status==='started')&&r.game&&r.revision>roomRevisionRef.current){
+    stopPolling();const generation=++pollGenerationRef.current;
+    const fn = async ()=>{ try{ const res = await fetch(`/api/rooms/${id}`,{cache:"no-store",headers:{authorization:`Bearer ${token}`}}); if(!res.ok) return; const r = await res.json();announceOnlineSnapshot(id,hostRole,r);setRoomError(current=>current==="Reconectando à sala…"?"":current);const incomingRevision=Number(r.revision??-1);if(incomingRevision<=roomRevisionRef.current)return; setRoomInfo(r);setSettings(r.settings??settings); if((r.status==='mulligan'||r.status==='started')&&r.game&&r.revision>roomRevisionRef.current){
             const oriented=hostRole?structuredClone(r.game):mirrorOnlineGame(r.game),previous=currentGameRef.current;roomRevisionRef.current=r.revision;currentGameRef.current=oriented;setResponseWindow(oriented.pendingResponse??null);if(previous&&oriented.events>previous.events){const newest=oriented.log?.[0]?.text||"Ação adversária concluída",shown=cards.find(card=>newest.includes(card.name));if(shown)showFx(shown.type==="Criatura"?"summon":shown.type==="Feitiço"?"spell":"ability","AÇÃO ONLINE",shown.name,shown)}setScreen('game');setGame(oriented); }
-    }catch(e){setRoomError("Reconectando à sala…")} };
-    fn(); pollRef.current = window.setInterval(fn,300);
+    }catch(e){setRoomError("Reconectando à sala…")}finally{if(generation===pollGenerationRef.current)pollRef.current=window.setTimeout(fn,600)} };
+    void fn();
 };
 
 useEffect(()=>{

@@ -10,6 +10,11 @@ export const revalidate = 0;
 const noStore = { headers: { "Cache-Control": "no-store, max-age=0" } };
 const VALID_DECK_IDS = new Set(["gimble", "goblin", "uruk", "tifon", "saymon", "tessalia", "quarion", "rasmus", "ngoro", "zayan", "natureza"]);
 const isStaleWrite = (error: unknown) => error instanceof Error && error.message === "stale room revision";
+const authenticatedReadToken = (req: NextRequest) => {
+  const authorization = req.headers.get("authorization") || "";
+  const bearer = authorization.match(/^Bearer\s+([^\s]+)$/i)?.[1];
+  return bearer || new URL(req.url).searchParams.get("token");
+};
 
 /** A polling GET and a command POST may notice the same expired deadline at the
  * same time. Only one CAS write should win; the loser reloads the winner rather
@@ -67,7 +72,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   let room = await readRoom(id);
   if (!room) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
   room = await persistDueTimeout(room, id);
-  const token = new URL(req.url).searchParams.get("token");
+  const token = authenticatedReadToken(req);
   let role = roleFor(room, token);
   if (role) {
     room = await resumeParticipant(room, id, role);

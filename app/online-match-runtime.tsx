@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { orientOnlineGameForRole } from "./online-state-orientation.mjs";
-import { shouldAutoPass } from "./rules-engine/priority.mjs";
 
-type Session = { id: string; token: string; isHost: boolean };
-type ResponseControl = "assisted" | "full-control";
+type Session = { id: string; isHost: boolean };
 type PriorityView = {
   model?: string;
   mode?: string;
@@ -55,13 +53,7 @@ type RoomSnapshot = {
   game?: OnlineGame | null;
 };
 
-const SESSION_PREFIX = "hemsfell-room-";
-/* Priority is a short-lived interaction. Poll it faster than ordinary lobby
-   discovery so Assisted mode feels like a continuous turn instead of a modal
-   round-trip. The server remains authoritative for every pass. */
-const POLL_MS = 320;
-const DISCOVERY_MS = 3_500;
-const ASSISTED_PASS_DELAY_MS = 45;
+const ONLINE_ROOM_SNAPSHOT_EVENT = "hemsfell:online-room-snapshot";
 const WINDOW_NAMES: Record<string, string> = {
   "maintenance-triggers": "Manutenção",
   "main-action-response": "Ação da Principal",
@@ -87,62 +79,6 @@ const INTERACTION_NAMES: Record<string, string> = {
   reposition: "Reposicionamento obrigatório",
   resolving: "Resolvendo",
 };
-
-function onlineRuntimeIsRelevant() {
-  const preferred = new URLSearchParams(window.location.search).get("room");
-  if (preferred) return true;
-  return !!document.querySelector(".match-clock");
-}
-
-function readResponseControl(): ResponseControl {
-  const toggle = document.querySelector<HTMLElement>(".screen-game .priority-control-toggle");
-  return /full\s*control/i.test(toggle?.textContent || "") ? "full-control" : "assisted";
-}
-
-function readSessions(): Session[] {
-  const result: Session[] = [];
-  if (!onlineRuntimeIsRelevant()) return result;
-  const preferred = new URLSearchParams(window.location.search).get("room");
-  const keys: string[] = [];
-  if (preferred) keys.push(`${SESSION_PREFIX}${preferred}`);
-  if (!preferred) {
-    for (let index = 0; index < localStorage.length; index += 1) {
-      const key = localStorage.key(index);
-      if (key?.startsWith(SESSION_PREFIX) && !keys.includes(key)) keys.push(key);
-    }
-  }
-  for (const key of keys) {
-    try {
-      const stored = JSON.parse(localStorage.getItem(key) || "null") as { token?: unknown; isHost?: unknown } | null;
-      if (!stored || typeof stored.token !== "string" || !stored.token) continue;
-      result.push({ id: key.slice(SESSION_PREFIX.length), token: stored.token, isHost: stored.isHost === true });
-    } catch { /* Ignore obsolete local sessions. */ }
-  }
-  return result;
-}
-
-async function fetchRoom(session: Session): Promise<RoomSnapshot | null> {
-  const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}?token=${encodeURIComponent(session.token)}`, { cache: "no-store" });
-  if (response.status === 404) {
-    localStorage.removeItem(`${SESSION_PREFIX}${session.id}`);
-    return null;
-  }
-  if (!response.ok) return null;
-  const room = await response.json() as RoomSnapshot;
-  return room.game ? room : null;
-}
-
-async function discoverSession(): Promise<{ session: Session; room: RoomSnapshot } | null> {
-  if (!onlineRuntimeIsRelevant()) return null;
-  const preferred = new URLSearchParams(window.location.search).get("room");
-  const sessions = readSessions();
-  if (!sessions.length) return null;
-  const candidates = await Promise.all(sessions.map(async (session) => ({ session, room: await fetchRoom(session) })));
-  const statusRank: Record<string, number> = { started: 3, mulligan: 2, finished: 1 };
-  return candidates
-    .filter((entry): entry is { session: Session; room: RoomSnapshot } => !!entry.room && ["mulligan", "started", "finished"].includes(entry.room.status))
-    .sort((a, b) => Number(b.session.id === preferred) - Number(a.session.id === preferred) || (statusRank[b.room.status] || 0) - (statusRank[a.room.status] || 0) || Number(b.room.createdAt || 0) - Number(a.room.createdAt || 0) || Number(b.room.revision || 0) - Number(a.room.revision || 0))[0] || null;
-}
 
 function combatStatus(game: OnlineGame) {
   const combat = game.combatAction;
@@ -176,134 +112,24 @@ export default function OnlineMatchRuntime() {
   const [session, setSession] = useState<Session | null>(null);
   const [room, setRoom] = useState<RoomSnapshot | null>(null);
   const [game, setGame] = useState<OnlineGame | null>(null);
-  const [responseControl, setResponseControl] = useState<ResponseControl>("assisted");
-  const roomRef = useRef<RoomSnapshot | null>(null);
-  const sessionRef = useRef<Session | null>(null);
-  const assistedPassKeyRef = useRef("");
-  const assistedPassInFlightRef = useRef(false);
+  const commandTypesKey = (game?.priority?.commandTypes || []).join(",");
 
-  const applySnapshot = (currentSession: Session, snapshot: RoomSnapshot) => {
-    sessionRef.current = currentSession;
-    roomRef.current = snapshot;
-    setRoom(snapshot);
-    setGame(snapshot.game ? orientOnlineGameForRole(snapshot.game, currentSession.isHost ? "host" : "guest") as OnlineGame : null);
-  };
-
-  /* `priorityControl` lives in the main match screen. Observe its rendered
-     toggle so this independent authoritative runtime honors Full Control too. */
+  /* The match screen owns the only HTTP poll. The HUD consumes those canonical
+     snapshots through a same-document event so it cannot double the request
+     rate, race the board snapshot, or send a second Assisted auto-pass. */
   useEffect(() => {
-    let frame = 0;
-    const sync = () => {
-      cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => setResponseControl(readResponseControl()));
+    const consume = (event: Event) => {
+      const detail = (event as CustomEvent<{ session?: Session; room?: RoomSnapshot }>).detail;
+      const nextSession = detail?.session;
+      const snapshot = detail?.room;
+      if (!nextSession || typeof nextSession.id !== "string" || !snapshot || snapshot.id !== nextSession.id || !Number.isFinite(Number(snapshot.revision))) return;
+      setSession(nextSession);
+      setRoom(snapshot);
+      setGame(snapshot.game ? orientOnlineGameForRole(snapshot.game, nextSession.isHost ? "host" : "guest") as OnlineGame : null);
     };
-    sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    return () => { cancelAnimationFrame(frame); observer.disconnect(); };
+    window.addEventListener(ONLINE_ROOM_SNAPSHOT_EVENT, consume);
+    return () => window.removeEventListener(ONLINE_ROOM_SNAPSHOT_EVENT, consume);
   }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    let timer = 0;
-    const reconcile = async () => {
-      if (!onlineRuntimeIsRelevant()) {
-        if (sessionRef.current) {
-          sessionRef.current = null;
-          roomRef.current = null;
-          setSession(null);
-          setRoom(null);
-          setGame(null);
-        }
-        timer = window.setTimeout(reconcile, DISCOVERY_MS);
-        return;
-      }
-      const found = await discoverSession().catch(() => null);
-      if (cancelled) return;
-      if (found) {
-        const currentSession = sessionRef.current;
-        const currentRoom = roomRef.current;
-        const preferred = new URLSearchParams(window.location.search).get("room");
-        const shouldSwitch = !currentSession || currentSession.id !== found.session.id && (found.session.id === preferred || currentRoom?.status === "finished" || Number(found.room.createdAt || 0) > Number(currentRoom?.createdAt || 0));
-        if (shouldSwitch || currentSession?.id === found.session.id) {
-          if (shouldSwitch) setSession(found.session);
-          applySnapshot(found.session, found.room);
-        }
-      }
-      timer = window.setTimeout(reconcile, DISCOVERY_MS);
-    };
-    void reconcile();
-    return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
-  }, []);
-
-  useEffect(() => {
-    if (!session) return;
-    sessionRef.current = session;
-    let cancelled = false;
-    let timer = 0;
-    const poll = async () => {
-      if (!onlineRuntimeIsRelevant()) {
-        sessionRef.current = null;
-        roomRef.current = null;
-        setSession(null);
-        setRoom(null);
-        setGame(null);
-        return;
-      }
-      const snapshot = await fetchRoom(session).catch(() => null);
-      if (cancelled) return;
-      if (snapshot) applySnapshot(session, snapshot);
-      timer = window.setTimeout(poll, POLL_MS);
-    };
-    void poll();
-    return () => { cancelled = true; if (timer) window.clearTimeout(timer); };
-  }, [session?.id, session?.token, session?.isHost]);
-
-  /* Assisted mode acts on the authoritative pendingResponse immediately. It
-     must not wait for the presentation layer's delayed response modal: when the
-     responder has no legal/payable action, the server receives Pass Priority
-     almost immediately and both clients advance to the same next snapshot. */
-  useEffect(() => {
-    if (!session || !room || !game || room.status !== "started" || game.winner != null || responseControl !== "assisted") {
-      assistedPassKeyRef.current = "";
-      return;
-    }
-    const pending = game.pendingResponse;
-    if (!pending || pending.responder !== 0 || !shouldAutoPass(game as any, 0, "assisted")) {
-      if (!pending || pending.responder !== 0) assistedPassKeyRef.current = "";
-      return;
-    }
-    const key = `${room.id}:${room.revision}:${pending.actor}:${pending.responder}:${pending.passes ?? 0}:${pending.action || ""}`;
-    if (assistedPassKeyRef.current === key || assistedPassInFlightRef.current) return;
-    assistedPassKeyRef.current = key;
-    let cancelled = false;
-    const timer = window.setTimeout(async () => {
-      if (assistedPassInFlightRef.current) return;
-      assistedPassInFlightRef.current = true;
-      try {
-        const response = await fetch(`/api/rooms/${encodeURIComponent(session.id)}`, {
-          method: "POST",
-          cache: "no-store",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            action: "command",
-            token: session.token,
-            baseRevision: room.revision,
-            commandId: `assisted-pass:${crypto.randomUUID()}`,
-            command: { type: "passPriority", auto: true },
-          }),
-        });
-        const snapshot = await response.json().catch(() => null) as RoomSnapshot | null;
-        if (!cancelled && snapshot?.game && Number.isFinite(Number(snapshot.revision))) applySnapshot(session, snapshot);
-      } catch {
-        /* Polling reconciles transient network failures; never manufacture a
-           local pass or mutate the authoritative snapshot optimistically. */
-      } finally {
-        assistedPassInFlightRef.current = false;
-      }
-    }, ASSISTED_PASS_DELAY_MS);
-    return () => { cancelled = true; window.clearTimeout(timer); };
-  }, [session?.id, session?.token, room?.id, room?.revision, room?.status, game, responseControl]);
 
   /* Local player is always oriented as owner 0.  The canonical input owner
      therefore gates the entire normal action surface during opponent priority,
@@ -326,7 +152,7 @@ export default function OnlineMatchRuntime() {
       if (board) {
         board.dataset.onlineActionBlocked = blocked ? "true" : "false";
         board.dataset.onlineInteractionState = game?.priority?.interactionState || "unknown";
-        board.dataset.onlineCommandTypes = (game?.priority?.commandTypes || []).join(",");
+        board.dataset.onlineCommandTypes = commandTypesKey;
       }
       for (const selector of selectors) {
         document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
@@ -346,7 +172,7 @@ export default function OnlineMatchRuntime() {
       board?.removeAttribute("data-online-interaction-state");
       board?.removeAttribute("data-online-command-types");
     };
-  }, [room?.status, room?.revision, game?.winner, game?.priority?.owner, game?.priority?.interactionState, game?.priority?.commandTypes?.join(",")]);
+  }, [room?.status, room?.revision, game?.winner, game?.priority?.owner, game?.priority?.interactionState, commandTypesKey]);
 
   if (!session || !room || !game || room.status !== "started" || game.winner != null) return null;
   return <OnlinePriorityHud game={game} />;
