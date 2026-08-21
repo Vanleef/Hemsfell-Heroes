@@ -47,7 +47,33 @@ jobs:
           if start < 0 or end >= len(lines):
               raise SystemExit("could not normalize runner")
           del lines[start:end + 1]
-          open(path, "w", encoding="utf-8").writelines(lines)
+          source = "".join(lines)
+          old = 'import { readRoom, roleFor, roomView, writeRoom, type Room } from "../store";'
+          new = 'import { readRoom, roleFor, roomView, writeRoom, type Room } from "../store-runtime";'
+          old_hardened = 'import { hasTransactionalRoomStore, readRoom, roleFor, roomView, writeRoom, type Room } from "../store";'
+          new_hardened = 'import { hasTransactionalRoomStore, readRoom, roleFor, roomView, writeRoom, type Room } from "../store-runtime";'
+          if old in source:
+              source = source.replace(old, new, 1)
+          if old_hardened in source:
+              source = source.replace(old_hardened, new_hardened, 1)
+          source = source.replace('await patchClock();', '// online-clock.mjs is patched against its current implementation by the workflow')
+          open(path, "w", encoding="utf-8").write(source)
+          PY
+      - name: Expose transactional authority through runtime store
+        run: |
+          python - <<'PY'
+          path = "app/api/rooms/store-runtime.ts"
+          source = open(path, encoding="utf-8").read()
+          import_line = 'import { hasTransactionalRoomStore as hasPersistentTransactionalRoomStore } from "./store";\n'
+          export_line = 'export const hasTransactionalRoomStore = () => useDevelopmentStore() || hasPersistentTransactionalRoomStore();\n'
+          if import_line not in source:
+              source = import_line + source
+          marker = 'const useDevelopmentStore = () => process.env.NODE_ENV === "development";\n'
+          if export_line not in source:
+              if marker not in source:
+                  raise SystemExit("runtime store marker not found")
+              source = source.replace(marker, marker + export_line, 1)
+          open(path, "w", encoding="utf-8").write(source)
           PY
       - name: Normalize legacy hidden-zone regression
         run: |
@@ -56,12 +82,39 @@ jobs:
           source = open(path, encoding="utf-8").read()
           old = ''' assert.match(roomStore,/card\\?\\.revealed === true \\? card : hiddenCard/);\n assert.match(roomStore,/game\\.pendingDecision\\?\\.kind === "investigate-selection"/);'''
           new = ''' assert.match(roomStore,/visibleTo\\(card, viewer\\) \\? card : hiddenCard/);\n assert.match(roomStore,/revealedTo\\.includes\\(viewer\\)/);\n assert.match(roomStore,/kind: "opponent-choice"/);\n assert.match(roomStore,/effect: \\{\\}/);\n assert.match(roomStore,/context: \\{\\}/);\n assert.match(roomStore,/targetSteps: \\[\\]/);'''
+          if new in source:
+              raise SystemExit(0)
           if old not in source:
-              raise SystemExit("stale hidden-zone assertions not found")
+              raise SystemExit("hidden-zone assertions are in an unexpected state")
           open(path, "w", encoding="utf-8").write(source.replace(old, new, 1))
           PY
       - name: Apply online hardening patches
         run: node scripts/online-risk-hardening.mjs
+      - name: Patch decision deadlines against current online clock
+        run: |
+          python - <<'PY'
+          path = "app/api/rooms/online-clock.mjs"
+          source = open(path, encoding="utf-8").read()
+          helper = '''const interactionKey = (game) => game?.pendingDecision\n  ? `decision:${game.pendingDecision.owner ?? game.pendingDecision.context?.decisionOwner ?? "?"}:${game.pendingDecision.kind ?? "?"}:${game.pendingDecision.context?.sourceId ?? game.pendingDecision.sourceName ?? ""}`\n  : game?.pendingReposition\n    ? `reposition:${game.pendingReposition.activeOwner ?? "?"}:${game.pendingReposition.sourceId ?? ""}`\n    : "";\nconst ensureInteractionDeadline = (before, after, settings, now) => {\n  const target = after?.pendingDecision || after?.pendingReposition;\n  if (!target) return;\n  const previous = before?.pendingDecision || before?.pendingReposition;\n  const sameInteraction = interactionKey(before) && interactionKey(before) === interactionKey(after);\n  if (sameInteraction && Number.isFinite(Number(previous?.deadline)) && Number(previous.deadline) > 0) target.deadline = Number(previous.deadline);\n  else if (!Number.isFinite(Number(target.deadline)) || Number(target.deadline) <= 0) target.deadline = now + settings.turnSeconds * 1000;\n};\n'''
+          marker = 'const choosingDecision = (game) => !!game?.pendingDecision || !!game?.pendingReposition;\n'
+          if 'const interactionKey = (game) =>' not in source:
+              if marker not in source:
+                  raise SystemExit("online clock decision marker not found")
+              source = source.replace(marker, marker + helper, 1)
+          winner_marker = '    if (after.combatAction) delete after.combatAction.deadline;\n    clearPriorityClock(after);'
+          winner_new = '    if (after.combatAction) delete after.combatAction.deadline;\n    if (after.pendingDecision) delete after.pendingDecision.deadline;\n    if (after.pendingReposition) delete after.pendingReposition.deadline;\n    clearPriorityClock(after);'
+          if winner_new not in source:
+              if winner_marker not in source:
+                  raise SystemExit("online clock winner cleanup marker not found")
+              source = source.replace(winner_marker, winner_new, 1)
+          decision_marker = '  const blockerChoice = choosingBlocker(after);\n  const decisionChoice = choosingDecision(after);\n'
+          decision_new = decision_marker + '  if (decisionChoice) ensureInteractionDeadline(before, after, settings, now);\n'
+          if decision_new not in source:
+              if decision_marker not in source:
+                  raise SystemExit("online clock decision reconciliation marker not found")
+              source = source.replace(decision_marker, decision_new, 1)
+          open(path, "w", encoding="utf-8").write(source)
+          PY
       - name: Validate hardening and capture failures
         run: |
           set +e
@@ -102,4 +155,4 @@ jobs:
           git commit -m "fix: close remaining online authority risks"
           git push origin HEAD:fix/cards_mechanics
 
-# manual retrigger 2026-08-19T22:20-03:00
+# manual retrigger after current clock compatibility

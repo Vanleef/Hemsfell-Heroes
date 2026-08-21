@@ -7,12 +7,24 @@ import { defaultEffectHandlers } from "../app/rules-engine/effects.mjs";
 import { hasSubtype, subtypesFor } from "../app/rules-engine/subtypes.mjs";
 import { cardPlayTargetPolicy, isValidTarget, targetPolicy, TargetScope } from "../app/rules-engine/targeting.mjs";
 import { canExecuteCard, executeCommand, RulesLoopError } from "../app/rules-engine/engine.mjs";
+import { executeOnlineCommand } from "../app/rules-engine/online-priority-engine.mjs";
 import { runHeadlessGames } from "../app/rules-engine/simulator.mjs";
 import { PriorityState, chooseAIResponse, isAccelerated, legalPriorityResponses, priorityView, shouldAutoPass } from "../app/rules-engine/priority.mjs";
 import { aiDifficultyProfile, canAIPlayLifeCost, legalAIAttackers, orderAIAttackers, preferredAISlot } from "../app/rules-engine/ai.mjs";
 import { canActivateCard } from "../app/card-activation.mjs";
 
 const state = () => ({ active: 0, phase: "principal", round: 1, players: [0, 1].map(() => ({ life: 30, maxLife: 30, energy: 5, maxEnergy: 5, reserve: 0, deck: [], hand: [], board: [], support: [], terrain: null, grave: [], obscuro: [] })) });
+
+test("Online surrender is authoritative even during another interaction", () => {
+  const game = state();
+  game.pendingResponse = { responder: 1, actor: 0, action: "teste", passes: 0 };
+  game.pendingDecision = { kind: "targets", owner: 0, effect: {}, context: {} };
+  const result = executeOnlineCommand(game, { type: "surrender", owner: 0 }, { priority: true }).state;
+  assert.equal(result.winner, 1);
+  assert.equal(result.pendingResponse, null);
+  assert.equal(result.pendingDecision, null);
+  assert.equal(result.turnDeadline, null);
+});
 
 test("ending a turn banks at most three energy and clears main energy", () => {
   const game = state(); game.phase = "fim"; game.players[0].energy = 5; game.players[0].reserve = 1;
@@ -1115,11 +1127,15 @@ test("production rooms use durable storage and never masquerade as process-local
 test("online priority passes update the local response window from the authoritative room state", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /setResponseWindow\(next\.pendingResponse\?\?null\)/);
-  assert.match(page, /const result=await roomAction\("command"/);
-  assert.match(page, /return !!result/);
+  assert.match(page, /const task=roomAction\("command"/);
+  assert.match(page, /then\(result=>\{[\s\S]*?return!!result\}\)/);
   assert.match(page, /currentGameRef\.current=oriented;setResponseWindow\(oriented\.pendingResponse\?\?null\)/);
   assert.match(page, /game\?\.pendingResponse\?\.responder/);
   assert.match(page, /game\?\.pendingResponse\?\.passes/);
+  assert.doesNotMatch(page, /syncOnlineGame/);
+  assert.doesNotMatch(page, /action:\"sync\"/);
+  assert.doesNotMatch(page, /RESPONSE_REVEAL_DELAY_MS/);
+  assert.match(page, /setCombatAction\(game\.combatAction\?\?null\);setResponseWindow\(game\.pendingResponse\?\?null\)/);
 });
 
 test("game client routes migrated cards through the command engine", async () => {
@@ -1140,7 +1156,7 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(page, /chooseAIResponse/);
   assert.match(page, /legalPriorityResponses/);
   assert.match(page, /shouldAutoPass/);
-  assert.match(page, /Resposta: Full Control/);
+  assert.match(page, /Modo: Manual/);
   assert.match(page, /priority-stack-indicator/);
   assert.match(page, /cardPlayTargetPolicy/);
   assert.match(page, /canChooseAllTargets/);
@@ -1487,8 +1503,9 @@ test("UI animation is presentation-only and cannot hide an unresolved ability re
 test("online actions share one serialized request queue and reconcile stale revisions", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /syncQueueRef\.current\.then\(\(\)=>execute\(\)\)/);
-  assert.match(page, /res\.status===409&&data\?\.game/);
-  assert.match(page, /if\(retry&&action==="command"\)return execute\(false\)/);
+  assert.match(page, /const retryableStale=staleRevision&&\(action==="command"\|\|action==="choose_start"\)/);
+  assert.match(page, /if\(staleRetries<3\)[\s\S]*?execute\(staleRetries\+1\)/);
+  assert.match(page, /if\(lobbyActionPending\)return/);
   assert.match(page, /incomingRevision<=roomRevisionRef\.current/);
 });
 

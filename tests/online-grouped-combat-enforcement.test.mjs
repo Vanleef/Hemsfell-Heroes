@@ -56,9 +56,10 @@ const combatState = () => {
   return { active: 0, phase: "combate", round: 3, events: 0, winner: null, players };
 };
 
-const passAttackPriority = (game) => {
-  game = executeOnlineCommand(game, { type: "passPriority", owner: 1 }).state;
-  return executeOnlineCommand(game, { type: "passPriority", owner: 0 }).state;
+const passPostBlockPriority = (game) => {
+  game = executeOnlineCommand(game, { type: "passPriority", owner: 0 }).state;
+  if (!game.pendingResponse) return game;
+  return executeOnlineCommand(game, { type: "passPriority", owner: 1 }).state;
 };
 
 test("Online rejects the retired grouped combat commands", () => {
@@ -67,53 +68,57 @@ test("Online rejects the retired grouped combat commands", () => {
   assert.throws(() => executeOnlineCommand(game, { type: "declareBlockers", owner: 1, assignments: [] }), /grouped-combat-removed/);
 });
 
-test("one attacker opens one defender decision and blocks further attacker actions", () => {
-  let game = executeOnlineCommand(combatState(), { type: "declareAttack", owner: 0, attackerId: "attacker" }).state;
+test("one attacker immediately gives exactly one blocker decision to the defender", () => {
+  const game = executeOnlineCommand(combatState(), { type: "declareAttack", owner: 0, attackerId: "attacker" }).state;
   assert.equal(game.combatAction.attackerUid, "attacker");
-  assert.equal(game.combatAction.stage, "priority");
-  assert.equal(game.pendingResponse.responder, 1);
-
-  game = passAttackPriority(game);
   assert.equal(game.combatAction.stage, "choosing");
   assert.equal(game.pendingResponse, null);
+  assert.equal(game.priority.interactionState, "awaiting-blocker");
+  assert.equal(game.priority.owner, 1);
   assert.throws(() => executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "next-attacker" }), /combat-action-pending/);
   assert.throws(() => executeOnlineCommand(game, { type: "selectDefender", owner: 0, attackerId: "attacker", targetHero: true }), /defender-choice-unavailable/);
   assert.throws(() => executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "next-attacker", targetHero: true }), /combat-state-mismatch/);
 });
 
-test("blocker selection is unitary and the selected attack resolves through the shared engine", () => {
+test("blocker selection is unitary and resolves after the post-block response checkpoint", () => {
   let game = executeOnlineCommand(combatState(), { type: "declareAttack", owner: 0, attackerId: "attacker" }).state;
-  game = passAttackPriority(game);
   assert.deepEqual(listLegalBlockers(game, 1, "attacker").map((card) => card.uid), ["blocker"]);
 
   game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "attacker", defenderId: "blocker", targetHero: false }).state;
-  assert.equal(game.combatAction.stage, "charging");
+  assert.equal(game.combatAction.stage, "priority");
   assert.equal(game.combatAction.defenderUid, "blocker");
+  assert.equal(game.pendingResponse.responder, 0);
+  assert.equal(game.priority.window, "after-blockers");
 
-  game = executeOnlineCommand(game, { type: "attack", owner: 0, attackerId: "attacker", defenderId: "blocker", skipPriority: true }).state;
+  game = passPostBlockPriority(game);
   assert.equal(game.combatAction, null);
   assert.equal(game.players[0].board.find((card) => card.uid === "attacker").attacksThisTurn, 1);
   assert.equal(game.players[1].board.find((card) => card.uid === "blocker").damage, 2);
   assert.deepEqual(listAttackCapableCreatures(game, 0).map((card) => card.uid), ["next-attacker"]);
 });
 
-test("illegal blocker is rejected before combat enters charging", () => {
+test("attack with no legal blocker skips the empty blocker decision", () => {
   let game = combatState();
   game.players[0].board = [unit("flying-attacker", 0, ["Voar"])];
   game.players[1].board = [unit("ground-blocker", 0)];
   game = executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "flying-attacker" }).state;
-  game = passAttackPriority(game);
   assert.deepEqual(listLegalBlockers(game, 1, "flying-attacker"), []);
-  assert.throws(() => executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "flying-attacker", defenderId: "ground-blocker", targetHero: false }), /invalid-defender/);
-  assert.equal(game.combatAction.stage, "choosing");
+  assert.equal(game.combatAction.stage, "priority");
+  assert.equal(game.combatAction.targetHero, true);
+  assert.equal(game.pendingResponse.responder, 0);
+  assert.equal(game.priority.window, "after-blockers");
+  game = passPostBlockPriority(game);
+  assert.equal(game.players[1].life, 28);
+  assert.equal(game.combatAction, null);
 });
 
-test("no block sends only that attack to the defending hero", () => {
+test("no block sends only that attack to the defending hero after both response passes", () => {
   let game = executeOnlineCommand(combatState(), { type: "declareAttack", owner: 0, attackerId: "attacker" }).state;
-  game = passAttackPriority(game);
   game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "attacker", targetHero: true }).state;
   assert.equal(game.combatAction.targetHero, true);
-  game = executeOnlineCommand(game, { type: "attack", owner: 0, attackerId: "attacker", skipPriority: true }).state;
+  assert.equal(game.combatAction.stage, "priority");
+  assert.equal(game.pendingResponse.responder, 0);
+  game = passPostBlockPriority(game);
   assert.equal(game.players[1].life, 28);
   assert.equal(game.combatAction, null);
 });
@@ -131,8 +136,7 @@ test("Indomável keeps endCombat illegal until its legal attack is spent", () =>
   assert.throws(() => executeOnlineCommand(game, { type: "advancePhase", owner: 0 }), /indomitable-must-attack/);
 
   game = executeOnlineCommand(game, { type: "declareAttack", owner: 0, attackerId: "must-attack" }).state;
-  game = passAttackPriority(game);
   game = executeOnlineCommand(game, { type: "selectDefender", owner: 1, attackerId: "must-attack", targetHero: true }).state;
-  game = executeOnlineCommand(game, { type: "attack", owner: 0, attackerId: "must-attack", skipPriority: true }).state;
+  game = passPostBlockPriority(game);
   assert.equal(canEndCombat(game, 0), true);
 });

@@ -135,7 +135,7 @@ test("game client routes rules and bot decisions through authoritative advanced 
   assert.match(page, /planAdvancedAIAttacks/);
   assert.match(page, /resetAdvancedAI\(1\)/);
   assert.match(page, /legalPriorityResponses/);
-  assert.match(page, /shouldAutoPass/);
+  assert.match(page, /hasUsablePriorityResponse/);
   assert.doesNotMatch(page, /\bbuildAIActionCandidates\b/);
   assert.doesNotMatch(page, /\bchooseAIHeroAbility\b/);
   assert.doesNotMatch(page, /\bchooseAIDecision\b/);

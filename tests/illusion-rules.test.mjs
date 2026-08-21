@@ -113,3 +113,59 @@ test("Draconic Illusions are spells and never remain as permanents", async () =>
   assert.equal(result.players[0].grave.some((card) => Number(card.page) === 12), true, "Ilusão Dracônica Menor must go to grave after resolving");
   assert.equal(result.players[0].board.some((card) => card.name === "Dragão Filhote"), true, "created Dragon Image remains on field");
 });
+
+const resolveOnlinePriority = (state, owner = 0) => {
+  let next = executeCommand(state, { type: "passPriority", owner: owner === 0 ? 1 : 0 }, { priority: true }).state;
+  next = executeCommand(next, { type: "passPriority", owner }, { priority: true }).state;
+  return next;
+};
+
+test("all Draconic Illusions spend their exact reserved energy and never change maximum energy Online", () => {
+  const cases = [
+    { page: 12, name: "Ilusão Dracônica Menor", cost: 2, imagePage: 23, imageName: "Dragão Filhote" },
+    { page: 13, name: "Ilusão Dracônica", cost: 4, imagePage: 24, imageName: "Dragão Jovem" },
+    { page: 14, name: "Ilusão Dracônica Maior", cost: 6, imagePage: 25, imageName: "Dragão Ancião" },
+  ];
+  for (const entry of cases) {
+    const game = baseState();
+    game.players[0].energy = 10;
+    game.players[0].maxEnergy = 10;
+    game.players[0].hand.push(spell(entry.page, entry.name, entry.cost));
+    game.players[0].extraDeck.push(extra(entry.imagePage, entry.imageName));
+    const declared = executeCommand(game, { type: "playCard", owner: 0, cardId: `p${entry.page}` }, { priority: true }).state;
+    assert.equal(declared.players[0].energy, 10 - entry.cost, `p${entry.page} reserves its printed cost`);
+    const resolved = resolveOnlinePriority(declared);
+    assert.equal(resolved.players[0].energy, 10 - entry.cost, `p${entry.page} pays its reserved cost exactly once`);
+    assert.equal(resolved.players[0].maxEnergy, 10, `p${entry.page} does not alter maximum energy`);
+  }
+});
+
+test("Ilusão Dracônica keeps its declared discount if the hatchling leaves during Online priority", () => {
+  const game = baseState();
+  game.players[0].energy = 4;
+  game.players[0].maxEnergy = 4;
+  game.players[0].board.push(image(23, "Dragão Filhote", 3, "hatchling"));
+  game.players[0].hand.push(spell(13, "Ilusão Dracônica", 4));
+  game.players[0].extraDeck.push(extra(24, "Dragão Jovem"));
+  const declared = executeCommand(game, { type: "playCard", owner: 0, cardId: "p13" }, { priority: true }).state;
+  assert.equal(declared.players[0].energy, 2);
+  declared.players[0].board = [];
+  const resolved = resolveOnlinePriority(declared);
+  assert.equal(resolved.players[0].energy, 2, "resolution must not recalculate the card at full cost");
+  assert.equal(resolved.players[0].maxEnergy, 4);
+});
+
+test("reserved cost is generic: hand-size cards are not overcharged after responses change the hand", async () => {
+  const rawCards = (await import("../app/cards.generated.json", { with: { type: "json" } })).default;
+  const accumulator = compileCard(rawCards.find((card) => Number(card.page) === 88));
+  const game = baseState();
+  game.players[0].energy = 8;
+  game.players[0].maxEnergy = 8;
+  game.players[0].hand.push(accumulator, spell(900, "Carta A", 0), spell(901, "Carta B", 0));
+  const declared = executeCommand(game, { type: "playCard", owner: 0, cardId: accumulator.id, instanceId: "accumulator", slot: 0 }, { priority: true }).state;
+  assert.equal(declared.players[0].energy, 6, "Acumulador reserves two energy for the other two cards in hand");
+  declared.players[0].hand.push(spell(902, "Carta C", 0), spell(903, "Carta D", 0));
+  const resolved = resolveOnlinePriority(declared);
+  assert.equal(resolved.players[0].energy, 6, "the two cards added during priority cannot raise the declared cost");
+  assert.equal(resolved.players[0].maxEnergy, 8);
+});

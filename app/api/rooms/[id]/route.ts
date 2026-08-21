@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readRoom, roleFor, roomView, writeRoom, type Room } from "../store-runtime";
+import { readRoomFast as readRoom, roleFor, roomView, writeRoom, type Room } from "../store-runtime";
 import { applyRulesCommand, applyTimeout, bothDecksLocked, deadline, participant, prepareCoin, sanitizeSettings } from "../machine";
 import { createInitialOnlineGame } from "../initial-game";
 import { shiftOnlineDeadlines } from "../online-clock.mjs";
+import { markStaleParticipants, PRESENCE_STALE_MS } from "../presence.mjs";
 import { isPlainRecord, isRoomId, readSafeJson } from "../validation";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 const noStore = { headers: { "Cache-Control": "no-store, max-age=0" } };
 const VALID_DECK_IDS = new Set(["gimble", "goblin", "uruk", "tifon", "saymon", "tessalia", "quarion", "rasmus", "ngoro", "zayan", "natureza"]);
+const PRESENCE_HEARTBEAT_WRITE_MS = 5_000;
 const isStaleWrite = (error: unknown) => error instanceof Error && error.message === "stale room revision";
+const authenticatedReadToken = (req: NextRequest) => {
+  const authorization = req.headers.get("authorization") || "";
+  const bearer = authorization.match(/^Bearer\s+([^\s]+)$/i)?.[1];
+  return bearer || new URL(req.url).searchParams.get("token");
+};
 
 /** A polling GET and a command POST may notice the same expired deadline at the
  * same time. Only one CAS write should win; the loser reloads the winner rather
@@ -26,13 +33,95 @@ async function persistDueTimeout(room: Room, id: string) {
   }
 }
 
+/** Persist missed heartbeats before evaluating reconnect expiry. Without this
+ * pass, two absent players could return much later and start a fresh grace
+ * period at the time of the first returning GET. */
+async function persistStalePresence(room: Room, id: string) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (!markStaleParticipants(room)) return room;
+    room.revision++;
+    try {
+      await writeRoom(room);
+      return room;
+    } catch (error) {
+      if (!isStaleWrite(error)) throw error;
+      const latest = await readRoom(id);
+      if (!latest) return room;
+      room = latest;
+    }
+  }
+  return room;
+}
+
+/** Treat authenticated polling as a heartbeat. A browser that is back and
+ * successfully polling the room is connected again, so do not leave the other
+ * player trapped behind a stale disconnectedAt flag waiting for an explicit
+ * resume POST that may never fire after a tab/page restore. */
+async function resumeParticipant(room: Room, id: string, role: "host" | "guest", detectStalePeer = false) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const activeParticipant = room[role];
+    if (!activeParticipant) return room;
+
+    const resumedAt = Date.now();
+    const otherRole = role === "host" ? "guest" : "host";
+    const otherParticipant = room[otherRole];
+    let changed = false;
+    if (detectStalePeer && (room.status === "mulligan" || room.status === "started") && otherParticipant && !otherParticipant.disconnectedAt && Number.isFinite(Number(otherParticipant.lastSeenAt)) && resumedAt - Number(otherParticipant.lastSeenAt) >= PRESENCE_STALE_MS) {
+      const peerLastSeenAt = Number(otherParticipant.lastSeenAt);
+      const disconnectedAt = Number.isFinite(peerLastSeenAt) ? peerLastSeenAt : resumedAt;
+      otherParticipant.disconnectedAt = disconnectedAt;
+      room.pauseStartedAt = room.pauseStartedAt == null ? disconnectedAt : Math.min(room.pauseStartedAt, disconnectedAt);
+      changed = true;
+    }
+
+    const awaySince = activeParticipant.disconnectedAt;
+    if (awaySince) {
+      activeParticipant.disconnectedAt = null;
+      changed = true;
+      const otherDisconnected = room[otherRole]?.disconnectedAt;
+      if (!otherDisconnected) {
+        const pauseStartedAt = room.pauseStartedAt ?? awaySince;
+        const pausedFor = Math.max(0, resumedAt - pauseStartedAt);
+        if (room.game && resumedAt < awaySince + 60_000) {
+          shiftOnlineDeadlines(room.game, pausedFor);
+          if (room.status === "mulligan") for (const participant of [room.host, room.guest]) if (participant?.mulliganDeadline) participant.mulliganDeadline += pausedFor;
+        }
+        room.pauseStartedAt = null;
+      }
+    }
+    if (!Number.isFinite(Number(activeParticipant.lastSeenAt)) || resumedAt - Number(activeParticipant.lastSeenAt) >= PRESENCE_HEARTBEAT_WRITE_MS) {
+      activeParticipant.lastSeenAt = resumedAt;
+      changed = true;
+    }
+    if (!changed) return room;
+
+    room.revision++;
+    try {
+      await writeRoom(room);
+      return room;
+    } catch (error) {
+      if (!isStaleWrite(error)) throw error;
+      const latest = await readRoom(id);
+      if (!latest) return room;
+      room = latest;
+    }
+  }
+  return room;
+}
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isRoomId(id)) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
   let room = await readRoom(id);
   if (!room) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
+  room = await persistStalePresence(room, id);
   room = await persistDueTimeout(room, id);
-  const role = roleFor(room, new URL(req.url).searchParams.get("token"));
+  const token = authenticatedReadToken(req);
+  let role = roleFor(room, token);
+  if (role) {
+    room = await resumeParticipant(room, id, role, true);
+    role = roleFor(room, token);
+  }
   return NextResponse.json(roomView(room, !!role, role), noStore);
 }
 
@@ -41,6 +130,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!isRoomId(id)) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
   let room = await readRoom(id);
   if (!room) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
+  room = await persistStalePresence(room, id);
   room = await persistDueTimeout(room, id);
   let requestToken: unknown = null;
   try {
@@ -66,6 +156,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (activeParticipant.disconnectedAt) return NextResponse.json(roomView(room, true, role), noStore);
       const disconnectedAt = Date.now();
       activeParticipant.disconnectedAt = disconnectedAt;
+      activeParticipant.lastSeenAt = disconnectedAt;
       room.pauseStartedAt ??= disconnectedAt;
       room.revision++;
       await writeRoom(room);
@@ -74,16 +165,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (body.action === "resume") {
       const awaySince = activeParticipant.disconnectedAt;
       if (!awaySince) return NextResponse.json(roomView(room, true, role), noStore);
-      const resumedAt = Date.now();
-      activeParticipant.disconnectedAt = null;
-      const otherDisconnected = role === "host" ? room.guest?.disconnectedAt : room.host.disconnectedAt;
-      if (!otherDisconnected) {
-        const pauseStartedAt = room.pauseStartedAt ?? awaySince;
-        if (room.game && resumedAt < awaySince + 60_000) shiftOnlineDeadlines(room.game, Math.max(0, resumedAt - pauseStartedAt));
-        room.pauseStartedAt = null;
-      }
-      room.revision++;
-      await writeRoom(room);
+      room = await resumeParticipant(room, id, role, true);
       return NextResponse.json(roomView(room, true, role), noStore);
     }
     if (activeParticipant.disconnectedAt) return NextResponse.json({ error: "resume required", ...roomView(room, true, role) }, { status: 409, ...noStore });

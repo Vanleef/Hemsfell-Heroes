@@ -14,7 +14,7 @@ test("authoritative room commands deduplicate a previously accepted command id b
   const duplicateIndex = machine.indexOf("recentCommandIds?.includes(normalizedCommandId)");
   const staleIndex = machine.indexOf("Number(baseRevision) !== room.revision", machine.indexOf("export function applyRulesCommand"));
   assert.ok(duplicateIndex > 0 && staleIndex > duplicateIndex, "duplicate recognition must happen before the stale-revision rejection");
-  assert.match(machine, /recentCommandIds = \[\.\.\.recent\.filter\(\(value\) => value !== normalizedCommandId\), normalizedCommandId\]\.slice\(-32\)/);
+  assert.match(machine, /recentCommandIds = \[\.\.\.recent\.filter\(\(value\) => value !== normalizedCommandId\), normalizedCommandId\]\.slice\(-128\)/);
 });
 
 test("room route forwards the stable command id to the authoritative machine", () => {
@@ -27,6 +27,12 @@ test("duplicate command acknowledgement returns the persisted room without anoth
   assert.ok(duplicateIndex > 0 && writeIndex > duplicateIndex, "duplicate retry must return before the shared write path");
 });
 
-test("canonical Online client attaches one stable id per logical command", () => {
-  assert.match(page, /const commandId=crypto\.randomUUID\(\);const result=await roomAction\("command",\{command,commandId/);
+test("canonical Online client single-flights a logical command with one stable id", () => {
+  assert.match(page, /onlineCommandFlightsRef=useRef<Map<string,Promise<boolean>>>/);
+  assert.match(page, /delete logicalCommand\.instanceId/);
+  assert.match(page, /existing=onlineCommandFlightsRef\.current\.get\(signature\);if\(existing\)return existing/);
+  assert.match(page, /if\(onlineCommandFlightsRef\.current\.size\)return false/);
+  assert.match(page, /const commandId=crypto\.randomUUID\(\),before=[^;]+;const task=roomAction\("command",\{command,commandId/);
+  assert.match(page, /setOnlineCommandPending\(true\)/);
+  assert.match(page, /priorityLocked=[^;]+onlineCommandPending/);
 });

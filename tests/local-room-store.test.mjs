@@ -25,6 +25,21 @@ test("development room rejects duplicate and stale writes", async () => {
   await assert.rejects(() => writeDevelopmentRoom({ ...room, revision: 2 }), /stale room revision/);
 });
 
+test("development room accepts only one concurrent writer for each revision", async () => {
+  const room = { id: "room-test-race789", revision: 0, status: "started", value: "base" };
+  await writeDevelopmentRoom(room);
+
+  const writes = await Promise.allSettled([
+    writeDevelopmentRoom({ ...room, revision: 1, value: "command" }),
+    writeDevelopmentRoom({ ...room, revision: 1, value: "heartbeat" }),
+  ]);
+
+  assert.equal(writes.filter((result) => result.status === "fulfilled").length, 1);
+  const rejected = writes.find((result) => result.status === "rejected");
+  assert.match(String(rejected?.reason?.message), /stale room revision/);
+  assert.equal((await readDevelopmentRoom(room.id)).revision, 1);
+});
+
 test.after(async () => {
   await rm(root, { recursive: true, force: true });
 });

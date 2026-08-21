@@ -46,8 +46,7 @@ const stateWithRootPriority = () => ({
 const reachSaymonTargetChoice = () => {
   let state = stateWithRootPriority();
   state = executeOnlineCommand(state, { type: "activateHero", owner: 1, abilityId: "saymon-level-1" }, { priority: true }).state;
-  state = executeOnlineCommand(state, { type: "passPriority", owner: 0 }, { priority: true }).state;
-  state = executeOnlineCommand(state, { type: "passPriority", owner: 1 }, { priority: true }).state;
+  if (state.pendingResponse?.responder === 0) state = executeOnlineCommand(state, { type: "passPriority", owner: 0 }, { priority: true }).state;
   return state;
 };
 
@@ -58,11 +57,9 @@ test("online hero target choice suspends the response window and resumes it only
   assert.equal(state.pendingResponse?.responder, 0);
   assert.equal(state.priorityStack?.length, 2);
 
+  /* Owner 0 has no legal response. The authoritative kernel performs the empty
+     second pass immediately instead of requiring an invisible extra click. */
   state = executeOnlineCommand(state, { type: "passPriority", owner: 0 }, { priority: true }).state;
-  assert.equal(state.pendingResponse?.responder, 1);
-  assert.equal(state.pendingResponse?.passes, 1);
-
-  state = executeOnlineCommand(state, { type: "passPriority", owner: 1 }, { priority: true }).state;
   assert.equal(state.pendingDecision?.kind, "activation-targets");
   assert.equal(state.pendingDecision?.owner, 1);
   assert.equal(state.pendingResponse, null);
@@ -82,6 +79,7 @@ test("online hero target choice suspends the response window and resumes it only
 
 test("pre-fix online snapshots with decision and response open together recover on the next choice command", () => {
   const correct = reachSaymonTargetChoice();
+  assert.equal(correct.pendingDecision?.kind, "activation-targets");
   const resume = structuredClone(correct.pendingDecision.onlinePriorityResume);
   const stale = structuredClone(correct);
   delete stale.pendingDecision.onlinePriorityResume;

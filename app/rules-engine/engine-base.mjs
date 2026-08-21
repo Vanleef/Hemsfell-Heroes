@@ -531,6 +531,14 @@ function activeAbilities(state, event) {
 
 export function executeCommand(inputState, command, options = {}) {
   const state = clone(inputState); const originalPhase = inputState.phase; const maxSteps = options.maxSteps ?? 512; const maxRepeats = options.maxRepeats ?? 4; const handlers = { ...defaultEffectHandlers, ...(options.handlers || {}) }; let actionLabel = command.type;
+  if (command.type === "surrender") {
+    if (!Number.isInteger(command.owner) || ![0, 1].includes(command.owner) || state.winner != null) throw new RulesViolation("surrender-unavailable");
+    state.winner = command.owner === 0 ? 1 : 0;
+    state.pendingResponse = null; delete state.pendingAction; state.priorityStack = undefined; state.stack = []; state.combatAction = null; state.onlineCombat = undefined; state.onlineFinalization = undefined; state.pendingDecision = null; state.pendingReposition = null; state.turnDeadline = null;
+    state.priority = { ...(state.priority || {}), mode: "none", owner: null, window: null, consecutivePasses: 0, deadline: null, stackDepth: 0 };
+    state.events = (state.events || 0) + 1; state.log ||= []; state.log.unshift({ id: `rules-${state.round}-${state.events}`, text: `${state.players[command.owner]?.heroId || "Um jogador"} se rendeu.`, tone: "danger" });
+    return { state, trace: [{ step: 1, kind: "command", type: "surrender" }], steps: 1 };
+  }
   if (command.type === "advancePhase" && state.phase === "manutencao" && state.players[state.active]?.skipNextTurn) { state.players[state.active].skipNextTurn = false; state.phase = "fim"; }
   const stack = [{ kind: "command", command }]; const trace = []; const repeats = new Map(); let steps = 0;
   while (stack.length) {
@@ -603,7 +611,7 @@ export function executeCommand(inputState, command, options = {}) {
         if (card.type !== "Criatura" || (item.command.targetIds || []).length) { const targetAbilities = card.type === "Criatura" ? enterAbilities : playAbilities, firstTargetCount = targetAbilities.reduce((sum, ability) => sum + abilityTargetSteps(ability).length, 0), validationCommand = card.type === "Criatura" && entry.heroId === "quarion" && (entry.level || 1) >= 3 ? { ...item.command, targetIds: (item.command.targetIds || []).slice(0, firstTargetCount) } : item.command; validateTargets(state, item.command.owner, targetAbilities, validationCommand, card); }
         for (const ability of playAbilities) validateCosts(state, ability, item.command);
         const staticDiscount = permanentUnits(entry).filter((source) => !source.suffocated).flatMap((source) => source.staticModifiers || []).filter((modifier) => modifier.type === "costModifier" && (!modifier.selector?.type || modifier.selector.type === card.type) && (!modifier.during || modifier.during !== "controllerTurn" || state.active === item.command.owner) && (!modifier.firstEachTurn || !(entry.turnCardsPlayed || 0))).reduce((sum, modifier) => sum + (modifier.amount || 0), 0);
-        const queuedDiscount = nextCardDiscount(entry, card, state.round); const cardModifier = card.costModifierExpiresRound != null && state.round >= card.costModifierExpiresRound ? 0 : card.costModifier || 0; const cost = Math.max(0, (card.cost || 0) + intrinsicCost(state, entry, card) + targetSurcharge(state, item.command.owner, card, item.command.targetIds) + cardModifier + staticDiscount - (queuedDiscount?.amount || 0)); const spell = card.type === "Feitiço"; const canUseReserve = card.type !== "Criatura"; const paysLife = card.type === "Criatura" && !!entry.nextCreaturePaysLife;
+        const queuedDiscount = nextCardDiscount(entry, card, state.round); const cardModifier = card.costModifierExpiresRound != null && state.round >= card.costModifierExpiresRound ? 0 : card.costModifier || 0; const calculatedCost = Math.max(0, (card.cost || 0) + intrinsicCost(state, entry, card) + targetSurcharge(state, item.command.owner, card, item.command.targetIds) + cardModifier + staticDiscount - (queuedDiscount?.amount || 0)); const lockedCost = Number(item.command.__lockedCost ?? item.command.__priorityPayment?.cost); const cost = Number.isFinite(lockedCost) ? Math.max(0, lockedCost) : calculatedCost; const spell = card.type === "Feitiço"; const canUseReserve = card.type !== "Criatura"; const paysLife = card.type === "Criatura" && !!entry.nextCreaturePaysLife;
         const available = accelerated && state.active !== item.command.owner ? entry.reserve : paysLife ? entry.life - (entry.heroId === "saymon" && (entry.level || 1) >= 3 ? 1 : 0) : entry.energy + (canUseReserve ? entry.reserve : 0);
         if (available < cost) throw new RulesViolation(paysLife ? "not-enough-life" : "not-enough-energy");
         for (const ability of playAbilities) payCosts(state, ability, item.command);

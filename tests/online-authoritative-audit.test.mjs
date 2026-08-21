@@ -111,10 +111,11 @@ test("two consecutive passes resolve the top accelerated response instead of dea
   state = executeOnlineCommand(state, { type: "passPriority", owner: 1 }, { priority: true }).state;
   assert.equal(state.players[1].hand.length, 0);
   assert.equal(state.players[1].grave.some((card) => card.id === "fast-1"), true);
-  assert.equal(state.pendingResponse?.responder, 1);
+  assert.equal(state.pendingResponse?.responder, 1, "after the top response resolves, preserve the canonical responder for the remaining root action");
+  assert.equal(state.pendingResponse?.actor, 0);
 });
 
-test("only the defending player can choose a blocker and the pending combat survives serialization", () => {
+test("only the defending player can choose a blocker and the post-block response survives serialization", () => {
   const state = baseState();
   state.pendingAction = undefined;
   state.pendingResponse = null;
@@ -128,8 +129,10 @@ test("only the defending player can choose a blocker and the pending combat surv
   assert.throws(() => executeOnlineCommand(refreshed, { type: "selectDefender", owner: 0, defenderId: "blocker" }, { priority: true }));
 
   const accepted = executeOnlineCommand(refreshed, { type: "selectDefender", owner: 1, defenderId: "blocker" }, { priority: true }).state;
-  assert.equal(accepted.combatAction?.stage, "charging");
+  assert.equal(accepted.combatAction?.stage, "priority");
   assert.equal(accepted.combatAction?.defenderUid, "blocker");
+  assert.equal(accepted.pendingResponse?.responder, 0);
+  assert.equal(accepted.priority?.window, "after-blockers");
 });
 
 test("command retries are idempotent and revision conflicts fail closed", () => {
@@ -140,6 +143,10 @@ test("command retries are idempotent and revision conflicts fail closed", () => 
   assert.match(store, /if \(isStaleRevision\(storageError\)\) throw storageError/);
   assert.match(store, /Number\(current\.revision\) !== room\.revision - 1/);
   assert.match(route, /error: "stale revision"[\s\S]*?roomView\(latest/);
+});
+
+test("hero evolution is accepted by the authoritative Online command boundary", () => {
+  assert.match(machine, /AUTHORITATIVE_COMMANDS[\s\S]*?"evolveHero"/);
 });
 
 test("server owns initial shuffle and the browser cannot upload a game snapshot", () => {

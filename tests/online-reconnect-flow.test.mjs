@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [route, machine, clock, runtime, layout] = await Promise.all([
+const [route, machine, clock, presence, runtime, layout] = await Promise.all([
   readFile(new URL("../app/api/rooms/[id]/route.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/online-clock.mjs", import.meta.url), "utf8"),
+  readFile(new URL("../app/api/rooms/presence.mjs", import.meta.url), "utf8"),
   readFile(new URL("../app/online-reconnect-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
 ]);
@@ -14,17 +15,15 @@ test("resume shifts every Online deadline through the shared clock helper", () =
   assert.match(route, /import \{ shiftOnlineDeadlines \} from "\.\.\/online-clock\.mjs"/);
   assert.match(route, /const awaySince = activeParticipant\.disconnectedAt/);
   assert.match(route, /const resumedAt = Date\.now\(\)/);
-  assert.match(route, /shiftOnlineDeadlines\(room\.game, resumedAt - awaySince\)/);
+  assert.match(route, /const pauseStartedAt = room\.pauseStartedAt \?\? awaySince/);
+  assert.match(route, /const pausedFor = Math\.max\(0, resumedAt - pauseStartedAt\)/);
+  assert.match(route, /shiftOnlineDeadlines\(room\.game, pausedFor\)/);
+  assert.match(route, /participant\.mulliganDeadline \+= pausedFor/);
 
   assert.match(clock, /export function shiftOnlineDeadlines/);
-  for (const target of [
-    /shiftDeadline\(game, "turnDeadline", milliseconds\)/,
-    /shiftDeadline\(game\.pendingResponse, "deadline", milliseconds\)/,
-    /shiftDeadline\(game\.priority, "deadline", milliseconds\)/,
-    /shiftDeadline\(game\.combatAction, "deadline", milliseconds\)/,
-    /shiftDeadline\(game\.pendingReposition, "deadline", milliseconds\)/,
-    /shiftDeadline\(game\.pendingDecision, "deadline", milliseconds\)/,
-  ]) assert.match(clock, target);
+  assert.match(clock, /shiftDeadline\(game, "turnDeadline", milliseconds\)/);
+  assert.match(clock, /for \(const target of \[game\.pendingResponse, game\.priority, game\.combatAction, game\.pendingReposition, game\.pendingDecision\]\)/);
+  assert.match(clock, /shiftDeadline\(target, "deadline", milliseconds\)/);
 });
 
 test("resume is idempotent and gameplay cannot silently clear a disconnected participant", () => {
@@ -41,6 +40,23 @@ test("bfcache restoration and network recovery explicitly resume the authenticat
   assert.match(runtime, /action: "resume", token: session\.token/);
   assert.match(runtime, /navigator|document\.visibilityState/);
   assert.match(runtime, /inFlight\.current/);
+  assert.match(runtime, /loadOnlineSession\(localStorage, roomId\)/);
+});
+
+test("authenticated polling detects silent network drops for either role", () => {
+  assert.match(machine, /lastSeenAt\?: number \| null/);
+  assert.match(route, /const PRESENCE_HEARTBEAT_WRITE_MS = 5_000/);
+  assert.match(presence, /export const PRESENCE_STALE_MS = 12_000/);
+  assert.match(route, /const otherRole = role === "host" \? "guest" : "host"/);
+  assert.match(route, /otherParticipant\.disconnectedAt = disconnectedAt/);
+  assert.match(route, /activeParticipant\.lastSeenAt = resumedAt/);
+  assert.match(route, /resumeParticipant\(room, id, role, true\)/);
+  assert.match(route, /room\.status === "mulligan" \|\| room\.status === "started"/);
+});
+
+test("missed heartbeats are persisted before timeout and keep their real origin", () => {
+  assert.match(presence, /participant\.disconnectedAt = lastSeenAt/);
+  assert.match(route, /room = await persistStalePresence\(room, id\);\s*room = await persistDueTimeout\(room, id\)/g);
 });
 
 test("the whole match is frozen while either participant is inside reconnect grace", () => {

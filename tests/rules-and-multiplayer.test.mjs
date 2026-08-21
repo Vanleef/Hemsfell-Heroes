@@ -41,7 +41,9 @@ test("response window remains a compact responsive drawer",()=>{
 });
 
 test("multiplayer response polling and resource display stay fast and authoritative",()=>{
- assert.match(page,/window\.setInterval\(fn,600\)/);
+ assert.match(page,/pollGenerationRef/);
+ assert.match(page,/window\.setTimeout\(fn,600\)/);
+ assert.doesNotMatch(page,/setInterval\(fn,(?:300|600)\)/);
  assert.match(page,/const responseBudget=\(state:Game,owner:0\|1\)=>state\.active===owner\?state\.players\[owner\]\.energy\+state\.players\[owner\]\.reserve/);
  assert.match(page,/const usableAcceleratedResponses=[\s\S]*?!isFast\(card\)\|\|cost>budget[\s\S]*?canChooseAllTargets/);
  assert.doesNotMatch(page,/cost>budget\?"unavailable"/);
@@ -76,10 +78,13 @@ test("rulebook resource and turn invariants stay automated",()=>{
  assert.match(page,/iniciou a Manutenção com o Deck vazio e perdeu/);
 });
 
-test("combat excludes turned defenders and preserves simultaneous resolution",()=>{
+test("combat excludes turned defenders and resolves through the shared authoritative engine",()=>{
  assert.match(page,/defenderPlayer\.board\.filter\(defender=>!defender\.exhausted/);
- assert.match(page,/liveDefender\.damage\+=resolvedAttackDamage/);
- assert.match(page,/liveAttacker\.damage\+=counterDamage/);
+ assert.match(page,/runRulesCommand\(\{type:"attack",attackerId:action\.attackerUid,defenderId:defender\?\.uid,skipPriority:true\}/);
+ assert.doesNotMatch(page,/liveDefender\.damage\+=resolvedAttackDamage/);
+ assert.doesNotMatch(page,/liveAttacker\.damage\+=counterDamage/);
+ assert.match(page,/const hasKeyword=.*?if\(!u\|\|u\.suffocated\)return false/);
+ assert.match(page,/const legalDefenders=.*?if\(!attacker\|\|hasKeyword/);
 });
 
 test("graveyards expose their complete public card list",()=>{
@@ -99,7 +104,8 @@ test("multiplayer uses durable shared state and authenticated room participants"
  assert.match(roomApi,/action === "sync"/);
  assert.match(roomApi,/invalid participant/);
  assert.match(page,/mirrorOnlineGame/);
- assert.match(page,/setInterval\(fn,600\)/);
+ assert.match(page,/headers:\{authorization:`Bearer \$\{token\}`\}/);
+ assert.match(page,/setTimeout\(fn,600\)/);
 });
 
 test("multiplayer lobby runs invitation, coin choice and one mulligan before play",()=>{
@@ -237,7 +243,6 @@ test("life-loss triggers use one event dispatcher",()=>{
  assert.match(page,/const g=structuredClone\(old\),before:\[number,number\]/);
 });
 
-
 test("global effects and Tessália's Commander lane stay deterministic",()=>{
  assert.match(page,/Global effects never request a target/);
  assert.match(page,/todas\?\\s\+\(\?:as\?\\s\+\)\?criaturas/);
@@ -260,8 +265,12 @@ test("room APIs reject unsafe input and never expose opponent hidden zones",()=>
  assert.match(roomApi,/isRoomId/);
  assert.match(roomApi,/request failed/);
  assert.match(roomMachine,/stale revision/);
- assert.match(roomStore,/card\?\.revealed === true \? card : hiddenCard/);
- assert.match(roomStore,/game\.pendingDecision\?\.kind === "investigate-selection"/);
+ assert.match(roomStore,/visibleTo\(card, viewer\) \? card : hiddenCard/);
+ assert.match(roomStore,/revealedTo\.includes\(viewer\)/);
+ assert.match(roomStore,/kind: "opponent-choice"/);
+ assert.match(roomStore,/effect: \{\}/);
+ assert.match(roomStore,/context: \{\}/);
+ assert.match(roomStore,/targetSteps: \[\]/);
 });
 
 test("public hand and deck information is rendered symmetrically",()=>{
