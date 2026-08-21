@@ -12,6 +12,7 @@ const noStore = { headers: { "Cache-Control": "no-store, max-age=0" } };
 const VALID_DECK_IDS = new Set(["gimble", "goblin", "uruk", "tifon", "saymon", "tessalia", "quarion", "rasmus", "ngoro", "zayan", "natureza"]);
 const PRESENCE_HEARTBEAT_WRITE_MS = 5_000;
 const isStaleWrite = (error: unknown) => error instanceof Error && error.message === "stale room revision";
+const validJoinRequestId = (value: unknown): value is string => typeof value === "string" && /^[a-zA-Z0-9_-]{16,128}$/.test(value);
 const authenticatedReadToken = (req: NextRequest) => {
   const authorization = req.headers.get("authorization") || "";
   const bearer = authorization.match(/^Bearer\s+([^\s]+)$/i)?.[1];
@@ -139,13 +140,32 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const body = parsed.body;
     requestToken = body?.token;
     if (body?.action === "join") {
-      if (room.guest) return NextResponse.json({ error: "room full" }, { status: 409, ...noStore });
+      if (!validJoinRequestId(body.joinRequestId)) return NextResponse.json({ error: "invalid join request" }, { status: 400, ...noStore });
+      const joinRequestId = body.joinRequestId;
       const token = crypto.randomUUID();
-      room.guest = participant(token, true);
-      room.status = "deck-selection";
-      room.revision++;
-      await writeRoom(room);
-      return NextResponse.json({ ...roomView(room), token }, noStore);
+      /* Host polling updates presence through the same CAS revision used by a
+         join. Retry that benign race with one stable request id. If the first
+         write committed but its response was lost, return the already-created
+         participant instead of incorrectly reporting a full room. */
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (room.guest) {
+          if (room.guest.joinRequestId === joinRequestId) return NextResponse.json({ ...roomView(room), token: room.guest.token }, noStore);
+          return NextResponse.json({ error: "room full" }, { status: 409, ...noStore });
+        }
+        room.guest = { ...participant(token, true), joinRequestId };
+        room.status = "deck-selection";
+        room.revision++;
+        try {
+          await writeRoom(room);
+          return NextResponse.json({ ...roomView(room), token }, noStore);
+        } catch (error) {
+          if (!isStaleWrite(error)) throw error;
+          const latest = await readRoom(id);
+          if (!latest) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
+          room = latest;
+        }
+      }
+      return NextResponse.json({ error: "stale revision" }, { status: 409, ...noStore });
     }
     const role = roleFor(room, body?.token);
     if (!role) return NextResponse.json({ error: "invalid participant" }, { status: 403, ...noStore });

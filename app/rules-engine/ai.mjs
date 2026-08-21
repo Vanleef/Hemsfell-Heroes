@@ -1,6 +1,7 @@
 import { cardPlayTargetPolicy, isValidTarget } from "./targeting.mjs";
 import { hasSubtype } from "./subtypes.mjs";
 import { canEvolveHero } from "./hero-evolution.mjs";
+import { priorityPlayCost } from "./match-integrity.mjs";
 
 const DIFFICULTY = Object.freeze({
   "Fácil": { cardBudget: 1, responseBias: 0.25, attackBias: 0.68 },
@@ -79,6 +80,7 @@ export function aiCardValue(card, state, owner, difficulty = "Normal") {
   if (/primeiro ato|ultimo suspiro|fura-fila/.test(text)) value += 2;
   if (controller?.heroId === "uruk" && card.type === "Feitiço") value += 3;
   if (controller?.heroId === "tessalia" && card.type === "Criatura" && !(controller.board || []).some((unit) => unit.slot === 2)) value += 8;
+  if (isTranqueira(card) && highDifficulty(difficulty)) value += tranqueiraComboForecast(state, owner, difficulty) >= 5 ? 24 : -24;
   return value * (.8 + profile.attackBias * .2);
 }
 
@@ -283,6 +285,78 @@ function completeAIActivationCommand(state, owner, source, ability, difficulty =
   return command;
 }
 
+const isTranqueira = (card) => Number(card?.page) === 46 || normalized(card?.name) === "tranqueira-matica eletrostatica";
+const highDifficulty = (difficulty) => difficulty === "Difícil" || ["Hard", "Expert", "Master"].includes(difficulty);
+const spendNonCreature = (energy, reserve, cost) => {
+  const fromReserve = Math.min(reserve, cost);
+  return { energy: energy - (cost - fromReserve), reserve: reserve - fromReserve };
+};
+
+/**
+ * Conservative, public forecast for the Tranqueira combo. It only counts
+ * cards that already have a legal declaration and can be paid from current
+ * resources after Tranqueira itself. Draws and speculative future energy are
+ * intentionally ignored: Hard+ must see a real five-card line before taking
+ * the 1–4 card self-damage risk.
+ */
+export function tranqueiraComboForecast(state, owner, difficulty = "Difícil") {
+  const entry = state?.players?.[owner];
+  if (!entry || state.active !== owner || state.phase !== "principal") return 0;
+  const source = (entry.hand || []).find(isTranqueira);
+  const live = permanentUnits(entry).find(isTranqueira);
+  if (!source && !live) return 0;
+
+  const forecastState = structuredClone(state);
+  const forecastEntry = forecastState.players[owner];
+  let energy = Number(forecastEntry.energy || 0), reserve = Number(forecastEntry.reserve || 0);
+  if (source) {
+    const sourceCommand = completeAIPlayCommand(forecastState, owner, source, difficulty);
+    if (!sourceCommand) return 0;
+    let sourceCost;
+    try { sourceCost = priorityPlayCost(forecastState, sourceCommand); } catch { return 0; }
+    if (energy + reserve < sourceCost) return 0;
+    ({ energy, reserve } = spendNonCreature(energy, reserve, sourceCost));
+    forecastEntry.hand = forecastEntry.hand.filter((card) => card !== source && card.id !== source.id);
+    forecastEntry.turnCardsPlayed = Number(forecastEntry.turnCardsPlayed || 0) + 1;
+    const queued = (forecastEntry.nextCardDiscounts || []).find((rule) => (rule.expiresRound == null || forecastState.round < rule.expiresRound) && (!rule.type || rule.type === source.type) && (!rule.typeNot || rule.typeNot !== source.type));
+    if (queued) forecastEntry.nextCardDiscounts = (forecastEntry.nextCardDiscounts || []).filter((rule) => rule !== queued);
+  }
+  forecastEntry.energy = energy;
+  forecastEntry.reserve = reserve;
+
+  const creatureSpace = Math.max(0, 5 - (forecastEntry.board || []).length);
+  const supportSpace = Math.max(0, 5 - (forecastEntry.support || []).length);
+  const options = (forecastEntry.hand || []).filter((card) => !isTranqueira(card)).flatMap((card) => {
+    const command = completeAIPlayCommand(forecastState, owner, card, difficulty);
+    if (!command) return [];
+    try {
+      return [{ card, cost: priorityPlayCost(forecastState, command), zone: card.type === "Criatura" && command.placementZone !== "support" ? "creature" : ["Artefato", "Encanto"].includes(card.type) || command.placementZone === "support" ? "support" : "other" }];
+    } catch { return []; }
+  });
+
+  let best = 0;
+  const visit = (index, availableEnergy, availableReserve, creatures, supports, count) => {
+    best = Math.max(best, count);
+    if (best >= 7 || index >= options.length) return;
+    for (let optionIndex = index; optionIndex < options.length; optionIndex += 1) {
+      const option = options[optionIndex];
+      if (option.zone === "creature" && creatures >= creatureSpace) continue;
+      if (option.zone === "support" && supports >= supportSpace) continue;
+      if (option.card.type === "Criatura") {
+        const paysLife = !!forecastEntry.nextCreaturePaysLife && creatures === 0;
+        if (!paysLife && option.cost > availableEnergy) continue;
+        visit(optionIndex + 1, paysLife ? availableEnergy : availableEnergy - option.cost, availableReserve, creatures + (option.zone === "creature" ? 1 : 0), supports + (option.zone === "support" ? 1 : 0), count + 1);
+      } else {
+        if (option.cost > availableEnergy + availableReserve) continue;
+        const paid = spendNonCreature(availableEnergy, availableReserve, option.cost);
+        visit(optionIndex + 1, paid.energy, paid.reserve, creatures, supports + (option.zone === "support" ? 1 : 0), count + 1);
+      }
+    }
+  };
+  visit(0, energy, reserve, 0, 0, Number(live?.cardsPlayedAfterSelf || 0));
+  return best;
+}
+
 export function buildAIActionCandidates(state, owner, difficulty = "Normal") {
   if (!state || state.winner != null) return [];
   if (state.pendingDecision) { const decision = chooseAIDecision(state, owner, difficulty); return decision ? [decision] : []; }
@@ -303,7 +377,7 @@ export function buildAIActionCandidates(state, owner, difficulty = "Normal") {
       for (const ability of abilities) { const command = completeAIActivationCommand(state, owner, source, ability, difficulty); if (command) candidates.push(command); }
     }
     const cards = [...entry.hand].sort((a, b) => aiCardValue(b, state, owner, difficulty) - aiCardValue(a, state, owner, difficulty));
-    for (const card of cards) { const command = completeAIPlayCommand(state, owner, card, difficulty); if (command) candidates.push(command); }
+    for (const card of cards) { if (highDifficulty(difficulty) && isTranqueira(card) && tranqueiraComboForecast(state, owner, difficulty) < 5) continue;const command = completeAIPlayCommand(state, owner, card, difficulty); if (command) candidates.push(command); }
   }
   if (state.phase === "combate") for (const attacker of orderAIAttackers(entry, difficulty)) {
     const defenders = state.players[1 - owner].board || [];

@@ -67,6 +67,13 @@ const boardEfficiency = (player: any) => (player.board || []).reduce((sum: numbe
   return sum + (currentAttack(card) * 0.62 + currentHealth(card) * 0.38 + keywordScore(card) * 0.5) / cost;
 }, 0);
 
+const tranqueiraProgressValue = (player: any) => [...(player.support || []), ...(player.board || [])]
+  .filter((card: any) => Number(card?.page) === 46)
+  .reduce((sum: number, card: any) => {
+    const progress = Number(card?.cardsPlayedAfterSelf || 0);
+    return sum + (progress >= 7 ? 24 : progress === 6 ? 20 : progress === 5 ? 16 : -2.5 * (5 - progress));
+  }, 0);
+
 export interface EvaluationBreakdown {
   total: number;
   life: number;
@@ -129,7 +136,8 @@ export class Evaluator {
     const heroLevelValue = (Number(me.level || 1) - Number(foe.level || 1)) * 4.5;
     const setupBodies = (me.board || []).filter((card: any) => /primeiro ato|ultimo suspiro|marcador|combo|cafe/.test(textOf(card))).length;
     const setupProtection = setupBodies * profile.weights.setupProtection * Math.min(1.5, ownResponses * 0.3 + Number(me.reserve || 0) * 0.15);
-    const synergy = (synergyScore(me) - synergyScore(foe)) * w.synergy + heroLevelValue + setupProtection;
+    const comboCommitment = tranqueiraProgressValue(me) - tranqueiraProgressValue(foe);
+    const synergy = (synergyScore(me) - synergyScore(foe)) * w.synergy + heroLevelValue + setupProtection + comboCommitment;
 
     // This operates on a determinized state during search. Sweep signals are
     // therefore beliefs, not privileged reads of the real hidden hand.

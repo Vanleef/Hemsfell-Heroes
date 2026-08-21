@@ -1,4 +1,4 @@
-import { hasSubtype } from "./subtypes.mjs";
+import { hasSubtype, subtypesFor } from "./subtypes.mjs";
 import { isValidTarget } from "./targeting.mjs";
 
 export class RulesViolation extends Error {
@@ -687,6 +687,8 @@ export const defaultEffectHandlers = Object.freeze({
         copy.slot = context.slot != null && !entry.board.some((unit) => unit.slot === context.slot) ? context.slot : openSlot;
         entry.board.push(copy);
       }
+      entry.subtypesEnteredThisTurn ||= {};
+      for (const subtype of subtypesFor(copy)) entry.subtypesEnteredThisTurn[subtype] = (entry.subtypesEnteredThisTurn[subtype] || 0) + 1;
     } else {
       const openSlot = Array.from({ length: 5 }, (_, slot) => slot).find((slot) => supportSlotAvailable(slot));
       if (openSlot == null) throw new RulesViolation("support-zone-full");
