@@ -531,6 +531,14 @@ function activeAbilities(state, event) {
 
 export function executeCommand(inputState, command, options = {}) {
   const state = clone(inputState); const originalPhase = inputState.phase; const maxSteps = options.maxSteps ?? 512; const maxRepeats = options.maxRepeats ?? 4; const handlers = { ...defaultEffectHandlers, ...(options.handlers || {}) }; let actionLabel = command.type;
+  if (command.type === "surrender") {
+    if (!Number.isInteger(command.owner) || ![0, 1].includes(command.owner) || state.winner != null) throw new RulesViolation("surrender-unavailable");
+    state.winner = command.owner === 0 ? 1 : 0;
+    state.pendingResponse = null; delete state.pendingAction; state.priorityStack = undefined; state.stack = []; state.combatAction = null; state.onlineCombat = undefined; state.onlineFinalization = undefined; state.pendingDecision = null; state.pendingReposition = null; state.turnDeadline = null;
+    state.priority = { ...(state.priority || {}), mode: "none", owner: null, window: null, consecutivePasses: 0, deadline: null, stackDepth: 0 };
+    state.events = (state.events || 0) + 1; state.log ||= []; state.log.unshift({ id: `rules-${state.round}-${state.events}`, text: `${state.players[command.owner]?.heroId || "Um jogador"} se rendeu.`, tone: "danger" });
+    return { state, trace: [{ step: 1, kind: "command", type: "surrender" }], steps: 1 };
+  }
   if (command.type === "advancePhase" && state.phase === "manutencao" && state.players[state.active]?.skipNextTurn) { state.players[state.active].skipNextTurn = false; state.phase = "fim"; }
   const stack = [{ kind: "command", command }]; const trace = []; const repeats = new Map(); let steps = 0;
   while (stack.length) {

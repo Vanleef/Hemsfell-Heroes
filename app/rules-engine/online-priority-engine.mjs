@@ -324,6 +324,9 @@ export function executeOnlineCommand(inputState, rawCommand, options = {}) {
   syncPriorityMetadata(state, { window: state.pendingResponse ? inferPriorityWindow(state) : null });
   const command = { ...rawCommand };
   if (!Number.isInteger(command.owner) || ![0, 1].includes(command.owner)) throw new RulesViolation("invalid-owner");
+  /* Conceding is always legal for an active participant and must not be held
+     inside a target/priority continuation. */
+  if (command.type === "surrender") return executeRulesCommand(state, command, { ...options, priority: false });
   validateDecisionPriority(state, command);
 
   if (state.pendingResponse) {

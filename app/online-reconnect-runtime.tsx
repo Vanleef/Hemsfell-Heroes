@@ -1,20 +1,11 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-
-type StoredSession = { token?: unknown };
-const SESSION_PREFIX = "hemsfell-room-";
+import { loadOnlineSession } from "./online-session.mjs";
 
 function activeRoomSession() {
   const roomId = new URLSearchParams(window.location.search).get("room");
-  if (!roomId) return null;
-  try {
-    const stored = JSON.parse(localStorage.getItem(`${SESSION_PREFIX}${roomId}`) || "null") as StoredSession | null;
-    if (!stored || typeof stored.token !== "string" || !stored.token) return null;
-    return { roomId, token: stored.token };
-  } catch {
-    return null;
-  }
+  return loadOnlineSession(localStorage, roomId);
 }
 
 /**

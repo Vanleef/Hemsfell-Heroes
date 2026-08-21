@@ -9,6 +9,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 const noStore = { headers: { "Cache-Control": "no-store, max-age=0" } };
 const VALID_DECK_IDS = new Set(["gimble", "goblin", "uruk", "tifon", "saymon", "tessalia", "quarion", "rasmus", "ngoro", "zayan", "natureza"]);
+const PRESENCE_HEARTBEAT_WRITE_MS = 5_000;
+const PRESENCE_STALE_MS = 12_000;
 const isStaleWrite = (error: unknown) => error instanceof Error && error.message === "stale room revision";
 const authenticatedReadToken = (req: NextRequest) => {
   const authorization = req.headers.get("authorization") || "";
@@ -35,22 +37,41 @@ async function persistDueTimeout(room: Room, id: string) {
  * successfully polling the room is connected again, so do not leave the other
  * player trapped behind a stale disconnectedAt flag waiting for an explicit
  * resume POST that may never fire after a tab/page restore. */
-async function resumeParticipant(room: Room, id: string, role: "host" | "guest") {
+async function resumeParticipant(room: Room, id: string, role: "host" | "guest", detectStalePeer = false) {
   for (let attempt = 0; attempt < 3; attempt++) {
     const activeParticipant = room[role];
-    if (!activeParticipant?.disconnectedAt) return room;
+    if (!activeParticipant) return room;
+
+    const resumedAt = Date.now();
+    const otherRole = role === "host" ? "guest" : "host";
+    const otherParticipant = room[otherRole];
+    let changed = false;
+    if (detectStalePeer && (room.status === "mulligan" || room.status === "started") && otherParticipant && !otherParticipant.disconnectedAt && Number.isFinite(Number(otherParticipant.lastSeenAt)) && resumedAt - Number(otherParticipant.lastSeenAt) >= PRESENCE_STALE_MS) {
+      otherParticipant.disconnectedAt = resumedAt;
+      room.pauseStartedAt ??= resumedAt;
+      changed = true;
+    }
 
     const awaySince = activeParticipant.disconnectedAt;
-    const resumedAt = Date.now();
-    activeParticipant.disconnectedAt = null;
-    const otherDisconnected = role === "host" ? room.guest?.disconnectedAt : room.host.disconnectedAt;
-    if (!otherDisconnected) {
-      const pauseStartedAt = room.pauseStartedAt ?? awaySince;
-      if (room.game && resumedAt < awaySince + 60_000) {
-        shiftOnlineDeadlines(room.game, Math.max(0, resumedAt - pauseStartedAt));
+    if (awaySince) {
+      activeParticipant.disconnectedAt = null;
+      changed = true;
+      const otherDisconnected = room[otherRole]?.disconnectedAt;
+      if (!otherDisconnected) {
+        const pauseStartedAt = room.pauseStartedAt ?? awaySince;
+        const pausedFor = Math.max(0, resumedAt - pauseStartedAt);
+        if (room.game && resumedAt < awaySince + 60_000) {
+          shiftOnlineDeadlines(room.game, pausedFor);
+          if (room.status === "mulligan") for (const participant of [room.host, room.guest]) if (participant?.mulliganDeadline) participant.mulliganDeadline += pausedFor;
+        }
+        room.pauseStartedAt = null;
       }
-      room.pauseStartedAt = null;
     }
+    if (!Number.isFinite(Number(activeParticipant.lastSeenAt)) || resumedAt - Number(activeParticipant.lastSeenAt) >= PRESENCE_HEARTBEAT_WRITE_MS) {
+      activeParticipant.lastSeenAt = resumedAt;
+      changed = true;
+    }
+    if (!changed) return room;
 
     room.revision++;
     try {
@@ -75,7 +96,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const token = authenticatedReadToken(req);
   let role = roleFor(room, token);
   if (role) {
-    room = await resumeParticipant(room, id, role);
+    room = await resumeParticipant(room, id, role, true);
     role = roleFor(room, token);
   }
   return NextResponse.json(roomView(room, !!role, role), noStore);
@@ -111,6 +132,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (activeParticipant.disconnectedAt) return NextResponse.json(roomView(room, true, role), noStore);
       const disconnectedAt = Date.now();
       activeParticipant.disconnectedAt = disconnectedAt;
+      activeParticipant.lastSeenAt = disconnectedAt;
       room.pauseStartedAt ??= disconnectedAt;
       room.revision++;
       await writeRoom(room);
@@ -119,7 +141,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (body.action === "resume") {
       const awaySince = activeParticipant.disconnectedAt;
       if (!awaySince) return NextResponse.json(roomView(room, true, role), noStore);
-      room = await resumeParticipant(room, id, role);
+      room = await resumeParticipant(room, id, role, true);
       return NextResponse.json(roomView(room, true, role), noStore);
     }
     if (activeParticipant.disconnectedAt) return NextResponse.json({ error: "resume required", ...roomView(room, true, role) }, { status: 409, ...noStore });

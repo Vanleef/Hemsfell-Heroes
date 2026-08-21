@@ -13,6 +13,7 @@ import { chooseAdvancedAIAction, chooseAdvancedAIDecision, chooseAdvancedAIBlock
 import { hasSubtype } from "./rules-engine/subtypes.mjs";
 import { cardPlayTargetPolicy, isValidTarget, targetPolicy, TargetScope } from "./rules-engine/targeting.mjs";
 import { applyCloneRetaliation, claimOncePerTurn, earthquakeDamage, elementalChainFrom as ruleElementalChainFrom } from "./game-rules.mjs";
+import { clearOnlineSession, loadOnlineSession, saveOnlineSession } from "./online-session.mjs";
 
 type CardType="Criatura"|"Feitiço"|"Artefato"|"Encanto"|"Terreno"|"Herói";
 type CardDef={page:number;id:string;name:string;type:CardType;cost:number;atk?:number;hp?:number;text:string;tags:string[];image:string;hero:boolean;imageCard:boolean;revealed?:boolean;revealedTo?:number[];subtypes?:string[];abilities?:any[];rules?:unknown;diagnostics?:{source?:string;unsupported?:number};generatedImage?:boolean};
@@ -32,6 +33,7 @@ type CafeChoice="cats"|"heal"|"draw"|"level";
 type PendingResponse={responder:0|1;actor:0|1;action:string;deadline?:number;passes?:number};
 type PendingDecision={kind:string;owner:0|1;effect:{choices?:any[];cards?:CardDef[];targetOwner?:0|1;replayEffects?:any[];minimum?:number;maximum?:number;amount?:number;types?:string[];subtype?:string;vanillaOnly?:boolean;minCost?:number;maxCost?:number;maxCostFromMarkerAmount?:boolean;markerCost?:number;nameIncludes?:string;name?:string;targetOwner?:0|1;creatureSlots?:number[];supportSlots?:number[]};context?:Record<string,any>;targetSteps?:Array<{scope:string;role?:string;requiredSubtype?:string;requiredName?:string;imageOnly?:boolean;excludeIds?:string[];allowedIds?:string[];maxCost?:number;requireExhausted?:boolean;requiresDamagedOwnerThisTurn?:boolean;requiresEffectAppliedThisTurn?:boolean;requiresMarker?:boolean;optional?:boolean}>;sourceName?:string};
 type MatchSettings={startingLife:number;responseSeconds:number;turnSeconds:number};
+type OnlineSession={roomId:string;token:string;isHost:boolean};
 type CombatStage="declared"|"priority"|"choosing"|"charging"|"impact"|"resolved";
 type CombatAction={attackerOwner:0|1;attackerUid:string;attackerCard:CardDef;defenderUid?:string;defenderCard?:CardDef;targetHero?:boolean;stage:CombatStage;result?:string;destroyed?:Array<"attacker"|"defender">;winnerText?:string;attackDamage?:number;counterDamage?:number};
 type VisualFx={id:string;kind:"summon"|"spell"|"artifact"|"terrain"|"ability"|"damage";theme:"blood"|"dragon"|"goblin"|"recruit"|"divine"|"nature"|"arcane"|"chaos"|"order"|"neutral";card?:CardDef;target?:CardDef;label:string;detail:string};
@@ -320,6 +322,8 @@ const [roomToken,setRoomToken]=useState<string|null>(null);
 const [inviteRoomId,setInviteRoomId]=useState<string|null>(null);
 const [invitePreview,setInvitePreview]=useState<any|null>(null);
 const [roomError,setRoomError]=useState("");
+const [activeOnlineSession,setActiveOnlineSession]=useState<OnlineSession|null>(null);
+const [sessionRecoveryPending,setSessionRecoveryPending]=useState(true);
 const [settings,setSettings]=useState<MatchSettings>({startingLife:30,responseSeconds:30,turnSeconds:120});
 const [clockNow,setClockNow]=useState(()=>Date.now());
 const timeoutSentRef=useRef("");
@@ -368,6 +372,24 @@ const fromCanonicalGame=(source:Game)=>isHost?structuredClone(source):mirrorOnli
 const announceOnlineSnapshot=(sessionId:string,hostRole:boolean,snapshot:any)=>window.dispatchEvent(new CustomEvent("hemsfell:online-room-snapshot",{detail:{session:{id:sessionId,isHost:hostRole},room:snapshot}}));
 
 const stopPolling = ()=>{pollGenerationRef.current++;if(pollRef.current){window.clearTimeout(pollRef.current);pollRef.current=undefined}};
+const roomUrl=(id:string)=>`${location.origin}/?room=${id}`;
+const rememberOnlineSession=(session:OnlineSession)=>{saveOnlineSession(localStorage,session);setActiveOnlineSession(session);history.replaceState({},"",`/?room=${encodeURIComponent(session.roomId)}`)};
+const forgetOnlineSession=(id?:string)=>{clearOnlineSession(localStorage,id);setActiveOnlineSession(null);history.replaceState({},"",location.pathname)};
+const leaveOnlineMatch=(destination:"menu"|"setup"="menu")=>{stopPolling();if(roomId)forgetOnlineSession(roomId);setRoomId(null);setRoomToken(null);setRoomLink(null);setRoomInfo(null);setInviteRoomId(null);setInvitePreview(null);setGame(null);currentGameRef.current=null;setResponseWindow(null);setCombatAction(null);setMode(destination==="setup"?"online":"bot");setScreen(destination)};
+const openOnlineSnapshot=(data:any,session:OnlineSession)=>{
+  setMode("online");setRoomId(session.roomId);setRoomToken(session.token);setIsHost(session.isHost);setRoomLink(roomUrl(session.roomId));setRoomInfo(data);setSettings(data.settings??settings);roomRevisionRef.current=data.revision??0;
+  if(data.game){const oriented=session.isHost?structuredClone(data.game):mirrorOnlineGame(data.game);currentGameRef.current=oriented;setGame(oriented);setResponseWindow(oriented.pendingResponse??null);setScreen("game")}else setScreen("setup");
+};
+const resumeOnlineSession=async(session:OnlineSession)=>{
+  setSessionRecoveryPending(true);setRoomError("");rememberOnlineSession(session);
+  try{
+    const response=await fetch(`/api/rooms/${session.roomId}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"resume",token:session.token})});
+    const data=await response.json();
+    if(!response.ok||data.status==="finished"){forgetOnlineSession(session.roomId);setRoomId(null);setRoomToken(null);setRoomInfo(null);setGame(null);setMode("bot");setScreen("menu");if(!response.ok)setRoomError(data?.error||"A partida online não está mais disponível.");return false}
+    openOnlineSnapshot(data,session);pollRoom(session.roomId,session.token,session.isHost);return true;
+  }catch(error){setRoomError("Reconectando à sala…");openOnlineSnapshot({},session);pollRoom(session.roomId,session.token,session.isHost);return false}
+  finally{setSessionRecoveryPending(false)}
+};
 
 /** Create a room with a compact, readable request boundary. */
 const createRoom = async () => {
@@ -381,11 +403,11 @@ const createRoom = async () => {
     if (!response.ok) throw new Error(data?.error || "failed");
 
     const id = data.id as string;
-    localStorage.setItem(`hemsfell-room-${id}`, JSON.stringify({ token: data.token, isHost: true }));
+    rememberOnlineSession({roomId:id,token:data.token,isHost:true});
     setMode("online");
     setRoomId(id);
     setRoomToken(data.token);
-    setRoomLink(`${location.origin}/?room=${id}`);
+    setRoomLink(roomUrl(id));
     setRoomInfo(data);
     setIsHost(true);
     roomRevisionRef.current = data.revision ?? 0;
@@ -401,7 +423,7 @@ const joinRoomWithPost = async (id:string)=>{
     try{
         const res = await fetch(`/api/rooms/${id}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'join'})});
         const data = await res.json(); if(res.status===409)throw new Error('Room full'); if(!res.ok)throw new Error(data?.error||'failed');
-        localStorage.setItem(`hemsfell-room-${id}`,JSON.stringify({token:data.token,isHost:false}));setMode('online'); setRoomId(id); setInviteRoomId(null); setRoomToken(data.token); setRoomLink(`${location.origin}/?room=${id}`); setRoomInfo(data); setSettings(data.settings??settings); setIsHost(false); roomRevisionRef.current=data.revision??0; setScreen('setup'); pollRoom(id,data.token,false);
+        rememberOnlineSession({roomId:id,token:data.token,isHost:false});setMode('online'); setRoomId(id); setInviteRoomId(null); setRoomToken(data.token); setRoomLink(roomUrl(id)); setRoomInfo(data); setSettings(data.settings??settings); setIsHost(false); roomRevisionRef.current=data.revision??0; setScreen('setup'); pollRoom(id,data.token,false);
     }catch(e){setRoomError(e instanceof Error?e.message:"Não foi possível entrar na sala.");}
 };
 
@@ -447,7 +469,7 @@ const queueOnlineSnapshotFx=(previous:Game|null,next:Game)=>{
   });
  });
 };
-const applyRoomSnapshot=(data:any)=>{setRoomInfo(data);if(roomId)announceOnlineSnapshot(roomId,isHost,data);roomRevisionRef.current=data.revision??roomRevisionRef.current;if(data.game){const next=fromCanonicalGame(data.game),previous=currentGameRef.current;queueOnlineSnapshotFx(previous,next);currentGameRef.current=next;setGame(next);setResponseWindow(next.pendingResponse??null);setScreen("game")}};
+const applyRoomSnapshot=(data:any)=>{setRoomInfo(data);if(roomId)announceOnlineSnapshot(roomId,isHost,data);roomRevisionRef.current=data.revision??roomRevisionRef.current;if(data.status==="finished"&&roomId)forgetOnlineSession(roomId);if(data.game){const next=fromCanonicalGame(data.game),previous=currentGameRef.current;queueOnlineSnapshotFx(previous,next);currentGameRef.current=next;setGame(next);setResponseWindow(next.pendingResponse??null);setScreen("game")}};
 const roomAction=(action:string,extra:Record<string,unknown>={})=>{
  if(!roomId||!roomToken)return Promise.resolve(null);
  const execute=async(staleRetries=0):Promise<any>=>{
@@ -468,14 +490,16 @@ const confirmMulligan=async(keep:boolean)=>{if(mulliganPendingRef.current)return
 
 const pollRoom = (id:string,token:string,hostRole:boolean)=>{
     stopPolling();const generation=++pollGenerationRef.current;
-    const fn = async ()=>{ try{ const res = await fetch(`/api/rooms/${id}`,{cache:"no-store",headers:{authorization:`Bearer ${token}`}}); if(!res.ok) return; const r = await res.json();announceOnlineSnapshot(id,hostRole,r);setRoomError(current=>current==="Reconectando à sala…"?"":current);const incomingRevision=Number(r.revision??-1);if(incomingRevision<=roomRevisionRef.current)return; setRoomInfo(r);setSettings(r.settings??settings); if((r.status==='mulligan'||r.status==='started')&&r.game&&r.revision>roomRevisionRef.current){
-            const oriented=hostRole?structuredClone(r.game):mirrorOnlineGame(r.game),previous=currentGameRef.current;roomRevisionRef.current=r.revision;queueOnlineSnapshotFx(previous,oriented);currentGameRef.current=oriented;setResponseWindow(oriented.pendingResponse??null);setScreen('game');setGame(oriented); }
+    const fn = async ()=>{ try{ const res = await fetch(`/api/rooms/${id}`,{cache:"no-store",headers:{authorization:`Bearer ${token}`}}); if(!res.ok) return; const r = await res.json();announceOnlineSnapshot(id,hostRole,r);setRoomError(current=>current==="Reconectando à sala…"?"":current);const incomingRevision=Number(r.revision??-1);if(incomingRevision<=roomRevisionRef.current)return; setRoomInfo(r);setSettings(r.settings??settings);roomRevisionRef.current=incomingRevision;if(r.status==="finished")forgetOnlineSession(id);if(r.game){
+            const oriented=hostRole?structuredClone(r.game):mirrorOnlineGame(r.game),previous=currentGameRef.current;queueOnlineSnapshotFx(previous,oriented);currentGameRef.current=oriented;setResponseWindow(oriented.pendingResponse??null);setScreen('game');setGame(oriented); }
     }catch(e){setRoomError("Reconectando à sala…")}finally{if(generation===pollGenerationRef.current)pollRef.current=window.setTimeout(fn,600)} };
     void fn();
 };
 
 useEffect(()=>{
-    try{const params=new URLSearchParams(location.search);const r=params.get('room');if(r){setMode("online");setScreen("setup");const saved=localStorage.getItem(`hemsfell-room-${r}`);if(saved){const session=JSON.parse(saved);setRoomId(r);setRoomToken(session.token);setIsHost(!!session.isHost);setRoomLink(`${location.origin}/?room=${r}`);fetch(`/api/rooms/${r}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"resume",token:session.token})}).finally(()=>pollRoom(r,session.token,!!session.isHost))}else{setInviteRoomId(r);fetch(`/api/rooms/${r}`).then(res=>res.json()).then(data=>{if(data.error)throw new Error(data.error);setInvitePreview(data);setSettings(data.settings??settings)}).catch(error=>setRoomError(error instanceof Error&&error.message?`Não foi possível carregar o convite: ${error.message}`:"A sala não existe ou o armazenamento está indisponível."))}}}catch(e){}
+    const preferredRoomId=new URLSearchParams(location.search).get("room")||undefined;
+    const session=loadOnlineSession(localStorage,preferredRoomId) as OnlineSession|null;
+    if(session){void resumeOnlineSession(session)}else if(preferredRoomId){setMode("online");setScreen("setup");setInviteRoomId(preferredRoomId);setSessionRecoveryPending(false);fetch(`/api/rooms/${preferredRoomId}`).then(res=>res.json()).then(data=>{if(data.error)throw new Error(data.error);setInvitePreview(data);setSettings(data.settings??settings)}).catch(error=>setRoomError(error instanceof Error&&error.message?`Não foi possível carregar o convite: ${error.message}`:"A sala não existe ou o armazenamento está indisponível."))}else setSessionRecoveryPending(false);
     return ()=>stopPolling();
 },[]);
 useEffect(()=>{
@@ -849,7 +873,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
  const opponentRoomParticipant=isHost?roomInfo?.guest:roomInfo?.host;
  const reconnectDeadline=(opponentRoomParticipant?.disconnectedAt??0)+60000;
  const reconnectRemaining=Math.max(0,Math.ceil((reconnectDeadline-clockNow)/1000));
- const opponentReconnecting=mode==="online"&&roomInfo?.status==="started"&&!!opponentRoomParticipant?.disconnectedAt&&reconnectRemaining>0;
+ const opponentReconnecting=mode==="online"&&(roomInfo?.status==="mulligan"||roomInfo?.status==="started")&&!!opponentRoomParticipant?.disconnectedAt&&reconnectRemaining>0;
  const priorityLocked=(mode==="online"&&game?.pendingResponse?.actor===0)||opponentReconnecting||onlineCommandPending;
  const responseRemaining=Math.max(0,Math.ceil(((game?.pendingResponse?.deadline??clockNow)-clockNow)/1000));
  const turnRemaining=Math.max(0,Math.ceil(((game?.turnDeadline??clockNow)-clockNow)/1000));
@@ -971,7 +995,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
   {repositionForLocal&&<div className="arte-da-guerra-decision"><span><b>ARTE DA GUERRA</b> · Arraste suas criaturas entre os espaços</span><strong>{repositionSeconds}s</strong><button onClick={confirmArteDaGuerra}>CONFIRMAR POSIÇÕES</button></div>}
   {!!game?.pendingReposition&&!repositionForLocal&&<div className="engine-decision-wait">O oponente está reorganizando o campo com Arte da Guerra…</div>}
   {screen!=="game"&&<nav className="shell-nav"><div className="hh-logo"><img src="/brand/hemsfell-heroes-logo.png" alt="Hemsfell Heroes"/></div><button onClick={()=>setScreen("decks")}>Coleção <em>{cards.length} cartas ativas</em></button></nav>}
-  {screen==="menu"&&<section className="landing"><div className="landing-copy"><p>AS CRÔNICAS DE HEMSFELL</p><h1>Heróis são escolhidos.<br/><em>Lendas são forjadas.</em></h1><span>Entidades cósmicas convocam campeões, criaturas e magias de um mundo de fantasia em guerra. Construa seu exército, domine o campo e reduza a vida do herói rival a zero.</span><div className="landing-actions"><button className="gold" onClick={()=>{setMode("bot");setScreen("setup")}}>Jogar contra IA</button><button className="online-cta" onClick={()=>{setMode("online");setScreen("setup")}}>Jogar online</button><button onClick={()=>setScreen("decks")}>Conhecer os heróis</button></div></div><div className="hero-fan">{deckDefs.slice(0,5).map((d,i)=><RemoteCardArt key={d.id} page={d.heroPage} name={d.name} priority style={{transform:`translateX(${(i-2)*50}px) rotate(${(i-2)*7}deg)`}}/>)}</div></section>}
+  {screen==="menu"&&<section className="landing"><div className="landing-copy"><p>AS CRÔNICAS DE HEMSFELL</p><h1>Heróis são escolhidos.<br/><em>Lendas são forjadas.</em></h1><span>Entidades cósmicas convocam campeões, criaturas e magias de um mundo de fantasia em guerra. Construa seu exército, domine o campo e reduza a vida do herói rival a zero.</span><div className="landing-actions">{sessionRecoveryPending?<button className="gold" disabled>Retomando partida…</button>:activeOnlineSession?<button className="gold" onClick={()=>void resumeOnlineSession(activeOnlineSession)}>Continuar partida</button>:<><button className="gold" onClick={()=>{setMode("bot");setScreen("setup")}}>Jogar contra IA</button><button className="online-cta" onClick={()=>{setMode("online");setScreen("setup")}}>Jogar online</button></>}<button onClick={()=>setScreen("decks")}>Conhecer os heróis</button></div></div><div className="hero-fan">{deckDefs.slice(0,5).map((d,i)=><RemoteCardArt key={d.id} page={d.heroPage} name={d.name} priority style={{transform:`translateX(${(i-2)*50}px) rotate(${(i-2)*7}deg)`}}/>)}</div></section>}
   {screen==="decks"&&<section className="collection"><header><button onClick={()=>setScreen("menu")}>← Menu</button><div><p>LABORATÓRIO DE DECKS</p><h2>Todos os heróis</h2></div><span>11 decks · 298 cartas de jogo</span></header><div className="deck-rail">{deckDefs.map(d=><button key={d.id} className={mine===d.id?"active":""} style={{"--deck":d.color} as React.CSSProperties} onClick={()=>setMine(d.id)}><RemoteCardArt page={d.heroPage} name={d.name}/><b>{d.name}</b><span>{d.style}</span></button>)}</div><div className="deck-detail"><aside style={{"--deck":selectedDeck.color} as React.CSSProperties}><button className="collection-hero-inspect" onClick={()=>setShowInspector(cards.find(card=>card.page===selectedDeck.heroPage)||null)} aria-label={`Ver detalhes de ${selectedDeck.name}`}><RemoteCardArt page={selectedDeck.heroPage} name={selectedDeck.name} priority/></button><h3>{selectedDeck.name}</h3><p>{selectedDeck.faction} · {selectedDeck.style}</p><b>49 cartas no Deck Principal</b><strong className="extra-summary">Deck Extra · {selectedExtra.length} Imagens</strong><button className="gold" onClick={()=>setScreen("setup")}>Usar este deck</button></aside><HeroGuide deck={selectedDeck}/><div className="collection-lists"><section><header><b>Deck Principal</b><span>Imagens amarelas não entram nesta lista.</span></header><div className="card-library">{selectedPool.map(c=><OriginalCard key={c.id} card={c} small onClick={()=>setShowInspector(c)}/>)}</div></section><section className="extra-collection"><header><b>Deck Extra</b><span>{selectedExtra.length} Imagens · invocadas apenas por efeitos</span></header>{selectedExtra.length?<div className="card-library">{selectedExtra.map(c=><OriginalCard key={c.id} card={c} small onClick={()=>setShowInspector(c)}/>)}</div>:<p>Este herói não possui cartas de Imagem no Deck Extra.</p>}</section></div></div></section>}
     {screen==="setup"&&<section className="match-setup"><button className="back" onClick={()=>setScreen("menu")}>← Menu</button><div className="setup-head"><p>{mode==="online"?"SALA MULTIPLAYER":"PREPARE O TESTE"}</p><h2>{mode==="online"?"Crie ou entre em uma sala":"Selecione os dois decks"}</h2><span>{mode==="online"?"Compartilhe o link da sala; os dois jogadores escolhem seus decks antes de iniciar.":"As listas usam até três cópias e sempre totalizam 49 cartas."}</span></div>
         {mode!=="online"&&<>
@@ -1021,8 +1045,8 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
    {cafeChoice!==null&&<CafeChoiceModal onCancel={()=>setCafeChoice(null)} onChoose={effect=>{playCard(cafeChoice,0,undefined,undefined,effect);setCafeChoice(null)}}/>}
    {extraView&&<ExtraDeckModal title={extraView.title} cards={extraView.cards} onClose={()=>setExtraView(null)}/>}
    {searchChoice&&<SearchDeckModal key={searchChoice.id} request={searchChoice} cards={game.players[searchChoice.owner].deck} onConfirm={completeSearch}/>}
-   {confirmSurrender&&game.winner===null&&<div className="overlay surrender-overlay"><section className="surrender-dialog"><i>⚑</i><p>ENCERRAR PARTIDA</p><h2>Deseja realmente se render?</h2><span>A vitória será concedida imediatamente ao oponente.</span><div><button onClick={()=>setConfirmSurrender(false)}>Continuar jogando</button><button className="confirm-surrender" onClick={()=>{setConfirmSurrender(false);setCombatAction(null);setResponseWindow(null);update(g=>{g.winner=1;log(g,"Você se rendeu. A vitória foi concedida ao oponente.","danger")})}}>Confirmar rendição</button></div></section></div>}
-   {game.winner!==null&&<div className="overlay"><div className="maintenance"><p>FIM DO TESTE</p><h2>{game.winner===0?"Vitória":"Derrota"}</h2><span>{deckById(game.players[game.winner].heroId).name} venceu após {game.round} turnos.</span><div><button className="gold" onClick={begin}>Revanche</button><button onClick={()=>setScreen("setup")}>Trocar decks</button></div></div></div>}
+   {confirmSurrender&&game.winner===null&&<div className="overlay surrender-overlay"><section className="surrender-dialog"><i>⚑</i><p>ENCERRAR PARTIDA</p><h2>Deseja realmente se render?</h2><span>A vitória será concedida imediatamente ao oponente.</span><div><button onClick={()=>setConfirmSurrender(false)}>Continuar jogando</button><button className="confirm-surrender" onClick={()=>{setConfirmSurrender(false);setCombatAction(null);setResponseWindow(null);if(mode==="online"){void runRulesCommand({type:"surrender"},0);return}update(g=>{g.winner=1;log(g,"Você se rendeu. A vitória foi concedida ao oponente.","danger")})}}>Confirmar rendição</button></div></section></div>}
+   {game.winner!==null&&<div className="overlay"><div className="maintenance"><p>FIM DO TESTE</p><h2>{game.winner===0?"Vitória":"Derrota"}</h2><span>{deckById(game.players[game.winner].heroId).name} venceu após {game.round} turnos.</span><div>{mode==="online"?<><button className="gold" onClick={()=>leaveOnlineMatch("setup")}>Nova partida online</button><button onClick={()=>leaveOnlineMatch("menu")}>Voltar ao menu</button></>:<><button className="gold" onClick={begin}>Revanche</button><button onClick={()=>setScreen("setup")}>Trocar decks</button></>}</div></div></div>}
   </section></div>}
  {showInspector&&<div className="overlay inspector card-focus-layer" onClick={()=>setShowInspector(null)} role="dialog" aria-modal="true" aria-label={`Detalhes de ${showInspector.name}`}><div onClick={event=>event.stopPropagation()}><button className="inspector-close" onClick={()=>setShowInspector(null)} aria-label="Fechar carta ampliada">×</button><RemoteCardArt page={showInspector.page} name={showInspector.name} priority/><aside>{deckByHeroPage(showInspector.page)?<div className="inspector-hero-guide"><HeroGuide deck={deckByHeroPage(showInspector.page)!}/><small>Carta {showInspector.page} · clique fora ou pressione o botão × para fechar</small></div>:<><p>{showInspector.imageCard?"IMAGEM · ":""}{showInspector.type} · custo {showInspector.cost}{showInspector.atk!=null?` · ${showInspector.atk}/${showInspector.hp}`:""}</p><h2>{showInspector.name}</h2>{showInspector.subtypes?.length?<section className="inspector-section"><b>SUBTIPOS</b><div className="inspector-subtypes">{showInspector.subtypes.map(subtype=><span key={subtype} title={`Esta carta pertence ao subtipo ${subtype}.`}>{subtype}</span>)}</div></section>:null}<section className="inspector-section"><b>EFEITO COMPLETO</b><RichCardText text={showInspector.text||"Esta carta não possui texto de efeito."}/></section><section className="inspector-section"><b>PALAVRAS-CHAVE</b><div className="inspector-keywords">{showInspector.tags.length?showInspector.tags.map(tag=><KeywordBadge name={tag} key={tag}/>):<span>Sem palavra-chave</span>}</div></section><small>Carta {showInspector.page} · clique fora ou pressione o botão × para fechar</small></>}</aside></div></div>}
  </main>

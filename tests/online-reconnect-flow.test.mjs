@@ -15,7 +15,9 @@ test("resume shifts every Online deadline through the shared clock helper", () =
   assert.match(route, /const awaySince = activeParticipant\.disconnectedAt/);
   assert.match(route, /const resumedAt = Date\.now\(\)/);
   assert.match(route, /const pauseStartedAt = room\.pauseStartedAt \?\? awaySince/);
-  assert.match(route, /shiftOnlineDeadlines\(room\.game, Math\.max\(0, resumedAt - pauseStartedAt\)\)/);
+  assert.match(route, /const pausedFor = Math\.max\(0, resumedAt - pauseStartedAt\)/);
+  assert.match(route, /shiftOnlineDeadlines\(room\.game, pausedFor\)/);
+  assert.match(route, /participant\.mulliganDeadline \+= pausedFor/);
 
   assert.match(clock, /export function shiftOnlineDeadlines/);
   assert.match(clock, /shiftDeadline\(game, "turnDeadline", milliseconds\)/);
@@ -37,6 +39,18 @@ test("bfcache restoration and network recovery explicitly resume the authenticat
   assert.match(runtime, /action: "resume", token: session\.token/);
   assert.match(runtime, /navigator|document\.visibilityState/);
   assert.match(runtime, /inFlight\.current/);
+  assert.match(runtime, /loadOnlineSession\(localStorage, roomId\)/);
+});
+
+test("authenticated polling detects silent network drops for either role", () => {
+  assert.match(machine, /lastSeenAt\?: number \| null/);
+  assert.match(route, /const PRESENCE_HEARTBEAT_WRITE_MS = 5_000/);
+  assert.match(route, /const PRESENCE_STALE_MS = 12_000/);
+  assert.match(route, /const otherRole = role === "host" \? "guest" : "host"/);
+  assert.match(route, /otherParticipant\.disconnectedAt = resumedAt/);
+  assert.match(route, /activeParticipant\.lastSeenAt = resumedAt/);
+  assert.match(route, /resumeParticipant\(room, id, role, true\)/);
+  assert.match(route, /room\.status === "mulligan" \|\| room\.status === "started"/);
 });
 
 test("the whole match is frozen while either participant is inside reconnect grace", () => {

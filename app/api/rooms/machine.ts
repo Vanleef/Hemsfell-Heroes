@@ -27,6 +27,7 @@ export type Participant = {
   mulliganCount: number;
   mulliganDeadline?: number | null;
   disconnectedAt?: number | null;
+  lastSeenAt?: number | null;
   recentCommandIds?: string[];
 };
 
@@ -63,7 +64,7 @@ export function sanitizeSettings(value: Partial<MatchSettings> | Record<string, 
 }
 
 export function participant(token: string, accepted = true): Participant {
-  return { heroId: null, token, accepted, deckLocked: false, mulliganDone: false, mulliganCount: 0, disconnectedAt: null, recentCommandIds: [] };
+  return { heroId: null, token, accepted, deckLocked: false, mulliganDone: false, mulliganCount: 0, disconnectedAt: null, lastSeenAt: Date.now(), recentCommandIds: [] };
 }
 
 export function bothDecksLocked(room: Room) {
@@ -129,8 +130,21 @@ function finishDisconnectedMatch(room: Room, loser: 0 | 1) {
 }
 
 export function applyTimeout(room: Room) {
+  const now = Date.now();
+  if (room.game && (room.status === "mulligan" || room.status === "started")) {
+    const disconnected = earliestDisconnected(room);
+    if (disconnected) {
+      if (disconnected.at + 60_000 > now) return false;
+      const loser = (disconnected.role === "host" ? 0 : 1) as 0 | 1;
+      finishDisconnectedMatch(room, loser);
+      room.game.events = (room.game.events ?? 0) + 1;
+      room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de reconexão terminou. A partida foi encerrada.", tone: "danger" }, ...(room.game.log ?? [])];
+      logOnlineDiagnostic(room, "reconnect-expired", { role: disconnected.role });
+      return true;
+    }
+  }
   if (room.game && room.status === "mulligan") {
-    const now = Date.now(); let changed = false;
+    let changed = false;
     for (const role of ["host", "guest"] as const) {
       const current = room[role];
       if (current && !current.mulliganDone && current.mulliganDeadline && current.mulliganDeadline <= now) {
@@ -144,17 +158,6 @@ export function applyTimeout(room: Room) {
     return changed;
   }
   if (!room.game || room.status !== "started") return false;
-  const now = Date.now();
-  const disconnected = earliestDisconnected(room);
-  if (disconnected) {
-    if (disconnected.at + 60_000 > now) return false;
-    const loser = (disconnected.role === "host" ? 0 : 1) as 0 | 1;
-    finishDisconnectedMatch(room, loser);
-    room.game.events = (room.game.events ?? 0) + 1;
-    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de reconexão terminou. A partida foi encerrada.", tone: "danger" }, ...(room.game.log ?? [])];
-    logOnlineDiagnostic(room, "reconnect-expired", { role: disconnected.role });
-    return true;
-  }
 
   /* Recovered legacy rooms can contain an interaction with no absolute
      deadline. Seed it once on the server so a refresh cannot create an
@@ -262,7 +265,7 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
   return { ok: true, status: 200, error: "" };
 }
 
-const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "evolveHero", "maintenanceChoice", "declareAttack", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
+const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "evolveHero", "maintenanceChoice", "declareAttack", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority", "surrender"]);
 
 /* Drain response windows that have no legal action immediately inside the same
  * authoritative transaction. This is deliberately server-side: an Assisted
@@ -333,6 +336,7 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
     room.game = result.state;
     reconcileOnlineClocks(before, room.game, room.settings);
     const trace = drainEmptyAssistedPriority(room, [...(result.trace || [])]);
+    if (room.game.winner === 0 || room.game.winner === 1) room.status = "finished";
     room.revision++;
     if (currentParticipant) {
       const recent = currentParticipant.recentCommandIds || [];
