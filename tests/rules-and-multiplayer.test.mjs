@@ -78,10 +78,13 @@ test("rulebook resource and turn invariants stay automated",()=>{
  assert.match(page,/iniciou a Manutenção com o Deck vazio e perdeu/);
 });
 
-test("combat excludes turned defenders and preserves simultaneous resolution",()=>{
+test("combat excludes turned defenders and resolves through the shared authoritative engine",()=>{
  assert.match(page,/defenderPlayer\.board\.filter\(defender=>!defender\.exhausted/);
- assert.match(page,/liveDefender\.damage\+=resolvedAttackDamage/);
- assert.match(page,/liveAttacker\.damage\+=counterDamage/);
+ assert.match(page,/runRulesCommand\(\{type:"attack",attackerId:action\.attackerUid,defenderId:defender\?\.uid,skipPriority:true\}/);
+ assert.doesNotMatch(page,/liveDefender\.damage\+=resolvedAttackDamage/);
+ assert.doesNotMatch(page,/liveAttacker\.damage\+=counterDamage/);
+ assert.match(page,/const hasKeyword=.*?if\(!u\|\|u\.suffocated\)return false/);
+ assert.match(page,/const legalDefenders=.*?if\(!attacker\|\|hasKeyword/);
 });
 
 test("graveyards expose their complete public card list",()=>{
