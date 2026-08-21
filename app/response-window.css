@@ -45,13 +45,10 @@
   display:block!important;
   visibility:visible!important;
   opacity:1!important;
-  top:var(--response-opponent-piles-top,clamp(3rem,6.5cqh,4.75rem))!important;
-  right:var(--response-opponent-piles-right,clamp(1rem,2.2cqw,2.25rem))!important;
   left:auto!important;
   bottom:auto!important;
   translate:none!important;
   transform:none!important;
-  width:fit-content!important;
   min-width:min(18rem,max(12rem,var(--response-opponent-piles-width,18rem)))!important;
   max-width:min(24rem,max(17rem,calc(var(--response-opponent-piles-width,18rem) * 1.45)))!important;
   height:fit-content!important;

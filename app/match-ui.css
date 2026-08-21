@@ -355,7 +355,7 @@
   gap: clamp(.02rem, .1cqw, .12rem) !important;
 }
 .screen-game .game-content.hs-board > .opponent-hand > :is(.official-card-back,.opponent-card-back,.card-frame) {
-  flex: 0 1 auto !important;
+  flex: 1 1 auto !important;
   width: clamp(.95rem, min(1.72cqw, 3.75cqh), 1.9rem) !important;
   min-width: 0 !important;
   max-width: none !important;
@@ -427,7 +427,7 @@
 .screen-game .priority-control-toggle {
   max-width: min(12cqw, 8rem) !important;
   padding: clamp(.18rem,.34cqh,.3rem) clamp(.3rem,.5cqw,.48rem) !important;
-  font-size: clamp(.32rem,min(.48cqw,.8cqh),.52rem) !important;
+  font-size: clamp(.62rem,min(.48cqw,.8cqh),.52rem) !important;
   line-height: 1.1 !important;
   white-space: normal !important;
 }
