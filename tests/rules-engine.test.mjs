@@ -1128,7 +1128,7 @@ test("online priority passes update the local response window from the authorita
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /setResponseWindow\(next\.pendingResponse\?\?null\)/);
   assert.match(page, /const task=roomAction\("command"/);
-  assert.match(page, /then\(result=>!!result\)/);
+  assert.match(page, /then\(result=>\{[\s\S]*?return!!result\}\)/);
   assert.match(page, /currentGameRef\.current=oriented;setResponseWindow\(oriented\.pendingResponse\?\?null\)/);
   assert.match(page, /game\?\.pendingResponse\?\.responder/);
   assert.match(page, /game\?\.pendingResponse\?\.passes/);
@@ -1156,7 +1156,7 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(page, /chooseAIResponse/);
   assert.match(page, /legalPriorityResponses/);
   assert.match(page, /shouldAutoPass/);
-  assert.match(page, /Resposta: Full Control/);
+  assert.match(page, /Modo: Manual/);
   assert.match(page, /priority-stack-indicator/);
   assert.match(page, /cardPlayTargetPolicy/);
   assert.match(page, /canChooseAllTargets/);
@@ -1503,8 +1503,9 @@ test("UI animation is presentation-only and cannot hide an unresolved ability re
 test("online actions share one serialized request queue and reconcile stale revisions", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /syncQueueRef\.current\.then\(\(\)=>execute\(\)\)/);
-  assert.match(page, /res\.status===409&&data\?\.error==="stale revision"&&data\?\.game/);
+  assert.match(page, /const retryableStale=staleRevision&&\(action==="command"\|\|action==="choose_start"\)/);
   assert.match(page, /if\(staleRetries<3\)[\s\S]*?execute\(staleRetries\+1\)/);
+  assert.match(page, /if\(lobbyActionPending\)return/);
   assert.match(page, /incomingRevision<=roomRevisionRef\.current/);
 });
 

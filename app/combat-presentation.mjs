@@ -73,3 +73,41 @@ export function resolvedCombatPresentation(previous, next) {
     result: targetHero ? `${heroDamage || 0} de dano direto` : "Combate resolvido pelo motor de regras",
   };
 }
+
+/**
+ * Synthesize presentation for a direct attack that the authoritative server
+ * completed inside the same command response. This happens when no blocking
+ * decision is legal (notably Voar/Indomável), so neither snapshot exposes an
+ * intermediate combatAction for the client to animate.
+ */
+export function immediateDirectCombatPresentation(previous, next, attackerOwner, attackerUid) {
+  if (!previous || !next || previous.combatAction || next.combatAction || !attackerUid) return null;
+  const defenderOwner = 1 - attackerOwner;
+  const attackerBefore = boardCard(previous, attackerOwner, attackerUid);
+  if (!attackerBefore) return null;
+
+  const attackerAfter = boardCard(next, attackerOwner, attackerUid);
+  const heroDamage = Math.max(
+    0,
+    Number(previous.players?.[defenderOwner]?.life || 0) - Number(next.players?.[defenderOwner]?.life || 0),
+  );
+  const attackWasCommitted = heroDamage > 0
+    || !attackerAfter
+    || (!attackerBefore.attackedThisTurn && !!attackerAfter?.attackedThisTurn)
+    || Number(attackerAfter?.attacksThisTurn || 0) > Number(attackerBefore.attacksThisTurn || 0)
+    || (!attackerBefore.exhausted && !!attackerAfter?.exhausted);
+  if (!attackWasCommitted) return null;
+
+  const attackerCard = baseCard(attackerBefore);
+  return {
+    attackerOwner,
+    attackerUid,
+    attackerCard,
+    targetHero: true,
+    stage: "charging",
+    attackDamage: heroDamage,
+    destroyed: attackerAfter ? [] : ["attacker"],
+    winnerText: "DANO DIRETO AO HERÓI",
+    result: `${heroDamage} de dano direto`,
+  };
+}

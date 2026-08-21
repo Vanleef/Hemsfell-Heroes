@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [route, machine, clock, runtime, layout] = await Promise.all([
+const [route, machine, clock, presence, runtime, layout] = await Promise.all([
   readFile(new URL("../app/api/rooms/[id]/route.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/online-clock.mjs", import.meta.url), "utf8"),
+  readFile(new URL("../app/api/rooms/presence.mjs", import.meta.url), "utf8"),
   readFile(new URL("../app/online-reconnect-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
 ]);
@@ -45,12 +46,17 @@ test("bfcache restoration and network recovery explicitly resume the authenticat
 test("authenticated polling detects silent network drops for either role", () => {
   assert.match(machine, /lastSeenAt\?: number \| null/);
   assert.match(route, /const PRESENCE_HEARTBEAT_WRITE_MS = 5_000/);
-  assert.match(route, /const PRESENCE_STALE_MS = 12_000/);
+  assert.match(presence, /export const PRESENCE_STALE_MS = 12_000/);
   assert.match(route, /const otherRole = role === "host" \? "guest" : "host"/);
-  assert.match(route, /otherParticipant\.disconnectedAt = resumedAt/);
+  assert.match(route, /otherParticipant\.disconnectedAt = disconnectedAt/);
   assert.match(route, /activeParticipant\.lastSeenAt = resumedAt/);
   assert.match(route, /resumeParticipant\(room, id, role, true\)/);
   assert.match(route, /room\.status === "mulligan" \|\| room\.status === "started"/);
+});
+
+test("missed heartbeats are persisted before timeout and keep their real origin", () => {
+  assert.match(presence, /participant\.disconnectedAt = lastSeenAt/);
+  assert.match(route, /room = await persistStalePresence\(room, id\);\s*room = await persistDueTimeout\(room, id\)/g);
 });
 
 test("the whole match is frozen while either participant is inside reconnect grace", () => {

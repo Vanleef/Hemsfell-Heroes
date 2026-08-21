@@ -32,7 +32,7 @@ test("canonical Online client single-flights a logical command with one stable i
   assert.match(page, /delete logicalCommand\.instanceId/);
   assert.match(page, /existing=onlineCommandFlightsRef\.current\.get\(signature\);if\(existing\)return existing/);
   assert.match(page, /if\(onlineCommandFlightsRef\.current\.size\)return false/);
-  assert.match(page, /const commandId=crypto\.randomUUID\(\);const task=roomAction\("command",\{command,commandId/);
+  assert.match(page, /const commandId=crypto\.randomUUID\(\),before=[^;]+;const task=roomAction\("command",\{command,commandId/);
   assert.match(page, /setOnlineCommandPending\(true\)/);
   assert.match(page, /priorityLocked=[^;]+onlineCommandPending/);
 });

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { resolvedCombatPresentation } from "../app/combat-presentation.mjs";
+import { immediateDirectCombatPresentation, resolvedCombatPresentation } from "../app/combat-presentation.mjs";
 
 const card = (uid, name, extra = {}) => ({
   uid, id: uid, page: 1, name, type: "Criatura", text: "", tags: [],
@@ -59,4 +59,32 @@ test("direct flying-style attack records hero damage without requiring a defende
 test("no presentation is synthesized while authoritative combat is still active", () => {
   const before = state();
   assert.equal(resolvedCombatPresentation(before, structuredClone(before)), null);
+});
+
+test("a direct Voar/Indomável attack resolved in one snapshot still animates", () => {
+  const before = state();
+  before.combatAction = null;
+  before.players[0].board[0] = card("attacker", "Dragão Indomável", {
+    tags: ["Voar", "Indomável"],
+    exhausted: false,
+    attackedThisTurn: false,
+    attacksThisTurn: 0,
+  });
+  const after = structuredClone(before);
+  after.players[0].board[0].exhausted = true;
+  after.players[0].board[0].attackedThisTurn = true;
+  after.players[0].board[0].attacksThisTurn = 1;
+  after.players[1].life = 27;
+
+  const presentation = immediateDirectCombatPresentation(before, after, 0, "attacker");
+  assert.equal(presentation.attackerCard.name, "Dragão Indomável");
+  assert.equal(presentation.targetHero, true);
+  assert.equal(presentation.attackDamage, 3);
+  assert.equal(presentation.stage, "charging");
+});
+
+test("an unchanged attacker snapshot never creates a false combat animation", () => {
+  const before = state();
+  before.combatAction = null;
+  assert.equal(immediateDirectCombatPresentation(before, structuredClone(before), 0, "attacker"), null);
 });
