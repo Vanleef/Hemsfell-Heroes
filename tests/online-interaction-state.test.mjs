@@ -22,7 +22,7 @@ test("principal exposes active-player action priority", () => {
   assert.equal(state.priority.model, "online-v3");
   assert.equal(deriveOnlineInteractionState(state), OnlineInteractionState.ACTION_PRIORITY);
   assert.equal(inputOwnerForOnlineState(state), 0);
-  assert.deepEqual(commandTypesForOnlineState(state), ["playCard", "activate", "activateHero", "advancePhase"]);
+  assert.deepEqual(commandTypesForOnlineState(state), ["playCard", "activate", "activateHero", "evolveHero", "advancePhase"]);
 });
 
 test("response window has exactly the responder as input owner", () => {

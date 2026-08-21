@@ -221,7 +221,11 @@ const stackResult = (state, trace = [], steps = 0) => ({ state, trace, steps });
 const restoreCommandPayment = (inputState, inputCommand) => {
   if (!inputCommand?.__priorityPayment) return { state: inputState, command: inputCommand };
   const state = restorePriorityPayment(inputState, inputCommand.__priorityPayment, inputCommand.owner);
-  const command = { ...inputCommand };
+  /* Costs are declared and reserved when an action enters the Online priority
+     window. Preserve that amount when a response changes the board/hand before
+     resolution; recalculating here could refund or overcharge every card with
+     a conditional discount (notably the Draconic Illusions). */
+  const command = { ...inputCommand, __lockedCost: inputCommand.__priorityPayment.cost };
   delete command.__priorityPayment;
   return { state, command };
 };
@@ -229,7 +233,7 @@ const restoreRootPaymentBeforeResolution = (inputState, command) => {
   const payment = inputState.pendingAction?.__priorityPayment;
   if (command?.type !== "passPriority" || !payment || (inputState.pendingResponse?.passes || 0) < 1) return inputState;
   const state = restorePriorityPayment(inputState, payment, inputState.pendingAction.owner);
-  state.pendingAction = { ...state.pendingAction };
+  state.pendingAction = { ...state.pendingAction, __lockedCost: payment.cost };
   delete state.pendingAction.__priorityPayment;
   return state;
 };

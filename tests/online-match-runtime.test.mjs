@@ -90,6 +90,15 @@ test("Online HUD reuses the board snapshot instead of opening a second polling l
   assert.doesNotMatch(runtime, /POLL_MS|DISCOVERY_MS|setInterval|setTimeout\(poll/);
 });
 
+test("confirmed Online snapshots drive card, Image, activation and evolution animations", () => {
+  assert.match(page, /const queueOnlineSnapshotFx=/);
+  assert.match(page, /applyRoomSnapshot=[\s\S]*?queueOnlineSnapshotFx\(previous,next\)/);
+  assert.match(page, /pollRoom[\s\S]*?queueOnlineSnapshotFx\(previous,oriented\)/);
+  assert.match(page, /IMAGEM INVOCADA/);
+  assert.match(page, /ativou sua habilidade/);
+  assert.match(page, /ASCENSÃO/);
+});
+
 test("strict Online typecheck remains in every validation path", () => {
   const pkg = JSON.parse(packageJson);
   assert.equal(pkg.scripts["typecheck:online"], "tsc -p tsconfig.online.json --noEmit");

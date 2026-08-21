@@ -1115,8 +1115,8 @@ test("production rooms use durable storage and never masquerade as process-local
 test("online priority passes update the local response window from the authoritative room state", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /setResponseWindow\(next\.pendingResponse\?\?null\)/);
-  assert.match(page, /const result=await roomAction\("command"/);
-  assert.match(page, /return !!result/);
+  assert.match(page, /const task=roomAction\("command"/);
+  assert.match(page, /then\(result=>!!result\)/);
   assert.match(page, /currentGameRef\.current=oriented;setResponseWindow\(oriented\.pendingResponse\?\?null\)/);
   assert.match(page, /game\?\.pendingResponse\?\.responder/);
   assert.match(page, /game\?\.pendingResponse\?\.passes/);

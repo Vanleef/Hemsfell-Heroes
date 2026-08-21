@@ -27,6 +27,12 @@ test("duplicate command acknowledgement returns the persisted room without anoth
   assert.ok(duplicateIndex > 0 && writeIndex > duplicateIndex, "duplicate retry must return before the shared write path");
 });
 
-test("canonical Online client attaches one stable id per logical command", () => {
-  assert.match(page, /const commandId=crypto\.randomUUID\(\);const result=await roomAction\("command",\{command,commandId/);
+test("canonical Online client single-flights a logical command with one stable id", () => {
+  assert.match(page, /onlineCommandFlightsRef=useRef<Map<string,Promise<boolean>>>/);
+  assert.match(page, /delete logicalCommand\.instanceId/);
+  assert.match(page, /existing=onlineCommandFlightsRef\.current\.get\(signature\);if\(existing\)return existing/);
+  assert.match(page, /if\(onlineCommandFlightsRef\.current\.size\)return false/);
+  assert.match(page, /const commandId=crypto\.randomUUID\(\);const task=roomAction\("command",\{command,commandId/);
+  assert.match(page, /setOnlineCommandPending\(true\)/);
+  assert.match(page, /priorityLocked=[^;]+onlineCommandPending/);
 });

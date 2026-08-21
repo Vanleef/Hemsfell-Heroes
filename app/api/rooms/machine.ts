@@ -262,7 +262,7 @@ export function canSync(room: Room, role: RoomRole, nextGame: any, baseRevision:
   return { ok: true, status: 200, error: "" };
 }
 
-const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "maintenanceChoice", "declareAttack", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
+const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", "evolveHero", "maintenanceChoice", "declareAttack", "selectDefender", "attack", "advancePhase", "resolveDecision", "reposition", "confirmReposition", "passPriority"]);
 
 /* Drain response windows that have no legal action immediately inside the same
  * authoritative transaction. This is deliberately server-side: an Assisted

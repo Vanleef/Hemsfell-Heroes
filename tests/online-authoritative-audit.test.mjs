@@ -145,6 +145,10 @@ test("command retries are idempotent and revision conflicts fail closed", () => 
   assert.match(route, /error: "stale revision"[\s\S]*?roomView\(latest/);
 });
 
+test("hero evolution is accepted by the authoritative Online command boundary", () => {
+  assert.match(machine, /AUTHORITATIVE_COMMANDS[\s\S]*?"evolveHero"/);
+});
+
 test("server owns initial shuffle and the browser cannot upload a game snapshot", () => {
   assert.match(route, /createInitialOnlineGame\(room\.host\.heroId, room\.guest\.heroId/);
   assert.match(route, /body\.action === "initialize"[\s\S]*?client game initialization disabled/);

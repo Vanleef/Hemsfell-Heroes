@@ -99,7 +99,7 @@ export function commandTypesForOnlineState(state) {
     case OnlineInteractionState.MAINTENANCE_DECISION:
       return ["maintenanceChoice"];
     case OnlineInteractionState.ACTION_PRIORITY:
-      return ["playCard", "activate", "activateHero", "advancePhase"];
+      return ["playCard", "activate", "activateHero", "evolveHero", "advancePhase"];
     case OnlineInteractionState.COMBAT_IDLE:
       return ["declareAttack", "advancePhase"];
     case OnlineInteractionState.AWAITING_BLOCKER:
