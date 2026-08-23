@@ -4,6 +4,7 @@ const text = (card: any) => String(`${card?.text || ""} ${(card?.tags || []).joi
 const currentAttack = (card: any) => Math.max(0, Number(card?.atk || 0) + Number(card?.bonusAtk || 0) + Number(card?.temporaryAtk || 0));
 const responseCards = (player: any) => (player.hand || []).filter((card: any) => /acelerado|destrua|dano|retorne|previna|barreira/.test(text(card)));
 const representedSweep = (player: any) => (player.hand || []).some((card: any) => /todas? .*criaturas|cada criatura|todas? .*unidades/.test(text(card)));
+const isTranqueira = (card: any) => Number(card?.page) === 46 || /tranqueira-matica eletrostatica/.test(String(card?.name || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase());
 
 export interface RiskDecision {
   hold: boolean;
@@ -77,6 +78,17 @@ export class RiskManager {
         const knownSweepMultiplier = representedSweep(foe) ? 8.5 : 1;
         score -= (after - before) * (1.4 + profile.weights.overextensionPenalty * 2.1) * knownSweepMultiplier;
       }
+    }
+
+    const playedCard = action.type === "playCard" ? (me.hand || []).find((card: any) => String(card?.id ?? card?.uid ?? "") === String(action.cardId || "")) : null;
+    const heldTranqueira = (me.hand || []).find(isTranqueira);
+    const liveTranqueira = [...(me.support || []), ...(me.board || [])].find(isTranqueira);
+    if (playedCard && isTranqueira(playedCard)) score += 16;
+    else if (playedCard && heldTranqueira) score -= 5;
+    if (liveTranqueira) {
+      const progress = Number(liveTranqueira.cardsPlayedAfterSelf || 0);
+      if (playedCard) score += progress < 5 ? 4.2 : 1.1;
+      if (action.type === "advancePhase") score += progress >= 5 ? 8 : -28 - (5 - progress) * 3;
     }
 
     // At genuinely low life, a human opponent stops treating healing/prevention

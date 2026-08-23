@@ -29,6 +29,10 @@ export type Participant = {
   disconnectedAt?: number | null;
   lastSeenAt?: number | null;
   recentCommandIds?: string[];
+  /** Idempotency key used only while accepting an invitation. It lets a
+   * client recover the participant token after a concurrent room write or a
+   * successful response that was lost in transit. */
+  joinRequestId?: string;
 };
 
 export type Room = {

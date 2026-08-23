@@ -45,7 +45,8 @@ test("multiplayer response polling and resource display stay fast and authoritat
  assert.match(page,/window\.setTimeout\(fn,600\)/);
  assert.doesNotMatch(page,/setInterval\(fn,(?:300|600)\)/);
  assert.match(page,/const responseBudget=\(state:Game,owner:0\|1\)=>state\.active===owner\?state\.players\[owner\]\.energy\+state\.players\[owner\]\.reserve/);
- assert.match(page,/const usableAcceleratedResponses=[\s\S]*?!isFast\(card\)\|\|cost>budget[\s\S]*?canChooseAllTargets/);
+ assert.match(page,/const legalAcceleratedResponseCommands=[\s\S]*?legalPriorityResponses\(state,owner\)/);
+ assert.match(page,/const usableAcceleratedResponses=[\s\S]*?legalIds\.has\(card\.id\)/);
  assert.doesNotMatch(page,/cost>budget\?"unavailable"/);
 });
 

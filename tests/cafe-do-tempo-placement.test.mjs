@@ -34,6 +34,35 @@ test("Café do Tempo controller chooses placement on the opponent active field",
  const placed=executeCommand(next,{type:"resolveDecision",owner:0,slot:3,placementZone:"creature"}).state;
  assert.equal(placed.players[0].board.length,0);
  const cat=placed.players[1].board.find(card=>card.name==="Gato Multidimensional");assertBattlefieldCat(cat,3);
+ assert.equal(placed.players[0].life,30,"o controlador do Café não paga o Primeiro Ato do Gato colocado no campo rival");
+ assert.equal(placed.players[1].life,29,"o Primeiro Ato é aplicado ao jogador que recebeu o Gato em seu campo");
+ assert.equal(placed.players[1].subtypesEnteredThisTurn.Gato,1,"a Imagem criada conta como um Gato que entrou no campo rival");
+});
+
+test("Gato Multidimensional checks its controller only after that player's combat",()=>{
+ const opponentTurn=state(0);opponentTurn.phase="combate";
+ opponentTurn.players[1].board.push({...printed(213),uid:"opponent-cat",slot:0,damage:0,exhausted:false,summoning:false,modifiers:[]});
+ opponentTurn.players[1].subtypesEnteredThisTurn={};
+ const afterOpponentCombat=executeCommand(opponentTurn,{type:"advancePhase",owner:0}).state;
+ assert.equal(afterOpponentCombat.phase,"fim");
+ assert.equal(afterOpponentCombat.players[1].life,30,"o Gato não cobra sua penalidade no turno do outro jogador");
+
+ const controllerTurn=structuredClone(afterOpponentCombat);controllerTurn.active=1;controllerTurn.phase="combate";
+ const afterControllerCombat=executeCommand(controllerTurn,{type:"advancePhase",owner:1}).state;
+ assert.equal(afterControllerCombat.phase,"fim");
+ assert.equal(afterControllerCombat.players[1].life,29,"sem outro Gato no turno, a penalidade resolve ao sair do combate do controlador");
+});
+
+test("a newly created Gato does not immediately fail its own end-of-turn condition",()=>{
+ const game=state(1);installCafe(game,0);
+ const placement=executeCommand(game,{type:"advancePhase",owner:1}).state;
+ const placed=executeCommand(placement,{type:"resolveDecision",owner:0,slot:2,placementZone:"creature"}).state;
+ assert.equal(placed.players[1].life,29,"somente o Primeiro Ato foi pago na entrada");
+ const combat=executeCommand(placed,{type:"advancePhase",owner:1}).state;
+ assert.equal(combat.phase,"combate");
+ const ending=executeCommand(combat,{type:"advancePhase",owner:1}).state;
+ assert.equal(ending.phase,"fim");
+ assert.equal(ending.players[1].life,29,"o próprio Gato criado satisfaz a condição de entrada neste turno");
 });
 
 test("Café do Tempo placement owns Online priority before the active opponent can continue",()=>{

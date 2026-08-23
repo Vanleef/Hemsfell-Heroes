@@ -1057,3 +1057,157 @@
 .screen-game .hand-limit-dialog .hand-limit-choice-area[data-hand-limit-fit="true"] > *:focus-within {
   z-index: 40 !important;
 }
+
+/* Collection lists are bounded independently so the main deck can never
+   paint over the Extra Deck. Card width becomes denser only when the list
+   contains many distinct entries. */
+.screen-decks .collection-lists,
+.screen-decks .collection-lists > section {
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  contain: layout paint !important;
+}
+.screen-decks .collection-lists > section:first-child .card-library {
+  max-height: clamp(18rem, 46vh, 32rem) !important;
+}
+.screen-decks .collection-lists .extra-collection .card-library {
+  max-height: clamp(9rem, 24vh, 15rem) !important;
+}
+.screen-decks .collection-lists .card-library {
+  width: 100% !important;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(4.7rem, 7vw, 6rem), 1fr)) !important;
+  gap: clamp(.38rem, .75vw, .72rem) !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  box-sizing: border-box !important;
+  scrollbar-gutter: stable !important;
+}
+.screen-decks .collection-lists .card-library:has(> :nth-child(21)) {
+  grid-template-columns: repeat(auto-fill, minmax(clamp(4.1rem, 5.8vw, 5.15rem), 1fr)) !important;
+  gap: clamp(.28rem, .55vw, .55rem) !important;
+}
+.screen-decks .collection-lists .card-library > .card-frame {
+  width: 100% !important;
+  max-width: clamp(14.7rem, 7vw, 6rem) !important;
+  min-width: 0 !important;
+  justify-self: center !important;
+  aspect-ratio: 5 / 7 !important;
+}
+.screen-decks .collection-lists .card-library .original-card,
+.screen-decks .collection-lists .card-library .original-card.is-small {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: 5 / 7 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.screen-decks .collection-lists .card-library .remote-card-art {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center top !important;
+  border-radius: inherit !important;
+}
+/* Remove padding interno que cria “moldura preta” grande */
+.screen-decks .collection-lists .card-library .card-frame,
+.screen-decks .collection-lists .card-library .original-card {
+  padding: 0 !important;
+}
+
+.collection-copy-count {
+  position: absolute;
+  z-index: 18;
+  top: clamp(-.35rem, -.35vw, -.18rem);
+  left: clamp(-.35rem, -.35vw, -.18rem);
+  display: grid;
+  place-items: center;
+  min-width: clamp(1.25rem, 1.8vw, 1.55rem);
+  height: clamp(1.25rem, 1.8vw, 1.55rem);
+  padding: 0 .22rem;
+  border: 2px solid #071116;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #f5d77d, #bd7b22);
+  color: #151008;
+  font: 900 clamp(.58rem, .72vw, .72rem)/1 Arial;
+  font-style: normal;
+  box-shadow: 0 .18rem .5rem #000b, 0 0 .45rem #e7bb5655;
+  pointer-events: none;
+}
+.graveyard-overlay .extra-deck-dialog > header span { color: #b9c9d5 !important; }
+.graveyard-overlay .extra-deck-dialog { border-color: #8da1b052 !important; }
+
+@media (max-width: 48rem) {
+  .screen-decks .collection-lists .card-library,
+  .screen-decks .collection-lists .card-library:has(> :nth-child(21)) {
+    grid-template-columns: repeat(auto-fill, minmax(clamp(3.8rem, 18vw, 4.8rem), 1fr)) !important;
+  }
+  .screen-decks .collection-lists > section:first-child .card-library { max-height: 42vh !important; }
+  .screen-decks .collection-lists .extra-collection .card-library { max-height: 22vh !important; }
+}
+
+/* ==========================================================================
+   COLLECTION LISTS — itens menores + gap + sem tooltips
+   ========================================================================== */
+
+.screen-decks .collection-lists,
+.screen-decks .collection-lists > section {
+  overflow: visible !important;
+  contain: none !important;
+}
+
+.screen-decks .collection-lists .card-library {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  grid-template-columns: repeat(auto-fill, minmax(clamp(3.1rem, 4.6vw, 4.2rem), 1fr)) !important;
+  gap: clamp(.32rem, .65vw, .55rem) !important;
+}
+
+.screen-decks .collection-lists .card-library:has(> :nth-child(21)) {
+  grid-template-columns: repeat(auto-fill, minmax(clamp(2.7rem, 4vw, 3.7rem), 1fr)) !important;
+  gap: clamp(.26rem, .5vw, .45rem) !important;
+}
+
+.screen-decks .collection-lists .card-library > .card-frame {
+  width: 100% !important;
+  max-width: none !important;
+  aspect-ratio: 5 / 7 !important;
+  position: relative !important;
+  overflow: visible !important;
+}
+
+.screen-decks .collection-lists .card-library .original-card,
+.screen-decks .collection-lists .card-library .original-card.is-small {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+}
+
+/* Remove tooltips */
+.screen-decks .collection-lists .card-tooltip,
+.screen-decks .collection-lists .original-card .card-tooltip,
+.screen-decks .collection-lists .card-frame .card-tooltip {
+  display: none !important;
+}
+
+/* Mobile */
+@media (max-width: 48rem) {
+  .screen-decks .collection-lists .card-library,
+  .screen-decks .collection-lists .card-library:has(> :nth-child(21)) {
+    grid-template-columns: repeat(auto-fill, minmax(clamp(2.6rem, 13.5vw, 3.5rem), 1fr)) !important;
+    gap: clamp(.24rem, 1.1vw, .42rem) !important;
+  }
+}
+
+@media (max-width: 36rem) {
+  .screen-decks .collection-lists .card-library,
+  .screen-decks .collection-lists .card-library:has(> :nth-child(21)) {
+    grid-template-columns: repeat(auto-fill, minmax(clamp(2.3rem, 16vw, 3.1rem), 1fr)) !important;
+  }
+}
+
