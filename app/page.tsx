@@ -450,13 +450,10 @@ const joinRoomWithPost = (id:string)=>{
 };
 
 const selectHeroInRoom = async (heroId:string)=>{
-    if(!roomId||!roomToken) return;
-    try{
-        setRoomError("");
-        const res = await fetch(`/api/rooms/${roomId}`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'select',token:roomToken,heroId,locked:true})});
-        const data = await res.json(); if(!res.ok)throw new Error(data?.error||'failed');
-        setRoomInfo(data);roomRevisionRef.current=data.revision??roomRevisionRef.current;
-    }catch(e){const message=e instanceof Error?e.message:"Não foi possível confirmar o deck.";console.error("Could not confirm multiplayer deck",e);setRoomError(message);}
+    if(!roomId||!roomToken||lobbyActionPending)return;
+    setLobbyActionPending(true);setRoomError("");
+    try{await roomAction("select",{heroId,locked:true})}
+    finally{setLobbyActionPending(false)}
 };
 
 const onlineCardIdentity=(card:Partial<CardDef&Unit>)=>card.uid||card.id||`${card.page??""}:${card.name??""}`;
@@ -500,8 +497,8 @@ const roomAction=(action:string,extra:Record<string,unknown>={})=>{
   const res=await fetch(`/api/rooms/${roomId}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
   const data=await res.json();
   const staleRevision=res.status===409&&data?.error==="stale revision";
-  const retryableStale=staleRevision&&(action==="command"||action==="choose_start");
-  if(retryableStale){applyRoomSnapshot(data);if(action==="choose_start"&&["mulligan","started","finished"].includes(data?.status))return data;if(staleRetries<3){await new Promise(resolve=>window.setTimeout(resolve,0));return execute(staleRetries+1)}}
+  const retryableStale=staleRevision&&(action==="command"||action==="choose_start"||action==="select");
+  if(retryableStale){applyRoomSnapshot(data);const participant=isHost?data?.host:data?.guest;if(action==="select"&&participant?.deckLocked&&participant?.heroId===extra.heroId)return data;if(action==="choose_start"&&["mulligan","started","finished"].includes(data?.status))return data;if(staleRetries<3){await new Promise(resolve=>window.setTimeout(resolve,0));return execute(staleRetries+1)}}
   if(!res.ok){setRoomError(data?.error||"A sala recusou a ação.");return null}
   setRoomError("");applyRoomSnapshot(data);return data;
  };
@@ -1045,7 +1042,7 @@ useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadl
                 {roomId&&<><div className="lobby-head"><div><p>SALA {roomId.slice(-8).toUpperCase()}</p><h3>{roomInfo?.status==="waiting"?"Aguardando oponente":roomInfo?.status==="deck-selection"?"Escolha e confirme seu deck":roomInfo?.status==="coin-choice"?"A moeda decidiu":roomInfo?.status==="mulligan"?"Prepare sua mão inicial":"Partida em andamento"}</h3></div><span className={`connection ${roomInfo?.guest?"online":""}`}><i></i>{roomInfo?.guest?"2 jogadores conectados":"1 jogador conectado"}</span></div>
                 {roomLink&&<div className="room-link"><div><b>Link do convite</b><span>Envie para o segundo jogador</span></div><input readOnly value={roomLink} onFocus={e=>e.currentTarget.select()}/><button onClick={()=>navigator.clipboard.writeText(roomLink)}>Copiar</button></div>}
                 <div className="lobby-steps">{[["1","Convite",!!roomInfo?.guest],["2","Decks",!!roomInfo?.host?.deckLocked&&!!roomInfo?.guest?.deckLocked],["3","Moeda",!!roomInfo?.startingRole],["4","Mulligan",roomInfo?.status==="started"]].map(([n,label,done])=><div className={done?"done":roomInfo?.status==="started"?"done":""} key={String(n)}><i>{done?"✓":n}</i><span>{label}</span></div>)}</div>
-                {roomInfo?.status==="deck-selection"&&<div className="room-deck-row"><DeckPicker label="SEU HERÓI E DECK" value={mine} onChange={setMine}/><button className="gold" disabled={!!myRoomParticipant?.deckLocked} onClick={()=>selectHeroInRoom(mine)}>{myRoomParticipant?.deckLocked?"Deck confirmado ✓":"Confirmar este deck"}</button><aside><b>Oponente</b><span>{(isHost?roomInfo?.guest:roomInfo?.host)?.deckLocked?"Deck confirmado":"Escolhendo…"}</span></aside></div>}
+                {roomInfo?.status==="deck-selection"&&<div className="room-deck-row"><DeckPicker label="SEU HERÓI E DECK" value={mine} onChange={setMine}/><button className="gold" disabled={!!myRoomParticipant?.deckLocked||lobbyActionPending} onClick={()=>void selectHeroInRoom(mine)}>{myRoomParticipant?.deckLocked?"Deck confirmado ✓":lobbyActionPending?"Confirmando…":"Confirmar este deck"}</button><aside><b>Oponente</b><span>{(isHost?roomInfo?.guest:roomInfo?.host)?.deckLocked?"Deck confirmado":"Escolhendo…"}</span></aside></div>}
                 {roomInfo?.status==="coin-choice"&&<div className="coin-stage"><i className="coin">H</i><div><p>RESULTADO DA MOEDA</p><h3>{roomInfo.coinWinner===(isHost?"host":"guest")?"Você venceu o lançamento":"Seu oponente venceu o lançamento"}</h3>{roomInfo.coinWinner===(isHost?"host":"guest")?<div><button className="gold" disabled={lobbyActionPending} onClick={()=>void chooseStarter(true)}>{lobbyActionPending?"Iniciando…":"Eu começo"}</button><button disabled={lobbyActionPending} onClick={()=>void chooseStarter(false)}>Oponente começa</button></div>:<span>Aguardando o vencedor escolher quem inicia…</span>}</div></div>}
                 {roomInfo?.status==="mulligan"&&<div className="lobby-wait"><i></i><b>Preparação da mão inicial</b><span>{roomInfo?.game?"Escolha suas trocas na tela de mulligan.":"Distribuindo as mãos…"}</span></div>}
                 {roomError&&<em className="room-error">{roomError}</em>}</>}

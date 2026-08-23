@@ -5,7 +5,7 @@ import test from "node:test";
 const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
 
 test("coin winner choice reconciles a heartbeat revision conflict on the first click", () => {
-  assert.match(page, /const retryableStale=staleRevision&&\(action==="command"\|\|action==="choose_start"\)/);
+  assert.match(page, /const retryableStale=staleRevision&&\(action==="command"\|\|action==="choose_start"\|\|action==="select"\)/);
   assert.match(page, /if\(action==="choose_start"&&\["mulligan","started","finished"\]\.includes\(data\?\.status\)\)return data/);
   assert.match(page, /if\(staleRetries<3\)[\s\S]*?execute\(staleRetries\+1\)/);
 });
