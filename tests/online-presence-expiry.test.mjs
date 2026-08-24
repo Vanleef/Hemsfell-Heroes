@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { markStaleParticipants } from "../app/api/rooms/presence.mjs";
 
-test("both players absent for over one minute do not receive a fresh reconnect grace", () => {
+test("throttled or minimized tabs are never disconnected by missing heartbeats", () => {
   const now = Date.now();
   const room = {
     status: "started",
@@ -11,11 +11,10 @@ test("both players absent for over one minute do not receive a fresh reconnect g
     guest: { lastSeenAt: now - 64_000, disconnectedAt: null },
   };
 
-  assert.equal(markStaleParticipants(room, now), true);
-  assert.equal(room.host.disconnectedAt, now - 65_000);
-  assert.equal(room.guest.disconnectedAt, now - 64_000);
-  assert.equal(room.pauseStartedAt, now - 65_000);
-  assert.ok(room.host.disconnectedAt + 60_000 <= now);
+  assert.equal(markStaleParticipants(room, now), false);
+  assert.equal(room.host.disconnectedAt, null);
+  assert.equal(room.guest.disconnectedAt, null);
+  assert.equal(room.pauseStartedAt, null);
 });
 
 test("a recent heartbeat remains connected", () => {

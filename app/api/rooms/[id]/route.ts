@@ -3,14 +3,12 @@ import { readRoomFast as readRoom, roleFor, roomView, writeRoom, type Room } fro
 import { applyRulesCommand, applyTimeout, bothDecksLocked, deadline, participant, prepareCoin, sanitizeSettings } from "../machine";
 import { createInitialOnlineGame } from "../initial-game";
 import { shiftOnlineDeadlines } from "../online-clock.mjs";
-import { markStaleParticipants, PRESENCE_STALE_MS } from "../presence.mjs";
 import { isPlainRecord, isRoomId, readSafeJson } from "../validation";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 const noStore = { headers: { "Cache-Control": "no-store, max-age=0" } };
 const VALID_DECK_IDS = new Set(["gimble", "goblin", "uruk", "tifon", "saymon", "tessalia", "quarion", "rasmus", "ngoro", "zayan", "natureza"]);
-const PRESENCE_HEARTBEAT_WRITE_MS = 5_000;
 const isStaleWrite = (error: unknown) => error instanceof Error && error.message === "stale room revision";
 const validJoinRequestId = (value: unknown): value is string => typeof value === "string" && /^[a-zA-Z0-9_-]{16,128}$/.test(value);
 const authenticatedReadToken = (req: NextRequest) => {
@@ -34,50 +32,24 @@ async function persistDueTimeout(room: Room, id: string) {
   }
 }
 
-/** Persist missed heartbeats before evaluating reconnect expiry. Without this
- * pass, two absent players could return much later and start a fresh grace
- * period at the time of the first returning GET. */
-async function persistStalePresence(room: Room, id: string) {
-  for (let attempt = 0; attempt < 3; attempt++) {
-    if (!markStaleParticipants(room)) return room;
-    room.revision++;
-    try {
-      await writeRoom(room);
-      return room;
-    } catch (error) {
-      if (!isStaleWrite(error)) throw error;
-      const latest = await readRoom(id);
-      if (!latest) return room;
-      room = latest;
-    }
-  }
-  return room;
-}
-
-/** Treat authenticated polling as a heartbeat. A browser that is back and
- * successfully polling the room is connected again, so do not leave the other
- * player trapped behind a stale disconnectedAt flag waiting for an explicit
- * resume POST that may never fire after a tab/page restore. */
-async function resumeParticipant(room: Room, id: string, role: "host" | "guest", detectStalePeer = false) {
+/** Explicit resume is the only operation that clears disconnectedAt. */
+async function resumeParticipant(room: Room, id: string, role: "host" | "guest") {
   for (let attempt = 0; attempt < 3; attempt++) {
     const activeParticipant = room[role];
     if (!activeParticipant) return room;
 
     const resumedAt = Date.now();
     const otherRole = role === "host" ? "guest" : "host";
-    const otherParticipant = room[otherRole];
     let changed = false;
-    if (detectStalePeer && (room.status === "mulligan" || room.status === "started") && otherParticipant && !otherParticipant.disconnectedAt && Number.isFinite(Number(otherParticipant.lastSeenAt)) && resumedAt - Number(otherParticipant.lastSeenAt) >= PRESENCE_STALE_MS) {
-      const peerLastSeenAt = Number(otherParticipant.lastSeenAt);
-      const disconnectedAt = Number.isFinite(peerLastSeenAt) ? peerLastSeenAt : resumedAt;
-      otherParticipant.disconnectedAt = disconnectedAt;
-      room.pauseStartedAt = room.pauseStartedAt == null ? disconnectedAt : Math.min(room.pauseStartedAt, disconnectedAt);
-      changed = true;
-    }
-
     const awaySince = activeParticipant.disconnectedAt;
     if (awaySince) {
       activeParticipant.disconnectedAt = null;
+      activeParticipant.lastSeenAt = resumedAt;
+      activeParticipant.turnHadAction = false;
+      activeParticipant.noActionTimeouts = 0;
+      activeParticipant.lastNoActionTimeoutRound = null;
+      activeParticipant.probationRound = null;
+      activeParticipant.disconnectAfterOpponentMaintenance = false;
       changed = true;
       const otherDisconnected = room[otherRole]?.disconnectedAt;
       if (!otherDisconnected) {
@@ -89,10 +61,6 @@ async function resumeParticipant(room: Room, id: string, role: "host" | "guest",
         }
         room.pauseStartedAt = null;
       }
-    }
-    if (!Number.isFinite(Number(activeParticipant.lastSeenAt)) || resumedAt - Number(activeParticipant.lastSeenAt) >= PRESENCE_HEARTBEAT_WRITE_MS) {
-      activeParticipant.lastSeenAt = resumedAt;
-      changed = true;
     }
     if (!changed) return room;
 
@@ -115,14 +83,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!isRoomId(id)) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
   let room = await readRoom(id);
   if (!room) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
-  room = await persistStalePresence(room, id);
   room = await persistDueTimeout(room, id);
   const token = authenticatedReadToken(req);
-  let role = roleFor(room, token);
-  if (role) {
-    room = await resumeParticipant(room, id, role, true);
-    role = roleFor(room, token);
-  }
+  const role = roleFor(room, token);
   return NextResponse.json(roomView(room, !!role, role), noStore);
 }
 
@@ -131,7 +94,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (!isRoomId(id)) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
   let room = await readRoom(id);
   if (!room) return NextResponse.json({ error: "not found" }, { status: 404, ...noStore });
-  room = await persistStalePresence(room, id);
   room = await persistDueTimeout(room, id);
   let requestToken: unknown = null;
   try {
@@ -185,7 +147,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (body.action === "resume") {
       const awaySince = activeParticipant.disconnectedAt;
       if (!awaySince) return NextResponse.json(roomView(room, true, role), noStore);
-      room = await resumeParticipant(room, id, role, true);
+      room = await resumeParticipant(room, id, role);
       return NextResponse.json(roomView(room, true, role), noStore);
     }
     if (activeParticipant.disconnectedAt) return NextResponse.json({ error: "resume required", ...roomView(room, true, role) }, { status: 409, ...noStore });

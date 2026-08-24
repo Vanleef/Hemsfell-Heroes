@@ -29,6 +29,8 @@ test("resume shifts every Online deadline through the shared clock helper", () =
 test("resume is idempotent and gameplay cannot silently clear a disconnected participant", () => {
   assert.match(route, /if \(!awaySince\) return NextResponse\.json\(roomView\(room, true, role\), noStore\)/);
   assert.match(route, /if \(activeParticipant\.disconnectedAt\) return NextResponse\.json\(\{ error: "resume required"/);
+  assert.match(route, /activeParticipant\.noActionTimeouts = 0/);
+  assert.match(route, /activeParticipant\.disconnectAfterOpponentMaintenance = false/);
   assert.doesNotMatch(route, /activeParticipant\.disconnectedAt = null;\s*if \(body\.action === "select"\)/);
 });
 
@@ -43,20 +45,20 @@ test("bfcache restoration and network recovery explicitly resume the authenticat
   assert.match(runtime, /loadOnlineSession\(localStorage, roomId\)/);
 });
 
-test("authenticated polling detects silent network drops for either role", () => {
+test("authenticated polling is read-only and never turns throttling into a disconnect", () => {
   assert.match(machine, /lastSeenAt\?: number \| null/);
-  assert.match(route, /const PRESENCE_HEARTBEAT_WRITE_MS = 5_000/);
-  assert.match(presence, /export const PRESENCE_STALE_MS = 12_000/);
-  assert.match(route, /const otherRole = role === "host" \? "guest" : "host"/);
-  assert.match(route, /otherParticipant\.disconnectedAt = disconnectedAt/);
-  assert.match(route, /activeParticipant\.lastSeenAt = resumedAt/);
-  assert.match(route, /resumeParticipant\(room, id, role, true\)/);
-  assert.match(route, /room\.status === "mulligan" \|\| room\.status === "started"/);
+  assert.match(presence, /missing polls must never be interpreted as a disconnect/);
+  assert.match(presence, /return false/);
+  assert.doesNotMatch(route, /heartbeatParticipant/);
+  assert.doesNotMatch(route, /PRESENCE_STALE_MS/);
+  assert.doesNotMatch(route, /otherParticipant\.disconnectedAt/);
 });
 
-test("missed heartbeats are persisted before timeout and keep their real origin", () => {
-  assert.match(presence, /participant\.disconnectedAt = lastSeenAt/);
-  assert.match(route, /room = await persistStalePresence\(room, id\);\s*room = await persistDueTimeout\(room, id\)/g);
+test("only explicit disconnect or authoritative inactivity sets disconnectedAt", () => {
+  assert.doesNotMatch(presence, /disconnectedAt\s*=/);
+  assert.doesNotMatch(route, /persistStalePresence/);
+  assert.match(route, /body\.action === "disconnect"/);
+  assert.match(machine, /"inactivity-disconnect"/);
 });
 
 test("the whole match is frozen while either participant is inside reconnect grace", () => {

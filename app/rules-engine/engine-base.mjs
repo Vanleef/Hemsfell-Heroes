@@ -987,6 +987,13 @@ export function executeCommand(inputState, command, options = {}) {
         const next = pending.owners.find((owner) => !pending.confirmed.includes(owner));
         if (next == null) state.pendingReposition = null;
         else { pending.activeOwner = next; pending.deadline = Date.now() + 30000; }
+      } else if (item.command.type === "skipMaintenanceChoice") {
+        if (!item.command.auto || state.phase !== "manutencao" || state.active !== item.command.owner) throw new RulesViolation("maintenance-choice-unavailable");
+        if (state.pendingResponse || state.pendingAction || state.pendingDecision || state.pendingReposition || state.combatAction) throw new RulesViolation("interaction-pending");
+        /* Server-only inactivity path: leave Maintenance without granting the
+           ordinary card/maximum-energy or two-card resource package. */
+        state.phase = "principal";
+        stack.push({ kind: "event", event: { type: "onMaintenanceExit", owner: item.command.owner, resourcesSkipped: true } });
       } else if (item.command.type === "maintenanceChoice") {
         if (state.phase !== "manutencao" || state.active !== item.command.owner) throw new RulesViolation("maintenance-choice-unavailable");
         if (state.pendingResponse || state.pendingAction || state.pendingDecision || state.pendingReposition || state.combatAction) throw new RulesViolation("interaction-pending");

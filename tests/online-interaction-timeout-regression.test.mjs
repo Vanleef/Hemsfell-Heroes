@@ -8,7 +8,7 @@ test("every authoritative interaction has a server timeout exit", () => {
   assert.match(machine, /pendingDecision\.deadline = now \+ room\.settings\.responseSeconds \* 1000/);
   assert.match(machine, /chooseAIDecision\(before, owner, "Normal"\)/);
   assert.match(machine, /type: "confirmReposition", owner, auto: true/);
-  assert.match(machine, /before\.phase === "manutencao"[\s\S]*?type: "maintenanceChoice"/);
+  assert.match(machine, /before\.phase === "manutencao" && noActionTimeout[\s\S]*?type: "skipMaintenanceChoice"/);
 });
 
 test("decision timeouts still flow through the authoritative command engine", () => {
