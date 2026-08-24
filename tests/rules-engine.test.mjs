@@ -1153,9 +1153,9 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(page, /executeCommand\(current,\{\.\.\.command,owner\},\{priority:true\}\)/);
   assert.match(page, /role!=="attachment"/);
   assert.match(page, /dragged!\.type!=="Artefato"\|\|!!creature/);
-  assert.match(page, /chooseAIResponse/);
+  assert.match(page, /chooseAdvancedAIResponse/);
   assert.match(page, /legalPriorityResponses/);
-  assert.match(page, /shouldAutoPass/);
+  assert.match(page, /hasUsablePriorityResponse/);
   assert.match(page, /Modo: Manual/);
   assert.match(page, /priority-stack-indicator/);
   assert.match(page, /cardPlayTargetPolicy/);
@@ -1423,6 +1423,18 @@ test("Goblin sacrifice damage uses the sacrificed creature effective attack", ()
   assert.equal(result.players[0].grave[0].deathCause, "sacrifice");
 });
 
+test("Goblin sacrifice activation collects its cost and effect target authoritatively", () => {
+  const game = state(); game.players[0].energy = 10;
+  const source = compileCard({ id: "p37", page: 37, name: "BUCHA DE CANHÃO", type: "Encanto", cost: 0, text: "", tags: [] });
+  game.players[0].support.push({ ...source, uid: "cannon", slot: 0, summoning: false, exhausted: false });
+  game.players[0].board.push({ uid: "goblin", id: "goblin", type: "Criatura", atk: 4, hp: 2, tags: ["Goblin"], subtypes: ["Goblin"], abilities: [] });
+  const pending = executeCommand(game, { type: "activate", owner: 0, sourceId: "cannon", abilityId: source.abilities[0].id }).state;
+  assert.deepEqual(pending.pendingDecision.targetSteps.map((step) => step.role), ["sacrifice", "effect"]);
+  const result = executeCommand(pending, { type: "resolveDecision", owner: 0, targetIds: ["goblin", "enemy-hero"] }).state;
+  assert.equal(result.players[1].life, 26);
+  assert.equal(result.players[0].board.length, 0);
+});
+
 test("Chave Rara searches a terrain directly onto the authoritative field", () => {
   const game = state(); game.players[0].energy = 10;
   const card = compileCard({ id: "p94", page: 94, name: "Chave Rara", type: "Feitiço", cost: 3, text: "", tags: [] });
@@ -1503,8 +1515,8 @@ test("UI animation is presentation-only and cannot hide an unresolved ability re
 test("online actions share one serialized request queue and reconcile stale revisions", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /syncQueueRef\.current\.then\(\(\)=>execute\(\)\)/);
-  assert.match(page, /const retryableStale=staleRevision&&\(action==="command"\|\|action==="choose_start"\|\|action==="select"\)/);
-  assert.match(page, /if\(staleRetries<3\)[\s\S]*?execute\(staleRetries\+1\)/);
+  assert.match(page, /const retryableStale=staleRevision&&\(action==="command"\|\|action==="choose_start"\|\|action==="select"\|\|action==="mulligan"\)/);
+  assert.match(page, /if\(staleRetries<3\)[\s\S]*?execute\(staleRetries\+1,networkRetries\)/);
   assert.match(page, /if\(lobbyActionPending\)return/);
   assert.match(page, /incomingRevision<=roomRevisionRef\.current/);
 });

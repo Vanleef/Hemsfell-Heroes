@@ -191,12 +191,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (activeParticipant.disconnectedAt) return NextResponse.json({ error: "resume required", ...roomView(room, true, role) }, { status: 409, ...noStore });
 
     if (body.action === "select") {
-      if (room.status !== "deck-selection") return NextResponse.json({ error: "deck selection is closed" }, { status: 409, ...noStore });
       const current = room[role];
       if (!current) return NextResponse.json({ error: "player not connected" }, { status: 409, ...noStore });
+      if (!validJoinRequestId(body.selectRequestId)) return NextResponse.json({ error: "invalid select request" }, { status: 400, ...noStore });
+      if (current.lastSelectRequestId === body.selectRequestId) return NextResponse.json(roomView(room, true, role), noStore);
+      if (room.status !== "deck-selection") return NextResponse.json({ error: "deck selection is closed", ...roomView(room, true, role) }, { status: 409, ...noStore });
       if (typeof body.heroId !== "string" || !VALID_DECK_IDS.has(body.heroId)) return NextResponse.json({ error: "invalid deck" }, { status: 400, ...noStore });
       current.heroId = body.heroId;
       current.deckLocked = !!body.locked;
+      current.lastSelectRequestId = body.selectRequestId;
       if (bothDecksLocked(room)) prepareCoin(room);
       room.revision++;
     } else if (body.action === "settings") {
@@ -204,6 +207,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       room.settings = sanitizeSettings(isPlainRecord(body.settings) ? body.settings : undefined);
       room.revision++;
     } else if (body.action === "choose_start") {
+      const current = room[role];
+      if (!current) return NextResponse.json({ error: "player not connected" }, { status: 409, ...noStore });
+      if (!validJoinRequestId(body.chooseStartRequestId)) return NextResponse.json({ error: "invalid start request" }, { status: 400, ...noStore });
+      if (current.lastChooseStartRequestId === body.chooseStartRequestId) return NextResponse.json(roomView(room, true, role), noStore);
       if (room.status !== "coin-choice" || room.coinWinner !== role) return NextResponse.json({ error: "only coin winner chooses" }, { status: 403, ...noStore });
       if (!room.host.heroId || !room.guest?.heroId) return NextResponse.json({ error: "decks are not ready" }, { status: 409, ...noStore });
       room.startingRole = body.startSelf ? role : role === "host" ? "guest" : "host";
@@ -216,6 +223,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       room.guest.mulliganDone = false;
       room.guest.mulliganDeadline = mulliganDeadline;
       room.status = "mulligan";
+      current.lastChooseStartRequestId = body.chooseStartRequestId;
       room.revision++;
     } else if (body.action === "initialize") {
       /* Pre-authoritative clients uploaded a complete shuffled match here. That
@@ -226,8 +234,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
          client game snapshot at all. */
       return NextResponse.json({ error: "client game initialization disabled", ...roomView(room, true, role) }, { status: 409, ...noStore });
     } else if (body.action === "mulligan") {
-      if (room.status !== "mulligan" || !room.game) return NextResponse.json({ error: "mulligan unavailable" }, { status: 409, ...noStore });
+      if (!validJoinRequestId(body.mulliganRequestId)) return NextResponse.json({ error: "invalid mulligan request" }, { status: 400, ...noStore });
+      const mulliganRequestId = body.mulliganRequestId;
       const current = room[role];
+      if (!current) return NextResponse.json({ error: "player not connected" }, { status: 409, ...noStore });
+      if (current.lastMulliganRequestId === mulliganRequestId) return NextResponse.json(roomView(room, true, role), noStore);
+      if (room.status !== "mulligan" || !room.game) return NextResponse.json({ error: "mulligan unavailable" }, { status: 409, ...noStore });
       if (!current || current.mulliganDone) return NextResponse.json({ error: "mulligan already confirmed" }, { status: 409, ...noStore });
       const playerIndex = role === "host" ? 0 : 1;
       const player = room.game.players?.[playerIndex];
@@ -250,6 +262,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         room.status = "started";
         room.game.turnDeadline = deadline(room.settings.turnSeconds);
       }
+      current.lastMulliganRequestId = mulliganRequestId;
       room.revision++;
     } else if (body.action === "command") {
       if (!isPlainRecord(body.command)) return NextResponse.json({ error: "invalid command" }, { status: 400, ...noStore });

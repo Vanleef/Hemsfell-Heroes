@@ -4728,6 +4728,23 @@
   color: #ffb3b3;
   font: 10px Arial;
 }
+.online-command-error {
+  position: absolute;
+  z-index: 85;
+  top: clamp(44px, 5.4vh, 66px);
+  left: 50%;
+  max-width: min(82vw, 520px);
+  transform: translateX(-50%);
+  padding: 7px 12px;
+  border: 1px solid #e2686888;
+  border-radius: 5px;
+  background: #2a0f14ee;
+  color: #ffd0d0;
+  box-shadow: 0 5px 20px #0008;
+  font: 600 clamp(9px, .75vw, 12px)/1.35 Arial;
+  text-align: center;
+  pointer-events: none;
+}
 .match-clock {
   min-width: 68px;
   display: grid;

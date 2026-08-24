@@ -3,6 +3,7 @@ import { reconcileOnlineClocks } from "./online-clock.mjs";
 import { executeOnlineCommand } from "../../rules-engine/online-priority-engine.mjs";
 import { listPendingIndomitableAttackers } from "../../rules-engine/combat.mjs";
 import { shouldAutoPass } from "../../rules-engine/priority.mjs";
+import { chooseAIDecision } from "../../rules-engine/ai.mjs";
 import { logOnlineDiagnostic } from "./online-diagnostics.mjs";
 
 /* `executeOnlineCommand` is the Online timing wrapper around the authoritative
@@ -33,6 +34,13 @@ export type Participant = {
    * client recover the participant token after a concurrent room write or a
    * successful response that was lost in transit. */
   joinRequestId?: string;
+  /** Last mulligan decision accepted for this participant. A stable request
+   * id makes retries safe even when the committed response is lost. */
+  lastMulliganRequestId?: string;
+  /** Idempotency keys for lobby mutations whose successful response may be
+   * lost while the other participant advances the room state. */
+  lastSelectRequestId?: string;
+  lastChooseStartRequestId?: string;
 };
 
 export type Room = {
@@ -177,6 +185,14 @@ export function applyTimeout(room: Room) {
     if (room.game.priority) room.game.priority.deadline = room.game.combatAction.deadline;
     seededDeadline = true;
   }
+  if (room.game.pendingDecision && !Number.isFinite(Number(room.game.pendingDecision.deadline))) {
+    room.game.pendingDecision.deadline = now + room.settings.responseSeconds * 1000;
+    seededDeadline = true;
+  }
+  if (room.game.pendingReposition && !Number.isFinite(Number(room.game.pendingReposition.deadline))) {
+    room.game.pendingReposition.deadline = now + room.settings.responseSeconds * 1000;
+    seededDeadline = true;
+  }
 
   if (room.game.pendingResponse) {
     if (room.game.pendingResponse.deadline > now) return seededDeadline;
@@ -208,18 +224,48 @@ export function applyTimeout(room: Room) {
     return true;
   }
 
-  /* Interactive target/effect decisions intentionally pause the action clock.
-     They are never allowed to fall through to a phase timeout underneath the
-     decision that owns input. */
-  if (room.game.pendingDecision || room.game.pendingReposition) return seededDeadline;
+  if (room.game.pendingDecision) {
+    if (room.game.pendingDecision.deadline > now) return seededDeadline;
+    const before = room.game;
+    const owner = before.pendingDecision.owner ?? before.pendingDecision.context?.decisionOwner;
+    const command = Number.isInteger(owner) ? chooseAIDecision(before, owner, "Normal") : null;
+    if (!command) return seededDeadline;
+    try {
+      const result = executeOnlineCommand(before, { ...command, auto: true }, { priority: true });
+      room.game = result.state;
+      reconcileOnlineClocks(before, room.game, room.settings, now);
+    } catch { return seededDeadline; }
+    room.game.events = (room.game.events ?? 0) + 1;
+    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo da escolha terminou; o jogo aplicou uma opção válida automaticamente.", tone: "response" }, ...(room.game.log ?? [])];
+    logOnlineDiagnostic(room, "decision-timeout", { role: owner === 0 ? "host" : "guest", commandType: "resolveDecision", auto: true });
+    return true;
+  }
+
+  if (room.game.pendingReposition) {
+    if (room.game.pendingReposition.deadline > now) return seededDeadline;
+    const before = room.game;
+    const owner = before.pendingReposition.activeOwner;
+    if (!Number.isInteger(owner)) return seededDeadline;
+    try {
+      const result = executeOnlineCommand(before, { type: "confirmReposition", owner, auto: true }, { priority: true });
+      room.game = result.state;
+      reconcileOnlineClocks(before, room.game, room.settings, now);
+    } catch { return seededDeadline; }
+    room.game.events = (room.game.events ?? 0) + 1;
+    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de reorganização terminou; as posições atuais foram confirmadas.", tone: "phase" }, ...(room.game.log ?? [])];
+    logOnlineDiagnostic(room, "reposition-timeout", { role: owner === 0 ? "host" : "guest", commandType: "confirmReposition", auto: true });
+    return true;
+  }
 
   if (room.game.turnDeadline && room.game.turnDeadline <= now) {
-    if (!room.game.combatAction && ["principal", "combate", "fim"].includes(room.game.phase)) {
+    if (!room.game.combatAction && ["manutencao", "principal", "combate", "fim"].includes(room.game.phase)) {
       try {
         const before = room.game;
         const owner = before.active;
         const mandatory = before.phase === "combate" ? listPendingIndomitableAttackers(before, owner) : [];
-        const command = mandatory.length
+        const command = before.phase === "manutencao"
+          ? { type: "maintenanceChoice", owner, extraEnergy: false, auto: true }
+          : mandatory.length
           ? { type: "declareAttack", owner, attackerId: mandatory[0].uid || mandatory[0].id, auto: true }
           : { type: "advancePhase", owner, auto: true };
         const result = executeOnlineCommand(before, command, { priority: true });
