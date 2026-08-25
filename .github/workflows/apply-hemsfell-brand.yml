@@ -1,4 +1,4 @@
-name: Full SonarJS diagnostic audit
+name: Evaluate safe SonarJS autofixes
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  sonar-diagnostic:
+  sonar-autofix-diagnostic:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -56,113 +56,108 @@ jobs:
           ];
           EOF
 
-      - name: Run ESLint + SonarJS over product source
+      - name: Capture baseline
         shell: bash
         run: |
           mkdir -p quality-report
           set +e
-          npx eslint app worker db scripts \
-            --config eslint.sonar-audit.config.mjs \
-            --format json \
-            --no-error-on-unmatched-pattern \
-            > quality-report/eslint-sonar.json
-          echo $? > quality-report/eslint-exit-code.txt
+          npx eslint app worker db scripts --config eslint.sonar-audit.config.mjs --format json --no-error-on-unmatched-pattern > quality-report/before.json
+          echo $? > quality-report/before-exit-code.txt
           set -e
 
-      - name: Run duplication analysis
-        shell: bash
-        run: |
-          mkdir -p quality-report/jscpd
-          set +e
-          npx jscpd app worker db scripts \
-            --min-lines 5 \
-            --min-tokens 35 \
-            --reporters json \
-            --output quality-report/jscpd \
-            --ignore "**/cards.generated.json,**/*.generated.*,**/.next/**,**/dist/**" \
-            > quality-report/jscpd-console.txt 2>&1
-          echo $? > quality-report/jscpd-exit-code.txt
-          set -e
-
-      - name: Run TypeScript authority checks
+      - name: Apply analyzer autofixes in runner only
         shell: bash
         run: |
           set +e
-          npm run typecheck:ai > quality-report/typecheck-ai.txt 2>&1
-          echo $? > quality-report/typecheck-ai-exit-code.txt
-          npm run typecheck:online > quality-report/typecheck-online.txt 2>&1
-          echo $? > quality-report/typecheck-online-exit-code.txt
+          npx eslint app worker db scripts --config eslint.sonar-audit.config.mjs --fix --no-error-on-unmatched-pattern > quality-report/autofix-console.txt 2>&1
+          echo $? > quality-report/autofix-exit-code.txt
+          set -e
+          git diff -- app worker db scripts > quality-report/autofix.patch
+          git diff --stat -- app worker db scripts > quality-report/autofix-stat.txt
+          git diff --numstat -- app worker db scripts > quality-report/autofix-numstat.txt
+          cat quality-report/autofix-stat.txt
+
+      - name: Capture remaining findings
+        shell: bash
+        run: |
+          set +e
+          npx eslint app worker db scripts --config eslint.sonar-audit.config.mjs --format json --no-error-on-unmatched-pattern > quality-report/after.json
+          echo $? > quality-report/after-exit-code.txt
           set -e
 
-      - name: Summarize findings
+      - name: Run complete rules suite on autofixed checkout
+        shell: bash
+        run: |
+          set +e
+          npm run test:rules > quality-report/test-rules.txt 2>&1
+          echo $? > quality-report/test-rules-exit-code.txt
+          set -e
+
+      - name: Run AI benchmark on autofixed checkout
+        shell: bash
+        run: |
+          set +e
+          npm run ai:calibrate:benchmark > quality-report/ai-benchmark.txt 2>&1
+          echo $? > quality-report/ai-benchmark-exit-code.txt
+          set -e
+
+      - name: Run production build on autofixed checkout
+        shell: bash
+        run: |
+          set +e
+          npm run vercel-build > quality-report/vercel-build.txt 2>&1
+          echo $? > quality-report/vercel-build-exit-code.txt
+          set -e
+
+      - name: Summarize autofix impact
+        if: always()
         run: |
           node --input-type=module <<'NODE'
           import { readFile, writeFile } from 'node:fs/promises';
-          const results = JSON.parse(await readFile('quality-report/eslint-sonar.json','utf8'));
-          const findings = [];
-          for (const file of results) {
-            for (const msg of file.messages ?? []) {
-              findings.push({
-                file: file.filePath.replace(process.cwd() + '/', ''),
-                line: msg.line ?? 0,
-                column: msg.column ?? 0,
-                severity: msg.severity === 2 ? 'error' : 'warning',
-                rule: msg.ruleId ?? 'unknown',
-                message: msg.message,
-              });
-            }
-          }
-          const sonar = findings.filter((f) => f.rule.startsWith('sonarjs/'));
-          const countBy = (items, key) => Object.entries(items.reduce((acc,item)=>{const k=item[key];acc[k]=(acc[k]??0)+1;return acc;},{})).sort((a,b)=>b[1]-a[1]);
-          const byRule = countBy(findings,'rule');
-          const sonarByRule = countBy(sonar,'rule');
-          const byFile = countBy(findings,'file');
-          const sonarByFile = countBy(sonar,'file');
-          let duplicateSummary = 'jscpd JSON report not found';
-          for (const candidate of ['quality-report/jscpd/jscpd-report.json','quality-report/jscpd/report.json']) {
-            try {
-              const report=JSON.parse(await readFile(candidate,'utf8'));
-              const total=report.statistics?.total ?? {};
-              duplicateSummary=`duplicatedLines=${total.duplicatedLines ?? 'n/a'}, percentage=${total.percentage ?? 'n/a'}%, clones=${report.duplicates?.length ?? 'n/a'}`;
-              break;
-            } catch {}
-          }
+          const parse = async (file) => JSON.parse(await readFile(file, 'utf8'));
+          const flatten = (results) => results.flatMap((file) => (file.messages ?? []).map((message) => ({
+            file: file.filePath.replace(process.cwd() + '/', ''),
+            rule: message.ruleId ?? 'unknown',
+            severity: message.severity === 2 ? 'error' : 'warning',
+          })));
+          const before = flatten(await parse('quality-report/before.json'));
+          const after = flatten(await parse('quality-report/after.json'));
+          const sonarBefore = before.filter((item) => item.rule.startsWith('sonarjs/'));
+          const sonarAfter = after.filter((item) => item.rule.startsWith('sonarjs/'));
+          const readExit = async (file) => (await readFile(file, 'utf8')).trim();
+          const countRules = (items) => Object.entries(items.reduce((acc, item) => {
+            acc[item.rule] = (acc[item.rule] ?? 0) + 1;
+            return acc;
+          }, {})).sort((a, b) => b[1] - a[1]);
+          const stat = await readFile('quality-report/autofix-stat.txt', 'utf8');
           const summary = [
-            'HEMSFELL HEROES — FULL STATIC QUALITY DIAGNOSTIC',
-            `Total ESLint/SonarJS findings: ${findings.length}`,
-            `  errors: ${findings.filter(f=>f.severity==='error').length}`,
-            `  warnings: ${findings.filter(f=>f.severity==='warning').length}`,
-            `SonarJS findings: ${sonar.length}`,
-            `Duplication: ${duplicateSummary}`,
+            'HEMSFELL — ANALYZER AUTOFIX SAFETY REPORT',
+            `Before: ${before.length} total / ${sonarBefore.length} SonarJS`,
+            `After:  ${after.length} total / ${sonarAfter.length} SonarJS`,
+            `Removed: ${before.length - after.length} total / ${sonarBefore.length - sonarAfter.length} SonarJS`,
             '',
-            'Top SonarJS rules:',
-            ...sonarByRule.slice(0,30).map(([rule,count])=>`  ${count.toString().padStart(4)}  ${rule}`),
+            'Changed source:',
+            stat.trim() || '(no source files changed)',
             '',
-            'Top files by SonarJS findings:',
-            ...sonarByFile.slice(0,30).map(([file,count])=>`  ${count.toString().padStart(4)}  ${file}`),
+            `test:rules exit=${await readExit('quality-report/test-rules-exit-code.txt')}`,
+            `AI benchmark exit=${await readExit('quality-report/ai-benchmark-exit-code.txt')}`,
+            `vercel-build exit=${await readExit('quality-report/vercel-build-exit-code.txt')}`,
             '',
-            'Top rules overall:',
-            ...byRule.slice(0,30).map(([rule,count])=>`  ${count.toString().padStart(4)}  ${rule}`),
-            '',
-            'Top files overall:',
-            ...byFile.slice(0,30).map(([file,count])=>`  ${count.toString().padStart(4)}  ${file}`),
-            '',
-            'First 120 SonarJS findings:',
-            ...sonar.slice(0,120).map(f=>`  ${f.file}:${f.line}:${f.column} [${f.rule}] ${f.message}`),
+            'Top remaining SonarJS rules:',
+            ...countRules(sonarAfter).slice(0,25).map(([rule, count]) => `  ${String(count).padStart(4)}  ${rule}`),
           ].join('\n');
-          await writeFile('quality-report/summary.txt',summary+'\n');
-          await writeFile('quality-report/sonar-findings.json',JSON.stringify(sonar,null,2));
+          await writeFile('quality-report/summary.txt', summary + '\n');
           console.log(summary);
           NODE
 
-      - name: Upload complete diagnostic report
+      - name: Upload autofix safety report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: hemsfell-full-sonar-diagnostic
+          name: hemsfell-sonar-autofix-safety
           path: quality-report/
           retention-days: 7
 
-      - name: Keep audit diagnostic-only
-        run: |
-          git status --short
-          test ! -f package-lock.json.tmp
+      - name: Confirm diagnostic did not commit product changes
+        if: always()
+        run: git status --short
