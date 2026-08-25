@@ -21,6 +21,13 @@ test("card preview uses Floating UI middleware and a body-level portal", () => {
   assert.match(matchCss, /body > \[data-floating-ui-portal\]/);
 });
 
+
+test("card preview runtime is mounted globally in the root layout", async () => {
+  const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  assert.match(layout, /import CardPreviewRuntime from ["']\.\/card-preview-runtime["']/);
+  assert.match(layout, /<CardPreviewRuntime\s*\/>/);
+});
+
 test("every rendered card exposes a preview source, including battlefield units", () => {
   assert.match(page, /data-card-preview="true"/);
   assert.match(page, /data-card-page=\{card\.page\}/);

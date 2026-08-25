@@ -28,3 +28,14 @@ test("local assisted priority uses authoritative legal responses and expires saf
   assert.match(page, /if\(next\.pendingResponse&&!next\.pendingResponse\.deadline\)/);
   assert.match(page, /mode!=="bot"\|\|pending\?\.responder!==0/);
 });
+
+
+test("graveyard and Extra Deck cards can open detailed inspection", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const modal = page.match(/function CardZoneModal[\s\S]*?function SearchDeckModal/)?.[0] ?? "";
+  assert.ok(modal, "expected CardZoneModal source");
+  assert.match(modal, /<OriginalCard[^>]*card=\{card\}[^>]*small[^>]*inspectable\s*\/>/);
+  assert.doesNotMatch(modal, /inspectable=\{false\}/);
+  assert.match(page, /hemsfell:inspect-card/);
+  assert.match(page, /setShowInspector/);
+});
