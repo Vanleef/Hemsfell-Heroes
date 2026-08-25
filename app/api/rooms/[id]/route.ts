@@ -4,6 +4,8 @@ import { applyRulesCommand, applyTimeout, bothDecksLocked, deadline, participant
 import { createInitialOnlineGame } from "../initial-game";
 import { shiftOnlineDeadlines } from "../online-clock.mjs";
 import { isPlainRecord, isRoomId, readSafeJson } from "../validation";
+import rawCards from "../../../cards.generated.json";
+import { validateUserDeck } from "../../../user-deck.mjs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -159,7 +161,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (current.lastSelectRequestId === body.selectRequestId) return NextResponse.json(roomView(room, true, role), noStore);
       if (room.status !== "deck-selection") return NextResponse.json({ error: "deck selection is closed", ...roomView(room, true, role) }, { status: 409, ...noStore });
       if (typeof body.heroId !== "string" || !VALID_DECK_IDS.has(body.heroId)) return NextResponse.json({ error: "invalid deck" }, { status: 400, ...noStore });
+      let selectedUserDeck = null;
+      if (body.userDeck !== undefined && body.userDeck !== null) {
+        const validation = validateUserDeck(body.userDeck, rawCards as any[]);
+        if (!validation.ok || !validation.deck || validation.deck.heroId !== body.heroId) return NextResponse.json({ error: "invalid deck list", details: validation.errors.slice(0, 4) }, { status: 400, ...noStore });
+        selectedUserDeck = validation.deck;
+      }
       current.heroId = body.heroId;
+      current.userDeck = selectedUserDeck;
       current.deckLocked = !!body.locked;
       current.lastSelectRequestId = body.selectRequestId;
       if (bothDecksLocked(room)) prepareCoin(room);
@@ -177,7 +186,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!room.host.heroId || !room.guest?.heroId) return NextResponse.json({ error: "decks are not ready" }, { status: 409, ...noStore });
       room.startingRole = body.startSelf ? role : role === "host" ? "guest" : "host";
       const active = room.startingRole === "host" ? 0 : 1;
-      room.game = createInitialOnlineGame(room.host.heroId, room.guest.heroId, active, room.settings.startingLife);
+      room.game = createInitialOnlineGame(room.host.heroId, room.guest.heroId, active, room.settings.startingLife, room.host.userDeck, room.guest.userDeck);
       room.game.turnDeadline = null;
       const mulliganDeadline = deadline(30);
       room.host.mulliganDone = false;

@@ -5,6 +5,7 @@ import { listPendingIndomitableAttackers } from "../../rules-engine/combat.mjs";
 import { shouldAutoPass } from "../../rules-engine/priority.mjs";
 import { chooseAIDecision } from "../../rules-engine/ai.mjs";
 import { logOnlineDiagnostic } from "./online-diagnostics.mjs";
+import type { UserDeck } from "../../user-deck.mjs";
 
 /* `executeOnlineCommand` is the Online timing wrapper around the authoritative
  * rules-engine executeCommand path; room clients still never mutate rules
@@ -24,6 +25,8 @@ export type Participant = {
   token: string;
   accepted: boolean;
   deckLocked: boolean;
+  /** Private deck payload validated server-side. roomView never exposes it. */
+  userDeck?: UserDeck | null;
   mulliganDone: boolean;
   mulliganCount: number;
   mulliganDeadline?: number | null;
@@ -83,7 +86,7 @@ export function sanitizeSettings(value: Partial<MatchSettings> | Record<string, 
 }
 
 export function participant(token: string, accepted = true): Participant {
-  return { heroId: null, token, accepted, deckLocked: false, mulliganDone: false, mulliganCount: 0, disconnectedAt: null, lastSeenAt: Date.now(), recentCommandIds: [], turnHadAction: false, noActionTimeouts: 0, lastNoActionTimeoutRound: null, probationRound: null, disconnectAfterOpponentMaintenance: false };
+  return { heroId: null, token, accepted, deckLocked: false, userDeck: null, mulliganDone: false, mulliganCount: 0, disconnectedAt: null, lastSeenAt: Date.now(), recentCommandIds: [], turnHadAction: false, noActionTimeouts: 0, lastNoActionTimeoutRound: null, probationRound: null, disconnectAfterOpponentMaintenance: false };
 }
 
 export function bothDecksLocked(room: Room) {
