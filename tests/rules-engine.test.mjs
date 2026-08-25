@@ -1165,7 +1165,7 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(page, /heroEvolutionProgress\(p\)/);
   assert.match(page, /effectiveCreatureName/);
   assert.match(page, /game\.active!==0/);
-  assert.match(page, /canEvolveThisTurn=\{game\.active===0\}/);
+  assert.match(page, /canEvolveThisTurn=\{game\.active===0&&!onlineCommandPending\}/);
   assert.match(page, /modifier\.duration!=="turn"/);
   assert.match(page, /combat-attack-ready/);
   assert.match(page, /summoning-sickness-badge/);
