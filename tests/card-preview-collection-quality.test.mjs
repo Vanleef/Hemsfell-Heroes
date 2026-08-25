@@ -21,7 +21,6 @@ test("card preview uses Floating UI middleware and a body-level portal", () => {
   assert.match(matchCss, /body > \[data-floating-ui-portal\]/);
 });
 
-
 test("card preview runtime is mounted globally in the root layout", async () => {
   const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
   assert.match(layout, /import CardPreviewRuntime from ["']\.\/card-preview-runtime["']/);
@@ -33,7 +32,18 @@ test("Floating UI coordinates are not overridden by tooltip CSS", () => {
   assert.ok(floatingBlock, "expected floating preview CSS block");
   assert.doesNotMatch(floatingBlock, /inset:\s*auto\s*!important/);
   assert.doesNotMatch(floatingBlock, /transform:\s*none\s*!important/);
-  assert.match(runtime, /style=\{floatingStyles\}/);
+  assert.match(runtime, /floatingStyles/);
+});
+
+test("floating preview has complete content before its first visible paint", () => {
+  assert.match(runtime, /function previewData[\s\S]*\.rich-card-text/);
+  assert.match(runtime, /title, meta, rules, keywords/);
+  assert.match(runtime, /setPositionReady\(false\);\s*refs\.setReference\(card\);\s*setPreview\(next\)/);
+  assert.match(runtime, /const visible = isPositioned && positionReady/);
+  assert.match(runtime, /visibility: visible \? "visible" : "hidden"/);
+  assert.match(runtime, /data-positioned=\{visible \? "true" : "false"\}/);
+  assert.doesNotMatch(runtime, /replaceChildren/);
+  assert.doesNotMatch(runtime, /contentRef/);
 });
 
 test("every rendered card exposes a preview source, including battlefield units", () => {
