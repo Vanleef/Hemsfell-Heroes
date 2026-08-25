@@ -21,6 +21,10 @@ type PreviewState = {
   page: number;
   name: string;
   expanded: boolean;
+  title: string;
+  meta: string;
+  rules: string;
+  keywords: string[];
 };
 
 const CARD_SELECTOR = ".original-card[data-card-preview='true']";
@@ -30,22 +34,41 @@ const TOUCH_SLOP_PX = 12;
 function previewData(card: HTMLElement, expanded: boolean): PreviewState | null {
   const page = Number(card.dataset.cardPage || card.querySelector<HTMLElement>(".remote-card-art")?.dataset.page);
   const name = card.dataset.cardName || card.getAttribute("aria-label") || "Carta";
-  return Number.isInteger(page) && page > 0 ? { reference: card, page, name, expanded } : null;
+  if (!Number.isInteger(page) || page <= 0) return null;
+
+  /* Capture the semantic tooltip payload before opening the floating surface.
+     The old implementation mounted an empty portal and cloned DOM into it in a
+     later effect. Floating UI could measure/paint that empty intermediate state,
+     producing the occasional long blank tooltip seen during hover. */
+  const source = card.querySelector<HTMLElement>(":scope > .card-tooltip") ?? card.querySelector<HTMLElement>(".card-tooltip");
+  const title = source?.querySelector<HTMLElement>(":scope > b")?.textContent?.trim() || name;
+  const meta = source?.querySelector<HTMLElement>(":scope > em")?.textContent?.trim() || "";
+  const richRules = source?.querySelector<HTMLElement>(".rich-card-text")?.textContent?.trim();
+  const rules = richRules || Array.from(source?.children ?? [])
+    .filter((element) => element.tagName !== "B" && element.tagName !== "EM" && !element.classList.contains("keyword-list"))
+    .map((element) => element.textContent?.trim() || "")
+    .filter(Boolean)
+    .join(" ");
+  const keywords = Array.from(source?.querySelectorAll<HTMLElement>(".keyword-list > *") ?? [])
+    .map((element) => element.getAttribute("data-keyword") || element.textContent?.trim() || "")
+    .filter(Boolean);
+
+  return { reference: card, page, name, expanded, title, meta, rules, keywords };
 }
 
 /**
  * One tooltip authority for every card surface.
  *
  * The compact rules copy remains beside the card in the React tree for
- * accessibility, but this runtime mirrors its DOM into a Floating UI portal.
- * That keeps previews outside overflow/contain/stacking contexts without
- * duplicating card-rule parsing in a second component.
+ * accessibility, but this runtime reads that semantic source before opening a
+ * Floating UI portal. The visible preview is therefore complete on its first
+ * paint and never depends on a post-paint DOM cloning effect.
  */
 export default function CardPreviewRuntime() {
   const [preview, setPreview] = useState<PreviewState | null>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+  const [positionReady, setPositionReady] = useState(false);
   const suppressedClicks = useRef(new WeakSet<HTMLElement>());
-  const { refs, floatingStyles, update } = useFloating({
+  const { refs, floatingStyles, update, isPositioned } = useFloating({
     open: !!preview,
     placement: preview?.expanded ? "right" : "right-start",
     strategy: "fixed",
@@ -65,13 +88,18 @@ export default function CardPreviewRuntime() {
   });
 
   useEffect(() => {
-    refs.setReference(preview?.reference ?? null);
-    const host = contentRef.current;
-    if (!host || !preview) return;
-    const source = preview.reference.querySelector<HTMLElement>(":scope > .card-tooltip");
-    host.replaceChildren(...Array.from(source?.childNodes ?? []).map((node) => node.cloneNode(true)));
-    void update();
-  }, [preview, refs, update]);
+    if (!preview) {
+      setPositionReady(false);
+      return;
+    }
+    let active = true;
+    void update().then(() => {
+      if (active) setPositionReady(true);
+    });
+    return () => {
+      active = false;
+    };
+  }, [preview, update]);
 
   useEffect(() => {
     let longPressTimer = 0;
@@ -86,7 +114,10 @@ export default function CardPreviewRuntime() {
 
     const openFor = (card: HTMLElement, expanded: boolean) => {
       const next = previewData(card, expanded);
-      if (next) setPreview(next);
+      if (!next) return;
+      setPositionReady(false);
+      refs.setReference(card);
+      setPreview(next);
     };
 
     const onPointerOver = (event: PointerEvent) => {
@@ -175,15 +206,17 @@ export default function CardPreviewRuntime() {
       document.removeEventListener("click", onClickCapture, true);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [preview?.expanded, refs.floating]);
+  }, [preview?.expanded, refs]);
 
   if (!preview) return null;
+  const visible = isPositioned && positionReady;
   return (
     <FloatingPortal>
       <section
         ref={refs.setFloating}
-        style={floatingStyles}
+        style={{ ...floatingStyles, visibility: visible ? "visible" : "hidden" }}
         className={`card-tooltip card-preview-floating ${preview.expanded ? "is-expanded" : "is-compact"}`}
+        data-positioned={visible ? "true" : "false"}
         role={preview.expanded ? "dialog" : "tooltip"}
         aria-modal={preview.expanded || undefined}
         aria-label={preview.expanded ? `Preview ampliado de ${preview.name}` : undefined}
@@ -193,7 +226,12 @@ export default function CardPreviewRuntime() {
             <RemoteCardArt page={preview.page} name={preview.name} priority />
           </div>
         ) : null}
-        <div ref={contentRef} className="card-preview-copy" />
+        <div className="card-preview-copy">
+          <b>{preview.title}</b>
+          {preview.meta ? <em>{preview.meta}</em> : null}
+          {preview.rules ? <span className="card-preview-rules">{preview.rules}</span> : null}
+          {preview.keywords.length ? <span className="card-preview-keywords">{preview.keywords.join(" · ")}</span> : null}
+        </div>
         {preview.expanded ? <button type="button" className="card-preview-close" onClick={() => setPreview(null)} aria-label="Fechar preview">×</button> : null}
       </section>
     </FloatingPortal>
