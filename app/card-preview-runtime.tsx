@@ -66,9 +66,8 @@ function previewData(card: HTMLElement, expanded: boolean): PreviewState | null 
  */
 export default function CardPreviewRuntime() {
   const [preview, setPreview] = useState<PreviewState | null>(null);
-  const [positionReady, setPositionReady] = useState(false);
   const suppressedClicks = useRef(new WeakSet<HTMLElement>());
-  const { refs, floatingStyles, update, isPositioned } = useFloating({
+  const { refs, floatingStyles, isPositioned } = useFloating({
     open: !!preview,
     placement: preview?.expanded ? "right" : "right-start",
     strategy: "fixed",
@@ -88,20 +87,6 @@ export default function CardPreviewRuntime() {
   });
 
   useEffect(() => {
-    if (!preview) {
-      setPositionReady(false);
-      return;
-    }
-    let active = true;
-    void update().then(() => {
-      if (active) setPositionReady(true);
-    });
-    return () => {
-      active = false;
-    };
-  }, [preview, update]);
-
-  useEffect(() => {
     let longPressTimer = 0;
     let touchCard: HTMLElement | null = null;
     let touchStart = { x: 0, y: 0 };
@@ -115,7 +100,6 @@ export default function CardPreviewRuntime() {
     const openFor = (card: HTMLElement, expanded: boolean) => {
       const next = previewData(card, expanded);
       if (!next) return;
-      setPositionReady(false);
       refs.setReference(card);
       setPreview(next);
     };
@@ -209,7 +193,7 @@ export default function CardPreviewRuntime() {
   }, [preview?.expanded, refs]);
 
   if (!preview) return null;
-  const visible = isPositioned && positionReady;
+  const visible = isPositioned;
   return (
     <FloatingPortal>
       <section
