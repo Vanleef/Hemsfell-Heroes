@@ -1,154 +1,58 @@
 ===== rules-engine.test.mjs =====
-# Subtest: Brutamontes only gains attack for creatures explicitly sacrificed
-ok 131 - Brutamontes only gains attack for creatures explicitly sacrificed
-  ---
-  duration_ms: 1.702321
+  duration_ms: 3.488332
   ...
-# Subtest: Brutamontes may decline every sacrifice and stays at base attack
-ok 132 - Brutamontes may decline every sacrifice and stays at base attack
+# Subtest: game client routes migrated cards through the command engine
+not ok 117 - game client routes migrated cards through the command engine
   ---
-  duration_ms: 0.672758
-  ...
-# Subtest: Caneca da Sorte grants its modifier and spell-damage immunity without Magic Barrier
-ok 133 - Caneca da Sorte grants its modifier and spell-damage immunity without Magic Barrier
-  ---
-  duration_ms: 0.58804
-  ...
-# Subtest: zero vitality from a modifier sends a reset card to grave
-ok 134 - zero vitality from a modifier sends a reset card to grave
-  ---
-  duration_ms: 0.6197
-  ...
-# Subtest: Fura-Fila compiles to the canonical previous-card condition
-ok 135 - Fura-Fila compiles to the canonical previous-card condition
-  ---
-  duration_ms: 0.183313
-  ...
-# Subtest: accelerated spells spend reserve first on own turn and only reserve on opponent turn
-ok 136 - accelerated spells spend reserve first on own turn and only reserve on opponent turn
-  ---
-  duration_ms: 0.509413
-  ...
-# Subtest: spell keywords apply Lifesteal and Deathtouch to effect damage
-ok 137 - spell keywords apply Lifesteal and Deathtouch to effect damage
-  ---
-  duration_ms: 0.163245
-  ...
-# Subtest: paying life is an atomic cost and publishes the life-loss trigger
-ok 138 - paying life is an atomic cost and publishes the life-loss trigger
-  ---
-  duration_ms: 0.601616
-  ...
-# Subtest: Saymon level 3 life costs can never reduce life below one
-ok 139 - Saymon level 3 life costs can never reduce life below one
-  ---
-  duration_ms: 0.610542
-  ...
-# Subtest: every generated card is executable by the authoritative engine
-ok 140 - every generated card is executable by the authoritative engine
-  ---
-  duration_ms: 11.981873
-  ...
-# Subtest: Goblin sacrifice damage uses the sacrificed creature effective attack
-ok 141 - Goblin sacrifice damage uses the sacrificed creature effective attack
-  ---
-  duration_ms: 0.835533
-  ...
-# Subtest: Goblin sacrifice activation collects its cost and effect target authoritatively
-ok 142 - Goblin sacrifice activation collects its cost and effect target authoritatively
-  ---
-  duration_ms: 1.428392
-  ...
-# Subtest: Chave Rara searches a terrain directly onto the authoritative field
-ok 143 - Chave Rara searches a terrain directly onto the authoritative field
-  ---
-  duration_ms: 0.89791
-  ...
-# Subtest: Desenterrar validates its grave choice and resumes by resurrecting it
-ok 144 - Desenterrar validates its grave choice and resumes by resurrecting it
-  ---
-  duration_ms: 1.147075
-  ...
-# Subtest: Café Pingado prevents exactly one point instead of the whole damage instance
-ok 145 - Café Pingado prevents exactly one point instead of the whole damage instance
-  ---
-  duration_ms: 0.767545
-  ...
-# Subtest: Prestidigitação lets its controller draw from the bottom
-ok 146 - Prestidigitação lets its controller draw from the bottom
-  ---
-  duration_ms: 0.32635
-  ...
-# Subtest: Tessália AI never queues an illegal non-commander attack
-ok 147 - Tessália AI never queues an illegal non-commander attack
-  ---
-  duration_ms: 0.414185
-  ...
-# Subtest: authoritative combat enforces Tessália commander restriction
-ok 148 - authoritative combat enforces Tessália commander restriction
-  ---
-  duration_ms: 0.655106
-  ...
-# Subtest: Saymon evolution markers expire when his next turn starts
-ok 149 - Saymon evolution markers expire when his next turn starts
-  ---
-  duration_ms: 0.377737
-  ...
-# Subtest: AI difficulty profiles and life-cost safety are explicit
-ok 150 - AI difficulty profiles and life-cost safety are explicit
-  ---
-  duration_ms: 0.378798
-  ...
-# Subtest: UI animation is presentation-only and cannot hide an unresolved ability response
-ok 151 - UI animation is presentation-only and cannot hide an unresolved ability response
-  ---
-  duration_ms: 3.066867
-  ...
-# Subtest: online actions share one serialized request queue and reconcile stale revisions
-ok 152 - online actions share one serialized request queue and reconcile stale revisions
-  ---
-  duration_ms: 1.429434
-  ...
-# Subtest: field keyword icons render outside the card button at its lower edge
-ok 153 - field keyword icons render outside the card button at its lower edge
-  ---
-  duration_ms: 17.596449
-  ...
-# Subtest: a full priority combat exchange always reaches a terminal combat state
-ok 154 - a full priority combat exchange always reaches a terminal combat state
-  ---
-  duration_ms: 1.691845
-  ...
-# Subtest: game viewport and stage use the canonical responsive shell
-ok 155 - game viewport and stage use the canonical responsive shell
-  ---
-  duration_ms: 12.076199
-  ...
-# Subtest: board layout preserves the approved 16:9 composition proportionally
-ok 156 - board layout preserves the approved 16:9 composition proportionally
-  ---
-  duration_ms: 7.315805
-  ...
-# Subtest: cards, fields, piles and hand remain proportional without coordinate reflow
-ok 157 - cards, fields, piles and hand remain proportional without coordinate reflow
-  ---
-  duration_ms: 3.261661
-  ...
-# Subtest: final stage seal outranks legacy fixed-position board rules
-ok 158 - final stage seal outranks legacy fixed-position board rules
-  ---
-  duration_ms: 3.349242
-  ...
-# Subtest: single eligible Draconic Illusion replacement auto-selects
-ok 159 - single eligible Draconic Illusion replacement auto-selects
-  ---
-  duration_ms: 0.713454
-  ...
-# Subtest: Dragão Ancião First Act applies primary and adjacent damage after target selection
-ok 160 - Dragão Ancião First Act applies primary and adjacent damage after target selection
-  ---
-  duration_ms: 1.615612
-  ...
+  duration_ms: 6.245954
+  location: '/home/runner/work/Hemsfell-Heroes/Hemsfell-Heroes/tests/rules-engine.test.mjs:1141:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    The input did not match the regular expression /canEvolveThisTurn=\{game\.active===0\}/. Input:
+    
+    '"use client";\n' +
+      '\n' +
+      'import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";\n' +
+      'import rawCards from "./cards.generated.json";\n' +
+      'import { RemoteCardArt } from "./remote-card-art";\n' +
+      'import { canActivateCard, hasActivatableEffect } from "./card-activation.mjs";\n' +
+      'import { compileCard } from "./rules-engine/compiler.mjs";\n' +
+      'import { hasIntrinsicKeyword, intrinsicKeywordNames } from "./card-keywords.mjs";\n' +
+      'import { canExecuteCard, executeCommand } from "./rules-engine/engine.mjs";\n' +
+      'import { legalPriorityResponses } from "./rules-engine/priority.mjs";\n' +
+      'import { orderAIAttackers } from "./rules-engine/ai.mjs";\n' +
+      'import { chooseAdvancedAIAction, chooseAdvancedAIDecision, chooseAdvancedAIBlock, chooseAdvancedAIResponse, planAdvancedAIAttacks, resetAdvancedAI } from "./rules-engine/ai-system/runtime";\n' +
+      'import { hasSubtype } from "./rules-engine/subtypes.mjs";\n' +
+      'import { cardPlayTargetPolicy, isValidTarget, targetPolicy, TargetScope } from "./rules-engine/targeting.mjs";\n' +
+      'import { applyCloneRetaliation, claimOncePerTurn, earthquakeDamage, elementalChainFrom as ruleElementalChainFrom } from "./game-rules.mjs";\n' +
+      'import { clearOnlineSession, loadOnlineSession, saveOnlineSession } from "./online-session.mjs";\n' +
+      'import { MAIN_DECK_SIZE, MAX_COPIES, USER_DECK_STORAGE_KEY, cardAllowedInDeckZone, defaultUserDeck, disabledDeckCardIds as sharedDisabledDeckCardIds, expandUserDeckMain, removedCatalogPages as sharedRemovedCatalogPages, resolveUserDeckExtra, suppliedDeckPages as sharedSuppliedDeckPages, validateUserDeck } from "./user-deck.mjs";\n' +
+      'import type { UserDeck } from "./user-deck.mjs";\n' +
+      'import { immediateDirectCombatPresentation, resolvedCombatPresentation } from "./combat-presentation.mjs";\n' +
+      '\n' +
+      'type CardType="Criatura"|"Feitiço"|"Artefato"|"Encanto"|"Terreno"|"Herói";\n' +
+      'type CardDef={page:number;id:string;name:string;type:CardType;cost:number;atk?:number;hp?:number;text:string;tags:string[];image:string;hero:boolean;imageCard:boolean;revealed?:boolean;revealedTo?:number[];subtypes?:string[];abilities?:any[];rules?:unknown;diagnostics?:{source?:string;unsupported?:number};generatedImage?:boolean;collectionQuantity?:number};\n' +
+      'const immediateCardEffectText=(card:CardDef)=>card.text.split(/neste turno,\\s*seu próximo/i)[0];\n' +
+      'const cardPlayEffectText=(card:CardDef)=>card.type!=="Criatura"?immediateCardEffectText(card):card.text.match(/primeiro ato\\s*:\\s*([\\s\\S]*?)(?=(?:último suspiro|fura-fila)\\s*:|$)/i)?.[1]?.trim()||"";\n' +
+      'type Unit=CardDef&{uid:string;slot:number;enteredRound?:number;damage:number;bonusAtk:number;bonusHp:number;temporaryAtk?:number;temporaryHp?:number;temporaryTags?:string[];temporarySubtypes?:string[];combatRestrictions?:Array<{cannotCombatSubtype?:string;duration?:string}>;attackLimit?:number;attacksThisTurn?:number;markers:number;modifiers?:Array<{attack?:number;health?:number;duration?:string;sourceId?:string}>;grantedKeywords?:string[];staticModifiers?:any[];lastDamagedBy?:string;damagedOwnersThisTurn?:number[];activatedThisTurn?:boolean;attackedThisTurn?:boolean;exhausted:boolean;summoning:boolean;frozen:boolean;stunned:boolean;suffocated:boolean;immobilized:boolean;impacting?:boolean;defenseUses:number;attachedTo?:string;temporary?:boolean;generatedImage?:boolean};\n' +
+      'type ElementName="Fogo"|"Água"|"Terra"|"Ar";\n' +
+      'type Player={heroId:string;level:number;heroXP:number;markers?:number|Record<string,number>;levelUpsThisTurn:number;life:number;lifeLostThisTurn?:number;lifeLossEvents?:number;maxEnergy:number;energy:number;reserve:number;noReserveStorageThisTurn?:boolean;nextCardDiscounts?:Array<{amount:number;type?:CardType;typeNot?:CardType;expiresRound?:number}>;deck:CardDef[];extraDeck:CardDef[];hand:CardDef[];board:Unit[];support:Unit[];terrain:Unit|null;grave:CardDef[];obscuro:CardDef[];cardsPlayed:number;turnCardsPlayed:number;goblinTurnCardsPlayed?:number;turnSpellsPlayed:number;spellsPlayed:number;coffeeSpells:number;damageDealt:number;turnDeaths:number;abilityUses:Record<string,number>;pendingTranqueira:boolean;nextCardDiscount:number;nextNonCreatureDiscount:number;nextSpellDiscount:number;nextSummonPaysLife:boolean;nextCreaturePaysLife?:boolean;catsEnteredThisTurn:number;fieldSubtypeCounts?:Record<string,number>;elementChain?:{element:ElementName;effect:"Sufocado"|"Atordoado"|"Congelado"|"Imobilizado"};nextElementEffects?:Array<{element:ElementName;keyword:string;expires?:string}>;lastElement?:ElementName;lastElementSource?:string};\n' +
+      'type Phase="manutencao"|"principal"|"combate"|"fim";\n' +
+      '/* Heroes are valid targets only for explicit damage or healing effects. */\n' +
+      'const allowsHeroTarget=(card:CardDef|undefined,step=0)=>!!card&&(targetPolicy({...card,text:cardPlayEffectText(card)}).steps?.[step]?.scope??targetPolicy({...card,text:cardPlayEffectText(card)}).scope)===TargetScope.ANY_CHARACTER;\n' +
+      'type Game={players:[Player,Player];active:0|1;phase:Phase;round:number;log:{id:string;text:string;tone?:string}[];winner:number|null;selectedAttackers:string[];events:number;combatAction?:CombatAction|null;pendingAction?:Record<string,unknown>;priorityStack?:Array<{kind?:string;actor?:0|1;label?:string;command?:Record<string,unknown>}>;pendingResponse?:PendingResponse|null;pendingDecision?:PendingDecision|null;pendingReposition?:{owners:Array<0|1>;confirmed:Array<0|1>;activeOwner?:0|1;moveAttachments:boolean;sourceId?:string;deadline?:number}|null;turnDeadline?:number|null};\n' +
+      'type Screen="menu"|"setup"|"decks"|"game";\n' +
+      'type Targeting={kind:"attach"|"spell"|"elemental-optional"|"gimble"|"natureza"|"saymon"|"saymon-life"|"ngoro"|"uruk-fire"|"tranqueira-attach";source:string;cardIndex?:number;amount?:number;response?:boolean;fieldSlot?:number;required?:number;minimum?:number;selected?:string[];chosenElement?:ElementName;sourceUid?:string;allowedIds?:string[]};\n' +
+      'type ImageChoice={cardIndex:number;cardName:string;options:string[];fieldSlot?:number};\n' +
+      'type CafeChoice="cats"|"heal"|"draw"|"level";\n' +
+      'type PendingResponse={responder:0|1;actor:0|1;action:string;deadline?:number;passes?:number};\n' +
+      'type PendingDecision={kind:string;owner:0|1;effect:{choices?:any[];cards?:CardDef[];targetOwner?:0|1;replayEffects?:any[];minimum?:number;maximum?:number;amount?:number;types?:string[];subtype?:string;vanillaOnly?:boolean;minCost?:number;maxCost?:number;maxCostFromMarkerAmount?:boolean;markerCost?:number;nameIncludes?:string;name?:string;targetOwner?:0|1;creatureSlots?:number[];supportSlots?:number[]};context?:Record<string,any>;targetSteps?:Array<{scope:string;role?:string;requiredSubtype?:string;requiredName?:string;imageOnly?:boolean;excludeIds?:string[];allowedIds?:string[];maxCost?:number;requireExhausted?:boolean;requiresDamagedOwnerThisTurn?:boolean;requiresEffectAppliedThisTurn?:boolean;requiresMarker?:boolean;optional?:boolean}>;sourceName?:string};\n' +
+      'type MatchSettings={startingLife:number;responseSeconds:number;turnSeconds:number};\n' +
+      'type OnlineSession={roomId:string;token:string;isHost:boolean};\n' +
+      'type CombatStage="declared"|"priority"|"choosing"|"charging"|"impact"|"resolved";\n' +
+
+---
+
 1..160
 # tests 160
 # suites 0
@@ -157,4 +61,4 @@ ok 160 - Dragão Ancião First Act applies primary and adjacent damage after tar
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 653.626541
+# duration_ms 591.266903
