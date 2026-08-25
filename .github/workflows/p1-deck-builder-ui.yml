@@ -7,6 +7,7 @@ on:
     paths:
       - scripts/p1-deck-builder-ui.mjs
       - scripts/p1-deck-builder-ui-fix.mjs
+      - scripts/p1-deck-builder-test-contracts.mjs
       - .github/workflows/p1-deck-builder-ui.yml
   workflow_dispatch:
 
@@ -34,6 +35,7 @@ jobs:
         run: |
           node scripts/p1-deck-builder-ui-fix.mjs
           node scripts/p1-deck-builder-ui.mjs
+          node scripts/p1-deck-builder-test-contracts.mjs
       - name: Validate and capture diagnostics
         run: |
           set +e
@@ -102,7 +104,7 @@ jobs:
       - name: Commit validated deck builder
         run: |
           rm -rf .diagnostics
-          rm -f scripts/p1-deck-builder-ui.mjs scripts/p1-deck-builder-ui-fix.mjs .github/workflows/p1-deck-builder-ui.yml
+          rm -f scripts/p1-deck-builder-ui.mjs scripts/p1-deck-builder-ui-fix.mjs scripts/p1-deck-builder-test-contracts.mjs .github/workflows/p1-deck-builder-ui.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
