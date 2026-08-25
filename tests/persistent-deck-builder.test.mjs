@@ -16,6 +16,7 @@ test("deck builder has pointer drag and accessible button fallbacks",()=>{
  assert.match(page,/onDragStart=\{\(\)=>setDeckDrag/);
  assert.match(page,/handleDeckDrop\("main"\)/);
  assert.match(page,/handleDeckDrop\("extra"\)/);
+ assert.match(page,/if\(drag\.zone===target\)return/);
  assert.ok(page.includes("Adicionar uma cópia"));
  assert.ok(page.includes("Remover uma cópia"));
  assert.match(page,/undoActiveDeck/);
