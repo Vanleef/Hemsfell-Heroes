@@ -33,6 +33,20 @@ jobs:
         run: node scripts/finalize-p1-builder.mjs
       - name: Validate persistent deck builder
         run: node --test tests/user-deck-model.test.mjs tests/online-user-deck-authority.test.mjs tests/persistent-deck-builder.test.mjs
+      - name: Diagnose all individual Node tests after contract update
+        run: node scripts/diagnose-p1-tests.mjs || true
+      - name: Publish remaining failure report
+        run: |
+          if grep -q '^ALL TEST FILES PASSED' p1-test-diagnostic.txt; then
+            echo 'All individual Node tests passed.'
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add p1-test-diagnostic.txt
+          git commit -m "chore: capture remaining P1 test failure"
+          git push origin HEAD:feat/web-card-game-quality-foundation
+          exit 1
       - name: Validate complete rules suite
         run: npm run test:rules
       - name: Validate AI strategic benchmark
