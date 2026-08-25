@@ -38,12 +38,14 @@ test("Floating UI coordinates are not overridden by tooltip CSS", () => {
 test("floating preview has complete content before its first visible paint", () => {
   assert.match(runtime, /function previewData[\s\S]*\.rich-card-text/);
   assert.match(runtime, /title, meta, rules, keywords/);
-  assert.match(runtime, /setPositionReady\(false\);\s*refs\.setReference\(card\);\s*setPreview\(next\)/);
-  assert.match(runtime, /const visible = isPositioned && positionReady/);
+  assert.match(runtime, /refs\.setReference\(card\);\s*setPreview\(next\)/);
+  assert.match(runtime, /const visible = isPositioned/);
   assert.match(runtime, /visibility: visible \? "visible" : "hidden"/);
   assert.match(runtime, /data-positioned=\{visible \? "true" : "false"\}/);
   assert.doesNotMatch(runtime, /replaceChildren/);
   assert.doesNotMatch(runtime, /contentRef/);
+  assert.doesNotMatch(runtime, /positionReady/);
+  assert.doesNotMatch(runtime, /update\(\)\.then/);
 });
 
 test("every rendered card exposes a preview source, including battlefield units", () => {
