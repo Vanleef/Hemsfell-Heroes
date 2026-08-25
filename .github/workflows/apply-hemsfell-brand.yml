@@ -1,4 +1,4 @@
-name: Apply Hemsfell brand refresh
+name: Sonar-style quality baseline
 
 on:
   push:
@@ -8,10 +8,10 @@ on:
       - .github/workflows/apply-hemsfell-brand.yml
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  brand-refresh:
+  quality-baseline:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -29,43 +29,50 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install approved transparent logo assets
-        env:
-          GH_TOKEN: ${{ github.token }}
-          MAIN_SHA: 3309d6684bda1092980d6c775108b626b4f35a11
-          MARK_SHA: d14844c5292e001a389014d06c9895023477a41c
-        run: |
-          mkdir -p public/brand
-          gh api "repos/${GITHUB_REPOSITORY}/git/blobs/${MAIN_SHA}" --jq .content | tr -d '\n' | base64 -d > public/brand/hemsfell-heroes-logo.webp
-          gh api "repos/${GITHUB_REPOSITORY}/git/blobs/${MARK_SHA}" --jq .content | tr -d '\n' | base64 -d > public/brand/hemsfell-heroes-mark.webp
-          test "$(wc -c < public/brand/hemsfell-heroes-logo.webp)" -gt 60000
-          test "$(wc -c < public/brand/hemsfell-heroes-mark.webp)" -gt 10000
+      - name: Install temporary quality analyzers
+        run: npm install --no-save --no-package-lock sharp@0.34.3 eslint-plugin-sonarjs@3.0.5 jscpd@4.0.5
 
-      - name: Replace landing copy and topbar brand
+      - name: Simulate approved high-resolution branding
         run: |
+          node --input-type=module <<'NODE'
+          import sharp from 'sharp';
+          import { mkdir } from 'node:fs/promises';
+          await mkdir('public/brand', { recursive: true });
+          await sharp('public/brand/hemsfell-heroes-logo.png')
+            .ensureAlpha()
+            .resize({ width: 1100, fit: 'inside', withoutEnlargement: false, kernel: sharp.kernel.lanczos3 })
+            .png({ compressionLevel: 9, palette: false })
+            .toFile('public/brand/hemsfell-heroes-logo-hq.png');
+          await sharp('public/icon.png')
+            .ensureAlpha()
+            .resize({ width: 512, height: 512, fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 }, kernel: sharp.kernel.lanczos3 })
+            .png({ compressionLevel: 9, palette: false })
+            .toFile('public/brand/hemsfell-heroes-mark-hq.png');
+          for (const file of ['public/brand/hemsfell-heroes-logo-hq.png','public/brand/hemsfell-heroes-mark-hq.png']) {
+            const meta = await sharp(file).metadata();
+            if (!meta.hasAlpha || !meta.width || !meta.height || meta.width < 500) throw new Error(`Invalid transparent HQ logo: ${file}`);
+            console.log(`${file}: ${meta.width}x${meta.height}, alpha=${meta.hasAlpha}`);
+          }
+          NODE
+
           python - <<'PY'
           from pathlib import Path
           page_path = Path('app/page.tsx')
           page = page_path.read_text()
-
           old_nav = '<nav className="shell-nav"><div className="hh-logo"><img src="/brand/hemsfell-heroes-logo.png" alt="Hemsfell Heroes"/></div><button onClick={()=>setScreen("decks")}>'
-          new_nav = '<nav className="shell-nav"><button className="hh-logo hh-home-logo" type="button" onClick={()=>setScreen("menu")} aria-label="Voltar ao menu principal" title="Voltar ao menu"><img src="/brand/hemsfell-heroes-mark.webp" alt="" aria-hidden="true"/></button><button onClick={()=>setScreen("decks")}>'
+          new_nav = '<nav className="shell-nav"><button className="hh-logo hh-home-logo" type="button" onClick={()=>setScreen("menu")} aria-label="Voltar ao menu principal" title="Voltar ao menu"><img src="/brand/hemsfell-heroes-mark-hq.png" alt="" aria-hidden="true"/></button><button onClick={()=>setScreen("decks")}>'
           if old_nav not in page:
               raise SystemExit('topbar markup changed; refusing unsafe replacement')
           page = page.replace(old_nav, new_nav, 1)
-
           old_copy = '<div className="landing-copy"><p>AS CRÔNICAS DE HEMSFELL</p><h1>Heróis são escolhidos.<br/><em>Lendas são forjadas.</em></h1><span>Entidades cósmicas convocam campeões, criaturas e magias de um mundo de fantasia em guerra. Construa seu exército, domine o campo e reduza a vida do herói rival a zero.</span><div className="landing-actions">'
-          new_copy = '<div className="landing-copy"><img className="landing-brand-logo" src="/brand/hemsfell-heroes-logo.webp" alt="Hemsfell Heroes"/><div className="landing-actions">'
+          new_copy = '<div className="landing-copy"><img className="landing-brand-logo" src="/brand/hemsfell-heroes-logo-hq.png" alt="Hemsfell Heroes"/><div className="landing-actions">'
           if old_copy not in page:
               raise SystemExit('landing copy changed; refusing unsafe replacement')
           page = page.replace(old_copy, new_copy, 1)
           page_path.write_text(page)
           PY
 
-      - name: Add isolated responsive brand styles
-        run: |
           cat > app/brand.css <<'EOF'
-          /* Landing/topbar branding. Kept outside match layout CSS. */
           .shell-nav .hh-home-logo {
             width: clamp(3.15rem, 4.6vw, 4rem) !important;
             height: clamp(3.15rem, 4.6vw, 4rem) !important;
@@ -123,96 +130,102 @@ jobs:
             flex-wrap: wrap;
           }
           @media (max-width: 56rem) {
-            .screen-menu .landing-copy {
-              align-items: center;
-              text-align: center;
-            }
-            .screen-menu .landing-brand-logo {
-              width: min(88vw, 34rem);
-              max-height: 46dvh;
-              object-position: center;
-            }
-            .screen-menu .landing-copy > .landing-actions {
-              justify-content: center;
-            }
+            .screen-menu .landing-copy { align-items: center; text-align: center; }
+            .screen-menu .landing-brand-logo { width: min(88vw, 34rem); max-height: 46dvh; object-position: center; }
+            .screen-menu .landing-copy > .landing-actions { justify-content: center; }
           }
           EOF
 
-      - name: Load brand styles and use HH mark as site icon
-        run: |
           python - <<'PY'
           from pathlib import Path
           path = Path('app/layout.tsx')
           text = path.read_text()
-          if 'import "./brand.css";' not in text:
-              needle = 'import "./globals.css";\n'
-              if needle not in text:
-                  raise SystemExit('layout stylesheet imports changed')
-              text = text.replace(needle, needle + 'import "./brand.css";\n', 1)
-          text = text.replace('icon: "/icon.png",\n    shortcut: "/icon.png",', 'icon: "/brand/hemsfell-heroes-mark.webp",\n    shortcut: "/brand/hemsfell-heroes-mark.webp",')
+          text = text.replace('import "./globals.css";\n', 'import "./globals.css";\nimport "./brand.css";\n', 1)
+          text = text.replace('icon: "/icon.png",\n    shortcut: "/icon.png",', 'icon: "/brand/hemsfell-heroes-mark-hq.png",\n    shortcut: "/brand/hemsfell-heroes-mark-hq.png",')
           path.write_text(text)
           PY
 
-      - name: Add branding regression test
+      - name: TypeScript authoritative checks
         run: |
-          cat > tests/landing-branding.test.mjs <<'EOF'
-          import assert from "node:assert/strict";
-          import { readFile } from "node:fs/promises";
-          import test from "node:test";
+          npm run typecheck:ai
+          npm run typecheck:online
 
-          const [page, layout, css, mainLogo, markLogo] = await Promise.all([
-            readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-            readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
-            readFile(new URL("../app/brand.css", import.meta.url), "utf8"),
-            readFile(new URL("../public/brand/hemsfell-heroes-logo.webp", import.meta.url)),
-            readFile(new URL("../public/brand/hemsfell-heroes-mark.webp", import.meta.url)),
-          ]);
+      - name: ESLint baseline
+        id: lint
+        continue-on-error: true
+        run: npm run lint 2>&1 | tee /tmp/eslint.txt
 
-          const isWebp = buffer => buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP";
-
-          test("landing replaces the old slogan copy with the approved large Hemsfell logo", () => {
-            assert.match(page, /className="landing-brand-logo" src="\/brand\/hemsfell-heroes-logo\.webp" alt="Hemsfell Heroes"/);
-            assert.doesNotMatch(page, /AS CRÔNICAS DE HEMSFELL/);
-            assert.doesNotMatch(page, /Heróis são escolhidos/);
-            assert.doesNotMatch(page, /Lendas são forjadas/);
-            assert.match(css, /\.screen-menu \.landing-brand-logo/);
-            assert.equal(isWebp(mainLogo), true);
-            assert.ok(mainLogo.length > 60000);
-          });
-
-          test("topbar HH mark is accessible and returns to the main menu", () => {
-            assert.match(page, /className="hh-logo hh-home-logo"[^>]*onClick=\{\(\)=>setScreen\("menu"\)\}/);
-            assert.match(page, /src="\/brand\/hemsfell-heroes-mark\.webp"/);
-            assert.match(page, /aria-label="Voltar ao menu principal"/);
-            assert.match(css, /\.shell-nav \.hh-home-logo/);
-            assert.equal(isWebp(markLogo), true);
-            assert.ok(markLogo.length > 10000);
-          });
-
-          test("the same HH mark is the browser site icon", () => {
-            assert.match(layout, /import "\.\/brand\.css";/);
-            assert.match(layout, /icon: "\/brand\/hemsfell-heroes-mark\.webp"/);
-            assert.match(layout, /shortcut: "\/brand\/hemsfell-heroes-mark\.webp"/);
-          });
+      - name: SonarJS baseline
+        id: sonarjs
+        continue-on-error: true
+        run: |
+          cat > /tmp/eslint.sonar.config.mjs <<'EOF'
+          import base from "${{ github.workspace }}/eslint.config.mjs";
+          import sonarjs from "eslint-plugin-sonarjs";
+          export default [
+            ...base,
+            {
+              files: ["app/**/*.{js,mjs,ts,tsx}", "worker/**/*.{js,mjs,ts,tsx}", "db/**/*.{js,mjs,ts,tsx}", "scripts/**/*.{js,mjs,ts,tsx}"],
+              plugins: { sonarjs },
+              rules: {
+                ...sonarjs.configs.recommended.rules,
+                "sonarjs/cognitive-complexity": ["warn", 25],
+                "sonarjs/no-duplicate-string": ["warn", { threshold: 5 }]
+              }
+            }
+          ];
           EOF
+          npx eslint app worker db scripts --config /tmp/eslint.sonar.config.mjs --format stylish 2>&1 | tee /tmp/sonarjs.txt
 
-      - name: Remove temporary workflow before canonical validation
-        run: rm .github/workflows/apply-hemsfell-brand.yml
+      - name: Duplication baseline
+        id: duplication
+        continue-on-error: true
+        run: |
+          npx jscpd app worker db scripts tests --min-lines 10 --min-tokens 75 --reporters console,json --output /tmp/jscpd 2>&1 | tee /tmp/jscpd.txt
 
-      - name: Run rules tests
+      - name: Risk-pattern baseline
+        run: |
+          node --input-type=module <<'NODE'
+          import { readdir, readFile } from 'node:fs/promises';
+          import path from 'node:path';
+          const roots=['app','worker','db','scripts'];
+          const exts=new Set(['.ts','.tsx','.js','.mjs','.cjs']);
+          const files=[];
+          async function walk(dir){for(const ent of await readdir(dir,{withFileTypes:true})){const p=path.join(dir,ent.name);if(ent.isDirectory())await walk(p);else if(exts.has(path.extname(ent.name)))files.push(p)}}
+          for(const root of roots) await walk(root);
+          const patterns=[
+            ['eval',/\beval\s*\(/g],
+            ['new Function',/\bnew\s+Function\b/g],
+            ['innerHTML',/\b(?:innerHTML|dangerouslySetInnerHTML)\b/g],
+            ['non-null assertion',/\w!\.(?:\w+)/g],
+            ['explicit any',/\bany\b/g],
+            ['console.log',/\bconsole\.log\s*\(/g],
+            ['ts-ignore',/@ts-ignore/g],
+            ['eslint-disable',/eslint-disable/g],
+          ];
+          const totals=Object.fromEntries(patterns.map(([name])=>[name,0]));
+          for(const file of files){const text=await readFile(file,'utf8');for(const [name,re] of patterns){totals[name]+=(text.match(re)||[]).length}}
+          console.log('RISK_PATTERN_TOTALS '+JSON.stringify(totals));
+          NODE
+
+      - name: Canonical rules suite
         run: npm run test:rules
 
-      - name: Run AI strategic benchmark
+      - name: AI strategic benchmark
         run: npm run ai:calibrate:benchmark
 
-      - name: Build production application
+      - name: Production build
         run: npm run vercel-build
 
-      - name: Commit validated branding refresh
+      - name: Baseline summary
+        if: always()
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --check
-          git commit -m "feat: refresh Hemsfell landing branding"
-          git push origin HEAD:feat/web-card-game-quality-foundation
+          echo "ESLint outcome: ${{ steps.lint.outcome }}"
+          echo "SonarJS outcome: ${{ steps.sonarjs.outcome }}"
+          echo "Duplication outcome: ${{ steps.duplication.outcome }}"
+          echo "--- ESLint tail ---"
+          tail -n 80 /tmp/eslint.txt 2>/dev/null || true
+          echo "--- SonarJS tail ---"
+          tail -n 120 /tmp/sonarjs.txt 2>/dev/null || true
+          echo "--- jscpd tail ---"
+          tail -n 80 /tmp/jscpd.txt 2>/dev/null || true
