@@ -1,0 +1,450 @@
+# Subtest: board layout preserves the approved 16:9 composition proportionally
+ok 536 - board layout preserves the approved 16:9 composition proportionally
+  ---
+  duration_ms: 1.137943
+  ...
+# Subtest: cards, fields, piles and hand remain proportional without coordinate reflow
+ok 537 - cards, fields, piles and hand remain proportional without coordinate reflow
+  ---
+  duration_ms: 1.264992
+  ...
+# Subtest: final stage seal outranks legacy fixed-position board rules
+ok 538 - final stage seal outranks legacy fixed-position board rules
+  ---
+  duration_ms: 1.801588
+  ...
+# Subtest: single eligible Draconic Illusion replacement auto-selects
+ok 539 - single eligible Draconic Illusion replacement auto-selects
+  ---
+  duration_ms: 0.695865
+  ...
+# Subtest: Dragão Ancião First Act applies primary and adjacent damage after target selection
+ok 540 - Dragão Ancião First Act applies primary and adjacent damage after target selection
+  ---
+  duration_ms: 1.811898
+  ...
+# Subtest: hero damage is also one authoritative life-loss event for Saymon
+ok 541 - hero damage is also one authoritative life-loss event for Saymon
+  ---
+  duration_ms: 2.318628
+  ...
+# Subtest: direct combat damage counts toward Saymon life loss
+ok 542 - direct combat damage counts toward Saymon life loss
+  ---
+  duration_ms: 23.469078
+  ...
+# Subtest: Discípulo only grows from controller life loss during controller turn
+ok 543 - Discípulo only grows from controller life loss during controller turn
+  ---
+  duration_ms: 27.020728
+  ...
+# Subtest: Morcego Rastreador draws only on controller first life loss of the turn
+ok 544 - Morcego Rastreador draws only on controller first life loss of the turn
+  ---
+  duration_ms: 20.001446
+  ...
+# Subtest: Condutor opens a real choice and its alternate path pays life as a cost
+ok 545 - Condutor opens a real choice and its alternate path pays life as a cost
+  ---
+  duration_ms: 52.043008
+  ...
+# Subtest: Olhos Sangrentos has no free Veloz and gains it only after paying 2 life
+ok 546 - Olhos Sangrentos has no free Veloz and gains it only after paying 2 life
+  ---
+  duration_ms: 15.233736
+  ...
+# Subtest: Castelo Carmesim counts only life losses witnessed by that card instance
+ok 547 - Castelo Carmesim counts only life losses witnessed by that card instance
+  ---
+  duration_ms: 24.052532
+  ...
+# Subtest: Saymon I can hit allied creatures but never Saymon himself; Saymon II is permanent
+ok 548 - Saymon I can hit allied creatures but never Saymon himself; Saymon II is permanent
+  ---
+  duration_ms: 32.398564
+  ...
+# Subtest: Saymon AI supplies Cobra markerAmount and avoids unsafe life activations
+ok 549 - Saymon AI supplies Cobra markerAmount and avoids unsafe life activations
+  ---
+  duration_ms: 1.433378
+  ...
+# Subtest: Condutor AI never chooses the 4-life branch when Saymon III cannot pay it
+ok 550 - Condutor AI never chooses the 4-life branch when Saymon III cannot pay it
+  ---
+  duration_ms: 0.863699
+  ...
+# Subtest: Saymon I kills the only Gato de Rua, which returns, and the power cannot be paid twice
+ok 551 - Saymon I kills the only Gato de Rua, which returns, and the power cannot be paid twice
+  ---
+  duration_ms: 49.160402
+  ...
+# Subtest: AI sees Saymon I as used after the authoritative activation
+ok 552 - AI sees Saymon I as used after the authoritative activation
+  ---
+  duration_ms: 13.007721
+  ...
+# Subtest: playing Máquina de Expresso keeps its activated effect locked on the entry turn
+ok 553 - playing Máquina de Expresso keeps its activated effect locked on the entry turn
+  ---
+  duration_ms: 13.19927
+  ...
+# Subtest: Máquina de Expresso cannot tap on entry, then creates Café Expresso in hand on a later round
+ok 554 - Máquina de Expresso cannot tap on entry, then creates Café Expresso in hand on a later round
+  ---
+  duration_ms: 12.489159
+  ...
+# Subtest: deck-search verb aliases compile to the same effect
+ok 555 - deck-search verb aliases compile to the same effect
+  ---
+  duration_ms: 12.902334
+  ...
+# Subtest: buscar uma and busque por amount keep selection semantics
+ok 556 - buscar uma and busque por amount keep selection semantics
+  ---
+  duration_ms: 8.835077
+  ...
+# Subtest: Dragão de Limo restores its authoritative Last Breath and deals 2 to every creature in play
+ok 557 - Dragão de Limo restores its authoritative Last Breath and deals 2 to every creature in play
+  ---
+  duration_ms: 18.708641
+  ...
+# Subtest: Tranqueira-Mática Eletrostática restores its authoritative turn-end trigger and leaves on its controller turn
+ok 558 - Tranqueira-Mática Eletrostática restores its authoritative turn-end trigger and leaves on its controller turn
+  ---
+  duration_ms: 3.214305
+  ...
+# Subtest: Tranqueira-Mática Eletrostática does not expire on the opponent turn
+ok 559 - Tranqueira-Mática Eletrostática does not expire on the opponent turn
+  ---
+  duration_ms: 0.95983
+  ...
+# Subtest: Bafo de Fumaça excludes itself on enter and repeat
+ok 560 - Bafo de Fumaça excludes itself on enter and repeat
+  ---
+  duration_ms: 1.287815
+  ...
+# Subtest: target plumbing propagates and validates source exclusion
+ok 561 - target plumbing propagates and validates source exclusion
+  ---
+  duration_ms: 2.007855
+  ...
+# Subtest: target banner stays compact while centered inside measured safe lane
+ok 562 - target banner stays compact while centered inside measured safe lane
+  ---
+  duration_ms: 1.751384
+  ...
+# Subtest: Tifon is an explicit authoritative hero with 3/7 evolution
+ok 563 - Tifon is an explicit authoritative hero with 3/7 evolution
+  ---
+  duration_ms: 1.958082
+  ...
+# Subtest: Tifon printed level I is automatic and limited to one
+ok 564 - Tifon printed level I is automatic and limited to one
+  ---
+  duration_ms: 0.228318
+  ...
+# Subtest: all Tifon creatures are Malorga
+ok 565 - all Tifon creatures are Malorga
+  ---
+  duration_ms: 8.22777
+  ...
+# Subtest: Conjurador is semantically a Last Breath through onDestroyed
+ok 566 - Conjurador is semantically a Last Breath through onDestroyed
+  ---
+  duration_ms: 0.181991
+  ...
+# Subtest: Reanimador only offers creatures costing 2 or less
+ok 567 - Reanimador only offers creatures costing 2 or less
+  ---
+  duration_ms: 1.608597
+  ...
+# Subtest: Reanimador stays silent when there is no eligible creature
+ok 568 - Reanimador stays silent when there is no eligible creature
+  ---
+  duration_ms: 0.218009
+  ...
+# Subtest: Explosivo counts deaths from both players
+ok 569 - Explosivo counts deaths from both players
+  ---
+  duration_ms: 0.56534
+  ...
+# Subtest: Altar is optional and once per turn
+ok 570 - Altar is optional and once per turn
+  ---
+  duration_ms: 0.129053
+  ...
+# Subtest: Primordial text now says destroy, not sacrifice
+ok 571 - Primordial text now says destroy, not sacrifice
+  ---
+  duration_ms: 0.437501
+  ...
+# Subtest: Estandarte is explicitly doubled by Tifon III
+ok 572 - Estandarte is explicitly doubled by Tifon III
+  ---
+  duration_ms: 0.548478
+  ...
+# Subtest: Totem uses exact double-cost marker selection
+ok 573 - Totem uses exact double-cost marker selection
+  ---
+  duration_ms: 0.223158
+  ...
+# Subtest: Hard AI only starts Tranqueira when five legal follow-up cards are payable
+ok 574 - Hard AI only starts Tranqueira when five legal follow-up cards are payable
+  ---
+  duration_ms: 11.619007
+  ...
+# Subtest: lower difficulty keeps its permissive, human-error candidate set
+ok 575 - lower difficulty keeps its permissive, human-error candidate set
+  ---
+  duration_ms: 0.333866
+  ...
+# Subtest: local end-turn removes every live Tranqueira using its own counter
+ok 576 - local end-turn removes every live Tranqueira using its own counter
+  ---
+  duration_ms: 7.905534
+  ...
+# Subtest: p46 six-card branch uses the canonical Trambuco name and Goblin attachment policy
+ok 577 - p46 six-card branch uses the canonical Trambuco name and Goblin attachment policy
+  ---
+  duration_ms: 1.341335
+  ...
+# Subtest: one valid Goblin receives Trambuco automatically
+ok 578 - one valid Goblin receives Trambuco automatically
+  ---
+  duration_ms: 19.620772
+  ...
+# Subtest: two valid Goblins require the controller to choose the attachment target
+ok 579 - two valid Goblins require the controller to choose the attachment target
+  ---
+  duration_ms: 6.188825
+  ...
+# Subtest: an occupied auxiliary slot removes that Goblin from the attachment choices
+ok 580 - an occupied auxiliary slot removes that Goblin from the attachment choices
+  ---
+  duration_ms: 2.676528
+  ...
+# Subtest: zero valid Goblins skips the reward without locking end of turn
+ok 581 - zero valid Goblins skips the reward without locking end of turn
+  ---
+  duration_ms: 2.833474
+  ...
+# Subtest: local bot UI asks for a Goblin when multiple hosts exist and honors the chosen uid
+ok 582 - local bot UI asks for a Goblin when multiple hosts exist and honors the chosen uid
+  ---
+  duration_ms: 13.781943
+  ...
+# Subtest: turned permanents are unavailable to the activation UI even without a tap cost
+ok 583 - turned permanents are unavailable to the activation UI even without a tap cost
+  ---
+  duration_ms: 3.766012
+  ...
+# Subtest: authoritative engine rejects an activated effect from a turned permanent
+ok 584 - authoritative engine rejects an activated effect from a turned permanent
+  ---
+  duration_ms: 1.890836
+  ...
+# Subtest: turned cards do not expose a clickable activation control
+ok 585 - turned cards do not expose a clickable activation control
+  ---
+  duration_ms: 0.707527
+  ...
+# Subtest: Anel de Safira preenche a reserva, não ativa cheio e é destruído
+ok 586 - Anel de Safira preenche a reserva, não ativa cheio e é destruído
+  ---
+  duration_ms: 98.805404
+  ...
+# Subtest: Punho Sísmico exige criatura e aceita um ou dois alvos distintos
+ok 587 - Punho Sísmico exige criatura e aceita um ou dois alvos distintos
+  ---
+  duration_ms: 67.409205
+  ...
+# Subtest: Maestria Elemental cria somente a imagem escolhida do deck extra
+ok 588 - Maestria Elemental cria somente a imagem escolhida do deck extra
+  ---
+  duration_ms: 22.629232
+  ...
+# Subtest: Hidromancia e Aeromancia disparam no primeiro feitiço de cada turno global
+ok 589 - Hidromancia e Aeromancia disparam no primeiro feitiço de cada turno global
+  ---
+  duration_ms: 56.093451
+  ...
+# Subtest: Geomancia é opcional, só abre com criaturas e respeita o piso 1
+ok 590 - Geomancia é opcional, só abre com criaturas e respeita o piso 1
+  ---
+  duration_ms: 35.929303
+  ...
+# Subtest: Piromancia adiciona 2 ao dano e causa o excesso ao herói
+ok 591 - Piromancia adiciona 2 ao dano e causa o excesso ao herói
+  ---
+  duration_ms: 11.567063
+  ...
+# Subtest: Orbe Cromático simula o elemento escolhido e ainda causa 1 de dano
+ok 592 - Orbe Cromático simula o elemento escolhido e ainda causa 1 de dano
+  ---
+  duration_ms: 20.911643
+  ...
+# Subtest: Feiticeira Espectral consome X marcadores e busca um feitiço de custo até X
+ok 593 - Feiticeira Espectral consome X marcadores e busca um feitiço de custo até X
+  ---
+  duration_ms: 43.686549
+  ...
+# Subtest: Tufão devolve todas as criaturas aos donos e dissipa Imagens
+ok 594 - Tufão devolve todas as criaturas aos donos e dissipa Imagens
+  ---
+  duration_ms: 13.210531
+  ...
+# Subtest: Levantar Maré em resposta permite escolher o Clone de Água como defensor
+ok 595 - Levantar Maré em resposta permite escolher o Clone de Água como defensor
+  ---
+  duration_ms: 51.754818
+  ...
+# Subtest: Uruk III repete no fim do turno o último feitiço usado naquele turno
+ok 596 - Uruk III repete no fim do turno o último feitiço usado naquele turno
+  ---
+  duration_ms: 44.671624
+  ...
+# Subtest: Uruk III não abre seleção quando o último feitiço não possui mais alvo válido
+ok 597 - Uruk III não abre seleção quando o último feitiço não possui mais alvo válido
+  ---
+  duration_ms: 16.884491
+  ...
+# Subtest: Uruk I resolve corretamente Fogo, Terra, Água e Ar no fim do turno
+ok 598 - Uruk I resolve corretamente Fogo, Terra, Água e Ar no fim do turno
+  ---
+  duration_ms: 39.724159
+  ...
+# Subtest: Eclipse Final causa duas vezes o total de feitiços do turno incluindo ela mesma
+ok 599 - Eclipse Final causa duas vezes o total de feitiços do turno incluindo ela mesma
+  ---
+  duration_ms: 22.737309
+  ...
+# Subtest: retornos dos demais decks reutilizam a regra de Imagens e bônus de subtipo
+ok 600 - retornos dos demais decks reutilizam a regra de Imagens e bônus de subtipo
+  ---
+  duration_ms: 30.801938
+  ...
+# Subtest: Contramedida e ativáveis de marcadores preservam quantidade e alvo
+ok 601 - Contramedida e ativáveis de marcadores preservam quantidade e alvo
+  ---
+  duration_ms: 30.97379
+  ...
+# Subtest: Bolha protege o próximo dano do herói sem alvo base
+ok 602 - Bolha protege o próximo dano do herói sem alvo base
+  ---
+  duration_ms: 16.008027
+  ...
+# Subtest: Nuvem Esmagadora acumula imposto e zera ataque aprimorado até o próximo turno
+ok 603 - Nuvem Esmagadora acumula imposto e zera ataque aprimorado até o próximo turno
+  ---
+  duration_ms: 17.720408
+  ...
+# Subtest: Arquimago e Golem resolvem passivamente sem solicitar alvo
+ok 604 - Arquimago e Golem resolvem passivamente sem solicitar alvo
+  ---
+  duration_ms: 30.807565
+  ...
+# Subtest: fim do turno exige descarte até nove cartas
+ok 605 - fim do turno exige descarte até nove cartas
+  ---
+  duration_ms: 15.743952
+  ...
+# Subtest: lista de feitiços acelerados e bônus permanente de Biriba estão corretos
+ok 606 - lista de feitiços acelerados e bônus permanente de Biriba estão corretos
+  ---
+  duration_ms: 0.168857
+  ...
+# Subtest: Marcha dos Condenados seleciona simultaneamente uma ou duas criaturas com Último Suspiro
+ok 607 - Marcha dos Condenados seleciona simultaneamente uma ou duas criaturas com Último Suspiro
+  ---
+  duration_ms: 26.614977
+  ...
+# Subtest: Castigo e Café Derramado exigem um efeito realmente aplicado no turno
+ok 608 - Castigo e Café Derramado exigem um efeito realmente aplicado no turno
+  ---
+  duration_ms: 33.065191
+  ...
+# Subtest: Abstinência de Café mantém a criatura virada até outro feitiço aplicar um efeito
+ok 609 - Abstinência de Café mantém a criatura virada até outro feitiço aplicar um efeito
+  ---
+  duration_ms: 16.049274
+  ...
+# Subtest: Descarte Estratégico escolhe aleatoriamente e resolve o tipo descartado
+ok 610 - Descarte Estratégico escolhe aleatoriamente e resolve o tipo descartado
+  ---
+  duration_ms: 57.555217
+  ...
+# Subtest: CRIATURA 6 move opcionalmente um marcador de qualquer carta para si
+ok 611 - CRIATURA 6 move opcionalmente um marcador de qualquer carta para si
+  ---
+  duration_ms: 29.014607
+  ...
+# Subtest: CRIATURA 7 converte marcadores e pede escolha em empate no fim do turno
+ok 612 - CRIATURA 7 converte marcadores e pede escolha em empate no fim do turno
+  ---
+  duration_ms: 25.962423
+  ...
+# Subtest: FUGA zera o custo retornado e transfere o artefato ao outro controlador
+ok 613 - FUGA zera o custo retornado e transfere o artefato ao outro controlador
+  ---
+  duration_ms: 10.650121
+  ...
+# Subtest: SOPRO NATURAL devolve até três criaturas e bane todo o restante do cemitério
+ok 614 - SOPRO NATURAL devolve até três criaturas e bane todo o restante do cemitério
+  ---
+  duration_ms: 15.874705
+  ...
+# Subtest: every canonical hero deck normalizes to the shared 49-card model
+ok 615 - every canonical hero deck normalizes to the shared 49-card model
+  ---
+  duration_ms: 17.022489
+  ...
+# Subtest: the canonical Quarion list keeps its intentional shared cards legal
+ok 616 - the canonical Quarion list keeps its intentional shared cards legal
+  ---
+  duration_ms: 2.915146
+  ...
+# Subtest: client payload cannot exceed copy limits, move Images into Main or cross hero identity
+ok 617 - client payload cannot exceed copy limits, move Images into Main or cross hero identity
+  ---
+  duration_ms: 1.300309
+  ...
+# Subtest: hero identity, total and duplicate entries are authoritative validation failures
+ok 618 - hero identity, total and duplicate entries are authoritative validation failures
+  ---
+  duration_ms: 1.275702
+  ...
+# Subtest: Valorian custo 7 não ativa na própria entrada
+ok 619 - Valorian custo 7 não ativa na própria entrada
+  ---
+  duration_ms: 15.572604
+  ...
+# Subtest: Valorian custo 7 ignora criatura aliada que não é Dragão
+ok 620 - Valorian custo 7 ignora criatura aliada que não é Dragão
+  ---
+  duration_ms: 10.752683
+  ...
+# Subtest: Valorian custo 7 ativa quando outro Dragão aliado entra
+ok 621 - Valorian custo 7 ativa quando outro Dragão aliado entra
+  ---
+  duration_ms: 6.258906
+  ...
+# Subtest: Vercel serverless launcher may require compiled Next API routes
+ok 622 - Vercel serverless launcher may require compiled Next API routes
+  ---
+  duration_ms: 6.048011
+  ...
+# Subtest: Xarqiroth does not count itself when resolving its onEnter
+ok 623 - Xarqiroth does not count itself when resolving its onEnter
+  ---
+  duration_ms: 28.129977
+  ...
+1..623
+# tests 623
+# suites 0
+# pass 618
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5720.836799
+===== production build exit=1 =====
