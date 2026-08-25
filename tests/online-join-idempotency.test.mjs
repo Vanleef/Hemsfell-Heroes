@@ -35,7 +35,8 @@ test("the invite client single-flights clicks and reuses one request id for retr
 
 test("guest deck selection shares the serialized room action and reconciles heartbeat races",()=>{
   assert.match(page,/const selectRequestId=crypto\.randomUUID\(\)/);
-  assert.match(page,/await roomAction\("select",\{heroId,locked:true,selectRequestId\}\)/);
+  assert.match(page,/validateUserDeck\(candidate,cards\)/);
+  assert.match(page,/await roomAction\("select",\{heroId,userDeck:validation\.deck,locked:true,selectRequestId\}\)/);
   assert.match(page,/action==="command"\|\|action==="choose_start"\|\|action==="select"/);
   assert.match(page,/participant\?\.deckLocked&&participant\?\.heroId===extra\.heroId/);
   assert.match(page,/networkRetries<2/);

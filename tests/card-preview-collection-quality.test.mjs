@@ -38,7 +38,9 @@ test("touch long press opens a large preview without also executing the card cli
 test("collection search, type filtering and deck validation are visible and responsive", () => {
   assert.match(page, /useDeferredValue\(collectionQuery\)/);
   assert.match(page, /collectionType==="Todas"\|\|card\.type===collectionType/);
-  assert.match(page, /mainDeckCopies===49/);
+  assert.match(page, /validateUserDeck\(activeUserDeck,cards\)/);
+  assert.match(page, /mainDeckCopies=deckValidation\.mainCount/);
+  assert.match(page, /MAIN_DECK_SIZE/);
   assert.match(page, /className={`deck-validity/);
   assert.match(page, /disabled=\{!deckListValid\}/);
   assert.match(collectionCss, /\.collection-toolbar/);

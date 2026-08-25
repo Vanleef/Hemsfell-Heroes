@@ -15,7 +15,8 @@ test("collection exposes copy counts and bounded responsive lists", async () => 
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/ui-overrides.css", import.meta.url), "utf8"),
   ]);
-  assert.match(page, /collectionQuantity:quantity/);
+  assert.match(page, /collectionQuantity:entry\.quantity/);
+  assert.match(page, /activeUserDeck\.main\.map/);
   assert.match(page, /collection-copy-count/);
   assert.match(css, /screen-decks \.collection-lists[^}]*overflow: hidden !important/s);
   assert.match(css, /card-library:has\(> :nth-child\(21\)\)/);
