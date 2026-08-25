@@ -1,0 +1,218 @@
+name: Apply Hemsfell brand refresh
+
+on:
+  push:
+    branches:
+      - feat/web-card-game-quality-foundation
+    paths:
+      - .github/workflows/apply-hemsfell-brand.yml
+
+permissions:
+  contents: write
+
+jobs:
+  brand-refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: feat/web-card-game-quality-foundation
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install approved transparent logo assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MAIN_SHA: 3309d6684bda1092980d6c775108b626b4f35a11
+          MARK_SHA: d14844c5292e001a389014d06c9895023477a41c
+        run: |
+          mkdir -p public/brand
+          gh api "repos/${GITHUB_REPOSITORY}/git/blobs/${MAIN_SHA}" --jq .content | tr -d '\n' | base64 -d > public/brand/hemsfell-heroes-logo.webp
+          gh api "repos/${GITHUB_REPOSITORY}/git/blobs/${MARK_SHA}" --jq .content | tr -d '\n' | base64 -d > public/brand/hemsfell-heroes-mark.webp
+          test "$(wc -c < public/brand/hemsfell-heroes-logo.webp)" -gt 60000
+          test "$(wc -c < public/brand/hemsfell-heroes-mark.webp)" -gt 10000
+
+      - name: Replace landing copy and topbar brand
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          page_path = Path('app/page.tsx')
+          page = page_path.read_text()
+
+          old_nav = '<nav className="shell-nav"><div className="hh-logo"><img src="/brand/hemsfell-heroes-logo.png" alt="Hemsfell Heroes"/></div><button onClick={()=>setScreen("decks")}>'
+          new_nav = '<nav className="shell-nav"><button className="hh-logo hh-home-logo" type="button" onClick={()=>setScreen("menu")} aria-label="Voltar ao menu principal" title="Voltar ao menu"><img src="/brand/hemsfell-heroes-mark.webp" alt="" aria-hidden="true"/></button><button onClick={()=>setScreen("decks")}>'
+          if old_nav not in page:
+              raise SystemExit('topbar markup changed; refusing unsafe replacement')
+          page = page.replace(old_nav, new_nav, 1)
+
+          old_copy = '<div className="landing-copy"><p>AS CRÔNICAS DE HEMSFELL</p><h1>Heróis são escolhidos.<br/><em>Lendas são forjadas.</em></h1><span>Entidades cósmicas convocam campeões, criaturas e magias de um mundo de fantasia em guerra. Construa seu exército, domine o campo e reduza a vida do herói rival a zero.</span><div className="landing-actions">'
+          new_copy = '<div className="landing-copy"><img className="landing-brand-logo" src="/brand/hemsfell-heroes-logo.webp" alt="Hemsfell Heroes"/><div className="landing-actions">'
+          if old_copy not in page:
+              raise SystemExit('landing copy changed; refusing unsafe replacement')
+          page = page.replace(old_copy, new_copy, 1)
+          page_path.write_text(page)
+          PY
+
+      - name: Add isolated responsive brand styles
+        run: |
+          cat > app/brand.css <<'EOF'
+          /* Landing/topbar branding. Kept outside match layout CSS. */
+          .shell-nav .hh-home-logo {
+            width: clamp(3.15rem, 4.6vw, 4rem) !important;
+            height: clamp(3.15rem, 4.6vw, 4rem) !important;
+            display: grid !important;
+            place-items: center !important;
+            flex: 0 0 auto !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            border: 0 !important;
+            border-radius: .55rem !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+            cursor: pointer !important;
+            transition: transform .16s ease, filter .16s ease !important;
+          }
+          .shell-nav .hh-home-logo:hover,
+          .shell-nav .hh-home-logo:focus-visible {
+            transform: translateY(-1px) scale(1.045) !important;
+            filter: drop-shadow(0 0 .7rem rgb(27 217 224 / .24)) !important;
+          }
+          .shell-nav .hh-home-logo:focus-visible {
+            outline: 2px solid #eab84d !important;
+            outline-offset: 3px !important;
+          }
+          .shell-nav .hh-home-logo > img {
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+            object-position: center !important;
+            user-select: none !important;
+            -webkit-user-drag: none !important;
+          }
+          .screen-menu .landing-copy {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            justify-content: center;
+            min-width: 0;
+          }
+          .screen-menu .landing-brand-logo {
+            display: block;
+            width: min(100%, clamp(25rem, 43vw, 39rem));
+            height: auto;
+            max-height: min(61dvh, 37rem);
+            object-fit: contain;
+            object-position: left center;
+            filter: drop-shadow(0 1.2rem 2.2rem rgb(0 0 0 / .38));
+            user-select: none;
+            -webkit-user-drag: none;
+          }
+          .screen-menu .landing-copy > .landing-actions {
+            width: min(100%, 39rem);
+            flex-wrap: wrap;
+          }
+          @media (max-width: 56rem) {
+            .screen-menu .landing-copy {
+              align-items: center;
+              text-align: center;
+            }
+            .screen-menu .landing-brand-logo {
+              width: min(88vw, 34rem);
+              max-height: 46dvh;
+              object-position: center;
+            }
+            .screen-menu .landing-copy > .landing-actions {
+              justify-content: center;
+            }
+          }
+          EOF
+
+      - name: Load brand styles and use HH mark as site icon
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('app/layout.tsx')
+          text = path.read_text()
+          if 'import "./brand.css";' not in text:
+              needle = 'import "./globals.css";\n'
+              if needle not in text:
+                  raise SystemExit('layout stylesheet imports changed')
+              text = text.replace(needle, needle + 'import "./brand.css";\n', 1)
+          text = text.replace('icon: "/icon.png",\n    shortcut: "/icon.png",', 'icon: "/brand/hemsfell-heroes-mark.webp",\n    shortcut: "/brand/hemsfell-heroes-mark.webp",')
+          path.write_text(text)
+          PY
+
+      - name: Add branding regression test
+        run: |
+          cat > tests/landing-branding.test.mjs <<'EOF'
+          import assert from "node:assert/strict";
+          import { readFile } from "node:fs/promises";
+          import test from "node:test";
+
+          const [page, layout, css, mainLogo, markLogo] = await Promise.all([
+            readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+            readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+            readFile(new URL("../app/brand.css", import.meta.url), "utf8"),
+            readFile(new URL("../public/brand/hemsfell-heroes-logo.webp", import.meta.url)),
+            readFile(new URL("../public/brand/hemsfell-heroes-mark.webp", import.meta.url)),
+          ]);
+
+          const isWebp = buffer => buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP";
+
+          test("landing replaces the old slogan copy with the approved large Hemsfell logo", () => {
+            assert.match(page, /className="landing-brand-logo" src="\/brand\/hemsfell-heroes-logo\.webp" alt="Hemsfell Heroes"/);
+            assert.doesNotMatch(page, /AS CRÔNICAS DE HEMSFELL/);
+            assert.doesNotMatch(page, /Heróis são escolhidos/);
+            assert.doesNotMatch(page, /Lendas são forjadas/);
+            assert.match(css, /\.screen-menu \.landing-brand-logo/);
+            assert.equal(isWebp(mainLogo), true);
+            assert.ok(mainLogo.length > 60000);
+          });
+
+          test("topbar HH mark is accessible and returns to the main menu", () => {
+            assert.match(page, /className="hh-logo hh-home-logo"[^>]*onClick=\{\(\)=>setScreen\("menu"\)\}/);
+            assert.match(page, /src="\/brand\/hemsfell-heroes-mark\.webp"/);
+            assert.match(page, /aria-label="Voltar ao menu principal"/);
+            assert.match(css, /\.shell-nav \.hh-home-logo/);
+            assert.equal(isWebp(markLogo), true);
+            assert.ok(markLogo.length > 10000);
+          });
+
+          test("the same HH mark is the browser site icon", () => {
+            assert.match(layout, /import "\.\/brand\.css";/);
+            assert.match(layout, /icon: "\/brand\/hemsfell-heroes-mark\.webp"/);
+            assert.match(layout, /shortcut: "\/brand\/hemsfell-heroes-mark\.webp"/);
+          });
+          EOF
+
+      - name: Remove temporary workflow before canonical validation
+        run: rm .github/workflows/apply-hemsfell-brand.yml
+
+      - name: Run rules tests
+        run: npm run test:rules
+
+      - name: Run AI strategic benchmark
+        run: npm run ai:calibrate:benchmark
+
+      - name: Build production application
+        run: npm run vercel-build
+
+      - name: Commit validated branding refresh
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "feat: refresh Hemsfell landing branding"
+          git push origin HEAD:feat/web-card-game-quality-foundation
