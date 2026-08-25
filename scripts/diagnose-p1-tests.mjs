@@ -14,10 +14,20 @@ function run(file) {
   });
 }
 
+function failureExcerpt(output) {
+  const lines = output.split("\n");
+  const indexes = lines.flatMap((line, index) => /^not ok\b/.test(line.trim()) ? [index] : []);
+  if (!indexes.length) return lines.slice(-220).join("\n");
+  const chunks = indexes.map((index) => lines.slice(Math.max(0, index - 3), Math.min(lines.length, index + 48)).join("\n"));
+  const summaryIndex = lines.findIndex((line) => /^# fail\s+[1-9]/.test(line.trim()));
+  if (summaryIndex >= 0) chunks.push(lines.slice(Math.max(0, summaryIndex - 4), Math.min(lines.length, summaryIndex + 6)).join("\n"));
+  return chunks.join("\n\n---\n\n");
+}
+
 for (const file of files) {
   const { code, output } = await run(file);
   if (code !== 0) {
-    failures.push({ file, output: output.split("\n").slice(-160).join("\n") });
+    failures.push({ file, output: failureExcerpt(output) });
     console.log(`FAIL ${file}`);
   } else {
     console.log(`PASS ${file}`);
