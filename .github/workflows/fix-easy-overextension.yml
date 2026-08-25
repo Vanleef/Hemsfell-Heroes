@@ -31,6 +31,11 @@ jobs:
         run: npm ci
       - name: Apply Easy known-sweeper safety fix
         run: node scripts/fix-easy-known-sweeper-overextension.mjs
+      - name: Remove temporary migration and diagnostic files
+        run: |
+          rm -f scripts/fix-easy-known-sweeper-overextension.mjs
+          rm -f .github/workflows/fix-easy-overextension.yml
+          rm -f .github/workflows/ai-overextension-diagnostic.yml
       - name: Validate AI safety contract
         run: node --test tests/advanced-ai.test.mjs
       - name: Validate strategic benchmark
@@ -39,11 +44,8 @@ jobs:
         run: npm run test:rules
       - name: Validate production build
         run: npm run vercel-build
-      - name: Commit validated fix and remove diagnostics
+      - name: Commit validated fix and cleanup
         run: |
-          rm -f scripts/fix-easy-known-sweeper-overextension.mjs
-          rm -f .github/workflows/fix-easy-overextension.yml
-          rm -f .github/workflows/ai-overextension-diagnostic.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
