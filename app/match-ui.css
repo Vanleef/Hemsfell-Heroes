@@ -27,7 +27,6 @@ body > [data-floating-ui-portal] { position: relative; z-index: 2147483000; }
 .card-preview-floating.card-tooltip {
   display: flex !important;
   position: fixed !important;
-  inset: auto !important;
   width: min(16rem, var(--card-preview-available-width, calc(100dvw - 1rem))) !important;
   max-width: calc(100dvw - 1rem) !important;
   max-height: min(32rem, var(--card-preview-available-height, calc(100dvh - 1rem))) !important;
@@ -40,7 +39,6 @@ body > [data-floating-ui-portal] { position: relative; z-index: 2147483000; }
   background: linear-gradient(145deg, #101927fa, #060b12fc) !important;
   box-shadow: 0 1rem 3rem #000c, 0 0 0 1px #ffffff10 !important;
   color: #f5ecd8 !important;
-  transform: none !important;
   filter: none !important;
   z-index: 2147483000 !important;
   pointer-events: none !important;
