@@ -1,0 +1,160 @@
+===== rules-engine.test.mjs =====
+# Subtest: Brutamontes only gains attack for creatures explicitly sacrificed
+ok 131 - Brutamontes only gains attack for creatures explicitly sacrificed
+  ---
+  duration_ms: 1.702321
+  ...
+# Subtest: Brutamontes may decline every sacrifice and stays at base attack
+ok 132 - Brutamontes may decline every sacrifice and stays at base attack
+  ---
+  duration_ms: 0.672758
+  ...
+# Subtest: Caneca da Sorte grants its modifier and spell-damage immunity without Magic Barrier
+ok 133 - Caneca da Sorte grants its modifier and spell-damage immunity without Magic Barrier
+  ---
+  duration_ms: 0.58804
+  ...
+# Subtest: zero vitality from a modifier sends a reset card to grave
+ok 134 - zero vitality from a modifier sends a reset card to grave
+  ---
+  duration_ms: 0.6197
+  ...
+# Subtest: Fura-Fila compiles to the canonical previous-card condition
+ok 135 - Fura-Fila compiles to the canonical previous-card condition
+  ---
+  duration_ms: 0.183313
+  ...
+# Subtest: accelerated spells spend reserve first on own turn and only reserve on opponent turn
+ok 136 - accelerated spells spend reserve first on own turn and only reserve on opponent turn
+  ---
+  duration_ms: 0.509413
+  ...
+# Subtest: spell keywords apply Lifesteal and Deathtouch to effect damage
+ok 137 - spell keywords apply Lifesteal and Deathtouch to effect damage
+  ---
+  duration_ms: 0.163245
+  ...
+# Subtest: paying life is an atomic cost and publishes the life-loss trigger
+ok 138 - paying life is an atomic cost and publishes the life-loss trigger
+  ---
+  duration_ms: 0.601616
+  ...
+# Subtest: Saymon level 3 life costs can never reduce life below one
+ok 139 - Saymon level 3 life costs can never reduce life below one
+  ---
+  duration_ms: 0.610542
+  ...
+# Subtest: every generated card is executable by the authoritative engine
+ok 140 - every generated card is executable by the authoritative engine
+  ---
+  duration_ms: 11.981873
+  ...
+# Subtest: Goblin sacrifice damage uses the sacrificed creature effective attack
+ok 141 - Goblin sacrifice damage uses the sacrificed creature effective attack
+  ---
+  duration_ms: 0.835533
+  ...
+# Subtest: Goblin sacrifice activation collects its cost and effect target authoritatively
+ok 142 - Goblin sacrifice activation collects its cost and effect target authoritatively
+  ---
+  duration_ms: 1.428392
+  ...
+# Subtest: Chave Rara searches a terrain directly onto the authoritative field
+ok 143 - Chave Rara searches a terrain directly onto the authoritative field
+  ---
+  duration_ms: 0.89791
+  ...
+# Subtest: Desenterrar validates its grave choice and resumes by resurrecting it
+ok 144 - Desenterrar validates its grave choice and resumes by resurrecting it
+  ---
+  duration_ms: 1.147075
+  ...
+# Subtest: Café Pingado prevents exactly one point instead of the whole damage instance
+ok 145 - Café Pingado prevents exactly one point instead of the whole damage instance
+  ---
+  duration_ms: 0.767545
+  ...
+# Subtest: Prestidigitação lets its controller draw from the bottom
+ok 146 - Prestidigitação lets its controller draw from the bottom
+  ---
+  duration_ms: 0.32635
+  ...
+# Subtest: Tessália AI never queues an illegal non-commander attack
+ok 147 - Tessália AI never queues an illegal non-commander attack
+  ---
+  duration_ms: 0.414185
+  ...
+# Subtest: authoritative combat enforces Tessália commander restriction
+ok 148 - authoritative combat enforces Tessália commander restriction
+  ---
+  duration_ms: 0.655106
+  ...
+# Subtest: Saymon evolution markers expire when his next turn starts
+ok 149 - Saymon evolution markers expire when his next turn starts
+  ---
+  duration_ms: 0.377737
+  ...
+# Subtest: AI difficulty profiles and life-cost safety are explicit
+ok 150 - AI difficulty profiles and life-cost safety are explicit
+  ---
+  duration_ms: 0.378798
+  ...
+# Subtest: UI animation is presentation-only and cannot hide an unresolved ability response
+ok 151 - UI animation is presentation-only and cannot hide an unresolved ability response
+  ---
+  duration_ms: 3.066867
+  ...
+# Subtest: online actions share one serialized request queue and reconcile stale revisions
+ok 152 - online actions share one serialized request queue and reconcile stale revisions
+  ---
+  duration_ms: 1.429434
+  ...
+# Subtest: field keyword icons render outside the card button at its lower edge
+ok 153 - field keyword icons render outside the card button at its lower edge
+  ---
+  duration_ms: 17.596449
+  ...
+# Subtest: a full priority combat exchange always reaches a terminal combat state
+ok 154 - a full priority combat exchange always reaches a terminal combat state
+  ---
+  duration_ms: 1.691845
+  ...
+# Subtest: game viewport and stage use the canonical responsive shell
+ok 155 - game viewport and stage use the canonical responsive shell
+  ---
+  duration_ms: 12.076199
+  ...
+# Subtest: board layout preserves the approved 16:9 composition proportionally
+ok 156 - board layout preserves the approved 16:9 composition proportionally
+  ---
+  duration_ms: 7.315805
+  ...
+# Subtest: cards, fields, piles and hand remain proportional without coordinate reflow
+ok 157 - cards, fields, piles and hand remain proportional without coordinate reflow
+  ---
+  duration_ms: 3.261661
+  ...
+# Subtest: final stage seal outranks legacy fixed-position board rules
+ok 158 - final stage seal outranks legacy fixed-position board rules
+  ---
+  duration_ms: 3.349242
+  ...
+# Subtest: single eligible Draconic Illusion replacement auto-selects
+ok 159 - single eligible Draconic Illusion replacement auto-selects
+  ---
+  duration_ms: 0.713454
+  ...
+# Subtest: Dragão Ancião First Act applies primary and adjacent damage after target selection
+ok 160 - Dragão Ancião First Act applies primary and adjacent damage after target selection
+  ---
+  duration_ms: 1.615612
+  ...
+1..160
+# tests 160
+# suites 0
+# pass 159
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 653.626541
