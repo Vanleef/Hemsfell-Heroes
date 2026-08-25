@@ -38,6 +38,7 @@
     "ai:selfplay": "npm run ai:runtime:build && node .ai-runtime/scripts/ai-selfplay.js"
   },
   "dependencies": {
+    "@floating-ui/react": "^0.27.20",
     "@vercel/blob": "2.7.0",
     "drizzle-orm": "0.45.2",
     "next": "16.2.6",

@@ -349,6 +349,11 @@ export function applyTimeout(room: Room) {
         reconcileOnlineClocks(before, room.game, room.settings, now);
         if (noActionTimeout) recordNoActionTurnTimeout(room, owner, before.round);
         reconcileInactivityAfterTransition(room, before, now);
+        /* A turn timeout can end a phase and open an ordinary priority
+           checkpoint. Resolve checkpoints with no legal Assisted response in
+           this same server transaction so browsers never render a transient
+           empty window and then race each other with passPriority. */
+        drainEmptyAssistedPriority(room, [...(result.trace || [])]);
         room.game.events = (room.game.events ?? 0) + 1;
         const forcedAttack = command.type === "declareAttack";
         room.game.log = [{ id: crypto.randomUUID(), text: forcedAttack ? "O tempo da etapa terminou; uma criatura com Indomável iniciou seu ataque obrigatório." : "O tempo da etapa terminou; foi solicitada a passagem pelo fluxo normal de prioridade.", tone: forcedAttack ? "combat" : "phase" }, ...(room.game.log ?? [])];
