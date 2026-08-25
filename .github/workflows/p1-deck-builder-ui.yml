@@ -34,16 +34,41 @@ jobs:
         run: |
           node scripts/p1-deck-builder-ui-fix.mjs
           node scripts/p1-deck-builder-ui.mjs
-      - name: Validate deck builder tests
-        run: node --test tests/user-deck-model.test.mjs tests/online-user-deck-authority.test.mjs tests/persistent-deck-builder.test.mjs
-      - name: Validate online typecheck
-        run: npm run typecheck:online
-      - name: Validate full rules suite
-        run: npm run test:rules
-      - name: Validate production build
-        run: npm run vercel-build
+      - name: Validate and capture diagnostics
+        run: |
+          set +e
+          : > /tmp/p1-validation.log
+          run_gate() {
+            label="$1"
+            shift
+            echo "===== $label =====" | tee -a /tmp/p1-validation.log
+            "$@" 2>&1 | tee -a /tmp/p1-validation.log
+            status=${PIPESTATUS[0]}
+            echo "===== $label exit=$status =====" | tee -a /tmp/p1-validation.log
+            return $status
+          }
+
+          failed=0
+          run_gate "deck builder tests" node --test tests/user-deck-model.test.mjs tests/online-user-deck-authority.test.mjs tests/persistent-deck-builder.test.mjs || failed=1
+          run_gate "online typecheck" npm run typecheck:online || failed=1
+          run_gate "full rules suite" npm run test:rules || failed=1
+          run_gate "production build" npm run vercel-build || failed=1
+
+          if [ "$failed" -ne 0 ]; then
+            cp /tmp/p1-validation.log /tmp/p1-validation-copy.log
+            git reset --hard HEAD
+            mkdir -p .diagnostics
+            tail -n 450 /tmp/p1-validation-copy.log > .diagnostics/p1-deck-builder-validation.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .diagnostics/p1-deck-builder-validation.txt
+            git commit -m "chore: capture P1 deck builder validation failure"
+            git push origin HEAD:feat/web-card-game-quality-foundation
+            exit 1
+          fi
       - name: Commit validated deck builder
         run: |
+          rm -rf .diagnostics
           rm -f scripts/p1-deck-builder-ui.mjs scripts/p1-deck-builder-ui-fix.mjs .github/workflows/p1-deck-builder-ui.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
