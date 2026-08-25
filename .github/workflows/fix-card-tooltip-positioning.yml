@@ -1,0 +1,76 @@
+name: Fix card tooltip positioning
+
+on:
+  push:
+    branches:
+      - feat/web-card-game-quality-foundation
+
+permissions:
+  contents: write
+
+jobs:
+  repair-and-validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/web-card-game-quality-foundation
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Repair Floating UI positioning authority
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          css_path = Path('app/match-ui.css')
+          css = css_path.read_text()
+          old = '''  position: fixed !important;\n  inset: auto !important;\n  width: min(16rem, var(--card-preview-available-width, calc(100dvw - 1rem))) !important;'''
+          new = '''  position: fixed !important;\n  width: min(16rem, var(--card-preview-available-width, calc(100dvw - 1rem))) !important;'''
+          if old not in css:
+              raise SystemExit('expected card preview inset override not found')
+          css = css.replace(old, new, 1)
+          old_transform = '''  color: #f5ecd8 !important;\n  transform: none !important;\n  filter: none !important;'''
+          new_transform = '''  color: #f5ecd8 !important;\n  filter: none !important;'''
+          if old_transform not in css:
+              raise SystemExit('expected card preview transform override not found')
+          css = css.replace(old_transform, new_transform, 1)
+          css_path.write_text(css)
+
+          test_path = Path('tests/card-preview-collection-quality.test.mjs')
+          test = test_path.read_text()
+          anchor = '''test("every rendered card exposes a preview source, including battlefield units", () => {'''
+          addition = '''test("Floating UI coordinates are not overridden by tooltip CSS", () => {\n  const floatingBlock = matchCss.match(/\\.card-preview-floating\\.card-tooltip \\{([\\s\\S]*?)\\n\\}/)?.[1] ?? "";\n  assert.ok(floatingBlock, "expected floating preview CSS block");\n  assert.doesNotMatch(floatingBlock, /inset:\\s*auto\\s*!important/);\n  assert.doesNotMatch(floatingBlock, /transform:\\s*none\\s*!important/);\n  assert.match(runtime, /style=\\{floatingStyles\\}/);\n});\n\n'''
+          if addition not in test:
+              if anchor not in test:
+                  raise SystemExit('test insertion anchor not found')
+              test = test.replace(anchor, addition + anchor, 1)
+              test_path.write_text(test)
+          PY
+      - name: Run focused tooltip regressions
+        run: node --test tests/card-preview-collection-quality.test.mjs tests/graveyard-collection-priority-ui.test.mjs
+      - name: Remove temporary workflow before canonical gate
+        run: rm .github/workflows/fix-card-tooltip-positioning.yml
+      - name: Validate canonical rules suite
+        run: npm run test:rules
+      - name: Validate AI strategic benchmark
+        run: npm run ai:calibrate:benchmark
+      - name: Validate production build
+        run: npm run vercel-build
+      - name: Check patch cleanliness
+        run: git diff --check
+      - name: Commit validated fix
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/match-ui.css tests/card-preview-collection-quality.test.mjs .github/workflows/fix-card-tooltip-positioning.yml
+          git commit -m 'fix: preserve Floating UI tooltip coordinates'
+          git push origin HEAD:feat/web-card-game-quality-foundation
