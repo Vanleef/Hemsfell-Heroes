@@ -1,0 +1,44 @@
+name: AI Overextension Diagnostic
+
+on:
+  push:
+    branches:
+      - feat/web-card-game-quality-foundation
+    paths:
+      - .github/workflows/ai-overextension-diagnostic.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - run: npm ci
+      - name: Build AI runtime
+        run: npm run ai:runtime:build
+      - name: Run the six Easy overextension cases
+        run: >-
+          node .ai-runtime/scripts/ai-calibration.js
+          --difficulty=Easy
+          --scenarios=overextension-1,overextension-2,overextension-3,overextension-4,overextension-5,overextension-6
+          --seed=20260818
+          --out=/tmp/hemsfell-ai-overextension
+      - name: Print per-scenario decisions
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const path='/tmp/hemsfell-ai-overextension';
+          const file=fs.readdirSync(path).find(name=>name.endsWith('.json'));
+          const report=JSON.parse(fs.readFileSync(`${path}/${file}`,'utf8'));
+          for(const row of report.results){
+            console.log(JSON.stringify({scenario:row.scenarioId,personality:row.personality,chosen:row.chosenActionKey,acceptable:row.acceptable,evaluation:row.evaluation,lethalMargin:row.lethalMargin}));
+          }
+          NODE
