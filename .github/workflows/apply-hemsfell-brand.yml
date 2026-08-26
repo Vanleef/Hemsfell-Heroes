@@ -1,4 +1,4 @@
-name: Evaluate safe SonarJS autofixes
+name: Validate structural Sonar cleanup
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 jobs:
-  sonar-autofix-diagnostic:
+  structural-quality-diagnostic:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -29,135 +29,128 @@ jobs:
       - name: Install project dependencies
         run: npm ci
 
-      - name: Install diagnostic analyzers without changing lockfile
-        run: npm install --no-save --package-lock=false eslint-plugin-sonarjs@3.0.5 jscpd@4.0.5
+      - name: Install SonarJS analyzer without changing lockfile
+        run: npm install --no-save --package-lock=false eslint-plugin-sonarjs@3.0.5
 
-      - name: Build full SonarJS audit configuration
-        run: |
-          cat > eslint.sonar-audit.config.mjs <<'EOF'
-          import base from "./eslint.config.mjs";
-          import sonarjs from "eslint-plugin-sonarjs";
-
-          export default [
-            ...base,
-            {
-              files: [
-                "app/**/*.{js,mjs,cjs,ts,tsx}",
-                "worker/**/*.{js,mjs,cjs,ts,tsx}",
-                "db/**/*.{js,mjs,cjs,ts,tsx}",
-                "scripts/**/*.{js,mjs,cjs,ts,tsx}",
-              ],
-              plugins: { sonarjs },
-              rules: {
-                ...sonarjs.configs.recommended.rules,
-                "sonarjs/cognitive-complexity": ["warn", 15],
-              },
-            },
-          ];
-          EOF
-
-      - name: Capture baseline
-        shell: bash
-        run: |
-          mkdir -p quality-report
-          set +e
-          npx eslint app worker db scripts --config eslint.sonar-audit.config.mjs --format json --no-error-on-unmatched-pattern > quality-report/before.json
-          echo $? > quality-report/before-exit-code.txt
-          set -e
-
-      - name: Apply analyzer autofixes in runner only
-        shell: bash
-        run: |
-          set +e
-          npx eslint app worker db scripts --config eslint.sonar-audit.config.mjs --fix --no-error-on-unmatched-pattern > quality-report/autofix-console.txt 2>&1
-          echo $? > quality-report/autofix-exit-code.txt
-          set -e
-          git diff -- app worker db scripts > quality-report/autofix.patch
-          git diff --stat -- app worker db scripts > quality-report/autofix-stat.txt
-          git diff --numstat -- app worker db scripts > quality-report/autofix-numstat.txt
-          cat quality-report/autofix-stat.txt
-
-      - name: Capture remaining findings
-        shell: bash
-        run: |
-          set +e
-          npx eslint app worker db scripts --config eslint.sonar-audit.config.mjs --format json --no-error-on-unmatched-pattern > quality-report/after.json
-          echo $? > quality-report/after-exit-code.txt
-          set -e
-
-      - name: Run complete rules suite on autofixed checkout
-        shell: bash
-        run: |
-          set +e
-          npm run test:rules > quality-report/test-rules.txt 2>&1
-          echo $? > quality-report/test-rules-exit-code.txt
-          set -e
-
-      - name: Run AI benchmark on autofixed checkout
-        shell: bash
-        run: |
-          set +e
-          npm run ai:calibrate:benchmark > quality-report/ai-benchmark.txt 2>&1
-          echo $? > quality-report/ai-benchmark-exit-code.txt
-          set -e
-
-      - name: Run production build on autofixed checkout
-        shell: bash
-        run: |
-          set +e
-          npm run vercel-build > quality-report/vercel-build.txt 2>&1
-          echo $? > quality-report/vercel-build-exit-code.txt
-          set -e
-
-      - name: Summarize autofix impact
-        if: always()
+      - name: Apply semantics-preserving control-flow braces
         run: |
           node --input-type=module <<'NODE'
-          import { readFile, writeFile } from 'node:fs/promises';
-          const parse = async (file) => JSON.parse(await readFile(file, 'utf8'));
-          const flatten = (results) => results.flatMap((file) => (file.messages ?? []).map((message) => ({
-            file: file.filePath.replace(process.cwd() + '/', ''),
-            rule: message.ruleId ?? 'unknown',
-            severity: message.severity === 2 ? 'error' : 'warning',
-          })));
-          const before = flatten(await parse('quality-report/before.json'));
-          const after = flatten(await parse('quality-report/after.json'));
-          const sonarBefore = before.filter((item) => item.rule.startsWith('sonarjs/'));
-          const sonarAfter = after.filter((item) => item.rule.startsWith('sonarjs/'));
-          const readExit = async (file) => (await readFile(file, 'utf8')).trim();
-          const countRules = (items) => Object.entries(items.reduce((acc, item) => {
-            acc[item.rule] = (acc[item.rule] ?? 0) + 1;
-            return acc;
-          }, {})).sort((a, b) => b[1] - a[1]);
-          const stat = await readFile('quality-report/autofix-stat.txt', 'utf8');
-          const summary = [
-            'HEMSFELL — ANALYZER AUTOFIX SAFETY REPORT',
-            `Before: ${before.length} total / ${sonarBefore.length} SonarJS`,
-            `After:  ${after.length} total / ${sonarAfter.length} SonarJS`,
-            `Removed: ${before.length - after.length} total / ${sonarBefore.length - sonarAfter.length} SonarJS`,
-            '',
-            'Changed source:',
-            stat.trim() || '(no source files changed)',
-            '',
-            `test:rules exit=${await readExit('quality-report/test-rules-exit-code.txt')}`,
-            `AI benchmark exit=${await readExit('quality-report/ai-benchmark-exit-code.txt')}`,
-            `vercel-build exit=${await readExit('quality-report/vercel-build-exit-code.txt')}`,
-            '',
-            'Top remaining SonarJS rules:',
-            ...countRules(sonarAfter).slice(0,25).map(([rule, count]) => `  ${String(count).padStart(4)}  ${rule}`),
-          ].join('\n');
-          await writeFile('quality-report/summary.txt', summary + '\n');
-          console.log(summary);
+          import ts from 'typescript';
+          import { readFile, writeFile, readdir } from 'node:fs/promises';
+          import path from 'node:path';
+
+          const roots = ['app', 'worker', 'db', 'scripts'];
+          const extensions = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs']);
+          const files = [];
+          async function walk(dir) {
+            for (const entry of await readdir(dir, { withFileTypes: true })) {
+              const full = path.join(dir, entry.name);
+              if (entry.isDirectory()) await walk(full);
+              else if (extensions.has(path.extname(entry.name))) files.push(full);
+            }
+          }
+          for (const root of roots) await walk(root);
+
+          const kindFor = (file) => file.endsWith('.tsx') ? ts.ScriptKind.TSX : file.endsWith('.ts') ? ts.ScriptKind.TS : ts.ScriptKind.JS;
+          let wrapped = 0;
+          let changedFiles = 0;
+          for (const file of files) {
+            const text = await readFile(file, 'utf8');
+            const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, kindFor(file));
+            const edits = new Map();
+            const add = (pos, value) => edits.set(pos, (edits.get(pos) ?? '') + value);
+            const wrap = (statement) => {
+              if (!statement || ts.isBlock(statement) || ts.isEmptyStatement(statement)) return;
+              add(statement.getStart(source), '{');
+              add(statement.end, '}');
+              wrapped += 1;
+            };
+            const visit = (node) => {
+              if (ts.isIfStatement(node)) {
+                wrap(node.thenStatement);
+                if (node.elseStatement && !ts.isIfStatement(node.elseStatement)) wrap(node.elseStatement);
+              } else if (
+                ts.isForStatement(node) || ts.isForInStatement(node) || ts.isForOfStatement(node) ||
+                ts.isWhileStatement(node) || ts.isDoStatement(node)
+              ) {
+                wrap(node.statement);
+              }
+              ts.forEachChild(node, visit);
+            };
+            visit(source);
+            if (!edits.size) continue;
+            let output = text;
+            for (const [pos, insertion] of [...edits.entries()].sort((a, b) => b[0] - a[0])) {
+              output = output.slice(0, pos) + insertion + output.slice(pos);
+            }
+            if (output !== text) {
+              await writeFile(file, output);
+              changedFiles += 1;
+            }
+          }
+          console.log(`Wrapped ${wrapped} control-flow bodies across ${changedFiles} files.`);
           NODE
 
-      - name: Upload autofix safety report
-        if: always()
+      - name: Apply low-risk lint corrections
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          def replace_all(path, old, new, expected):
+              p=Path(path); text=p.read_text(); count=text.count(old)
+              if count != expected: raise SystemExit(f'{path}: expected {expected} occurrences, found {count}: {old}')
+              p.write_text(text.replace(old,new))
+          replace_all('app/api/rooms/store-runtime.ts','useDevelopmentStore','shouldUseDevelopmentStore',4)
+          replace_all('app/api/rooms/store.ts','useMemoryStore','shouldUseMemoryStore',4)
+          PY
+
+      - name: Remove diagnostic workflow before project gates
+        run: rm -f .github/workflows/apply-hemsfell-brand.yml
+
+      - name: Verify patch syntax
+        run: git diff --check
+
+      - name: Measure SonarJS after structural cleanup
+        shell: bash
+        run: |
+          cat > /tmp/eslint.sonar.config.mjs <<EOF
+          import base from "${GITHUB_WORKSPACE}/eslint.config.mjs";
+          import sonarjs from "${GITHUB_WORKSPACE}/node_modules/eslint-plugin-sonarjs/index.js";
+          export default [...base,{files:["app/**/*.{js,mjs,cjs,ts,tsx}","worker/**/*.{js,mjs,cjs,ts,tsx}","db/**/*.{js,mjs,cjs,ts,tsx}","scripts/**/*.{js,mjs,cjs,ts,tsx}"],plugins:{sonarjs},rules:{...sonarjs.configs.recommended.rules,"sonarjs/cognitive-complexity":["warn",15]}}];
+          EOF
+          mkdir -p quality-report
+          set +e
+          npx eslint app worker db scripts --config /tmp/eslint.sonar.config.mjs --format json --no-error-on-unmatched-pattern > quality-report/after.json
+          echo $? > quality-report/eslint-exit.txt
+          set -e
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+          const data=JSON.parse(await readFile('quality-report/after.json','utf8'));
+          const messages=data.flatMap(file=>(file.messages??[]).map(message=>({file:file.filePath.replace(process.cwd()+'/',''),rule:message.ruleId??'unknown'})));
+          const sonar=messages.filter(item=>item.rule.startsWith('sonarjs/'));
+          const byRule=Object.entries(sonar.reduce((acc,item)=>{acc[item.rule]=(acc[item.rule]??0)+1;return acc;},{})).sort((a,b)=>b[1]-a[1]);
+          console.log(`Remaining total findings: ${messages.length}`);
+          console.log(`Remaining SonarJS findings: ${sonar.length}`);
+          console.log(byRule.slice(0,15).map(([rule,count])=>`${count} ${rule}`).join('\n'));
+          NODE
+
+      - name: Run complete rules suite
+        run: npm run test:rules
+
+      - name: Run AI benchmark
+        run: npm run ai:calibrate:benchmark
+
+      - name: Build production application
+        run: npm run vercel-build
+
+      - name: Capture validated diff
+        run: |
+          git diff -- app worker db scripts > quality-report/validated.patch
+          git diff --stat -- app worker db scripts > quality-report/validated-stat.txt
+          cat quality-report/validated-stat.txt
+
+      - name: Upload structural cleanup report
         uses: actions/upload-artifact@v4
         with:
-          name: hemsfell-sonar-autofix-safety
+          name: hemsfell-structural-sonar-cleanup
           path: quality-report/
           retention-days: 7
-
-      - name: Confirm diagnostic did not commit product changes
-        if: always()
-        run: git status --short
