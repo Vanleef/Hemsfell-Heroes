@@ -1,156 +1,48 @@
-name: Validate structural Sonar cleanup
-
+name: Validate structural quality cleanup
 on:
   push:
-    branches:
-      - feat/web-card-game-quality-foundation
-    paths:
-      - .github/workflows/apply-hemsfell-brand.yml
-
+    branches: [feat/web-card-game-quality-foundation]
+    paths: [.github/workflows/apply-hemsfell-brand.yml]
 permissions:
   contents: read
-
 jobs:
-  structural-quality-diagnostic:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: feat/web-card-game-quality-foundation
           fetch-depth: 0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22.13.0
           cache: npm
-
-      - name: Install project dependencies
-        run: npm ci
-
-      - name: Install SonarJS analyzer without changing lockfile
-        run: npm install --no-save --package-lock=false eslint-plugin-sonarjs@3.0.5
-
-      - name: Apply semantics-preserving control-flow braces
+      - run: npm ci
+      - name: Wrap single-statement control bodies
         run: |
           node --input-type=module <<'NODE'
-          import ts from 'typescript';
-          import { readFile, writeFile, readdir } from 'node:fs/promises';
-          import path from 'node:path';
-
-          const roots = ['app', 'worker', 'db', 'scripts'];
-          const extensions = new Set(['.ts', '.tsx', '.js', '.mjs', '.cjs']);
-          const files = [];
-          async function walk(dir) {
-            for (const entry of await readdir(dir, { withFileTypes: true })) {
-              const full = path.join(dir, entry.name);
-              if (entry.isDirectory()) await walk(full);
-              else if (extensions.has(path.extname(entry.name))) files.push(full);
-            }
-          }
-          for (const root of roots) await walk(root);
-
-          const kindFor = (file) => file.endsWith('.tsx') ? ts.ScriptKind.TSX : file.endsWith('.ts') ? ts.ScriptKind.TS : ts.ScriptKind.JS;
-          let wrapped = 0;
-          let changedFiles = 0;
-          for (const file of files) {
-            const text = await readFile(file, 'utf8');
-            const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, kindFor(file));
-            const edits = new Map();
-            const add = (pos, value) => edits.set(pos, (edits.get(pos) ?? '') + value);
-            const wrap = (statement) => {
-              if (!statement || ts.isBlock(statement) || ts.isEmptyStatement(statement)) return;
-              add(statement.getStart(source), '{');
-              add(statement.end, '}');
-              wrapped += 1;
-            };
-            const visit = (node) => {
-              if (ts.isIfStatement(node)) {
-                wrap(node.thenStatement);
-                if (node.elseStatement && !ts.isIfStatement(node.elseStatement)) wrap(node.elseStatement);
-              } else if (
-                ts.isForStatement(node) || ts.isForInStatement(node) || ts.isForOfStatement(node) ||
-                ts.isWhileStatement(node) || ts.isDoStatement(node)
-              ) {
-                wrap(node.statement);
-              }
-              ts.forEachChild(node, visit);
-            };
-            visit(source);
-            if (!edits.size) continue;
-            let output = text;
-            for (const [pos, insertion] of [...edits.entries()].sort((a, b) => b[0] - a[0])) {
-              output = output.slice(0, pos) + insertion + output.slice(pos);
-            }
-            if (output !== text) {
-              await writeFile(file, output);
-              changedFiles += 1;
-            }
-          }
-          console.log(`Wrapped ${wrapped} control-flow bodies across ${changedFiles} files.`);
+          import ts from 'typescript'; import {readFile,writeFile,readdir} from 'node:fs/promises'; import path from 'node:path';
+          const roots=['app','worker','db','scripts'], exts=new Set(['.ts','.tsx','.js','.mjs','.cjs']), files=[];
+          async function walk(d){for(const e of await readdir(d,{withFileTypes:true})){const f=path.join(d,e.name);if(e.isDirectory())await walk(f);else if(exts.has(path.extname(f)))files.push(f)}} for(const r of roots)await walk(r);
+          let total=0,changed=0;
+          for(const file of files){const text=await readFile(file,'utf8'),sf=ts.createSourceFile(file,text,ts.ScriptTarget.Latest,true,file.endsWith('.tsx')?ts.ScriptKind.TSX:file.endsWith('.ts')?ts.ScriptKind.TS:ts.ScriptKind.JS),edits=new Map();
+            const add=(p,s)=>edits.set(p,(edits.get(p)||'')+s),wrap=s=>{if(!s||ts.isBlock(s)||ts.isEmptyStatement(s))return;add(s.getStart(sf),'{');add(s.end,'}');total++};
+            const visit=n=>{if(ts.isIfStatement(n)){wrap(n.thenStatement);if(n.elseStatement&&!ts.isIfStatement(n.elseStatement))wrap(n.elseStatement)}else if(ts.isForStatement(n)||ts.isForInStatement(n)||ts.isForOfStatement(n)||ts.isWhileStatement(n)||ts.isDoStatement(n))wrap(n.statement);ts.forEachChild(n,visit)};visit(sf);
+            if(!edits.size)continue;let out=text;for(const [p,s] of [...edits].sort((a,b)=>b[0]-a[0]))out=out.slice(0,p)+s+out.slice(p);if(out!==text){await writeFile(file,out);changed++}}
+          console.log(`wrapped=${total} files=${changed}`);
           NODE
-
-      - name: Apply low-risk lint corrections
+      - name: Rename false-positive hook helpers
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          def replace_all(path, old, new, expected):
-              p=Path(path); text=p.read_text(); count=text.count(old)
-              if count != expected: raise SystemExit(f'{path}: expected {expected} occurrences, found {count}: {old}')
-              p.write_text(text.replace(old,new))
-          replace_all('app/api/rooms/store-runtime.ts','useDevelopmentStore','shouldUseDevelopmentStore',4)
-          replace_all('app/api/rooms/store.ts','useMemoryStore','shouldUseMemoryStore',4)
-          PY
-
-      - name: Remove diagnostic workflow before project gates
+          sed -i 's/useDevelopmentStore/shouldUseDevelopmentStore/g' app/api/rooms/store-runtime.ts
+          sed -i 's/useMemoryStore/shouldUseMemoryStore/g' app/api/rooms/store.ts
+      - name: Remove temporary workflow
         run: rm -f .github/workflows/apply-hemsfell-brand.yml
-
-      - name: Verify patch syntax
-        run: git diff --check
-
-      - name: Measure SonarJS after structural cleanup
-        shell: bash
-        run: |
-          cat > /tmp/eslint.sonar.config.mjs <<EOF
-          import base from "${GITHUB_WORKSPACE}/eslint.config.mjs";
-          import sonarjs from "${GITHUB_WORKSPACE}/node_modules/eslint-plugin-sonarjs/index.js";
-          export default [...base,{files:["app/**/*.{js,mjs,cjs,ts,tsx}","worker/**/*.{js,mjs,cjs,ts,tsx}","db/**/*.{js,mjs,cjs,ts,tsx}","scripts/**/*.{js,mjs,cjs,ts,tsx}"],plugins:{sonarjs},rules:{...sonarjs.configs.recommended.rules,"sonarjs/cognitive-complexity":["warn",15]}}];
-          EOF
-          mkdir -p quality-report
-          set +e
-          npx eslint app worker db scripts --config /tmp/eslint.sonar.config.mjs --format json --no-error-on-unmatched-pattern > quality-report/after.json
-          echo $? > quality-report/eslint-exit.txt
-          set -e
-          node --input-type=module <<'NODE'
-          import { readFile } from 'node:fs/promises';
-          const data=JSON.parse(await readFile('quality-report/after.json','utf8'));
-          const messages=data.flatMap(file=>(file.messages??[]).map(message=>({file:file.filePath.replace(process.cwd()+'/',''),rule:message.ruleId??'unknown'})));
-          const sonar=messages.filter(item=>item.rule.startsWith('sonarjs/'));
-          const byRule=Object.entries(sonar.reduce((acc,item)=>{acc[item.rule]=(acc[item.rule]??0)+1;return acc;},{})).sort((a,b)=>b[1]-a[1]);
-          console.log(`Remaining total findings: ${messages.length}`);
-          console.log(`Remaining SonarJS findings: ${sonar.length}`);
-          console.log(byRule.slice(0,15).map(([rule,count])=>`${count} ${rule}`).join('\n'));
-          NODE
-
-      - name: Run complete rules suite
+      - run: git diff --check
+      - name: Rules suite
         run: npm run test:rules
-
-      - name: Run AI benchmark
+      - name: AI benchmark
         run: npm run ai:calibrate:benchmark
-
-      - name: Build production application
+      - name: Production build
         run: npm run vercel-build
-
-      - name: Capture validated diff
-        run: |
-          git diff -- app worker db scripts > quality-report/validated.patch
-          git diff --stat -- app worker db scripts > quality-report/validated-stat.txt
-          cat quality-report/validated-stat.txt
-
-      - name: Upload structural cleanup report
-        uses: actions/upload-artifact@v4
-        with:
-          name: hemsfell-structural-sonar-cleanup
-          path: quality-report/
-          retention-days: 7
+      - name: Show diff stats
+        run: git diff --stat -- app worker db scripts
