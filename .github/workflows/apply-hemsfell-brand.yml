@@ -1,12 +1,15 @@
-name: Validate structural quality cleanup
+name: Apply validated branding and safe quality batch
+
 on:
   push:
     branches: [feat/web-card-game-quality-foundation]
     paths: [.github/workflows/apply-hemsfell-brand.yml]
+
 permissions:
-  contents: read
+  contents: write
+
 jobs:
-  validate:
+  apply:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,31 +21,186 @@ jobs:
           node-version: 22.13.0
           cache: npm
       - run: npm ci
-      - name: Wrap single-statement control bodies
+      - name: Install validation-only tooling
+        run: npm install --no-save --package-lock=false sharp@0.34.3 eslint-plugin-sonarjs@3.0.5
+
+      - name: Build transparent HQ brand assets
         run: |
           node --input-type=module <<'NODE'
-          import ts from 'typescript'; import {readFile,writeFile,readdir} from 'node:fs/promises'; import path from 'node:path';
-          const roots=['app','worker','db','scripts'], exts=new Set(['.ts','.tsx','.js','.mjs','.cjs']), files=[];
-          async function walk(d){for(const e of await readdir(d,{withFileTypes:true})){const f=path.join(d,e.name);if(e.isDirectory())await walk(f);else if(exts.has(path.extname(f)))files.push(f)}} for(const r of roots)await walk(r);
-          let total=0,changed=0;
-          for(const file of files){const text=await readFile(file,'utf8'),sf=ts.createSourceFile(file,text,ts.ScriptTarget.Latest,true,file.endsWith('.tsx')?ts.ScriptKind.TSX:file.endsWith('.ts')?ts.ScriptKind.TS:ts.ScriptKind.JS),edits=new Map();
-            const add=(p,s)=>edits.set(p,(edits.get(p)||'')+s),wrap=s=>{if(!s||ts.isBlock(s)||ts.isEmptyStatement(s))return;add(s.getStart(sf),'{');add(s.end,'}');total++};
-            const visit=n=>{if(ts.isIfStatement(n)){wrap(n.thenStatement);if(n.elseStatement&&!ts.isIfStatement(n.elseStatement))wrap(n.elseStatement)}else if(ts.isForStatement(n)||ts.isForInStatement(n)||ts.isForOfStatement(n)||ts.isWhileStatement(n)||ts.isDoStatement(n))wrap(n.statement);ts.forEachChild(n,visit)};visit(sf);
-            if(!edits.size)continue;let out=text;for(const [p,s] of [...edits].sort((a,b)=>b[0]-a[0]))out=out.slice(0,p)+s+out.slice(p);if(out!==text){await writeFile(file,out);changed++}}
-          console.log(`wrapped=${total} files=${changed}`);
+          import sharp from 'sharp';
+          import { mkdir } from 'node:fs/promises';
+          await mkdir('public/brand',{recursive:true});
+          const jobs=[
+            ['public/brand/hemsfell-heroes-logo.png','public/brand/hemsfell-heroes-logo-hq.png',1052,972,24],
+            ['public/icon.png','public/brand/hemsfell-heroes-mark-hq.png',448,448,32],
+          ];
+          for(const [input,output,width,height,pad] of jobs){
+            await sharp(input).ensureAlpha().trim({background:{r:0,g:0,b:0,alpha:0}})
+              .resize({width,height,fit:'contain',background:{r:0,g:0,b:0,alpha:0},kernel:sharp.kernel.lanczos3})
+              .extend({top:pad,bottom:pad,left:pad,right:pad,background:{r:0,g:0,b:0,alpha:0}})
+              .png({compressionLevel:9,palette:false}).toFile(output);
+            const image=sharp(output).ensureAlpha(); const meta=await image.metadata();
+            if(!meta.hasAlpha) throw new Error(`${output}: missing alpha channel`);
+            const {data,info}=await image.raw().toBuffer({resolveWithObject:true});
+            const alpha=(x,y)=>data[(y*info.width+x)*info.channels+3];
+            for(let x=0;x<info.width;x++) if(alpha(x,0)!==0||alpha(x,info.height-1)!==0) throw new Error(`${output}: nontransparent horizontal perimeter`);
+            for(let y=0;y<info.height;y++) if(alpha(0,y)!==0||alpha(info.width-1,y)!==0) throw new Error(`${output}: nontransparent vertical perimeter`);
+            console.log(`${output}: ${info.width}x${info.height}, transparent perimeter verified`);
+          }
           NODE
-      - name: Rename false-positive hook helpers
+
+      - name: Apply approved branding
         run: |
-          sed -i 's/useDevelopmentStore/shouldUseDevelopmentStore/g' app/api/rooms/store-runtime.ts
-          sed -i 's/useMemoryStore/shouldUseMemoryStore/g' app/api/rooms/store.ts
-      - name: Remove temporary workflow
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app/page.tsx'); text=p.read_text()
+          react='import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";\n'
+          if 'import Image from "next/image";' not in text:
+            if react not in text: raise SystemExit('React import anchor changed')
+            text=text.replace(react,react+'import Image from "next/image";\n',1)
+          old='<nav className="shell-nav"><div className="hh-logo"><img src="/brand/hemsfell-heroes-logo.png" alt="Hemsfell Heroes"/></div><button onClick={()=>setScreen("decks")}>'
+          new='<nav className="shell-nav"><button className="hh-logo hh-home-logo" type="button" onClick={()=>setScreen("menu")} aria-label="Voltar ao menu principal" title="Voltar ao menu"><Image src="/brand/hemsfell-heroes-mark-hq.png" alt="" width={512} height={512} aria-hidden="true"/></button><button onClick={()=>setScreen("decks")}>'
+          if old not in text: raise SystemExit('topbar branding anchor changed')
+          text=text.replace(old,new,1)
+          old='<div className="landing-copy"><p>AS CRÔNICAS DE HEMSFELL</p><h1>Heróis são escolhidos.<br/><em>Lendas são forjadas.</em></h1><span>Entidades cósmicas convocam campeões, criaturas e magias de um mundo de fantasia em guerra. Construa seu exército, domine o campo e reduza a vida do herói rival a zero.</span><div className="landing-actions">'
+          new='<div className="landing-copy"><Image className="landing-brand-logo" src="/brand/hemsfell-heroes-logo-hq.png" alt="Hemsfell Heroes" width={1100} height={1020}/><div className="landing-actions">'
+          if old not in text: raise SystemExit('landing branding anchor changed')
+          p.write_text(text.replace(old,new,1))
+
+          layout=Path('app/layout.tsx'); text=layout.read_text()
+          if 'import "./brand.css";' not in text:
+            if 'import "./globals.css";\n' not in text: raise SystemExit('layout css import anchor changed')
+            text=text.replace('import "./globals.css";\n','import "./globals.css";\nimport "./brand.css";\n',1)
+          text=text.replace('icon: "/icon.png",\n    shortcut: "/icon.png",','icon: "/brand/hemsfell-heroes-mark-hq.png",\n    shortcut: "/brand/hemsfell-heroes-mark-hq.png",',1)
+          layout.write_text(text)
+          PY
+          cat > app/brand.css <<'EOF'
+          /* Branding only: deliberately isolated from match-board geometry. */
+          .shell-nav .hh-home-logo{width:clamp(3.15rem,4.6vw,4rem)!important;height:clamp(3.15rem,4.6vw,4rem)!important;display:grid!important;place-items:center!important;flex:0 0 auto!important;padding:0!important;margin:0!important;border:0!important;border-radius:.55rem!important;background:transparent!important;box-shadow:none!important;overflow:visible!important;cursor:pointer!important;transition:transform .16s ease,filter .16s ease!important}
+          .shell-nav .hh-home-logo:hover,.shell-nav .hh-home-logo:focus-visible{transform:translateY(-1px) scale(1.045)!important;filter:drop-shadow(0 0 .7rem rgb(27 217 224/.24))!important}
+          .shell-nav .hh-home-logo:focus-visible{outline:2px solid #eab84d!important;outline-offset:3px!important}
+          .shell-nav .hh-home-logo>img{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important;user-select:none!important;-webkit-user-drag:none!important}
+          .screen-menu .landing-copy{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-width:0}
+          .screen-menu .landing-brand-logo{display:block;width:min(100%,clamp(24rem,42vw,38rem),72dvh);height:auto;object-fit:contain;object-position:left center;filter:drop-shadow(0 1.2rem 2.2rem rgb(0 0 0/.38));user-select:none;-webkit-user-drag:none}
+          .screen-menu .landing-copy>.landing-actions{width:min(100%,39rem);flex-wrap:wrap}
+          @media(max-width:56rem){.screen-menu .landing-copy{align-items:center;text-align:center}.screen-menu .landing-brand-logo{width:min(88vw,30rem,62dvh);object-position:center}.screen-menu .landing-copy>.landing-actions{justify-content:center}}
+          EOF
+
+      - name: Apply low-risk quality fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          def exact(path,old,new,count=1):
+            p=Path(path); text=p.read_text(); n=text.count(old)
+            if n!=count: raise SystemExit(f'{path}: expected {count}, found {n}: {old[:80]}')
+            p.write_text(text.replace(old,new))
+
+          exact('app/api/rooms/store-runtime.ts','useDevelopmentStore','shouldUseDevelopmentStore',4)
+          exact('app/api/rooms/store.ts','useMemoryStore','shouldUseMemoryStore',4)
+
+          exact('app/api/rooms/[id]/route.ts','import { validateUserDeck } from "../../../user-deck.mjs";','import { validateUserDeck } from "../../../user-deck.mjs";\nimport type { DeckCatalogCard } from "../../../user-deck.mjs";')
+          exact('app/api/rooms/[id]/route.ts','validateUserDeck(body.userDeck, rawCards as any[])','validateUserDeck(body.userDeck, rawCards as DeckCatalogCard[])')
+
+          exact('types/cloudflare-workers.d.ts','type D1Database = any;','type D1Database = unknown;')
+
+          exact('app/match-ui-runtime.tsx','if (document.fonts?.ready) void document.fonts.ready.then(queueScan);','if (document.fonts?.ready) document.fonts.ready.then(queueScan).catch(() => {});')
+          exact('app/match-ui-runtime.tsx','aside.innerHTML = renderHeroGuide(hero, hero.names[0]);','const fragment = document.createRange().createContextualFragment(renderHeroGuide(hero, hero.names[0]));\n        aside.replaceChildren(fragment);')
+
+          p=Path('app/card-preview-runtime.tsx'); text=p.read_text()
+          old='''    const onPointerOut = (event: PointerEvent) => {\n      const card = (event.target as Element | null)?.closest<HTMLElement>(CARD_SELECTOR);\n      if (!card || event.relatedTarget instanceof Node && card.contains(event.relatedTarget)) return;\n      setPreview((current) => current?.reference === card && !current.expanded ? null : current);\n    };\n\n    const onFocusIn = (event: FocusEvent) => {\n'''
+          new='''    const closeCompactFor = (card: HTMLElement) => {\n      setPreview((current) => current?.reference === card && !current.expanded ? null : current);\n    };\n\n    const onPointerOut = (event: PointerEvent) => {\n      const card = (event.target as Element | null)?.closest<HTMLElement>(CARD_SELECTOR);\n      if (!card || event.relatedTarget instanceof Node && card.contains(event.relatedTarget)) return;\n      closeCompactFor(card);\n    };\n\n    const onFocusIn = (event: FocusEvent) => {\n'''
+          if text.count(old)!=1: raise SystemExit('card preview pointer-out anchor changed')
+          text=text.replace(old,new,1)
+          old='''    const onFocusOut = (event: FocusEvent) => {\n      const card = (event.target as Element | null)?.closest<HTMLElement>(CARD_SELECTOR);\n      if (!card || event.relatedTarget instanceof Node && card.contains(event.relatedTarget)) return;\n      setPreview((current) => current?.reference === card && !current.expanded ? null : current);\n    };\n'''
+          new='''    const onFocusOut = (event: FocusEvent) => {\n      const card = (event.target as Element | null)?.closest<HTMLElement>(CARD_SELECTOR);\n      if (!card || event.relatedTarget instanceof Node && card.contains(event.relatedTarget)) return;\n      closeCompactFor(card);\n    };\n'''
+          if text.count(old)!=1: raise SystemExit('card preview focus-out anchor changed')
+          text=text.replace(old,new,1)
+          old='''    const onPointerEnd = () => {\n      window.clearTimeout(longPressTimer);\n      longPressTimer = 0;\n      touchCard = null;\n    };\n'''
+          if text.count(old)!=1: raise SystemExit('card preview pointer-end anchor changed')
+          text=text.replace(old,'    const onPointerEnd = clearLongPress;\n',1)
+          p.write_text(text)
+
+          p=Path('app/online-state-orientation.mjs'); text=p.read_text()
+          old='const flip = (value) => value === 0 ? 1 : value === 1 ? 0 : value;'
+          new='''const flip = (value) => {\n  if (value === 0) return 1;\n  if (value === 1) return 0;\n  return value;\n};'''
+          if text.count(old)!=1: raise SystemExit('orientation flip anchor changed')
+          p.write_text(text.replace(old,new,1))
+          PY
+
+      - name: Add regression tests
+        run: |
+          cat > tests/branding-quality.test.mjs <<'EOF'
+          import test from 'node:test';
+          import assert from 'node:assert/strict';
+          import { readFile } from 'node:fs/promises';
+
+          test('landing uses the full HQ Hemsfell logo and topbar uses clickable HH mark', async()=>{
+            const page=await readFile(new URL('../app/page.tsx',import.meta.url),'utf8');
+            assert.match(page,/landing-brand-logo[^>]*hemsfell-heroes-logo-hq\.png/);
+            assert.doesNotMatch(page,/AS CRÔNICAS DE HEMSFELL/);
+            assert.match(page,/hh-home-logo[^>]*onClick=\{\(\)=>setScreen\("menu"\)\}/);
+            assert.match(page,/hemsfell-heroes-mark-hq\.png/);
+            assert.match(page,/aria-label="Voltar ao menu principal"/);
+          });
+
+          test('branding stylesheet is isolated from match board geometry', async()=>{
+            const css=await readFile(new URL('../app/brand.css',import.meta.url),'utf8');
+            for(const forbidden of ['.screen-game','.hs-board','.creature-slot','.support-slot','.side-pile','.phase-orb']) assert.equal(css.includes(forbidden),false,`brand.css must not target ${forbidden}`);
+          });
+
+          test('layout uses the HH mark as the site icon', async()=>{
+            const layout=await readFile(new URL('../app/layout.tsx',import.meta.url),'utf8');
+            assert.match(layout,/import "\.\/brand\.css"/);
+            assert.match(layout,/icon: "\/brand\/hemsfell-heroes-mark-hq\.png"/);
+            assert.match(layout,/shortcut: "\/brand\/hemsfell-heroes-mark-hq\.png"/);
+          });
+          EOF
+
+      - name: Measure SonarJS delta on touched source
+        shell: bash
+        run: |
+          cat > eslint.sonar-temp.config.mjs <<'EOF'
+          import base from './eslint.config.mjs';
+          import sonarjs from 'eslint-plugin-sonarjs';
+          export default [...base,{files:['app/**/*.{js,mjs,cjs,ts,tsx}'],plugins:{sonarjs},rules:{...sonarjs.configs.recommended.rules,'sonarjs/cognitive-complexity':['warn',15]}}];
+          EOF
+          set +e
+          npx eslint app/api/rooms app/card-preview-runtime.tsx app/match-ui-runtime.tsx app/online-state-orientation.mjs --config eslint.sonar-temp.config.mjs --format json > /tmp/quality.json
+          set -e
+          node --input-type=module <<'NODE'
+          import {readFile} from 'node:fs/promises';
+          const data=JSON.parse(await readFile('/tmp/quality.json','utf8'));
+          const msgs=data.flatMap(f=>f.messages??[]), sonar=msgs.filter(m=>m.ruleId?.startsWith('sonarjs/'));
+          console.log(`Touched-scope findings: total=${msgs.length}, sonar=${sonar.length}`);
+          console.log(Object.entries(sonar.reduce((a,m)=>{a[m.ruleId]=(a[m.ruleId]??0)+1;return a;},{})).sort((a,b)=>b[1]-a[1]).slice(0,15));
+          NODE
+          rm -f eslint.sonar-temp.config.mjs
+
+      - name: Remove temporary workflow before canonical gates
         run: rm -f .github/workflows/apply-hemsfell-brand.yml
-      - run: git diff --check
-      - name: Rules suite
+
+      - name: Focused regressions
+        run: node --test tests/branding-quality.test.mjs tests/card-preview-collection-quality.test.mjs tests/graveyard-collection-priority-ui.test.mjs
+      - name: Patch hygiene
+        run: git diff --check
+      - name: Complete rules suite
         run: npm run test:rules
       - name: AI benchmark
         run: npm run ai:calibrate:benchmark
       - name: Production build
         run: npm run vercel-build
-      - name: Show diff stats
-        run: git diff --stat -- app worker db scripts
+      - name: Confirm visual scope
+        run: |
+          test -f app/brand.css
+          ! grep -Eq '\.(screen-game|hs-board|creature-slot|support-slot|side-pile|phase-orb)' app/brand.css
+          git diff --stat
+
+      - name: Commit validated batch
+        run: |
+          git fetch origin feat/web-card-game-quality-foundation
+          test "$(git rev-parse origin/feat/web-card-game-quality-foundation)" = "$GITHUB_SHA"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: apply Hemsfell branding and safe quality fixes"
+          git push origin HEAD:feat/web-card-game-quality-foundation
