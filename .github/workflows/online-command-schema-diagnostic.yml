@@ -1,4 +1,4 @@
-name: Online command schema rules diagnostic
+name: Validate final online command schema diff
 
 on:
   push:
@@ -11,9 +11,9 @@ permissions:
   contents: read
 
 jobs:
-  diagnose-rules:
+  validate-final-diff:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,30 +42,44 @@ jobs:
           exec(compile(code, 'online-command-schema-v6-inline.py', 'exec'), {})
           PY
 
-      - name: Reproduce v6 pre-gate cleanup
+      - name: Prepare final cleanup and diff
         shell: bash
         run: |
           set -euo pipefail
-          git rm -f .github/workflows/online-command-schema-v4.yml .github/workflows/online-command-schema-v5.yml .github/workflows/online-command-schema-v6.yml
+          git rm -f \
+            .github/workflows/online-command-schema-v4.yml \
+            .github/workflows/online-command-schema-v5.yml \
+            .github/workflows/online-command-schema-v6.yml \
+            .github/workflows/online-command-schema-diagnostic.yml
           git diff --check
+          git diff --stat > final-diff-stat.txt
+          git diff -- . ':!final-diff-stat.txt' ':!final-diff.patch' > final-diff.patch
+          cat final-diff-stat.txt
 
-      - name: Full rules suite with captured output
-        id: rules
-        continue-on-error: true
-        shell: bash
-        run: |
-          set -o pipefail
-          npm run test:rules 2>&1 | tee test-rules.log
-
-      - name: Upload rules diagnostic
-        if: always()
+      - name: Upload proposed final diff
         uses: actions/upload-artifact@v4
         with:
-          name: rules-diagnostic
-          path: test-rules.log
+          name: command-schema-final-diff
+          path: |
+            final-diff-stat.txt
+            final-diff.patch
           if-no-files-found: error
           retention-days: 1
 
-      - name: Preserve rules gate result
-        if: steps.rules.outcome != 'success'
-        run: exit 1
+      - name: Focused command schema tests
+        run: node --test tests/online-command-schema.test.mjs tests/online-match-runtime.test.mjs tests/online-maintenance-choice.test.mjs
+
+      - name: Online typecheck
+        run: npm run typecheck:online
+
+      - name: AI typecheck
+        run: npm run typecheck:ai
+
+      - name: Full rules suite
+        run: npm run test:rules
+
+      - name: AI strategic benchmark
+        run: npm run benchmark:ai
+
+      - name: Build Next.js application
+        run: npm run vercel-build
