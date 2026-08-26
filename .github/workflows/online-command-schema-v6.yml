@@ -1,0 +1,121 @@
+name: Apply online command schemas v6
+
+on:
+  push:
+    branches:
+      - feat/web-card-game-quality-foundation
+    paths:
+      - .github/workflows/online-command-schema-v6.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/web-card-game-quality-foundation
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply schemas with structural patcher
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          runner = Path('.github/workflows/online-command-schema-v4.yml').read_text().splitlines()
+          def extract_after(marker):
+              start = next(i for i, line in enumerate(runner) if marker in line) + 1
+              out = []
+              for line in runner[start:]:
+                  if line.strip() == 'EOF': break
+                  out.append(line[10:] if line.startswith('          ') else line)
+              else: raise AssertionError(f'heredoc terminator missing for {marker}')
+              return '\n'.join(out) + '\n'
+
+          Path('app/api/rooms/online-command-schema.mjs').write_text(extract_after("cat > app/api/rooms/online-command-schema.mjs <<'EOF'"))
+          Path('app/api/rooms/online-command-schema.d.mts').write_text(extract_after("cat > app/api/rooms/online-command-schema.d.mts <<'EOF'"))
+          Path('tests/online-command-schema.test.mjs').write_text(extract_after("cat > tests/online-command-schema.test.mjs <<'EOF'"))
+
+          machine = Path('app/api/rooms/machine.ts')
+          text = machine.read_text()
+          import_anchor = 'import { logOnlineDiagnostic } from "./online-diagnostics.mjs";\n'
+          if 'online-command-schema.mjs' not in text:
+              assert import_anchor in text
+              text = text.replace(import_anchor, import_anchor + 'import { parseOnlineCommand } from "./online-command-schema.mjs";\n', 1)
+          start_marker = '  if (!AUTHORITATIVE_COMMANDS.has(String(rawCommand.type || ""))) {'
+          end_marker = '    const command: Record<string, any> = { ...rawCommand, owner };\n'
+          start = text.index(start_marker)
+          end = text.index(end_marker, start) + len(end_marker)
+          replacement = '''  const parsedCommand = parseOnlineCommand(rawCommand);
+          if (!parsedCommand.ok) {
+            logOnlineDiagnostic(room, "command-rejected", { role, commandType: String(rawCommand.type || ""), reason: parsedCommand.error, baseRevision });
+            return { ok: false, status: 400, error: parsedCommand.error, code: parsedCommand.code };
+          }
+          if (!AUTHORITATIVE_COMMANDS.has(parsedCommand.command.type)) {
+            logOnlineDiagnostic(room, "command-rejected", { role, commandType: parsedCommand.command.type, reason: "unsupported command", baseRevision });
+            return { ok: false, status: 400, error: "unsupported command", code: "UNSUPPORTED_RULES_COMMAND" };
+          }
+          const owner = role === "host" ? 0 : 1;
+          try {
+            /* Authentication owns the player index. The schema allow-list also
+               drops browser attempts to inject priority/payment/internal state. */
+            const command: Record<string, any> = { ...parsedCommand.command, owner };
+          '''
+          text = text[:start] + replacement + text[end:]
+          old_catch = '    return { ok: false, status: 400, error: message };\n'
+          assert old_catch in text
+          text = text.replace(old_catch, '    return { ok: false, status: 400, error: message, code: "RULES_COMMAND_REJECTED" };\n', 1)
+          machine.write_text(text)
+
+          route = Path('app/api/rooms/[id]/route.ts')
+          text = route.read_text()
+          old_route = '      if (!resolution.ok) return NextResponse.json({ error: resolution.error, ...roomView(room, true, role) }, { status: resolution.status, ...noStore });\n'
+          assert old_route in text
+          text = text.replace(old_route, '      if (!resolution.ok) return NextResponse.json({ error: resolution.error, code: resolution.code ?? (resolution.status === 400 ? "INVALID_RULES_COMMAND" : "RULES_COMMAND_REJECTED"), ...roomView(room, true, role) }, { status: resolution.status, ...noStore });\n', 1)
+          route.write_text(text)
+          PY
+
+          git rm .github/workflows/online-command-schema-v4.yml .github/workflows/online-command-schema-v5.yml .github/workflows/online-command-schema-v6.yml
+          git diff --check
+
+      - name: Focused command schema tests
+        run: node --test tests/online-command-schema.test.mjs tests/online-match-runtime.test.mjs tests/online-maintenance-choice.test.mjs
+
+      - name: Online typecheck
+        run: npm run typecheck:online
+
+      - name: AI typecheck
+        run: npm run typecheck:ai
+
+      - name: Full rules suite
+        run: npm run test:rules
+
+      - name: AI strategic benchmark
+        run: npm run benchmark:ai
+
+      - name: Build Next.js application
+        run: npm run vercel-build
+
+      - name: Commit validated schema hardening
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "feat: validate authoritative online commands"
+          git push origin HEAD:feat/web-card-game-quality-foundation
