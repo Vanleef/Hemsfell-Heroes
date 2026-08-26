@@ -16,7 +16,7 @@
     "typecheck:ai": "tsc -p tsconfig.ai.json --noEmit",
     "typecheck:online": "tsc -p tsconfig.online.json --noEmit",
     "test:node": "node --test --test-skip-pattern=\"^game client routes migrated cards through the command engine$\" tests/*.test.mjs",
-    "vercel-build": "npm run test:rules && npm run ai:calibrate:benchmark && next build",
+    "vercel-build": "npm run test:rules && npm run typecheck:ai && npm run typecheck:online && npm run ai:calibrate:benchmark && next build",
     "start": "vinext start",
     "test": "npm run build && npm run typecheck:ai && npm run typecheck:online && npm run test:node",
     "validate:artifact": "bash scripts/validate-artifact.sh",
