@@ -1,5 +1,9 @@
 const clone = (value) => structuredClone(value);
-const flip = (value) => value === 0 ? 1 : value === 1 ? 0 : value;
+const flip = (value) => {
+  if (value === 0) return 1;
+  if (value === 1) return 0;
+  return value;
+};
 
 const orientCommand = (command) => command && typeof command === "object"
   ? { ...command, owner: flip(command.owner) }

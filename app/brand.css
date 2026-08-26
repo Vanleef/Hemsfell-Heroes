@@ -1,0 +1,9 @@
+/* Branding only: deliberately isolated from match-board geometry. */
+.shell-nav .hh-home-logo{width:clamp(3.15rem,4.6vw,4rem)!important;height:clamp(3.15rem,4.6vw,4rem)!important;display:grid!important;place-items:center!important;flex:0 0 auto!important;padding:0!important;margin:0!important;border:0!important;border-radius:.55rem!important;background:transparent!important;box-shadow:none!important;overflow:visible!important;cursor:pointer!important;transition:transform .16s ease,filter .16s ease!important}
+.shell-nav .hh-home-logo:hover,.shell-nav .hh-home-logo:focus-visible{transform:translateY(-1px) scale(1.045)!important;filter:drop-shadow(0 0 .7rem rgb(27 217 224/.24))!important}
+.shell-nav .hh-home-logo:focus-visible{outline:2px solid #eab84d!important;outline-offset:3px!important}
+.shell-nav .hh-home-logo>img{display:block!important;width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important;user-select:none!important;-webkit-user-drag:none!important}
+.screen-menu .landing-copy{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-width:0}
+.screen-menu .landing-brand-logo{display:block;width:min(100%,clamp(24rem,42vw,38rem),72dvh);height:auto;object-fit:contain;object-position:left center;filter:drop-shadow(0 1.2rem 2.2rem rgb(0 0 0/.38));user-select:none;-webkit-user-drag:none}
+.screen-menu .landing-copy>.landing-actions{width:min(100%,39rem);flex-wrap:wrap}
+@media(max-width:56rem){.screen-menu .landing-copy{align-items:center;text-align:center}.screen-menu .landing-brand-logo{width:min(88vw,30rem,62dvh);object-position:center}.screen-menu .landing-copy>.landing-actions{justify-content:center}}

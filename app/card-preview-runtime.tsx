@@ -111,10 +111,14 @@ export default function CardPreviewRuntime() {
       openFor(card, false);
     };
 
+    const closeCompactFor = (card: HTMLElement) => {
+      setPreview((current) => current?.reference === card && !current.expanded ? null : current);
+    };
+
     const onPointerOut = (event: PointerEvent) => {
       const card = (event.target as Element | null)?.closest<HTMLElement>(CARD_SELECTOR);
       if (!card || event.relatedTarget instanceof Node && card.contains(event.relatedTarget)) return;
-      setPreview((current) => current?.reference === card && !current.expanded ? null : current);
+      closeCompactFor(card);
     };
 
     const onFocusIn = (event: FocusEvent) => {
@@ -125,7 +129,7 @@ export default function CardPreviewRuntime() {
     const onFocusOut = (event: FocusEvent) => {
       const card = (event.target as Element | null)?.closest<HTMLElement>(CARD_SELECTOR);
       if (!card || event.relatedTarget instanceof Node && card.contains(event.relatedTarget)) return;
-      setPreview((current) => current?.reference === card && !current.expanded ? null : current);
+      closeCompactFor(card);
     };
 
     const onPointerDown = (event: PointerEvent) => {
@@ -148,11 +152,7 @@ export default function CardPreviewRuntime() {
       clearLongPress();
     };
 
-    const onPointerEnd = () => {
-      window.clearTimeout(longPressTimer);
-      longPressTimer = 0;
-      touchCard = null;
-    };
+    const onPointerEnd = clearLongPress;
 
     const onClickCapture = (event: MouseEvent) => {
       const card = (event.target as Element | null)?.closest<HTMLElement>(CARD_SELECTOR);

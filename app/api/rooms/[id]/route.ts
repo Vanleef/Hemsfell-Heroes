@@ -6,6 +6,7 @@ import { shiftOnlineDeadlines } from "../online-clock.mjs";
 import { isPlainRecord, isRoomId, readSafeJson } from "../validation";
 import rawCards from "../../../cards.generated.json";
 import { validateUserDeck } from "../../../user-deck.mjs";
+import type { DeckCatalogCard } from "../../../user-deck.mjs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -163,7 +164,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (typeof body.heroId !== "string" || !VALID_DECK_IDS.has(body.heroId)) return NextResponse.json({ error: "invalid deck" }, { status: 400, ...noStore });
       let selectedUserDeck = null;
       if (body.userDeck !== undefined && body.userDeck !== null) {
-        const validation = validateUserDeck(body.userDeck, rawCards as any[]);
+        const validation = validateUserDeck(body.userDeck, rawCards as DeckCatalogCard[]);
         if (!validation.ok || !validation.deck || validation.deck.heroId !== body.heroId) return NextResponse.json({ error: "invalid deck list", details: validation.errors.slice(0, 4) }, { status: 400, ...noStore });
         selectedUserDeck = validation.deck;
       }

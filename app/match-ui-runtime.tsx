@@ -128,7 +128,7 @@ function useCommandBarTextAutofit() {
     });
 
     window.addEventListener("resize", queueScan, { passive: true });
-    if (document.fonts?.ready) void document.fonts.ready.then(queueScan);
+    if (document.fonts?.ready) document.fonts.ready.then(queueScan).catch(() => {});
     queueScan();
 
     return () => {
@@ -315,7 +315,8 @@ function useHeroInspectorCanonicalizer() {
         if (!hero) return;
         const aside = dialog.querySelector<HTMLElement>("aside");
         if (!aside || aside.querySelector(".canonical-runtime-guide")) return;
-        aside.innerHTML = renderHeroGuide(hero, hero.names[0]);
+        const fragment = document.createRange().createContextualFragment(renderHeroGuide(hero, hero.names[0]));
+        aside.replaceChildren(fragment);
       });
     };
 

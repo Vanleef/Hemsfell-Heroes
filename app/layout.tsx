@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./brand.css";
 import "./match-ui.css";
 import "./online-match-runtime.css";
 import MatchUiGuard from "./match-ui-guard";
@@ -34,8 +35,8 @@ export const metadata: Metadata = {
     "codex-preview": "development",
   },
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
+    icon: "/brand/hemsfell-heroes-mark-hq.png",
+    shortcut: "/brand/hemsfell-heroes-mark-hq.png",
   },
 };
 
