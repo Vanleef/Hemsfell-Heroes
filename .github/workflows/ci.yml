@@ -307,10 +307,7 @@ jobs:
           (
             set -euo pipefail
           git diff --check
-          git show 5cd8a6cd1cccc455031972810e4c71479c1cf06d:.github/workflows/ci.yml > .github/workflows/ci.yml
-          git rm -f .github/workflows/client-decomposition-priority.yml
           git add -- \
-            .github/workflows/ci.yml \
             app/page.tsx \
             app/match/priority-control-policy.mjs \
             app/match/priority-control-policy.d.ts \
