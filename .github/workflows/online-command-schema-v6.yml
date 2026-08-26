@@ -58,6 +58,24 @@ jobs:
               extract_after("cat > tests/online-command-schema.test.mjs <<'EOF'")
           )
 
+          schema_test = Path('tests/online-command-schema.test.mjs')
+          schema_test_text = schema_test.read_text()
+          authority_anchor = '              __priorityPayment: { cost: 0 },\n'
+          assert authority_anchor in schema_test_text
+          schema_test_text = schema_test_text.replace(
+              authority_anchor,
+              authority_anchor + '              __futureAuthority: "blocked",\n',
+              1,
+          )
+          stripped_anchor = '            for (const field of STRIPPED_AUTHORITY_FIELDS) assert.equal(Object.hasOwn(result.command, field), false, field);\n'
+          assert stripped_anchor in schema_test_text
+          schema_test_text = schema_test_text.replace(
+              stripped_anchor,
+              stripped_anchor + '            assert.equal(Object.hasOwn(result.command, "__futureAuthority"), false, "arbitrary __ fields are not trusted");\n',
+              1,
+          )
+          schema_test.write_text(schema_test_text)
+
           machine = Path('app/api/rooms/machine.ts')
           text = machine.read_text()
           import_anchor = 'import { logOnlineDiagnostic } from "./online-diagnostics.mjs";\n'
@@ -122,7 +140,7 @@ jobs:
           audit.write_text(audit_text.replace(old_audit, new_audit, 1))
           PY
 
-      - name: Remove temporary schema workflows and stage final diff
+      - name: Remove temporary schema workflows and stage only the validated schema diff
         shell: bash
         run: |
           set -euo pipefail
@@ -131,7 +149,26 @@ jobs:
             .github/workflows/online-command-schema-v5.yml \
             .github/workflows/online-command-schema-v6.yml \
             .github/workflows/online-command-schema-diagnostic.yml
-          git add -A
+          git add -- \
+            'app/api/rooms/[id]/route.ts' \
+            app/api/rooms/machine.ts \
+            app/api/rooms/online-command-schema.mjs \
+            app/api/rooms/online-command-schema.d.mts \
+            tests/online-command-schema.test.mjs \
+            tests/online-authoritative-audit.test.mjs
+          expected_files=$(printf '%s\n' \
+            '.github/workflows/online-command-schema-diagnostic.yml' \
+            '.github/workflows/online-command-schema-v4.yml' \
+            '.github/workflows/online-command-schema-v5.yml' \
+            '.github/workflows/online-command-schema-v6.yml' \
+            'app/api/rooms/[id]/route.ts' \
+            'app/api/rooms/machine.ts' \
+            'app/api/rooms/online-command-schema.d.mts' \
+            'app/api/rooms/online-command-schema.mjs' \
+            'tests/online-authoritative-audit.test.mjs' \
+            'tests/online-command-schema.test.mjs' | sort)
+          actual_files=$(git diff --cached --name-only | sort)
+          test "$actual_files" = "$expected_files"
           git diff --cached --check
           git status --short
           git diff --cached --stat
