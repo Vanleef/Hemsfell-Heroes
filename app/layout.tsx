@@ -29,7 +29,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Hemsfell Heroes — Jogo de Cartas",
+  title: "Hemsfell Heroes",
   description: "Duelo digital de cartas no universo fantástico de Hemsfell.",
   other: {
     "codex-preview": "development",
