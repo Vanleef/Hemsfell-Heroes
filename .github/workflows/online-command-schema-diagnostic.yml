@@ -41,6 +41,12 @@ jobs:
           code = '\n'.join(line[10:] if line.startswith('          ') else line for line in lines[start:end])
           exec(compile(code, 'online-command-schema-v6-inline.py', 'exec'), {})
           PY
+
+      - name: Reproduce v6 pre-gate cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm -f .github/workflows/online-command-schema-v4.yml .github/workflows/online-command-schema-v5.yml .github/workflows/online-command-schema-v6.yml
           git diff --check
 
       - name: Full rules suite with captured output
