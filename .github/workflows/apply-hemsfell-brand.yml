@@ -95,9 +95,6 @@ jobs:
             if n!=count: raise SystemExit(f'{path}: expected {count}, found {n}: {old[:80]}')
             p.write_text(text.replace(old,new))
 
-          exact('app/api/rooms/store-runtime.ts','useDevelopmentStore','shouldUseDevelopmentStore',4)
-          exact('app/api/rooms/store.ts','useMemoryStore','shouldUseMemoryStore',4)
-
           exact('app/api/rooms/[id]/route.ts','import { validateUserDeck } from "../../../user-deck.mjs";','import { validateUserDeck } from "../../../user-deck.mjs";\nimport type { DeckCatalogCard } from "../../../user-deck.mjs";')
           exact('app/api/rooms/[id]/route.ts','validateUserDeck(body.userDeck, rawCards as any[])','validateUserDeck(body.userDeck, rawCards as DeckCatalogCard[])')
 
