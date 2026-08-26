@@ -12,7 +12,7 @@ test("hero inspector resolves guide by canonical hero page",()=>{
 });
 
 test("hero inspector uses structured HeroGuide with consolidated runtime fallback",()=>{
- const inspector=source.slice(source.indexOf('{showInspector&&<div className="overlay inspector'),source.indexOf('function CombatAnimation'));
+ const inspector=source.slice(source.indexOf('{showInspector&&<div className="overlay inspector'),source.indexOf('function MulliganModal'));
  assert.match(inspector,/HeroGuide deck=\{deckByHeroPage\(showInspector\.page\)!\}/);
  assert.match(inspector,/deckByHeroPage\(showInspector\.page\)\?[\s\S]*?:<>/);
  assert.ok(inspector.indexOf('EFEITO COMPLETO')>inspector.indexOf(':<>'));
