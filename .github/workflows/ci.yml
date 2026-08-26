@@ -309,7 +309,6 @@ jobs:
           git rm -f .github/workflows/client-decomposition-priority.yml
           git add -- \
             .github/workflows/ci.yml \
-            .github/workflows/client-decomposition-priority.yml \
             app/page.tsx \
             app/match/priority-control-policy.mjs \
             app/match/priority-control-policy.d.ts \
