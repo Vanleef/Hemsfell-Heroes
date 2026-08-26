@@ -3,6 +3,7 @@ import { readRoomFast as readRoom, roleFor, roomView, writeRoom, type Room } fro
 import { applyRulesCommand, applyTimeout, bothDecksLocked, deadline, participant, prepareCoin, sanitizeSettings } from "../machine";
 import { createInitialOnlineGame } from "../initial-game";
 import { shiftOnlineDeadlines } from "../online-clock.mjs";
+import { parseOnlineCommand } from "../online-command-schema.mjs";
 import { isPlainRecord, isRoomId, readSafeJson } from "../validation";
 import rawCards from "../../../cards.generated.json";
 import { validateUserDeck } from "../../../user-deck.mjs";
@@ -237,9 +238,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       current.lastMulliganRequestId = mulliganRequestId;
       room.revision++;
     } else if (body.action === "command") {
-      if (!isPlainRecord(body.command)) return NextResponse.json({ error: "invalid command" }, { status: 400, ...noStore });
-      const resolution = applyRulesCommand(room, role, body.command, body.baseRevision, body.commandId);
-      if (!resolution.ok) return NextResponse.json({ error: resolution.error, ...roomView(room, true, role) }, { status: resolution.status, ...noStore });
+      if (!isPlainRecord(body.command)) return NextResponse.json({ error: "invalid command", code: "INVALID_RULES_COMMAND" }, { status: 400, ...noStore });
+      const parsedCommand = parseOnlineCommand(body.command);
+      if (!parsedCommand.ok) return NextResponse.json({ error: parsedCommand.error, code: parsedCommand.code, ...roomView(room, true, role) }, { status: 400, ...noStore });
+      const resolution = applyRulesCommand(room, role, parsedCommand.command, body.baseRevision, body.commandId);
+      if (!resolution.ok) return NextResponse.json({ error: resolution.error, code: resolution.status === 400 ? "RULES_COMMAND_REJECTED" : undefined, ...roomView(room, true, role) }, { status: resolution.status, ...noStore });
       if (resolution.duplicate) return NextResponse.json(roomView(room, true, role), noStore);
     } else if (body.action === "sync") {
       /* Full client snapshots are never accepted. Returning the current
