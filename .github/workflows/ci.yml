@@ -75,6 +75,33 @@ jobs:
 
           python - <<'PY'
           from pathlib import Path
+          import subprocess
+
+          page_path=Path('app/page.tsx')
+          page=page_path.read_text()
+          base=subprocess.check_output(
+              ['git','show','5cd8a6cd1cccc455031972810e4c71479c1cf06d:app/page.tsx'],
+              text=True,
+          )
+          preserved_start=base.index('\nfunction VisualEffect(')
+          preserved_end=base.index('\nfunction ResponseModal(',preserved_start)
+          preserved=base[preserved_start:preserved_end]
+          insertion=page.index('\nfunction MulliganModal(')
+          assert '\nfunction PlayerHero(' not in page
+          page_path.write_text(page[:insertion]+preserved+page[insertion:])
+
+          test_path=Path('tests/responsive-match-ui.test.mjs')
+          test=test_path.read_text()
+          old='''const [css, page] = await Promise.all([\n  readFile(new URL("../app/match-ui.css", import.meta.url), "utf8"),\n  readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),\n]);\n'''
+          new='''const [css, page, priorityUi] = await Promise.all([\n  readFile(new URL("../app/match-ui.css", import.meta.url), "utf8"),\n  readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),\n  readFile(new URL("../app/match/priority-ui.tsx", import.meta.url), "utf8"),\n]);\n'''
+          assert old in test
+          test=test.replace(old,new,1)
+          test=test.replace('''  assert.match(page, /Modo: Assistido/);\n  assert.match(page, /Modo: Manual/);\n  assert.doesNotMatch(page, /Resposta: Full Control/);\n''','''  assert.match(page, /PriorityControlToggle/);\n  assert.match(priorityUi, /Modo: Assistido/);\n  assert.match(priorityUi, /Modo: Manual/);\n  assert.doesNotMatch(page + priorityUi, /Resposta: Full Control/);\n''',1)
+          test_path.write_text(test)
+          PY
+
+          python - <<'PY'
+          from pathlib import Path
           policy=Path('app/match/priority-control-policy.mjs')
           text=policy.read_text()
           old='''export function requestPriorityControlChange({ mode, queuedMode = null, interactionActive }) {\n  const requestedMode = nextPriorityControlMode(queuedMode ?? mode);\n  return interactionActive\n    ? { mode, queuedMode: requestedMode }\n    : { mode: requestedMode, queuedMode: null };\n}\n'''
@@ -292,7 +319,8 @@ jobs:
             tests/client-priority-control.test.mjs \
             tests/online-assisted-response-autopass.test.mjs \
             tests/hero-priority-ui.test.mjs \
-            tests/hero-inspector-guide.test.mjs
+            tests/hero-inspector-guide.test.mjs \
+            tests/responsive-match-ui.test.mjs
           git diff --cached --check
           git diff --cached --stat
           git config user.name "github-actions[bot]"
