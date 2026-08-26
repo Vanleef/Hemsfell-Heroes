@@ -1,0 +1,387 @@
+name: Refactor client priority flow
+
+on:
+  push:
+    branches:
+      - feat/web-card-game-quality-foundation
+    paths:
+      - .github/workflows/client-decomposition-priority.yml
+
+permissions:
+  contents: write
+
+jobs:
+  refactor-and-validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Verify requested base
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "5cd8a6cd1cccc455031972810e4c71479c1cf06d"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Extract client priority and combat presentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p app/match
+
+          cat > app/match/priority-control-policy.mjs <<'EOF'
+          export const PRIORITY_CONTROL_ASSISTED = "assisted";
+          export const PRIORITY_CONTROL_FULL = "full-control";
+
+          export function nextPriorityControlMode(mode) {
+            return mode === PRIORITY_CONTROL_ASSISTED ? PRIORITY_CONTROL_FULL : PRIORITY_CONTROL_ASSISTED;
+          }
+
+          export function priorityWindowKey(pending) {
+            if (!pending) return null;
+            return `${pending.actor}:${pending.responder}:${pending.passes ?? 0}:${pending.action}:${pending.deadline ?? 0}`;
+          }
+
+          export function requestPriorityControlChange({ mode, queuedMode = null, interactionActive }) {
+            const requestedMode = nextPriorityControlMode(queuedMode ?? mode);
+            return interactionActive
+              ? { mode, queuedMode: requestedMode }
+              : { mode: requestedMode, queuedMode: null };
+          }
+
+          export function flushQueuedPriorityControl({ mode, queuedMode = null, interactionActive }) {
+            if (interactionActive || !queuedMode) return { mode, queuedMode };
+            return { mode: queuedMode, queuedMode: null };
+          }
+
+          export function shouldShowPriorityWindow({ pending, owner = 0, mode, hasUsableResponse }) {
+            return pending?.responder === owner
+              && (mode === PRIORITY_CONTROL_FULL || hasUsableResponse);
+          }
+
+          export function shouldAutoPassPriorityWindow({ pending, owner = 0, mode, hasUsableResponse }) {
+            return pending?.responder === owner
+              && mode === PRIORITY_CONTROL_ASSISTED
+              && !hasUsableResponse;
+          }
+          EOF
+
+          cat > app/match/use-priority-control.ts <<'EOF'
+          "use client";
+
+          import { useCallback, useEffect, useRef, useState } from "react";
+          import {
+            flushQueuedPriorityControl,
+            priorityWindowKey,
+            requestPriorityControlChange,
+            shouldAutoPassPriorityWindow,
+            shouldShowPriorityWindow,
+          } from "./priority-control-policy.mjs";
+
+          export type PriorityControlMode = "assisted" | "full-control";
+
+          type PendingResponseLike = {
+            responder: 0 | 1;
+            actor: 0 | 1;
+            action: string;
+            deadline?: number;
+            passes?: number;
+          } | null;
+
+          type UsePriorityControlArgs = {
+            interactionActive: boolean;
+            pendingResponse: PendingResponseLike;
+            hasUsableResponse: boolean;
+            getCurrentPending: () => PendingResponseLike;
+            onAutoPass: () => void | Promise<unknown>;
+            owner?: 0 | 1;
+            autoPassDelayMs?: number;
+          };
+
+          export function usePriorityControl({
+            interactionActive,
+            pendingResponse,
+            hasUsableResponse,
+            getCurrentPending,
+            onAutoPass,
+            owner = 0,
+            autoPassDelayMs = 80,
+          }: UsePriorityControlArgs) {
+            const [mode, setMode] = useState<PriorityControlMode>("assisted");
+            const [queuedMode, setQueuedMode] = useState<PriorityControlMode | null>(null);
+            const getCurrentPendingRef = useRef(getCurrentPending);
+            const onAutoPassRef = useRef(onAutoPass);
+
+            useEffect(() => {
+              getCurrentPendingRef.current = getCurrentPending;
+              onAutoPassRef.current = onAutoPass;
+            }, [getCurrentPending, onAutoPass]);
+
+            useEffect(() => {
+              const next = flushQueuedPriorityControl({ mode, queuedMode, interactionActive });
+              if (next.mode !== mode) setMode(next.mode as PriorityControlMode);
+              if (next.queuedMode !== queuedMode) setQueuedMode(next.queuedMode as PriorityControlMode | null);
+            }, [interactionActive, mode, queuedMode]);
+
+            const toggle = useCallback(() => {
+              const next = requestPriorityControlChange({ mode, queuedMode, interactionActive });
+              setMode(next.mode as PriorityControlMode);
+              setQueuedMode(next.queuedMode as PriorityControlMode | null);
+            }, [interactionActive, mode, queuedMode]);
+
+            const pendingKey = priorityWindowKey(pendingResponse);
+            useEffect(() => {
+              if (!shouldAutoPassPriorityWindow({ pending: pendingResponse, owner, mode, hasUsableResponse })) return;
+              const key = pendingKey;
+              if (!key) return;
+              const timer = window.setTimeout(() => {
+                if (priorityWindowKey(getCurrentPendingRef.current()) !== key) return;
+                void onAutoPassRef.current();
+              }, autoPassDelayMs);
+              return () => window.clearTimeout(timer);
+            }, [autoPassDelayMs, hasUsableResponse, mode, owner, pendingKey, pendingResponse]);
+
+            return {
+              mode,
+              displayMode: queuedMode ?? mode,
+              changeQueued: queuedMode !== null,
+              toggle,
+              showWindow: shouldShowPriorityWindow({
+                pending: pendingResponse,
+                owner,
+                mode,
+                hasUsableResponse,
+              }),
+            };
+          }
+          EOF
+
+          cat > app/match/priority-ui.tsx <<'EOF'
+          "use client";
+
+          import type { ReactNode } from "react";
+          import type { PriorityControlMode } from "./use-priority-control";
+
+          export function PriorityControlToggle({
+            mode,
+            queued,
+            onToggle,
+          }: {
+            mode: PriorityControlMode;
+            queued: boolean;
+            onToggle: () => void;
+          }) {
+            const assisted = mode === "assisted";
+            const explanation = assisted
+              ? "Assistido: a janela só aparece quando houver uma resposta utilizável."
+              : "Manual: toda janela de prioridade é exibida para você decidir.";
+            const title = queued
+              ? `Alteração agendada para depois da jogada/prioridade atual. ${explanation}`
+              : explanation;
+            return <button className="priority-control-toggle" title={title} onClick={onToggle}>{assisted ? "Modo: Assistido" : "Modo: Manual"}</button>;
+          }
+
+          type ResponseOption<TCard> = { card: TCard; index: number; cost: number };
+
+          export function ResponseModal<TCard>({
+            action,
+            available,
+            heroAbilities,
+            budget,
+            offTurn,
+            seconds,
+            passes = 0,
+            renderCard,
+            cardName,
+            onPlay,
+            onHeroAbility,
+            onPass,
+          }: {
+            action: string;
+            available: Array<ResponseOption<TCard>>;
+            heroAbilities: Array<{ abilityId: string; label: string }>;
+            budget: number;
+            offTurn: boolean;
+            seconds: number;
+            passes?: number;
+            renderCard: (card: TCard, index: number, onPlay: () => void) => ReactNode;
+            cardName: (card: TCard) => string;
+            onPlay: (idx: number) => void;
+            onHeroAbility: (abilityId: string) => void;
+            onPass: () => void;
+          }) {
+            const hasResponses = available.length > 0 || heroAbilities.length > 0;
+            return <div className="overlay response-overlay"><section className="response-dialog" role="dialog" aria-modal="true" aria-labelledby="response-title"><header><span>JANELA DE RESPOSTA</span><b className={seconds <= 5 ? "urgent" : ""}>⏱ {seconds}s</b><b>{offTurn ? "Reserva" : "Energia"} · {budget}</b></header><h2 id="response-title">Sua prioridade</h2><div className="priority-status"><b>{passes === 0 ? "Primeiro passe" : "Segundo passe"}</b><span>{passes === 0 ? "A prioridade voltará ao jogador da ação" : "A ação será encerrada após este passe."}</span></div><p>O oponente realizou: <strong>{action}</strong>. Use um Feitiço Acelerado, uma habilidade ativa disponível do seu Herói ou passe.</p>{available.length ? <div className="response-cards">{available.map(({ card, index, cost }) => <div key={`${cardName(card)}-${index}`}>{renderCard(card, index, () => onPlay(index))}<b>{cardName(card)}</b><small>Responder · custo {cost}</small></div>)}</div> : null}{heroAbilities.length ? <div className="response-hero-abilities">{heroAbilities.map(ability => <button key={ability.abilityId} onClick={() => onHeroAbility(ability.abilityId)}><i>⚡</i><span><b>{ability.label}</b><small>Habilidade ativa do Herói</small></span></button>)}</div> : null}{!hasResponses ? <div className="no-response-card"><i>◇</i><b>Nenhuma resposta utilizável</b><span>Não há Feitiço Acelerado nem habilidade ativa de Herói legal neste momento. Passe para devolver a prioridade.</span></div> : null}<footer><button className="pass-response" onClick={onPass}>Passar prioridade</button></footer></section></div>;
+          }
+          EOF
+
+          cat > app/match/combat-animation.tsx <<'EOF'
+          "use client";
+
+          import { RemoteCardArt } from "../remote-card-art";
+
+          type CombatStage = "declared" | "priority" | "choosing" | "charging" | "impact" | "resolved";
+          type CombatCard = { page: number; name: string };
+          type CombatPresentation = {
+            attackerOwner: 0 | 1;
+            attackerCard: CombatCard;
+            defenderCard?: CombatCard;
+            targetHero?: boolean;
+            stage: CombatStage;
+            result?: string;
+            destroyed?: Array<"attacker" | "defender">;
+            winnerText?: string;
+            attackDamage?: number;
+            counterDamage?: number;
+          };
+
+          export function CombatAnimation({ action, attackerHero, defenderHero }: { action: CombatPresentation; attackerHero: string; defenderHero: string }) {
+            const title = action.stage === "declared" ? "ATAQUE DECLARADO" : action.stage === "priority" ? "PRIORIDADE DE RESPOSTA" : action.stage === "choosing" ? "DECISÃO DO DEFENSOR" : action.stage === "charging" ? "ATAQUE EM CURSO" : action.stage === "impact" ? "IMPACTO" : "COMBATE RESOLVIDO";
+            const detail = action.stage === "declared" ? `${action.attackerCard.name} declarou um ataque.` : action.stage === "priority" ? "Antes da defesa, feitiços Acelerados e efeitos de resposta podem alterar o confronto." : action.stage === "choosing" ? "O defensor pode bloquear com uma criatura válida ou receber o dano diretamente no herói." : action.stage === "charging" ? `${action.attackerCard.name} avança contra ${action.targetHero ? defenderHero : action.defenderCard?.name || "o defensor"}.` : action.stage === "impact" ? "Ofensividade, Vitalidade e palavras-chave estão sendo resolvidas." : action.result || "O ataque foi concluído.";
+            return <section className={`combat-cinematic owner-${action.attackerOwner} stage-${action.stage}`} aria-live="polite"><header><span>{title}</span><b>{action.attackerOwner === 0 ? "SEU ATAQUE" : "ATAQUE ADVERSÁRIO"}</b></header><div className="combat-duel"><article className={`combatant combat-attacker ${action.destroyed?.includes("attacker") ? "combat-destroyed" : ""}`}><RemoteCardArt page={action.attackerCard.page} name={action.attackerCard.name} priority />{action.stage === "resolved" && action.counterDamage !== undefined && <em className="combat-damage">-{action.counterDamage}</em>}<p><small>{attackerHero}</small><b>{action.attackerCard.name}</b>{action.destroyed?.includes("attacker") && <strong>AO CEMITÉRIO</strong>}</p></article><div className="combat-track"><i></i><strong>⚔</strong><i></i></div>{action.targetHero ? <article className="combatant combat-hero-target"><div className="combat-hero-emblem">♛</div>{action.stage === "resolved" && action.attackDamage !== undefined && <em className="combat-damage">-{action.attackDamage}</em>}<p><small>ALVO</small><b>{defenderHero}</b></p></article> : action.defenderCard ? <article className={`combatant combat-defender ${action.destroyed?.includes("defender") ? "combat-destroyed" : ""}`}><RemoteCardArt page={action.defenderCard.page} name={action.defenderCard.name} priority />{action.stage === "resolved" && action.attackDamage !== undefined && <em className="combat-damage">-{action.attackDamage}</em>}<p><small>{defenderHero}</small><b>{action.defenderCard.name}</b>{action.destroyed?.includes("defender") && <strong>AO CEMITÉRIO</strong>}</p></article> : <article className="combatant combat-open-target"><div className="combat-hero-emblem">?</div><p><small>DEFESA</small><b>Aguardando escolha</b></p></article>}</div><footer><b>{action.winnerText || title}</b><span>{detail}</span></footer></section>;
+          }
+          EOF
+
+          cat > tests/client-priority-control.test.mjs <<'EOF'
+          import assert from "node:assert/strict";
+          import { readFileSync } from "node:fs";
+          import test from "node:test";
+          import {
+            flushQueuedPriorityControl,
+            requestPriorityControlChange,
+            shouldAutoPassPriorityWindow,
+            shouldShowPriorityWindow,
+          } from "../app/match/priority-control-policy.mjs";
+
+          const pending = { responder: 0, actor: 1, action: "feitiço adversário", deadline: 1234, passes: 0 };
+
+          test("assistido para manual durante uma interação só vale depois da prioridade atual", () => {
+            const queued = requestPriorityControlChange({ mode: "assisted", queuedMode: null, interactionActive: true });
+            assert.deepEqual(queued, { mode: "assisted", queuedMode: "full-control" });
+            assert.equal(shouldShowPriorityWindow({ pending, mode: queued.mode, hasUsableResponse: false }), false);
+            assert.equal(shouldAutoPassPriorityWindow({ pending, mode: queued.mode, hasUsableResponse: false }), true);
+            assert.deepEqual(flushQueuedPriorityControl({ ...queued, interactionActive: true }), queued);
+            assert.deepEqual(flushQueuedPriorityControl({ ...queued, interactionActive: false }), { mode: "full-control", queuedMode: null });
+          });
+
+          test("manual para assistido não fecha nem auto-passa uma janela que já começou manual", () => {
+            const queued = requestPriorityControlChange({ mode: "full-control", queuedMode: null, interactionActive: true });
+            assert.deepEqual(queued, { mode: "full-control", queuedMode: "assisted" });
+            assert.equal(shouldShowPriorityWindow({ pending, mode: queued.mode, hasUsableResponse: false }), true);
+            assert.equal(shouldAutoPassPriorityWindow({ pending, mode: queued.mode, hasUsableResponse: false }), false);
+          });
+
+          test("fora de uma interação a troca de modo é imediata", () => {
+            assert.deepEqual(requestPriorityControlChange({ mode: "assisted", queuedMode: null, interactionActive: false }), { mode: "full-control", queuedMode: null });
+          });
+
+          test("page delegates priority and combat presentation to client modules", () => {
+            const page = readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
+            assert.match(page, /from "\.\/match\/use-priority-control"/);
+            assert.match(page, /from "\.\/match\/priority-ui"/);
+            assert.match(page, /from "\.\/match\/combat-animation"/);
+            assert.doesNotMatch(page, /function ResponseModal\(/);
+            assert.doesNotMatch(page, /function CombatAnimation\(/);
+            assert.doesNotMatch(page, /setPriorityControl/);
+            assert.match(page, /priorityControl\.showWindow/);
+          });
+          EOF
+
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("app/page.tsx")
+          page = path.read_text()
+
+          import_anchor = 'import { immediateDirectCombatPresentation, resolvedCombatPresentation } from "./combat-presentation.mjs";\n'
+          new_imports = (
+              'import { CombatAnimation } from "./match/combat-animation";\n'
+              'import { PriorityControlToggle, ResponseModal } from "./match/priority-ui";\n'
+              'import { usePriorityControl } from "./match/use-priority-control";\n'
+          )
+          assert import_anchor in page
+          page = page.replace(import_anchor, import_anchor + new_imports, 1)
+
+          state_line = 'const [priorityControl,setPriorityControl]=useState<"assisted"|"full-control">("assisted");\n'
+          assert state_line in page
+          page = page.replace(state_line, '', 1)
+
+          assisted_effect = re.compile(
+              r' useEffect\(\(\)=>\{const pending=game\?\.pendingResponse;if\(!game\|\|pending\?\.responder!==0\|\|priorityControl!=="assisted"\)return;.*?\},\[game\?\.pendingResponse\?\.actor,game\?\.pendingResponse\?\.responder,game\?\.pendingResponse\?\.passes,game\?\.pendingResponse\?\.action,game\?\.pendingResponse\?\.deadline,priorityControl\]\);\n',
+              re.S,
+          )
+          page, count = assisted_effect.subn('', page, count=1)
+          assert count == 1, count
+
+          helper = ' const hasUsablePriorityResponse=(state:Game,owner:0|1=0)=>hasUsableAcceleratedResponse(state,owner)||heroPriorityResponses(state,owner).length>0;\n'
+          assert helper in page
+          hook = ''' const priorityInteractionActive=!!(game?.pendingResponse||responseWindow||game?.pendingAction||game?.priorityStack?.length||(combatAction&&["declared","priority"].includes(combatAction.stage))||targeting?.response);\n const priorityControl=usePriorityControl({interactionActive:priorityInteractionActive,pendingResponse:responseWindow,hasUsableResponse:!!game&&hasUsablePriorityResponse(game,0),getCurrentPending:()=>currentGameRef.current?.pendingResponse??null,onAutoPass:()=>passPriorityWindow(0,true)});\n'''
+          page = page.replace(helper, helper + hook, 1)
+
+          old_toggle = '<button className="priority-control-toggle" title={priorityControl==="assisted"?"Assistido: a janela só aparece quando houver uma carta Acelerado utilizável com Reserva suficiente.":"Manual: toda janela de prioridade é exibida para você decidir."} onClick={()=>setPriorityControl(value=>value==="assisted"?"full-control":"assisted")}>{priorityControl==="assisted"?"Modo: Assistido":"Modo: Manual"}</button>'
+          assert old_toggle in page
+          page = page.replace(old_toggle, '<PriorityControlToggle mode={priorityControl.displayMode} queued={priorityControl.changeQueued} onToggle={priorityControl.toggle}/>', 1)
+
+          old_condition = 'responseWindow?.responder===0&&(priorityControl==="full-control"||hasUsablePriorityResponse(game,0))'
+          assert old_condition in page
+          page = page.replace(old_condition, 'priorityControl.showWindow', 1)
+
+          old_modal = '<ResponseModal action={responseWindow.action} available={usableAcceleratedResponses(game,0)} heroAbilities={heroPriorityResponses(game,0)} budget={responseBudget(game,0)} offTurn={game.active!==0} seconds={responseRemaining} passes={responseWindow.passes??0} onPlay={chooseResponse} onHeroAbility={chooseHeroResponse} onPass={declineResponse}/>'
+          assert old_modal in page
+          new_modal = '<ResponseModal action={responseWindow!.action} available={usableAcceleratedResponses(game,0)} heroAbilities={heroPriorityResponses(game,0)} budget={responseBudget(game,0)} offTurn={game.active!==0} seconds={responseRemaining} passes={responseWindow!.passes??0} cardName={card=>card.name} renderCard={(card,_index,onPlay)=><OriginalCard card={card} small inspectable={false} activeEffect="RESPOSTA ACELERADA" onClick={onPlay}/>} onPlay={chooseResponse} onHeroAbility={chooseHeroResponse} onPass={declineResponse}/>'
+          page = page.replace(old_modal, new_modal, 1)
+
+          start = page.index('\nfunction CombatAnimation(')
+          end = page.index('\nfunction MulliganModal(', start)
+          page = page[:start] + '\n' + page[end:]
+
+          assert 'setPriorityControl' not in page
+          assert 'function ResponseModal(' not in page
+          assert 'function CombatAnimation(' not in page
+          assert 'priorityControl.showWindow' in page
+          path.write_text(page)
+          PY
+
+      - name: Validate focused priority behavior
+        run: node --test tests/client-priority-control.test.mjs
+
+      - name: Validate full application gates
+        run: npm run vercel-build
+
+      - name: Inspect final diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git diff --stat
+          git status --short
+
+      - name: Commit validated refactor
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f .github/workflows/client-decomposition-priority.yml
+          git add -- \
+            app/page.tsx \
+            app/match/priority-control-policy.mjs \
+            app/match/use-priority-control.ts \
+            app/match/priority-ui.tsx \
+            app/match/combat-animation.tsx \
+            tests/client-priority-control.test.mjs
+          git diff --cached --check
+          git diff --cached --stat
+          git commit -m "refactor: isolate client priority flow and mode switching"
+          git push origin HEAD:feat/web-card-game-quality-foundation
