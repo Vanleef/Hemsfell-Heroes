@@ -19,49 +19,36 @@ jobs:
         with:
           ref: feat/web-card-game-quality-foundation
           fetch-depth: 0
-
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-
       - name: Verify requested base has not moved
         shell: bash
         run: |
           set -euo pipefail
           unexpected="$(git diff --name-only 5cd8a6cd1cccc455031972810e4c71479c1cf06d..HEAD | grep -v '^.github/workflows/client-decomposition-priority.yml$' || true)"
-          if [ -n "$unexpected" ]; then
-            echo "Unexpected concurrent changes after the requested base:"
-            echo "$unexpected"
-            exit 1
-          fi
-
+          test -z "$unexpected" || { echo "$unexpected"; exit 1; }
       - name: Install dependencies
         run: npm ci
-
       - name: Apply reviewed client decomposition patch
         shell: bash
         run: |
           set -euo pipefail
-          git show ff6d313972b6da13437df9e75ef7125dcff1832a:.github/workflows/client-decomposition-priority.yml > /tmp/original-client-refactor.yml
+          git show ff6d313972b6da13437df9e75ef7125dcff1832a:.github/workflows/client-decomposition-priority.yml > /tmp/original.yml
           python - <<'PY'
           from pathlib import Path
-          lines=Path('/tmp/original-client-refactor.yml').read_text().splitlines()
-          marker='      - name: Extract client priority and combat presentation'
-          start=lines.index(marker)
+          lines=Path('/tmp/original.yml').read_text().splitlines()
+          start=lines.index('      - name: Extract client priority and combat presentation')
           run_index=next(i for i in range(start+1,len(lines)) if lines[i].strip()=='run: |')+1
           end=next(i for i in range(run_index,len(lines)) if lines[i].startswith('      - name: Validate focused priority behavior'))
-          code='\n'.join(line[10:] if line.startswith('          ') else line for line in lines[run_index:end])+'\n'
-          Path('/tmp/apply-client-refactor.sh').write_text(code)
+          Path('/tmp/apply.sh').write_text('\n'.join(line[10:] if line.startswith('          ') else line for line in lines[run_index:end])+'\n')
           PY
-          bash /tmp/apply-client-refactor.sh
-
+          bash /tmp/apply.sh
       - name: Validate focused priority behavior
         run: node --test tests/client-priority-control.test.mjs
-
       - name: Validate full application gates
         run: npm run vercel-build
-
       - name: Inspect final diff
         shell: bash
         run: |
@@ -69,7 +56,6 @@ jobs:
           git diff --check
           git diff --stat
           git status --short
-
       - name: Commit validated refactor
         shell: bash
         run: |
@@ -77,13 +63,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm -f .github/workflows/client-decomposition-priority.yml
-          git add -- \
-            app/page.tsx \
-            app/match/priority-control-policy.mjs \
-            app/match/use-priority-control.ts \
-            app/match/priority-ui.tsx \
-            app/match/combat-animation.tsx \
-            tests/client-priority-control.test.mjs
+          git add -- app/page.tsx app/match/priority-control-policy.mjs app/match/use-priority-control.ts app/match/priority-ui.tsx app/match/combat-animation.tsx tests/client-priority-control.test.mjs
           git diff --cached --check
           git diff --cached --stat
           git commit -m "refactor: isolate client priority flow and mode switching"
