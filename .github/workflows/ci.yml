@@ -213,8 +213,18 @@ jobs:
           });
           EOF
 
+          python - <<'PY'
+          from pathlib import Path
+          path=Path('tests/hero-inspector-guide.test.mjs')
+          text=path.read_text()
+          old="source.indexOf('function CombatAnimation')"
+          new="source.indexOf('function MulliganModal')"
+          assert old in text
+          path.write_text(text.replace(old,new,1))
+          PY
+
       - name: Validate focused priority behavior
-        run: node --test tests/client-priority-control.test.mjs tests/online-assisted-response-autopass.test.mjs tests/hero-priority-ui.test.mjs
+        run: node --test tests/client-priority-control.test.mjs tests/online-assisted-response-autopass.test.mjs tests/hero-priority-ui.test.mjs tests/hero-inspector-guide.test.mjs
 
       - name: Validate canonical project state
         run: npm run prepare:project
@@ -269,7 +279,8 @@ jobs:
             app/match/combat-animation.tsx \
             tests/client-priority-control.test.mjs \
             tests/online-assisted-response-autopass.test.mjs \
-            tests/hero-priority-ui.test.mjs
+            tests/hero-priority-ui.test.mjs \
+            tests/hero-inspector-guide.test.mjs
           git diff --cached --check
           git diff --cached --stat
           git config user.name "github-actions[bot]"
