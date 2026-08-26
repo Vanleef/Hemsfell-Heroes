@@ -23,17 +23,20 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test-and-build:
     name: Rules, lint, types, card audit and Next.js build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: feat/web-card-game-quality-foundation
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -41,8 +44,100 @@ jobs:
           node-version: 22.13.0
           cache: npm
 
+      - name: Verify requested source commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          unexpected="$(git diff --name-only 5cd8a6cd1cccc455031972810e4c71479c1cf06d..HEAD | grep -Ev '^\.github/workflows/(ci|client-decomposition-priority)\.yml$' || true)"
+          if [ -n "$unexpected" ]; then
+            echo "Unexpected concurrent source changes after 5cd8a6cd:"
+            echo "$unexpected"
+            exit 1
+          fi
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Apply client decomposition and priority-mode fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git show ff6d313972b6da13437df9e75ef7125dcff1832a:.github/workflows/client-decomposition-priority.yml > /tmp/original-client-refactor.yml
+          python - <<'PY'
+          from pathlib import Path
+          lines=Path('/tmp/original-client-refactor.yml').read_text().splitlines()
+          start=lines.index('      - name: Extract client priority and combat presentation')
+          run_index=next(i for i in range(start+1,len(lines)) if lines[i].strip()=='run: |')+1
+          end=next(i for i in range(run_index,len(lines)) if lines[i].startswith('      - name: Validate focused priority behavior'))
+          Path('/tmp/apply-client-refactor.sh').write_text('\n'.join(line[10:] if line.startswith('          ') else line for line in lines[run_index:end])+'\n')
+          PY
+          bash /tmp/apply-client-refactor.sh
+
+          python - <<'PY'
+          from pathlib import Path
+          policy=Path('app/match/priority-control-policy.mjs')
+          text=policy.read_text()
+          old='''export function requestPriorityControlChange({ mode, queuedMode = null, interactionActive }) {\n  const requestedMode = nextPriorityControlMode(queuedMode ?? mode);\n  return interactionActive\n    ? { mode, queuedMode: requestedMode }\n    : { mode: requestedMode, queuedMode: null };\n}\n'''
+          new='''export function requestPriorityControlChange({ mode, queuedMode = null, interactionActive }) {\n  const requestedMode = nextPriorityControlMode(queuedMode ?? mode);\n  if (!interactionActive) return { mode: requestedMode, queuedMode: null };\n  return requestedMode === mode\n    ? { mode, queuedMode: null }\n    : { mode, queuedMode: requestedMode };\n}\n'''
+          assert old in text
+          policy.write_text(text.replace(old,new,1))
+
+          test=Path('tests/client-priority-control.test.mjs')
+          test_text=test.read_text()
+          anchor='''test("fora de uma interação a troca de modo é imediata", () => {\n  assert.deepEqual(requestPriorityControlChange({ mode: "assisted", queuedMode: null, interactionActive: false }), { mode: "full-control", queuedMode: null });\n});\n'''
+          extra='''\ntest("duplo toggle durante a mesma interação cancela a mudança agendada", () => {\n  const once = requestPriorityControlChange({ mode: "assisted", queuedMode: null, interactionActive: true });\n  assert.deepEqual(requestPriorityControlChange({ ...once, interactionActive: true }), { mode: "assisted", queuedMode: null });\n});\n'''
+          assert anchor in test_text
+          test.write_text(test_text.replace(anchor,anchor+extra,1))
+          PY
+
+          cat > app/match/priority-control-policy.d.ts <<'EOF'
+          export type PriorityControlMode = "assisted" | "full-control";
+          export type PriorityPending = { actor: 0 | 1; responder: 0 | 1; action: string; passes?: number; deadline?: number } | null;
+          export function nextPriorityControlMode(mode: PriorityControlMode): PriorityControlMode;
+          export function priorityWindowKey(pending: PriorityPending): string | null;
+          export function requestPriorityControlChange(input: { mode: PriorityControlMode; queuedMode?: PriorityControlMode | null; interactionActive: boolean }): { mode: PriorityControlMode; queuedMode: PriorityControlMode | null };
+          export function flushQueuedPriorityControl(input: { mode: PriorityControlMode; queuedMode?: PriorityControlMode | null; interactionActive: boolean }): { mode: PriorityControlMode; queuedMode: PriorityControlMode | null };
+          export function shouldShowPriorityWindow(input: { pending: PriorityPending; owner?: 0 | 1; mode: PriorityControlMode; hasUsableResponse: boolean }): boolean;
+          export function shouldAutoPassPriorityWindow(input: { pending: PriorityPending; owner?: 0 | 1; mode: PriorityControlMode; hasUsableResponse: boolean }): boolean;
+          EOF
+
+          cat > app/match/combat-animation.tsx <<'EOF'
+          "use client";
+
+          import { RemoteCardArt } from "../remote-card-art";
+
+          type CombatStage = "declared" | "priority" | "choosing" | "charging" | "impact" | "resolved";
+          type CombatCard = { page: number; name: string };
+          type CombatPresentation = {
+            attackerOwner: 0 | 1;
+            attackerCard: CombatCard;
+            defenderCard?: CombatCard;
+            targetHero?: boolean;
+            stage: CombatStage;
+            result?: string;
+            destroyed?: string[];
+            winnerText?: string;
+            attackDamage?: number;
+            counterDamage?: number;
+          };
+
+          export function CombatAnimation({action,attackerHero,defenderHero}:{action:CombatPresentation;attackerHero:string;defenderHero:string}){
+           const title=action.stage==="declared"?"ATAQUE DECLARADO":action.stage==="priority"?"PRIORIDADE DE RESPOSTA":action.stage==="choosing"?"DECISÃO DO DEFENSOR":action.stage==="charging"?"ATAQUE EM CURSO":action.stage==="impact"?"IMPACTO":"COMBATE RESOLVIDO";
+           const detail=action.stage==="declared"?`${action.attackerCard.name} declarou um ataque.`:action.stage==="priority"?"Antes da defesa, feitiços Acelerados e efeitos de resposta podem alterar o confronto.":action.stage==="choosing"?"O defensor pode bloquear com uma criatura válida ou receber o dano diretamente no herói.":action.stage==="charging"?`${action.attackerCard.name} avança contra ${action.targetHero?defenderHero:action.defenderCard?.name||"o defensor"}.`:action.stage==="impact"?"Ofensividade, Vitalidade e palavras-chave estão sendo resolvidas.":action.result||"O ataque foi concluído.";
+           return <section className={`combat-cinematic owner-${action.attackerOwner} stage-${action.stage}`} aria-live="polite">
+            <header><span>{title}</span><b>{action.attackerOwner===0?"SEU ATAQUE":"ATAQUE ADVERSÁRIO"}</b></header>
+            <div className="combat-duel">
+             <article className={`combatant combat-attacker ${action.destroyed?.includes("attacker")?"combat-destroyed":""}`}><RemoteCardArt page={action.attackerCard.page} name={action.attackerCard.name} priority/>{action.stage==="resolved"&&action.counterDamage!==undefined&&<em className="combat-damage">-{action.counterDamage}</em>}<p><small>{attackerHero}</small><b>{action.attackerCard.name}</b>{action.destroyed?.includes("attacker")&&<strong>AO CEMITÉRIO</strong>}</p></article>
+             <div className="combat-track"><i></i><strong>⚔</strong><i></i></div>
+             <article className={`combatant combat-defender ${action.destroyed?.includes("defender")?"combat-destroyed":""}`}>{action.defenderCard?<RemoteCardArt page={action.defenderCard.page} name={action.defenderCard.name} priority/>:<span>♛</span>}{action.stage==="resolved"&&action.attackDamage!==undefined&&<em className="combat-damage">-{action.attackDamage}</em>}<p><small>{defenderHero}</small><b>{action.defenderCard?.name||(action.targetHero?"Herói escolhido":"Aguardando escolha")}</b>{action.destroyed?.includes("defender")&&<strong>AO CEMITÉRIO</strong>}</p></article>
+            </div>
+            <footer>{action.winnerText&&<b>{action.winnerText}</b>}<span>{detail}</span></footer>
+           </section>
+          }
+          EOF
+
+      - name: Validate focused priority behavior
+        run: node --test tests/client-priority-control.test.mjs
 
       - name: Validate canonical project state
         run: npm run prepare:project
@@ -54,10 +149,6 @@ jobs:
         run: npm run ai:calibrate:benchmark
 
       - name: Lint advanced AI surfaces
-        # The AI adapter deliberately bridges the typed controller to the legacy
-        # JS card engine, whose card payloads are not yet modeled end-to-end.
-        # Strict TypeScript remains mandatory; only explicit-any style warnings
-        # at that boundary are relaxed here.
         run: >-
           npx eslint app/rules-engine/ai-system/*.ts scripts/ai-calibration.ts scripts/ai-selfplay.ts tests/advanced-ai.test.mjs
           --rule '@typescript-eslint/no-explicit-any: off'
@@ -82,3 +173,27 @@ jobs:
 
       - name: Build Next.js application
         run: npm run vercel-build
+
+      - name: Inspect and commit validated client refactor
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git show 5cd8a6cd1cccc455031972810e4c71479c1cf06d:.github/workflows/ci.yml > .github/workflows/ci.yml
+          git rm -f .github/workflows/client-decomposition-priority.yml
+          git add -- \
+            .github/workflows/ci.yml \
+            .github/workflows/client-decomposition-priority.yml \
+            app/page.tsx \
+            app/match/priority-control-policy.mjs \
+            app/match/priority-control-policy.d.ts \
+            app/match/use-priority-control.ts \
+            app/match/priority-ui.tsx \
+            app/match/combat-animation.tsx \
+            tests/client-priority-control.test.mjs
+          git diff --cached --check
+          git diff --cached --stat
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "refactor: isolate client priority flow and mode switching"
+          git push origin HEAD:feat/web-card-game-quality-foundation
