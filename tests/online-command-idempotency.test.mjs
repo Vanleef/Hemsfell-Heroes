@@ -17,8 +17,13 @@ test("authoritative room commands deduplicate a previously accepted command id b
   assert.match(machine, /recentCommandIds = \[\.\.\.recent\.filter\(\(value\) => value !== normalizedCommandId\), normalizedCommandId\]\.slice\(-128\)/);
 });
 
-test("room route forwards the stable command id to the authoritative machine", () => {
-  assert.match(route, /applyRulesCommand\(room, role, body\.command, body\.baseRevision, body\.commandId\)/);
+test("room route sanitizes the browser command while forwarding the stable command id to the authoritative machine", () => {
+  assert.match(route, /const parsedCommand = parseOnlineCommand\(body\.command\)/);
+  assert.match(route, /applyRulesCommand\(room, role, parsedCommand\.command, body\.baseRevision, body\.commandId\)/);
+  assert.doesNotMatch(route, /applyRulesCommand\(room, role, body\.command, body\.baseRevision, body\.commandId\)/);
+  const parseIndex = route.indexOf("parseOnlineCommand(body.command)");
+  const applyIndex = route.indexOf("applyRulesCommand(room, role, parsedCommand.command");
+  assert.ok(parseIndex > 0 && applyIndex > parseIndex, "browser input must be sanitized before the authoritative machine receives it");
 });
 
 test("duplicate command acknowledgement returns the persisted room without another storage write", () => {
