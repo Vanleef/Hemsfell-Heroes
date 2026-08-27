@@ -1,5 +1,6 @@
 .hh-motion-layer,
-.hh-effect-layer {
+.hh-effect-layer,
+.hh-action-cue-layer {
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -11,6 +12,7 @@
 
 .hh-motion-layer { z-index: 7600; }
 .hh-effect-layer { z-index: 7700; }
+.hh-action-cue-layer { z-index: 7750; }
 
 .hh-presentation-hidden {
   opacity: 0 !important;
@@ -62,7 +64,8 @@
 .hh-arrival-ring,
 .hh-destruction-ring,
 .hh-banish-vortex,
-.hh-effect-impact {
+.hh-effect-impact,
+.hh-cue-impact {
   position: absolute;
   width: clamp(3rem, 6vw, 6rem);
   aspect-ratio: 1;
@@ -113,6 +116,66 @@
 .hh-float.is-positive { color: #7ee3a3; }
 .hh-float.is-neutral { color: #f4f1e8; }
 
+.hh-combat-sword {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: clamp(2rem, 4vw, 3.8rem);
+  aspect-ratio: 1;
+  font-size: clamp(1.65rem, 3.2vw, 3rem);
+  line-height: 1;
+  transform-origin: 50% 50%;
+  filter: drop-shadow(0 0 .45rem rgb(255 231 154 / .95)) drop-shadow(0 .2rem .25rem rgb(0 0 0 / .75));
+  will-change: transform, opacity;
+}
+
+.hh-effect-orb {
+  position: absolute;
+  width: clamp(.8rem, 1.6vw, 1.3rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff 0 12%, #ffe8a0 18%, #c77dff 46%, rgb(86 38 128 / .1) 78%);
+  box-shadow: 0 0 .55rem #fff, 0 0 1rem rgb(199 125 255 / .9), 0 0 1.5rem rgb(96 182 255 / .55);
+  will-change: transform, opacity;
+}
+
+.hh-cue-impact.is-combat {
+  border: .18rem solid rgb(255 225 142 / .96);
+  box-shadow: 0 0 1rem rgb(255 194 92 / .82), inset 0 0 .8rem rgb(255 255 255 / .52);
+}
+
+.hh-cue-impact.is-magic {
+  border: .18rem solid rgb(199 125 255 / .92);
+  box-shadow: 0 0 1rem rgb(112 198 255 / .8), inset 0 0 .85rem rgb(255 255 255 / .4);
+}
+
+/* Presentation is a real input boundary, not decoration. While either the
+   physical-card queue or the action-cue queue is busy, the match surface is
+   visually and interactively unavailable. */
+html.hh-presentation-locked .screen-game .player-hand .original-card,
+html.hh-presentation-locked .screen-game .player-hand .card-frame,
+html.hh-presentation-locked .screen-game .player-hand [data-card-preview="true"] {
+  filter: grayscale(.35) saturate(.55) brightness(.68) !important;
+  opacity: .68 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+  transform: none !important;
+}
+
+html.hh-presentation-locked .screen-game .phase-orb,
+html.hh-presentation-locked .screen-game .card-frame-activation,
+html.hh-presentation-locked .screen-game .hero-command-bar button,
+html.hh-presentation-locked .screen-game .hero-abilities button,
+html.hh-presentation-locked .screen-game button:not(.card-preview-close) {
+  filter: saturate(.55) brightness(.76);
+  opacity: .72;
+  cursor: wait !important;
+}
+
+html.hh-presentation-locked .screen-game {
+  cursor: wait;
+}
+
 /* Ordinary card plays now use physical motion. The legacy full-screen theatre
    remains only for ability/damage moments that are outside PR1. */
 .visual-effect.fx-summon,
@@ -128,7 +191,10 @@
   .hh-destruction-ring,
   .hh-banish-vortex,
   .hh-effect-beam,
-  .hh-float {
+  .hh-float,
+  .hh-combat-sword,
+  .hh-effect-orb,
+  .hh-cue-impact {
     animation-duration: .12s !important;
     transition-duration: .12s !important;
   }

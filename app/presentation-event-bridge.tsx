@@ -5,10 +5,12 @@ import { useEffect } from "react";
 const RULES_RESOLVED_EVENT = "hemsfell:rules-command-resolved";
 const PRESENTATION_EVENT = "hemsfell:presentation-action";
 const ONLINE_SNAPSHOT_EVENT = "hemsfell:online-room-snapshot";
-const EXCLUDED_COMMANDS = new Set(["declareAttack", "selectDefender", "attack", "reposition", "confirmReposition", "surrender"]);
+const EXCLUDED_COMMANDS = new Set(["declareAttack", "selectDefender", "reposition", "confirmReposition", "surrender"]);
+const MAX_SEEN_TRANSITIONS = 256;
 
 type SnapshotEntry = { revision: number; game: any; isHost: boolean };
 type ConfirmedAck = { before: any; command: Record<string, any>; commandId: string; revision: number };
+type PresentationPayload = { before: any; after: any; command: Record<string, any>; trace?: any[]; commandId: string; revision?: number };
 
 const clone = <T,>(value: T): T => {
   try { return structuredClone(value); }
@@ -51,6 +53,7 @@ const orientGame = (game: any, isHost: boolean) => {
   };
   return oriented;
 };
+
 const cardIdentity = (card: any) => String(card?.uid || card?.id || `${card?.page ?? ""}:${card?.name ?? ""}`);
 const unitFingerprint = (unit: any) => ({
   id: cardIdentity(unit), slot: unit?.slot, damage: unit?.damage, bonusAtk: unit?.bonusAtk, bonusHp: unit?.bonusHp,
@@ -60,6 +63,10 @@ const unitFingerprint = (unit: any) => ({
   modifiers: unit?.modifiers, grantedKeywords: unit?.grantedKeywords,
 });
 const presentationFingerprint = (game: any) => JSON.stringify({
+  round: game?.round,
+  phase: game?.phase,
+  active: game?.active,
+  events: game?.events,
   winner: game?.winner,
   players: (game?.players || []).map((player: any) => ({
     life: player?.life,
@@ -76,12 +83,36 @@ const presentationFingerprint = (game: any) => JSON.stringify({
   })),
 });
 const hasPresentableDelta = (before: any, after: any) => !!before && !!after && presentationFingerprint(before) !== presentationFingerprint(after);
+const hashText = (value: string) => {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index++) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+};
+const transitionKey = (detail: PresentationPayload) => {
+  const before = presentationFingerprint(detail.before);
+  const after = presentationFingerprint(detail.after);
+  return `${detail.revision == null ? "local" : `rev:${detail.revision}`}:${hashText(before)}>${hashText(after)}`;
+};
+const attackFromCombat = (combat: any) => combat?.attackerUid ? {
+  type: "attack",
+  owner: Number(combat.attackerOwner) === 1 ? 1 : 0,
+  attackerId: combat.attackerUid,
+  ...(combat.targetHero || !combat.defenderUid ? { targetHero: true } : { defenderId: combat.defenderUid }),
+} : null;
 const priorityResolutionCommand = (before: any, command: Record<string, any>) => {
   if (command?.type !== "passPriority") return command;
-  if (Number(before?.pendingResponse?.passes || 0) < 1) return null;
+  const combatCheckpoint = before?.pendingAction?.checkpoint === "single-attack-resolution"
+    || before?.priorityStack?.[0]?.command?.checkpoint === "single-attack-resolution";
+  if (combatCheckpoint) return attackFromCombat(before?.combatAction);
   const stack = Array.isArray(before?.priorityStack) ? before.priorityStack : [];
   const top = stack.length > 1 ? stack.at(-1)?.command : null;
-  return top || before?.pendingAction || null;
+  if (top?.type) return top;
+  const pending = before?.pendingAction;
+  if (pending?.type && pending.type !== "onlineCheckpoint") return pending;
+  return null;
 };
 const presentedCommand = (before: any, after: any, command: Record<string, any> | undefined) => {
   if (!command?.type || !hasPresentableDelta(before, after)) return null;
@@ -107,12 +138,28 @@ export default function PresentationEventBridge() {
   useEffect(() => {
     const snapshots = new Map<string, SnapshotEntry>();
     const confirmed = new Map<string, ConfirmedAck>();
+    const seenTransitionKeys = new Set<string>();
+    const seenOrder: string[] = [];
     let localSequence = 0;
 
-    const emit = (detail: { before: any; after: any; command: Record<string, any>; trace?: any[]; commandId: string; revision?: number }) => {
+    const rememberTransition = (detail: PresentationPayload) => {
+      const key = transitionKey(detail);
+      if (seenTransitionKeys.has(key)) return false;
+      seenTransitionKeys.add(key);
+      seenOrder.push(key);
+      while (seenOrder.length > MAX_SEEN_TRANSITIONS) {
+        const expired = seenOrder.shift();
+        if (expired) seenTransitionKeys.delete(expired);
+      }
+      return true;
+    };
+
+    const emit = (detail: PresentationPayload) => {
       const command = presentedCommand(detail.before, detail.after, detail.command);
       if (!command) return;
-      window.dispatchEvent(new CustomEvent(PRESENTATION_EVENT, { detail: { ...detail, command: clone(command) } }));
+      const next = { ...detail, command: clone(command) };
+      if (!rememberTransition(next)) return;
+      window.dispatchEvent(new CustomEvent(PRESENTATION_EVENT, { detail: next }));
     };
 
     const onLocalResolution = (event: Event) => {
@@ -149,14 +196,14 @@ export default function PresentationEventBridge() {
         return;
       }
 
-      /* Polling/recovery is still authoritative. If the revision contains a
-         physical non-combat delta, present that delta generically instead of
-         guessing which unobserved opponent command caused it. */
-      const combatTransition = !!previous.game?.combatAction || !!after?.combatAction;
-      if (!combatTransition) emit({
+      /* Polling/recovery still represents confirmed server state. Material
+         combat resolution is inferred only from the previous authoritative
+         combat descriptor; every other revision remains a generic diff. */
+      const combatCommand = hasPresentableDelta(previous.game, after) ? attackFromCombat(previous.game?.combatAction) : null;
+      emit({
         before: clone(previous.game),
         after: clone(after),
-        command: { type: "onlineSnapshot", owner: 1 },
+        command: combatCommand || { type: "onlineSnapshot", owner: 1 },
         commandId: `online:${roomId}:${revision}`,
         revision,
       });
@@ -195,6 +242,7 @@ export default function PresentationEventBridge() {
       window.removeEventListener(ONLINE_SNAPSHOT_EVENT, onOnlineSnapshot as EventListener);
       snapshots.clear();
       confirmed.clear();
+      seenTransitionKeys.clear();
     };
   }, []);
 
