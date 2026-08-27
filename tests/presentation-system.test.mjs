@@ -41,6 +41,15 @@ test("presentation bridge only stages material confirmed actions and keeps comba
   assert.match(bridge, /hemsfell:presentation-action/);
 });
 
+test("guest online presentation mirrors nested priority ownership", () => {
+  const bridge = read("app/presentation-event-bridge.tsx");
+  assert.match(bridge, /const flipOwner/);
+  assert.match(bridge, /pendingAction = \{ \.\.\.clone\(game\.pendingAction\), owner: flipOwner/);
+  assert.match(bridge, /priorityStack = game\.priorityStack\.map/);
+  assert.match(bridge, /owner: flipOwner\(frame\.command\.owner\)/);
+  assert.match(bridge, /responder: flipOwner\(game\.pendingResponse\.responder\)/);
+});
+
 test("presentation runtime serializes confirmed before-after clips and exposes pacing signals", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
   assert.match(runtime, /await nextFrame\(\); await nextFrame\(\)/);
