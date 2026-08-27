@@ -4,6 +4,7 @@ import "./globals.css";
 import "./brand.css";
 import "./match-ui.css";
 import "./online-match-runtime.css";
+import "./game-presentation.css";
 /* Keep the command-bar typography as the final CSS cascade authority. */
 import "./command-bar-fixes.css";
 import MatchUiGuard from "./match-ui-guard";
@@ -11,6 +12,7 @@ import MatchUiRuntime from "./match-ui-runtime";
 import OnlineMatchRuntime from "./online-match-runtime";
 import OnlineReconnectRuntime from "./online-reconnect-runtime";
 import CardPreviewRuntime from "./card-preview-runtime";
+import GamePresentationRuntime from "./game-presentation-runtime";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,6 +57,7 @@ export default function RootLayout({
         <OnlineMatchRuntime />
         <OnlineReconnectRuntime />
         <CardPreviewRuntime />
+        <GamePresentationRuntime />
         {children}
       </body>
     </html>
