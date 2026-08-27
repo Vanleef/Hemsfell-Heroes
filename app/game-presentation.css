@@ -113,6 +113,15 @@
 .hh-float.is-positive { color: #7ee3a3; }
 .hh-float.is-neutral { color: #f4f1e8; }
 
+/* Ordinary card plays now use physical motion. The legacy full-screen theatre
+   remains only for ability/damage moments that are outside PR1. */
+.visual-effect.fx-summon,
+.visual-effect.fx-spell,
+.visual-effect.fx-artifact,
+.visual-effect.fx-terrain {
+  display: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hh-flight-card,
   .hh-arrival-ring,
