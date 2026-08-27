@@ -11,6 +11,7 @@ import MatchUiGuard from "./match-ui-guard";
 import MatchUiRuntime from "./match-ui-runtime";
 import OnlineMatchRuntime from "./online-match-runtime";
 import OnlineReconnectRuntime from "./online-reconnect-runtime";
+import GameGlossaryRuntime from "./game-glossary-runtime";
 import CardPreviewRuntime from "./card-preview-runtime";
 import PresentationEventBridge from "./presentation-event-bridge";
 import GamePresentationRuntime from "./game-presentation-runtime";
@@ -57,6 +58,7 @@ export default function RootLayout({
         <MatchUiRuntime />
         <OnlineMatchRuntime />
         <OnlineReconnectRuntime />
+        <GameGlossaryRuntime />
         <CardPreviewRuntime />
         <PresentationEventBridge />
         <GamePresentationRuntime />
