@@ -6,9 +6,9 @@ The presentation layer explains authoritative game transitions without owning th
 
 `app/presentation-event-bridge.tsx` is the application bridge. Local top-level command results arrive through the browser-only `hemsfell:rules-command-resolved` instrumentation facade in `app/rules-engine/engine.mjs`; the unchanged rules implementation itself lives in `engine-core.mjs`. Online presentation is built from `hemsfell:online-room-snapshot`, which `page.tsx` already emits from server room snapshots. The bridge associates a local Online command only when the HTTP response is successful and contains the authoritative game snapshot; polling/recovery revisions are presented as generic confirmed snapshot deltas instead of guessed commands.
 
-The bridge dispatches `hemsfell:presentation-action` with `{ before, after, command, trace?, commandId, revision? }`. Rejected Online commands never produce a resolved action. Priority bookkeeping and combat interaction commands (`passPriority`, attack declaration, blocker choice and the authoritative combat hit) are excluded because priority must remain immediately interactive and `CombatAnimation` owns combat presentation.
+The bridge dispatches `hemsfell:presentation-action` with `{ before, after, command, trace?, commandId, revision? }` only when the before/after pair contains a material game-state change. Opening a priority window or reserving a response cost therefore does not start a cinematic. When a later `passPriority` actually resolves a stacked/root action, the bridge recovers that resolved command from the authoritative pre-resolution priority state and presents the resulting transition. Combat declaration, blocker choice and combat damage remain excluded because `CombatAnimation` owns those interactions.
 
-The runtime waits for two animation frames after a confirmed transition before reading geometry, so animations use current `getBoundingClientRect()` values on desktop and mobile. Rules, priority and decisions never wait for animation frames or clip durations.
+Rejected Online commands never produce a resolved action. Rules, priority and decisions do not wait for animation frames or clip durations: the runtime receives the already-resolved state, waits for two animation frames only so React can paint it, and then reads current `getBoundingClientRect()` geometry.
 
 ## Layers and sequencing
 
@@ -23,6 +23,6 @@ The runtime serializes clips, deduplicates command ids and exposes `window.__hem
 
 `VisualEffect` remains for genuinely large ability/damage moments that have not migrated yet. Ordinary summon, spell, artifact and terrain overlays are visually retired by `game-presentation.css`; those plays now use physical card motion on the board.
 
-`CombatAnimation` remains the interaction UI for `declared`, `priority` and `choosing`, where a player may still respond or choose a blocker. PR1 deliberately excludes those combat commands from the generic presentation queue so it cannot delay priority or duplicate combat resolution.
+`CombatAnimation` remains the interaction UI for `declared`, `priority` and `choosing`, where a player may still respond or choose a blocker. PR1 deliberately excludes combat commands from the generic presentation queue so it cannot duplicate combat resolution.
 
 The presentation layers are owned by `GamePresentationRuntime` itself and are removed on runtime unmount. `MatchUiGuard` continues to clean the legacy match overlays and does not delete the persistent `hh-*` runtime layers while navigating inside the app.
