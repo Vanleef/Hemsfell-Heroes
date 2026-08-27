@@ -1,0 +1,26 @@
+name: Temporary workspace materialization
+
+on:
+  push:
+    branches:
+      - feat/web-card-game-quality-foundation
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Archive tracked workspace
+        run: git archive --format=tar HEAD | gzip -9 > hemsfell-workspace.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hemsfell-workspace-${{ github.sha }}
+          path: hemsfell-workspace.tar.gz
+          retention-days: 1
+          if-no-files-found: error
