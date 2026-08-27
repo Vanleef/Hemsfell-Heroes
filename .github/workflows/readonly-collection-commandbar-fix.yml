@@ -1,3 +1,4 @@
+# Temporary validation workflow; removed automatically after a successful build.
 name: Read-only collection and command bar fix
 
 on:
