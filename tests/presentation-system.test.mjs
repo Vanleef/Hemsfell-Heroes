@@ -62,6 +62,19 @@ test("guest online presentation mirrors nested priority ownership", () => {
   assert.match(bridge, /responder: flipOwner\(game\.pendingResponse\.responder\)/);
 });
 
+test("normal AI waits for presentation idle while priority keeps the core deadline", () => {
+  const facade = read("app/rules-engine/ai-system/runtime.ts");
+  const core = read("app/rules-engine/ai-system/runtime-core.ts");
+  assert.match(facade, /await waitForPresentationIdle\(\)/);
+  assert.match(facade, /hemsfell:presentation-idle/);
+  assert.match(facade, /PRESENTATION_IDLE_FAILSAFE_MS = 12000/);
+  assert.match(facade, /chooseAdvancedAIResponse/);
+  assert.doesNotMatch(facade, /boundedPrioritySearch\(/);
+  assert.match(core, /const PRIORITY_HARD_TIMEOUT_MS = 850/);
+  assert.match(core, /export async function chooseAdvancedAIResponse/);
+  assert.match(core, /boundedPrioritySearch\(chooseAdvancedAIAction/);
+});
+
 test("presentation runtime serializes confirmed before-after clips and exposes pacing signals", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
   assert.match(runtime, /await nextFrame\(\); await nextFrame\(\)/);
