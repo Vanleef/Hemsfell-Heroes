@@ -6,12 +6,24 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 
 test("presentation runtime is mounted after card preview and before the game page", () => {
   const layout = read("app/layout.tsx");
+  const glossary = layout.indexOf("<GameGlossaryRuntime />");
   const preview = layout.indexOf("<CardPreviewRuntime />");
   const bridge = layout.indexOf("<PresentationEventBridge />");
   const runtime = layout.indexOf("<GamePresentationRuntime />");
   const children = layout.indexOf("{children}");
-  assert.ok(preview >= 0 && bridge > preview && runtime > bridge && children > runtime);
+  assert.ok(glossary >= 0 && preview > glossary && bridge > preview && runtime > bridge && children > runtime);
   assert.ok(layout.indexOf('import "./game-presentation.css"') < layout.indexOf('import "./command-bar-fixes.css"'));
+});
+
+test("canonical glossary feeds the legacy semantic spans used by card preview", () => {
+  const glossary = read("app/game-glossary.ts");
+  const runtime = read("app/game-glossary-runtime.tsx");
+  assert.match(glossary, /export function gameGlossaryEntry/);
+  assert.match(runtime, /import \{ gameGlossaryEntry \} from "\.\/game-glossary"/);
+  assert.match(runtime, /\.keyword-term,\.keyword-badge,\[data-keyword\],\[data-status\]/);
+  assert.match(runtime, /element\.dataset\.tip = entry\.description/);
+  assert.match(runtime, /element\.dataset\.glossaryTone = entry\.tone/);
+  assert.match(runtime, /element\.removeAttribute\("title"\)/);
 });
 
 test("rules core stays isolated behind a browser instrumentation facade", () => {
