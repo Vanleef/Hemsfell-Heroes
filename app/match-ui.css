@@ -377,7 +377,7 @@ body > [data-floating-ui-portal] { position: relative; z-index: 2147483000; }
 .screen-game .game-bar > button {
   min-width: 0 !important;
   padding: clamp(.14rem, .3cqh, .27rem) clamp(.25rem, .48cqw, .5rem) !important;
-  font-size: clamp(.46rem, min(.62cqw, .98cqh), .68rem) !important;
+  font-size: clamp(.36rem, min(.62cqw, .98cqh), .68rem) !important;
   white-space: nowrap !important;
 }
 .screen-game .game-bar > button:last-child {
