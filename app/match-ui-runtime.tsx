@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import CardPreviewRuntime from "./card-preview-runtime";
 import { RemoteCardArt } from "./remote-card-art";
 
 /*
@@ -447,5 +446,5 @@ export default function MatchUiRuntime() {
   useHeroInspectorCanonicalizer();
   useResponseWindowAnchor();
 
-  return <><CardPreviewRuntime/><MatchResultHeroPortal/></>;
+  return <MatchResultHeroPortal/>;
 }

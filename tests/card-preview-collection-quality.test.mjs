@@ -23,11 +23,14 @@ test("card preview uses Floating UI middleware and a body-level portal", () => {
 });
 
 test("card preview runtime is mounted globally in the root layout", async () => {
-  const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  const [layout, matchRuntime] = await Promise.all([
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/match-ui-runtime.tsx", import.meta.url), "utf8"),
+  ]);
   assert.match(layout, /import CardPreviewRuntime from ["']\.\/card-preview-runtime["']/);
   assert.match(layout, /<CardPreviewRuntime\s*\/>/);
+  assert.doesNotMatch(matchRuntime, /CardPreviewRuntime/);
 });
-
 test("Floating UI coordinates are not overridden by tooltip CSS", () => {
   const floatingBlock = matchCss.match(/\.card-preview-floating\.card-tooltip \{([\s\S]*?)\n\}/)?.[1] ?? "";
   assert.ok(floatingBlock, "expected floating preview CSS block");
