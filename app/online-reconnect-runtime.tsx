@@ -11,10 +11,9 @@ function activeRoomSession() {
 /**
  * The match page sends `disconnect` on pagehide. A normal remount already sends
  * `resume`, but browser back/forward cache can restore the same React tree
- * without remounting it. This global bridge resumes idempotently on every
- * browser signal that means the player is actually back. The authenticated GET
- * is also a server heartbeat now, so even if an explicit resume POST races with
- * polling, the next heartbeat clears stale disconnected state for both clients.
+ * without remounting it. This global bridge resumes idempotently on signals
+ * that mean the player actively returned. Ordinary polling is intentionally
+ * not a resume signal, so an idle background tab cannot cancel its own grace.
  */
 export default function OnlineReconnectRuntime() {
   const inFlight = useRef(false);
@@ -38,7 +37,7 @@ export default function OnlineReconnectRuntime() {
           await fetch(path, { cache: "no-store", headers: { authorization: `Bearer ${session.token}` } });
         }
       } catch {
-        // The normal authenticated room poll is itself a heartbeat and retries.
+        // The visible-page recovery signals retry when connectivity returns.
       } finally {
         inFlight.current = false;
       }

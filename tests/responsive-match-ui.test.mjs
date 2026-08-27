@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [css, page] = await Promise.all([
+const [css, page, priorityUi] = await Promise.all([
   readFile(new URL("../app/match-ui.css", import.meta.url), "utf8"),
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/match/priority-ui.tsx", import.meta.url), "utf8"),
 ]);
 
 test("lower match resolutions use two-axis responsive sizing", () => {
@@ -24,7 +25,8 @@ test("match chrome and card collections have explicit responsive bounds", () => 
 });
 
 test("priority controls use the requested Assisted and Manual labels", () => {
-  assert.match(page, /Modo: Assistido/);
-  assert.match(page, /Modo: Manual/);
-  assert.doesNotMatch(page, /Resposta: Full Control/);
+  assert.match(page, /PriorityControlToggle/);
+  assert.match(priorityUi, /Modo: Assistido/);
+  assert.match(priorityUi, /Modo: Manual/);
+  assert.doesNotMatch(page + priorityUi, /Resposta: Full Control/);
 });

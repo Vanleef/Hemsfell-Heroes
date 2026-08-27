@@ -14,6 +14,60 @@
 @import "./target-banner-anchor.css";
 @import "./hero-inspector-fix.css";
 
+/* === GLOBAL CARD PREVIEW ================================================= */
+/* Inline copies are semantic sources only. Floating UI renders the visible
+   tooltip directly under body, outside every board/list stacking context. */
+.original-card[data-card-preview="true"] > .card-tooltip,
+.original-card[data-card-preview="true"]:hover > .card-tooltip,
+.original-card[data-card-preview="true"]:focus-visible > .card-tooltip {
+  display: none !important;
+}
+
+body > [data-floating-ui-portal] { position: relative; z-index: 2147483000; }
+.card-preview-floating.card-tooltip {
+  display: flex !important;
+  position: fixed !important;
+  width: min(16rem, var(--card-preview-available-width, calc(100dvw - 1rem))) !important;
+  max-width: calc(100dvw - 1rem) !important;
+  max-height: min(32rem, var(--card-preview-available-height, calc(100dvh - 1rem))) !important;
+  margin: 0 !important;
+  padding: clamp(.65rem, 1.15vw, .9rem) !important;
+  gap: clamp(.3rem, .65vw, .55rem) !important;
+  overflow: auto !important;
+  border: 1px solid #e1ba6588 !important;
+  border-radius: clamp(.45rem, .8vw, .72rem) !important;
+  background: linear-gradient(145deg, #101927fa, #060b12fc) !important;
+  box-shadow: 0 1rem 3rem #000c, 0 0 0 1px #ffffff10 !important;
+  color: #f5ecd8 !important;
+  filter: none !important;
+  z-index: 2147483000 !important;
+  pointer-events: none !important;
+  isolation: isolate !important;
+}
+.card-preview-floating.is-expanded {
+  display: grid !important;
+  grid-template-columns: minmax(7.2rem, 11rem) minmax(10rem, 17rem) !important;
+  width: min(30rem, var(--card-preview-available-width, calc(100dvw - 1rem))) !important;
+  align-items: center !important;
+  pointer-events: auto !important;
+}
+.card-preview-art { width: 100%; min-width: 0; aspect-ratio: 5 / 7; }
+.card-preview-art .remote-card-art { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: .55rem; }
+.card-preview-copy { display: flex; min-width: 0; flex-direction: column; gap: .4rem; text-align: left; }
+.card-preview-floating > .card-preview-copy > b { color: #fff5d2; font: 900 clamp(.78rem, 1.15vw, 1rem)/1.15 system-ui; }
+.card-preview-floating > .card-preview-copy > em { color: #e6b95a; font: 800 clamp(.64rem, .9vw, .78rem)/1.2 system-ui; }
+.card-preview-floating > .card-preview-copy > span { color: #d2dce5; font: 600 clamp(.65rem, .9vw, .8rem)/1.45 system-ui; }
+.card-preview-close { position: absolute; top: .35rem; right: .35rem; width: 2rem; height: 2rem; border: 1px solid #ffffff35; border-radius: 50%; background: #070c13e8; color: white; font: 800 1.1rem/1 system-ui; }
+
+@media (max-width: 42rem), (pointer: coarse) {
+  .card-preview-floating.is-compact { display: none !important; }
+  .card-preview-floating.is-expanded {
+    grid-template-columns: minmax(6.4rem, 42vw) minmax(8rem, 1fr) !important;
+    width: min(94dvw, var(--card-preview-available-width, 94dvw)) !important;
+    max-height: min(88dvh, var(--card-preview-available-height, 88dvh)) !important;
+  }
+}
+
 /* === HERO INSPECTOR CLEANUP === */
 /* Final authority for the in-match hero inspector.
    Keep only the canonical structured HeroGuide and suppress any legacy
@@ -318,12 +372,12 @@
 .screen-game .game-content.hs-board > .game-bar {
   gap: clamp(.1rem, min(.3cqw, .55cqh), .38rem) !important;
   padding-inline: clamp(.22rem, .55cqw, .62rem) !important;
-  font-size: clamp(.34rem, min(.49cqw, .82cqh), .58rem) !important;
+  font-size: clamp(.5rem, min(.68cqw, 1.05cqh), .74rem) !important;
 }
 .screen-game .game-bar > button {
   min-width: 0 !important;
   padding: clamp(.14rem, .3cqh, .27rem) clamp(.25rem, .48cqw, .5rem) !important;
-  font-size: clamp(.32rem, min(.47cqw, .78cqh), .54rem) !important;
+  font-size: clamp(.46rem, min(.62cqw, .98cqh), .68rem) !important;
   white-space: nowrap !important;
 }
 .screen-game .game-bar > button:last-child {
@@ -334,7 +388,7 @@
 .screen-game .turn-owner :is(span,b),
 .screen-game .resource-panel :is(span,strong,small),
 .screen-game .match-clock :is(span,b) {
-  font-size: clamp(.3rem, min(.44cqw, .72cqh), .52rem) !important;
+  font-size: clamp(.44rem, min(.58cqw, .92cqh), .64rem) !important;
 }
 .screen-game .resource-summary { gap: clamp(.08rem, .2cqw, .22rem) !important; }
 .screen-game .resource-panel { padding: clamp(.09rem, .2cqh, .18rem) clamp(.16rem, .3cqw, .3rem) !important; }
@@ -346,19 +400,19 @@
 .screen-game .phase-track i {
   width: clamp(.64rem, min(.92cqw, 1.55cqh), .92rem) !important;
   height: clamp(.64rem, min(.92cqw, 1.55cqh), .92rem) !important;
-  font-size: clamp(.27rem, min(.39cqw, .64cqh), .43rem) !important;
+  font-size: clamp(.36rem, min(.48cqw, .76cqh), .5rem) !important;
 }
-.screen-game .phase-track span { font-size: clamp(.28rem, min(.42cqw, .7cqh), .48rem) !important; }
+.screen-game .phase-track span { font-size: clamp(.41rem, min(.54cqw, .86cqh), .58rem) !important; }
 
 .screen-game .game-content.hs-board > .opponent-hand {
   width: min(33cqw, 100%) !important;
   gap: clamp(.02rem, .1cqw, .12rem) !important;
 }
 .screen-game .game-content.hs-board > .opponent-hand > :is(.official-card-back,.opponent-card-back,.card-frame) {
-  flex: 1 1 auto !important;
-  width: clamp(.95rem, min(1.72cqw, 3.75cqh), 1.9rem) !important;
+  flex: 0 1 clamp(1.45rem, min(3.45cqw, 6.4cqh), 3rem) !important;
+  width: clamp(1.45rem, min(3.45cqw, 6.4cqh), 3rem) !important;
   min-width: 0 !important;
-  max-width: none !important;
+  max-width: 3rem !important;
   height: auto !important;
   aspect-ratio: var(--hh-card-ratio) !important;
 }

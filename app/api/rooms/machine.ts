@@ -3,7 +3,9 @@ import { reconcileOnlineClocks } from "./online-clock.mjs";
 import { executeOnlineCommand } from "../../rules-engine/online-priority-engine.mjs";
 import { listPendingIndomitableAttackers } from "../../rules-engine/combat.mjs";
 import { shouldAutoPass } from "../../rules-engine/priority.mjs";
+import { chooseAIDecision } from "../../rules-engine/ai.mjs";
 import { logOnlineDiagnostic } from "./online-diagnostics.mjs";
+import type { UserDeck } from "../../user-deck.mjs";
 
 /* `executeOnlineCommand` is the Online timing wrapper around the authoritative
  * rules-engine executeCommand path; room clients still never mutate rules
@@ -23,6 +25,8 @@ export type Participant = {
   token: string;
   accepted: boolean;
   deckLocked: boolean;
+  /** Private deck payload validated server-side. roomView never exposes it. */
+  userDeck?: UserDeck | null;
   mulliganDone: boolean;
   mulliganCount: number;
   mulliganDeadline?: number | null;
@@ -33,6 +37,20 @@ export type Participant = {
    * client recover the participant token after a concurrent room write or a
    * successful response that was lost in transit. */
   joinRequestId?: string;
+  /** Last mulligan decision accepted for this participant. A stable request
+   * id makes retries safe even when the committed response is lost. */
+  lastMulliganRequestId?: string;
+  /** Idempotency keys for lobby mutations whose successful response may be
+   * lost while the other participant advances the room state. */
+  lastSelectRequestId?: string;
+  lastChooseStartRequestId?: string;
+  /** Online inactivity is based on accepted gameplay commands, never on
+   * background-tab heartbeats (which browsers are free to throttle). */
+  turnHadAction?: boolean;
+  noActionTimeouts?: number;
+  lastNoActionTimeoutRound?: number | null;
+  probationRound?: number | null;
+  disconnectAfterOpponentMaintenance?: boolean;
 };
 
 export type Room = {
@@ -68,7 +86,7 @@ export function sanitizeSettings(value: Partial<MatchSettings> | Record<string, 
 }
 
 export function participant(token: string, accepted = true): Participant {
-  return { heroId: null, token, accepted, deckLocked: false, mulliganDone: false, mulliganCount: 0, disconnectedAt: null, lastSeenAt: Date.now(), recentCommandIds: [] };
+  return { heroId: null, token, accepted, deckLocked: false, userDeck: null, mulliganDone: false, mulliganCount: 0, disconnectedAt: null, lastSeenAt: Date.now(), recentCommandIds: [], turnHadAction: false, noActionTimeouts: 0, lastNoActionTimeoutRound: null, probationRound: null, disconnectAfterOpponentMaintenance: false };
 }
 
 export function bothDecksLocked(room: Room) {
@@ -133,6 +151,68 @@ function finishDisconnectedMatch(room: Room, loser: 0 | 1) {
   room.status = "finished";
 }
 
+const roleForOwner = (owner: 0 | 1): RoomRole => owner === 0 ? "host" : "guest";
+
+function participantForOwner(room: Room, owner: 0 | 1) {
+  return room[roleForOwner(owner)];
+}
+
+/** Apply turn-boundary consequences after an authoritative transition. The
+ * second chance is deliberately short and starts only when that player's next
+ * turn actually begins. A pending inactivity disconnect is committed only
+ * after the opponent completes Maintenance. */
+function reconcileInactivityAfterTransition(room: Room, before: any, now = Date.now()) {
+  const after = room.game;
+  if (!after) return;
+  const turnChanged = before.active !== after.active || before.round !== after.round;
+  if (turnChanged) {
+    const activeParticipant = participantForOwner(room, after.active as 0 | 1);
+    if (activeParticipant) {
+      activeParticipant.turnHadAction = false;
+      if ((activeParticipant.noActionTimeouts ?? 0) === 1) {
+        activeParticipant.probationRound = after.round;
+        after.turnDeadline = now + 15_000;
+        delete after.turnTimeRemainingMs;
+        after.log = [{ id: crypto.randomUUID(), text: "Último aviso: este turno será encerrado em 15 segundos se nenhuma ação for realizada.", tone: "danger" }, ...(after.log ?? [])];
+      } else activeParticipant.probationRound = null;
+    }
+  }
+
+  const maintenanceCompleted = before.active === after.active && before.phase === "manutencao" && after.phase !== "manutencao";
+  if (!maintenanceCompleted) return;
+  const absentOwner = (1 - after.active) as 0 | 1;
+  const absent = participantForOwner(room, absentOwner);
+  if (!absent?.disconnectAfterOpponentMaintenance || absent.disconnectedAt) return;
+  absent.disconnectAfterOpponentMaintenance = false;
+  absent.disconnectedAt = now;
+  room.pauseStartedAt = now;
+  after.log = [{ id: crypto.randomUUID(), text: "O jogador inativo foi desconectado e tem 1 minuto para retornar.", tone: "danger" }, ...(after.log ?? [])];
+  logOnlineDiagnostic(room, "inactivity-disconnect", { role: roleForOwner(absentOwner) });
+}
+
+function recordAcceptedPlayerAction(room: Room, owner: 0 | 1, before: any) {
+  if (before.active !== owner) return;
+  const current = participantForOwner(room, owner);
+  if (!current) return;
+  current.turnHadAction = true;
+  current.noActionTimeouts = 0;
+  current.lastNoActionTimeoutRound = null;
+  current.probationRound = null;
+  current.disconnectAfterOpponentMaintenance = false;
+}
+
+function recordNoActionTurnTimeout(room: Room, owner: 0 | 1, round: number) {
+  const current = participantForOwner(room, owner);
+  if (!current || current.turnHadAction || current.lastNoActionTimeoutRound === round) return false;
+  current.lastNoActionTimeoutRound = round;
+  current.noActionTimeouts = Math.min(2, (current.noActionTimeouts ?? 0) + 1);
+  if (current.noActionTimeouts >= 2) {
+    current.disconnectAfterOpponentMaintenance = true;
+    current.probationRound = null;
+  }
+  return true;
+}
+
 export function applyTimeout(room: Room) {
   const now = Date.now();
   if (room.game && (room.status === "mulligan" || room.status === "started")) {
@@ -177,6 +257,14 @@ export function applyTimeout(room: Room) {
     if (room.game.priority) room.game.priority.deadline = room.game.combatAction.deadline;
     seededDeadline = true;
   }
+  if (room.game.pendingDecision && !Number.isFinite(Number(room.game.pendingDecision.deadline))) {
+    room.game.pendingDecision.deadline = now + room.settings.responseSeconds * 1000;
+    seededDeadline = true;
+  }
+  if (room.game.pendingReposition && !Number.isFinite(Number(room.game.pendingReposition.deadline))) {
+    room.game.pendingReposition.deadline = now + room.settings.responseSeconds * 1000;
+    seededDeadline = true;
+  }
 
   if (room.game.pendingResponse) {
     if (room.game.pendingResponse.deadline > now) return seededDeadline;
@@ -186,6 +274,7 @@ export function applyTimeout(room: Room) {
       const result = executeOnlineCommand(before, { type: "passPriority", owner, auto: true }, { priority: true });
       room.game = result.state;
       reconcileOnlineClocks(before, room.game, room.settings, now);
+      reconcileInactivityAfterTransition(room, before, now);
     } catch { return seededDeadline; }
     room.game.events = (room.game.events ?? 0) + 1;
     room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de resposta terminou; a prioridade foi passada automaticamente.", tone: "response" }, ...(room.game.log ?? [])];
@@ -201,6 +290,7 @@ export function applyTimeout(room: Room) {
       const result = executeOnlineCommand(before, { type: "selectDefender", owner, targetHero: true, auto: true }, { priority: true });
       room.game = result.state;
       reconcileOnlineClocks(before, room.game, room.settings, now);
+      reconcileInactivityAfterTransition(room, before, now);
     } catch { return seededDeadline; }
     room.game.events = (room.game.events ?? 0) + 1;
     room.game.log = [{ id: crypto.randomUUID(), text: "O tempo para bloquear terminou; este ataque seguiu sem bloqueio.", tone: "combat" }, ...(room.game.log ?? [])];
@@ -208,23 +298,65 @@ export function applyTimeout(room: Room) {
     return true;
   }
 
-  /* Interactive target/effect decisions intentionally pause the action clock.
-     They are never allowed to fall through to a phase timeout underneath the
-     decision that owns input. */
-  if (room.game.pendingDecision || room.game.pendingReposition) return seededDeadline;
+  if (room.game.pendingDecision) {
+    if (room.game.pendingDecision.deadline > now) return seededDeadline;
+    const before = room.game;
+    const owner = before.pendingDecision.owner ?? before.pendingDecision.context?.decisionOwner;
+    const command = Number.isInteger(owner) ? chooseAIDecision(before, owner, "Normal") : null;
+    if (!command) return seededDeadline;
+    try {
+      const result = executeOnlineCommand(before, { ...command, auto: true }, { priority: true });
+      room.game = result.state;
+      reconcileOnlineClocks(before, room.game, room.settings, now);
+      reconcileInactivityAfterTransition(room, before, now);
+    } catch { return seededDeadline; }
+    room.game.events = (room.game.events ?? 0) + 1;
+    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo da escolha terminou; o jogo aplicou uma opção válida automaticamente.", tone: "response" }, ...(room.game.log ?? [])];
+    logOnlineDiagnostic(room, "decision-timeout", { role: owner === 0 ? "host" : "guest", commandType: "resolveDecision", auto: true });
+    return true;
+  }
+
+  if (room.game.pendingReposition) {
+    if (room.game.pendingReposition.deadline > now) return seededDeadline;
+    const before = room.game;
+    const owner = before.pendingReposition.activeOwner;
+    if (!Number.isInteger(owner)) return seededDeadline;
+    try {
+      const result = executeOnlineCommand(before, { type: "confirmReposition", owner, auto: true }, { priority: true });
+      room.game = result.state;
+      reconcileOnlineClocks(before, room.game, room.settings, now);
+      reconcileInactivityAfterTransition(room, before, now);
+    } catch { return seededDeadline; }
+    room.game.events = (room.game.events ?? 0) + 1;
+    room.game.log = [{ id: crypto.randomUUID(), text: "O tempo de reorganização terminou; as posições atuais foram confirmadas.", tone: "phase" }, ...(room.game.log ?? [])];
+    logOnlineDiagnostic(room, "reposition-timeout", { role: owner === 0 ? "host" : "guest", commandType: "confirmReposition", auto: true });
+    return true;
+  }
 
   if (room.game.turnDeadline && room.game.turnDeadline <= now) {
-    if (!room.game.combatAction && ["principal", "combate", "fim"].includes(room.game.phase)) {
+    if (!room.game.combatAction && ["manutencao", "principal", "combate", "fim"].includes(room.game.phase)) {
       try {
         const before = room.game;
         const owner = before.active;
+        const noActionTimeout = !participantForOwner(room, owner)?.turnHadAction;
         const mandatory = before.phase === "combate" ? listPendingIndomitableAttackers(before, owner) : [];
-        const command = mandatory.length
+        const command = before.phase === "manutencao" && noActionTimeout
+          ? { type: "skipMaintenanceChoice", owner, auto: true }
+          : before.phase === "manutencao"
+          ? { type: "maintenanceChoice", owner, extraEnergy: false, auto: true }
+          : mandatory.length
           ? { type: "declareAttack", owner, attackerId: mandatory[0].uid || mandatory[0].id, auto: true }
           : { type: "advancePhase", owner, auto: true };
         const result = executeOnlineCommand(before, command, { priority: true });
         room.game = result.state;
         reconcileOnlineClocks(before, room.game, room.settings, now);
+        if (noActionTimeout) recordNoActionTurnTimeout(room, owner, before.round);
+        reconcileInactivityAfterTransition(room, before, now);
+        /* A turn timeout can end a phase and open an ordinary priority
+           checkpoint. Resolve checkpoints with no legal Assisted response in
+           this same server transaction so browsers never render a transient
+           empty window and then race each other with passPriority. */
+        drainEmptyAssistedPriority(room, [...(result.trace || [])]);
         room.game.events = (room.game.events ?? 0) + 1;
         const forcedAttack = command.type === "declareAttack";
         room.game.log = [{ id: crypto.randomUUID(), text: forcedAttack ? "O tempo da etapa terminou; uma criatura com Indomável iniciou seu ataque obrigatório." : "O tempo da etapa terminou; foi solicitada a passagem pelo fluxo normal de prioridade.", tone: forcedAttack ? "combat" : "phase" }, ...(room.game.log ?? [])];
@@ -245,6 +377,7 @@ export function applySafeAutoPass(room: Room, role: RoomRole, control: "assisted
   const result = executeOnlineCommand(before, { type: "passPriority", owner, auto: true }, { priority: true });
   room.game = result.state;
   reconcileOnlineClocks(before, room.game, room.settings);
+  reconcileInactivityAfterTransition(room, before);
   room.revision++;
   return true;
 }
@@ -279,13 +412,14 @@ const AUTHORITATIVE_COMMANDS = new Set(["playCard", "activate", "activateHero", 
  * ordinary response handoffs without creating extra room revisions. */
 function drainEmptyAssistedPriority(room: Room, trace: string[] = []) {
   let guard = 0;
-  while (room.game?.pendingResponse && guard++ < 4) {
+  while (room.game?.pendingResponse && !reconnectPause(room) && guard++ < 4) {
     const owner = room.game.pendingResponse.responder as 0 | 1;
     if (!shouldAutoPass(room.game, owner, "assisted")) break;
     const before = room.game;
     const result = executeOnlineCommand(before, { type: "passPriority", owner, auto: true }, { priority: true });
     room.game = result.state;
     reconcileOnlineClocks(before, room.game, room.settings);
+    reconcileInactivityAfterTransition(room, before);
     trace.push(...(result.trace || []), "online-priority:server-assisted-auto-pass");
   }
   return trace;
@@ -339,6 +473,8 @@ export function applyRulesCommand(room: Room, role: RoomRole, rawCommand: Record
     const result = executeOnlineCommand(before, command, { priority: true });
     room.game = result.state;
     reconcileOnlineClocks(before, room.game, room.settings);
+    recordAcceptedPlayerAction(room, owner, before);
+    reconcileInactivityAfterTransition(room, before);
     const trace = drainEmptyAssistedPriority(room, [...(result.trace || [])]);
     if (room.game.winner === 0 || room.game.winner === 1) room.status = "finished";
     room.revision++;

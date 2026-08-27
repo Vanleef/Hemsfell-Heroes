@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feat/web-card-game-quality-foundation
       - fix/cards_mechanics
       - optimization-cleanup
       - ai/advanced-opponent-system
@@ -15,6 +16,7 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -56,7 +58,9 @@ jobs:
         # JS card engine, whose card payloads are not yet modeled end-to-end.
         # Strict TypeScript remains mandatory; only explicit-any style warnings
         # at that boundary are relaxed here.
-        run: npx eslint app/rules-engine/ai-system/*.ts scripts/ai-calibration.ts scripts/ai-selfplay.ts tests/advanced-ai.test.mjs --rule '@typescript-eslint/no-explicit-any: off'
+        run: >-
+          npx eslint app/rules-engine/ai-system/*.ts scripts/ai-calibration.ts scripts/ai-selfplay.ts tests/advanced-ai.test.mjs
+          --rule '@typescript-eslint/no-explicit-any: off'
 
       - name: Report repository-wide legacy lint debt
         continue-on-error: true

@@ -88,6 +88,13 @@ const emitDebug = (detail: Record<string, unknown>) => {
 
 const actionKey = (action: AIAction | null) => action ? JSON.stringify(action) : "";
 const actionPriority = (action: AIAction) => action.type === "attack" ? 0 : action.type === "activate" || action.type === "activateHero" ? 1 : action.type === "playCard" ? 2 : action.type === "resolveDecision" ? 3 : action.type === "evolveHero" ? 4 : action.type === "passPriority" ? 5 : 6;
+const publiclyRepresentedSweep = (state: AIGameState, owner: number): boolean => {
+  const opponent = state.players[1 - owner];
+  return (opponent?.hand || []).some((card: any) => {
+    const visible = !!card?.revealed || (Array.isArray(card?.revealedTo) && card.revealedTo.includes(owner));
+    return visible && /todas? .*criaturas|cada criatura|todas? .*unidades/.test(cardText(card));
+  });
+};
 const adaptationStrength = (difficulty: AIDifficulty) => difficulty === "Master" ? 1 : difficulty === "Expert" ? 0.78 : difficulty === "Hard" ? 0.55 : difficulty === "Normal" ? 0.28 : 0;
 
 const prioritySearchBudget = (base: DifficultyConfig, difficulty: AIDifficulty): DifficultyConfig => {
@@ -183,15 +190,23 @@ export class AIController {
             return { action, score, next };
           } catch { return { action, score: -Infinity, next: null as AIGameState | null }; }
         }).sort((a, b) => b.score - a.score);
-        const best = ranked[0];
-        const mistake = this.random() < config.intentionalErrorRate;
         const beforeBoard = planningState.players[owner]?.board?.length || 0;
-        const mistakeWindow = Math.max(5, Math.abs(Number(best?.score || 0)) * 0.14);
-        const plausibleMistakes = ranked.slice(1).filter((entry) => {
-          if (!entry.next || !Number.isFinite(entry.score) || entry.score < Number(best?.score || -Infinity) - mistakeWindow) return false;
+        const publicSweepThreat = publiclyRepresentedSweep(state, owner);
+        const isRecklessOverextension = (entry: { action: AIAction; score: number; next: AIGameState | null }) => {
+          if (!entry.next) return false;
           const afterBoard = entry.next.players[owner]?.board?.length || 0;
-          const recklessOverextension = afterBoard > beforeBoard && !this.risk.shouldOverextend(planningState, owner, personality);
-          return !recklessOverextension;
+          return afterBoard > beforeBoard && !this.risk.shouldOverextend(planningState, owner, personality);
+        };
+        // Easy may make plausible human mistakes, but it must not rank a known
+        // board-clear punt as its baseline choice. Hidden sweep hypotheses stay
+        // probabilistic; this hard guard only applies to a publicly revealed one.
+        const baselineRanked = publicSweepThreat ? ranked.filter((entry) => !isRecklessOverextension(entry)) : ranked;
+        const best = baselineRanked[0] || ranked[0];
+        const mistake = this.random() < config.intentionalErrorRate;
+        const mistakeWindow = Math.max(5, Math.abs(Number(best?.score || 0)) * 0.14);
+        const plausibleMistakes = ranked.filter((entry) => actionKey(entry.action) !== actionKey(best?.action)).filter((entry) => {
+          if (!entry.next || !Number.isFinite(entry.score) || entry.score < Number(best?.score || -Infinity) - mistakeWindow) return false;
+          return !isRecklessOverextension(entry);
         });
         const picked = mistake && plausibleMistakes.length
           ? plausibleMistakes[Math.floor(this.random() * plausibleMistakes.length)]

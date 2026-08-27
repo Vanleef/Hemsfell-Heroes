@@ -1,5 +1,7 @@
 import rawCards from "../../cards.generated.json";
 import { compileCard } from "../../rules-engine/compiler.mjs";
+import { deckRanges, disabledDeckCardIds, expandUserDeckMain, removedCatalogPages, resolveUserDeckExtra, suppliedDeckPages, validateUserDeck } from "../../user-deck.mjs";
+import type { UserDeck } from "../../user-deck.mjs";
 
 /**
  * Server-owned Online match bootstrap.
@@ -21,43 +23,13 @@ type Card = {
   [key: string]: unknown;
 };
 
-type DeckId = "gimble" | "goblin" | "uruk" | "tifon" | "saymon" | "tessalia" | "quarion" | "rasmus" | "ngoro" | "zayan" | "natureza";
+type DeckId = keyof typeof deckRanges;
 
-const removedCatalogPages = new Set([149, 200, 201, 203, 204, 205, 207, 209, 210]);
-const disabledDeckCardIds = new Set(["p200", "p201", "p203", "p206", "p207", "p209", "p210"]);
 const cards = (rawCards as Card[])
   .filter((card) => !removedCatalogPages.has(card.page))
   .map((card) => compileCard(card.page === 252
     ? { ...card, type: "Feitiço", tags: [...new Set([...(card.tags || []), "Acelerado"])] }
     : card) as Card);
-
-const deckRanges: Record<DeckId, { start: number; end: number }> = {
-  gimble: { start: 3, end: 25 },
-  goblin: { start: 27, end: 49 },
-  uruk: { start: 55, end: 109 },
-  tifon: { start: 111, end: 128 },
-  saymon: { start: 130, end: 151 },
-  tessalia: { start: 153, end: 179 },
-  quarion: { start: 181, end: 210 },
-  rasmus: { start: 212, end: 254 },
-  ngoro: { start: 256, end: 272 },
-  zayan: { start: 274, end: 290 },
-  natureza: { start: 292, end: 309 },
-};
-
-/* Canonical testing/gameplay lists. These mirror the deck definitions used by
- * the client collection, but the randomization itself happens only here. */
-const suppliedDeckPages: Partial<Record<DeckId, Array<[number, number]>>> = {
-  gimble: [[3,3],[4,3],[5,3],[6,3],[7,3],[8,3],[9,2],[10,2],[11,2],[12,3],[13,3],[14,2],[15,3],[17,3],[18,2],[16,2],[20,3],[21,2],[22,2]],
-  goblin: [[28,2],[29,3],[27,3],[30,2],[33,2],[32,2],[31,3],[34,3],[35,3],[36,3],[48,3],[42,3],[43,3],[44,3],[45,3],[46,3],[47,2],[41,3]],
-  uruk: [[77,3],[78,3],[76,2],[80,2],[79,3],[64,2],[69,2],[55,3],[56,3],[68,3],[67,2],[63,2],[61,3],[65,2],[57,2],[75,2],[62,2],[58,1],[66,1],[60,2],[70,2],[59,2]],
-  tifon: [[111,3],[112,3],[114,3],[113,3],[115,3],[116,3],[117,3],[118,3],[119,2],[120,2],[125,3],[122,3],[123,3],[121,3],[124,3],[127,2],[126,2],[128,2]],
-  saymon: [[130,3],[131,3],[132,3],[133,3],[135,2],[134,3],[136,3],[138,2],[137,3],[140,3],[139,3],[145,3],[146,2],[143,2],[144,3],[142,2],[147,2],[141,2],[148,2]],
-  tessalia: [[164,2],[165,2],[166,2],[167,3],[171,3],[169,2],[168,2],[172,3],[173,2],[174,2],[175,2],[176,2],[158,2],[161,2],[157,2],[160,2],[162,2],[159,2],[156,2],[154,2],[153,2],[155,2],[163,2]],
-  quarion: [[184,3],[189,3],[186,3],[188,3],[183,3],[190,3],[187,3],[185,3],[182,2],[193,2],[197,2],[194,2],[196,2],[195,2],[192,2],[153,2],[150,2],[151,3],[191,2],[181,2]],
-  rasmus: [[221,3],[245,3],[244,2],[217,3],[215,3],[246,3],[247,3],[216,3],[214,2],[250,2],[225,3],[249,3],[252,3],[234,3],[254,2],[212,1],[229,3],[251,2],[235,2]],
-  ngoro: [[256,3],[257,3],[260,3],[259,3],[262,3],[258,3],[261,3],[264,3],[263,3],[266,3],[265,3],[269,3],[267,3],[268,3],[270,3],[271,2],[272,2]],
-};
 
 const uid = () => globalThis.crypto.randomUUID();
 const secureIndex = (maxExclusive: number) => {
@@ -87,7 +59,14 @@ const poolFor = (id: DeckId) => {
     : allFor(id).filter((card) => !card.imageCard && !disabledDeckCardIds.has(card.id));
 };
 const extraFor = (id: DeckId) => allFor(id).filter((card) => card.imageCard && !disabledDeckCardIds.has(card.id) && (id !== "uruk" || [71,72,73,74,81].includes(card.page)));
-const buildDeck = (id: DeckId) => {
+const resolveConfiguredDeck = (id: DeckId, candidate?: UserDeck | null): UserDeck | null => {
+  if (!candidate) return null;
+  const validation = validateUserDeck(candidate, cards);
+  if (!validation.ok || !validation.deck || validation.deck.heroId !== id) throw new Error("invalid deck");
+  return validation.deck;
+};
+const buildDeck = (id: DeckId, configured: UserDeck | null = null) => {
+  if (configured) return expandUserDeckMain(configured, cards, (cardId, copy) => `${cardId}-${id}-${copy}-${uid()}`) as Card[];
   const supplied = suppliedDeckPages[id];
   if (supplied) return supplied.flatMap(([page, quantity]) => {
     const card = cards.find((candidate) => candidate.page === page);
@@ -107,8 +86,9 @@ const buildDeck = (id: DeckId) => {
   return output;
 };
 
-const makePlayer = (heroId: DeckId, startingLife: number) => {
-  const deck = shuffle(buildDeck(heroId));
+const makePlayer = (heroId: DeckId, startingLife: number, userDeck?: UserDeck | null) => {
+  const configured = resolveConfiguredDeck(heroId, userDeck);
+  const deck = shuffle(buildDeck(heroId, configured));
   return {
     heroId,
     level: 1,
@@ -121,7 +101,7 @@ const makePlayer = (heroId: DeckId, startingLife: number) => {
     energy: 0,
     reserve: 0,
     deck: deck.slice(7),
-    extraDeck: structuredClone(extraFor(heroId)),
+    extraDeck: configured ? resolveUserDeckExtra(configured, cards) : structuredClone(extraFor(heroId)),
     hand: deck.slice(0, 7),
     board: [],
     support: [],
@@ -147,11 +127,11 @@ const makePlayer = (heroId: DeckId, startingLife: number) => {
   };
 };
 
-export function createInitialOnlineGame(hostHeroId: string, guestHeroId: string, active: 0 | 1, startingLife: number) {
+export function createInitialOnlineGame(hostHeroId: string, guestHeroId: string, active: 0 | 1, startingLife: number, hostDeck?: UserDeck | null, guestDeck?: UserDeck | null) {
   if (!(hostHeroId in deckRanges) || !(guestHeroId in deckRanges)) throw new Error("invalid deck");
   const life = Math.max(1, Math.round(Number(startingLife) || 30));
   return {
-    players: [makePlayer(hostHeroId as DeckId, life), makePlayer(guestHeroId as DeckId, life)],
+    players: [makePlayer(hostHeroId as DeckId, life, hostDeck), makePlayer(guestHeroId as DeckId, life, guestDeck)],
     active,
     phase: "manutencao",
     round: 1,

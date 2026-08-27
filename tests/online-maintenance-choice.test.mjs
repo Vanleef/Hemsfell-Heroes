@@ -49,6 +49,17 @@ test("empty deck at maintenance is an authoritative defeat", () => {
   assert.equal(result.players[0].life, 0);
 });
 
+test("server inactivity can leave Maintenance without granting resources", () => {
+  const game = state();
+  const before = { hand: game.players[0].hand.length, maxEnergy: game.players[0].maxEnergy, energy: game.players[0].energy };
+  const result = executeOnlineCommand(game, { type: "skipMaintenanceChoice", owner: 0, auto: true }).state;
+  assert.equal(result.phase, "principal");
+  assert.equal(result.players[0].hand.length, before.hand);
+  assert.equal(result.players[0].maxEnergy, before.maxEnergy);
+  assert.equal(result.players[0].energy, before.energy);
+  assert.throws(() => executeOnlineCommand(game, { type: "skipMaintenanceChoice", owner: 0 }), /maintenance-choice-unavailable/);
+});
+
 test("Online client sends maintenanceChoice instead of relying on legacy sync", async () => {
   const [page, machine, route] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),

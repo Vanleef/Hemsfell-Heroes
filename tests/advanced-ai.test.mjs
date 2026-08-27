@@ -81,7 +81,10 @@ test("lower difficulties keep human-like errors without catastrophic tactical pu
   const controller = await read("controller.ts");
   const risk = await read("risk.ts");
   assert.match(controller, /plausibleMistakes/);
-  assert.match(controller, /recklessOverextension/);
+  assert.match(controller, /isRecklessOverextension/);
+  assert.match(controller, /publiclyRepresentedSweep/);
+  assert.match(controller, /publicSweepThreat/);
+  assert.match(controller, /baselineRanked/);
   assert.match(controller, /plausibilityScore/);
   assert.match(controller, /ownLife <= 8 \? 2\.75 : 5\.5/);
   assert.match(risk, /stabilizes/);

@@ -32,3 +32,14 @@ test("the invite client single-flights clicks and reuses one request id for retr
   assert.match(page,/disabled=\{!invitePreview\|\|joinPending\}/);
   assert.match(page,/data\?\.error==="room full"/);
 });
+
+test("guest deck selection shares the serialized room action and reconciles heartbeat races",()=>{
+  assert.match(page,/const selectRequestId=crypto\.randomUUID\(\)/);
+  assert.match(page,/validateUserDeck\(candidate,cards\)/);
+  assert.match(page,/await roomAction\("select",\{heroId,userDeck:validation\.deck,locked:true,selectRequestId\}\)/);
+  assert.match(page,/action==="command"\|\|action==="choose_start"\|\|action==="select"/);
+  assert.match(page,/participant\?\.deckLocked&&participant\?\.heroId===extra\.heroId/);
+  assert.match(page,/networkRetries<2/);
+  assert.match(page,/disabled=\{!!myRoomParticipant\?\.deckLocked\|\|lobbyActionPending\}/);
+  assert.doesNotMatch(page,/const selectHeroInRoom[\s\S]{0,500}fetch\(`\/api\/rooms\/\$\{roomId\}`/);
+});

@@ -1,12 +1,14 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./brand.css";
 import "./match-ui.css";
 import "./online-match-runtime.css";
 import MatchUiGuard from "./match-ui-guard";
 import MatchUiRuntime from "./match-ui-runtime";
 import OnlineMatchRuntime from "./online-match-runtime";
 import OnlineReconnectRuntime from "./online-reconnect-runtime";
+import CardPreviewRuntime from "./card-preview-runtime";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,14 +29,14 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Hemsfell Heroes — Jogo de Cartas",
+  title: "Hemsfell Heroes",
   description: "Duelo digital de cartas no universo fantástico de Hemsfell.",
   other: {
     "codex-preview": "development",
   },
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
+    icon: "/brand/hemsfell-heroes-mark-hq.png",
+    shortcut: "/brand/hemsfell-heroes-mark-hq.png",
   },
 };
 
@@ -50,6 +52,7 @@ export default function RootLayout({
         <MatchUiRuntime />
         <OnlineMatchRuntime />
         <OnlineReconnectRuntime />
+        <CardPreviewRuntime />
         {children}
       </body>
     </html>
