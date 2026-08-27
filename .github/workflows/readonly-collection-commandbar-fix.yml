@@ -50,11 +50,11 @@ jobs:
         if: failure()
         shell: bash
         run: |
+          cp readonly-build-output.txt /tmp/readonly-build-output.txt 2>/dev/null || true
           git reset --hard HEAD
           git clean -fd
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          cp readonly-build-output.txt /tmp/readonly-build-output.txt 2>/dev/null || true
           if [ -f /tmp/readonly-build-output.txt ]; then
             cp /tmp/readonly-build-output.txt .github/readonly-build-error.txt
           else
