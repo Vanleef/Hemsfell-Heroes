@@ -40,7 +40,7 @@ test("floating preview has complete content before its first visible paint", () 
   assert.match(runtime, /function previewData[\s\S]*\.rich-card-text/);
   assert.match(runtime, /title, meta, rules, keywords, subtypes/);
   assert.match(runtime, /refs\.setReference\(card\);\s*setPreview\(next\)/);
-  assert.match(runtime, /const visible = isPositioned/);
+  assert.match(runtime, /const visible = previewFloating\.isPositioned/);
   assert.match(runtime, /visibility: visible \? "visible" : "hidden"/);
   assert.match(runtime, /data-positioned=\{visible \? "true" : "false"\}/);
   assert.doesNotMatch(runtime, /replaceChildren/);
