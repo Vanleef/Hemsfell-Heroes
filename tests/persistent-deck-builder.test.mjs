@@ -36,11 +36,11 @@ test("read-only collection keeps search, type filter and card inspection",()=>{
 test("command bar keeps production text inside a readable floor",()=>{
  assert.match(commandCss,/Production command-bar readability guard/);
  assert.match(commandCss,/flex:1 1 0!important/);
- assert.match(commandCss,/game-stage>\\.game-content\\.hs-board \\.hero-command-bar/);
- assert.match(runtime,/COMMAND_COPY_SIZE = "clamp\\(\\.74rem/);
- assert.match(runtime,/COMMAND_TITLE_SIZE = "clamp\\(\\.62rem/);
- assert.match(runtime,/setProperty\\("font-size", descriptionSize, "important"\\)/);
- assert.match(runtime,/commandTextFit = "readable"/);
+ assert.ok(commandCss.includes("game-stage>.game-content.hs-board .hero-command-bar"));
+ assert.ok(runtime.includes('COMMAND_COPY_SIZE = "clamp(.74rem'));
+ assert.ok(runtime.includes('COMMAND_TITLE_SIZE = "clamp(.62rem'));
+ assert.ok(runtime.includes('setProperty("font-size", descriptionSize, "important")'));
+ assert.ok(runtime.includes('commandTextFit = "readable"'));
  assert.doesNotMatch(runtime,/minimumScale/);
 });
 
