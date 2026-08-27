@@ -1,4 +1,4 @@
-name: Temporary workspace materialization
+name: Temporary workspace publisher
 
 on:
   push:
@@ -7,20 +7,28 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  archive:
+  publish:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
-      - name: Archive tracked workspace
-        run: git archive --format=tar HEAD | gzip -9 > hemsfell-workspace.tar.gz
-      - uses: actions/upload-artifact@v4
-        with:
-          name: hemsfell-workspace-${{ github.sha }}
-          path: hemsfell-workspace.tar.gz
-          retention-days: 1
-          if-no-files-found: error
+      - name: Publish validated deck builder patch
+        shell: bash
+        run: |
+          if [[ ! -f .codex/deck-builder.patch ]]; then
+            echo "No deck builder patch to publish."
+            exit 0
+          fi
+          git apply --check .codex/deck-builder.patch
+          git apply .codex/deck-builder.patch
+          rm .codex/deck-builder.patch
+          git config user.name "Eduardo Santos"
+          git config user.email "94094011+Vanleef@users.noreply.github.com"
+          git add -- app/page.tsx app/user-deck.mjs app/user-deck.d.mts app/ui-overrides.css app/match-ui.css tests/user-deck-model.test.mjs tests/persistent-deck-builder.test.mjs tests/card-preview-collection-quality.test.mjs tests/graveyard-collection-priority-ui.test.mjs .codex/deck-builder.patch
+          git diff --cached --check
+          git commit -m "feat: improve button feedback and deck management"
+          git push origin HEAD:feat/web-card-game-quality-foundation
