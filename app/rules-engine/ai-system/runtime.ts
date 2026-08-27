@@ -13,7 +13,10 @@ export {
 
 type PresentationWindow = Window & { __hemsfellPresentationBusy?: boolean };
 const PRESENTATION_IDLE_EVENT = "hemsfell:presentation-idle";
-const PRESENTATION_IDLE_FAILSAFE_MS = 2400;
+/* Eight serial PR1 flights can legitimately exceed seven seconds. This guard
+ * exists only for catastrophic runtime teardown; normal pacing resolves on the
+ * explicit idle event. */
+const PRESENTATION_IDLE_FAILSAFE_MS = 12000;
 
 function waitForPresentationIdle(): Promise<void> {
   if (typeof window === "undefined" || !(window as PresentationWindow).__hemsfellPresentationBusy) return Promise.resolve();
