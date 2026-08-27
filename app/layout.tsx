@@ -4,6 +4,8 @@ import "./globals.css";
 import "./brand.css";
 import "./match-ui.css";
 import "./online-match-runtime.css";
+/* Keep the command-bar typography as the final CSS cascade authority. */
+import "./command-bar-fixes.css";
 import MatchUiGuard from "./match-ui-guard";
 import MatchUiRuntime from "./match-ui-runtime";
 import OnlineMatchRuntime from "./online-match-runtime";
