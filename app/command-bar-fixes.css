@@ -82,34 +82,37 @@
   }
 }
 
-/* Production command-bar readability guard. The legacy CSS still contains
-   historical 6–8px declarations, so this stylesheet is also imported last by
-   layout.tsx. Match the preview's 16:9 proportional typography and keep a
-   readable minimum even on compact viewports. */
+/* Production command-bar readability guard.
+   match-ui.css still has a legacy direct-child selector capped at .41rem.
+   Include body + the exact DOM path here so this rule has strictly greater
+   specificity and cannot be beaten by that compact legacy declaration. */
 .screen-game .hero-command-bar .hero-ability-chip>span{
   flex:1 1 0!important;
   width:auto!important;
   max-width:none!important;
   margin-left:clamp(.08rem,.16cqw,.16rem)!important;
 }
-.screen-game .hero-command-bar .hero-ability-chip p{
+body .screen-game .hero-command-bar>.hero-ability-chip>span>p,
+body .screen-game .hero-command-bar .hero-ability-chip p{
   font-family:var(--font-geist-sans),Arial,sans-serif!important;
   font-size:clamp(.74rem,min(.88vw,1.56dvh),1rem)!important;
   font-weight:750!important;
   line-height:1.16!important;
 }
-.screen-game .hero-command-bar .hero-ability-chip>span>b{
+body .screen-game .hero-command-bar>.hero-ability-chip>span>b{
   font-family:var(--font-geist-sans),Arial,sans-serif!important;
   font-size:clamp(.62rem,min(.72vw,1.28dvh),.78rem)!important;
   font-weight:900!important;
   line-height:1.05!important;
   letter-spacing:.08em!important;
 }
-.screen-game .hero-command-bar .hero-ability-chip.copy-compact p{
+body .screen-game .hero-command-bar>.hero-ability-chip.copy-compact>span>p,
+body .screen-game .hero-command-bar .hero-ability-chip.copy-compact p{
   font-size:clamp(.7rem,min(.8vw,1.42dvh),.92rem)!important;
   line-height:1.13!important;
 }
-.screen-game .hero-command-bar .hero-ability-chip.copy-dense p{
+body .screen-game .hero-command-bar>.hero-ability-chip.copy-dense>span>p,
+body .screen-game .hero-command-bar .hero-ability-chip.copy-dense p{
   font-size:clamp(.66rem,min(.74vw,1.32dvh),.86rem)!important;
   line-height:1.1!important;
 }
