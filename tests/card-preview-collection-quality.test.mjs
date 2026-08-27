@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [runtime, page, matchCss, collectionCss, packageJson] = await Promise.all([
+const [runtime, page, remoteCardArt, matchCss, collectionCss, packageJson] = await Promise.all([
   readFile(new URL("../app/card-preview-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/remote-card-art.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/match-ui.css", import.meta.url), "utf8"),
   readFile(new URL("../app/ui-overrides.css", import.meta.url), "utf8"),
   readFile(new URL("../package.json", import.meta.url), "utf8").then(JSON.parse),
@@ -22,11 +23,14 @@ test("card preview uses Floating UI middleware and a body-level portal", () => {
 });
 
 test("card preview runtime is mounted globally in the root layout", async () => {
-  const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  const [layout, matchRuntime] = await Promise.all([
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/match-ui-runtime.tsx", import.meta.url), "utf8"),
+  ]);
   assert.match(layout, /import CardPreviewRuntime from ["']\.\/card-preview-runtime["']/);
   assert.match(layout, /<CardPreviewRuntime\s*\/>/);
+  assert.doesNotMatch(matchRuntime, /CardPreviewRuntime/);
 });
-
 test("Floating UI coordinates are not overridden by tooltip CSS", () => {
   const floatingBlock = matchCss.match(/\.card-preview-floating\.card-tooltip \{([\s\S]*?)\n\}/)?.[1] ?? "";
   assert.ok(floatingBlock, "expected floating preview CSS block");
@@ -37,9 +41,9 @@ test("Floating UI coordinates are not overridden by tooltip CSS", () => {
 
 test("floating preview has complete content before its first visible paint", () => {
   assert.match(runtime, /function previewData[\s\S]*\.rich-card-text/);
-  assert.match(runtime, /title, meta, rules, keywords/);
+  assert.match(runtime, /title, meta, rules, keywords, subtypes/);
   assert.match(runtime, /refs\.setReference\(card\);\s*setPreview\(next\)/);
-  assert.match(runtime, /const visible = isPositioned/);
+  assert.match(runtime, /const visible = previewFloating\.isPositioned/);
   assert.match(runtime, /visibility: visible \? "visible" : "hidden"/);
   assert.match(runtime, /data-positioned=\{visible \? "true" : "false"\}/);
   assert.doesNotMatch(runtime, /replaceChildren/);
@@ -79,4 +83,31 @@ test("read-only collection keeps hero information, deck lists, search and valida
   assert.doesNotMatch(page, /Coleção disponível/);
   assert.match(collectionCss, /\.collection-toolbar/);
   assert.match(collectionCss, /\.deck-validity\.is-invalid/);
+});
+
+test("native browser titles are removed from card tooltip targets", () => {
+  assert.match(runtime, /NATIVE_TITLE_SELECTOR/);
+  assert.match(runtime, /removeAttribute\("title"\)/);
+  assert.match(runtime, /MutationObserver/);
+  assert.doesNotMatch(page, /data-tip=\{keyword\.description\} title=/);
+  assert.doesNotMatch(page, /data-tip=\{keyword\?\.description\} title=/);
+  assert.doesNotMatch(remoteCardArt, /\s+title=\{/);
+});
+
+test("card tooltip remains interactive while hovered", () => {
+  assert.match(runtime, /TOOLTIP_CLOSE_DELAY_MS = 180/);
+  assert.match(runtime, /target\?\.closest\("\.card-preview-floating"\)/);
+  assert.match(runtime, /onPointerEnter=\{cancelScheduledClose\}/);
+  assert.match(matchCss, /\.card-preview-floating\.card-tooltip[\s\S]*pointer-events: auto !important/);
+});
+
+test("keywords and subtypes expose highlighted nested glossary tooltips", () => {
+  assert.match(page, /data-card-subtypes=/);
+  assert.match(runtime, /kind: "keyword"/);
+  assert.match(runtime, /kind: "subtype"/);
+  assert.match(runtime, /card-preview-term is-/);
+  assert.match(runtime, /card-glossary-floating/);
+  assert.match(runtime, /glossaryFloating\.refs\.setReference/);
+  assert.match(matchCss, /\.card-preview-term\.is-keyword/);
+  assert.match(matchCss, /\.card-preview-term\.is-subtype/);
 });

@@ -112,7 +112,6 @@ export function RemoteCardArt({ page, name, className = "", style, priority = fa
       role="img"
       aria-label={name}
       data-page={page}
-      title={failed ? `${name} — arte remota temporariamente indisponível` : name}
     />
   );
 }
