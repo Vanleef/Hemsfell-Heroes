@@ -19,5 +19,6 @@ export function isDeckId(value: unknown): value is DeckId;
 export function cardAllowedInDeckZone(heroId: string, card: DeckCatalogCard, zone: "main" | "extra"): boolean;
 export function defaultUserDeck(heroId: DeckId, catalog: DeckCatalogCard[], name?: string): UserDeck;
 export function validateUserDeck(input: unknown, catalog: DeckCatalogCard[]): UserDeckValidation;
+export function validateUserDeckDraft(input: unknown, catalog: DeckCatalogCard[]): UserDeckValidation;
 export function expandUserDeckMain<T extends DeckCatalogCard>(userDeck: UserDeck, catalog: T[], idFactory?: (cardId: string, copy: number) => string): T[];
 export function resolveUserDeckExtra<T extends DeckCatalogCard>(userDeck: UserDeck, catalog: T[]): T[];

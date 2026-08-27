@@ -8,6 +8,7 @@ import {
   deckIds,
   defaultUserDeck,
   validateUserDeck,
+  validateUserDeckDraft,
 } from "../app/user-deck.mjs";
 
 const catalog = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
@@ -64,4 +65,19 @@ test("hero identity, total and duplicate entries are authoritative validation fa
   const duplicate = structuredClone(deck);
   duplicate.main.push({ ...duplicate.main[0] });
   assert.equal(validateUserDeck(duplicate, catalog).ok, false);
+});
+
+test("safe incomplete drafts persist without weakening match validation", () => {
+  const deck = defaultUserDeck("saymon", catalog, "Saymon em edição");
+  const draft = structuredClone(deck);
+  draft.main[0].quantity -= 1;
+
+  const draftValidation = validateUserDeckDraft(draft, catalog);
+  assert.equal(draftValidation.ok, true, draftValidation.errors.join("; "));
+  assert.equal(draftValidation.mainCount, MAIN_DECK_SIZE - 1);
+  assert.deepEqual(draftValidation.deck, draft);
+  assert.equal(validateUserDeck(draft, catalog).ok, false);
+
+  draft.main[0].quantity = MAX_COPIES + 1;
+  assert.equal(validateUserDeckDraft(draft, catalog).ok, false);
 });

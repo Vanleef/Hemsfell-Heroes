@@ -564,3 +564,25 @@ body > [data-floating-ui-portal] { position: relative; z-index: 2147483000; }
   .extra-deck-dialog,.search-deck-dialog { width: 92vw !important; max-width: 92vw !important; height: 84dvh !important; max-height: 84dvh !important; }
   .extra-card-grid,.search-card-grid { grid-template-columns: repeat(auto-fill,minmax(clamp(3.1rem,14vw,4.35rem),1fr)) !important; }
 }
+
+/* Every enabled button communicates clickability consistently. Existing
+   component-specific transforms and shadows remain authoritative; this layer
+   adds a shared light/ring response and a clear keyboard focus treatment. */
+button:disabled{cursor:not-allowed}
+button:focus-visible{outline:2px solid #f3ca69;outline-offset:2px}
+@media (hover:hover) and (pointer:fine){
+  button:where(:not(:disabled)){
+    cursor:pointer;
+    transition-property:filter,outline-color,background-color,border-color,box-shadow;
+    transition-duration:.16s;
+    transition-timing-function:ease;
+  }
+  button:where(:not(:disabled)):hover{
+    filter:brightness(1.13) saturate(1.08);
+    outline:1px solid #f0ca6b99;
+    outline-offset:2px;
+  }
+  button.original-card:where(:not(:disabled)):hover{filter:brightness(1.08) saturate(1.06)}
+  button:where(:not(:disabled)):active{filter:brightness(.96) saturate(1.04)}
+}
+@media (prefers-reduced-motion:reduce){button{transition-duration:.01ms!important}}
