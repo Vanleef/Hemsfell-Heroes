@@ -14,70 +14,37 @@ import { RemoteCardArt } from "./remote-card-art";
  */
 
 /* --------------------------------------------------------------------------
-   Command-bar text autofit
+   Command-bar readable typography guard
    -------------------------------------------------------------------------- */
 
 const COMMAND_CHIP_SELECTOR = ".screen-game .hero-command-bar .hero-ability-chip";
-const originalInlineFont = new WeakMap<HTMLElement, string>();
 
-function restoreCommandFont(node: HTMLElement) {
-  if (!originalInlineFont.has(node)) originalInlineFont.set(node, node.style.fontSize);
-  node.style.fontSize = originalInlineFont.get(node) ?? "";
-}
-
-function commandContentFits(_chip: HTMLElement, content: HTMLElement) {
-  const tolerance = 1;
-  return (
-    content.scrollHeight <= content.clientHeight + tolerance &&
-    content.scrollWidth <= content.clientWidth + tolerance
-  );
-}
+const COMMAND_TITLE_SIZE = "clamp(.62rem,min(.72vw,1.28dvh),.78rem)";
+const COMMAND_COPY_SIZE = "clamp(.74rem,min(.88vw,1.56dvh),1rem)";
+const COMMAND_COMPACT_COPY_SIZE = "clamp(.7rem,min(.8vw,1.42dvh),.92rem)";
+const COMMAND_DENSE_COPY_SIZE = "clamp(.66rem,min(.74vw,1.32dvh),.86rem)";
 
 function fitCommandChip(chip: HTMLElement) {
   const content = chip.querySelector<HTMLElement>(":scope > span");
-  if (!content || chip.clientWidth <= 0 || chip.clientHeight <= 0) return;
+  if (!content) return;
 
   const title = content.querySelector<HTMLElement>(":scope > b");
   const description = content.querySelector<HTMLElement>("p");
-  const nodes = [title, description].filter(Boolean) as HTMLElement[];
-  if (!nodes.length) return;
 
-  nodes.forEach(restoreCommandFont);
-  chip.dataset.commandTextFit = "native";
+  title?.style.setProperty("font-size", COMMAND_TITLE_SIZE, "important");
 
-  const baseSizes = nodes.map((node) => parseFloat(getComputedStyle(node).fontSize) || 4);
-  if (commandContentFits(chip, content)) return;
-
-  const minimumScale = 0.78;
-  const applyScale = (scale: number) => {
-    nodes.forEach((node, index) => {
-      const minimum = Math.min(baseSizes[index], index === 0 ? 4 : 4.35);
-      node.style.fontSize = `${Math.max(minimum, baseSizes[index] * scale)}px`;
-    });
-  };
-
-  applyScale(minimumScale);
-  if (!commandContentFits(chip, content)) {
-    chip.dataset.commandTextFit = "minimum";
-    return;
+  if (description) {
+    const descriptionSize = chip.classList.contains("copy-dense")
+      ? COMMAND_DENSE_COPY_SIZE
+      : chip.classList.contains("copy-compact")
+        ? COMMAND_COMPACT_COPY_SIZE
+        : COMMAND_COPY_SIZE;
+    description.style.setProperty("font-size", descriptionSize, "important");
   }
 
-  let low = minimumScale;
-  let high = 1;
-  let best = minimumScale;
-  for (let index = 0; index < 10; index += 1) {
-    const mid = (low + high) / 2;
-    applyScale(mid);
-    if (commandContentFits(chip, content)) {
-      best = mid;
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-
-  applyScale(best);
-  chip.dataset.commandTextFit = "scaled";
+  // Production used to classify every chip as "minimum" and inject 4–6px
+  // inline sizes. Keep the responsive CSS curve, but never scale below it.
+  chip.dataset.commandTextFit = "readable";
 }
 
 function useCommandBarTextAutofit() {

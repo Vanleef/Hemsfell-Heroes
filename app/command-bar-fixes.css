@@ -83,22 +83,24 @@
 }
 
 /* Production command-bar readability guard.
-   match-ui.css still has a legacy direct-child selector capped at .41rem.
-   Include body + the exact DOM path here so this rule has strictly greater
-   specificity and cannot be beaten by that compact legacy declaration. */
+   The board stylesheet has a full game-stage selector that wins over generic
+   command-bar rules. Match that real DOM path so the no-JS layout keeps the
+   same readable typography as the preview. The runtime repeats these values
+   inline with !important after hydration as a deterministic final guard. */
 .screen-game .hero-command-bar .hero-ability-chip>span{
   flex:1 1 0!important;
   width:auto!important;
   max-width:none!important;
   margin-left:clamp(.08rem,.16cqw,.16rem)!important;
 }
-body .screen-game .hero-command-bar>.hero-ability-chip>span>p,
+html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip>span>p,
 body .screen-game .hero-command-bar .hero-ability-chip p{
   font-family:var(--font-geist-sans),Arial,sans-serif!important;
   font-size:clamp(.74rem,min(.88vw,1.56dvh),1rem)!important;
   font-weight:750!important;
   line-height:1.16!important;
 }
+html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip>span>b,
 body .screen-game .hero-command-bar>.hero-ability-chip>span>b{
   font-family:var(--font-geist-sans),Arial,sans-serif!important;
   font-size:clamp(.62rem,min(.72vw,1.28dvh),.78rem)!important;
@@ -106,12 +108,12 @@ body .screen-game .hero-command-bar>.hero-ability-chip>span>b{
   line-height:1.05!important;
   letter-spacing:.08em!important;
 }
-body .screen-game .hero-command-bar>.hero-ability-chip.copy-compact>span>p,
+html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip.copy-compact>span>p,
 body .screen-game .hero-command-bar .hero-ability-chip.copy-compact p{
   font-size:clamp(.7rem,min(.8vw,1.42dvh),.92rem)!important;
   line-height:1.13!important;
 }
-body .screen-game .hero-command-bar>.hero-ability-chip.copy-dense>span>p,
+html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip.copy-dense>span>p,
 body .screen-game .hero-command-bar .hero-ability-chip.copy-dense p{
   font-size:clamp(.66rem,min(.74vw,1.32dvh),.86rem)!important;
   line-height:1.1!important;
