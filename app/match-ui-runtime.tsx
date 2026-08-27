@@ -25,23 +25,11 @@ function restoreCommandFont(node: HTMLElement) {
   node.style.fontSize = originalInlineFont.get(node) ?? "";
 }
 
-function commandContentFits(chip: HTMLElement, content: HTMLElement) {
-  const tolerance = 0.5;
-  const chipRect = chip.getBoundingClientRect();
-  const style = getComputedStyle(chip);
-  const innerTop = chipRect.top + (parseFloat(style.paddingTop) || 0);
-  const innerBottom = chipRect.bottom - (parseFloat(style.paddingBottom) || 0);
-  const innerLeft = chipRect.left + (parseFloat(style.paddingLeft) || 0);
-  const innerRight = chipRect.right - (parseFloat(style.paddingRight) || 0);
-  const contentRect = content.getBoundingClientRect();
-
+function commandContentFits(_chip: HTMLElement, content: HTMLElement) {
+  const tolerance = 1;
   return (
     content.scrollHeight <= content.clientHeight + tolerance &&
-    content.scrollWidth <= content.clientWidth + tolerance &&
-    contentRect.top >= innerTop - tolerance &&
-    contentRect.bottom <= innerBottom + tolerance &&
-    contentRect.left >= innerLeft - tolerance &&
-    contentRect.right <= innerRight + tolerance
+    content.scrollWidth <= content.clientWidth + tolerance
   );
 }
 
@@ -60,10 +48,10 @@ function fitCommandChip(chip: HTMLElement) {
   const baseSizes = nodes.map((node) => parseFloat(getComputedStyle(node).fontSize) || 4);
   if (commandContentFits(chip, content)) return;
 
-  const minimumScale = 0.32;
+  const minimumScale = 0.78;
   const applyScale = (scale: number) => {
     nodes.forEach((node, index) => {
-      const minimum = Math.min(baseSizes[index], 2.15);
+      const minimum = Math.min(baseSizes[index], index === 0 ? 4 : 4.35);
       node.style.fontSize = `${Math.max(minimum, baseSizes[index] * scale)}px`;
     });
   };
