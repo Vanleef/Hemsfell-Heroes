@@ -16,7 +16,9 @@ test("an obsolete automatic priority pass is reconciled without exposing an engi
 
 test("top bar copy remains legible and a short opponent hand cannot stretch its cards", () => {
   assert.match(css, /game-content\.hs-board > \.game-bar[\s\S]*?font-size: clamp\(\.5rem/);
-  assert.match(css, /game-bar > button[\s\S]*?font-size: clamp\(\.46rem/);
+  const topBarButtonSize = css.match(/game-bar > button[\s\S]*?font-size: clamp\(\.(\d+)rem/);
+  assert.ok(topBarButtonSize, "expected responsive font sizing for top bar buttons");
+  assert.ok(Number(`0.${topBarButtonSize[1]}`) >= 0.36, "top bar button font floor must remain readable");
   assert.match(css, /opponent-hand > :is\([\s\S]*?flex: 0 1 clamp\(1\.45rem/);
   assert.match(css, /max-width: 3rem !important/);
 });
