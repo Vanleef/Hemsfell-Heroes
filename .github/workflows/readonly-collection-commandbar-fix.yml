@@ -38,13 +38,37 @@ jobs:
         run: node --test tests/persistent-deck-builder.test.mjs tests/graveyard-collection-priority-ui.test.mjs
 
       - name: Validate production build
-        run: npm run vercel-build
+        shell: bash
+        run: |
+          set +e
+          npm run vercel-build > readonly-build-output.txt 2>&1
+          status=$?
+          tail -n 260 readonly-build-output.txt
+          exit $status
+
+      - name: Persist build diagnostics on failure
+        if: failure()
+        shell: bash
+        run: |
+          git reset --hard HEAD
+          git clean -fd
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cp readonly-build-output.txt /tmp/readonly-build-output.txt 2>/dev/null || true
+          if [ -f /tmp/readonly-build-output.txt ]; then
+            cp /tmp/readonly-build-output.txt .github/readonly-build-error.txt
+          else
+            echo "Build failed before diagnostics could be captured." > .github/readonly-build-error.txt
+          fi
+          git add .github/readonly-build-error.txt
+          git commit -m "chore: capture readonly collection build error" || true
+          git push origin HEAD:feat/web-card-game-quality-foundation
 
       - name: Commit validated changes
         shell: bash
         run: |
-          rm -f .github/workflows/readonly-collection-commandbar-fix.yml scripts/apply-readonly-collection-commandbar-fix.py
-          unexpected=$(git status --short | grep -vE '^( M|M | D|D |\?\?) (app/page\.tsx|app/match-ui-runtime\.tsx|app/command-bar-fixes\.css|tests/persistent-deck-builder\.test\.mjs|\.github/workflows/readonly-collection-commandbar-fix\.yml|scripts/apply-readonly-collection-commandbar-fix\.py)$' || true)
+          rm -f .github/workflows/readonly-collection-commandbar-fix.yml scripts/apply-readonly-collection-commandbar-fix.py .github/readonly-build-error.txt readonly-build-output.txt
+          unexpected=$(git status --short | grep -vE '^( M|M | D|D |\?\?) (app/page\.tsx|app/match-ui-runtime\.tsx|app/command-bar-fixes\.css|tests/persistent-deck-builder\.test\.mjs|\.github/workflows/readonly-collection-commandbar-fix\.yml|scripts/apply-readonly-collection-commandbar-fix\.py|\.github/readonly-build-error\.txt|readonly-build-output\.txt)$' || true)
           if [ -n "$unexpected" ]; then
             echo "Unexpected generated changes detected:"
             echo "$unexpected"
@@ -53,5 +77,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app/page.tsx app/match-ui-runtime.tsx app/command-bar-fixes.css tests/persistent-deck-builder.test.mjs .github/workflows/readonly-collection-commandbar-fix.yml scripts/apply-readonly-collection-commandbar-fix.py
+          git add -u .github/readonly-build-error.txt || true
           git commit -m "fix: restore read-only collection and command bar legibility"
           git push origin HEAD:feat/web-card-game-quality-foundation
