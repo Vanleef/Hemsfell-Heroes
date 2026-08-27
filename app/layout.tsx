@@ -12,6 +12,7 @@ import MatchUiRuntime from "./match-ui-runtime";
 import OnlineMatchRuntime from "./online-match-runtime";
 import OnlineReconnectRuntime from "./online-reconnect-runtime";
 import CardPreviewRuntime from "./card-preview-runtime";
+import PresentationEventBridge from "./presentation-event-bridge";
 import GamePresentationRuntime from "./game-presentation-runtime";
 
 const geistSans = Geist({
@@ -57,6 +58,7 @@ export default function RootLayout({
         <OnlineMatchRuntime />
         <OnlineReconnectRuntime />
         <CardPreviewRuntime />
+        <PresentationEventBridge />
         <GamePresentationRuntime />
         {children}
       </body>
