@@ -25,11 +25,16 @@ test("rules core stays isolated behind a browser instrumentation facade", () => 
   assert.doesNotMatch(core, /hemsfell:presentation-action|hemsfell:rules-command-resolved|__hemsfellPresentationBusy/);
 });
 
-test("presentation bridge only stages confirmed actions and leaves priority/combat interactive", () => {
+test("presentation bridge only stages material confirmed actions and keeps combat interaction external", () => {
   const bridge = read("app/presentation-event-bridge.tsx");
-  for (const command of ["passPriority", "declareAttack", "selectDefender", "attack", "reposition", "confirmReposition", "surrender"]) {
+  for (const command of ["declareAttack", "selectDefender", "attack", "reposition", "confirmReposition", "surrender"]) {
     assert.match(bridge, new RegExp(`\\"${command}\\"`));
   }
+  assert.match(bridge, /hasPresentableDelta/);
+  assert.match(bridge, /command\?\.type !== "passPriority"/);
+  assert.match(bridge, /before\?\.pendingResponse\?\.passes/);
+  assert.match(bridge, /stack\.at\(-1\)\?\.command/);
+  assert.match(bridge, /before\?\.pendingAction/);
   assert.match(bridge, /response\.ok && data\?\.game/);
   assert.match(bridge, /onlineSnapshot/);
   assert.match(bridge, /hemsfell:online-room-snapshot/);
