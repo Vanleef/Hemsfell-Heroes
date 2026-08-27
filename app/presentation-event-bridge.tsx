@@ -14,13 +14,41 @@ const clone = <T,>(value: T): T => {
   try { return structuredClone(value); }
   catch { return value; }
 };
+const flipOwner = (value: unknown) => value === 0 ? 1 : value === 1 ? 0 : value;
 const orientGame = (game: any, isHost: boolean) => {
   if (!game) return null;
   const oriented = clone(game);
   if (isHost || !Array.isArray(game.players) || game.players.length < 2) return oriented;
   oriented.players = [clone(game.players[1]), clone(game.players[0])];
-  if (game.active === 0 || game.active === 1) oriented.active = game.active === 0 ? 1 : 0;
-  if (game.winner === 0 || game.winner === 1) oriented.winner = game.winner === 0 ? 1 : 0;
+  oriented.active = flipOwner(game.active);
+  oriented.winner = game.winner == null ? null : flipOwner(game.winner);
+  if (game.combatAction) oriented.combatAction = { ...clone(game.combatAction), attackerOwner: flipOwner(game.combatAction.attackerOwner) };
+  if (game.pendingResponse) oriented.pendingResponse = { ...clone(game.pendingResponse), responder: flipOwner(game.pendingResponse.responder), actor: flipOwner(game.pendingResponse.actor) };
+  if (game.pendingAction) oriented.pendingAction = { ...clone(game.pendingAction), owner: flipOwner(game.pendingAction.owner) };
+  if (Array.isArray(game.priorityStack)) oriented.priorityStack = game.priorityStack.map((frame: any) => ({
+    ...clone(frame),
+    actor: flipOwner(frame?.actor),
+    command: frame?.command ? { ...clone(frame.command), owner: flipOwner(frame.command.owner) } : frame?.command,
+  }));
+  if (game.pendingDecision) {
+    oriented.pendingDecision = { ...clone(game.pendingDecision), owner: flipOwner(game.pendingDecision.owner) };
+    if (oriented.pendingDecision.context && typeof oriented.pendingDecision.context === "object") {
+      oriented.pendingDecision.context = {
+        ...oriented.pendingDecision.context,
+        owner: flipOwner(oriented.pendingDecision.context.owner),
+        decisionOwner: flipOwner(oriented.pendingDecision.context.decisionOwner),
+      };
+    }
+    if (oriented.pendingDecision.effect && typeof oriented.pendingDecision.effect.targetOwner === "number") {
+      oriented.pendingDecision.effect.targetOwner = flipOwner(oriented.pendingDecision.effect.targetOwner);
+    }
+  }
+  if (game.pendingReposition) oriented.pendingReposition = {
+    ...clone(game.pendingReposition),
+    owners: (game.pendingReposition.owners || []).map(flipOwner),
+    confirmed: (game.pendingReposition.confirmed || []).map(flipOwner),
+    activeOwner: flipOwner(game.pendingReposition.activeOwner),
+  };
   return oriented;
 };
 const cardIdentity = (card: any) => String(card?.uid || card?.id || `${card?.page ?? ""}:${card?.name ?? ""}`);
