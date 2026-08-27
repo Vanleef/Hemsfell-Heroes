@@ -86,7 +86,7 @@ export function defaultUserDeck(heroId, catalog, name) {
   return validated.deck;
 }
 
-export function validateUserDeck(input, catalog) {
+function validateUserDeckInput(input, catalog, { allowIncomplete = false } = {}) {
   const errors = [];
   const record = input && typeof input === "object" && !Array.isArray(input) ? input : null;
   if (!record) return { ok: false, errors: ["deck payload must be an object"], deck: null, mainCount: 0 };
@@ -123,7 +123,7 @@ export function validateUserDeck(input, catalog) {
     mainCount += quantity;
   }
   if (rawMain.length > 128) errors.push("main deck has too many unique entries");
-  if (mainCount !== MAIN_DECK_SIZE) errors.push("main deck must contain exactly " + MAIN_DECK_SIZE + " cards");
+  if (!allowIncomplete && mainCount !== MAIN_DECK_SIZE) errors.push("main deck must contain exactly " + MAIN_DECK_SIZE + " cards");
 
   const rawExtra = Array.isArray(record.extra) ? record.extra : [];
   if (!Array.isArray(record.extra)) errors.push("extra deck must be an array");
@@ -153,6 +153,18 @@ export function validateUserDeck(input, catalog) {
     mainCount,
     deck: errors.length === 0 ? { version: USER_DECK_VERSION, name, heroId, main, extra } : null,
   };
+}
+
+export function validateUserDeck(input, catalog) {
+  return validateUserDeckInput(input, catalog);
+}
+
+/* Deck building is an incremental flow. A safe draft may contain fewer than
+   49 cards while the player edits it, but it must still obey every identity,
+   availability, copy-limit and Extra Deck rule. Match entry points continue
+   to use validateUserDeck(), which requires the authoritative 49-card total. */
+export function validateUserDeckDraft(input, catalog) {
+  return validateUserDeckInput(input, catalog, { allowIncomplete: true });
 }
 
 export function expandUserDeckMain(userDeck, catalog, idFactory = (cardId, copy) => cardId + "-" + copy) {

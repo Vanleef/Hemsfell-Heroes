@@ -62,7 +62,7 @@ test("touch long press opens a large preview without also executing the card cli
   assert.match(runtime, /preview\.expanded \? "dialog" : "tooltip"/);
 });
 
-test("collection search, type filtering and deck validation are visible and responsive", () => {
+test("read-only collection keeps hero information, deck lists, search and validation", () => {
   assert.match(page, /useDeferredValue\(collectionQuery\)/);
   assert.match(page, /collectionType==="Todas"\|\|card\.type===collectionType/);
   assert.match(page, /validateUserDeck\(activeUserDeck,cards\)/);
@@ -70,6 +70,13 @@ test("collection search, type filtering and deck validation are visible and resp
   assert.match(page, /MAIN_DECK_SIZE/);
   assert.match(page, /className={`deck-validity/);
   assert.match(page, /disabled=\{!deckListValid\}/);
+  assert.match(page, /HeroGuide deck=\{selectedDeck\}/);
+  assert.match(page, /<b>Deck Principal<\/b>/);
+  assert.match(page, /<b>Deck Extra<\/b>/);
+  assert.doesNotMatch(page, /collectionMembership/);
+  assert.doesNotMatch(page, /compareCollectionCards/);
+  assert.doesNotMatch(page, /DeckQuantityControls/);
+  assert.doesNotMatch(page, /Coleção disponível/);
   assert.match(collectionCss, /\.collection-toolbar/);
   assert.match(collectionCss, /\.deck-validity\.is-invalid/);
 });

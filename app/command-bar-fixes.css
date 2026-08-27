@@ -81,3 +81,28 @@
     padding:clamp(.015rem,.04cqh,.035rem) clamp(.045rem,.08cqw,.075rem)!important;
   }
 }
+
+
+/* Production command-bar readability guard. The text column used to combine
+   width:100% with an external margin, so the runtime could conclude that the
+   chip never fit and shrink it to its emergency minimum. Keep the text column
+   inside the available flex width and preserve a readable CSS floor. */
+.screen-game .hero-command-bar .hero-ability-chip>span{
+  flex:1 1 0!important;
+  width:auto!important;
+  max-width:none!important;
+  margin-left:clamp(.08rem,.16cqw,.16rem)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip p{
+  font-size:clamp(.31rem,4.15cqi,.48rem)!important;
+  line-height:1.09!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip>span>b{
+  font-size:clamp(.27rem,3.5cqi,.4rem)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip.copy-compact p{
+  font-size:clamp(.29rem,3.72cqi,.44rem)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip.copy-dense p{
+  font-size:clamp(.27rem,3.32cqi,.4rem)!important;
+}
