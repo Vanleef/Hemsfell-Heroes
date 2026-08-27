@@ -103,7 +103,7 @@ test("card tooltip remains interactive while hovered", () => {
 
 test("keywords and subtypes expose highlighted nested glossary tooltips", () => {
   assert.match(page, /data-card-subtypes=/);
-  assert.match(runtime, /kind: "keyword"/);
+  assert.match(runtime, /glossaryKind as GlossaryKind\) \|\| "keyword"/);
   assert.match(runtime, /kind: "subtype"/);
   assert.match(runtime, /card-preview-term is-/);
   assert.match(runtime, /card-glossary-floating/);
