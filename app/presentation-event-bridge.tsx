@@ -5,7 +5,7 @@ import { useEffect } from "react";
 const RULES_RESOLVED_EVENT = "hemsfell:rules-command-resolved";
 const PRESENTATION_EVENT = "hemsfell:presentation-action";
 const ONLINE_SNAPSHOT_EVENT = "hemsfell:online-room-snapshot";
-const NON_CINEMATIC_COMMANDS = new Set(["passPriority", "declareAttack", "selectDefender", "attack", "reposition", "confirmReposition", "surrender"]);
+const EXCLUDED_COMMANDS = new Set(["declareAttack", "selectDefender", "attack", "reposition", "confirmReposition", "surrender"]);
 
 type SnapshotEntry = { revision: number; game: any; isHost: boolean };
 type ConfirmedAck = { before: any; command: Record<string, any>; commandId: string; revision: number };
@@ -23,7 +23,44 @@ const orientGame = (game: any, isHost: boolean) => {
   if (game.winner === 0 || game.winner === 1) oriented.winner = game.winner === 0 ? 1 : 0;
   return oriented;
 };
-const shouldPresent = (command: Record<string, any> | undefined) => !!command?.type && !NON_CINEMATIC_COMMANDS.has(String(command.type));
+const cardIdentity = (card: any) => String(card?.uid || card?.id || `${card?.page ?? ""}:${card?.name ?? ""}`);
+const unitFingerprint = (unit: any) => ({
+  id: cardIdentity(unit), slot: unit?.slot, damage: unit?.damage, bonusAtk: unit?.bonusAtk, bonusHp: unit?.bonusHp,
+  temporaryAtk: unit?.temporaryAtk, temporaryHp: unit?.temporaryHp, markers: unit?.markers,
+  exhausted: unit?.exhausted, summoning: unit?.summoning, frozen: unit?.frozen, stunned: unit?.stunned,
+  suffocated: unit?.suffocated, immobilized: unit?.immobilized, tags: unit?.tags, temporaryTags: unit?.temporaryTags,
+  modifiers: unit?.modifiers, grantedKeywords: unit?.grantedKeywords,
+});
+const presentationFingerprint = (game: any) => JSON.stringify({
+  winner: game?.winner,
+  players: (game?.players || []).map((player: any) => ({
+    life: player?.life,
+    level: player?.level,
+    heroXP: player?.heroXP,
+    markers: player?.markers,
+    hand: (player?.hand || []).map(cardIdentity),
+    board: (player?.board || []).map(unitFingerprint),
+    support: (player?.support || []).map(unitFingerprint),
+    terrain: player?.terrain ? unitFingerprint(player.terrain) : null,
+    grave: (player?.grave || []).map(cardIdentity),
+    obscuro: (player?.obscuro || []).map(cardIdentity),
+    extraDeck: (player?.extraDeck || []).map(cardIdentity),
+  })),
+});
+const hasPresentableDelta = (before: any, after: any) => !!before && !!after && presentationFingerprint(before) !== presentationFingerprint(after);
+const priorityResolutionCommand = (before: any, command: Record<string, any>) => {
+  if (command?.type !== "passPriority") return command;
+  if (Number(before?.pendingResponse?.passes || 0) < 1) return null;
+  const stack = Array.isArray(before?.priorityStack) ? before.priorityStack : [];
+  const top = stack.length > 1 ? stack.at(-1)?.command : null;
+  return top || before?.pendingAction || null;
+};
+const presentedCommand = (before: any, after: any, command: Record<string, any> | undefined) => {
+  if (!command?.type || !hasPresentableDelta(before, after)) return null;
+  const resolved = priorityResolutionCommand(before, command);
+  if (!resolved?.type || EXCLUDED_COMMANDS.has(String(resolved.type))) return null;
+  return resolved;
+};
 const roomRequest = (input: RequestInfo | URL) => {
   const raw = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url;
   try {
@@ -45,13 +82,14 @@ export default function PresentationEventBridge() {
     let localSequence = 0;
 
     const emit = (detail: { before: any; after: any; command: Record<string, any>; trace?: any[]; commandId: string; revision?: number }) => {
-      if (!detail.before || !detail.after || !shouldPresent(detail.command)) return;
-      window.dispatchEvent(new CustomEvent(PRESENTATION_EVENT, { detail }));
+      const command = presentedCommand(detail.before, detail.after, detail.command);
+      if (!command) return;
+      window.dispatchEvent(new CustomEvent(PRESENTATION_EVENT, { detail: { ...detail, command: clone(command) } }));
     };
 
     const onLocalResolution = (event: Event) => {
       const detail = (event as CustomEvent<any>).detail;
-      if (!detail?.before || !detail?.after || !shouldPresent(detail.command)) return;
+      if (!detail?.before || !detail?.after || !detail?.command) return;
       localSequence += 1;
       emit({
         before: clone(detail.before),
@@ -83,9 +121,9 @@ export default function PresentationEventBridge() {
         return;
       }
 
-      /* Polling/recovery still represents confirmed server state. With no local
-         ACK metadata we present the physical delta generically rather than
-         guessing an unconfirmed command. Combat remains owned by CombatAnimation. */
+      /* Polling/recovery is still authoritative. If the revision contains a
+         physical non-combat delta, present that delta generically instead of
+         guessing which unobserved opponent command caused it. */
       const combatTransition = !!previous.game?.combatAction || !!after?.combatAction;
       if (!combatTransition) emit({
         before: clone(previous.game),
@@ -106,23 +144,19 @@ export default function PresentationEventBridge() {
       const command = isCommand ? { ...clone(payload.command), owner: 0 } : null;
       const commandId = isCommand ? String(payload.commandId) : "";
 
-      try {
-        const response = await originalFetch(input, init);
-        if (isCommand && roomId && before && command && commandId) {
-          try {
-            const data = await response.clone().json();
-            const revision = Number(data?.revision ?? -1);
-            if (response.ok && data?.game && Number.isFinite(revision)) {
-              confirmed.set(`${roomId}:${revision}`, { before, command, commandId, revision });
-            }
-          } catch {
-            // A malformed/non-JSON response simply falls back to snapshot-diff presentation.
+      const response = await originalFetch(input, init);
+      if (isCommand && roomId && before && command && commandId) {
+        try {
+          const data = await response.clone().json();
+          const revision = Number(data?.revision ?? -1);
+          if (response.ok && data?.game && Number.isFinite(revision)) {
+            confirmed.set(`${roomId}:${revision}`, { before, command, commandId, revision });
           }
+        } catch {
+          // A malformed/non-JSON response simply falls back to snapshot-diff presentation.
         }
-        return response;
-      } catch (error) {
-        throw error;
       }
+      return response;
     };
 
     window.addEventListener(RULES_RESOLVED_EVENT, onLocalResolution as EventListener);
