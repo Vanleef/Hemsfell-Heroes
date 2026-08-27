@@ -41,7 +41,7 @@ body > [data-floating-ui-portal] { position: relative; z-index: 2147483000; }
   color: #f5ecd8 !important;
   filter: none !important;
   z-index: 2147483000 !important;
-  pointer-events: none !important;
+  pointer-events: auto !important;
   isolation: isolate !important;
 }
 .card-preview-floating.is-expanded {
@@ -586,3 +586,79 @@ button:focus-visible{outline:2px solid #f3ca69;outline-offset:2px}
   button:where(:not(:disabled)):active{filter:brightness(.96) saturate(1.04)}
 }
 @media (prefers-reduced-motion:reduce){button{transition-duration:.01ms!important}}
+
+
+/* Interactive card glossary: the primary tooltip accepts hover/focus and the
+   nested definition stays visually subordinate without stealing the pointer. */
+.card-preview-rules {
+  display: inline !important;
+  white-space: pre-wrap;
+}
+.card-preview-term {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: .3rem;
+  cursor: help;
+  font: inherit;
+  font-weight: 900;
+  line-height: inherit;
+  outline: none;
+  transition: color .14s ease, background .14s ease, box-shadow .14s ease;
+}
+.card-preview-rules > .card-preview-term { display: inline; padding: .05rem .2rem; }
+.card-preview-term.is-keyword {
+  color: #ffd878;
+  background: #d99a1c1f;
+  box-shadow: inset 0 0 0 1px #e6b95a45;
+}
+.card-preview-term.is-subtype {
+  color: #9edcff;
+  background: #3aa5da1c;
+  box-shadow: inset 0 0 0 1px #65c6f34a;
+}
+.card-preview-term:hover,
+.card-preview-term:focus-visible {
+  color: #fff8dc;
+  background: #ffffff18;
+  box-shadow: 0 0 0 2px #f2ca70a6;
+}
+.card-preview-taxonomy {
+  display: flex !important;
+  flex-direction: column;
+  gap: .3rem;
+  color: #d2dce5 !important;
+}
+.card-preview-taxonomy > small {
+  color: #8798aa;
+  font: 900 .58rem/1 system-ui;
+  letter-spacing: .08em;
+}
+.card-preview-term-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .3rem;
+}
+.card-preview-term-list > .card-preview-term { padding: .2rem .42rem; }
+.card-glossary-floating {
+  position: fixed;
+  z-index: 2147483001;
+  display: flex;
+  width: min(15rem, calc(100dvw - 1rem));
+  flex-direction: column;
+  gap: .2rem;
+  padding: .5rem .62rem;
+  border: 1px solid #e1ba6570;
+  border-radius: .45rem;
+  background: #080f19fa;
+  box-shadow: 0 .7rem 1.8rem #000b;
+  color: #dbe6ef;
+  pointer-events: none;
+}
+.card-glossary-floating > b {
+  color: #fff1bd;
+  font: 900 .72rem/1.2 system-ui;
+}
+.card-glossary-floating > span {
+  font: 600 .68rem/1.4 system-ui;
+}
