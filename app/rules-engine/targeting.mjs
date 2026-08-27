@@ -29,6 +29,7 @@ export function targetPolicy(cardOrText) {
   const ally = /(?:criaturas?|constantes?|permanentes?)\s+(?:do\s+)?(?:seu\s+campo|aliad)|sua\s+(?:criatura|constante|permanente)/.test(targetingText);
   if (creatureMention) return withSteps({ scope: enemy ? TargetScope.ENEMY_CREATURE : ally ? TargetScope.ALLY_CREATURE : TargetScope.ANY_CREATURE, selections: amount });
   if (permanentMention) return withSteps({ scope: enemy ? TargetScope.ENEMY_PERMANENT : ally ? TargetScope.ALLY_PERMANENT : TargetScope.ANY_PERMANENT, selections: amount });
+  if (/\b(?:cartas?\s+alvo|alvo\s+(?:e\s+)?(?:uma\s+)?carta)\b/.test(targetingText)) return withSteps({ scope: TargetScope.ANY_PERMANENT, selections: amount });
   if (/\b(cause|causar|cure|restaure|recupere|aumente|alvo)\b/.test(targetingText)) return withSteps({ scope: TargetScope.ANY_CHARACTER, selections: amount });
   if (/\b(destrua|elimine|derrote|bana|banir|sufoc|congel|atordoad|imobiliz|retorne|devolva)\b/.test(targetingText)) return withSteps({ scope: TargetScope.ANY_PERMANENT, selections: amount });
   return { scope: TargetScope.NONE, selections: 0, steps: [] };

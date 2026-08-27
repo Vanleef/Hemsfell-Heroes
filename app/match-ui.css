@@ -662,3 +662,70 @@ button:focus-visible{outline:2px solid #f3ca69;outline-offset:2px}
 .card-glossary-floating > span {
   font: 600 .68rem/1.4 system-ui;
 }
+
+
+/* Manual glossary and live effect cues share the game's Floating UI tooltip.
+   Field badges remain reachable by mouse and keyboard without native titles. */
+.card-preview-term.is-rule {
+  color: #b9d9ee;
+  background: #75b6dd1c;
+  box-shadow: inset 0 0 0 1px #75b6dd4a;
+}
+.card-glossary-floating[data-kind="positive"] {
+  border-color: #70d59b88;
+  box-shadow: 0 .7rem 1.8rem #000b, 0 0 0 1px #70d59b22;
+}
+.card-glossary-floating[data-kind="negative"] {
+  border-color: #ff7d8799;
+  box-shadow: 0 .7rem 1.8rem #000b, 0 0 0 1px #ff657329;
+}
+.card-glossary-floating[data-kind="rule"] {
+  border-color: #78c7ef88;
+}
+.card-frame > :is(.field-negative-statuses,.field-positive-statuses) {
+  position: absolute;
+  top: 50%;
+  z-index: 26;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(.08rem, 2cqi, .18rem);
+  transform: translateY(-50%);
+  overflow: visible;
+  pointer-events: auto;
+}
+.card-frame > .field-negative-statuses { left: clamp(-.82rem, -13cqi, -.54rem); }
+.card-frame > .field-positive-statuses { right: clamp(-.82rem, -13cqi, -.54rem); }
+.screen-game :is(.field-keywords,.field-negative-statuses,.field-positive-statuses) > i,
+.screen-game :is(.card-frame-marker,.card-frame-activation,.summoning-sickness-badge) {
+  pointer-events: auto !important;
+  cursor: help;
+}
+.card-frame > :is(.field-negative-statuses,.field-positive-statuses) > i {
+  display: grid;
+  place-items: center;
+  width: clamp(.52rem, 13cqi, .84rem);
+  height: clamp(.52rem, 13cqi, .84rem);
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-style: normal;
+  font-weight: 900;
+  box-shadow: 0 2px 6px #000b;
+}
+.card-frame > .field-negative-statuses > i {
+  background: #3f0d15ee;
+  color: #ff9ca5;
+}
+.card-frame > .field-positive-statuses > i {
+  background: #0b3827ee;
+  color: #9df0be;
+}
+.card-frame > :is(.field-keywords,.field-negative-statuses,.field-positive-statuses) > i:focus-visible,
+.card-frame > :is(.card-frame-marker,.card-frame-activation):focus-visible {
+  outline: 2px solid #fff1aa;
+  outline-offset: 2px;
+}
+.card-frame > .field-keywords::after,
+.original-card .field-keywords::after {
+  content: none !important;
+  display: none !important;
+}

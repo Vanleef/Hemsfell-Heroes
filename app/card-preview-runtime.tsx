@@ -16,7 +16,7 @@ import {
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RemoteCardArt } from "./remote-card-art";
 
-type GlossaryKind = "keyword" | "subtype";
+type GlossaryKind = "keyword" | "subtype" | "rule" | "positive" | "negative";
 type GlossaryTerm = {
   label: string;
   description: string;
@@ -43,7 +43,7 @@ type GlossaryState = {
 };
 
 const CARD_SELECTOR = ".original-card[data-card-preview='true']";
-const NATIVE_TITLE_SELECTOR = `${CARD_SELECTOR}[title], ${CARD_SELECTOR} [title], [data-tip][title], .remote-card-art[title]`;
+const NATIVE_TITLE_SELECTOR = `${CARD_SELECTOR}[title], ${CARD_SELECTOR} [title], [data-tip][title], [data-game-tip][title], .remote-card-art[title]`;
 const LONG_PRESS_MS = 520;
 const TOUCH_SLOP_PX = 12;
 const TOOLTIP_CLOSE_DELAY_MS = 180;
@@ -103,7 +103,7 @@ function previewData(card: HTMLElement, expanded: boolean): PreviewState | null 
             term: {
               label: text.trim(),
               description: node.dataset.tip || "Palavra-chave com uma regra especial do jogo.",
-              kind: "keyword",
+              kind: (node.dataset.glossaryKind as GlossaryKind) || "keyword",
             },
           }];
         }
@@ -118,7 +118,7 @@ function previewData(card: HTMLElement, expanded: boolean): PreviewState | null 
     .map((element): GlossaryTerm => ({
       label: element.getAttribute("data-keyword") || element.textContent?.trim() || "",
       description: element.dataset.tip || "Palavra-chave com uma regra especial do jogo.",
-      kind: "keyword",
+      kind: (element.dataset.glossaryKind as GlossaryKind) || "keyword",
     }))
     .filter((term) => Boolean(term.label)));
 
@@ -214,6 +214,49 @@ export default function CardPreviewRuntime() {
     observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ["title"] });
     return () => observer.disconnect();
   }, []);
+
+  useEffect(() => {
+    const gameTip = (target: EventTarget | null) => target instanceof Element ? target.closest<HTMLElement>("[data-game-tip]") : null;
+    const showGameTip = (trigger: HTMLElement) => {
+      const description = trigger.dataset.gameTip?.trim();
+      if (!description) return;
+      openGlossary(trigger, {
+        label: trigger.dataset.gameTipLabel || trigger.getAttribute("aria-label")?.split(":")[0] || "Regra",
+        description,
+        kind: (trigger.dataset.gameTipKind as GlossaryKind) || "rule",
+      });
+    };
+    const onPointerOver = (event: PointerEvent) => {
+      if (event.pointerType && event.pointerType !== "mouse" && event.pointerType !== "pen") return;
+      const trigger = gameTip(event.target);
+      if (!trigger || event.relatedTarget instanceof Node && trigger.contains(event.relatedTarget)) return;
+      showGameTip(trigger);
+    };
+    const onPointerOut = (event: PointerEvent) => {
+      const trigger = gameTip(event.target);
+      if (!trigger || event.relatedTarget instanceof Node && trigger.contains(event.relatedTarget)) return;
+      setGlossary((current) => current?.reference === trigger ? null : current);
+    };
+    const onFocusIn = (event: FocusEvent) => {
+      const trigger = gameTip(event.target);
+      if (trigger) showGameTip(trigger);
+    };
+    const onFocusOut = (event: FocusEvent) => {
+      const trigger = gameTip(event.target);
+      if (!trigger || event.relatedTarget instanceof Node && trigger.contains(event.relatedTarget)) return;
+      setGlossary((current) => current?.reference === trigger ? null : current);
+    };
+    document.addEventListener("pointerover", onPointerOver, true);
+    document.addEventListener("pointerout", onPointerOut, true);
+    document.addEventListener("focusin", onFocusIn, true);
+    document.addEventListener("focusout", onFocusOut, true);
+    return () => {
+      document.removeEventListener("pointerover", onPointerOver, true);
+      document.removeEventListener("pointerout", onPointerOut, true);
+      document.removeEventListener("focusin", onFocusIn, true);
+      document.removeEventListener("focusout", onFocusOut, true);
+    };
+  }, [openGlossary]);
 
   useEffect(() => {
     let longPressTimer = 0;
@@ -344,8 +387,8 @@ export default function CardPreviewRuntime() {
     };
   }, [cancelScheduledClose, closePreview, preview?.expanded, previewFloating.refs, scheduleCompactClose]);
 
-  if (!preview) return null;
-  const visible = previewFloating.isPositioned;
+  if (!preview && !glossary) return null;
+  const visible = !!preview && previewFloating.isPositioned;
   const renderTerm = (term: GlossaryTerm, key: string) => (
     <span
       key={key}
@@ -363,6 +406,7 @@ export default function CardPreviewRuntime() {
 
   return (
     <>
+      {preview ? (
       <FloatingPortal>
         <section
           ref={previewFloating.refs.setFloating}
@@ -408,6 +452,7 @@ export default function CardPreviewRuntime() {
           {preview.expanded ? <button type="button" className="card-preview-close" onClick={closePreview} aria-label="Fechar preview">×</button> : null}
         </section>
       </FloatingPortal>
+      ) : null}
       {glossary ? (
         <FloatingPortal>
           <aside
