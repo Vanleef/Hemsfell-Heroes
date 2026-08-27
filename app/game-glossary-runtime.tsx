@@ -11,7 +11,7 @@ const glossaryLabel = (element: HTMLElement) =>
 function applyCanonicalGlossary(root: ParentNode) {
   const candidates: HTMLElement[] = [];
   if (root instanceof HTMLElement && root.matches(GLOSSARY_SELECTOR)) candidates.push(root);
-  root.querySelectorAll?.<HTMLElement>(GLOSSARY_SELECTOR).forEach((element) => candidates.push(element));
+  root.querySelectorAll<HTMLElement>(GLOSSARY_SELECTOR).forEach((element) => candidates.push(element));
   for (const element of candidates) {
     const entry = gameGlossaryEntry(glossaryLabel(element));
     if (!entry) continue;
