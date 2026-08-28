@@ -11,9 +11,9 @@ test("presentation runtimes are mounted after card preview and before the game p
   const bridge = layout.indexOf("<PresentationEventBridge />");
   const interaction = layout.indexOf("<PresentationInteractionRuntime />");
   const runtime = layout.indexOf("<GamePresentationRuntime />");
-  const cues = layout.indexOf("<GameActionCuesRuntime />");
   const children = layout.indexOf("{children}");
-  assert.ok(glossary >= 0 && preview > glossary && bridge > preview && interaction > bridge && runtime > interaction && cues > runtime && children > cues);
+  assert.ok(glossary >= 0 && preview > glossary && bridge > preview && interaction > bridge && runtime > interaction && children > runtime);
+  assert.doesNotMatch(layout, /GameActionCuesRuntime/);
   assert.ok(layout.indexOf('import "./game-presentation.css"') < layout.indexOf('import "./command-bar-fixes.css"'));
 });
 
@@ -46,7 +46,7 @@ test("presentation bridge deduplicates material transitions and recovers resolve
   }
   assert.match(bridge, /MAX_SEEN_TRANSITIONS = 256/);
   assert.match(bridge, /seenTransitionKeys/);
-  assert.match(bridge, /transitionKey\(detail\)/);
+  assert.match(bridge, /transitionKey\(base\)/);
   assert.match(bridge, /single-attack-resolution/);
   assert.match(bridge, /attackFromCombat/);
   assert.match(bridge, /type: "attack"/);
@@ -66,14 +66,13 @@ test("guest online presentation mirrors nested priority ownership", () => {
   assert.match(bridge, /responder: flipOwner\(game\.pendingResponse\.responder\)/);
 });
 
-test("AI keeps its original runtime shape and waits for both presentation queues", () => {
+test("AI keeps its original runtime shape and waits for the single presentation transaction", () => {
   const runtime = read("app/rules-engine/ai-system/runtime.ts");
   assert.equal(existsSync(new URL("../app/rules-engine/ai-system/runtime-core.ts", import.meta.url)), false);
   assert.match(runtime, /controllerFor\(owner, difficulty\)\.planAttacks\(state, owner\)\.map/);
   assert.match(runtime, /__hemsfellPresentationBusy/);
-  assert.match(runtime, /__hemsfellPresentationCueBusy/);
   assert.match(runtime, /hemsfell:presentation-idle/);
-  assert.match(runtime, /hemsfell:presentation-cue-idle/);
+  assert.doesNotMatch(runtime, /PresentationCueBusy|presentation-cue/);
   assert.match(runtime, /PRESENTATION_IDLE_FAILSAFE_MS = 20000/);
   assert.match(runtime, /export async function chooseAdvancedAIAction[\s\S]*await waitForPresentationIdle\(\)/);
   assert.match(runtime, /export async function chooseAdvancedAIResponse[\s\S]*await waitForPresentationIdle\(\)/);
@@ -84,7 +83,7 @@ test("AI keeps its original runtime shape and waits for both presentation queues
 test("player interaction is blocked for the full presentation lifetime", () => {
   const runtime = read("app/presentation-interaction-runtime.tsx");
   assert.match(runtime, /__hemsfellPresentationBusy/);
-  assert.match(runtime, /__hemsfellPresentationCueBusy/);
+  assert.doesNotMatch(runtime, /PresentationCueBusy|presentation-cue/);
   assert.match(runtime, /pointerdown/);
   assert.match(runtime, /dragstart/);
   assert.match(runtime, /keydown/);
@@ -94,16 +93,16 @@ test("player interaction is blocked for the full presentation lifetime", () => {
 });
 
 test("combat and targeted effects have explicit one-shot visual cues", () => {
-  const runtime = read("app/game-action-cues-runtime.tsx");
+  const runtime = read("app/presentation-action-cues.ts");
   assert.match(runtime, /hh-combat-sword/);
   assert.match(runtime, /hh-effect-orb/);
-  assert.match(runtime, /animateCombat/);
+  assert.match(runtime, /animateActionCue/);
   assert.match(runtime, /animateSword\(layer, cue\.attacker, clash\)/);
   assert.match(runtime, /animateSword\(layer, cue\.defender, clash/);
   assert.match(runtime, /animateSword\(layer, cue\.attacker, cue\.hero\)/);
   assert.match(runtime, /animateMagicProjectile/);
-  assert.match(runtime, /__hemsfellPresentationCueBusy/);
-  assert.match(runtime, /seenOrder\.length > 256/);
+  assert.match(runtime, /canInferTargets/);
+  assert.match(runtime, /uniqueRects/);
 });
 
 test("presentation runtime serializes confirmed before-after clips and exposes pacing signals", () => {
@@ -112,7 +111,11 @@ test("presentation runtime serializes confirmed before-after clips and exposes p
   assert.match(runtime, /__hemsfellPresentationBusy/);
   assert.match(runtime, /hemsfell:presentation-busy/);
   assert.match(runtime, /hemsfell:presentation-idle/);
-  assert.match(runtime, /seenCommandIds/);
+  assert.match(runtime, /seenPresentationIds/);
+  assert.match(runtime, /captureActionCue/);
+  assert.match(runtime, /await animateActionCue/);
+  assert.match(runtime, /await presentDeltas/);
+  assert.match(runtime, /await Promise\.all\(completion\)/);
   assert.match(runtime, /if \(!detail\?\.before \|\| !detail\?\.after \|\| !detail\?\.command/);
   assert.match(runtime, /MAX_FLIGHTS = 8/);
 });
@@ -126,6 +129,7 @@ test("presentation CSS dims the hand while locked and styles combat/effect cues"
   assert.match(css, /\.hh-effect-orb/);
   assert.match(css, /\.hh-cue-impact\.is-combat/);
   assert.match(css, /\.hh-cue-impact\.is-magic/);
+  assert.doesNotMatch(css, /hh-action-cue-layer/);
   for (const kind of ["fx-summon", "fx-spell", "fx-artifact", "fx-terrain"]) assert.match(css, new RegExp(`visual-effect\\.${kind}`));
   assert.doesNotMatch(css, /visual-effect\.fx-ability\s*\{/);
   assert.doesNotMatch(css, /visual-effect\.fx-damage\s*\{/);

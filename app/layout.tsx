@@ -16,7 +16,6 @@ import CardPreviewRuntime from "./card-preview-runtime";
 import PresentationEventBridge from "./presentation-event-bridge";
 import PresentationInteractionRuntime from "./presentation-interaction-runtime";
 import GamePresentationRuntime from "./game-presentation-runtime";
-import GameActionCuesRuntime from "./game-action-cues-runtime";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -65,7 +64,6 @@ export default function RootLayout({
         <PresentationEventBridge />
         <PresentationInteractionRuntime />
         <GamePresentationRuntime />
-        <GameActionCuesRuntime />
         {children}
       </body>
     </html>

@@ -4,20 +4,17 @@ import { useEffect } from "react";
 
 type PresentationWindow = Window & {
   __hemsfellPresentationBusy?: boolean;
-  __hemsfellPresentationCueBusy?: boolean;
 };
 
 const PRESENTATION_EVENTS = [
   "hemsfell:presentation-busy",
   "hemsfell:presentation-idle",
-  "hemsfell:presentation-cue-busy",
-  "hemsfell:presentation-cue-idle",
 ];
 const BLOCKED_EVENTS = ["pointerdown", "click", "dblclick", "contextmenu", "dragstart", "drop", "keydown"] as const;
 
 const locked = () => {
   const presentationWindow = window as PresentationWindow;
-  return !!(presentationWindow.__hemsfellPresentationBusy || presentationWindow.__hemsfellPresentationCueBusy);
+  return !!presentationWindow.__hemsfellPresentationBusy;
 };
 
 export default function PresentationInteractionRuntime() {
@@ -41,7 +38,7 @@ export default function PresentationInteractionRuntime() {
       const target = event.target instanceof Element ? event.target : null;
       const insideGame = !!target?.closest(".screen-game") || event instanceof KeyboardEvent && !!document.querySelector(".screen-game");
       if (!insideGame) return;
-      if (target?.closest(".hh-motion-layer,.hh-effect-layer,.hh-action-cue-layer")) return;
+      if (target?.closest(".hh-motion-layer,.hh-effect-layer")) return;
       if (event.cancelable) event.preventDefault();
       event.stopImmediatePropagation();
     };

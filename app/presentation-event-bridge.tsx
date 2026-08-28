@@ -10,7 +10,7 @@ const MAX_SEEN_TRANSITIONS = 256;
 
 type SnapshotEntry = { revision: number; game: any; isHost: boolean };
 type ConfirmedAck = { before: any; command: Record<string, any>; commandId: string; revision: number };
-type PresentationPayload = { before: any; after: any; command: Record<string, any>; trace?: any[]; commandId: string; revision?: number };
+type PresentationPayload = { before: any; after: any; command: Record<string, any>; trace?: any[]; commandId: string; presentationId?: string; revision?: number };
 
 const clone = <T,>(value: T): T => {
   try { return structuredClone(value); }
@@ -98,6 +98,14 @@ const attackFromCombat = (combat: any) => combat?.attackerUid ? {
   attackerId: combat.attackerUid,
   ...(combat.targetHero || !combat.defenderUid ? { targetHero: true } : { defenderId: combat.defenderUid }),
 } : null;
+const immediateDirectAttack = (before: any, after: any, command: Record<string, any>) => {
+  if (command?.type !== "declareAttack" || !command?.attackerId) return null;
+  const owner = Number(command.owner) === 1 ? 1 : 0;
+  const defender = owner === 0 ? 1 : 0;
+  const heroWasHit = Number(after?.players?.[defender]?.life) < Number(before?.players?.[defender]?.life);
+  if (!heroWasHit) return null;
+  return { type: "attack", owner, attackerId: command.attackerId, targetHero: true };
+};
 const priorityResolutionCommand = (before: any, command: Record<string, any>) => {
   if (command?.type !== "passPriority") return command;
   const combatCheckpoint = before?.pendingAction?.checkpoint === "single-attack-resolution"
@@ -112,6 +120,8 @@ const priorityResolutionCommand = (before: any, command: Record<string, any>) =>
 };
 const presentedCommand = (before: any, after: any, command: Record<string, any> | undefined) => {
   if (!command?.type || !hasPresentableDelta(before, after)) return null;
+  const directAttack = immediateDirectAttack(before, after, command);
+  if (directAttack) return directAttack;
   const resolved = priorityResolutionCommand(before, command);
   if (!resolved?.type || EXCLUDED_COMMANDS.has(String(resolved.type))) return null;
   return resolved;
@@ -138,8 +148,7 @@ export default function PresentationEventBridge() {
     const seenOrder: string[] = [];
     let localSequence = 0;
 
-    const rememberTransition = (detail: PresentationPayload) => {
-      const key = transitionKey(detail);
+    const rememberTransition = (key: string) => {
       if (seenTransitionKeys.has(key)) return false;
       seenTransitionKeys.add(key);
       seenOrder.push(key);
@@ -153,8 +162,10 @@ export default function PresentationEventBridge() {
     const emit = (detail: PresentationPayload) => {
       const command = presentedCommand(detail.before, detail.after, detail.command);
       if (!command) return;
-      const next = { ...detail, command: clone(command) };
-      if (!rememberTransition(next)) return;
+      const base = { ...detail, command: clone(command) };
+      const presentationId = transitionKey(base);
+      if (!rememberTransition(presentationId)) return;
+      const next = { ...base, presentationId };
       window.dispatchEvent(new CustomEvent(PRESENTATION_EVENT, { detail: next }));
     };
 

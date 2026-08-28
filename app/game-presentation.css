@@ -1,6 +1,5 @@
 .hh-motion-layer,
-.hh-effect-layer,
-.hh-action-cue-layer {
+.hh-effect-layer {
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -12,7 +11,6 @@
 
 .hh-motion-layer { z-index: 7600; }
 .hh-effect-layer { z-index: 7700; }
-.hh-action-cue-layer { z-index: 7750; }
 
 .hh-presentation-hidden {
   opacity: 0 !important;
@@ -149,9 +147,8 @@
   box-shadow: 0 0 1rem rgb(112 198 255 / .8), inset 0 0 .85rem rgb(255 255 255 / .4);
 }
 
-/* Presentation is a real input boundary, not decoration. While either the
-   physical-card queue or the action-cue queue is busy, the match surface is
-   visually and interactively unavailable. */
+/* Presentation is a real input boundary, not decoration. The single ordered
+   presentation transaction owns motion, cues and deltas until it becomes idle. */
 html.hh-presentation-locked .screen-game .player-hand .original-card,
 html.hh-presentation-locked .screen-game .player-hand .card-frame,
 html.hh-presentation-locked .screen-game .player-hand [data-card-preview="true"] {
@@ -177,7 +174,7 @@ html.hh-presentation-locked .screen-game {
 }
 
 /* CombatAnimation remains responsible for declaration/priority/blocker input.
-   Once damage resolves, GameActionCuesRuntime is the single visual owner. */
+   Once damage resolves, GamePresentationRuntime is the single visual owner. */
 .combat-cinematic.stage-charging,
 .combat-cinematic.stage-impact,
 .combat-cinematic.stage-resolved {

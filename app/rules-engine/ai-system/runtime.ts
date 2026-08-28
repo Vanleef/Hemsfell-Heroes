@@ -8,19 +8,18 @@ const priorityInFlight = new Map<string, Promise<AIAction>>();
 const recentlySettledPriority = new Map<string, number>();
 const PRIORITY_HARD_TIMEOUT_MS = 850;
 const PRESENTATION_IDLE_FAILSAFE_MS = 20000;
-const PRESENTATION_IDLE_EVENTS = ["hemsfell:presentation-idle", "hemsfell:presentation-cue-idle"] as const;
+const PRESENTATION_IDLE_EVENTS = ["hemsfell:presentation-idle"] as const;
 let thinkingIndicatorInstalled = false;
 let debugTelemetryInstalled = false;
 
 type PresentationWindow = Window & {
   __hemsfellPresentationBusy?: boolean;
-  __hemsfellPresentationCueBusy?: boolean;
 };
 
 const presentationBusy = () => {
   if (typeof window === "undefined") return false;
   const presentationWindow = window as PresentationWindow;
-  return !!(presentationWindow.__hemsfellPresentationBusy || presentationWindow.__hemsfellPresentationCueBusy);
+  return !!presentationWindow.__hemsfellPresentationBusy;
 };
 
 async function waitForPresentationIdle(): Promise<void> {

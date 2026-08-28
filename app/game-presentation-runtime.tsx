@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { animateActionCue, captureActionCue, type ActionCue } from "./presentation-action-cues";
 
 type Owner = 0 | 1;
 type RectLike = { left: number; top: number; width: number; height: number; right: number; bottom: number };
@@ -11,6 +12,7 @@ type PresentationDetail = {
   command: Record<string, any>;
   trace?: any[];
   commandId?: string;
+  presentationId?: string;
   revision?: number;
 };
 type DomCard = {
@@ -193,7 +195,7 @@ function createFlightFace(face: HTMLElement) {
   return wrapper;
 }
 
-function arrivalRing(layer: HTMLElement, rect: RectLike) {
+async function arrivalRing(layer: HTMLElement, rect: RectLike) {
   if (prefersReducedMotion()) return;
   const point = center(rect);
   const ring = document.createElement("i");
@@ -201,14 +203,15 @@ function arrivalRing(layer: HTMLElement, rect: RectLike) {
   ring.style.left = `${point.x}px`;
   ring.style.top = `${point.y}px`;
   layer.append(ring);
-  ring.animate([
+  await ring.animate([
     { opacity: 0, transform: "translate(-50%,-50%) scale(.25)" },
     { offset: .22, opacity: 1 },
     { opacity: 0, transform: "translate(-50%,-50%) scale(1.65)" },
-  ], { duration: 360, easing: EASING }).finished.catch(() => undefined).finally(() => ring.remove());
+  ], { duration: 360, easing: EASING }).finished.catch(() => undefined);
+  ring.remove();
 }
 
-function destructionPrelude(layer: HTMLElement, rect: RectLike) {
+async function destructionPrelude(layer: HTMLElement, rect: RectLike) {
   if (prefersReducedMotion()) return;
   const point = center(rect);
   const ring = document.createElement("i");
@@ -216,14 +219,15 @@ function destructionPrelude(layer: HTMLElement, rect: RectLike) {
   ring.style.left = `${point.x}px`;
   ring.style.top = `${point.y}px`;
   layer.append(ring);
-  ring.animate([
+  await ring.animate([
     { opacity: 0, transform: "translate(-50%,-50%) scale(.4)" },
     { offset: .28, opacity: 1, transform: "translate(-50%,-50%) scale(1)" },
     { opacity: 0, transform: "translate(-50%,-50%) scale(.1)" },
-  ], { duration: 300, easing: EASING }).finished.catch(() => undefined).finally(() => ring.remove());
+  ], { duration: 300, easing: EASING }).finished.catch(() => undefined);
+  ring.remove();
 }
 
-function banishVortex(layer: HTMLElement, rect: RectLike) {
+async function banishVortex(layer: HTMLElement, rect: RectLike) {
   if (prefersReducedMotion()) return;
   const point = center(rect);
   const node = document.createElement("i");
@@ -231,14 +235,15 @@ function banishVortex(layer: HTMLElement, rect: RectLike) {
   node.style.left = `${point.x}px`;
   node.style.top = `${point.y}px`;
   layer.append(node);
-  node.animate([
+  await node.animate([
     { opacity: 0, transform: "translate(-50%,-50%) scale(.25) rotate(0deg)" },
     { offset: .2, opacity: 1 },
     { opacity: 0, transform: "translate(-50%,-50%) scale(1.25) rotate(280deg)" },
-  ], { duration: 520, easing: EASING }).finished.catch(() => undefined).finally(() => node.remove());
+  ], { duration: 520, easing: EASING }).finished.catch(() => undefined);
+  node.remove();
 }
 
-function effectBeam(layer: HTMLElement, from: RectLike, to: RectLike) {
+async function effectBeam(layer: HTMLElement, from: RectLike, to: RectLike) {
   if (prefersReducedMotion()) return;
   const a = center(from), b = center(to), dx = b.x - a.x, dy = b.y - a.y;
   const beam = document.createElement("i");
@@ -248,15 +253,16 @@ function effectBeam(layer: HTMLElement, from: RectLike, to: RectLike) {
   beam.style.width = `${Math.max(10, Math.hypot(dx, dy))}px`;
   beam.style.transform = `rotate(${Math.atan2(dy, dx) * 180 / Math.PI}deg)`;
   layer.append(beam);
-  beam.animate([
+  await beam.animate([
     { opacity: 0, clipPath: "inset(0 100% 0 0)" },
     { offset: .25, opacity: 1, clipPath: "inset(0 0 0 0)" },
     { offset: .7, opacity: 1 },
     { opacity: 0 },
-  ], { duration: 420, easing: EASING }).finished.catch(() => undefined).finally(() => beam.remove());
+  ], { duration: 420, easing: EASING }).finished.catch(() => undefined);
+  beam.remove();
 }
 
-function floatingLabel(layer: HTMLElement, rect: RectLike, text: string, tone: "positive" | "negative" | "neutral") {
+async function floatingLabel(layer: HTMLElement, rect: RectLike, text: string, tone: "positive" | "negative" | "neutral") {
   if (!text || layer.querySelectorAll(".hh-float").length >= MAX_FLOATS) return;
   const point = center(rect);
   const node = document.createElement("b");
@@ -266,20 +272,22 @@ function floatingLabel(layer: HTMLElement, rect: RectLike, text: string, tone: "
   node.style.top = `${point.y}px`;
   layer.append(node);
   const duration = prefersReducedMotion() ? 140 : 620;
-  node.animate([
+  await node.animate([
     { opacity: 0, transform: "translate(-50%,4px) scale(.75)" },
     { offset: .2, opacity: 1, transform: "translate(-50%,-6px) scale(1.1)" },
     { offset: .7, opacity: 1, transform: "translate(-50%,-18px) scale(1)" },
     { opacity: 0, transform: "translate(-50%,-34px) scale(.94)" },
-  ], { duration, easing: EASING }).finished.catch(() => undefined).finally(() => node.remove());
+  ], { duration, easing: EASING }).finished.catch(() => undefined);
+  node.remove();
 }
 
 async function animateCardMove(layer: HTMLElement, effectLayer: HTMLElement, flight: Flight) {
   const reduced = prefersReducedMotion();
   const to = flight.to || flight.from;
   flight.destination?.classList.add("hh-presentation-hidden");
-  if (flight.kind === "destroy") destructionPrelude(effectLayer, flight.from);
-  if (flight.kind === "banish") banishVortex(effectLayer, to);
+  const ambient: Promise<void>[] = [];
+  if (flight.kind === "destroy") ambient.push(destructionPrelude(effectLayer, flight.from));
+  if (flight.kind === "banish") ambient.push(banishVortex(effectLayer, to));
   const wrapper = document.createElement("div");
   wrapper.className = `hh-flight-card is-${flight.kind}`;
   wrapper.style.left = `${flight.from.left}px`;
@@ -295,9 +303,18 @@ async function animateCardMove(layer: HTMLElement, effectLayer: HTMLElement, fli
   const duration = reduced ? 120 : flight.kind === "cast" ? 760 : flight.kind === "summon" ? 560 : flight.kind === "draw" ? 420 : 430;
   const delay = reduced ? 0 : Math.max(0, flight.delay || 0);
   let keyframes: Keyframe[];
+  let effectOrigin = flight.from;
   if (flight.kind === "cast") {
     const board = document.querySelector<HTMLElement>(".screen-game .game-content.hs-board");
     const boardRect = board ? rectOf(board) : { left: 0, top: 0, width: innerWidth, height: innerHeight, right: innerWidth, bottom: innerHeight };
+    effectOrigin = {
+      left: boardRect.left + boardRect.width * .5 - 1,
+      top: boardRect.top + boardRect.height * .5 - 1,
+      width: 2,
+      height: 2,
+      right: boardRect.left + boardRect.width * .5 + 1,
+      bottom: boardRect.top + boardRect.height * .5 + 1,
+    };
     const cx = boardRect.left + boardRect.width * .5 - flight.from.left - flight.from.width / 2;
     const cy = boardRect.top + boardRect.height * .5 - flight.from.top - flight.from.height / 2;
     keyframes = [
@@ -320,11 +337,14 @@ async function animateCardMove(layer: HTMLElement, effectLayer: HTMLElement, fli
       { transform: `translate3d(${dx}px,${dy}px,0) scale(${scale}) rotate(0deg)`, opacity: 1 },
     ];
   }
-  await wrapper.animate(keyframes, { duration, delay, easing: EASING, fill: "forwards" }).finished.catch(() => undefined);
+  const movement = wrapper.animate(keyframes, { duration, delay, easing: EASING, fill: "forwards" }).finished.catch(() => undefined);
+  await Promise.all([movement, ...ambient]);
   wrapper.remove();
   flight.destination?.classList.remove("hh-presentation-hidden");
-  if (flight.destination?.isConnected && !["destroy", "banish", "cast"].includes(flight.kind)) arrivalRing(effectLayer, rectOf(flight.destination));
-  flight.targets?.forEach((target) => effectBeam(effectLayer, flight.kind === "cast" ? to : flight.from, target));
+  const completion: Promise<void>[] = [];
+  if (flight.destination?.isConnected && !["destroy", "banish", "cast"].includes(flight.kind)) completion.push(arrivalRing(effectLayer, rectOf(flight.destination)));
+  for (const target of flight.targets || []) completion.push(effectBeam(effectLayer, effectOrigin, target));
+  await Promise.all(completion);
 }
 
 function stateHandIndex(game: any, owner: Owner, id: string) {
@@ -373,7 +393,7 @@ function buildFlights(detail: PresentationDetail, beforeDom: DomSnapshot, afterD
         else if (countDelta(pBefore?.deck, pAfter?.deck, key) < 0) source = beforeDom.piles.get(`${owner}:deck`) || null;
       }
       if (source) flights.push({ kind, from: source.rect, to: destination.rect, face: source === playedSource ? source.clone : destination.clone, destination: destination.element, delay: flights.length * 55 });
-      else arrivalRing(document.querySelector<HTMLElement>(".hh-effect-layer")!, destination.rect);
+      else flights.push({ kind, from: destination.rect, to: destination.rect, face: destination.clone, destination: destination.element, delay: flights.length * 55 });
       usedDestinationUids.add(uid);
     }
 
@@ -425,24 +445,26 @@ function buildFlights(detail: PresentationDetail, beforeDom: DomSnapshot, afterD
   });
 }
 
-function presentDeltas(beforeDom: DomSnapshot, afterDom: DomSnapshot, layer: HTMLElement) {
+async function presentDeltas(beforeDom: DomSnapshot, afterDom: DomSnapshot, layer: HTMLElement) {
+  const labels: Promise<void>[] = [];
   for (const [uid, fresh] of afterDom.units) {
     const old = beforeDom.units.get(uid);
     if (!old) continue;
     if (old.hp != null && fresh.hp != null && old.hp !== fresh.hp) {
       const delta = fresh.hp - old.hp;
-      floatingLabel(layer, fresh.rect, `${delta > 0 ? "+" : ""}${delta}`, delta > 0 ? "positive" : "negative");
+      labels.push(floatingLabel(layer, fresh.rect, `${delta > 0 ? "+" : ""}${delta}`, delta > 0 ? "positive" : "negative"));
     } else if (old.atk != null && fresh.atk != null && old.atk !== fresh.atk) {
       const delta = fresh.atk - old.atk;
-      floatingLabel(layer, fresh.rect, `${delta > 0 ? "+" : ""}${delta}`, delta > 0 ? "positive" : "negative");
+      labels.push(floatingLabel(layer, fresh.rect, `${delta > 0 ? "+" : ""}${delta}`, delta > 0 ? "positive" : "negative"));
     }
   }
   for (const owner of [0, 1] as const) {
     const old = beforeDom.heroes.get(owner), fresh = afterDom.heroes.get(owner);
     if (!old || !fresh || old.life === fresh.life) continue;
     const delta = fresh.life - old.life;
-    floatingLabel(layer, fresh.rect, `${delta > 0 ? "+" : ""}${delta}`, delta > 0 ? "positive" : "negative");
+    labels.push(floatingLabel(layer, fresh.rect, `${delta > 0 ? "+" : ""}${delta}`, delta > 0 ? "positive" : "negative"));
   }
+  await Promise.all(labels);
 }
 
 export default function GamePresentationRuntime() {
@@ -453,8 +475,9 @@ export default function GamePresentationRuntime() {
     let sequence: Promise<void> = Promise.resolve();
     let queued = 0;
     let refreshFrame = 0;
-    const seenCommandIds = new Set<string>();
+    const seenPresentationIds = new Set<string>();
     const seenOrder: string[] = [];
+    let disposed = false;
 
     const setBusy = (busy: boolean) => {
       if (!!presentationWindow.__hemsfellPresentationBusy === busy) return;
@@ -463,39 +486,52 @@ export default function GamePresentationRuntime() {
     };
     presentationWindow.__hemsfellPresentationBusy = false;
 
-    const rememberCommand = (detail: PresentationDetail) => {
-      if (!detail.commandId) return true;
-      if (seenCommandIds.has(detail.commandId)) return false;
-      seenCommandIds.add(detail.commandId);
-      seenOrder.push(detail.commandId);
+    const rememberPresentation = (detail: PresentationDetail) => {
+      const key = detail.presentationId || `${detail.revision ?? "local"}:${detail.commandId || "unknown"}`;
+      if (seenPresentationIds.has(key)) return false;
+      seenPresentationIds.add(key);
+      seenOrder.push(key);
       while (seenOrder.length > MAX_SEEN_COMMANDS) {
         const expired = seenOrder.shift();
-        if (expired) seenCommandIds.delete(expired);
+        if (expired) seenPresentationIds.delete(expired);
       }
       return true;
     };
 
-    const present = async (detail: PresentationDetail, capturedDom: DomSnapshot) => {
+    const present = async (detail: PresentationDetail, capturedDom: DomSnapshot, cue: ActionCue | null) => {
       await afterReactPaint();
+      if (disposed) return;
       const afterDom = snapshotDom();
       const beforeDom = expectedUnitScore(detail.before, stableDom) > expectedUnitScore(detail.before, capturedDom) ? stableDom : capturedDom;
       const flights = buildFlights(detail, beforeDom, afterDom);
-      if (flights.length) {
-        for (const flight of flights) await animateCardMove(layers.motion, layers.effect, flight);
-      }
-      presentDeltas(beforeDom, afterDom, layers.effect);
+      const arrivals = flights.filter((flight) => flight.kind !== "destroy" && flight.kind !== "banish");
+      const departures = flights.filter((flight) => flight.kind === "destroy" || flight.kind === "banish");
+
+      /* One action owns one ordered visual transaction:
+         1. combat declaration impact, or card arrival/cast;
+         2. targeted ability cue;
+         3. destruction/banishment caused by that cue;
+         4. numeric state deltas.
+         Every animation is awaited, so idle cannot be emitted while a child
+         animation from the same action is still visible. */
+      if (cue?.kind === "combat") await animateActionCue(layers.effect, cue);
+      for (const flight of arrivals) await animateCardMove(layers.motion, layers.effect, flight);
+      if (cue?.kind === "effect") await animateActionCue(layers.effect, cue);
+      for (const flight of departures) await animateCardMove(layers.motion, layers.effect, flight);
+      await presentDeltas(beforeDom, afterDom, layers.effect);
       stableDom = snapshotDom();
     };
 
     const onAction = (event: Event) => {
       const detail = (event as CustomEvent<PresentationDetail>).detail;
-      if (!detail?.before || !detail?.after || !detail?.command || !rememberCommand(detail)) return;
+      if (!detail?.before || !detail?.after || !detail?.command || !rememberPresentation(detail)) return;
       const capturedDom = snapshotDom();
+      const cue = captureActionCue(detail);
       queued += 1;
       setBusy(true);
-      sequence = sequence.catch(() => undefined).then(() => present(detail, capturedDom)).finally(() => {
+      sequence = sequence.catch(() => undefined).then(() => present(detail, capturedDom, cue)).finally(() => {
         queued = Math.max(0, queued - 1);
-        if (!queued) setBusy(false);
+        if (!queued && !disposed) setBusy(false);
       });
     };
     window.addEventListener(ACTION_EVENT, onAction as EventListener);
@@ -512,10 +548,13 @@ export default function GamePresentationRuntime() {
     observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["class", "data-unit-id"] });
 
     return () => {
+      disposed = true;
       if (refreshFrame) cancelAnimationFrame(refreshFrame);
       observer.disconnect();
       window.removeEventListener(ACTION_EVENT, onAction as EventListener);
       presentationWindow.__hemsfellPresentationBusy = false;
+      layers.motion.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
+      layers.effect.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
       layers.motion.remove();
       layers.effect.remove();
     };

@@ -1,24 +1,78 @@
-"use client";
-
-import { useEffect } from "react";
-
 type Owner = 0 | 1;
-type RectLike = { left: number; top: number; width: number; height: number; right: number; bottom: number };
-type PresentationDetail = {
-  before: any;
-  after: any;
-  command: Record<string, any>;
+
+type CardLike = {
+  uid?: unknown;
+  id?: unknown;
+  type?: unknown;
+  damage?: unknown;
+  bonusAtk?: unknown;
+  bonusHp?: unknown;
+  temporaryAtk?: unknown;
+  temporaryHp?: unknown;
+  markers?: unknown;
+  exhausted?: unknown;
+  frozen?: unknown;
+  stunned?: unknown;
+  suffocated?: unknown;
+  immobilized?: unknown;
+  tags?: unknown;
+  temporaryTags?: unknown;
+  modifiers?: unknown;
+  grantedKeywords?: unknown;
+};
+
+type PlayerLike = {
+  board?: CardLike[];
+  support?: CardLike[];
+  terrain?: CardLike | null;
+  hand?: CardLike[];
+  life?: unknown;
+};
+
+type GameLike = {
+  players?: PlayerLike[];
+  pendingDecision?: {
+    sourceId?: unknown;
+    sourceUid?: unknown;
+    context?: { sourceId?: unknown };
+  };
+};
+
+type CommandLike = Record<string, unknown> & {
+  type?: unknown;
+  owner?: unknown;
+  sourceId?: unknown;
+  cardId?: unknown;
+  targetIds?: unknown[];
+  targetId?: unknown;
+  defenderId?: unknown;
+  elementalTargetId?: unknown;
+  attackerId?: unknown;
+  targetHero?: unknown;
+};
+
+export type RectLike = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  right: number;
+  bottom: number;
+};
+
+export type PresentationActionDetail = {
+  before: GameLike;
+  after: GameLike;
+  command: CommandLike;
   commandId?: string;
+  presentationId?: string;
   revision?: number;
 };
-type Cue =
+
+export type ActionCue =
   | { kind: "combat"; attacker: RectLike; defender?: RectLike; hero?: RectLike }
   | { kind: "effect"; source: RectLike; targets: RectLike[] };
-type PresentationWindow = Window & { __hemsfellPresentationCueBusy?: boolean };
 
-const ACTION_EVENT = "hemsfell:presentation-action";
-const CUE_BUSY_EVENT = "hemsfell:presentation-cue-busy";
-const CUE_IDLE_EVENT = "hemsfell:presentation-cue-idle";
 const MAX_TARGETS = 6;
 const EASING = "cubic-bezier(.18,.8,.28,1)";
 
@@ -42,15 +96,26 @@ const uniqueRects = (rects: RectLike[]) => {
   });
 };
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-const fields = (player: any) => [...(player?.board || []), ...(player?.support || []), ...(player?.terrain ? [player.terrain] : [])];
-const cardId = (card: any) => String(card?.uid || card?.id || "");
-const unitState = (card: any) => JSON.stringify({
-  damage: card?.damage, bonusAtk: card?.bonusAtk, bonusHp: card?.bonusHp, temporaryAtk: card?.temporaryAtk, temporaryHp: card?.temporaryHp,
-  markers: card?.markers, exhausted: card?.exhausted, frozen: card?.frozen, stunned: card?.stunned,
-  suffocated: card?.suffocated, immobilized: card?.immobilized, tags: card?.tags, temporaryTags: card?.temporaryTags,
-  modifiers: card?.modifiers, grantedKeywords: card?.grantedKeywords,
+const fields = (player?: PlayerLike) => [...(player?.board || []), ...(player?.support || []), ...(player?.terrain ? [player.terrain] : [])];
+const cardId = (card: CardLike) => String(card?.uid || card?.id || "");
+const unitState = (card: CardLike) => JSON.stringify({
+  damage: card?.damage,
+  bonusAtk: card?.bonusAtk,
+  bonusHp: card?.bonusHp,
+  temporaryAtk: card?.temporaryAtk,
+  temporaryHp: card?.temporaryHp,
+  markers: card?.markers,
+  exhausted: card?.exhausted,
+  frozen: card?.frozen,
+  stunned: card?.stunned,
+  suffocated: card?.suffocated,
+  immobilized: card?.immobilized,
+  tags: card?.tags,
+  temporaryTags: card?.temporaryTags,
+  modifiers: card?.modifiers,
+  grantedKeywords: card?.grantedKeywords,
 });
-const sourceIdFor = (detail: PresentationDetail) => String(
+const sourceIdFor = (detail: PresentationActionDetail) => String(
   detail.command?.sourceId
   || detail.before?.pendingDecision?.sourceId
   || detail.before?.pendingDecision?.context?.sourceId
@@ -64,17 +129,20 @@ function unitElement(id: string) {
   }
   return null;
 }
+
 function heroElement(owner: Owner) {
   const selector = owner === 1 ? ".game-stage .player-hero.enemy" : ".game-stage .player-hero:not(.enemy)";
   return document.querySelector<HTMLElement>(selector);
 }
+
 function heroTargetOwner(id: string, fallback: Owner): Owner | null {
   const normalized = id.toLowerCase();
   if (!normalized.includes("hero")) return null;
   if (normalized.includes("enemy") || /hero[-_:]?1$/.test(normalized)) return 1;
-  if (normalized.includes("player") || /hero[-_:]?0$/.test(normalized)) return 0;
+  if (normalized.includes("player") || normalized.includes("ally") || /hero[-_:]?0$/.test(normalized)) return 0;
   return fallback;
 }
+
 function targetRect(id: string, fallbackOwner: Owner): RectLike | null {
   const heroOwner = heroTargetOwner(id, fallbackOwner);
   if (heroOwner != null) {
@@ -85,11 +153,19 @@ function targetRect(id: string, fallbackOwner: Owner): RectLike | null {
   return unit ? rectOf(unit) : null;
 }
 
-function changedTargetRects(detail: PresentationDetail, excludedIds = new Set<string>()) {
+function changedTargetRects(detail: PresentationActionDetail, excludedIds = new Set<string>()) {
   const result: RectLike[] = [];
   for (const owner of [0, 1] as const) {
-    const before = new Map(fields(detail.before?.players?.[owner]).map((card: any) => [cardId(card), card]).filter(([id]) => !!id));
-    const after = new Map(fields(detail.after?.players?.[owner]).map((card: any) => [cardId(card), card]).filter(([id]) => !!id));
+    const before = new Map<string, CardLike>();
+    const after = new Map<string, CardLike>();
+    for (const card of fields(detail.before?.players?.[owner])) {
+      const id = cardId(card);
+      if (id) before.set(id, card);
+    }
+    for (const card of fields(detail.after?.players?.[owner])) {
+      const id = cardId(card);
+      if (id) after.set(id, card);
+    }
     for (const [id, oldCard] of before) {
       if (excludedIds.has(id)) continue;
       const fresh = after.get(id);
@@ -105,7 +181,7 @@ function changedTargetRects(detail: PresentationDetail, excludedIds = new Set<st
   return uniqueRects(result);
 }
 
-function explicitTargetRects(detail: PresentationDetail) {
+function explicitTargetRects(detail: PresentationActionDetail) {
   const owner: Owner = Number(detail.command?.owner) === 1 ? 1 : 0;
   const ids = [
     ...(Array.isArray(detail.command?.targetIds) ? detail.command.targetIds : []),
@@ -116,7 +192,7 @@ function explicitTargetRects(detail: PresentationDetail) {
   return uniqueRects(ids.map((id) => targetRect(id, (1 - owner) as Owner)).filter((rect): rect is RectLike => !!rect));
 }
 
-function sourceRect(detail: PresentationDetail): RectLike | null {
+function sourceRect(detail: PresentationActionDetail): RectLike | null {
   const owner: Owner = Number(detail.command?.owner) === 1 ? 1 : 0;
   const sourceId = sourceIdFor(detail);
   const source = sourceId ? unitElement(sourceId) : null;
@@ -125,13 +201,13 @@ function sourceRect(detail: PresentationDetail): RectLike | null {
   return hero ? rectOf(hero) : null;
 }
 
-function playedCard(detail: PresentationDetail) {
+function playedCard(detail: PresentationActionDetail) {
   const owner: Owner = Number(detail.command?.owner) === 1 ? 1 : 0;
   const wanted = String(detail.command?.cardId || "");
-  return (detail.before?.players?.[owner]?.hand || []).find((card: any) => String(card?.id || card?.uid || "") === wanted);
+  return (detail.before?.players?.[owner]?.hand || []).find((card) => String(card?.id || card?.uid || "") === wanted);
 }
 
-function captureCue(detail: PresentationDetail): Cue | null {
+export function captureActionCue(detail: PresentationActionDetail): ActionCue | null {
   const command = detail.command || {};
   const owner: Owner = Number(command.owner) === 1 ? 1 : 0;
   if (command.type === "attack") {
@@ -144,28 +220,19 @@ function captureCue(detail: PresentationDetail): Cue | null {
     const hero = heroElement((1 - owner) as Owner);
     return hero ? { kind: "combat", attacker: rectOf(attacker), hero: rectOf(hero) } : null;
   }
-  if (["declareAttack", "selectDefender", "reposition", "confirmReposition", "surrender"].includes(String(command.type))) return null;
-  if (command.type === "onlineSnapshot") return null;
+  if (["declareAttack", "selectDefender", "reposition", "confirmReposition", "surrender", "onlineSnapshot"].includes(String(command.type))) return null;
   if (command.type === "playCard" && playedCard(detail)?.type === "Feitiço") return null;
 
   const source = sourceRect(detail);
   if (!source) return null;
   const explicit = explicitTargetRects(detail);
   const sourceIds = new Set([sourceIdFor(detail)].filter(Boolean));
-  const inferred = explicit.length ? [] : changedTargetRects(detail, sourceIds);
-  const selected = explicit.length ? explicit : inferred.length === 1 ? inferred : [];
+  const canInferTargets = ["playCard", "activate", "activateHero", "resolveDecision"].includes(String(command.type));
+  const inferred = explicit.length || !canInferTargets ? [] : changedTargetRects(detail, sourceIds);
+  const selected = explicit.length ? explicit : inferred.length <= MAX_TARGETS ? inferred : [];
   const sourceKey = rectKey(source);
   const targets = uniqueRects(selected).filter((rect) => rectKey(rect) !== sourceKey).slice(0, MAX_TARGETS);
   return targets.length ? { kind: "effect", source, targets } : null;
-}
-
-function installLayer() {
-  document.querySelectorAll(".hh-action-cue-layer").forEach((node) => node.remove());
-  const layer = document.createElement("div");
-  layer.className = "hh-action-cue-layer";
-  layer.setAttribute("aria-hidden", "true");
-  document.body.append(layer);
-  return layer;
 }
 
 async function animateSword(layer: HTMLElement, from: RectLike, to: RectLike, delay = 0) {
@@ -203,22 +270,6 @@ async function impact(layer: HTMLElement, rect: RectLike, kind: "combat" | "magi
   node.remove();
 }
 
-async function animateCombat(layer: HTMLElement, cue: Extract<Cue, { kind: "combat" }>) {
-  if (cue.defender) {
-    const clash = midpoint(cue.attacker, cue.defender);
-    await Promise.all([
-      animateSword(layer, cue.attacker, clash),
-      animateSword(layer, cue.defender, clash, 35),
-    ]);
-    await impact(layer, clash, "combat");
-    return;
-  }
-  if (cue.hero) {
-    await animateSword(layer, cue.attacker, cue.hero);
-    await impact(layer, cue.hero, "combat");
-  }
-}
-
 async function animateMagicProjectile(layer: HTMLElement, from: RectLike, to: RectLike, delay: number) {
   const a = center(from), b = center(to), dx = b.x - a.x, dy = b.y - a.y;
   const orb = document.createElement("i");
@@ -237,65 +288,22 @@ async function animateMagicProjectile(layer: HTMLElement, from: RectLike, to: Re
   await impact(layer, to, "magic");
 }
 
-async function animateEffect(layer: HTMLElement, cue: Extract<Cue, { kind: "effect" }>) {
-  await Promise.all(cue.targets.map((target, index) => animateMagicProjectile(layer, cue.source, target, index * 45)));
-}
-
-const afterReactPaint = () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-
-export default function GameActionCuesRuntime() {
-  useEffect(() => {
-    const layer = installLayer();
-    const presentationWindow = window as PresentationWindow;
-    const seen = new Set<string>();
-    const seenOrder: string[] = [];
-    let queued = 0;
-    let sequence: Promise<void> = Promise.resolve();
-
-    const setBusy = (busy: boolean) => {
-      if (!!presentationWindow.__hemsfellPresentationCueBusy === busy) return;
-      presentationWindow.__hemsfellPresentationCueBusy = busy;
-      window.dispatchEvent(new CustomEvent(busy ? CUE_BUSY_EVENT : CUE_IDLE_EVENT));
-    };
-    presentationWindow.__hemsfellPresentationCueBusy = false;
-
-    const remember = (detail: PresentationDetail) => {
-      const key = `${detail.revision ?? "local"}:${detail.commandId || detail.command?.type || "action"}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      seenOrder.push(key);
-      while (seenOrder.length > 256) {
-        const expired = seenOrder.shift();
-        if (expired) seen.delete(expired);
-      }
-      return true;
-    };
-
-    const onAction = (event: Event) => {
-      const detail = (event as CustomEvent<PresentationDetail>).detail;
-      if (!detail?.before || !detail?.after || !detail?.command || !remember(detail)) return;
-      const cue = captureCue(detail);
-      if (!cue) return;
-      queued += 1;
-      setBusy(true);
-      sequence = sequence.catch(() => undefined).then(async () => {
-        await afterReactPaint();
-        if (cue.kind === "effect" && document.querySelector(".visual-effect.fx-ability,.visual-effect.fx-damage")) return;
-        if (cue.kind === "combat") await animateCombat(layer, cue);
-        else await animateEffect(layer, cue);
-      }).finally(() => {
-        queued = Math.max(0, queued - 1);
-        if (!queued) setBusy(false);
-      });
-    };
-
-    window.addEventListener(ACTION_EVENT, onAction as EventListener);
-    return () => {
-      window.removeEventListener(ACTION_EVENT, onAction as EventListener);
-      presentationWindow.__hemsfellPresentationCueBusy = false;
-      layer.remove();
-    };
-  }, []);
-
-  return null;
+export async function animateActionCue(layer: HTMLElement, cue: ActionCue) {
+  if (cue.kind === "effect") {
+    await Promise.all(cue.targets.map((target, index) => animateMagicProjectile(layer, cue.source, target, index * 45)));
+    return;
+  }
+  if (cue.defender) {
+    const clash = midpoint(cue.attacker, cue.defender);
+    await Promise.all([
+      animateSword(layer, cue.attacker, clash),
+      animateSword(layer, cue.defender, clash, 35),
+    ]);
+    await impact(layer, clash, "combat");
+    return;
+  }
+  if (cue.hero) {
+    await animateSword(layer, cue.attacker, cue.hero);
+    await impact(layer, cue.hero, "combat");
+  }
 }

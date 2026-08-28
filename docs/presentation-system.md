@@ -19,15 +19,15 @@ Rules, priority and decisions do not depend on animation frames or clip duration
 - `.hh-motion-layer`: card flights between hand, field and piles.
 - `.hh-effect-layer`: arrival rings, spell beams, impacts and floating labels.
 
-`GameActionCuesRuntime` owns `.hh-action-cue-layer` for resolved combat and targeted-effect readability. Creature-versus-creature combat launches one sword cue from each creature into a central clash. Direct attacks launch a sword from the attacker toward the damaged Hero. Activated and other targeted effects can launch a magic projectile toward affected permanents/Heroes; spell casts continue to use the existing cast flight and target beams instead of duplicating that cue.
+`GamePresentationRuntime` is the single owner of resolved motion, combat cues, targeted effects and numeric deltas. Its helpers in `presentation-action-cues.ts` capture the source and targets once. Creature-versus-creature combat launches one sword cue from each creature into a central clash. Direct attacks launch a sword from the attacker toward the damaged Hero. Activated and other targeted effects can launch a magic projectile toward affected permanents/Heroes; spell casts use the cast flight and target beams instead of duplicating that cue.
 
-Both runtimes are one-shot consumers. The bridge deduplicates authoritative transitions and the cue runtime maintains its own bounded seen-key cache as a second guard.
+The bridge and runtime are one-shot consumers. The bridge assigns and deduplicates a stable presentation ID, while the runtime keeps its own bounded seen-ID cache as a second guard.
 
 ## Input and AI pacing
 
-`GamePresentationRuntime` exposes `window.__hemsfellPresentationBusy` plus `hemsfell:presentation-busy` / `hemsfell:presentation-idle`. `GameActionCuesRuntime` exposes the equivalent `__hemsfellPresentationCueBusy` and cue busy/idle events.
+`GamePresentationRuntime` exposes `window.__hemsfellPresentationBusy` plus `hemsfell:presentation-busy` / `hemsfell:presentation-idle` for the complete transaction. Arrival rings, beams, impacts and floating numbers are awaited before idle is emitted; there is no second cue-specific busy channel.
 
-`PresentationInteractionRuntime` treats either busy flag as a hard match input boundary. While presentation is active, pointer/click/drag/keyboard actions inside the match are intercepted, `.screen-game` is marked `aria-busy`, and the player's hand is rendered with the same unavailable visual language used for cards that cannot currently be played. Input becomes available only after both queues are idle.
+`PresentationInteractionRuntime` treats the presentation busy flag as a hard match input boundary. While a presentation transaction is active, pointer/click/drag/keyboard actions inside the match are intercepted, `.screen-game` is marked `aria-busy`, and the player's hand is rendered with the same unavailable visual language used for cards that cannot currently be played. Input becomes available only after the complete transaction is idle.
 
 The original `ai-system/runtime.ts` remains the single AI runtime surface. Normal decisions and priority-response searches await presentation idle before starting. Once idle, priority computation still uses its existing 850 ms hard search deadline. A long fail-safe exists only to recover from catastrophic presentation-runtime teardown, not as normal pacing.
 
