@@ -1,0 +1,102 @@
+name: Finalize Ordered Combat Presentation
+
+on:
+  push:
+    branches:
+      - feat/presentation-system-pr1
+    paths:
+      - .github/workflows/presentation-finalize.yml
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Apply verified presentation refactor recipe
+        shell: bash
+        run: |
+          python - <<'EXTRACT'
+          from pathlib import Path
+
+          recipe_path = Path('.github/workflows/presentation-sequencer-refactor.yml')
+          text = recipe_path.read_text(encoding='utf-8')
+          marker = "          python - <<'PY'\n"
+          start = text.index(marker) + len(marker)
+          end = text.index("\n          PY\n", start)
+          body = text[start:end]
+          body = "\n".join(line[10:] if line.startswith("          ") else line for line in body.splitlines())
+          exec(compile(body, str(recipe_path), 'exec'), {'__name__': '__main__'})
+          EXTRACT
+
+      - name: Update regression contract for staged state commit
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tests/presentation-dedupe-regression.test.mjs')
+          text = path.read_text(encoding='utf-8')
+          old = '''test("child animations are awaited before presentation idle", () => {
+            const runtime = read("app/game-presentation-runtime.tsx");
+            assert.match(runtime, /await Promise\\.all\\(\\[movement, \\.\\.\\.ambient\\]\\)/);
+            assert.match(runtime, /await Promise\\.all\\(completion\\)/);
+            assert.match(runtime, /await Promise\\.all\\(labels\\)/);
+            assert.doesNotMatch(runtime, /flight\\.targets\\?\\.forEach\\(\\(target\\) => effectBeam/);
+            assert.match(runtime, /const heldState = holdChangedState/);
+            assert.match(runtime, /finally \\{\\s*releaseChangedState\\(heldState\\)/);
+            assert.ok(runtime.indexOf("releaseChangedState(heldState)") < runtime.indexOf("await presentDeltas"));
+          });'''
+          new = '''test("blocking child animations are ordered while readable damage gates visual state commit", () => {
+            const runtime = read("app/game-presentation-runtime.tsx");
+            assert.match(runtime, /await Promise\\.all\\(\\[movement, \\.\\.\\.ambient\\]\\)/);
+            assert.match(runtime, /await Promise\\.all\\(completion\\)/);
+            assert.match(runtime, /const completion = Promise\\.all\\(labels\\)/);
+            assert.match(runtime, /if \\(settle\\) await completion/);
+            assert.doesNotMatch(runtime, /flight\\.targets\\?\\.forEach\\(\\(target\\) => effectBeam/);
+            assert.match(runtime, /const heldState = holdChangedState/);
+            assert.match(runtime, /releaseReadableState\\(heldState\\)/);
+            assert.match(runtime, /await presentDeltas[\\s\\S]*finally \\{\\s*releaseChangedState\\(heldState\\)/);
+            assert.ok(runtime.indexOf("await presentDeltas") < runtime.indexOf("releaseChangedState(heldState)"));
+          });'''
+          if old not in text:
+              raise SystemExit('old presentation child-animation regression block not found')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate generated project state
+        run: npm run prepare:project
+
+      - name: Run focused presentation regressions
+        run: node --test tests/presentation-system.test.mjs tests/presentation-dedupe-regression.test.mjs tests/combat-animation-flow.test.mjs
+
+      - name: Run complete rules and typecheck suite
+        run: npm run test:rules
+
+      - name: Run production-equivalent build
+        run: npm run vercel-build
+
+      - name: Commit verified implementation and clean temporary workflows
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/presentation-sequencer-refactor.yml
+          git rm .github/workflows/presentation-baseline-diagnostic.yml
+          git rm .github/workflows/presentation-finalize.yml
+          git add app/game-presentation-runtime.tsx app/game-presentation.css app/page.tsx tests/combat-animation-flow.test.mjs tests/presentation-dedupe-regression.test.mjs
+          git commit -m "fix: serialize combat presentation feedback"
+          git push origin HEAD:feat/presentation-system-pr1
