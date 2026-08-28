@@ -90,13 +90,11 @@ test("Online HUD reuses the board snapshot instead of opening a second polling l
   assert.doesNotMatch(runtime, /POLL_MS|DISCOVERY_MS|setInterval|setTimeout\(poll/);
 });
 
-test("confirmed Online snapshots drive card, Image, activation and evolution animations", () => {
-  assert.match(page, /const queueOnlineSnapshotFx=/);
+test("confirmed Online snapshots use one canonical presentation owner for milestones too", () => {
+  assert.match(page, /const queueOnlineSnapshotFx=\(_previous:Game\|null,_next:Game\)=>\{\};/);
   assert.match(page, /applyRoomSnapshot=[\s\S]*?queueOnlineSnapshotFx\(previous,next\)/);
   assert.match(page, /pollRoom[\s\S]*?queueOnlineSnapshotFx\(previous,oriented\)/);
-  assert.match(page, /IMAGEM INVOCADA/);
-  assert.match(page, /ativou sua habilidade/);
-  assert.match(page, /ASCENSÃO/);
+  assert.match(page, /announceOnlineSnapshot/);
 });
 
 test("strict Online typecheck remains in every validation path", () => {

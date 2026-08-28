@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [runtime, page, matchCss, collectionCss, packageJson] = await Promise.all([
+const [runtime, page, remoteCardArt, matchCss, collectionCss, packageJson] = await Promise.all([
   readFile(new URL("../app/card-preview-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/remote-card-art.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/match-ui.css", import.meta.url), "utf8"),
   readFile(new URL("../app/ui-overrides.css", import.meta.url), "utf8"),
   readFile(new URL("../package.json", import.meta.url), "utf8").then(JSON.parse),
@@ -22,11 +23,14 @@ test("card preview uses Floating UI middleware and a body-level portal", () => {
 });
 
 test("card preview runtime is mounted globally in the root layout", async () => {
-  const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
+  const [layout, matchRuntime] = await Promise.all([
+    readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/match-ui-runtime.tsx", import.meta.url), "utf8"),
+  ]);
   assert.match(layout, /import CardPreviewRuntime from ["']\.\/card-preview-runtime["']/);
   assert.match(layout, /<CardPreviewRuntime\s*\/>/);
+  assert.doesNotMatch(matchRuntime, /CardPreviewRuntime/);
 });
-
 test("Floating UI coordinates are not overridden by tooltip CSS", () => {
   const floatingBlock = matchCss.match(/\.card-preview-floating\.card-tooltip \{([\s\S]*?)\n\}/)?.[1] ?? "";
   assert.ok(floatingBlock, "expected floating preview CSS block");
@@ -37,9 +41,9 @@ test("Floating UI coordinates are not overridden by tooltip CSS", () => {
 
 test("floating preview has complete content before its first visible paint", () => {
   assert.match(runtime, /function previewData[\s\S]*\.rich-card-text/);
-  assert.match(runtime, /title, meta, rules, keywords/);
+  assert.match(runtime, /title, meta, rules, keywords, subtypes/);
   assert.match(runtime, /refs\.setReference\(card\);\s*setPreview\(next\)/);
-  assert.match(runtime, /const visible = isPositioned/);
+  assert.match(runtime, /const visible = previewFloating\.isPositioned/);
   assert.match(runtime, /visibility: visible \? "visible" : "hidden"/);
   assert.match(runtime, /data-positioned=\{visible \? "true" : "false"\}/);
   assert.doesNotMatch(runtime, /replaceChildren/);
@@ -54,12 +58,28 @@ test("every rendered card exposes a preview source, including battlefield units"
   assert.doesNotMatch(page, /\{!unit&&<span className="card-tooltip"/);
 });
 
-test("touch long press opens a large preview without also executing the card click", () => {
-  assert.match(runtime, /LONG_PRESS_MS = 520/);
-  assert.match(runtime, /event\.pointerType !== "touch"/);
+test("one-second press opens detailed inspection without also executing the card click", () => {
+  assert.match(runtime, /INSPECTION_HOLD_MS = 1_000/);
+  assert.match(runtime, /card\.dataset\.cardInspectable !== "true"/);
+  assert.match(runtime, /beginInspectionHold\(card, event\)/);
+  assert.match(runtime, /new CustomEvent\("hemsfell:inspect-card", \{ detail: \{ page \} \}\)/);
   assert.match(runtime, /suppressedClicks\.current\.add/);
   assert.match(runtime, /event\.preventDefault\(\);\s*event\.stopPropagation\(\)/);
-  assert.match(runtime, /preview\.expanded \? "dialog" : "tooltip"/);
+  assert.match(page, /data-card-inspectable=\{inspectable\?"true":"false"\}/);
+  assert.match(page, /disabled=\{disabled&&!inspectable\}/);
+  assert.match(page, /aria-disabled=\{disabled\|\|undefined\}/);
+  assert.match(page, /const interactionClick=!disabled&&/);
+  assert.doesNotMatch(page, /requestCardInspection/);
+});
+
+test("press progress is centered, non-interactive and canceled by movement or dragging", () => {
+  assert.match(runtime, /const HOLD_SLOP_PX = 12/);
+  assert.match(runtime, /progress\.className = "card-inspection-hold-progress"/);
+  assert.match(runtime, /Math\.hypot\([\s\S]*HOLD_SLOP_PX/);
+  assert.match(runtime, /const onDragStart = \(\) => \{[\s\S]*clearInspectionHold\(\)/);
+  assert.match(matchCss, /\.card-inspection-hold-progress\s*\{[\s\S]*left:\s*50%[\s\S]*top:\s*50%[\s\S]*pointer-events:\s*none/);
+  assert.match(matchCss, /conic-gradient\(/);
+  assert.match(matchCss, /@keyframes cardInspectionHoldProgress/);
 });
 
 test("read-only collection keeps hero information, deck lists, search and validation", () => {
@@ -79,4 +99,46 @@ test("read-only collection keeps hero information, deck lists, search and valida
   assert.doesNotMatch(page, /Coleção disponível/);
   assert.match(collectionCss, /\.collection-toolbar/);
   assert.match(collectionCss, /\.deck-validity\.is-invalid/);
+});
+
+test("native browser titles are removed from card tooltip targets", () => {
+  assert.match(runtime, /NATIVE_TITLE_SELECTOR/);
+  assert.match(runtime, /removeAttribute\("title"\)/);
+  assert.match(runtime, /MutationObserver/);
+  assert.doesNotMatch(page, /data-tip=\{keyword\.description\} title=/);
+  assert.doesNotMatch(page, /data-tip=\{keyword\?\.description\} title=/);
+  assert.doesNotMatch(remoteCardArt, /\s+title=\{/);
+});
+
+test("card tooltip remains interactive while hovered", () => {
+  assert.match(runtime, /TOOLTIP_CLOSE_DELAY_MS = 180/);
+  assert.match(runtime, /target\?\.closest\("\.card-preview-floating"\)/);
+  assert.match(runtime, /onPointerEnter=\{cancelScheduledClose\}/);
+  assert.match(matchCss, /\.card-preview-floating\.card-tooltip[\s\S]*pointer-events: auto !important/);
+});
+
+test("compact card tooltip stays small and closes as soon as dragging starts", () => {
+  assert.match(matchCss, /\.card-preview-floating\.is-compact\s*\{[\s\S]*width:\s*min\(12rem/);
+  assert.match(matchCss, /\.card-preview-floating\.is-compact\s*\{[\s\S]*max-height:\s*min\(22rem/);
+  assert.match(runtime, /document\.addEventListener\("dragstart", onDragStart, true\)/);
+  assert.match(runtime, /const onDragStart = \(\) => \{[\s\S]*clearHoverOpen\(\);[\s\S]*closePreview\(\)/);
+});
+
+test("card tooltip opens only after one second of continuous hover and never from focus", () => {
+  assert.match(runtime, /const TOOLTIP_HOVER_DELAY_MS = 1_000/);
+  assert.match(runtime, /hoverTimer = window\.setTimeout\([\s\S]*TOOLTIP_HOVER_DELAY_MS\)/);
+  assert.match(runtime, /const onPointerOver[\s\S]*scheduleHoverOpen\(card\)/);
+  assert.match(runtime, /const onPointerOut[\s\S]*clearHoverOpen\(\)/);
+  assert.doesNotMatch(runtime, /addEventListener\("focusin"/);
+});
+
+test("keywords and subtypes expose highlighted nested glossary tooltips", () => {
+  assert.match(page, /data-card-subtypes=/);
+  assert.match(runtime, /kind: "keyword"/);
+  assert.match(runtime, /kind: "subtype"/);
+  assert.match(runtime, /card-preview-term is-/);
+  assert.match(runtime, /card-glossary-floating/);
+  assert.match(runtime, /glossaryFloating\.refs\.setReference/);
+  assert.match(matchCss, /\.card-preview-term\.is-keyword/);
+  assert.match(matchCss, /\.card-preview-term\.is-subtype/);
 });

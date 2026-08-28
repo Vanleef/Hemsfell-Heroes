@@ -7,8 +7,46 @@ const lastObservedState = new Map<number, AIGameState>();
 const priorityInFlight = new Map<string, Promise<AIAction>>();
 const recentlySettledPriority = new Map<string, number>();
 const PRIORITY_HARD_TIMEOUT_MS = 850;
+const PRESENTATION_IDLE_FAILSAFE_MS = 20000;
+const PRESENTATION_IDLE_EVENTS = ["hemsfell:presentation-idle"] as const;
 let thinkingIndicatorInstalled = false;
 let debugTelemetryInstalled = false;
+
+type PresentationWindow = Window & {
+  __hemsfellPresentationBusy?: boolean;
+};
+
+const presentationBusy = () => {
+  if (typeof window === "undefined") return false;
+  const presentationWindow = window as PresentationWindow;
+  return !!presentationWindow.__hemsfellPresentationBusy;
+};
+
+async function waitForPresentationIdle(): Promise<void> {
+  if (!presentationBusy()) return;
+  await new Promise<void>((resolve) => {
+    let settled = false;
+    const cleanup = () => {
+      PRESENTATION_IDLE_EVENTS.forEach((eventName) => window.removeEventListener(eventName, onIdle));
+      window.clearTimeout(failsafe);
+    };
+    const finish = () => {
+      if (settled || presentationBusy()) return;
+      settled = true;
+      cleanup();
+      resolve();
+    };
+    const onIdle = () => finish();
+    const failsafe = window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve();
+    }, PRESENTATION_IDLE_FAILSAFE_MS);
+    PRESENTATION_IDLE_EVENTS.forEach((eventName) => window.addEventListener(eventName, onIdle));
+    queueMicrotask(finish);
+  });
+}
 
 const cardId = (card: any) => String(card?.uid ?? card?.id ?? "");
 const publicCards = (player: any) => [
@@ -196,6 +234,7 @@ function installDebugTelemetry(): void {
 }
 
 export async function chooseAdvancedAIAction(state: AIGameState, owner: number, difficulty: string): Promise<AIAction | null> {
+  await waitForPresentationIdle();
   const controller = controllerFor(owner, difficulty);
   observePublicDelta(controller, state, owner);
   const result = await controller.chooseAction(state, owner);
@@ -218,13 +257,12 @@ export function chooseAdvancedAIBlock(state: AIGameState, owner: number, attacke
 }
 
 /**
- * Priority uses the same imperfect-information controller, but the runtime owns
- * progress guarantees: forced second-pass resolution, zero-response fast-pass,
- * in-flight de-duplication, a short-lived stale-window guard, and a hard async
- * deadline. A repeated authoritative priority signature is passed instead of
- * being searched again.
+ * Priority uses the same imperfect-information controller. Presentation pacing
+ * is awaited before the response search starts; the existing 850 ms hard
+ * deadline still bounds the actual response computation once the board is idle.
  */
 export async function chooseAdvancedAIResponse(state: AIGameState, owner: number, difficulty: string): Promise<AIAction> {
+  await waitForPresentationIdle();
   const pending = state.pendingResponse as any;
   if (!pending || pending.responder !== owner) return passPriority(owner);
   if (pending.actor === owner && Number(pending.passes || 0) > 0) return passPriority(owner);

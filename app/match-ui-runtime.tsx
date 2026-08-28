@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import CardPreviewRuntime from "./card-preview-runtime";
 import { RemoteCardArt } from "./remote-card-art";
 
 /*
@@ -14,70 +13,74 @@ import { RemoteCardArt } from "./remote-card-art";
  */
 
 /* --------------------------------------------------------------------------
-   Command-bar text autofit
+   Command-bar readable typography guard
    -------------------------------------------------------------------------- */
 
 const COMMAND_CHIP_SELECTOR = ".screen-game .hero-command-bar .hero-ability-chip";
-const originalInlineFont = new WeakMap<HTMLElement, string>();
 
-function restoreCommandFont(node: HTMLElement) {
-  if (!originalInlineFont.has(node)) originalInlineFont.set(node, node.style.fontSize);
-  node.style.fontSize = originalInlineFont.get(node) ?? "";
-}
+const COMMAND_TITLE_SIZE = "clamp(.5rem,min(.62vw,1.05dvh),.66rem)";
+const COMMAND_COPY_SIZE = "clamp(.58rem,min(.72vw,1.22dvh),.78rem)";
+const COMMAND_COMPACT_COPY_SIZE = "clamp(.54rem,min(.66vw,1.12dvh),.72rem)";
+const COMMAND_DENSE_COPY_SIZE = "clamp(.5rem,min(.61vw,1.04dvh),.68rem)";
+const COMMAND_MIN_TITLE_PX = 7;
+const COMMAND_MIN_COPY_PX = 7.5;
 
-function commandContentFits(_chip: HTMLElement, content: HTMLElement) {
-  const tolerance = 1;
-  return (
-    content.scrollHeight <= content.clientHeight + tolerance &&
-    content.scrollWidth <= content.clientWidth + tolerance
-  );
-}
+const commandChipFits = (content: HTMLElement, title: HTMLElement | null, description: HTMLElement | null) => {
+  if (content.clientWidth <= 0 || content.clientHeight <= 0) return true;
+  const contentFits = content.scrollHeight <= content.clientHeight + 1 && content.scrollWidth <= content.clientWidth + 1;
+  const titleFits = !title || title.scrollWidth <= title.clientWidth + 1;
+  const copyFits = !description || description.scrollWidth <= description.clientWidth + 1;
+  return contentFits && titleFits && copyFits;
+};
 
 function fitCommandChip(chip: HTMLElement) {
   const content = chip.querySelector<HTMLElement>(":scope > span");
-  if (!content || chip.clientWidth <= 0 || chip.clientHeight <= 0) return;
-
+  if (!content) return;
   const title = content.querySelector<HTMLElement>(":scope > b");
   const description = content.querySelector<HTMLElement>("p");
-  const nodes = [title, description].filter(Boolean) as HTMLElement[];
-  if (!nodes.length) return;
+  const descriptionSize = chip.classList.contains("copy-dense")
+    ? COMMAND_DENSE_COPY_SIZE
+    : chip.classList.contains("copy-compact")
+      ? COMMAND_COMPACT_COPY_SIZE
+      : COMMAND_COPY_SIZE;
 
-  nodes.forEach(restoreCommandFont);
-  chip.dataset.commandTextFit = "native";
+  content.style.removeProperty("gap");
+  title?.style.removeProperty("line-height");
+  title?.style.removeProperty("letter-spacing");
+  description?.style.removeProperty("line-height");
+  title?.style.setProperty("font-size", COMMAND_TITLE_SIZE, "important");
+  description?.style.setProperty("font-size", descriptionSize, "important");
+  chip.dataset.commandTextFit = "readable";
+  if (commandChipFits(content, title, description)) return;
 
-  const baseSizes = nodes.map((node) => parseFloat(getComputedStyle(node).fontSize) || 4);
-  if (commandContentFits(chip, content)) return;
-
-  const minimumScale = 0.78;
+  const baseTitlePx = title ? parseFloat(getComputedStyle(title).fontSize) || 10 : 10;
+  const baseCopyPx = description ? parseFloat(getComputedStyle(description).fontSize) || 11 : 11;
   const applyScale = (scale: number) => {
-    nodes.forEach((node, index) => {
-      const minimum = Math.min(baseSizes[index], index === 0 ? 4 : 4.35);
-      node.style.fontSize = `${Math.max(minimum, baseSizes[index] * scale)}px`;
-    });
+    if (title) title.style.setProperty("font-size", `${Math.max(COMMAND_MIN_TITLE_PX, baseTitlePx * scale)}px`, "important");
+    if (description) description.style.setProperty("font-size", `${Math.max(COMMAND_MIN_COPY_PX, baseCopyPx * scale)}px`, "important");
   };
 
-  applyScale(minimumScale);
-  if (!commandContentFits(chip, content)) {
-    chip.dataset.commandTextFit = "minimum";
+  let low = .48, high = 1, best = low;
+  for (let index = 0; index < 8; index += 1) {
+    const middle = (low + high) / 2;
+    applyScale(middle);
+    if (commandChipFits(content, title, description)) { best = middle; low = middle; }
+    else high = middle;
+  }
+  applyScale(best);
+  if (commandChipFits(content, title, description)) {
+    chip.dataset.commandTextFit = "scaled";
     return;
   }
 
-  let low = minimumScale;
-  let high = 1;
-  let best = minimumScale;
-  for (let index = 0; index < 10; index += 1) {
-    const mid = (low + high) / 2;
-    applyScale(mid);
-    if (commandContentFits(chip, content)) {
-      best = mid;
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-
-  applyScale(best);
-  chip.dataset.commandTextFit = "scaled";
+  // Last-resort compacting keeps PASSIVA/ATIVA and the complete description
+  // inside the existing panel without line-clamp or text clipping.
+  content.style.setProperty("gap", "0", "important");
+  title?.style.setProperty("line-height", "1", "important");
+  title?.style.setProperty("letter-spacing", ".035em", "important");
+  description?.style.setProperty("line-height", "1.03", "important");
+  applyScale(low);
+  chip.dataset.commandTextFit = "minimum";
 }
 
 function useCommandBarTextAutofit() {
@@ -92,6 +95,11 @@ function useCommandBarTextAutofit() {
     });
 
     const scan = () => {
+      observed.forEach((chip) => {
+        if (chip.isConnected) return;
+        resizeObserver.unobserve(chip);
+        observed.delete(chip);
+      });
       document.querySelectorAll<HTMLElement>(COMMAND_CHIP_SELECTOR).forEach((chip) => {
         if (!observed.has(chip)) {
           observed.add(chip);
@@ -106,7 +114,15 @@ function useCommandBarTextAutofit() {
       frame = requestAnimationFrame(scan);
     };
 
-    const mutationObserver = new MutationObserver(queueScan);
+    const mutationTouchesCommandBar = (record: MutationRecord) => {
+      const target = record.target instanceof Element ? record.target : record.target.parentElement;
+      if (target?.closest(".hero-command-bar")) return true;
+      if (record.type !== "childList") return false;
+      return [...record.addedNodes, ...record.removedNodes].some((node) => node instanceof Element && (node.matches(".hero-command-bar,.hero-ability-chip") || !!node.querySelector(".hero-command-bar,.hero-ability-chip")));
+    };
+    const mutationObserver = new MutationObserver((records) => {
+      if (records.some(mutationTouchesCommandBar)) queueScan();
+    });
     mutationObserver.observe(document.body, {
       subtree: true,
       childList: true,
@@ -480,5 +496,5 @@ export default function MatchUiRuntime() {
   useHeroInspectorCanonicalizer();
   useResponseWindowAnchor();
 
-  return <><CardPreviewRuntime/><MatchResultHeroPortal/></>;
+  return <MatchResultHeroPortal/>;
 }

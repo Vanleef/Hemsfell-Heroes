@@ -36,9 +36,15 @@ test("read-only collection keeps search, type filter and card inspection",()=>{
 test("command bar keeps production text inside a readable floor",()=>{
  assert.match(commandCss,/Production command-bar readability guard/);
  assert.match(commandCss,/flex:1 1 0!important/);
- assert.match(runtime,/const minimumScale = 0\.78/);
- assert.match(runtime,/index === 0 \? 4 : 4\.35/);
- assert.doesNotMatch(runtime,/minimumScale = 0\.32/);
+ assert.ok(commandCss.includes("game-stage>.game-content.hs-board .hero-command-bar"));
+ assert.ok(runtime.includes('COMMAND_MIN_TITLE_PX = 7'));
+ assert.ok(runtime.includes('COMMAND_MIN_COPY_PX = 7.5'));
+ assert.match(runtime,/commandChipFits/);
+ assert.match(runtime,/scrollHeight <= content\.clientHeight/);
+ assert.match(runtime,/scrollWidth <= content\.clientWidth/);
+ assert.ok(runtime.includes('setProperty("font-size", descriptionSize, "important")'));
+ assert.ok(runtime.includes('commandTextFit = "readable"'));
+ assert.doesNotMatch(runtime,/minimumScale/);
 });
 
 test("all enabled buttons expose hover, active and keyboard focus feedback",()=>{
