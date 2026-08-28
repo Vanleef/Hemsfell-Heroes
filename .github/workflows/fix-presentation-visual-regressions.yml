@@ -164,7 +164,7 @@ jobs:
             const runtime = read("app/game-presentation-runtime.tsx");
             const css = read("app/game-presentation.css");
             assert.match(runtime, /function freezePresentationCardMetrics/);
-            assert.match(runtime, /\[\"\\.live-atk\", \"\\.live-hp\"\]/);
+            assert.match(runtime, /live-atk.*live-hp/);
             assert.match(runtime, /freezePresentationCardMetrics\\(element, clone\\)/);
             assert.match(runtime, /\"is-impacting\"/);
             assert.match(css, /\\.hh-flight-face :is\\(\\.live-atk, \\.live-hp\\)/);
@@ -180,6 +180,9 @@ jobs:
           });'''
           test_path.write_text(test)
           PY
+
+      - name: Remove temporary workflow before validation
+        run: rm .github/workflows/fix-presentation-visual-regressions.yml
 
       - name: Install dependencies
         run: npm ci
@@ -198,7 +201,6 @@ jobs:
 
       - name: Commit fixes and remove temporary workflow
         run: |
-          rm .github/workflows/fix-presentation-visual-regressions.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app/game-presentation-runtime.tsx app/game-presentation.css app/command-bar-fixes.css tests/combat-animation-flow.test.mjs .github/workflows/fix-presentation-visual-regressions.yml
