@@ -27,11 +27,10 @@ jobs:
           python3 <<'PY'
           from pathlib import Path
 
-          runtime_path = Path('app/game-presentation-runtime.tsx')
+          runtime_path = Path("app/game-presentation-runtime.tsx")
           runtime = runtime_path.read_text()
 
-          helper_anchor = 'function cloneRendered(element: HTMLElement) {'
-          assert helper_anchor in runtime
+          helper_anchor = "function cloneRendered(element: HTMLElement) {"
           helper = '''function freezePresentationCardMetrics(source: HTMLElement, clone: HTMLElement) {
             const sourceCard = source.matches(".original-card") ? source : source.querySelector<HTMLElement>(".original-card");
             const cloneCard = clone.matches(".original-card") ? clone : clone.querySelector<HTMLElement>(".original-card");
@@ -45,17 +44,15 @@ jobs:
               const rect = sourceNode.getBoundingClientRect();
               if (rect.width <= 0 || rect.height <= 0) continue;
               const style = window.getComputedStyle(sourceNode);
-              const cssHeight = Number.parseFloat(style.height);
-              const visualScale = Number.isFinite(cssHeight) && cssHeight > 0 ? rect.height / cssHeight : 1;
               cloneNode.style.boxSizing = "border-box";
-              cloneNode.style.left = `${((rect.left - cardRect.left) / cardRect.width) * 100}%`;
-              cloneNode.style.top = `${((rect.top - cardRect.top) / cardRect.height) * 100}%`;
+              cloneNode.style.left = `${rect.left - cardRect.left}px`;
+              cloneNode.style.top = `${rect.top - cardRect.top}px`;
               cloneNode.style.right = "auto";
               cloneNode.style.bottom = "auto";
-              cloneNode.style.width = `${(rect.width / cardRect.width) * 100}%`;
-              cloneNode.style.height = `${(rect.height / cardRect.height) * 100}%`;
-              cloneNode.style.fontSize = `${Math.max(1, Number.parseFloat(style.fontSize) * visualScale)}px`;
-              cloneNode.style.lineHeight = "1";
+              cloneNode.style.width = `${rect.width}px`;
+              cloneNode.style.height = `${rect.height}px`;
+              cloneNode.style.fontSize = style.fontSize;
+              cloneNode.style.lineHeight = style.lineHeight === "normal" ? "1" : style.lineHeight;
               cloneNode.style.transform = "none";
               cloneNode.style.animation = "none";
               cloneNode.style.transition = "none";
@@ -63,45 +60,34 @@ jobs:
           }
 
           '''
-          if 'function freezePresentationCardMetrics(' not in runtime:
+          if "function freezePresentationCardMetrics(" not in runtime:
+              assert helper_anchor in runtime
               runtime = runtime.replace(helper_anchor, helper + helper_anchor, 1)
 
           old_remove = '  clone.classList.remove("hh-presentation-hidden", "damage-hit", "is-selected");'
           new_remove = '''  const transientClasses = ["hh-presentation-hidden", "damage-hit", "is-selected", "is-impacting", "combat-attack-ready", "target-ally", "target-enemy"];
             clone.classList.remove(...transientClasses);
             clone.querySelectorAll<HTMLElement>(".damage-hit,.is-selected,.is-impacting,.combat-attack-ready,.target-ally,.target-enemy").forEach((node) => node.classList.remove(...transientClasses));'''
-          assert old_remove in runtime
-          runtime = runtime.replace(old_remove, new_remove, 1)
+          if old_remove in runtime:
+              runtime = runtime.replace(old_remove, new_remove, 1)
+          assert '"is-impacting"' in runtime
 
-          canvas_tail = '''  sourceCanvases.forEach((source, index) => {
-            const target = cloneCanvases[index];
-            if (!target) return;
-            try {
-              target.width = source.width;
-              target.height = source.height;
-              target.getContext("2d")?.drawImage(source, 0, 0);
-            } catch {
-              // A presentation clone must never affect the game if a browser refuses a canvas copy.
-            }
-          });
-          return clone;'''
-          canvas_new = canvas_tail.replace('  return clone;', '  freezePresentationCardMetrics(element, clone);\n  return clone;')
-          assert canvas_tail in runtime
-          runtime = runtime.replace(canvas_tail, canvas_new, 1)
+          return_anchor = "  return clone;\n}\n\nfunction domCard"
+          if "freezePresentationCardMetrics(element, clone);" not in runtime:
+              assert return_anchor in runtime
+              runtime = runtime.replace(return_anchor, "  freezePresentationCardMetrics(element, clone);\n  return clone;\n}\n\nfunction domCard", 1)
 
-          old_shake = '''    const visual = held.find((candidate) => candidate.destination === fresh.element && !candidate.deferredDeath);
-              const node = visual?.overlay || fresh.element;
-              node.classList.add("hh-hero-impact");
-              const animation = node.animate([
-                { transform: "translate3d(0,0,0) scale(1)" },
-                { offset: .22, transform: "translate3d(-3px,1px,0) scale(1.006)" },
-                { offset: .46, transform: "translate3d(3px,-1px,0) scale(.998)" },
-                { offset: .7, transform: "translate3d(-1.5px,0,0) scale(1.002)" },
-                { transform: "translate3d(0,0,0) scale(1)" },
-              ], { duration: prefersReducedMotion() ? 90 : 190, easing: "ease-out" });'''
-          new_shake = '''    const visual = held.find((candidate) => candidate.destination === fresh.element && !candidate.deferredDeath);
-              const node = visual?.overlay.querySelector<HTMLElement>(".hh-flight-face")
+          shake_start = runtime.index("async function animateHeroShake(")
+          shake_end = runtime.index("\n\nasync function floatingLabel", shake_start)
+          new_shake = '''async function animateHeroShake(held: HeldStateVisual[], before: DomSnapshot, after: DomSnapshot) {
+            const jobs: Promise<unknown>[] = [];
+            for (const owner of [0, 1] as const) {
+              const old = before.heroes.get(owner), fresh = after.heroes.get(owner);
+              if (!old || !fresh || fresh.life >= old.life) continue;
+              const visual = held.find((candidate) => candidate.destination === fresh.element && !candidate.deferredDeath);
+              const node = visual?.overlay.querySelector<HTMLElement>(".hero-power-trigger")
                 || fresh.element.querySelector<HTMLElement>(".hero-power-trigger")
+                || visual?.overlay
                 || fresh.element;
               node.classList.add("hh-hero-impact");
               const animation = node.animate([
@@ -111,29 +97,18 @@ jobs:
                 { offset: .62, transform: "translateX(-1.25px)" },
                 { offset: .82, transform: "translateX(1.25px)" },
                 { transform: "translateX(0)" },
-              ], { duration: prefersReducedMotion() ? 80 : 165, easing: "ease-out" });'''
-          assert old_shake in runtime
-          runtime = runtime.replace(old_shake, new_shake, 1)
+              ], { duration: prefersReducedMotion() ? 80 : 165, easing: "ease-out" });
+              jobs.push(animation.finished.catch(() => undefined).finally(() => node.classList.remove("hh-hero-impact")));
+            }
+            await Promise.all(jobs);
+          }'''
+          runtime = runtime[:shake_start] + new_shake + runtime[shake_end:]
           runtime_path.write_text(runtime)
 
-          css_path = Path('app/game-presentation.css')
+          css_path = Path("app/game-presentation.css")
           css = css_path.read_text()
-          css_anchor = '''.hh-flight-face > .original-card,
-          .hh-flight-face > .opponent-card-back,
-          .hh-flight-face > .pile-card {
-            display: block;
-            width: 100% !important;
-            height: 100% !important;
-            min-width: 0 !important;
-            min-height: 0 !important;
-            margin: 0 !important;
-            transform: none !important;
-          }
-          '''
-          css_extra = css_anchor + '''
-          /* Presentation clones leave the board container, so freeze the stat badges
-             to the geometry captured from the real card and never let legacy impact
-             animations scale or pulse them independently. */
+          badge_rule = '''/* Presentation clones live outside the board container. Freeze the captured
+             attack/health badge geometry and never inherit legacy impact pulses. */
           .hh-flight-face :is(.live-atk, .live-hp) {
             max-width: none !important;
             max-height: none !important;
@@ -141,42 +116,38 @@ jobs:
             animation: none !important;
             transition: none !important;
           }
+
           '''
-          assert css_anchor in css
-          css = css.replace(css_anchor, css_extra, 1)
+          if ".hh-flight-face :is(.live-atk, .live-hp)" not in css:
+              anchor = ".hh-flight-card.is-cast {"
+              assert anchor in css
+              css = css.replace(anchor, badge_rule + anchor, 1)
           css_path.write_text(css)
 
-          command_path = Path('app/command-bar-fixes.css')
+          command_path = Path("app/command-bar-fixes.css")
           command = command_path.read_text()
-          replacements = {
-            'font-size:clamp(.74rem,min(.88vw,1.56dvh),1rem)!important;': 'font-size:clamp(.74rem,min(.88vw,1.56dvh),.92rem)!important;',
-            'font-size:clamp(.62rem,min(.72vw,1.28dvh),.78rem)!important;': 'font-size:clamp(.62rem,min(.72vw,1.28dvh),.74rem)!important;',
-            'font-size:clamp(.7rem,min(.8vw,1.42dvh),.92rem)!important;': 'font-size:clamp(.7rem,min(.8vw,1.42dvh),.86rem)!important;',
-            'font-size:clamp(.66rem,min(.74vw,1.32dvh),.86rem)!important;': 'font-size:clamp(.66rem,min(.74vw,1.32dvh),.8rem)!important;',
-          }
-          for old, new in replacements.items():
-              assert old in command, old
-              command = command.replace(old, new, 1)
+          replacements = [
+            ("font-size:clamp(.74rem,min(.88vw,1.56dvh),1rem)!important;", "font-size:clamp(.74rem,min(.88vw,1.56dvh),.92rem)!important;"),
+            ("font-size:clamp(.62rem,min(.72vw,1.28dvh),.78rem)!important;", "font-size:clamp(.62rem,min(.72vw,1.28dvh),.74rem)!important;"),
+            ("font-size:clamp(.7rem,min(.8vw,1.42dvh),.92rem)!important;", "font-size:clamp(.7rem,min(.8vw,1.42dvh),.86rem)!important;"),
+            ("font-size:clamp(.66rem,min(.74vw,1.32dvh),.86rem)!important;", "font-size:clamp(.66rem,min(.74vw,1.32dvh),.8rem)!important;"),
+          ]
+          for old, new in replacements:
+              if old in command:
+                  command = command.replace(old, new, 1)
+              assert new in command
           command_path.write_text(command)
 
-          test_path = Path('tests/combat-animation-flow.test.mjs')
+          test_path = Path("tests/combat-animation-flow.test.mjs")
           test = test_path.read_text()
-          old_hero_test = '''test("direct hero damage only shakes the anchored presentation clone", () => {
+          hero_start = test.index('test("direct hero damage only shakes the anchored presentation clone"')
+          hero_end = test.index('\n\ntest("spell flights are physically deduplicated', hero_start)
+          hero_test = '''test("direct hero damage only shakes the anchored presentation clone", () => {
             const runtime = read("app/game-presentation-runtime.tsx");
             const start = runtime.indexOf("async function animateHeroShake");
             const end = runtime.indexOf("async function floatingLabel", start);
             const shake = runtime.slice(start, end);
-            assert.match(shake, /translate3d\\(-3px,1px,0\\)/);
-            assert.match(shake, /translate3d\\(3px,-1px,0\\)/);
-            assert.doesNotMatch(shake, /style\\.(left|top)\\s*=/);
-            assert.doesNotMatch(shake, /append\\(|remove\\(\\)/);
-          });'''
-          new_hero_test = '''test("direct hero damage only shakes the anchored presentation clone", () => {
-            const runtime = read("app/game-presentation-runtime.tsx");
-            const start = runtime.indexOf("async function animateHeroShake");
-            const end = runtime.indexOf("async function floatingLabel", start);
-            const shake = runtime.slice(start, end);
-            assert.match(shake, /querySelector<HTMLElement>\\(\"\\.hh-flight-face\"\\)/);
+            assert.match(shake, /querySelector<HTMLElement>\\(\"\\.hero-power-trigger\"\\)/);
             assert.match(shake, /translateX\\(-2\\.5px\\)/);
             assert.match(shake, /translateX\\(2\\.5px\\)/);
             assert.doesNotMatch(shake, /translate3d\\(/);
@@ -184,30 +155,29 @@ jobs:
             assert.doesNotMatch(shake, /style\\.(left|top)\\s*=/);
             assert.doesNotMatch(shake, /append\\(|remove\\(\\)/);
           });'''
-          assert old_hero_test in test
-          test = test.replace(old_hero_test, new_hero_test, 1)
-          extra_tests = '''
+          test = test[:hero_start] + hero_test + test[hero_end:]
 
-          test("presentation clones preserve live stat geometry without legacy impact animation", () => {
+          if 'test("presentation clones preserve live stat badge geometry"' not in test:
+              test += '''
+
+          test("presentation clones preserve live stat badge geometry", () => {
             const runtime = read("app/game-presentation-runtime.tsx");
             const css = read("app/game-presentation.css");
             assert.match(runtime, /function freezePresentationCardMetrics/);
-            assert.match(runtime, /for \\(const selector of \\[\"\\.live-atk\", \"\\.live-hp\"\\]/);
+            assert.match(runtime, /\[\"\\.live-atk\", \"\\.live-hp\"\]/);
             assert.match(runtime, /freezePresentationCardMetrics\\(element, clone\\)/);
             assert.match(runtime, /\"is-impacting\"/);
             assert.match(css, /\\.hh-flight-face :is\\(\\.live-atk, \\.live-hp\\)/);
             assert.match(css, /animation: none !important/);
           });
 
-          test("command bar keeps a slightly lower maximum text size", () => {
+          test("command bar caps remain compact at large viewport sizes", () => {
             const css = read("app/command-bar-fixes.css");
             assert.match(css, /font-size:clamp\\(\\.74rem,min\\(\\.88vw,1\\.56dvh\\),\\.92rem\\)!important/);
             assert.match(css, /font-size:clamp\\(\\.62rem,min\\(\\.72vw,1\\.28dvh\\),\\.74rem\\)!important/);
             assert.match(css, /font-size:clamp\\(\\.7rem,min\\(\\.8vw,1\\.42dvh\\),\\.86rem\\)!important/);
             assert.match(css, /font-size:clamp\\(\\.66rem,min\\(\\.74vw,1\\.32dvh\\),\\.8rem\\)!important/);
           });'''
-          if 'presentation clones preserve live stat geometry' not in test:
-              test += extra_tests
           test_path.write_text(test)
           PY
 
