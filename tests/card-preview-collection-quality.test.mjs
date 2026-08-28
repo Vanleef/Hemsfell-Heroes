@@ -101,6 +101,13 @@ test("card tooltip remains interactive while hovered", () => {
   assert.match(matchCss, /\.card-preview-floating\.card-tooltip[\s\S]*pointer-events: auto !important/);
 });
 
+test("compact card tooltip stays small and closes as soon as dragging starts", () => {
+  assert.match(matchCss, /\.card-preview-floating\.is-compact\s*\{[\s\S]*width:\s*min\(12rem/);
+  assert.match(matchCss, /\.card-preview-floating\.is-compact\s*\{[\s\S]*max-height:\s*min\(22rem/);
+  assert.match(runtime, /document\.addEventListener\("dragstart", onDragStart, true\)/);
+  assert.match(runtime, /const onDragStart = \(\) => closePreview\(\)/);
+});
+
 test("keywords and subtypes expose highlighted nested glossary tooltips", () => {
   assert.match(page, /data-card-subtypes=/);
   assert.match(runtime, /kind: "keyword"/);

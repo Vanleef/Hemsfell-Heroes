@@ -19,7 +19,6 @@ type PresentationDetail = {
 type DomCard = {
   element: HTMLElement;
   rect: RectLike;
-  baseRect?: RectLike;
   clone: HTMLElement;
   owner: Owner;
   name: string;
@@ -48,6 +47,11 @@ type Flight = {
   targets?: RectLike[];
   uid?: string;
   sourcePlay?: boolean;
+};
+type PresentationReservation = {
+  arrivalGate: HTMLStyleElement | null;
+  stateGate: HTMLStyleElement | null;
+  heldUnits: HeldStateVisual[];
 };
 type PresentationWindow = Window & { __hemsfellPresentationBusy?: boolean };
 
@@ -110,6 +114,10 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 const afterReactCommit = nextFrame;
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
+function escapedSelectorValue(value: string) {
+  return typeof globalThis.CSS === "undefined" ? value.replace(/["\\]/g, "\\$&") : globalThis.CSS.escape(value);
+}
+
 function addedStateIds(before: any[] = [], after: any[] = []) {
   const existing = new Set(before.map(stateId));
   return after.map(stateId).filter((id) => id && !existing.has(id));
@@ -117,20 +125,45 @@ function addedStateIds(before: any[] = [], after: any[] = []) {
 
 function installArrivalGate(detail: PresentationDetail) {
   const selectors: string[] = [];
-  const escaped = (value: string) => typeof globalThis.CSS === "undefined" ? value.replace(/["\\]/g, "\\$&") : globalThis.CSS.escape(value);
   for (const owner of [0, 1] as const) {
     const beforePlayer = detail.before?.players?.[owner], afterPlayer = detail.after?.players?.[owner];
     for (const uid of addedStateIds(stateFields(beforePlayer), stateFields(afterPlayer))) {
-      selectors.push(`.game-stage .card-frame[data-unit-id="${escaped(uid)}"] > .original-card`);
+      selectors.push(`.game-stage .card-frame[data-unit-id="${escapedSelectorValue(uid)}"] > .original-card`);
     }
     for (const id of addedStateIds(beforePlayer?.hand, afterPlayer?.hand)) {
       const hand = owner === 0 ? ".player-hand" : ".opponent-hand";
-      selectors.push(`.game-stage ${hand} [data-card-id="${escaped(id)}"]`);
+      selectors.push(`.game-stage ${hand} [data-card-id="${escapedSelectorValue(id)}"]`);
     }
   }
   if (!selectors.length) return null;
   const gate = document.createElement("style");
   gate.className = "hh-prepaint-arrival-gate";
+  gate.textContent = `${selectors.join(",")} { opacity: 0 !important; visibility: hidden !important; }`;
+  document.head.append(gate);
+  return gate;
+}
+
+function changedStateUnitIds(detail: PresentationDetail) {
+  const ids = new Set<string>();
+  for (const owner of [0, 1] as const) {
+    const before = new Map(stateFields(detail.before?.players?.[owner]).map((card: any) => [stateId(card), card]));
+    const after = new Map(stateFields(detail.after?.players?.[owner]).map((card: any) => [stateId(card), card]));
+    for (const [uid, old] of before) {
+      if (!uid) continue;
+      const fresh = after.get(uid);
+      if (!fresh || unitPresentationFingerprint(old) !== unitPresentationFingerprint(fresh)) ids.add(uid);
+    }
+  }
+  return ids;
+}
+
+function installStateGate(detail: PresentationDetail) {
+  const selectors = [...changedStateUnitIds(detail)].map((uid) =>
+    `.game-stage .card-frame[data-unit-id="${escapedSelectorValue(uid)}"] > .original-card`,
+  );
+  if (!selectors.length) return null;
+  const gate = document.createElement("style");
+  gate.className = "hh-prepaint-state-gate";
   gate.textContent = `${selectors.join(",")} { opacity: 0 !important; visibility: hidden !important; }`;
   document.head.append(gate);
   return gate;
@@ -212,33 +245,11 @@ function cloneRendered(element: HTMLElement) {
   return clone;
 }
 
-function baseCardRect(element: HTMLElement, visualRect: RectLike) {
-  const width = element.offsetWidth;
-  const height = element.offsetHeight;
-  if (width <= 0 || height <= 0) return visualRect;
-  const point = center(visualRect);
-  return rectWithSize(point.x - width / 2, point.y - height / 2, width, height);
-}
-
-function readyDepartureFace(source: DomCard) {
-  const face = source.clone.cloneNode(true) as HTMLElement;
-  const card = face.matches(".original-card") ? face : face.querySelector<HTMLElement>(".original-card");
-  if (!card) return face;
-  card.classList.remove("is-exhausted");
-  delete card.dataset.hhPresentationOrientation;
-  delete card.dataset.hhPresentationWidth;
-  delete card.dataset.hhPresentationHeight;
-  card.style.removeProperty("--hh-presentation-card-width");
-  card.style.removeProperty("--hh-presentation-card-height");
-  return face;
-}
-
 function domCard(element: HTMLElement, owner: Owner, uid?: string): DomCard {
   const rect = rectOf(element);
   return {
     element,
     rect,
-    baseRect: element.classList.contains("is-exhausted") ? baseCardRect(element, rect) : rect,
     clone: cloneRendered(element),
     owner,
     uid,
@@ -326,6 +337,23 @@ function expectedUnitScore(game: any, snapshot: DomSnapshot) {
   return score;
 }
 
+function expectedUnitCount(game: any) {
+  let count = 0;
+  for (const owner of [0, 1] as const) for (const card of stateFields(game?.players?.[owner])) if (card?.uid) count += 1;
+  return count;
+}
+
+async function committedDom(game: any) {
+  await afterReactCommit();
+  let snapshot = snapshotDom();
+  const expected = expectedUnitCount(game);
+  for (let frame = 1; frame < 6 && expectedUnitScore(game, snapshot) < expected; frame += 1) {
+    await afterReactCommit();
+    snapshot = snapshotDom();
+  }
+  return snapshot;
+}
+
 function installLayers() {
   document.querySelectorAll(".hh-motion-layer,.hh-effect-layer").forEach((node) => node.remove());
   const motion = document.createElement("div");
@@ -366,6 +394,26 @@ function holdStateVisual(layer: HTMLElement, destination: HTMLElement | null, fa
   overlay.append(createFlightFace(cloneRendered(face)));
   layer.append(overlay);
   return { destination, overlay, uid, deferredDeath, levelUp, zoneTransfer, released: false };
+}
+
+function reserveChangedUnits(layer: HTMLElement, captured: DomSnapshot, detail: PresentationDetail) {
+  const changed = changedStateUnitIds(detail);
+  const afterIds = new Set(stateFields(detail.after?.players?.[0]).concat(stateFields(detail.after?.players?.[1])).map(stateId));
+  const held: HeldStateVisual[] = [];
+  for (const uid of changed) {
+    const old = captured.units.get(uid);
+    if (!old) continue;
+    held.push(holdStateVisual(layer, old.element, old.clone, old.rect, uid, !afterIds.has(uid)));
+  }
+  return held;
+}
+
+function bindReservedDestinations(held: HeldStateVisual[], after: DomSnapshot) {
+  for (const visual of held) {
+    if (!visual.uid || visual.deferredDeath) continue;
+    visual.destination = after.units.get(visual.uid)?.element || null;
+    visual.destination?.classList.add("hh-presentation-hidden");
+  }
 }
 
 function holdHeroLifeVisual(layer: HTMLElement, destination: HTMLElement, life: number, rect: RectLike): HeldStateVisual {
@@ -412,9 +460,11 @@ function pileStateChanged(detail: PresentationDetail, owner: Owner, kind: "grave
   return JSON.stringify(before.map(stateId)) !== JSON.stringify(after.map(stateId));
 }
 
-function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSnapshot, detail: PresentationDetail) {
-  const held: HeldStateVisual[] = [];
+function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSnapshot, detail: PresentationDetail, reserved: HeldStateVisual[] = []) {
+  const held: HeldStateVisual[] = [...reserved];
+  const reservedUids = new Set(reserved.map((visual) => visual.uid).filter((uid): uid is string => !!uid));
   for (const [uid, fresh] of after.units) {
+    if (reservedUids.has(uid)) continue;
     const old = before.units.get(uid);
     const oldState = stateUnitById(detail.before, uid);
     const freshState = stateUnitById(detail.after, uid);
@@ -445,7 +495,7 @@ function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSna
      Keep its pre-command rendering pinned in place until the ordered death
      stage begins, so damage never looks like an unexplained teleport. */
   for (const [uid, old] of before.units) {
-    if (after.units.has(uid)) continue;
+    if (after.units.has(uid) || reservedUids.has(uid)) continue;
     held.push(holdStateVisual(layer, null, old.clone, old.rect, uid, true));
   }
   return held;
@@ -467,8 +517,12 @@ function releaseLevelState(held: HeldStateVisual[], destination?: HTMLElement | 
 }
 
 function releaseDepartureHold(held: HeldStateVisual[], uid?: string) {
-  if (!uid) return;
-  held.filter((visual) => visual.deferredDeath && visual.uid === uid).forEach(releaseHeldVisual);
+  if (!uid) return null;
+  const visual = held.find((candidate) => candidate.deferredDeath && candidate.uid === uid && !candidate.released);
+  if (!visual) return null;
+  visual.released = true;
+  visual.destination?.classList.remove("hh-presentation-hidden");
+  return visual.overlay;
 }
 
 function releaseChangedState(held: HeldStateVisual[]) {
@@ -848,21 +902,21 @@ function floatingLabel(layer: HTMLElement, rect: RectLike, text: string, tone: "
   return { readable, finished };
 }
 
-async function animateCardMove(layer: HTMLElement, effectLayer: HTMLElement, flight: Flight) {
+async function animateCardMove(layer: HTMLElement, effectLayer: HTMLElement, flight: Flight, reservedWrapper: HTMLElement | null = null) {
   const reduced = prefersReducedMotion();
   const to = flight.to || flight.from;
   flight.destination?.classList.add("hh-presentation-hidden");
   const ambient: Promise<void>[] = [];
   if (flight.kind === "destroy") ambient.push(destructionPrelude(effectLayer, flight.from));
   if (flight.kind === "banish") ambient.push(banishVortex(effectLayer, to));
-  const wrapper = document.createElement("div");
+  const wrapper = reservedWrapper || document.createElement("div");
   wrapper.className = `hh-flight-card is-${flight.kind}`;
   wrapper.style.left = `${flight.from.left}px`;
   wrapper.style.top = `${flight.from.top}px`;
   wrapper.style.width = `${Math.max(1, flight.from.width)}px`;
   wrapper.style.height = `${Math.max(1, flight.from.height)}px`;
-  wrapper.append(createFlightFace(cloneRendered(flight.face)));
-  layer.append(wrapper);
+  if (!reservedWrapper) wrapper.append(createFlightFace(cloneRendered(flight.face)));
+  if (!wrapper.isConnected) layer.append(wrapper);
   const dx = to.left - flight.from.left + (to.width - flight.from.width) / 2;
   const dy = to.top - flight.from.top + (to.height - flight.from.height) / 2;
   const scale = Math.max(.18, Math.min(1.3, to.width / Math.max(1, flight.from.width)));
@@ -952,7 +1006,7 @@ function buildFlights(detail: PresentationDetail, beforeDom: DomSnapshot, afterD
       const destination = afterDom.units.get(uid);
       if (!destination) continue;
       let source: DomCard | null = null;
-      let kind: MotionKind = "summon";
+      const kind: MotionKind = "summon";
       if (playedSource && owner === commandOwner && semantic(fresh) === semantic(playedCard)) source = playedSource;
       if (!source) {
         const pBefore = detail.before?.players?.[owner];
@@ -999,7 +1053,7 @@ function buildFlights(detail: PresentationDetail, beforeDom: DomSnapshot, afterD
         const handIndex = (afterPlayer?.hand || []).findIndex((card: any) => semantic(card) === key);
         target = handIndex >= 0 ? afterDom.hands[owner][handIndex] : null; kind = "return";
       } else if (countDelta(beforePlayer?.extraDeck, afterPlayer?.extraDeck, key) > 0) { target = afterDom.piles.get(`${owner}:extra`) || null; kind = "return"; }
-      flights.push({ kind, from: source.baseRect || source.rect, to: target?.rect || source.rect, face: readyDepartureFace(source), destination: target?.element || null, delay: flights.length * 55, uid });
+      flights.push({ kind, from: source.rect, to: target?.rect || source.rect, face: source.clone, destination: target?.element || null, delay: flights.length * 55, uid });
     }
   }
 
@@ -1065,6 +1119,7 @@ export default function GamePresentationRuntime() {
     let refreshFrame = 0;
     const seenPresentationIds = new Set<string>();
     const seenOrder: string[] = [];
+    const activeReservations = new Set<PresentationReservation>();
     let disposed = false;
 
     const setBusy = (busy: boolean) => {
@@ -1086,10 +1141,10 @@ export default function GamePresentationRuntime() {
       return true;
     };
 
-    const present = async (detail: PresentationDetail, capturedDom: DomSnapshot, cue: ActionCue | null, arrivalGate: HTMLStyleElement | null) => {
-    await afterReactCommit();
-    if (disposed) { arrivalGate?.remove(); return; }
-    const afterDom = snapshotDom();
+    const present = async (detail: PresentationDetail, capturedDom: DomSnapshot, cue: ActionCue | null, reservation: PresentationReservation) => {
+    const { arrivalGate, stateGate, heldUnits } = reservation;
+    const afterDom = await committedDom(detail.after);
+    if (disposed) { arrivalGate?.remove(); stateGate?.remove(); releaseChangedState(heldUnits); return; }
     const beforeDom = expectedUnitScore(detail.before, stableDom) > expectedUnitScore(detail.before, capturedDom) ? stableDom : capturedDom;
     const flights = buildFlights(detail, beforeDom, afterDom);
     await revealOpponentPlayedCard(detail, flights);
@@ -1101,7 +1156,8 @@ export default function GamePresentationRuntime() {
     // hidden until the effect cue has completed.
     const sourceArrivals = detail.command?.type === "playCard" ? arrivals.filter((flight) => flight.sourcePlay) : [];
     const resultArrivals = detail.command?.type === "playCard" ? arrivals.filter((flight) => !flight.sourcePlay) : arrivals;
-    const heldState = holdChangedState(layers.motion, beforeDom, afterDom, detail);
+    bindReservedDestinations(heldUnits, afterDom);
+    const heldState = holdChangedState(layers.motion, beforeDom, afterDom, detail, heldUnits);
     arrivals.forEach((flight) => flight.destination?.classList.add("hh-presentation-hidden"));
     // Destination nodes now own a persistent hidden class, so the synchronous
     // pre-paint stylesheet can be removed without exposing the resolved state.
@@ -1110,6 +1166,7 @@ export default function GamePresentationRuntime() {
     const releaseReadable = () => {
       if (readableReleased) return;
       readableReleased = true;
+      stateGate?.remove();
       releaseReadableState(heldState);
     };
 
@@ -1129,8 +1186,8 @@ export default function GamePresentationRuntime() {
         await heroShake;
         await animateSpellExit(layers.motion, avatar, spellFlight.to);
         for (const flight of departures) {
-          releaseDepartureHold(heldState, flight.uid);
-          await animateCardMove(layers.motion, layers.effect, flight);
+          const reservedWrapper = releaseDepartureHold(heldState, flight.uid);
+          await animateCardMove(layers.motion, layers.effect, flight, reservedWrapper);
         }
         for (const flight of resultArrivals) await animateCardMove(layers.motion, layers.effect, flight);
         await deltaCompletion;
@@ -1141,8 +1198,8 @@ export default function GamePresentationRuntime() {
         const { completion: deltaCompletion } = await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable);
         await heroShake;
         for (const flight of departures) {
-          releaseDepartureHold(heldState, flight.uid);
-          await animateCardMove(layers.motion, layers.effect, flight);
+          const reservedWrapper = releaseDepartureHold(heldState, flight.uid);
+          await animateCardMove(layers.motion, layers.effect, flight, reservedWrapper);
         }
         for (const flight of arrivals) await animateCardMove(layers.motion, layers.effect, flight);
         await deltaCompletion;
@@ -1153,8 +1210,8 @@ export default function GamePresentationRuntime() {
         const { completion: deltaCompletion } = await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable);
         await heroShake;
         for (const flight of departures) {
-          releaseDepartureHold(heldState, flight.uid);
-          await animateCardMove(layers.motion, layers.effect, flight);
+          const reservedWrapper = releaseDepartureHold(heldState, flight.uid);
+          await animateCardMove(layers.motion, layers.effect, flight, reservedWrapper);
         }
         for (const flight of resultArrivals) await animateCardMove(layers.motion, layers.effect, flight);
         await deltaCompletion;
@@ -1162,6 +1219,7 @@ export default function GamePresentationRuntime() {
       await animateHeroLevelUp(layers.effect, detail, afterDom, heldState);
     } finally {
       arrivalGate?.remove();
+      stateGate?.remove();
       releaseChangedState(heldState);
       arrivals.forEach((flight) => flight.destination?.classList.remove("hh-presentation-hidden"));
     }
@@ -1177,9 +1235,17 @@ export default function GamePresentationRuntime() {
       // recovered from a hidden zone therefore cannot paint at its destination
       // even once before its flight begins.
       const arrivalGate = installArrivalGate(detail);
+      const stateGate = installStateGate(detail);
+      const heldUnits = reserveChangedUnits(layers.motion, capturedDom, detail);
+      const reservation = { arrivalGate, stateGate, heldUnits };
+      activeReservations.add(reservation);
       queued += 1;
       setBusy(true);
-      sequence = sequence.catch(() => undefined).then(() => present(detail, capturedDom, cue, arrivalGate)).finally(() => {
+      sequence = sequence.catch(() => undefined).then(() => present(detail, capturedDom, cue, reservation)).finally(() => {
+        reservation.arrivalGate?.remove();
+        reservation.stateGate?.remove();
+        releaseChangedState(reservation.heldUnits);
+        activeReservations.delete(reservation);
         queued = Math.max(0, queued - 1);
         if (!queued && !disposed) setBusy(false);
       });
@@ -1213,6 +1279,12 @@ export default function GamePresentationRuntime() {
       observer.disconnect();
       window.removeEventListener(ACTION_EVENT, onAction as EventListener);
       presentationWindow.__hemsfellPresentationBusy = false;
+      activeReservations.forEach((reservation) => {
+        reservation.arrivalGate?.remove();
+        reservation.stateGate?.remove();
+        releaseChangedState(reservation.heldUnits);
+      });
+      activeReservations.clear();
       layers.motion.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
       layers.effect.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
       layers.motion.remove();

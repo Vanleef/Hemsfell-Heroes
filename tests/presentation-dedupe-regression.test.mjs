@@ -35,6 +35,26 @@ test("presentation identity is assigned once by the bridge and reused by the run
   assert.match(runtime, /seenPresentationIds/);
 });
 
+test("triggered effects preserve their real source through the engine trace", () => {
+  const engine = read("app/rules-engine/engine-base.mjs");
+  const cues = read("app/presentation-action-cues.ts");
+  assert.match(engine, /sourceId: traceContext\.sourceId/);
+  assert.match(engine, /targetIds: traceContext\.targetIds/);
+  assert.match(cues, /reverse\(\)\.find\(\(entry\) => entry\.kind === "effect" && entry\.sourceId\)/);
+});
+
+test("pre-commit reservation keeps one visible unit representation across queued transitions", () => {
+  const runtime = read("app/game-presentation-runtime.tsx");
+  assert.match(runtime, /const stateGate = installStateGate\(detail\)/);
+  assert.match(runtime, /const heldUnits = reserveChangedUnits\(layers\.motion, capturedDom, detail\)/);
+  assert.match(runtime, /bindReservedDestinations\(heldUnits, afterDom\)/);
+  assert.match(runtime, /const wrapper = reservedWrapper \|\| document\.createElement\("div"\)/);
+  assert.match(runtime, /if \(!reservedWrapper\) wrapper\.append/);
+  assert.match(runtime, /activeReservations\.add\(reservation\)/);
+  assert.match(runtime, /activeReservations\.delete\(reservation\)/);
+  assert.match(runtime, /activeReservations\.forEach\(\(reservation\) => \{[\s\S]*releaseChangedState\(reservation\.heldUnits\)/);
+});
+
 test("blocking child animations are ordered while readable damage gates visual state commit", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
   assert.match(runtime, /await Promise\.all\(\[movement, \.\.\.ambient\]\)/);
@@ -45,7 +65,7 @@ test("blocking child animations are ordered while readable damage gates visual s
   assert.doesNotMatch(runtime, /flight\.targets\?\.forEach\(\(target\) => effectBeam/);
   assert.match(runtime, /const heldState = holdChangedState/);
   assert.match(runtime, /releaseReadableState\(heldState\)/);
-  assert.match(runtime, /await presentDeltas[\s\S]*finally \{\s*arrivalGate\?\.remove\(\);\s*releaseChangedState\(heldState\)/);
+  assert.match(runtime, /await presentDeltas[\s\S]*finally \{\s*arrivalGate\?\.remove\(\);\s*stateGate\?\.remove\(\);\s*releaseChangedState\(heldState\)/);
   assert.ok(runtime.indexOf("await presentDeltas") < runtime.indexOf("releaseChangedState(heldState)"));
 });
 

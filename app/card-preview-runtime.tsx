@@ -316,6 +316,7 @@ export default function CardPreviewRuntime() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") closePreview();
     };
+    const onDragStart = () => closePreview();
 
     document.addEventListener("pointerover", onPointerOver, true);
     document.addEventListener("pointerout", onPointerOut, true);
@@ -327,6 +328,7 @@ export default function CardPreviewRuntime() {
     document.addEventListener("pointercancel", clearLongPress, true);
     document.addEventListener("click", onClickCapture, true);
     document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("dragstart", onDragStart, true);
 
     return () => {
       clearLongPress();
@@ -341,6 +343,7 @@ export default function CardPreviewRuntime() {
       document.removeEventListener("pointercancel", clearLongPress, true);
       document.removeEventListener("click", onClickCapture, true);
       document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("dragstart", onDragStart, true);
     };
   }, [cancelScheduledClose, closePreview, preview?.expanded, previewFloating.refs, scheduleCompactClose]);
 

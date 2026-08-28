@@ -67,6 +67,7 @@ export type PresentationActionDetail = {
   commandId?: string;
   presentationId?: string;
   revision?: number;
+  trace?: Array<{ kind?: unknown; type?: unknown; sourceId?: unknown; targetIds?: unknown[] }>;
 };
 
 export type ActionCue =
@@ -120,6 +121,7 @@ const sourceIdFor = (detail: PresentationActionDetail) => String(
   || detail.before?.pendingDecision?.sourceId
   || detail.before?.pendingDecision?.context?.sourceId
   || detail.before?.pendingDecision?.sourceUid
+  || [...(detail.trace || [])].reverse().find((entry) => entry.kind === "effect" && entry.sourceId)?.sourceId
   || "",
 );
 

@@ -553,7 +553,15 @@ export function executeCommand(inputState, command, options = {}) {
     refreshDynamicChoices(state);
     if (++steps > maxSteps) throw new RulesLoopError(`Resolution exceeded ${maxSteps} steps`, trace);
     const key = fingerprint(state, stack); const count = (repeats.get(key) || 0) + 1; repeats.set(key, count); if (count > maxRepeats) throw new RulesLoopError("Repeated resolution state detected", trace);
-    const item = stack.pop(); trace.push({ step: steps, kind: item.kind, type: item.command?.type || item.effect?.type || item.event?.type });
+    const item = stack.pop();
+    const traceContext = item.context || item.event || item.command || {};
+    trace.push({
+      step: steps,
+      kind: item.kind,
+      type: item.command?.type || item.effect?.type || item.event?.type,
+      sourceId: traceContext.sourceId,
+      targetIds: traceContext.targetIds,
+    });
     if (state.pendingDecision && !(item.kind === "command" && item.command?.type === "resolveDecision")) { state.pendingDecision.continuation = [item, ...stack.splice(0), ...(state.pendingDecision.continuation || [])]; continue; }
     if (item.kind === "command") {
       if (item.command.type === "evolveHero") {

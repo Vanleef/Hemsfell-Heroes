@@ -31,9 +31,11 @@ test("changed stats stay visually old until damage number becomes readable", () 
 
 test("lethal targets remain on board until their ordered departure starts", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
-  assert.match(runtime, /if \(after\.units\.has\(uid\)\) continue;/);
+  assert.match(runtime, /reserveChangedUnits\(layers\.motion, capturedDom, detail\)/);
+  assert.match(runtime, /!afterIds\.has\(uid\)/);
   assert.match(runtime, /deferredDeath/);
-  assert.match(runtime, /releaseDepartureHold\(heldState, flight\.uid\)/);
+  assert.match(runtime, /const reservedWrapper = releaseDepartureHold\(heldState, flight\.uid\)/);
+  assert.match(runtime, /animateCardMove\(layers\.motion, layers\.effect, flight, reservedWrapper\)/);
   assert.match(runtime, /afterDom\.units\.get\(id\)\?\.rect \|\| beforeDom\.units\.get\(id\)\?\.rect/);
 });
 
@@ -101,7 +103,7 @@ test("Hero damage holds only the life badge instead of cloning the Hero portrait
 });
 
 
-test("turned cards stay turned through effect highlights and ready only for departure", () => {
+test("turned cards keep the same visible orientation through state changes and departure", () => {
   const page = read("app/page.tsx");
   const runtime = read("app/game-presentation-runtime.tsx");
   const css = read("app/game-presentation.css");
@@ -110,7 +112,8 @@ test("turned cards stay turned through effect highlights and ready only for depa
   assert.match(runtime, /dataset\.hhPresentationOrientation = "turned"/);
   assert.match(css, /data-hh-presentation-orientation="turned"/);
   assert.match(css, /rotate\(90deg\) !important/);
-  assert.match(runtime, /face: readyDepartureFace\(source\)/);
+  assert.match(runtime, /face: source\.clone/);
+  assert.doesNotMatch(runtime, /readyDepartureFace/);
 });
 
 test("graveyard and extra-deck results stay behind their effect animation", () => {
@@ -155,7 +158,9 @@ test("opponent plays reveal their actual face at the start of presentation", () 
 test("spell and ability state cannot become visible before their presentation cue", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
   assert.match(runtime, /const unitPresentationFingerprint/);
-  assert.match(runtime, /holdChangedState\(layers\.motion, beforeDom, afterDom, detail\)/);
+  assert.match(runtime, /holdChangedState\(layers\.motion, beforeDom, afterDom, detail, heldUnits\)/);
+  assert.match(runtime, /const stateGate = installStateGate\(detail\)/);
+  assert.match(runtime, /stateGate\?\.remove\(\);\s*releaseReadableState\(heldState\)/);
   assert.match(runtime, /unitPresentationFingerprint\(oldState\) === unitPresentationFingerprint\(freshState\)/);
   assert.match(runtime, /changedTargetRects\(detail, beforeDom, afterDom\)/);
   assert.match(runtime, /!visual\.deferredDeath && !visual\.levelUp/);
