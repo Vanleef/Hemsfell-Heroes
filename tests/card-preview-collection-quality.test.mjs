@@ -105,7 +105,14 @@ test("compact card tooltip stays small and closes as soon as dragging starts", (
   assert.match(matchCss, /\.card-preview-floating\.is-compact\s*\{[\s\S]*width:\s*min\(12rem/);
   assert.match(matchCss, /\.card-preview-floating\.is-compact\s*\{[\s\S]*max-height:\s*min\(22rem/);
   assert.match(runtime, /document\.addEventListener\("dragstart", onDragStart, true\)/);
-  assert.match(runtime, /const onDragStart = \(\) => closePreview\(\)/);
+  assert.match(runtime, /const onDragStart = \(\) => \{[\s\S]*clearHoverOpen\(\);[\s\S]*closePreview\(\)/);
+});
+
+test("card tooltip opens only after two seconds of continuous hover", () => {
+  assert.match(runtime, /const TOOLTIP_HOVER_DELAY_MS = 2_000/);
+  assert.match(runtime, /hoverTimer = window\.setTimeout\([\s\S]*TOOLTIP_HOVER_DELAY_MS\)/);
+  assert.match(runtime, /const onPointerOver[\s\S]*scheduleHoverOpen\(card\)/);
+  assert.match(runtime, /const onPointerOut[\s\S]*clearHoverOpen\(\)/);
 });
 
 test("keywords and subtypes expose highlighted nested glossary tooltips", () => {

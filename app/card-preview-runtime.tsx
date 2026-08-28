@@ -46,6 +46,7 @@ const CARD_SELECTOR = ".original-card[data-card-preview='true']";
 const NATIVE_TITLE_SELECTOR = `${CARD_SELECTOR}[title], ${CARD_SELECTOR} [title], [data-tip][title], .remote-card-art[title]`;
 const LONG_PRESS_MS = 520;
 const TOUCH_SLOP_PX = 12;
+const TOOLTIP_HOVER_DELAY_MS = 2_000;
 const TOOLTIP_CLOSE_DELAY_MS = 180;
 
 function escapeRegExp(value: string) {
@@ -134,9 +135,10 @@ function stripNativeTitle(element: Element) {
  * One interactive tooltip authority for every card surface.
  *
  * The semantic copy remains inside each card, while the visible surface is
- * rendered in a body-level Floating UI portal. A short close delay bridges the
- * gap from the card to the portal so users can enter it and inspect glossary
- * terms without losing the preview.
+ * rendered in a body-level Floating UI portal. Mouse hover must remain on the
+ * same card for two seconds before opening. A short close delay then bridges
+ * the gap from the card to the portal so users can enter it and inspect
+ * glossary terms without losing the preview.
  */
 export default function CardPreviewRuntime() {
   const [preview, setPreview] = useState<PreviewState | null>(null);
@@ -217,8 +219,16 @@ export default function CardPreviewRuntime() {
 
   useEffect(() => {
     let longPressTimer = 0;
+    let hoverTimer = 0;
+    let hoverCard: HTMLElement | null = null;
     let touchCard: HTMLElement | null = null;
     let touchStart = { x: 0, y: 0 };
+
+    const clearHoverOpen = () => {
+      window.clearTimeout(hoverTimer);
+      hoverTimer = 0;
+      hoverCard = null;
+    };
 
     const clearLongPress = () => {
       window.clearTimeout(longPressTimer);
@@ -229,10 +239,22 @@ export default function CardPreviewRuntime() {
     const openFor = (card: HTMLElement, expanded: boolean) => {
       const next = previewData(card, expanded);
       if (!next) return;
+      clearHoverOpen();
       cancelScheduledClose();
       setGlossary(null);
       previewFloating.refs.setReference(card);
       setPreview(next);
+    };
+
+    const scheduleHoverOpen = (card: HTMLElement) => {
+      clearHoverOpen();
+      hoverCard = card;
+      hoverTimer = window.setTimeout(() => {
+        const pendingCard = hoverCard;
+        hoverTimer = 0;
+        hoverCard = null;
+        if (pendingCard?.isConnected) openFor(pendingCard, false);
+      }, TOOLTIP_HOVER_DELAY_MS);
     };
 
     const onPointerOver = (event: PointerEvent) => {
@@ -244,7 +266,7 @@ export default function CardPreviewRuntime() {
       }
       const card = target?.closest<HTMLElement>(CARD_SELECTOR);
       if (!card || event.relatedTarget instanceof Node && card.contains(event.relatedTarget)) return;
-      openFor(card, false);
+      scheduleHoverOpen(card);
     };
 
     const onPointerOut = (event: PointerEvent) => {
@@ -257,6 +279,7 @@ export default function CardPreviewRuntime() {
       }
       const card = target?.closest<HTMLElement>(CARD_SELECTOR);
       if (!card || event.relatedTarget instanceof Node && card.contains(event.relatedTarget)) return;
+      clearHoverOpen();
       scheduleCompactClose(card);
     };
 
@@ -284,6 +307,7 @@ export default function CardPreviewRuntime() {
     };
 
     const onPointerDown = (event: PointerEvent) => {
+      clearHoverOpen();
       const target = event.target instanceof Element ? event.target : null;
       const card = target?.closest<HTMLElement>(CARD_SELECTOR);
       const insidePreview = event.target instanceof Node && previewFloating.refs.floating.current?.contains(event.target);
@@ -316,7 +340,10 @@ export default function CardPreviewRuntime() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") closePreview();
     };
-    const onDragStart = () => closePreview();
+    const onDragStart = () => {
+      clearHoverOpen();
+      closePreview();
+    };
 
     document.addEventListener("pointerover", onPointerOver, true);
     document.addEventListener("pointerout", onPointerOut, true);
@@ -331,6 +358,7 @@ export default function CardPreviewRuntime() {
     document.addEventListener("dragstart", onDragStart, true);
 
     return () => {
+      clearHoverOpen();
       clearLongPress();
       cancelScheduledClose();
       document.removeEventListener("pointerover", onPointerOver, true);
