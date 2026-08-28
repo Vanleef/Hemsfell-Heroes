@@ -88,6 +88,7 @@ test("command bar caps remain compact at large viewport sizes", () => {
   assert.match(css, /font-size:clamp\(\.66rem,min\(\.74vw,1\.32dvh\),\.8rem\)!important/);
 });
 
+// These guards cover both the regular React board and the transient presentation clones.
 test("legacy hero-hurt fallback uses only the tiny translate shake", () => {
   const css = read("app/ui-overrides.css");
   assert.match(css, /player-hero\.hero-hurt>\.hero-power-trigger\{animation:heroDamagePulse \.18s ease-out both\}/);
