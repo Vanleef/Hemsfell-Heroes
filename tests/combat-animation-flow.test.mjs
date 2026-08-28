@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
+// These regressions intentionally encode what the player is allowed to see, not just final engine state.
 test("spell presentation follows entry target impact damage cleanup death order", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
   const start = runtime.indexOf("if (spellFlight) {");
