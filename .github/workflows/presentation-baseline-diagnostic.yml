@@ -1,0 +1,46 @@
+name: Presentation Baseline Diagnostic
+
+on:
+  push:
+    branches:
+      - feat/presentation-system-pr1
+    paths:
+      - .github/workflows/presentation-baseline-diagnostic.yml
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - run: npm ci
+      - run: npm run prepare:project
+      - name: Capture baseline rules suite
+        id: rules
+        shell: bash
+        run: |
+          set +e
+          npm run test:rules > rules-baseline.log 2>&1
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          echo "$code" > rules-baseline.exit
+          tail -n 500 rules-baseline.log > rules-baseline-tail.log
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: presentation-baseline-rules
+          path: |
+            rules-baseline.exit
+            rules-baseline-tail.log
+          if-no-files-found: error
+      - name: Report baseline result
+        run: |
+          echo "Rules baseline exit code: ${{ steps.rules.outputs.exit_code }}"
+          test "${{ steps.rules.outputs.exit_code }}" = "0"
