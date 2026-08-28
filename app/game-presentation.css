@@ -59,6 +59,11 @@
   filter: saturate(.55) hue-rotate(18deg) drop-shadow(0 0 1rem rgb(121 73 181 / .56));
 }
 
+.hh-state-hold {
+  filter: none;
+  pointer-events: none;
+}
+
 .hh-arrival-ring,
 .hh-destruction-ring,
 .hh-banish-vortex,
@@ -171,6 +176,18 @@ html.hh-presentation-locked .screen-game button:not(.card-preview-close) {
 
 html.hh-presentation-locked .screen-game {
   cursor: wait;
+}
+
+/* Result UI belongs to the resolution phase, after motion and cues. Keeping it
+   out of the locked frame also prevents a one-frame dialog flash before React
+   observes the busy event. */
+html.hh-presentation-locked .screen-game .engine-decision-backdrop,
+html.hh-presentation-locked .screen-game .engine-decision-wait,
+html.hh-presentation-locked .screen-game .arte-da-guerra-decision,
+html.hh-presentation-locked .screen-game .response-overlay,
+html.hh-presentation-locked .screen-game .response-waiting,
+html.hh-presentation-locked .screen-game .search-deck-overlay {
+  display: none !important;
 }
 
 /* CombatAnimation remains responsible for declaration/priority/blocker input.

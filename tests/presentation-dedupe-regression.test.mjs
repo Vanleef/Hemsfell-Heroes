@@ -41,6 +41,78 @@ test("child animations are awaited before presentation idle", () => {
   assert.match(runtime, /await Promise\.all\(completion\)/);
   assert.match(runtime, /await Promise\.all\(labels\)/);
   assert.doesNotMatch(runtime, /flight\.targets\?\.forEach\(\(target\) => effectBeam/);
+  assert.match(runtime, /const heldState = holdChangedState/);
+  assert.match(runtime, /finally \{\s*releaseChangedState\(heldState\)/);
+  assert.ok(runtime.indexOf("releaseChangedState(heldState)") < runtime.indexOf("await presentDeltas"));
+});
+
+test("only an authoritative local command may publish a presentation transition", () => {
+  const facade = read("app/rules-engine/engine.mjs");
+  const page = read("app/page.tsx");
+  const controller = read("app/rules-engine/ai-system/controller.ts");
+  const combat = read("app/rules-engine/combat.mjs");
+
+  assert.match(facade, /options\?\.presentation === true/);
+  assert.match(page, /\{priority:true,presentation:true\}/);
+  assert.match(controller, /from "\.\.\/engine-core\.mjs"/);
+  assert.match(combat, /from "\.\/engine-core\.mjs"/);
+  assert.doesNotMatch(controller, /from "\.\.\/engine\.mjs"/);
+  assert.doesNotMatch(combat, /from "\.\/engine\.mjs"/);
+});
+
+test("simulated engine commands stay silent while one opted-in command emits synchronously once", async () => {
+  const emitted = [];
+  const previousWindow = globalThis.window;
+  const previousCustomEvent = globalThis.CustomEvent;
+  globalThis.window = { dispatchEvent: (event) => emitted.push(event) };
+  globalThis.CustomEvent = class {
+    constructor(type, init = {}) { this.type = type; this.detail = init.detail; }
+  };
+
+  try {
+    const { executeCommand } = await import("../app/rules-engine/engine.mjs");
+    const state = () => ({
+      active: 0,
+      phase: "fim",
+      round: 1,
+      players: [0, 1].map(() => ({
+        life: 30, maxLife: 30, energy: 0, maxEnergy: 5, reserve: 0,
+        deck: [], hand: [], board: [], support: [], terrain: null, grave: [], obscuro: [],
+      })),
+    });
+
+    for (let index = 0; index < 10; index++) {
+      executeCommand(state(), { type: "advancePhase", owner: 0 }, { priority: false });
+    }
+    await new Promise((resolve) => queueMicrotask(resolve));
+    assert.equal(emitted.length, 0);
+
+    executeCommand(state(), { type: "advancePhase", owner: 0 }, { priority: false, presentation: true });
+    assert.equal(emitted.length, 1);
+    assert.equal(emitted[0].type, "hemsfell:rules-command-resolved");
+  } finally {
+    if (previousWindow === undefined) delete globalThis.window;
+    else globalThis.window = previousWindow;
+    if (previousCustomEvent === undefined) delete globalThis.CustomEvent;
+    else globalThis.CustomEvent = previousCustomEvent;
+  }
+});
+
+test("interactive card results stay behind the complete presentation barrier", () => {
+  const page = read("app/page.tsx");
+  const facade = read("app/rules-engine/engine.mjs");
+
+  assert.match(page, /presentationBlocked=presentationBusy\|\|!!visualFx\|\|visualFxQueue\.length>0\|\|shufflingDeck!==null/);
+  assert.match(page, /visibleResponseWindow=presentationBlocked\?null:responseWindow/);
+  assert.match(page, /engineDecision=presentationBlocked\?null:game\?\.pendingDecision/);
+  assert.match(page, /!presentationBlocked&&searchChoice&&<SearchDeckModal/);
+  assert.match(page, /!presentationBlocked&&!!game\?\.pendingReposition/);
+  const css = read("app/game-presentation.css");
+  for (const resultUi of ["engine-decision-backdrop", "response-overlay", "search-deck-overlay"]) {
+    assert.match(css, new RegExp(`html\\.hh-presentation-locked[\\s\\S]*${resultUi}`));
+  }
+  assert.doesNotMatch(facade, /queueMicrotask|pending\s*=\s*new Map|flushScheduled/);
+  assert.match(facade, /window\.dispatchEvent\(new CustomEvent\(RULES_RESOLVED_EVENT/);
 });
 
 test("resolved combat has a single visual owner", () => {

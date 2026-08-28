@@ -127,7 +127,7 @@ test("game client routes rules and bot decisions through authoritative advanced 
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
   assert.match(page, /canExecuteCard\(snapshot\)/);
   assert.match(page, /roomAction\("command"/);
-  assert.match(page, /executeCommand\(current,\{\.\.\.command,owner\},\{priority:true\}\)/);
+  assert.match(page, /executeCommand\(current,\{\.\.\.command,owner\},\{priority:true,presentation:true\}\)/);
   assert.match(page, /role!=="attachment"/);
   assert.match(page, /dragged!\.type!=="Artefato"\|\|!!creature/);
   assert.match(page, /rules-engine\/ai-system\/runtime/);

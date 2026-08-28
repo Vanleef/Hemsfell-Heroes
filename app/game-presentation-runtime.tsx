@@ -26,7 +26,7 @@ type DomCard = {
   hp?: number;
   atk?: number;
 };
-type HeroDom = { element: HTMLElement; rect: RectLike; life: number };
+type HeroDom = { element: HTMLElement; rect: RectLike; clone: HTMLElement; life: number };
 type DomSnapshot = {
   units: Map<string, DomCard>;
   hands: [DomCard[], DomCard[]];
@@ -160,7 +160,7 @@ function snapshotDom(): DomSnapshot {
   const heroes = new Map<Owner, HeroDom>();
   document.querySelectorAll<HTMLElement>(".game-stage .player-hero").forEach((hero) => {
     const owner: Owner = hero.classList.contains("enemy") ? 1 : 0;
-    heroes.set(owner, { element: hero, rect: rectOf(hero), life: numberText(hero.querySelector<HTMLElement>(".hero-life")?.textContent) });
+    heroes.set(owner, { element: hero, rect: rectOf(hero), clone: cloneRendered(hero), life: numberText(hero.querySelector<HTMLElement>(".hero-life")?.textContent) });
   });
   const piles = new Map<string, DomCard>();
   for (const owner of [0, 1] as const) for (const kind of ["deck", "extra", "grave", "obscuro"] as const) {
@@ -193,6 +193,43 @@ function createFlightFace(face: HTMLElement) {
   wrapper.className = "hh-flight-face";
   wrapper.append(face);
   return wrapper;
+}
+
+type HeldStateVisual = { destination: HTMLElement; overlay: HTMLElement };
+
+function holdStateVisual(layer: HTMLElement, destination: HTMLElement, face: HTMLElement, rect: RectLike): HeldStateVisual {
+  destination.classList.add("hh-presentation-hidden");
+  const overlay = document.createElement("div");
+  overlay.className = "hh-flight-card hh-state-hold";
+  overlay.style.left = `${rect.left}px`;
+  overlay.style.top = `${rect.top}px`;
+  overlay.style.width = `${Math.max(1, rect.width)}px`;
+  overlay.style.height = `${Math.max(1, rect.height)}px`;
+  overlay.append(createFlightFace(cloneRendered(face)));
+  layer.append(overlay);
+  return { destination, overlay };
+}
+
+function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSnapshot) {
+  const held: HeldStateVisual[] = [];
+  for (const [uid, fresh] of after.units) {
+    const old = before.units.get(uid);
+    if (!old || old.hp === fresh.hp && old.atk === fresh.atk) continue;
+    held.push(holdStateVisual(layer, fresh.element, old.clone, old.rect));
+  }
+  for (const owner of [0, 1] as const) {
+    const old = before.heroes.get(owner), fresh = after.heroes.get(owner);
+    if (!old || !fresh || old.life === fresh.life) continue;
+    held.push(holdStateVisual(layer, fresh.element, old.clone, old.rect));
+  }
+  return held;
+}
+
+function releaseChangedState(held: HeldStateVisual[]) {
+  for (const visual of held) {
+    visual.overlay.remove();
+    visual.destination.classList.remove("hh-presentation-hidden");
+  }
 }
 
 async function arrivalRing(layer: HTMLElement, rect: RectLike) {
@@ -506,6 +543,7 @@ export default function GamePresentationRuntime() {
       const flights = buildFlights(detail, beforeDom, afterDom);
       const arrivals = flights.filter((flight) => flight.kind !== "destroy" && flight.kind !== "banish");
       const departures = flights.filter((flight) => flight.kind === "destroy" || flight.kind === "banish");
+      const heldState = holdChangedState(layers.motion, beforeDom, afterDom);
 
       /* One action owns one ordered visual transaction:
          1. combat declaration impact, or card arrival/cast;
@@ -514,10 +552,14 @@ export default function GamePresentationRuntime() {
          4. numeric state deltas.
          Every animation is awaited, so idle cannot be emitted while a child
          animation from the same action is still visible. */
-      if (cue?.kind === "combat") await animateActionCue(layers.effect, cue);
-      for (const flight of arrivals) await animateCardMove(layers.motion, layers.effect, flight);
-      if (cue?.kind === "effect") await animateActionCue(layers.effect, cue);
-      for (const flight of departures) await animateCardMove(layers.motion, layers.effect, flight);
+      try {
+        if (cue?.kind === "combat") await animateActionCue(layers.effect, cue);
+        for (const flight of arrivals) await animateCardMove(layers.motion, layers.effect, flight);
+        if (cue?.kind === "effect") await animateActionCue(layers.effect, cue);
+        for (const flight of departures) await animateCardMove(layers.motion, layers.effect, flight);
+      } finally {
+        releaseChangedState(heldState);
+      }
       await presentDeltas(beforeDom, afterDom, layers.effect);
       stableDom = snapshotDom();
     };

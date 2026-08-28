@@ -34,6 +34,8 @@ test("rules core stays isolated behind a browser instrumentation facade", () => 
   assert.match(facade, /executeCommand as executeCore/);
   assert.match(facade, /export \* from "\.\/engine-core\.mjs"/);
   assert.match(facade, /typeof window !== "undefined"/);
+  assert.match(facade, /options\?\.presentation === true/);
+  assert.doesNotMatch(facade, /queueMicrotask|pending\s*=\s*new Map|flushScheduled/);
   assert.match(facade, /hemsfell:rules-command-resolved/);
   assert.match(core, /export function executeCommand\(/);
   assert.doesNotMatch(core, /hemsfell:presentation-action|hemsfell:rules-command-resolved|__hemsfellPresentationBusy/);

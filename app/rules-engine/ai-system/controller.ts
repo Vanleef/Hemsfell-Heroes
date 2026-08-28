@@ -1,5 +1,5 @@
 import { buildAIActionCandidates, chooseAIHeroAbility, completeAIPlayCommand } from "../ai.mjs";
-import { executeCommand } from "../engine.mjs";
+import { executeCommand } from "../engine-core.mjs";
 import { legalPriorityResponses } from "../priority.mjs";
 import { BeliefModel } from "./belief";
 import { CombatPlanner } from "./combat";

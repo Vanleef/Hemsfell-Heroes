@@ -1,53 +1,31 @@
 /* Browser instrumentation facade. The authoritative rules implementation lives in
- * engine-core.mjs and stays side-effect free; this module only mirrors completed
- * top-level client resolutions into a neutral event consumed by presentation. */
+ * engine-core.mjs and stays side-effect free. Presentation is explicitly opt-in:
+ * legality probes, combat queries and AI simulations also execute cloned states in
+ * the browser and must never be mistaken for completed match transitions. */
 import { executeCommand as executeCore } from "./engine-core.mjs";
 export * from "./engine-core.mjs";
 
 const RULES_RESOLVED_EVENT = "hemsfell:rules-command-resolved";
-let flushScheduled = false;
-const pending = new Map();
 
 const browserClone = (value) => {
   try { return structuredClone(value); }
   catch { return value; }
 };
-const transitionKey = (before, after, command) => JSON.stringify({
-  type: command?.type,
-  owner: command?.owner,
-  cardId: command?.cardId,
-  sourceId: command?.sourceId,
-  abilityId: command?.abilityId,
-  attackerId: command?.attackerId,
-  defenderId: command?.defenderId,
-  beforeRound: before?.round,
-  beforeEvents: before?.events,
-  beforeLog: before?.log?.[0]?.id,
-  afterRound: after?.round,
-  afterEvents: after?.events,
-  afterLog: after?.log?.[0]?.id,
-  beforeHands: before?.players?.map?.((entry) => entry?.hand?.length || 0),
-  afterHands: after?.players?.map?.((entry) => entry?.hand?.length || 0),
-});
-const scheduleBrowserResolution = (detail) => {
-  const key = transitionKey(detail.before, detail.after, detail.command);
-  pending.set(key, detail);
-  if (flushScheduled) return;
-  flushScheduled = true;
-  queueMicrotask(() => {
-    flushScheduled = false;
-    const batch = [...pending.values()];
-    pending.clear();
-    for (const item of batch) window.dispatchEvent(new CustomEvent(RULES_RESOLVED_EVENT, { detail: item }));
-  });
+const publishBrowserResolution = (detail) => {
+  /* Dispatch before React commits the returned state. The presentation runtime
+     captures the real pre-action DOM and raises its busy barrier synchronously,
+     so result dialogs cannot flash ahead of the card animation. */
+  window.dispatchEvent(new CustomEvent(RULES_RESOLVED_EVENT, { detail }));
 };
 
 export function executeCommand(inputState, command, options = {}) {
-  const inBrowser = typeof window !== "undefined" && typeof CustomEvent !== "undefined";
-  const before = inBrowser ? browserClone(inputState) : null;
+  const shouldPresent = options?.presentation === true
+    && typeof window !== "undefined"
+    && typeof CustomEvent !== "undefined";
+  const before = shouldPresent ? browserClone(inputState) : null;
   const result = executeCore(inputState, command, options);
-  if (inBrowser && before && result?.state && command?.type) {
-    scheduleBrowserResolution({
+  if (shouldPresent && before && result?.state && command?.type) {
+    publishBrowserResolution({
       before,
       after: browserClone(result.state),
       command: browserClone(command),

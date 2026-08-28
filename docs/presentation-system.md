@@ -23,6 +23,10 @@ Rules, priority and decisions do not depend on animation frames or clip duration
 
 The bridge and runtime are one-shot consumers. The bridge assigns and deduplicates a stable presentation ID, while the runtime keeps its own bounded seen-ID cache as a second guard.
 
+Browser rules execution is presentation-silent by default. Only the authoritative local command path opts in with `presentation: true`; AI search, legality probes and combat queries import the side-effect-free core and therefore cannot enqueue animations for their cloned states.
+
+The authoritative local event is published synchronously before React commits the returned state. Interactive consequences—target/choice/search dialogs, reposition controls and response windows—remain behind the shared presentation barrier until card movement, effect cues, queued legacy theatre and deck-shuffle visuals have all finished.
+
 ## Input and AI pacing
 
 `GamePresentationRuntime` exposes `window.__hemsfellPresentationBusy` plus `hemsfell:presentation-busy` / `hemsfell:presentation-idle` for the complete transaction. Arrival rings, beams, impacts and floating numbers are awaited before idle is emitted; there is no second cue-specific busy channel.
