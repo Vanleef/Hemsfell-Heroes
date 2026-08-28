@@ -89,17 +89,21 @@ test("command bar caps remain compact at large viewport sizes", () => {
   assert.match(css, /font-size:clamp\(\.66rem,min\(\.74vw,1\.32dvh\),\.8rem\)!important/);
 });
 
-// These guards cover both the regular React board and the transient presentation clones.
-test("legacy hero-hurt fallback uses only the tiny translate shake", () => {
+// Direct damage must never animate or replace the Hero portrait itself.
+test("legacy hero-hurt fallback cannot move or scale the Hero portrait", () => {
   const css = read("app/ui-overrides.css");
-  assert.match(css, /player-hero\.hero-hurt>\.hero-power-trigger\{animation:heroDamagePulse \.18s ease-out both\}/);
-  const start = css.indexOf("@keyframes heroDamagePulse");
-  const end = css.indexOf("@keyframes heroDamageFlash", start);
-  const pulse = css.slice(start, end);
-  assert.match(pulse, /translateX\(-2\.5px\)/);
-  assert.match(pulse, /translateX\(2\.5px\)/);
-  assert.doesNotMatch(pulse, /scale\(/);
-  assert.doesNotMatch(pulse, /translateX\([^)]*%/);
+  assert.match(css, /player-hero\.hero-hurt>\.hero-power-trigger\{animation:none!important;transform:none!important;transition:none!important\}/);
+  assert.doesNotMatch(css, /@keyframes heroDamagePulse/);
+});
+
+test("Hero damage holds only the life badge instead of cloning the Hero portrait", () => {
+  const runtime = read("app/game-presentation-runtime.tsx");
+  const css = read("app/game-presentation.css");
+  assert.match(runtime, /function holdHeroLifeVisual/);
+  assert.match(runtime, /fresh\.lifeElement, old\.life, old\.lifeRect/);
+  assert.match(runtime, /Damage feedback must never replace the Hero portrait/);
+  assert.match(css, /\.hh-hero-life-hold \{/);
+  assert.match(css, /transform: none !important/);
 });
 
 test("command bar runtime uses the same compact caps as the stylesheet", () => {

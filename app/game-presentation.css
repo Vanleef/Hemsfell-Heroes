@@ -94,6 +94,21 @@
   pointer-events: none;
 }
 
+.hh-hero-life-hold {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+  z-index: 7;
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+  will-change: auto;
+}
+
 .hh-arrival-ring,
 .hh-destruction-ring,
 .hh-banish-vortex,

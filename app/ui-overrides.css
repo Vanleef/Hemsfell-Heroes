@@ -572,9 +572,8 @@
 .screen-game .hero-command-bar>.hero-ability-chip>span>b{align-self:flex-start!important;margin:0 0 clamp(.08rem,.16cqh,.14rem)!important;line-height:.9!important;letter-spacing:.08em!important}
 .screen-game .hero-command-bar>.hero-ability-chip>span>p{margin:0!important}
 .screen-game .hero-command-bar>.hero-ability-chip.is-active.is-available:hover,.screen-game .hero-command-bar>.hero-ability-chip.is-active.is-available:focus-visible{box-shadow:0 0 0 .1rem #ffd35ccc,0 0 clamp(.7rem,1.25cqw,1.25rem) #ffc934a8,inset 0 0 clamp(.35rem,.65cqw,.65rem) #ffd45a32!important;filter:brightness(1.13) saturate(1.14)!important}
-.screen-game .player-hero.hero-hurt>.hero-power-trigger{animation:heroDamagePulse .18s ease-out both}
+.screen-game .player-hero.hero-hurt>.hero-power-trigger{animation:none!important;transform:none!important;transition:none!important}
 .screen-game .player-hero.hero-hurt>.hero-power-trigger::after{content:"";position:absolute;inset:-7%;border-radius:16%;pointer-events:none;animation:heroDamageFlash .62s ease-out both}
-@keyframes heroDamagePulse{0%,100%{transform:translateX(0)}20%{transform:translateX(-2.5px)}40%{transform:translateX(2.5px)}62%{transform:translateX(-1.25px)}82%{transform:translateX(1.25px)}}
 @keyframes heroDamageFlash{0%{box-shadow:0 0 0 0 rgba(255,74,57,.92);background:rgba(255,55,38,.28);opacity:1}100%{box-shadow:0 0 clamp(1rem,2cqw,2rem) clamp(.25rem,.55cqw,.55rem) rgba(255,51,34,0);background:rgba(255,55,38,0);opacity:0}}
 @container hemsfell-board (max-height:44rem){.screen-game .hero-command-bar>.hero-ability-chip>span{margin-left:clamp(.09rem,.2cqw,.2rem)!important}.screen-game .hero-command-bar>.hero-ability-chip>span>b{margin-bottom:clamp(.06rem,.12cqh,.1rem)!important}}
 @container hemsfell-board (max-height:36rem){.screen-game .hero-command-bar>.hero-ability-chip>span{margin-left:clamp(.07rem,.17cqw,.16rem)!important}}

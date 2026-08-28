@@ -27,7 +27,7 @@ type DomCard = {
   hp?: number;
   atk?: number;
 };
-type HeroDom = { element: HTMLElement; rect: RectLike; clone: HTMLElement; life: number };
+type HeroDom = { element: HTMLElement; rect: RectLike; clone: HTMLElement; life: number; lifeElement: HTMLElement | null; lifeRect: RectLike | null };
 type DomSnapshot = {
   units: Map<string, DomCard>;
   hands: [DomCard[], DomCard[]];
@@ -219,7 +219,15 @@ function snapshotDom(): DomSnapshot {
   const heroes = new Map<Owner, HeroDom>();
   document.querySelectorAll<HTMLElement>(".game-stage .player-hero").forEach((hero) => {
     const owner: Owner = hero.classList.contains("enemy") ? 1 : 0;
-    heroes.set(owner, { element: hero, rect: rectOf(hero), clone: cloneRendered(hero), life: numberText(hero.querySelector<HTMLElement>(".hero-life")?.textContent) });
+    const lifeElement = hero.querySelector<HTMLElement>(".hero-life");
+    heroes.set(owner, {
+      element: hero,
+      rect: rectOf(hero),
+      clone: cloneRendered(hero),
+      life: numberText(lifeElement?.textContent),
+      lifeElement,
+      lifeRect: lifeElement ? rectOf(lifeElement) : null,
+    });
   });
   const piles = new Map<string, DomCard>();
   for (const owner of [0, 1] as const) for (const kind of ["deck", "extra", "grave", "obscuro"] as const) {
@@ -276,6 +284,34 @@ function holdStateVisual(layer: HTMLElement, destination: HTMLElement | null, fa
   return { destination, overlay, uid, deferredDeath, levelUp, released: false };
 }
 
+function holdHeroLifeVisual(layer: HTMLElement, destination: HTMLElement, life: number, rect: RectLike): HeldStateVisual {
+  // Damage feedback must never replace the Hero portrait with a detached clone.
+  // Only the life badge is held at its exact viewport coordinates until the red
+  // delta becomes readable, leaving the portrait completely stationary.
+  destination.classList.add("hh-presentation-hidden");
+  const overlay = document.createElement("b");
+  overlay.className = "hh-hero-life-hold";
+  overlay.textContent = String(life);
+  overlay.style.left = `${rect.left}px`;
+  overlay.style.top = `${rect.top}px`;
+  overlay.style.width = `${Math.max(1, rect.width)}px`;
+  overlay.style.height = `${Math.max(1, rect.height)}px`;
+  const style = window.getComputedStyle(destination);
+  overlay.style.fontFamily = style.fontFamily;
+  overlay.style.fontSize = style.fontSize;
+  overlay.style.fontWeight = style.fontWeight;
+  overlay.style.lineHeight = style.lineHeight;
+  overlay.style.letterSpacing = style.letterSpacing;
+  overlay.style.color = style.color;
+  overlay.style.background = style.background;
+  overlay.style.border = style.border;
+  overlay.style.borderRadius = style.borderRadius;
+  overlay.style.boxShadow = style.boxShadow;
+  overlay.style.textShadow = style.textShadow;
+  layer.append(overlay);
+  return { destination, overlay, deferredDeath: false, levelUp: false, released: false };
+}
+
 function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSnapshot, detail: PresentationDetail) {
   const held: HeldStateVisual[] = [];
   for (const [uid, fresh] of after.units) {
@@ -291,8 +327,11 @@ function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSna
   for (const owner of [0, 1] as const) {
     const old = before.heroes.get(owner), fresh = after.heroes.get(owner);
     const levelUp = Number(detail.after?.players?.[owner]?.level || 0) > Number(detail.before?.players?.[owner]?.level || 0);
-    if (!old || !fresh || old.life === fresh.life && !levelUp) continue;
-    held.push(holdStateVisual(layer, fresh.element, old.clone, old.rect, undefined, false, levelUp));
+    if (!old || !fresh) continue;
+    if (levelUp) held.push(holdStateVisual(layer, fresh.element, old.clone, old.rect, undefined, false, true));
+    if (old.life !== fresh.life && old.lifeRect && fresh.lifeElement) {
+      held.push(holdHeroLifeVisual(layer, fresh.lifeElement, old.life, old.lifeRect));
+    }
   }
   /* A lethal target has already disappeared from React's post-command DOM.
      Keep its pre-command rendering pinned in place until the ordered death
