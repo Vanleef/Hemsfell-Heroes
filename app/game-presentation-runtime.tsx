@@ -71,6 +71,28 @@ const stateFields = (player: any) => [
   ...(player?.support || []),
   ...(player?.terrain ? [player.terrain] : []),
 ];
+const unitPresentationFingerprint = (card: any) => JSON.stringify({
+  damage: card?.damage,
+  bonusAtk: card?.bonusAtk,
+  bonusHp: card?.bonusHp,
+  temporaryAtk: card?.temporaryAtk,
+  temporaryHp: card?.temporaryHp,
+  markers: card?.markers,
+  modifiers: card?.modifiers,
+  tags: card?.tags,
+  temporaryTags: card?.temporaryTags,
+  temporarySubtypes: card?.temporarySubtypes,
+  grantedKeywords: card?.grantedKeywords,
+  staticModifiers: card?.staticModifiers,
+  exhausted: card?.exhausted,
+  summoning: card?.summoning,
+  frozen: card?.frozen,
+  stunned: card?.stunned,
+  suffocated: card?.suffocated,
+  immobilized: card?.immobilized,
+  activatedThisTurn: card?.activatedThisTurn,
+  attachedTo: card?.attachedTo,
+});
 const sameSemanticCount = (cards: any[] = []) => {
   const counts = new Map<string, number>();
   cards.forEach((card) => counts.set(semantic(card), (counts.get(semantic(card)) || 0) + 1));
@@ -237,33 +259,40 @@ type HeldStateVisual = {
   overlay: HTMLElement;
   uid?: string;
   deferredDeath: boolean;
+  levelUp: boolean;
   released: boolean;
 };
 
-function holdStateVisual(layer: HTMLElement, destination: HTMLElement | null, face: HTMLElement, rect: RectLike, uid?: string, deferredDeath = false): HeldStateVisual {
+function holdStateVisual(layer: HTMLElement, destination: HTMLElement | null, face: HTMLElement, rect: RectLike, uid?: string, deferredDeath = false, levelUp = false): HeldStateVisual {
   destination?.classList.add("hh-presentation-hidden");
   const overlay = document.createElement("div");
-  overlay.className = `hh-flight-card hh-state-hold${deferredDeath ? " is-deferred-death" : ""}`;
+  overlay.className = `hh-flight-card hh-state-hold${deferredDeath ? " is-deferred-death" : ""}${levelUp ? " is-level-up-hold" : ""}`;
   overlay.style.left = `${rect.left}px`;
   overlay.style.top = `${rect.top}px`;
   overlay.style.width = `${Math.max(1, rect.width)}px`;
   overlay.style.height = `${Math.max(1, rect.height)}px`;
   overlay.append(createFlightFace(cloneRendered(face)));
   layer.append(overlay);
-  return { destination, overlay, uid, deferredDeath, released: false };
+  return { destination, overlay, uid, deferredDeath, levelUp, released: false };
 }
 
-function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSnapshot) {
+function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSnapshot, detail: PresentationDetail) {
   const held: HeldStateVisual[] = [];
   for (const [uid, fresh] of after.units) {
     const old = before.units.get(uid);
-    if (!old || old.hp === fresh.hp && old.atk === fresh.atk) continue;
+    const oldState = stateUnitById(detail.before, uid);
+    const freshState = stateUnitById(detail.after, uid);
+    // Statuses, markers, exhaustion, granted keywords and stat changes are all
+    // player-visible effects. Keep the old rendering until the matching cue
+    // has reached its readable checkpoint.
+    if (!old || !oldState || !freshState || unitPresentationFingerprint(oldState) === unitPresentationFingerprint(freshState)) continue;
     held.push(holdStateVisual(layer, fresh.element, old.clone, old.rect, uid));
   }
   for (const owner of [0, 1] as const) {
     const old = before.heroes.get(owner), fresh = after.heroes.get(owner);
-    if (!old || !fresh || old.life === fresh.life) continue;
-    held.push(holdStateVisual(layer, fresh.element, old.clone, old.rect));
+    const levelUp = Number(detail.after?.players?.[owner]?.level || 0) > Number(detail.before?.players?.[owner]?.level || 0);
+    if (!old || !fresh || old.life === fresh.life && !levelUp) continue;
+    held.push(holdStateVisual(layer, fresh.element, old.clone, old.rect, undefined, false, levelUp));
   }
   /* A lethal target has already disappeared from React's post-command DOM.
      Keep its pre-command rendering pinned in place until the ordered death
@@ -283,7 +312,11 @@ function releaseHeldVisual(visual: HeldStateVisual) {
 }
 
 function releaseReadableState(held: HeldStateVisual[]) {
-  held.filter((visual) => !visual.deferredDeath).forEach(releaseHeldVisual);
+  held.filter((visual) => !visual.deferredDeath && !visual.levelUp).forEach(releaseHeldVisual);
+}
+
+function releaseLevelState(held: HeldStateVisual[], destination?: HTMLElement | null) {
+  held.filter((visual) => visual.levelUp && (!destination || visual.destination === destination)).forEach(releaseHeldVisual);
 }
 
 function releaseDepartureHold(held: HeldStateVisual[], uid?: string) {
@@ -460,11 +493,13 @@ function uniqueRects(rects: RectLike[]) {
   });
 }
 
-function changedTargetRects(before: DomSnapshot, after: DomSnapshot) {
+function changedTargetRects(detail: PresentationDetail, before: DomSnapshot, after: DomSnapshot) {
   const rects: RectLike[] = [];
   for (const [uid, old] of before.units) {
     const fresh = after.units.get(uid);
-    if (!fresh || old.hp !== fresh.hp || old.atk !== fresh.atk) rects.push(fresh?.rect || old.rect);
+    const oldState = stateUnitById(detail.before, uid);
+    const freshState = stateUnitById(detail.after, uid);
+    if (!fresh || !oldState || !freshState || unitPresentationFingerprint(oldState) !== unitPresentationFingerprint(freshState)) rects.push(fresh?.rect || old.rect);
   }
   for (const owner of [0, 1] as const) {
     const old = before.heroes.get(owner), fresh = after.heroes.get(owner);
@@ -592,6 +627,51 @@ async function animateHeroShake(held: HeldStateVisual[], before: DomSnapshot, af
     jobs.push(animation.finished.catch(() => undefined).finally(() => node.classList.remove("hh-hero-impact")));
   }
   await Promise.all(jobs);
+}
+
+async function animateHeroLevelUp(layer: HTMLElement, detail: PresentationDetail, afterDom: DomSnapshot, held: HeldStateVisual[]) {
+  for (const owner of [0, 1] as const) {
+    const previousLevel = Number(detail.before?.players?.[owner]?.level || 0);
+    const nextLevel = Number(detail.after?.players?.[owner]?.level || 0);
+    if (nextLevel <= previousLevel) continue;
+
+    const hero = afterDom.heroes.get(owner);
+    const overlay = document.createElement("section");
+    overlay.className = `hh-hero-level-up owner-${owner}`;
+    overlay.setAttribute("aria-live", "polite");
+
+    const panel = document.createElement("div");
+    const crest = document.createElement("i");
+    crest.textContent = "✦";
+    const eyebrow = document.createElement("b");
+    eyebrow.textContent = owner === 0 ? "ASCENSÃO DO HERÓI" : "ASCENSÃO DO HERÓI ADVERSÁRIO";
+    const level = document.createElement("strong");
+    level.textContent = `NÍVEL ${nextLevel}`;
+    const name = document.createElement("span");
+    name.textContent = hero?.element.querySelector<HTMLElement>(".hero-short-name")?.textContent?.trim()
+      || String(detail.after?.players?.[owner]?.heroId || "Herói");
+    panel.append(crest, eyebrow, level, name);
+    overlay.append(panel);
+    layer.append(overlay);
+
+    const reduced = prefersReducedMotion();
+    await overlay.animate([
+      { opacity: 0, transform: "scale(.74)" },
+      { offset: .72, opacity: 1, transform: "scale(1.04)" },
+      { opacity: 1, transform: "scale(1)" },
+    ], { duration: reduced ? 90 : 280, easing: EASING, fill: "forwards" }).finished.catch(() => undefined);
+
+    // The new level becomes visible only once the central ascension cue has
+    // actually appeared. Until this point the old Hero rendering stays pinned.
+    releaseLevelState(held, hero?.element);
+    await new Promise<void>((resolve) => window.setTimeout(resolve, reduced ? 90 : 520));
+
+    await overlay.animate([
+      { opacity: 1, transform: "scale(1)" },
+      { opacity: 0, transform: "scale(1.08)" },
+    ], { duration: reduced ? 90 : 260, easing: EASING, fill: "forwards" }).finished.catch(() => undefined);
+    overlay.remove();
+  }
 }
 
 async function floatingLabel(layer: HTMLElement, rect: RectLike, text: string, tone: "positive" | "negative" | "neutral") {
@@ -861,7 +941,7 @@ export default function GamePresentationRuntime() {
     const departures = flights.filter((flight) => flight.kind === "destroy" || flight.kind === "banish");
     const sourceArrivals = detail.command?.type === "playCard" ? arrivals.filter((flight) => flight.sourcePlay) : arrivals;
     const resultArrivals = detail.command?.type === "playCard" ? arrivals.filter((flight) => !flight.sourcePlay) : [];
-    const heldState = holdChangedState(layers.motion, beforeDom, afterDom);
+    const heldState = holdChangedState(layers.motion, beforeDom, afterDom, detail);
     arrivals.forEach((flight) => flight.destination?.classList.add("hh-presentation-hidden"));
     let readableReleased = false;
     const releaseReadable = () => {
@@ -879,7 +959,7 @@ export default function GamePresentationRuntime() {
         const avatar = await animateSpellEntry(layers.motion, layers.effect, spellFlight);
         const explicitTargets = spellFlight.targets || [];
         const reticles = await animateSpellTargeting(layers.effect, explicitTargets);
-        const impacts = explicitTargets.length ? explicitTargets : changedTargetRects(beforeDom, afterDom);
+        const impacts = explicitTargets.length ? explicitTargets : changedTargetRects(detail, beforeDom, afterDom);
         await animateSpellImpact(layers.effect, avatar.rect, impacts, reticles);
         const heroShake = animateHeroShake(heldState, beforeDom, afterDom);
         await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable, false);
@@ -892,7 +972,8 @@ export default function GamePresentationRuntime() {
         for (const flight of resultArrivals) await animateCardMove(layers.motion, layers.effect, flight);
       } else if (cue?.kind === "combat") {
         await animateActionCue(layers.effect, cue);
-        const heroShake = animateHeroShake(heldState, beforeDom, afterDom);
+        const directHeroAttack = !!cue.hero && !cue.defender;
+        const heroShake = directHeroAttack ? Promise.resolve() : animateHeroShake(heldState, beforeDom, afterDom);
         await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable, cue.hero == null);
         await heroShake;
         for (const flight of departures) {
@@ -912,11 +993,12 @@ export default function GamePresentationRuntime() {
         }
         for (const flight of resultArrivals) await animateCardMove(layers.motion, layers.effect, flight);
       }
+      await animateHeroLevelUp(layers.effect, detail, afterDom, heldState);
     } finally {
       releaseChangedState(heldState);
       arrivals.forEach((flight) => flight.destination?.classList.remove("hh-presentation-hidden"));
     }
-    stableDom = snapshotDom();
+    stableDom = afterDom;
   };
 
   const onAction = (event: Event) => {
@@ -933,10 +1015,20 @@ export default function GamePresentationRuntime() {
     };
     window.addEventListener(ACTION_EVENT, onAction as EventListener);
 
+    const mutationTouchesPresentationState = (record: MutationRecord) => {
+      const target = record.target instanceof Element ? record.target : record.target.parentElement;
+      if (!target || target.closest(".hh-motion-layer,.hh-effect-layer")) return false;
+      const relevantSelector = ".card-frame,.player-hand,.opponent-hand,.player-hero,.player-piles,.enemy-piles,.player-field,.enemy-field,.player-terrain,.enemy-terrain";
+      if (target.closest(relevantSelector)) return true;
+      if (record.type !== "childList") return false;
+      return [...record.addedNodes, ...record.removedNodes].some((node) => node instanceof Element && (node.matches(relevantSelector) || !!node.querySelector(relevantSelector)));
+    };
+
     const observer = new MutationObserver((records) => {
       if (queued) return;
-      const relevant = records.some((record) => !(record.target instanceof Element && record.target.closest(".hh-motion-layer,.hh-effect-layer")));
-      if (!relevant || refreshFrame) return;
+      // Ignore clocks, logs and unrelated UI churn. Previously every text tick
+      // could clone the entire board, which caused avoidable jank in long games.
+      if (!records.some(mutationTouchesPresentationState) || refreshFrame) return;
       refreshFrame = requestAnimationFrame(() => {
         refreshFrame = 0;
         if (!queued) stableDom = snapshotDom();

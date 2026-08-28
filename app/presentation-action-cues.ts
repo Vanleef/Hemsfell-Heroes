@@ -303,7 +303,8 @@ export async function animateActionCue(layer: HTMLElement, cue: ActionCue) {
     return;
   }
   if (cue.hero) {
+    // Direct Hero attacks intentionally stop at the sword contact. The Hero
+    // never moves; the red life delta is owned by GamePresentationRuntime.
     await animateSword(layer, cue.attacker, cue.hero);
-    await impact(layer, cue.hero, "combat");
   }
 }

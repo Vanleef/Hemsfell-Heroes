@@ -316,3 +316,50 @@ html.hh-presentation-locked .screen-game .search-deck-overlay {
   z-index: 12;
   text-shadow: 0 2px 2px rgba(0,0,0,.9), 0 0 10px rgba(255,50,48,.72);
 }
+
+
+/* Hero ascension is a blocking presentation stage shared by local, AI and online play. */
+.hh-hero-level-up {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgb(255 221 117 / .12), transparent 34%);
+  will-change: transform, opacity;
+}
+
+.hh-hero-level-up > div {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: .28rem;
+  min-width: min(78vw, 24rem);
+  padding: clamp(1rem, 2.2vw, 1.55rem) clamp(1.4rem, 3vw, 2.4rem);
+  border: 1px solid rgb(255 225 137 / .72);
+  border-radius: 1rem;
+  background: linear-gradient(180deg, rgb(22 25 39 / .96), rgb(8 10 19 / .94));
+  box-shadow: 0 0 0 .12rem rgb(115 170 255 / .18), 0 0 2.4rem rgb(255 207 91 / .34), 0 1rem 2.6rem rgb(0 0 0 / .62);
+  overflow: hidden;
+}
+
+.hh-hero-level-up > div::before {
+  content: "";
+  position: absolute;
+  inset: -45%;
+  background: conic-gradient(from 0deg, transparent, rgb(255 224 124 / .22), transparent 18%, rgb(115 169 255 / .18), transparent 38%);
+  animation: hh-level-up-spin 1.25s linear infinite;
+}
+
+.hh-hero-level-up :is(i,b,strong,span) { position: relative; z-index: 1; }
+.hh-hero-level-up i { font-style: normal; font-size: clamp(1.8rem, 4vw, 3rem); color: #ffe49a; text-shadow: 0 0 1rem rgb(255 208 91 / .78); }
+.hh-hero-level-up b { font: 800 clamp(.62rem, 1.1vw, .82rem)/1 system-ui,sans-serif; letter-spacing: .18em; color: #dce9ff; }
+.hh-hero-level-up strong { font: 950 clamp(1.65rem, 4.2vw, 3.25rem)/.92 system-ui,sans-serif; letter-spacing: .04em; color: #fff2bb; text-shadow: 0 0 1.15rem rgb(255 205 76 / .56); }
+.hh-hero-level-up span { font: 800 clamp(.78rem, 1.5vw, 1.05rem)/1.1 system-ui,sans-serif; color: #f4f6ff; }
+.hh-state-hold.is-level-up-hold { z-index: 5; }
+@keyframes hh-level-up-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .hh-hero-level-up > div::before { animation: none !important; }
+}

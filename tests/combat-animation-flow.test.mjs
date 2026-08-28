@@ -36,18 +36,19 @@ test("lethal targets remain on board until their ordered departure starts", () =
   assert.match(runtime, /afterDom\.units\.get\(id\)\?\.rect \|\| beforeDom\.units\.get\(id\)\?\.rect/);
 });
 
-test("direct hero damage only shakes the anchored presentation clone", () => {
+test("direct hero attacks use only sword travel plus the red life delta", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
-  const start = runtime.indexOf("async function animateHeroShake");
-  const end = runtime.indexOf("async function floatingLabel", start);
-  const shake = runtime.slice(start, end);
-  assert.match(shake, /querySelector<HTMLElement>\("\.hero-power-trigger"\)/);
-  assert.match(shake, /translateX\(-2\.5px\)/);
-  assert.match(shake, /translateX\(2\.5px\)/);
-  assert.doesNotMatch(shake, /translate3d\(/);
-  assert.doesNotMatch(shake, /scale\(/);
-  assert.doesNotMatch(shake, /style\.(left|top)\s*=/);
-  assert.doesNotMatch(shake, /append\(|remove\(\)/);
+  const cues = read("app/presentation-action-cues.ts");
+  const heroCueStart = cues.indexOf("if (cue.hero) {");
+  const heroCue = cues.slice(heroCueStart, cues.indexOf("}", heroCueStart) + 1);
+  assert.match(heroCue, /await animateSword/);
+  assert.doesNotMatch(heroCue, /impact\(/);
+  const combatStart = runtime.indexOf('} else if (cue?.kind === "combat")');
+  const combatEnd = runtime.indexOf('} else {', combatStart);
+  const combat = runtime.slice(combatStart, combatEnd);
+  assert.match(combat, /const directHeroAttack = !!cue\.hero && !cue\.defender/);
+  assert.match(combat, /directHeroAttack \? Promise\.resolve\(\) : animateHeroShake/);
+  assert.match(combat, /await presentDeltas/);
 });
 
 test("spell flights are physically deduplicated and AI combat waits for presentation idle", () => {
@@ -131,4 +132,42 @@ test("opponent plays reveal their actual face at the start of presentation", () 
   assert.match(bridge, /const inferOpponentPlayCommand/);
   assert.match(bridge, /presentationCard: clone\(candidate\)/);
   assert.match(bridge, /combatCommand \|\| opponentPlayCommand \|\|/);
+});
+
+
+test("spell and ability state cannot become visible before their presentation cue", () => {
+  const runtime = read("app/game-presentation-runtime.tsx");
+  assert.match(runtime, /const unitPresentationFingerprint/);
+  assert.match(runtime, /holdChangedState\(layers\.motion, beforeDom, afterDom, detail\)/);
+  assert.match(runtime, /unitPresentationFingerprint\(oldState\) === unitPresentationFingerprint\(freshState\)/);
+  assert.match(runtime, /changedTargetRects\(detail, beforeDom, afterDom\)/);
+  assert.match(runtime, /!visual\.deferredDeath && !visual\.levelUp/);
+});
+
+test("hero level-up is a central blocking presentation stage in every mode", () => {
+  const runtime = read("app/game-presentation-runtime.tsx");
+  const css = read("app/game-presentation.css");
+  const page = read("app/page.tsx");
+  const bridge = read("app/presentation-event-bridge.tsx");
+  assert.match(runtime, /async function animateHeroLevelUp/);
+  assert.match(runtime, /await animateHeroLevelUp\(layers\.effect, detail, afterDom, heldState\)/);
+  assert.match(runtime, /releaseLevelState\(held, hero\?\.element\)/);
+  assert.match(css, /\.hh-hero-level-up \{/);
+  assert.match(page, /const queueOnlineSnapshotFx=\(_previous:Game\|null,_next:Game\)=>\{\};/);
+  assert.match(bridge, /level: player\?\.level/);
+});
+
+test("AI and online follow-up commands respect presentation idle", () => {
+  const page = read("app/page.tsx");
+  assert.match(page, /__hemsfellPresentationBusy\?\:boolean\}\)\.__hemsfellPresentationBusy\)return false/);
+  assert.match(page, /presentationBusy\|\|mode!=="bot"\|\|!decision/);
+  assert.match(page, /if\(!game\|\|presentationBusy\|\|game\.active!==1/);
+  assert.match(page, /if\(incomingRevision<=roomRevisionRef\.current\)return;announceOnlineSnapshot/);
+});
+
+test("presentation snapshot maintenance ignores unrelated UI churn", () => {
+  const runtime = read("app/game-presentation-runtime.tsx");
+  assert.match(runtime, /const mutationTouchesPresentationState = \(record: MutationRecord\)/);
+  assert.match(runtime, /Ignore clocks, logs and unrelated UI churn/);
+  assert.match(runtime, /stableDom = afterDom;/);
 });
