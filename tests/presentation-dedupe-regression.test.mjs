@@ -39,8 +39,9 @@ test("blocking child animations are ordered while readable damage gates visual s
   const runtime = read("app/game-presentation-runtime.tsx");
   assert.match(runtime, /await Promise\.all\(\[movement, \.\.\.ambient\]\)/);
   assert.match(runtime, /await Promise\.all\(completion\)/);
-  assert.match(runtime, /const completion = Promise\.all\(labels\)/);
-  assert.match(runtime, /if \(settle\) await completion/);
+  assert.match(runtime, /await Promise\.all\(labels\.map\(\(label\) => label\.readable\)\)/);
+  assert.match(runtime, /completion: Promise\.all\(labels\.map\(\(label\) => label\.finished\)\)/);
+  assert.match(runtime, /await deltaCompletion/);
   assert.doesNotMatch(runtime, /flight\.targets\?\.forEach\(\(target\) => effectBeam/);
   assert.match(runtime, /const heldState = holdChangedState/);
   assert.match(runtime, /releaseReadableState\(heldState\)/);

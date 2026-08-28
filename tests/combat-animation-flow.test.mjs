@@ -22,9 +22,10 @@ test("spell presentation follows entry target impact damage cleanup death order"
 test("changed stats stay visually old until damage number becomes readable", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
   assert.match(runtime, /holdStateVisual\(layer, fresh\.element, old\.clone, old\.rect/);
-  assert.match(runtime, /if \(!labels\.length\) \{ onReadable\(\); return; \}/);
-  assert.match(runtime, /window\.setTimeout\(resolve, prefersReducedMotion\(\) \? 35 : 135\)/);
-  assert.match(runtime, /onReadable\(\);/);
+  assert.match(runtime, /FloatingLabelLifecycle/);
+  assert.match(runtime, /await Promise\.all\(labels\.map\(\(label\) => label\.readable\)\)/);
+  assert.doesNotMatch(runtime, /setTimeout\(resolve, prefersReducedMotion\(\) \? 35 : 135\)/);
+  assert.match(runtime, /completion: Promise\.all\(labels\.map\(\(label\) => label\.finished\)\)/);
   assert.match(runtime, /releaseReadableState\(heldState\)/);
 });
 
@@ -81,13 +82,6 @@ test("presentation clones preserve live stat badge geometry", () => {
   assert.match(css, /animation: none !important/);
 });
 
-test("command bar caps remain compact at large viewport sizes", () => {
-  const css = read("app/command-bar-fixes.css");
-  assert.match(css, /font-size:clamp\(\.74rem,min\(\.88vw,1\.56dvh\),\.92rem\)!important/);
-  assert.match(css, /font-size:clamp\(\.62rem,min\(\.72vw,1\.28dvh\),\.74rem\)!important/);
-  assert.match(css, /font-size:clamp\(\.7rem,min\(\.8vw,1\.42dvh\),\.86rem\)!important/);
-  assert.match(css, /font-size:clamp\(\.66rem,min\(\.74vw,1\.32dvh\),\.8rem\)!important/);
-});
 
 // Direct damage must never animate or replace the Hero portrait itself.
 test("legacy hero-hurt fallback cannot move or scale the Hero portrait", () => {
@@ -106,13 +100,6 @@ test("Hero damage holds only the life badge instead of cloning the Hero portrait
   assert.match(css, /transform: none !important/);
 });
 
-test("command bar runtime uses the same compact caps as the stylesheet", () => {
-  const runtime = read("app/match-ui-runtime.tsx");
-  assert.match(runtime, /COMMAND_TITLE_SIZE = "clamp\(\.62rem,min\(\.72vw,1\.28dvh\),\.74rem\)"/);
-  assert.match(runtime, /COMMAND_COPY_SIZE = "clamp\(\.74rem,min\(\.88vw,1\.56dvh\),\.92rem\)"/);
-  assert.match(runtime, /COMMAND_COMPACT_COPY_SIZE = "clamp\(\.7rem,min\(\.8vw,1\.42dvh\),\.86rem\)"/);
-  assert.match(runtime, /COMMAND_DENSE_COPY_SIZE = "clamp\(\.66rem,min\(\.74vw,1\.32dvh\),\.8rem\)"/);
-});
 
 test("turned cards omit the VIRADA plate while presenting effects", () => {
   const page = read("app/page.tsx");
@@ -174,4 +161,30 @@ test("presentation snapshot maintenance ignores unrelated UI churn", () => {
   assert.match(runtime, /const mutationTouchesPresentationState = \(record: MutationRecord\)/);
   assert.match(runtime, /Ignore clocks, logs and unrelated UI churn/);
   assert.match(runtime, /stableDom = afterDom;/);
+});
+
+
+test("presentation busy releases from animation completion instead of wall-clock holds", () => {
+  const runtime = read("app/game-presentation-runtime.tsx");
+  const page = read("app/page.tsx");
+  assert.doesNotMatch(runtime, /window\.setTimeout/);
+  assert.match(runtime, /await deltaCompletion/);
+  assert.doesNotMatch(page, /VISUAL_FX_HOLD_MS|COMBAT_STAGE_DELAY_MS/);
+  assert.match(page, /useFiniteVisualCompletion/);
+  assert.match(page, /getAnimations\(\{subtree:true\}\)/);
+  assert.match(page, /const frame=requestAnimationFrame\(\(\)=>\{/);
+  assert.doesNotMatch(page, /setShufflingDeck\(current=>current===owner\?null:current\),4000/);
+});
+
+test("command bar measures overflow and scales PASSIVA ATIVA copy to fit", () => {
+  const runtime = read("app/match-ui-runtime.tsx");
+  const css = read("app/command-bar-fixes.css");
+  assert.match(runtime, /commandChipFits/);
+  assert.match(runtime, /for \(let index = 0; index < 8; index \+= 1\)/);
+  assert.match(runtime, /COMMAND_MIN_TITLE_PX = 7/);
+  assert.match(runtime, /COMMAND_MIN_COPY_PX = 7\.5/);
+  assert.match(runtime, /mutationTouchesCommandBar/);
+  assert.match(runtime, /resizeObserver\.unobserve\(chip\)/);
+  assert.match(css, /white-space:nowrap!important/);
+  assert.match(css, /data-command-text-fit="minimum"/);
 });

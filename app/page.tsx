@@ -43,8 +43,6 @@ type OnlineSession={roomId:string;token:string;isHost:boolean};
 type CombatStage="declared"|"priority"|"choosing"|"charging"|"impact"|"resolved";
 type CombatAction={attackerOwner:0|1;attackerUid:string;attackerCard:CardDef;defenderUid?:string;defenderCard?:CardDef;targetHero?:boolean;stage:CombatStage;result?:string;destroyed?:Array<"attacker"|"defender">;winnerText?:string;attackDamage?:number;counterDamage?:number};
 type VisualFx={id:string;kind:"summon"|"spell"|"artifact"|"terrain"|"ability"|"damage";theme:"blood"|"dragon"|"goblin"|"recruit"|"divine"|"nature"|"arcane"|"chaos"|"order"|"neutral";card?:CardDef;target?:CardDef;label:string;detail:string};
-const VISUAL_FX_HOLD_MS=2280;
-const COMBAT_STAGE_DELAY_MS:Record<CombatStage,number>={declared:220,priority:180,choosing:0,charging:320,impact:550,resolved:450};
 type SearchRequest={id:string;owner:0|1;sourceName:string;sourcePage:number;text:string;limit:number;filterLabel:string;destination:"hand"|"field";reveal:boolean;optional:boolean;maxCost?:number};
 
 const removedCatalogPages=sharedRemovedCatalogPages;
@@ -568,7 +566,7 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
  /* Card moments are deliberately serialized: a new spell or summon waits for the previous
     animation to finish instead of replacing it halfway through. */
  const showFx=(kind:VisualFx["kind"],label:string,detail:string,card?:CardDef,target?:CardDef,allowRepeat=false)=>{const signature=[kind,label,detail,card?.id||"",target?.id||""].join("|"),context=[kind,label,card?.id||""].join("|"),now=Date.now(),previous=visualFxDedupeRef.current.get(signature)||0,contextPrevious=visualFxContextRef.current.get(context)||0;if(!allowRepeat&&(now-previous<3600||now-contextPrevious<250))return;visualFxDedupeRef.current.set(signature,now);visualFxContextRef.current.set(context,now);setVisualFxQueue(queue=>[...queue,{id:uid(),kind,theme:effectTheme(card,target,kind,label,detail),label,detail,card,target}])};
- const animateDeckShuffle=(owner:0|1)=>{setShufflingDeck(owner);setTimeout(()=>setShufflingDeck(current=>current===owner?null:current),4000)};
+ const animateDeckShuffle=(owner:0|1)=>{setShufflingDeck(owner)};
  const completeSearch=(selectedIds:string[])=>{if(!searchChoice)return;const request=searchChoice;update(g=>applySearchSelection(g,request,selectedIds));setSearchChoice(null);animateDeckShuffle(request.owner)};
  const doMaintenance=(two=false)=>{
   if(!game||game.active!==0||game.phase!=="manutencao"||game.winner!==null)return;
@@ -585,7 +583,6 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
   setMaintenanceOpen(false);
  };
  useEffect(()=>{if(!visualFx&&visualFxQueue.length){setVisualFx(visualFxQueue[0]);setVisualFxQueue(queue=>queue.slice(1))}},[visualFx,visualFxQueue]);
- useEffect(()=>{if(!visualFx)return;const t=setTimeout(()=>setVisualFx(null),VISUAL_FX_HOLD_MS);return()=>clearTimeout(t)},[visualFx]);
  const resolveText=(g:Game,owner:0|1,c:CardDef,targetUid?:string,selectedImageName?:string,cafeEffect?:CafeChoice,allowVisualRepeat=false,targetUids?:string[])=>{const p=g.players[owner],o=g.players[owner===0?1:0];const text=("suffocated" in c&&c.suffocated?"":c.text).toLowerCase(),primaryText=text.split(/neste turno, seu próximo/i)[0];let resolved=false;const selectedTargetIds=targetUids?.length?targetUids:targetUid?[targetUid]:[],chosenEnemies=selectedTargetIds.map(id=>o.board.find(x=>x.uid===id)||o.support.find(x=>x.uid===id)||(o.terrain?.uid===id?o.terrain:undefined)).filter((unit):unit is Unit=>!!unit),chosenAllies=selectedTargetIds.map(id=>p.board.find(x=>x.uid===id)||p.support.find(x=>x.uid===id)||(p.terrain?.uid===id?p.terrain:undefined)).filter((unit):unit is Unit=>!!unit),chosenEnemy=chosenEnemies[0],chosenAlly=chosenAllies[0],chosenUnits=[...chosenEnemies,...chosenAllies];if(!text){log(g,`${c.name} está Sufocada e não pode ativar efeitos.`,"danger");return}
   const showTargetEffect=(label:string,target:CardDef|Unit)=>queueMicrotask(()=>showFx("ability",label,`${c.name} → ${target.name}`,baseCard(c),baseCard(target),allowVisualRepeat));
   /* Rules resolve atomically. Animation is presentation-only and never owns a game transition. */
@@ -789,8 +786,7 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
 
  useEffect(()=>{
   if(!combatAction||!game)return;const action=combatAction,defenderOwner=(action.attackerOwner===0?1:0) as 0|1;if(action.stage==="choosing"||action.stage==="priority"&&(responseWindow||targeting?.response))return;const onlineDriver=action.stage==="declared"?action.attackerOwner===0:action.stage==="priority"?action.attackerOwner===1:action.attackerOwner===0;if(mode==="online"&&!onlineDriver)return;
-  const delay=COMBAT_STAGE_DELAY_MS[action.stage];
-  const t=setTimeout(()=>{
+  const frame=requestAnimationFrame(()=>{
    const attackingPlayer=game.players[action.attackerOwner],defendingPlayer=game.players[defenderOwner],attacker=attackingPlayer.board.find(x=>x.uid===action.attackerUid);
    if(action.stage==="declared"){if(mode==="online")return;const priorityAction={...action,stage:"priority" as const};setSharedCombat(priorityAction);setSharedResponse({responder:defenderOwner,actor:action.attackerOwner,action:`declaração de ataque de ${action.attackerCard.name}`},priorityAction);return}
    if(action.stage==="priority"){
@@ -821,7 +817,7 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
     });return
    }
    setSharedCombat(null)
-  },delay);return()=>clearTimeout(t)
+  });return()=>cancelAnimationFrame(frame)
  },[combatAction,game,responseWindow,targeting,difficulty,mode]);
 
  useEffect(()=>{
@@ -1069,7 +1065,7 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
     />
    )}
    {defenseChoice&&<div className="defense-decision"><span>ESCOLHA UMA CRIATURA PARA BLOQUEAR</span><b>OU</b><button onClick={chooseDirectDefense}>NÃO BLOQUEAR</button></div>}
-   {visualFx&&<VisualEffect fx={visualFx}/>} {shufflingDeck!==null&&<DeckShuffleEffect owner={shufflingDeck}/>}<button className="surrender-button" onClick={()=>setConfirmSurrender(true)}>⚑ Render-se</button>
+   {visualFx&&<VisualEffect fx={visualFx} onComplete={()=>setVisualFx(current=>current?.id===visualFx.id?null:current)}/>} {shufflingDeck!==null&&<DeckShuffleEffect owner={shufflingDeck} onComplete={()=>setShufflingDeck(current=>current===shufflingDeck?null:current)}/>}<button className="surrender-button" onClick={()=>setConfirmSurrender(true)}>⚑ Render-se</button>
    <PriorityControlToggle mode={priorityControl.displayMode} queued={priorityControl.changeQueued} onToggle={priorityControl.toggle}/>
    {(game.pendingAction||game.priorityStack?.length)&&<div className="priority-stack-indicator" title="Ações aguardando resolução por prioridade"><span>PILHA</span><b>{Math.max(1,game.priorityStack?.length||0)}</b></div>}
    {priorityControl.showWindow&&visibleResponseWindow&&<ResponseModal action={visibleResponseWindow.action} available={usableAcceleratedResponses(game,0)} heroAbilities={heroPriorityResponses(game,0)} budget={responseBudget(game,0)} offTurn={game.active!==0} seconds={responseRemaining} passes={visibleResponseWindow.passes??0} cardName={card=>card.name} renderCard={(card,_index,onPlay)=><OriginalCard card={card} small inspectable={false} activeEffect="RESPOSTA ACELERADA" onClick={onPlay}/>} onPlay={chooseResponse} onHeroAbility={chooseHeroResponse} onPass={declineResponse}/>} {!presentationBlocked&&game.pendingResponse?.responder===1&&<div className="response-waiting"><i></i>{mode==="online"?<>Aguardando resposta do oponente <b>{responseRemaining}s</b></>:"A IA está avaliando a prioridade…"}</div>}
@@ -1089,9 +1085,14 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
 }
 
 
-function VisualEffect({fx}:{fx:VisualFx}){return <div className={`visual-effect fx-${fx.kind} fx-theme-${fx.theme} ${fx.target?"fx-targeted":""}`} aria-live="polite"><div className="fx-emblem" aria-hidden="true">{fx.theme==="blood"?"☾":fx.theme==="dragon"?"◆":fx.theme==="goblin"?"⚙":fx.theme==="recruit"?"⚔":fx.theme==="divine"?"✦":fx.theme==="nature"?"❧":fx.theme==="arcane"?"◈":fx.theme==="chaos"?"✹":fx.theme==="order"?"♜":"◇"}</div><div className="fx-runes">{Array.from({length:10},(_,i)=><i key={i}></i>)}</div>{fx.card?<RemoteCardArt page={fx.card.page} name={fx.card.name} priority/>:<span>✦</span>}{fx.target&&<><div className="effect-link"><i/><b>➜</b><i/></div><RemoteCardArt page={fx.target.page} name={fx.target.name} priority/></>}<section><b>{fx.label}</b><strong>{fx.detail}</strong>{fx.target&&<small>{fx.card?.name||"Efeito"} afeta {fx.target.name}</small>}</section></div>}
+function useFiniteVisualCompletion(ref:{current:HTMLElement|null},identity:string,onComplete:()=>void){
+ const completeRef=useRef(onComplete);useEffect(()=>{completeRef.current=onComplete},[onComplete]);
+ useEffect(()=>{let cancelled=false,frame=0;const finish=()=>{if(!cancelled)completeRef.current()};frame=requestAnimationFrame(()=>{if(cancelled)return;const element=ref.current;if(!element){queueMicrotask(finish);return}const animations=element.getAnimations({subtree:true}).filter(animation=>{const timing=animation.effect?.getTiming();return timing?Number.isFinite(Number(timing.iterations)):false});if(!animations.length){queueMicrotask(finish);return}void Promise.allSettled(animations.map(animation=>animation.finished)).then(finish)});return()=>{cancelled=true;if(frame)cancelAnimationFrame(frame)}},[identity,ref]);
+}
 
-function DeckShuffleEffect({owner}:{owner:0|1}){return <div className={`deck-shuffle-effect owner-${owner}`} aria-live="polite"><div><i>H</i><i>H</i><i>H</i><i>H</i><i>H</i></div><b>EMBARALHANDO</b><span>{owner===0?"Seu Deck Principal":"Deck Principal adversário"}</span></div>}
+function VisualEffect({fx,onComplete}:{fx:VisualFx;onComplete:()=>void}){const ref=useRef<HTMLDivElement>(null);useFiniteVisualCompletion(ref,fx.id,onComplete);return <div ref={ref} className={`visual-effect fx-${fx.kind} fx-theme-${fx.theme} ${fx.target?"fx-targeted":""}`} aria-live="polite"><div className="fx-emblem" aria-hidden="true">{fx.theme==="blood"?"☾":fx.theme==="dragon"?"◆":fx.theme==="goblin"?"⚙":fx.theme==="recruit"?"⚔":fx.theme==="divine"?"✦":fx.theme==="nature"?"❧":fx.theme==="arcane"?"◈":fx.theme==="chaos"?"✹":fx.theme==="order"?"♜":"◇"}</div><div className="fx-runes">{Array.from({length:10},(_,i)=><i key={i}></i>)}</div>{fx.card?<RemoteCardArt page={fx.card.page} name={fx.card.name} priority/>:<span>✦</span>}{fx.target&&<><div className="effect-link"><i/><b>➜</b><i/></div><RemoteCardArt page={fx.target.page} name={fx.target.name} priority/></>}<section><b>{fx.label}</b><strong>{fx.detail}</strong>{fx.target&&<small>{fx.card?.name||"Efeito"} afeta {fx.target.name}</small>}</section></div>}
+
+function DeckShuffleEffect({owner,onComplete}:{owner:0|1;onComplete:()=>void}){const ref=useRef<HTMLDivElement>(null);useFiniteVisualCompletion(ref,`shuffle-${owner}`,onComplete);return <div ref={ref} className={`deck-shuffle-effect owner-${owner}`} aria-live="polite"><div><i>H</i><i>H</i><i>H</i><i>H</i><i>H</i></div><b>EMBARALHANDO</b><span>{owner===0?"Seu Deck Principal":"Deck Principal adversário"}</span></div>}
 
 function DeckPicker({label,value,onChange}:{label:string;value:DeckId;onChange:(v:DeckId)=>void}){const d=deckById(value);return <label className="deck-picker" style={{"--deck":d.color} as React.CSSProperties}><span>{label}</span><RemoteCardArt page={d.heroPage} name={d.name} priority/><select value={value} onChange={e=>onChange(e.target.value as DeckId)}>{deckDefs.map(x=><option key={x.id} value={x.id}>{x.name}</option>)}</select><b>{d.faction}</b><small>{d.style}</small></label>}
 function PlayerHero({player,enemy=false,onLevel,canEvolveThisTurn=true,targetClass="",onTarget,onInspect}:{player:Player;enemy?:boolean;onLevel?:()=>void;canEvolveThisTurn?:boolean;targetClass?:string;onTarget?:()=>void;onInspect?:()=>void}){

@@ -96,25 +96,44 @@
 html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip>span>p,
 body .screen-game .hero-command-bar .hero-ability-chip p{
   font-family:var(--font-geist-sans),Arial,sans-serif!important;
-  font-size:clamp(.74rem,min(.88vw,1.56dvh),.92rem)!important;
+  font-size:clamp(.58rem,min(.72vw,1.22dvh),.78rem)!important;
   font-weight:750!important;
   line-height:1.16!important;
 }
 html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip>span>b,
 body .screen-game .hero-command-bar>.hero-ability-chip>span>b{
   font-family:var(--font-geist-sans),Arial,sans-serif!important;
-  font-size:clamp(.62rem,min(.72vw,1.28dvh),.74rem)!important;
+  font-size:clamp(.5rem,min(.62vw,1.05dvh),.66rem)!important;
   font-weight:900!important;
   line-height:1.05!important;
   letter-spacing:.08em!important;
 }
 html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip.copy-compact>span>p,
 body .screen-game .hero-command-bar .hero-ability-chip.copy-compact p{
-  font-size:clamp(.7rem,min(.8vw,1.42dvh),.86rem)!important;
+  font-size:clamp(.54rem,min(.66vw,1.12dvh),.72rem)!important;
   line-height:1.13!important;
 }
 html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip.copy-dense>span>p,
 body .screen-game .hero-command-bar .hero-ability-chip.copy-dense p{
-  font-size:clamp(.66rem,min(.74vw,1.32dvh),.8rem)!important;
+  font-size:clamp(.5rem,min(.61vw,1.04dvh),.68rem)!important;
   line-height:1.1!important;
+}
+
+
+/* PASSIVA/ATIVA is a fixed semantic label: never clip it vertically or horizontally. */
+html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip>span>b{
+  display:block!important;
+  flex:0 0 auto!important;
+  min-height:1em!important;
+  padding-block:.02em!important;
+  overflow:visible!important;
+  white-space:nowrap!important;
+  text-wrap:nowrap!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip[data-command-text-fit="minimum"]{
+  padding:clamp(.055rem,.11cqh,.09rem) clamp(.08rem,.14cqw,.12rem)!important;
+}
+.screen-game .hero-command-bar .hero-ability-chip[data-command-text-fit="minimum"]>span{
+  margin-left:clamp(.035rem,.07cqw,.065rem)!important;
+  padding:0!important;
 }

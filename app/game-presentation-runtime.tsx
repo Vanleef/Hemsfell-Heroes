@@ -703,18 +703,19 @@ async function animateHeroLevelUp(layer: HTMLElement, detail: PresentationDetail
     // The new level becomes visible only once the central ascension cue has
     // actually appeared. Until this point the old Hero rendering stays pinned.
     releaseLevelState(held, hero?.element);
-    await new Promise<void>((resolve) => window.setTimeout(resolve, reduced ? 90 : 520));
-
     await overlay.animate([
-      { opacity: 1, transform: "scale(1)" },
+      { offset: 0, opacity: 1, transform: "scale(1)" },
+      { offset: .7, opacity: 1, transform: "scale(1)" },
       { opacity: 0, transform: "scale(1.08)" },
-    ], { duration: reduced ? 90 : 260, easing: EASING, fill: "forwards" }).finished.catch(() => undefined);
+    ], { duration: reduced ? 160 : 620, easing: EASING, fill: "forwards" }).finished.catch(() => undefined);
     overlay.remove();
   }
 }
 
-async function floatingLabel(layer: HTMLElement, rect: RectLike, text: string, tone: "positive" | "negative" | "neutral") {
-  if (!text || layer.querySelectorAll(".hh-float").length >= MAX_FLOATS) return;
+type FloatingLabelLifecycle = { readable: Promise<void>; finished: Promise<void> };
+
+function floatingLabel(layer: HTMLElement, rect: RectLike, text: string, tone: "positive" | "negative" | "neutral"): FloatingLabelLifecycle | null {
+  if (!text || layer.querySelectorAll(".hh-float").length >= MAX_FLOATS) return null;
   const point = center(rect);
   const node = document.createElement("b");
   node.className = `hh-float is-${tone}`;
@@ -722,14 +723,21 @@ async function floatingLabel(layer: HTMLElement, rect: RectLike, text: string, t
   node.style.left = `${point.x}px`;
   node.style.top = `${point.y}px`;
   layer.append(node);
-  const duration = prefersReducedMotion() ? 140 : 620;
-  await node.animate([
-    { opacity: 0, transform: "translate(-50%,4px) scale(.75)" },
-    { offset: .2, opacity: 1, transform: "translate(-50%,-6px) scale(1.1)" },
-    { offset: .7, opacity: 1, transform: "translate(-50%,-18px) scale(1)" },
-    { opacity: 0, transform: "translate(-50%,-34px) scale(.94)" },
-  ], { duration, easing: EASING }).finished.catch(() => undefined);
-  node.remove();
+  const reduced = prefersReducedMotion();
+  const intro = node.animate([
+    { opacity: 0, transform: "translate(-50%,4px) scale(.78)" },
+    { opacity: 1, transform: "translate(-50%,-6px) scale(1.08)" },
+  ], { duration: reduced ? 45 : 115, easing: EASING, fill: "forwards" });
+  const readable = intro.finished.catch(() => undefined).then(() => undefined);
+  const finished = readable.then(async () => {
+    await node.animate([
+      { opacity: 1, transform: "translate(-50%,-6px) scale(1.08)" },
+      { offset: .55, opacity: 1, transform: "translate(-50%,-14px) scale(1)" },
+      { opacity: 0, transform: "translate(-50%,-28px) scale(.94)" },
+    ], { duration: reduced ? 90 : 285, easing: EASING, fill: "forwards" }).finished.catch(() => undefined);
+    node.remove();
+  });
+  return { readable, finished };
 }
 
 async function animateCardMove(layer: HTMLElement, effectLayer: HTMLElement, flight: Flight) {
@@ -902,39 +910,41 @@ function buildFlights(detail: PresentationDetail, beforeDom: DomSnapshot, afterD
   });
 }
 
-async function presentDeltas(detail: PresentationDetail, beforeDom: DomSnapshot, afterDom: DomSnapshot, layer: HTMLElement, onReadable: () => void, settle = true) {
-  const labels: Promise<void>[] = [];
+async function presentDeltas(detail: PresentationDetail, beforeDom: DomSnapshot, afterDom: DomSnapshot, layer: HTMLElement, onReadable: () => void): Promise<{ completion: Promise<void> }> {
+  const labels: FloatingLabelLifecycle[] = [];
+  const addLabel = (label: FloatingLabelLifecycle | null) => { if (label) labels.push(label); };
   for (const [uid, fresh] of afterDom.units) {
     const old = beforeDom.units.get(uid);
     if (!old) continue;
     if (old.hp != null && fresh.hp != null && old.hp !== fresh.hp) {
       const delta = fresh.hp - old.hp;
-      labels.push(floatingLabel(layer, fresh.rect, `${delta > 0 ? "+" : ""}${delta}`, delta > 0 ? "positive" : "negative"));
+      addLabel(floatingLabel(layer, fresh.rect, `${delta > 0 ? "+" : ""}${delta}`, delta > 0 ? "positive" : "negative"));
     } else if (old.atk != null && fresh.atk != null && old.atk !== fresh.atk) {
       const delta = fresh.atk - old.atk;
-      labels.push(floatingLabel(layer, fresh.rect, `${delta > 0 ? "+" : ""}${delta}`, delta > 0 ? "positive" : "negative"));
+      addLabel(floatingLabel(layer, fresh.rect, `${delta > 0 ? "+" : ""}${delta}`, delta > 0 ? "positive" : "negative"));
     }
   }
   for (const [uid, old] of beforeDom.units) {
     if (afterDom.units.has(uid)) continue;
     const damage = removedUnitDamage(detail, uid, beforeDom);
-    if (damage != null && damage > 0) labels.push(floatingLabel(layer, old.rect, `-${damage}`, "negative"));
+    if (damage != null && damage > 0) addLabel(floatingLabel(layer, old.rect, `-${damage}`, "negative"));
   }
   for (const owner of [0, 1] as const) {
     const old = beforeDom.heroes.get(owner), fresh = afterDom.heroes.get(owner);
     if (!old || !fresh || old.life === fresh.life) continue;
     const delta = fresh.life - old.life;
-    labels.push(floatingLabel(layer, fresh.rect, `${delta > 0 ? "+" : ""}${delta}`, delta > 0 ? "positive" : "negative"));
+    addLabel(floatingLabel(layer, fresh.rect, `${delta > 0 ? "+" : ""}${delta}`, delta > 0 ? "positive" : "negative"));
   }
-  if (!labels.length) { onReadable(); return; }
-  const completion = Promise.all(labels);
-  await new Promise<void>((resolve) => window.setTimeout(resolve, prefersReducedMotion() ? 35 : 135));
-  /* The old life/stat overlay is released only after the number has become
-     readable. The authoritative state may already exist in memory, but
-     the player never sees it jump ahead of its visual explanation. */
+  if (!labels.length) {
+    onReadable();
+    return { completion: Promise.resolve() };
+  }
+  await Promise.all(labels.map((label) => label.readable));
+  /* Release the old stat/life rendering exactly when every number has reached
+     its readable keyframe. No wall-clock timeout can drift from the browser's
+     actual animation timeline. */
   onReadable();
-  if (settle) await completion;
-  else void completion.catch(() => undefined);
+  return { completion: Promise.all(labels.map((label) => label.finished)).then(() => undefined) };
 }
 
 export default function GamePresentationRuntime() {
@@ -1001,7 +1011,7 @@ export default function GamePresentationRuntime() {
         const impacts = explicitTargets.length ? explicitTargets : changedTargetRects(detail, beforeDom, afterDom);
         await animateSpellImpact(layers.effect, avatar.rect, impacts, reticles);
         const heroShake = animateHeroShake(heldState, beforeDom, afterDom);
-        await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable, false);
+        const { completion: deltaCompletion } = await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable);
         await heroShake;
         await animateSpellExit(layers.motion, avatar, spellFlight.to);
         for (const flight of departures) {
@@ -1009,28 +1019,31 @@ export default function GamePresentationRuntime() {
           await animateCardMove(layers.motion, layers.effect, flight);
         }
         for (const flight of resultArrivals) await animateCardMove(layers.motion, layers.effect, flight);
+        await deltaCompletion;
       } else if (cue?.kind === "combat") {
         await animateActionCue(layers.effect, cue);
         const directHeroAttack = !!cue.hero && !cue.defender;
         const heroShake = directHeroAttack ? Promise.resolve() : animateHeroShake(heldState, beforeDom, afterDom);
-        await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable, cue.hero == null);
+        const { completion: deltaCompletion } = await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable);
         await heroShake;
         for (const flight of departures) {
           releaseDepartureHold(heldState, flight.uid);
           await animateCardMove(layers.motion, layers.effect, flight);
         }
         for (const flight of arrivals) await animateCardMove(layers.motion, layers.effect, flight);
+        await deltaCompletion;
       } else {
         for (const flight of sourceArrivals) await animateCardMove(layers.motion, layers.effect, flight);
         if (cue?.kind === "effect") await animateActionCue(layers.effect, cue);
         const heroShake = animateHeroShake(heldState, beforeDom, afterDom);
-        await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable, true);
+        const { completion: deltaCompletion } = await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable);
         await heroShake;
         for (const flight of departures) {
           releaseDepartureHold(heldState, flight.uid);
           await animateCardMove(layers.motion, layers.effect, flight);
         }
         for (const flight of resultArrivals) await animateCardMove(layers.motion, layers.effect, flight);
+        await deltaCompletion;
       }
       await animateHeroLevelUp(layers.effect, detail, afterDom, heldState);
     } finally {
