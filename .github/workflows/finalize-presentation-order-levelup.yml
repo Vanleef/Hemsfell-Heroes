@@ -1,0 +1,95 @@
+name: Finalize presentation ordering fixes
+
+on:
+  push:
+    branches:
+      - feat/presentation-system-pr1
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Apply staged presentation patch
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import subprocess, textwrap
+
+          workflow = Path('.github/workflows/apply-presentation-order-levelup-optimization.yml').read_text()
+          start = workflow.index("          python3 <<'PY'\n") + len("          python3 <<'PY'\n")
+          end = workflow.index("\n          PY\n", start)
+          script = textwrap.dedent(workflow[start:end])
+          subprocess.run(['python3', '-c', script], check=True)
+          PY
+
+      - name: Fix early presentation guards
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          page_path = Path('app/page.tsx')
+          page = page_path.read_text()
+          replacements = {
+            'if(!game||presentationBlocked||mode!=="bot"||!decision': 'if(!game||presentationBusy||mode!=="bot"||!decision',
+            '[game,mode,difficulty,presentationBlocked]': '[game,mode,difficulty,presentationBusy]',
+            'if(!game||presentationBlocked||game.active!==1': 'if(!game||presentationBusy||game.active!==1',
+            '[game,mode,difficulty,responseWindow,combatAction,presentationBlocked]': '[game,mode,difficulty,responseWindow,combatAction,presentationBusy]',
+            'if(presentationBlocked||mode!=="bot"||pending?.responder!==0': 'if(presentationBusy||mode!=="bot"||pending?.responder!==0',
+          }
+          for old, new in replacements.items():
+            if old not in page:
+              raise AssertionError(f'missing page guard anchor: {old}')
+            page = page.replace(old, new, 1)
+          page_path.write_text(page)
+
+          test_path = Path('tests/combat-animation-flow.test.mjs')
+          test = test_path.read_text()
+          test = test.replace('/presentationBlocked\\|\\|mode!=="bot"\\|\\|!decision/', '/presentationBusy\\|\\|mode!=="bot"\\|\\|!decision/')
+          test = test.replace('/if\\(!game\\|\\|presentationBlocked\\|\\|game\\.active!==1/', '/if\\(!game\\|\\|presentationBusy\\|\\|game\\.active!==1/')
+          test_path.write_text(test)
+          PY
+
+      - name: Remove temporary workflows
+        run: |
+          git rm .github/workflows/apply-presentation-order-levelup-optimization.yml
+          git rm .github/workflows/diagnose-presentation-rules.yml
+          git rm .github/workflows/finalize-presentation-order-levelup.yml
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate canonical state
+        run: npm run prepare:project
+
+      - name: Focused presentation tests
+        run: node --test tests/combat-animation-flow.test.mjs tests/presentation-dedupe-regression.test.mjs
+
+      - name: Full rules suite
+        run: npm run test:rules
+
+      - name: Production build
+        run: npm run vercel-build
+
+      - name: Commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: order combat effects and add hero ascension presentation"
+          git push origin HEAD:feat/presentation-system-pr1
