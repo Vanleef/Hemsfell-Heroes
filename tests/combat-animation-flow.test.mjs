@@ -68,6 +68,7 @@ test("presentation CSS exposes dedicated target, impact and hero feedback layers
   assert.match(css, /\.hh-hero-impact/);
 });
 
+// Damage presentation clones must keep field-scale stats and an anchored Hero portrait.
 test("presentation clones preserve live stat badge geometry", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
   const css = read("app/game-presentation.css");
