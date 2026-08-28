@@ -101,11 +101,37 @@ test("Hero damage holds only the life badge instead of cloning the Hero portrait
 });
 
 
-test("turned cards omit the VIRADA plate while presenting effects", () => {
+test("turned cards stay turned through effect highlights and ready only for departure", () => {
   const page = read("app/page.tsx");
   const runtime = read("app/game-presentation-runtime.tsx");
+  const css = read("app/game-presentation.css");
   assert.match(page, /unit\.exhausted&&!activeEffect&&!unit\.impacting/);
   assert.match(runtime, /toUpperCase\(\) === "VIRADA"/);
+  assert.match(runtime, /dataset\.hhPresentationOrientation = "turned"/);
+  assert.match(css, /data-hh-presentation-orientation="turned"/);
+  assert.match(css, /rotate\(90deg\) !important/);
+  assert.match(runtime, /face: readyDepartureFace\(source\)/);
+});
+
+test("graveyard and extra-deck results stay behind their effect animation", () => {
+  const runtime = read("app/game-presentation-runtime.tsx");
+  const page = read("app/page.tsx");
+  assert.match(runtime, /for \(const kind of \["grave", "extra"\] as const\)/);
+  assert.match(runtime, /!visual\.zoneTransfer/);
+  assert.match(runtime, /const afterReactCommit = nextFrame/);
+  assert.doesNotMatch(runtime, /await nextFrame\(\); await nextFrame\(\)/);
+  assert.match(runtime, /const arrivalGate = installArrivalGate\(detail\)/);
+  assert.match(runtime, /arrivalGate\?\.remove\(\);[\s\S]*releaseChangedState/);
+  assert.match(page, /data-card-id=\{card\.id\}/);
+  const genericStart = runtime.lastIndexOf("} else {");
+  const genericEnd = runtime.indexOf("await animateHeroLevelUp", genericStart);
+  const generic = runtime.slice(genericStart, genericEnd);
+  const source = generic.indexOf("for (const flight of sourceArrivals)");
+  const cue = generic.indexOf('if (cue?.kind === "effect")');
+  const result = generic.indexOf("for (const flight of resultArrivals)");
+  assert.ok(source >= 0 && source < cue && cue < result);
+  assert.match(runtime, /detail\.command\?\.type === "playCard" \? arrivals\.filter\(\(flight\) => flight\.sourcePlay\) : \[\]/);
+  assert.match(runtime, /detail\.command\?\.type === "playCard" \? arrivals\.filter\(\(flight\) => !flight\.sourcePlay\) : arrivals/);
 });
 
 test("opponent plays reveal their actual face at the start of presentation", () => {

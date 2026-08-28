@@ -109,7 +109,8 @@ test("combat and targeted effects have explicit one-shot visual cues", () => {
 
 test("presentation runtime serializes confirmed before-after clips and exposes pacing signals", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
-  assert.match(runtime, /await nextFrame\(\); await nextFrame\(\)/);
+  assert.match(runtime, /const afterReactCommit = nextFrame/);
+  assert.match(runtime, /installArrivalGate\(detail\)/);
   assert.match(runtime, /__hemsfellPresentationBusy/);
   assert.match(runtime, /hemsfell:presentation-busy/);
   assert.match(runtime, /hemsfell:presentation-idle/);

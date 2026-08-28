@@ -35,6 +35,8 @@
   pointer-events: none !important;
 }
 
+.hh-flight-face { position: relative; }
+
 .hh-flight-face > .original-card,
 .hh-flight-face > .opponent-card-back,
 .hh-flight-face > .pile-card {
@@ -45,6 +47,19 @@
   min-height: 0 !important;
   margin: 0 !important;
   transform: none !important;
+}
+
+/* Field snapshots preserve exhaustion while an effect is being presented.
+   The clone is sized with the card's pre-transform box so a 90-degree turn
+   stays geometrically identical even outside the board container. */
+.hh-flight-face > .original-card[data-hh-presentation-orientation="turned"] {
+  position: absolute !important;
+  left: 50% !important;
+  top: 50% !important;
+  width: var(--hh-presentation-card-width) !important;
+  height: var(--hh-presentation-card-height) !important;
+  transform: translate(-50%, -50%) rotate(90deg) !important;
+  transform-origin: 50% 50% !important;
 }
 
 /* Presentation clones live outside the board container. Freeze the captured
@@ -107,6 +122,18 @@
   animation: none !important;
   transition: none !important;
   will-change: auto;
+}
+
+.hh-pile-count-hold {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  box-sizing: border-box;
+  pointer-events: none;
+  z-index: 8;
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
 }
 
 .hh-arrival-ring,

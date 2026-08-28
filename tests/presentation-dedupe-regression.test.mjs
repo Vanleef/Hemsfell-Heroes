@@ -45,7 +45,7 @@ test("blocking child animations are ordered while readable damage gates visual s
   assert.doesNotMatch(runtime, /flight\.targets\?\.forEach\(\(target\) => effectBeam/);
   assert.match(runtime, /const heldState = holdChangedState/);
   assert.match(runtime, /releaseReadableState\(heldState\)/);
-  assert.match(runtime, /await presentDeltas[\s\S]*finally \{\s*releaseChangedState\(heldState\)/);
+  assert.match(runtime, /await presentDeltas[\s\S]*finally \{\s*arrivalGate\?\.remove\(\);\s*releaseChangedState\(heldState\)/);
   assert.ok(runtime.indexOf("await presentDeltas") < runtime.indexOf("releaseChangedState(heldState)"));
 });
 

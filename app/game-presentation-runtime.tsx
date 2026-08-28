@@ -19,6 +19,7 @@ type PresentationDetail = {
 type DomCard = {
   element: HTMLElement;
   rect: RectLike;
+  baseRect?: RectLike;
   clone: HTMLElement;
   owner: Owner;
   name: string;
@@ -26,6 +27,9 @@ type DomCard = {
   uid?: string;
   hp?: number;
   atk?: number;
+  countElement?: HTMLElement | null;
+  countRect?: RectLike | null;
+  count?: number;
 };
 type HeroDom = { element: HTMLElement; rect: RectLike; clone: HTMLElement; life: number; lifeElement: HTMLElement | null; lifeRect: RectLike | null };
 type DomSnapshot = {
@@ -100,8 +104,37 @@ const sameSemanticCount = (cards: any[] = []) => {
 };
 const countDelta = (before: any[] = [], after: any[] = [], key: string) => (sameSemanticCount(after).get(key) || 0) - (sameSemanticCount(before).get(key) || 0);
 const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-const afterReactPaint = async () => { await nextFrame(); await nextFrame(); };
+// The first animation frame runs after React's commit but before that frame is
+// painted. Waiting for a second frame would let result cards flash once in
+// their destination before the presentation runtime can hide them.
+const afterReactCommit = nextFrame;
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+function addedStateIds(before: any[] = [], after: any[] = []) {
+  const existing = new Set(before.map(stateId));
+  return after.map(stateId).filter((id) => id && !existing.has(id));
+}
+
+function installArrivalGate(detail: PresentationDetail) {
+  const selectors: string[] = [];
+  const escaped = (value: string) => typeof globalThis.CSS === "undefined" ? value.replace(/["\\]/g, "\\$&") : globalThis.CSS.escape(value);
+  for (const owner of [0, 1] as const) {
+    const beforePlayer = detail.before?.players?.[owner], afterPlayer = detail.after?.players?.[owner];
+    for (const uid of addedStateIds(stateFields(beforePlayer), stateFields(afterPlayer))) {
+      selectors.push(`.game-stage .card-frame[data-unit-id="${escaped(uid)}"] > .original-card`);
+    }
+    for (const id of addedStateIds(beforePlayer?.hand, afterPlayer?.hand)) {
+      const hand = owner === 0 ? ".player-hand" : ".opponent-hand";
+      selectors.push(`.game-stage ${hand} [data-card-id="${escaped(id)}"]`);
+    }
+  }
+  if (!selectors.length) return null;
+  const gate = document.createElement("style");
+  gate.className = "hh-prepaint-arrival-gate";
+  gate.textContent = `${selectors.join(",")} { opacity: 0 !important; visibility: hidden !important; }`;
+  document.head.append(gate);
+  return gate;
+}
 
 function freezePresentationCardMetrics(source: HTMLElement, clone: HTMLElement) {
   const sourceCard = source.matches(".original-card") ? source : source.querySelector<HTMLElement>(".original-card");
@@ -159,14 +192,53 @@ function cloneRendered(element: HTMLElement) {
       // A presentation clone must never affect the game if a browser refuses a canvas copy.
     }
   });
-  freezePresentationCardMetrics(element, clone);
+  const sourceCard = element.matches(".original-card") ? element : element.querySelector<HTMLElement>(".original-card");
+  const cloneCard = clone.matches(".original-card") ? clone : clone.querySelector<HTMLElement>(".original-card");
+  const turned = sourceCard?.dataset.hhPresentationOrientation === "turned" || sourceCard?.classList.contains("is-exhausted");
+  if (sourceCard && cloneCard && turned) {
+    const capturedWidth = Number(sourceCard.dataset.hhPresentationWidth) || sourceCard.offsetWidth;
+    const capturedHeight = Number(sourceCard.dataset.hhPresentationHeight) || sourceCard.offsetHeight;
+    cloneCard.dataset.hhPresentationOrientation = "turned";
+    if (capturedWidth > 0 && capturedHeight > 0) {
+      cloneCard.dataset.hhPresentationWidth = String(capturedWidth);
+      cloneCard.dataset.hhPresentationHeight = String(capturedHeight);
+      cloneCard.style.setProperty("--hh-presentation-card-width", `${capturedWidth}px`);
+      cloneCard.style.setProperty("--hh-presentation-card-height", `${capturedHeight}px`);
+    }
+  }
+  // A turned clone keeps its native badge geometry and rotates as one card.
+  // Freezing screen-space badge coordinates would rotate those coordinates twice.
+  if (!turned) freezePresentationCardMetrics(element, clone);
   return clone;
 }
 
+function baseCardRect(element: HTMLElement, visualRect: RectLike) {
+  const width = element.offsetWidth;
+  const height = element.offsetHeight;
+  if (width <= 0 || height <= 0) return visualRect;
+  const point = center(visualRect);
+  return rectWithSize(point.x - width / 2, point.y - height / 2, width, height);
+}
+
+function readyDepartureFace(source: DomCard) {
+  const face = source.clone.cloneNode(true) as HTMLElement;
+  const card = face.matches(".original-card") ? face : face.querySelector<HTMLElement>(".original-card");
+  if (!card) return face;
+  card.classList.remove("is-exhausted");
+  delete card.dataset.hhPresentationOrientation;
+  delete card.dataset.hhPresentationWidth;
+  delete card.dataset.hhPresentationHeight;
+  card.style.removeProperty("--hh-presentation-card-width");
+  card.style.removeProperty("--hh-presentation-card-height");
+  return face;
+}
+
 function domCard(element: HTMLElement, owner: Owner, uid?: string): DomCard {
+  const rect = rectOf(element);
   return {
     element,
-    rect: rectOf(element),
+    rect,
+    baseRect: element.classList.contains("is-exhausted") ? baseCardRect(element, rect) : rect,
     clone: cloneRendered(element),
     owner,
     uid,
@@ -204,7 +276,18 @@ function pileSnapshot(owner: Owner, kind: "deck" | "extra" | "grave" | "obscuro"
   const zone = document.querySelector<HTMLElement>(`.game-stage ${root} .pile-zone${className}`);
   if (!zone) return null;
   const visual = zone.querySelector<HTMLElement>(".pile-card,.official-card-back") || zone;
-  return { element: visual, rect: rectOf(visual), clone: cloneRendered(visual), owner, page: 0, name: kind } as DomCard;
+  const countElement = zone.querySelector<HTMLElement>("strong");
+  return {
+    element: visual,
+    rect: rectOf(visual),
+    clone: cloneRendered(visual),
+    owner,
+    page: 0,
+    name: kind,
+    countElement,
+    countRect: countElement ? rectOf(countElement) : null,
+    count: numberText(countElement?.textContent),
+  } as DomCard;
 }
 
 function snapshotDom(): DomSnapshot {
@@ -268,10 +351,11 @@ type HeldStateVisual = {
   uid?: string;
   deferredDeath: boolean;
   levelUp: boolean;
+  zoneTransfer: boolean;
   released: boolean;
 };
 
-function holdStateVisual(layer: HTMLElement, destination: HTMLElement | null, face: HTMLElement, rect: RectLike, uid?: string, deferredDeath = false, levelUp = false): HeldStateVisual {
+function holdStateVisual(layer: HTMLElement, destination: HTMLElement | null, face: HTMLElement, rect: RectLike, uid?: string, deferredDeath = false, levelUp = false, zoneTransfer = false): HeldStateVisual {
   destination?.classList.add("hh-presentation-hidden");
   const overlay = document.createElement("div");
   overlay.className = `hh-flight-card hh-state-hold${deferredDeath ? " is-deferred-death" : ""}${levelUp ? " is-level-up-hold" : ""}`;
@@ -281,7 +365,7 @@ function holdStateVisual(layer: HTMLElement, destination: HTMLElement | null, fa
   overlay.style.height = `${Math.max(1, rect.height)}px`;
   overlay.append(createFlightFace(cloneRendered(face)));
   layer.append(overlay);
-  return { destination, overlay, uid, deferredDeath, levelUp, released: false };
+  return { destination, overlay, uid, deferredDeath, levelUp, zoneTransfer, released: false };
 }
 
 function holdHeroLifeVisual(layer: HTMLElement, destination: HTMLElement, life: number, rect: RectLike): HeldStateVisual {
@@ -309,7 +393,23 @@ function holdHeroLifeVisual(layer: HTMLElement, destination: HTMLElement, life: 
   overlay.style.boxShadow = style.boxShadow;
   overlay.style.textShadow = style.textShadow;
   layer.append(overlay);
-  return { destination, overlay, deferredDeath: false, levelUp: false, released: false };
+  return { destination, overlay, deferredDeath: false, levelUp: false, zoneTransfer: false, released: false };
+}
+
+function holdPileCountVisual(layer: HTMLElement, before: DomCard, after: DomCard): HeldStateVisual | null {
+  if (!after.countElement || !before.countRect || before.count == null) return null;
+  const held = holdHeroLifeVisual(layer, after.countElement, before.count, before.countRect);
+  held.overlay.classList.remove("hh-hero-life-hold");
+  held.overlay.classList.add("hh-pile-count-hold");
+  held.zoneTransfer = true;
+  return held;
+}
+
+function pileStateChanged(detail: PresentationDetail, owner: Owner, kind: "grave" | "extra") {
+  const stateKey = kind === "extra" ? "extraDeck" : "grave";
+  const before = detail.before?.players?.[owner]?.[stateKey] || [];
+  const after = detail.after?.players?.[owner]?.[stateKey] || [];
+  return JSON.stringify(before.map(stateId)) !== JSON.stringify(after.map(stateId));
 }
 
 function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSnapshot, detail: PresentationDetail) {
@@ -332,6 +432,14 @@ function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSna
     if (old.life !== fresh.life && old.lifeRect && fresh.lifeElement) {
       held.push(holdHeroLifeVisual(layer, fresh.lifeElement, old.life, old.lifeRect));
     }
+    for (const kind of ["grave", "extra"] as const) {
+      if (!pileStateChanged(detail, owner, kind)) continue;
+      const oldPile = before.piles.get(`${owner}:${kind}`), freshPile = after.piles.get(`${owner}:${kind}`);
+      if (!oldPile || !freshPile) continue;
+      held.push(holdStateVisual(layer, freshPile.element, oldPile.clone, oldPile.rect, undefined, false, false, true));
+      const countHold = holdPileCountVisual(layer, oldPile, freshPile);
+      if (countHold) held.push(countHold);
+    }
   }
   /* A lethal target has already disappeared from React's post-command DOM.
      Keep its pre-command rendering pinned in place until the ordered death
@@ -351,7 +459,7 @@ function releaseHeldVisual(visual: HeldStateVisual) {
 }
 
 function releaseReadableState(held: HeldStateVisual[]) {
-  held.filter((visual) => !visual.deferredDeath && !visual.levelUp).forEach(releaseHeldVisual);
+  held.filter((visual) => !visual.deferredDeath && !visual.levelUp && !visual.zoneTransfer).forEach(releaseHeldVisual);
 }
 
 function releaseLevelState(held: HeldStateVisual[], destination?: HTMLElement | null) {
@@ -891,7 +999,7 @@ function buildFlights(detail: PresentationDetail, beforeDom: DomSnapshot, afterD
         const handIndex = (afterPlayer?.hand || []).findIndex((card: any) => semantic(card) === key);
         target = handIndex >= 0 ? afterDom.hands[owner][handIndex] : null; kind = "return";
       } else if (countDelta(beforePlayer?.extraDeck, afterPlayer?.extraDeck, key) > 0) { target = afterDom.piles.get(`${owner}:extra`) || null; kind = "return"; }
-      flights.push({ kind, from: source.rect, to: target?.rect || source.rect, face: source.clone, destination: target?.element || null, delay: flights.length * 55, uid });
+      flights.push({ kind, from: source.baseRect || source.rect, to: target?.rect || source.rect, face: readyDepartureFace(source), destination: target?.element || null, delay: flights.length * 55, uid });
     }
   }
 
@@ -978,9 +1086,9 @@ export default function GamePresentationRuntime() {
       return true;
     };
 
-    const present = async (detail: PresentationDetail, capturedDom: DomSnapshot, cue: ActionCue | null) => {
-    await afterReactPaint();
-    if (disposed) return;
+    const present = async (detail: PresentationDetail, capturedDom: DomSnapshot, cue: ActionCue | null, arrivalGate: HTMLStyleElement | null) => {
+    await afterReactCommit();
+    if (disposed) { arrivalGate?.remove(); return; }
     const afterDom = snapshotDom();
     const beforeDom = expectedUnitScore(detail.before, stableDom) > expectedUnitScore(detail.before, capturedDom) ? stableDom : capturedDom;
     const flights = buildFlights(detail, beforeDom, afterDom);
@@ -988,10 +1096,16 @@ export default function GamePresentationRuntime() {
     const spellFlight = flights.find((flight) => flight.kind === "cast") || null;
     const arrivals = flights.filter((flight) => flight.kind !== "destroy" && flight.kind !== "banish" && flight.kind !== "cast");
     const departures = flights.filter((flight) => flight.kind === "destroy" || flight.kind === "banish");
-    const sourceArrivals = detail.command?.type === "playCard" ? arrivals.filter((flight) => flight.sourcePlay) : arrivals;
-    const resultArrivals = detail.command?.type === "playCard" ? arrivals.filter((flight) => !flight.sourcePlay) : [];
+    // Only the card explicitly played from hand is a source arrival. Cards
+    // created, drawn or recovered by an effect are results and must remain
+    // hidden until the effect cue has completed.
+    const sourceArrivals = detail.command?.type === "playCard" ? arrivals.filter((flight) => flight.sourcePlay) : [];
+    const resultArrivals = detail.command?.type === "playCard" ? arrivals.filter((flight) => !flight.sourcePlay) : arrivals;
     const heldState = holdChangedState(layers.motion, beforeDom, afterDom, detail);
     arrivals.forEach((flight) => flight.destination?.classList.add("hh-presentation-hidden"));
+    // Destination nodes now own a persistent hidden class, so the synchronous
+    // pre-paint stylesheet can be removed without exposing the resolved state.
+    arrivalGate?.remove();
     let readableReleased = false;
     const releaseReadable = () => {
       if (readableReleased) return;
@@ -1047,6 +1161,7 @@ export default function GamePresentationRuntime() {
       }
       await animateHeroLevelUp(layers.effect, detail, afterDom, heldState);
     } finally {
+      arrivalGate?.remove();
       releaseChangedState(heldState);
       arrivals.forEach((flight) => flight.destination?.classList.remove("hh-presentation-hidden"));
     }
@@ -1058,9 +1173,13 @@ export default function GamePresentationRuntime() {
       if (!detail?.before || !detail?.after || !detail?.command || !rememberPresentation(detail)) return;
       const capturedDom = snapshotDom();
       const cue = captureActionCue(detail);
+      // Install this synchronously, before React commits `detail.after`. A card
+      // recovered from a hidden zone therefore cannot paint at its destination
+      // even once before its flight begins.
+      const arrivalGate = installArrivalGate(detail);
       queued += 1;
       setBusy(true);
-      sequence = sequence.catch(() => undefined).then(() => present(detail, capturedDom, cue)).finally(() => {
+      sequence = sequence.catch(() => undefined).then(() => present(detail, capturedDom, cue, arrivalGate)).finally(() => {
         queued = Math.max(0, queued - 1);
         if (!queued && !disposed) setBusy(false);
       });
