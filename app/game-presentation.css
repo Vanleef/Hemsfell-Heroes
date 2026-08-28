@@ -176,6 +176,14 @@ html.hh-presentation-locked .screen-game {
   cursor: wait;
 }
 
+/* CombatAnimation remains responsible for declaration/priority/blocker input.
+   Once damage resolves, GameActionCuesRuntime is the single visual owner. */
+.combat-cinematic.stage-charging,
+.combat-cinematic.stage-impact,
+.combat-cinematic.stage-resolved {
+  display: none !important;
+}
+
 /* Ordinary card plays now use physical motion. The legacy full-screen theatre
    remains only for ability/damage moments that are outside PR1. */
 .visual-effect.fx-summon,

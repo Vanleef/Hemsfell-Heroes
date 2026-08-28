@@ -31,6 +31,16 @@ const midpoint = (a: RectLike, b: RectLike): RectLike => {
   const ca = center(a), cb = center(b), x = (ca.x + cb.x) / 2, y = (ca.y + cb.y) / 2;
   return { left: x - 1, top: y - 1, width: 2, height: 2, right: x + 1, bottom: y + 1 };
 };
+const rectKey = (rect: RectLike) => `${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(rect.width)}:${Math.round(rect.height)}`;
+const uniqueRects = (rects: RectLike[]) => {
+  const seen = new Set<string>();
+  return rects.filter((rect) => {
+    const key = rectKey(rect);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 const fields = (player: any) => [...(player?.board || []), ...(player?.support || []), ...(player?.terrain ? [player.terrain] : [])];
 const cardId = (card: any) => String(card?.uid || card?.id || "");
@@ -40,6 +50,13 @@ const unitState = (card: any) => JSON.stringify({
   suffocated: card?.suffocated, immobilized: card?.immobilized, tags: card?.tags, temporaryTags: card?.temporaryTags,
   modifiers: card?.modifiers, grantedKeywords: card?.grantedKeywords,
 });
+const sourceIdFor = (detail: PresentationDetail) => String(
+  detail.command?.sourceId
+  || detail.before?.pendingDecision?.sourceId
+  || detail.before?.pendingDecision?.context?.sourceId
+  || detail.before?.pendingDecision?.sourceUid
+  || "",
+);
 
 function unitElement(id: string) {
   for (const frame of document.querySelectorAll<HTMLElement>(".game-stage .card-frame[data-unit-id]")) {
@@ -68,26 +85,24 @@ function targetRect(id: string, fallbackOwner: Owner): RectLike | null {
   return unit ? rectOf(unit) : null;
 }
 
-function changedTargetRects(detail: PresentationDetail) {
+function changedTargetRects(detail: PresentationDetail, excludedIds = new Set<string>()) {
   const result: RectLike[] = [];
-  const seen = new Set<string>();
   for (const owner of [0, 1] as const) {
     const before = new Map(fields(detail.before?.players?.[owner]).map((card: any) => [cardId(card), card]).filter(([id]) => !!id));
     const after = new Map(fields(detail.after?.players?.[owner]).map((card: any) => [cardId(card), card]).filter(([id]) => !!id));
     for (const [id, oldCard] of before) {
+      if (excludedIds.has(id)) continue;
       const fresh = after.get(id);
-      if (fresh && unitState(oldCard) === unitState(fresh)) continue;
+      if (!fresh || unitState(oldCard) === unitState(fresh)) continue;
       const element = unitElement(id);
-      if (!element || seen.has(id)) continue;
-      seen.add(id);
-      result.push(rectOf(element));
+      if (element) result.push(rectOf(element));
     }
     if (Number(detail.before?.players?.[owner]?.life) !== Number(detail.after?.players?.[owner]?.life)) {
       const hero = heroElement(owner);
       if (hero) result.push(rectOf(hero));
     }
   }
-  return result;
+  return uniqueRects(result);
 }
 
 function explicitTargetRects(detail: PresentationDetail) {
@@ -98,28 +113,12 @@ function explicitTargetRects(detail: PresentationDetail) {
     detail.command?.defenderId,
     detail.command?.elementalTargetId,
   ].filter(Boolean).map(String);
-  const rects: RectLike[] = [];
-  const seen = new Set<string>();
-  for (const id of ids) {
-    const rect = targetRect(id, (1 - owner) as Owner);
-    if (!rect) continue;
-    const key = `${Math.round(rect.left)}:${Math.round(rect.top)}:${Math.round(rect.width)}:${Math.round(rect.height)}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    rects.push(rect);
-  }
-  return rects;
+  return uniqueRects(ids.map((id) => targetRect(id, (1 - owner) as Owner)).filter((rect): rect is RectLike => !!rect));
 }
 
 function sourceRect(detail: PresentationDetail): RectLike | null {
   const owner: Owner = Number(detail.command?.owner) === 1 ? 1 : 0;
-  const sourceId = String(
-    detail.command?.sourceId
-    || detail.before?.pendingDecision?.sourceId
-    || detail.before?.pendingDecision?.context?.sourceId
-    || detail.before?.pendingDecision?.sourceUid
-    || "",
-  );
+  const sourceId = sourceIdFor(detail);
   const source = sourceId ? unitElement(sourceId) : null;
   if (source) return rectOf(source);
   const hero = heroElement(owner);
@@ -146,12 +145,18 @@ function captureCue(detail: PresentationDetail): Cue | null {
     return hero ? { kind: "combat", attacker: rectOf(attacker), hero: rectOf(hero) } : null;
   }
   if (["declareAttack", "selectDefender", "reposition", "confirmReposition", "surrender"].includes(String(command.type))) return null;
+  if (command.type === "onlineSnapshot") return null;
   if (command.type === "playCard" && playedCard(detail)?.type === "Feitiço") return null;
 
-  const targets = [...explicitTargetRects(detail), ...changedTargetRects(detail)].slice(0, MAX_TARGETS);
-  if (!targets.length) return null;
   const source = sourceRect(detail);
-  return source ? { kind: "effect", source, targets } : null;
+  if (!source) return null;
+  const explicit = explicitTargetRects(detail);
+  const sourceIds = new Set([sourceIdFor(detail)].filter(Boolean));
+  const inferred = explicit.length ? [] : changedTargetRects(detail, sourceIds);
+  const selected = explicit.length ? explicit : inferred.length === 1 ? inferred : [];
+  const sourceKey = rectKey(source);
+  const targets = uniqueRects(selected).filter((rect) => rectKey(rect) !== sourceKey).slice(0, MAX_TARGETS);
+  return targets.length ? { kind: "effect", source, targets } : null;
 }
 
 function installLayer() {
@@ -236,6 +241,8 @@ async function animateEffect(layer: HTMLElement, cue: Extract<Cue, { kind: "effe
   await Promise.all(cue.targets.map((target, index) => animateMagicProjectile(layer, cue.source, target, index * 45)));
 }
 
+const afterReactPaint = () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
 export default function GameActionCuesRuntime() {
   useEffect(() => {
     const layer = installLayer();
@@ -272,7 +279,8 @@ export default function GameActionCuesRuntime() {
       queued += 1;
       setBusy(true);
       sequence = sequence.catch(() => undefined).then(async () => {
-        await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        await afterReactPaint();
+        if (cue.kind === "effect" && document.querySelector(".visual-effect.fx-ability,.visual-effect.fx-damage")) return;
         if (cue.kind === "combat") await animateCombat(layer, cue);
         else await animateEffect(layer, cue);
       }).finally(() => {

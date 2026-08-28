@@ -63,10 +63,6 @@ const unitFingerprint = (unit: any) => ({
   modifiers: unit?.modifiers, grantedKeywords: unit?.grantedKeywords,
 });
 const presentationFingerprint = (game: any) => JSON.stringify({
-  round: game?.round,
-  phase: game?.phase,
-  active: game?.active,
-  events: game?.events,
   winner: game?.winner,
   players: (game?.players || []).map((player: any) => ({
     life: player?.life,
