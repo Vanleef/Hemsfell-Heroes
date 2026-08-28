@@ -1,0 +1,44 @@
+name: Diagnose presentation rules regression
+
+on:
+  push:
+    branches:
+      - feat/presentation-system-pr1
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - name: Reapply staged source patch
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import subprocess, textwrap
+          workflow = Path('.github/workflows/apply-presentation-order-levelup-optimization.yml').read_text()
+          start = workflow.index("          python3 <<'PY'\n") + len("          python3 <<'PY'\n")
+          end = workflow.index("\n          PY\n", start)
+          script = textwrap.dedent(workflow[start:end])
+          subprocess.run(['python3', '-c', script], check=True)
+          PY
+      - name: Install dependencies
+        run: npm ci
+      - name: Capture full rules failure
+        shell: bash
+        run: |
+          set +e
+          npm run test:rules > /tmp/rules.log 2>&1
+          code=$?
+          echo "===== LAST 260 LINES OF RULES OUTPUT ====="
+          tail -n 260 /tmp/rules.log
+          echo "===== EXIT CODE: $code ====="
+          exit $code
