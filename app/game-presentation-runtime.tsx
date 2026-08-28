@@ -80,10 +80,40 @@ const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() 
 const afterReactPaint = async () => { await nextFrame(); await nextFrame(); };
 const prefersReducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
+function freezePresentationCardMetrics(source: HTMLElement, clone: HTMLElement) {
+  const sourceCard = source.matches(".original-card") ? source : source.querySelector<HTMLElement>(".original-card");
+  const cloneCard = clone.matches(".original-card") ? clone : clone.querySelector<HTMLElement>(".original-card");
+  if (!sourceCard || !cloneCard) return;
+  const cardRect = sourceCard.getBoundingClientRect();
+  if (cardRect.width <= 0 || cardRect.height <= 0) return;
+  for (const selector of [".live-atk", ".live-hp"] as const) {
+    const sourceNode = sourceCard.querySelector<HTMLElement>(selector);
+    const cloneNode = cloneCard.querySelector<HTMLElement>(selector);
+    if (!sourceNode || !cloneNode) continue;
+    const rect = sourceNode.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) continue;
+    const style = window.getComputedStyle(sourceNode);
+    cloneNode.style.boxSizing = "border-box";
+    cloneNode.style.left = `${rect.left - cardRect.left}px`;
+    cloneNode.style.top = `${rect.top - cardRect.top}px`;
+    cloneNode.style.right = "auto";
+    cloneNode.style.bottom = "auto";
+    cloneNode.style.width = `${rect.width}px`;
+    cloneNode.style.height = `${rect.height}px`;
+    cloneNode.style.fontSize = style.fontSize;
+    cloneNode.style.lineHeight = style.lineHeight === "normal" ? "1" : style.lineHeight;
+    cloneNode.style.transform = "none";
+    cloneNode.style.animation = "none";
+    cloneNode.style.transition = "none";
+  }
+}
+
 function cloneRendered(element: HTMLElement) {
   const clone = element.cloneNode(true) as HTMLElement;
   clone.removeAttribute("id");
-  clone.classList.remove("hh-presentation-hidden", "damage-hit", "is-selected");
+  const transientClasses = ["hh-presentation-hidden", "damage-hit", "is-selected", "is-impacting", "combat-attack-ready", "target-ally", "target-enemy"];
+  clone.classList.remove(...transientClasses);
+  clone.querySelectorAll<HTMLElement>(".damage-hit,.is-selected,.is-impacting,.combat-attack-ready,.target-ally,.target-enemy").forEach((node) => node.classList.remove(...transientClasses));
   clone.querySelectorAll<HTMLElement>("[id]").forEach((node) => node.removeAttribute("id"));
   clone.querySelectorAll<HTMLElement>("[title]").forEach((node) => node.removeAttribute("title"));
   clone.querySelectorAll<HTMLElement>("button,input,select,textarea,a").forEach((node) => {
@@ -103,6 +133,7 @@ function cloneRendered(element: HTMLElement) {
       // A presentation clone must never affect the game if a browser refuses a canvas copy.
     }
   });
+  freezePresentationCardMetrics(element, clone);
   return clone;
 }
 
@@ -503,20 +534,23 @@ async function animateHeroShake(held: HeldStateVisual[], before: DomSnapshot, af
     const old = before.heroes.get(owner), fresh = after.heroes.get(owner);
     if (!old || !fresh || fresh.life >= old.life) continue;
     const visual = held.find((candidate) => candidate.destination === fresh.element && !candidate.deferredDeath);
-    const node = visual?.overlay || fresh.element;
+    const node = visual?.overlay.querySelector<HTMLElement>(".hero-power-trigger")
+      || fresh.element.querySelector<HTMLElement>(".hero-power-trigger")
+      || visual?.overlay
+      || fresh.element;
     node.classList.add("hh-hero-impact");
     const animation = node.animate([
-      { transform: "translate3d(0,0,0) scale(1)" },
-      { offset: .22, transform: "translate3d(-3px,1px,0) scale(1.006)" },
-      { offset: .46, transform: "translate3d(3px,-1px,0) scale(.998)" },
-      { offset: .7, transform: "translate3d(-1.5px,0,0) scale(1.002)" },
-      { transform: "translate3d(0,0,0) scale(1)" },
-    ], { duration: prefersReducedMotion() ? 90 : 190, easing: "ease-out" });
+      { transform: "translateX(0)" },
+      { offset: .2, transform: "translateX(-2.5px)" },
+      { offset: .4, transform: "translateX(2.5px)" },
+      { offset: .62, transform: "translateX(-1.25px)" },
+      { offset: .82, transform: "translateX(1.25px)" },
+      { transform: "translateX(0)" },
+    ], { duration: prefersReducedMotion() ? 80 : 165, easing: "ease-out" });
     jobs.push(animation.finished.catch(() => undefined).finally(() => node.classList.remove("hh-hero-impact")));
   }
   await Promise.all(jobs);
 }
-
 
 async function floatingLabel(layer: HTMLElement, rect: RectLike, text: string, tone: "positive" | "negative" | "neutral") {
   if (!text || layer.querySelectorAll(".hh-float").length >= MAX_FLOATS) return;

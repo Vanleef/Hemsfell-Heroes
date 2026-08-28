@@ -41,8 +41,11 @@ test("direct hero damage only shakes the anchored presentation clone", () => {
   const start = runtime.indexOf("async function animateHeroShake");
   const end = runtime.indexOf("async function floatingLabel", start);
   const shake = runtime.slice(start, end);
-  assert.match(shake, /translate3d\(-3px,1px,0\)/);
-  assert.match(shake, /translate3d\(3px,-1px,0\)/);
+  assert.match(shake, /querySelector<HTMLElement>\("\.hero-power-trigger"\)/);
+  assert.match(shake, /translateX\(-2\.5px\)/);
+  assert.match(shake, /translateX\(2\.5px\)/);
+  assert.doesNotMatch(shake, /translate3d\(/);
+  assert.doesNotMatch(shake, /scale\(/);
   assert.doesNotMatch(shake, /style\.(left|top)\s*=/);
   assert.doesNotMatch(shake, /append\(|remove\(\)/);
 });
@@ -63,4 +66,23 @@ test("presentation CSS exposes dedicated target, impact and hero feedback layers
   assert.match(css, /\.hh-spell-impact/);
   assert.match(css, /\.hh-state-hold\.is-deferred-death/);
   assert.match(css, /\.hh-hero-impact/);
+});
+
+test("presentation clones preserve live stat badge geometry", () => {
+  const runtime = read("app/game-presentation-runtime.tsx");
+  const css = read("app/game-presentation.css");
+  assert.match(runtime, /function freezePresentationCardMetrics/);
+  assert.match(runtime, /live-atk.*live-hp/);
+  assert.match(runtime, /freezePresentationCardMetrics\(element, clone\)/);
+  assert.match(runtime, /"is-impacting"/);
+  assert.match(css, /\.hh-flight-face :is\(\.live-atk, \.live-hp\)/);
+  assert.match(css, /animation: none !important/);
+});
+
+test("command bar caps remain compact at large viewport sizes", () => {
+  const css = read("app/command-bar-fixes.css");
+  assert.match(css, /font-size:clamp\(\.74rem,min\(\.88vw,1\.56dvh\),\.92rem\)!important/);
+  assert.match(css, /font-size:clamp\(\.62rem,min\(\.72vw,1\.28dvh\),\.74rem\)!important/);
+  assert.match(css, /font-size:clamp\(\.7rem,min\(\.8vw,1\.42dvh\),\.86rem\)!important/);
+  assert.match(css, /font-size:clamp\(\.66rem,min\(\.74vw,1\.32dvh\),\.8rem\)!important/);
 });

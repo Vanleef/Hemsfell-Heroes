@@ -47,6 +47,16 @@
   transform: none !important;
 }
 
+/* Presentation clones live outside the board container. Freeze the captured
+   attack/health badge geometry and never inherit legacy impact pulses. */
+.hh-flight-face :is(.live-atk, .live-hp) {
+  max-width: none !important;
+  max-height: none !important;
+  transform: none !important;
+  animation: none !important;
+  transition: none !important;
+}
+
 .hh-flight-card.is-cast {
   filter: drop-shadow(0 0 1rem rgb(199 125 255 / .52)) drop-shadow(0 .65rem 1rem rgb(0 0 0 / .56));
 }

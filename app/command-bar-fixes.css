@@ -96,25 +96,25 @@
 html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip>span>p,
 body .screen-game .hero-command-bar .hero-ability-chip p{
   font-family:var(--font-geist-sans),Arial,sans-serif!important;
-  font-size:clamp(.74rem,min(.88vw,1.56dvh),1rem)!important;
+  font-size:clamp(.74rem,min(.88vw,1.56dvh),.92rem)!important;
   font-weight:750!important;
   line-height:1.16!important;
 }
 html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip>span>b,
 body .screen-game .hero-command-bar>.hero-ability-chip>span>b{
   font-family:var(--font-geist-sans),Arial,sans-serif!important;
-  font-size:clamp(.62rem,min(.72vw,1.28dvh),.78rem)!important;
+  font-size:clamp(.62rem,min(.72vw,1.28dvh),.74rem)!important;
   font-weight:900!important;
   line-height:1.05!important;
   letter-spacing:.08em!important;
 }
 html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip.copy-compact>span>p,
 body .screen-game .hero-command-bar .hero-ability-chip.copy-compact p{
-  font-size:clamp(.7rem,min(.8vw,1.42dvh),.92rem)!important;
+  font-size:clamp(.7rem,min(.8vw,1.42dvh),.86rem)!important;
   line-height:1.13!important;
 }
 html body .screen-game .game-stage>.game-content.hs-board .hero-command-bar>.hero-ability-chip.copy-dense>span>p,
 body .screen-game .hero-command-bar .hero-ability-chip.copy-dense p{
-  font-size:clamp(.66rem,min(.74vw,1.32dvh),.86rem)!important;
+  font-size:clamp(.66rem,min(.74vw,1.32dvh),.8rem)!important;
   line-height:1.1!important;
 }
