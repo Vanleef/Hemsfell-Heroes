@@ -23,6 +23,18 @@ jobs:
           cache: npm
       - name: Apply source patch
         run: python3 scripts/tmp-apply-dynamic-presentation-commandbar.py
+      - name: Update lifecycle regression
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tests/presentation-dedupe-regression.test.mjs')
+          text = path.read_text()
+          old = '''  assert.match(runtime, /const completion = Promise\\.all\\(labels\\)/);\n  assert.match(runtime, /if \\(settle\\) await completion/);'''
+          new = '''  assert.match(runtime, /await Promise\\.all\\(labels\\.map\\(\\(label\\) => label\\.readable\\)\\)/);\n  assert.match(runtime, /completion: Promise\\.all\\(labels\\.map\\(\\(label\\) => label\\.finished\\)\\)/);\n  assert.match(runtime, /await deltaCompletion/);'''
+          if old not in text:
+              raise AssertionError('presentation lifecycle assertion anchor not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
       - name: Remove temporary tooling
         run: |
           git rm .github/workflows/apply-dynamic-presentation-commandbar.yml
