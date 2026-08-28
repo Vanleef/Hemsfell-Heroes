@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { animateActionCue, captureActionCue, type ActionCue } from "./presentation-action-cues";
+import { renderRemoteCardArtToCanvas } from "./remote-card-art";
 
 type Owner = 0 | 1;
 type RectLike = { left: number; top: number; width: number; height: number; right: number; bottom: number };
@@ -114,6 +115,9 @@ function cloneRendered(element: HTMLElement) {
   const transientClasses = ["hh-presentation-hidden", "damage-hit", "is-selected", "is-impacting", "combat-attack-ready", "target-ally", "target-enemy"];
   clone.classList.remove(...transientClasses);
   clone.querySelectorAll<HTMLElement>(".damage-hit,.is-selected,.is-impacting,.combat-attack-ready,.target-ally,.target-enemy").forEach((node) => node.classList.remove(...transientClasses));
+  clone.querySelectorAll<HTMLElement>(".status").forEach((node) => {
+    if (node.textContent?.trim().toUpperCase() === "VIRADA") node.remove();
+  });
   clone.querySelectorAll<HTMLElement>("[id]").forEach((node) => node.removeAttribute("id"));
   clone.querySelectorAll<HTMLElement>("[title]").forEach((node) => node.removeAttribute("title"));
   clone.querySelectorAll<HTMLElement>("button,input,select,textarea,a").forEach((node) => {
@@ -376,7 +380,45 @@ function spellResolutionRect(from: RectLike) {
 function playedCardForDetail(detail: PresentationDetail) {
   const owner: Owner = Number(detail.command?.owner || 0) === 1 ? 1 : 0;
   const id = String(detail.command?.cardId || "");
-  return (detail.before?.players?.[owner]?.hand || []).find((card: any) => String(card?.id || card?.uid || "") === id);
+  const fromHand = (detail.before?.players?.[owner]?.hand || []).find((card: any) => String(card?.id || card?.uid || "") === id);
+  if (fromHand) return fromHand;
+  if (detail.command?.presentationCard) return detail.command.presentationCard;
+  const afterPlayer = detail.after?.players?.[owner];
+  return [...stateFields(afterPlayer), ...(afterPlayer?.grave || [])].find((card: any) => stateId(card) === id);
+}
+
+async function createRevealedOpponentCardFace(card: any, width: number) {
+  const face = document.createElement("button");
+  face.type = "button";
+  face.tabIndex = -1;
+  face.className = "original-card hh-opponent-play-reveal";
+  face.setAttribute("aria-label", String(card?.name || "Carta jogada pelo oponente"));
+  face.dataset.cardPage = String(Number(card?.page || 0));
+  face.dataset.cardName = String(card?.name || "Carta jogada pelo oponente");
+  const canvas = document.createElement("canvas");
+  canvas.className = "remote-card-art";
+  canvas.setAttribute("role", "img");
+  canvas.setAttribute("aria-label", String(card?.name || "Carta jogada pelo oponente"));
+  canvas.dataset.page = String(Number(card?.page || 0));
+  face.append(canvas);
+  try {
+    await renderRemoteCardArtToCanvas(canvas, Number(card?.page || 0), Math.max(120, width));
+  } catch {
+    face.classList.add("hh-opponent-play-reveal-failed");
+  }
+  return face;
+}
+
+async function revealOpponentPlayedCard(detail: PresentationDetail, flights: Flight[]) {
+  const owner: Owner = Number(detail.command?.owner || 0) === 1 ? 1 : 0;
+  if (detail.command?.type !== "playCard" || owner !== 1) return;
+  const card = playedCardForDetail(detail);
+  if (!card) return;
+  for (const flight of flights.filter((candidate) => candidate.sourcePlay)) {
+    flight.face = flight.destination
+      ? cloneRendered(flight.destination)
+      : await createRevealedOpponentCardFace(card, flight.from.width);
+  }
 }
 
 function stateUnitById(game: any, uid: string) {
@@ -660,8 +702,11 @@ function buildFlights(detail: PresentationDetail, beforeDom: DomSnapshot, afterD
   const commandOwner: Owner = Number(detail.command?.owner || 0) === 1 ? 1 : 0;
   const playedId = String(detail.command?.cardId || "");
   const playedIndex = playedId ? stateHandIndex(detail.before, commandOwner, playedId) : -1;
-  const playedCard = playedIndex >= 0 ? detail.before?.players?.[commandOwner]?.hand?.[playedIndex] : null;
-  const playedSource = playedIndex >= 0 ? beforeDom.hands[commandOwner][playedIndex] : null;
+  const playedCard = playedCardForDetail(detail);
+  const opponentHandShrank = commandOwner === 1
+    && (detail.before?.players?.[1]?.hand?.length || 0) > (detail.after?.players?.[1]?.hand?.length || 0);
+  const fallbackOpponentSource = opponentHandShrank ? beforeDom.hands[1].at(-1) || null : null;
+  const playedSource = playedIndex >= 0 ? beforeDom.hands[commandOwner][playedIndex] : fallbackOpponentSource;
   const targets = targetRects(detail, beforeDom, afterDom);
 
   for (const owner of [0, 1] as const) {
@@ -725,7 +770,7 @@ function buildFlights(detail: PresentationDetail, beforeDom: DomSnapshot, afterD
 
   if (detail.command?.type === "playCard" && playedCard?.type === "Feitiço" && playedSource) {
     const grave = afterDom.piles.get(`${commandOwner}:grave`) || beforeDom.piles.get(`${commandOwner}:grave`);
-    if (grave) flights.unshift({ kind: "cast", from: playedSource.rect, to: grave.rect, face: playedSource.clone, targets });
+    if (grave) flights.unshift({ kind: "cast", from: playedSource.rect, to: grave.rect, face: playedSource.clone, targets, sourcePlay: true });
   }
   const seenFlights = new Set<string>();
   return flights.filter((flight, index) => {
@@ -810,6 +855,7 @@ export default function GamePresentationRuntime() {
     const afterDom = snapshotDom();
     const beforeDom = expectedUnitScore(detail.before, stableDom) > expectedUnitScore(detail.before, capturedDom) ? stableDom : capturedDom;
     const flights = buildFlights(detail, beforeDom, afterDom);
+    await revealOpponentPlayedCard(detail, flights);
     const spellFlight = flights.find((flight) => flight.kind === "cast") || null;
     const arrivals = flights.filter((flight) => flight.kind !== "destroy" && flight.kind !== "banish" && flight.kind !== "cast");
     const departures = flights.filter((flight) => flight.kind === "destroy" || flight.kind === "banish");

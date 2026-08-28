@@ -98,6 +98,33 @@ const attackFromCombat = (combat: any) => combat?.attackerUid ? {
   attackerId: combat.attackerUid,
   ...(combat.targetHero || !combat.defenderUid ? { targetHero: true } : { defenderId: combat.defenderUid }),
 } : null;
+
+const stateFieldCards = (player: any) => [
+  ...(player?.board || []),
+  ...(player?.support || []),
+  ...(player?.terrain ? [player.terrain] : []),
+];
+const newCardsByIdentity = (beforeCards: any[] = [], afterCards: any[] = []) => {
+  const beforeCounts = new Map<string, number>();
+  beforeCards.forEach((card) => beforeCounts.set(cardIdentity(card), (beforeCounts.get(cardIdentity(card)) || 0) + 1));
+  const used = new Map<string, number>();
+  return afterCards.filter((card) => {
+    const id = cardIdentity(card);
+    const seen = (used.get(id) || 0) + 1;
+    used.set(id, seen);
+    return seen > (beforeCounts.get(id) || 0);
+  });
+};
+const inferOpponentPlayCommand = (before: any, after: any) => {
+  const beforePlayer = before?.players?.[1], afterPlayer = after?.players?.[1];
+  if (!beforePlayer || !afterPlayer) return null;
+  if ((afterPlayer.hand?.length || 0) >= (beforePlayer.hand?.length || 0)) return null;
+  const enteredField = newCardsByIdentity(stateFieldCards(beforePlayer), stateFieldCards(afterPlayer));
+  const enteredGrave = newCardsByIdentity(beforePlayer.grave || [], afterPlayer.grave || []);
+  const candidate = enteredField[0] || enteredGrave.at(-1);
+  if (!candidate) return null;
+  return { type: "playCard", owner: 1, cardId: cardIdentity(candidate), presentationCard: clone(candidate) };
+};
 const immediateDirectAttack = (before: any, after: any, command: Record<string, any>) => {
   if (command?.type !== "declareAttack" || !command?.attackerId) return null;
   const owner = Number(command.owner) === 1 ? 1 : 0;
@@ -207,10 +234,11 @@ export default function PresentationEventBridge() {
          combat resolution is inferred only from the previous authoritative
          combat descriptor; every other revision remains a generic diff. */
       const combatCommand = hasPresentableDelta(previous.game, after) ? attackFromCombat(previous.game?.combatAction) : null;
+      const opponentPlayCommand = hasPresentableDelta(previous.game, after) ? inferOpponentPlayCommand(previous.game, after) : null;
       emit({
         before: clone(previous.game),
         after: clone(after),
-        command: combatCommand || { type: "onlineSnapshot", owner: 1 },
+        command: combatCommand || opponentPlayCommand || { type: "onlineSnapshot", owner: 1 },
         commandId: `online:${roomId}:${revision}`,
         revision,
       });

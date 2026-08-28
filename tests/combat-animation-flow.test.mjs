@@ -87,3 +87,47 @@ test("command bar caps remain compact at large viewport sizes", () => {
   assert.match(css, /font-size:clamp\(\.7rem,min\(\.8vw,1\.42dvh\),\.86rem\)!important/);
   assert.match(css, /font-size:clamp\(\.66rem,min\(\.74vw,1\.32dvh\),\.8rem\)!important/);
 });
+
+test("legacy hero-hurt fallback uses only the tiny translate shake", () => {
+  const css = read("app/ui-overrides.css");
+  assert.match(css, /player-hero\.hero-hurt>\.hero-power-trigger\{animation:heroDamagePulse \.18s ease-out both\}/);
+  const start = css.indexOf("@keyframes heroDamagePulse");
+  const end = css.indexOf("@keyframes heroDamageFlash", start);
+  const pulse = css.slice(start, end);
+  assert.match(pulse, /translateX\(-2\.5px\)/);
+  assert.match(pulse, /translateX\(2\.5px\)/);
+  assert.doesNotMatch(pulse, /scale\(/);
+  assert.doesNotMatch(pulse, /translateX\([^)]*%/);
+});
+
+test("command bar runtime uses the same compact caps as the stylesheet", () => {
+  const runtime = read("app/match-ui-runtime.tsx");
+  assert.match(runtime, /COMMAND_TITLE_SIZE = "clamp\(\.62rem,min\(\.72vw,1\.28dvh\),\.74rem\)"/);
+  assert.match(runtime, /COMMAND_COPY_SIZE = "clamp\(\.74rem,min\(\.88vw,1\.56dvh\),\.92rem\)"/);
+  assert.match(runtime, /COMMAND_COMPACT_COPY_SIZE = "clamp\(\.7rem,min\(\.8vw,1\.42dvh\),\.86rem\)"/);
+  assert.match(runtime, /COMMAND_DENSE_COPY_SIZE = "clamp\(\.66rem,min\(\.74vw,1\.32dvh\),\.8rem\)"/);
+});
+
+test("turned cards omit the VIRADA plate while presenting effects", () => {
+  const page = read("app/page.tsx");
+  const runtime = read("app/game-presentation-runtime.tsx");
+  assert.match(page, /unit\.exhausted&&!activeEffect&&!unit\.impacting/);
+  assert.match(runtime, /toUpperCase\(\) === "VIRADA"/);
+});
+
+test("opponent plays reveal their actual face at the start of presentation", () => {
+  const runtime = read("app/game-presentation-runtime.tsx");
+  const art = read("app/remote-card-art.tsx");
+  const bridge = read("app/presentation-event-bridge.tsx");
+  assert.match(art, /export async function renderRemoteCardArtToCanvas/);
+  assert.match(runtime, /async function revealOpponentPlayedCard/);
+  assert.match(runtime, /owner !== 1/);
+  assert.match(runtime, /fallbackOpponentSource/);
+  assert.match(runtime, /sourcePlay: true/);
+  const reveal = runtime.indexOf("await revealOpponentPlayedCard(detail, flights)");
+  const spell = runtime.indexOf("const spellFlight = flights.find", reveal);
+  assert.ok(reveal >= 0 && reveal < spell);
+  assert.match(bridge, /const inferOpponentPlayCommand/);
+  assert.match(bridge, /presentationCard: clone\(candidate\)/);
+  assert.match(bridge, /combatCommand \|\| opponentPlayCommand \|\|/);
+});

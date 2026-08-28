@@ -43,6 +43,22 @@ function loadCatalogPage(page: number) {
   return pending;
 }
 
+export async function renderRemoteCardArtToCanvas(canvas: HTMLCanvasElement, page: number, cssWidth = 120) {
+  const pdfPage = await loadCatalogPage(page);
+  const baseViewport = pdfPage.getViewport({ scale: 1 });
+  const width = Math.max(cssWidth, canvas.clientWidth, 120);
+  const pixelRatio = Math.min(globalThis.devicePixelRatio || 1, 1.5);
+  const viewport = pdfPage.getViewport({ scale: (width / baseViewport.width) * pixelRatio });
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  canvas.style.aspectRatio = `${baseViewport.width} / ${baseViewport.height}`;
+  const context = canvas.getContext("2d", { alpha: false });
+  if (!context) throw new Error("Canvas indisponível");
+  const renderTask = pdfPage.render({ canvas, canvasContext: context, viewport });
+  await renderTask.promise;
+  canvas.dataset.loaded = "true";
+}
+
 type RemoteCardArtProps = {
   page: number;
   name: string;

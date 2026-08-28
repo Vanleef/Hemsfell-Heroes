@@ -57,6 +57,26 @@
   transition: none !important;
 }
 
+.hh-opponent-play-reveal {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+}
+.hh-opponent-play-reveal > .remote-card-art {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+}
+
 .hh-flight-card.is-cast {
   filter: drop-shadow(0 0 1rem rgb(199 125 255 / .52)) drop-shadow(0 .65rem 1rem rgb(0 0 0 / .56));
 }

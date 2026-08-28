@@ -18,10 +18,10 @@ import { RemoteCardArt } from "./remote-card-art";
 
 const COMMAND_CHIP_SELECTOR = ".screen-game .hero-command-bar .hero-ability-chip";
 
-const COMMAND_TITLE_SIZE = "clamp(.62rem,min(.72vw,1.28dvh),.78rem)";
-const COMMAND_COPY_SIZE = "clamp(.74rem,min(.88vw,1.56dvh),1rem)";
-const COMMAND_COMPACT_COPY_SIZE = "clamp(.7rem,min(.8vw,1.42dvh),.92rem)";
-const COMMAND_DENSE_COPY_SIZE = "clamp(.66rem,min(.74vw,1.32dvh),.86rem)";
+const COMMAND_TITLE_SIZE = "clamp(.62rem,min(.72vw,1.28dvh),.74rem)";
+const COMMAND_COPY_SIZE = "clamp(.74rem,min(.88vw,1.56dvh),.92rem)";
+const COMMAND_COMPACT_COPY_SIZE = "clamp(.7rem,min(.8vw,1.42dvh),.86rem)";
+const COMMAND_DENSE_COPY_SIZE = "clamp(.66rem,min(.74vw,1.32dvh),.8rem)";
 
 function fitCommandChip(chip: HTMLElement) {
   const content = chip.querySelector<HTMLElement>(":scope > span");
