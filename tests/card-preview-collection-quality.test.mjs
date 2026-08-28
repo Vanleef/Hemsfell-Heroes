@@ -58,12 +58,28 @@ test("every rendered card exposes a preview source, including battlefield units"
   assert.doesNotMatch(page, /\{!unit&&<span className="card-tooltip"/);
 });
 
-test("touch long press opens a large preview without also executing the card click", () => {
-  assert.match(runtime, /LONG_PRESS_MS = 520/);
-  assert.match(runtime, /event\.pointerType !== "touch"/);
+test("one-second press opens detailed inspection without also executing the card click", () => {
+  assert.match(runtime, /INSPECTION_HOLD_MS = 1_000/);
+  assert.match(runtime, /card\.dataset\.cardInspectable !== "true"/);
+  assert.match(runtime, /beginInspectionHold\(card, event\)/);
+  assert.match(runtime, /new CustomEvent\("hemsfell:inspect-card", \{ detail: \{ page \} \}\)/);
   assert.match(runtime, /suppressedClicks\.current\.add/);
   assert.match(runtime, /event\.preventDefault\(\);\s*event\.stopPropagation\(\)/);
-  assert.match(runtime, /preview\.expanded \? "dialog" : "tooltip"/);
+  assert.match(page, /data-card-inspectable=\{inspectable\?"true":"false"\}/);
+  assert.match(page, /disabled=\{disabled&&!inspectable\}/);
+  assert.match(page, /aria-disabled=\{disabled\|\|undefined\}/);
+  assert.match(page, /const interactionClick=!disabled&&/);
+  assert.doesNotMatch(page, /requestCardInspection/);
+});
+
+test("press progress is centered, non-interactive and canceled by movement or dragging", () => {
+  assert.match(runtime, /const HOLD_SLOP_PX = 12/);
+  assert.match(runtime, /progress\.className = "card-inspection-hold-progress"/);
+  assert.match(runtime, /Math\.hypot\([\s\S]*HOLD_SLOP_PX/);
+  assert.match(runtime, /const onDragStart = \(\) => \{[\s\S]*clearInspectionHold\(\)/);
+  assert.match(matchCss, /\.card-inspection-hold-progress\s*\{[\s\S]*left:\s*50%[\s\S]*top:\s*50%[\s\S]*pointer-events:\s*none/);
+  assert.match(matchCss, /conic-gradient\(/);
+  assert.match(matchCss, /@keyframes cardInspectionHoldProgress/);
 });
 
 test("read-only collection keeps hero information, deck lists, search and validation", () => {
@@ -108,11 +124,12 @@ test("compact card tooltip stays small and closes as soon as dragging starts", (
   assert.match(runtime, /const onDragStart = \(\) => \{[\s\S]*clearHoverOpen\(\);[\s\S]*closePreview\(\)/);
 });
 
-test("card tooltip opens only after two seconds of continuous hover", () => {
-  assert.match(runtime, /const TOOLTIP_HOVER_DELAY_MS = 2_000/);
+test("card tooltip opens only after one second of continuous hover and never from focus", () => {
+  assert.match(runtime, /const TOOLTIP_HOVER_DELAY_MS = 1_000/);
   assert.match(runtime, /hoverTimer = window\.setTimeout\([\s\S]*TOOLTIP_HOVER_DELAY_MS\)/);
   assert.match(runtime, /const onPointerOver[\s\S]*scheduleHoverOpen\(card\)/);
   assert.match(runtime, /const onPointerOut[\s\S]*clearHoverOpen\(\)/);
+  assert.doesNotMatch(runtime, /addEventListener\("focusin"/);
 });
 
 test("keywords and subtypes expose highlighted nested glossary tooltips", () => {

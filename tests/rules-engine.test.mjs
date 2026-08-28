@@ -1175,7 +1175,8 @@ test("game client routes migrated cards through the command engine", async () =>
   assert.match(css, /auxiliary-slot \.card-tooltip/);
   assert.match(css, /z-index:9020!important/);
   assert.doesNotMatch(page, /className="card-frame-inspect"/);
-  assert.match(page, /requestCardInspection\(card\)/);
+  assert.match(page, /data-card-inspectable=\{inspectable\?"true":"false"\}/);
+  assert.match(page, /window\.addEventListener\("hemsfell:inspect-card",inspect\)/);
   assert.match(page, /hero-command-bar/);
   assert.match(page, /card-focus-layer/);
   assert.match(page, /hemsfell-heroes-logo\.png/);

@@ -44,9 +44,9 @@ type GlossaryState = {
 
 const CARD_SELECTOR = ".original-card[data-card-preview='true']";
 const NATIVE_TITLE_SELECTOR = `${CARD_SELECTOR}[title], ${CARD_SELECTOR} [title], [data-tip][title], .remote-card-art[title]`;
-const LONG_PRESS_MS = 520;
-const TOUCH_SLOP_PX = 12;
-const TOOLTIP_HOVER_DELAY_MS = 2_000;
+const INSPECTION_HOLD_MS = 1_000;
+const HOLD_SLOP_PX = 12;
+const TOOLTIP_HOVER_DELAY_MS = 1_000;
 const TOOLTIP_CLOSE_DELAY_MS = 180;
 
 function escapeRegExp(value: string) {
@@ -136,7 +136,7 @@ function stripNativeTitle(element: Element) {
  *
  * The semantic copy remains inside each card, while the visible surface is
  * rendered in a body-level Floating UI portal. Mouse hover must remain on the
- * same card for two seconds before opening. A short close delay then bridges
+ * same card for one second before opening. A short close delay then bridges
  * the gap from the card to the portal so users can enter it and inspect
  * glossary terms without losing the preview.
  */
@@ -218,11 +218,12 @@ export default function CardPreviewRuntime() {
   }, []);
 
   useEffect(() => {
-    let longPressTimer = 0;
+    let holdTimer = 0;
+    let holdCard: HTMLElement | null = null;
+    let holdProgress: HTMLElement | null = null;
+    let holdStart = { x: 0, y: 0 };
     let hoverTimer = 0;
     let hoverCard: HTMLElement | null = null;
-    let touchCard: HTMLElement | null = null;
-    let touchStart = { x: 0, y: 0 };
 
     const clearHoverOpen = () => {
       window.clearTimeout(hoverTimer);
@@ -230,10 +231,12 @@ export default function CardPreviewRuntime() {
       hoverCard = null;
     };
 
-    const clearLongPress = () => {
-      window.clearTimeout(longPressTimer);
-      longPressTimer = 0;
-      touchCard = null;
+    const clearInspectionHold = () => {
+      window.clearTimeout(holdTimer);
+      holdTimer = 0;
+      holdCard = null;
+      holdProgress?.remove();
+      holdProgress = null;
     };
 
     const openFor = (card: HTMLElement, expanded: boolean) => {
@@ -255,6 +258,34 @@ export default function CardPreviewRuntime() {
         hoverCard = null;
         if (pendingCard?.isConnected) openFor(pendingCard, false);
       }, TOOLTIP_HOVER_DELAY_MS);
+    };
+
+    const beginInspectionHold = (card: HTMLElement, event: PointerEvent) => {
+      clearInspectionHold();
+      holdCard = card;
+      holdStart = { x: event.clientX, y: event.clientY };
+      const progress = document.createElement("span");
+      progress.className = "card-inspection-hold-progress";
+      progress.setAttribute("aria-hidden", "true");
+      progress.style.setProperty("--card-inspection-hold-duration", `${INSPECTION_HOLD_MS}ms`);
+      progress.append(document.createElement("i"));
+      card.append(progress);
+      holdProgress = progress;
+      holdTimer = window.setTimeout(() => {
+        const inspectedCard = holdCard;
+        if (!inspectedCard?.isConnected) {
+          clearInspectionHold();
+          return;
+        }
+        suppressedClicks.current.add(inspectedCard);
+        const page = Number(inspectedCard.dataset.cardPage);
+        clearInspectionHold();
+        closePreview();
+        if (Number.isInteger(page) && page > 0) {
+          window.dispatchEvent(new CustomEvent("hemsfell:inspect-card", { detail: { page } }));
+          navigator.vibrate?.(18);
+        }
+      }, INSPECTION_HOLD_MS);
     };
 
     const onPointerOver = (event: PointerEvent) => {
@@ -279,30 +310,8 @@ export default function CardPreviewRuntime() {
       }
       const card = target?.closest<HTMLElement>(CARD_SELECTOR);
       if (!card || event.relatedTarget instanceof Node && card.contains(event.relatedTarget)) return;
+      if (holdCard === card) clearInspectionHold();
       clearHoverOpen();
-      scheduleCompactClose(card);
-    };
-
-    const onFocusIn = (event: FocusEvent) => {
-      const target = event.target instanceof Element ? event.target : null;
-      if (target?.closest(".card-preview-floating")) {
-        cancelScheduledClose();
-        return;
-      }
-      const card = target?.closest<HTMLElement>(CARD_SELECTOR);
-      if (card) openFor(card, false);
-    };
-
-    const onFocusOut = (event: FocusEvent) => {
-      const target = event.target instanceof Element ? event.target : null;
-      const floating = target?.closest<HTMLElement>(".card-preview-floating");
-      if (floating) {
-        if (event.relatedTarget instanceof Node && floating.contains(event.relatedTarget)) return;
-        scheduleCompactClose();
-        return;
-      }
-      const card = target?.closest<HTMLElement>(CARD_SELECTOR);
-      if (!card || event.relatedTarget instanceof Node && card.contains(event.relatedTarget)) return;
       scheduleCompactClose(card);
     };
 
@@ -311,22 +320,14 @@ export default function CardPreviewRuntime() {
       const target = event.target instanceof Element ? event.target : null;
       const card = target?.closest<HTMLElement>(CARD_SELECTOR);
       const insidePreview = event.target instanceof Node && previewFloating.refs.floating.current?.contains(event.target);
-      if (preview?.expanded && !card && !insidePreview) closePreview();
-      if (event.pointerType !== "touch" || !card) return;
-      clearLongPress();
-      touchCard = card;
-      touchStart = { x: event.clientX, y: event.clientY };
-      longPressTimer = window.setTimeout(() => {
-        if (!touchCard) return;
-        suppressedClicks.current.add(touchCard);
-        openFor(touchCard, true);
-        navigator.vibrate?.(18);
-      }, LONG_PRESS_MS);
+      if (!insidePreview) closePreview();
+      if (!card || card.dataset.cardInspectable !== "true" || !event.isPrimary || event.button > 0) return;
+      beginInspectionHold(card, event);
     };
 
     const onPointerMove = (event: PointerEvent) => {
-      if (!touchCard || Math.hypot(event.clientX - touchStart.x, event.clientY - touchStart.y) <= TOUCH_SLOP_PX) return;
-      clearLongPress();
+      if (!holdCard || Math.hypot(event.clientX - holdStart.x, event.clientY - holdStart.y) <= HOLD_SLOP_PX) return;
+      clearInspectionHold();
     };
 
     const onClickCapture = (event: MouseEvent) => {
@@ -337,43 +338,48 @@ export default function CardPreviewRuntime() {
       event.stopPropagation();
     };
 
+    const onContextMenu = (event: MouseEvent) => {
+      const card = (event.target as Element | null)?.closest<HTMLElement>(CARD_SELECTOR);
+      if (!card || card !== holdCard && !suppressedClicks.current.has(card)) return;
+      event.preventDefault();
+    };
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") closePreview();
     };
     const onDragStart = () => {
       clearHoverOpen();
+      clearInspectionHold();
       closePreview();
     };
 
     document.addEventListener("pointerover", onPointerOver, true);
     document.addEventListener("pointerout", onPointerOut, true);
-    document.addEventListener("focusin", onFocusIn, true);
-    document.addEventListener("focusout", onFocusOut, true);
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("pointermove", onPointerMove, true);
-    document.addEventListener("pointerup", clearLongPress, true);
-    document.addEventListener("pointercancel", clearLongPress, true);
+    document.addEventListener("pointerup", clearInspectionHold, true);
+    document.addEventListener("pointercancel", clearInspectionHold, true);
     document.addEventListener("click", onClickCapture, true);
+    document.addEventListener("contextmenu", onContextMenu, true);
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("dragstart", onDragStart, true);
 
     return () => {
       clearHoverOpen();
-      clearLongPress();
+      clearInspectionHold();
       cancelScheduledClose();
       document.removeEventListener("pointerover", onPointerOver, true);
       document.removeEventListener("pointerout", onPointerOut, true);
-      document.removeEventListener("focusin", onFocusIn, true);
-      document.removeEventListener("focusout", onFocusOut, true);
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("pointermove", onPointerMove, true);
-      document.removeEventListener("pointerup", clearLongPress, true);
-      document.removeEventListener("pointercancel", clearLongPress, true);
+      document.removeEventListener("pointerup", clearInspectionHold, true);
+      document.removeEventListener("pointercancel", clearInspectionHold, true);
       document.removeEventListener("click", onClickCapture, true);
+      document.removeEventListener("contextmenu", onContextMenu, true);
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("dragstart", onDragStart, true);
     };
-  }, [cancelScheduledClose, closePreview, preview?.expanded, previewFloating.refs, scheduleCompactClose]);
+  }, [cancelScheduledClose, closePreview, previewFloating.refs, scheduleCompactClose]);
 
   if (!preview) return null;
   const visible = previewFloating.isPositioned;
