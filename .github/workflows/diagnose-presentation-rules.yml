@@ -34,13 +34,15 @@ jobs:
         run: rm .github/workflows/apply-presentation-order-levelup-optimization.yml
       - name: Install dependencies
         run: npm ci
-      - name: Capture full rules failure
+      - name: Capture exact rules failure
         shell: bash
         run: |
           set +e
           npm run test:rules > /tmp/rules.log 2>&1
           code=$?
-          echo "===== LAST 260 LINES OF RULES OUTPUT ====="
-          tail -n 260 /tmp/rules.log
+          echo "===== FAILURE CONTEXT ====="
+          grep -n -B 24 -A 44 -E 'not ok|AssertionError|ERR_ASSERTION|failureType|error:' /tmp/rules.log || true
+          echo "===== SUMMARY ====="
+          tail -n 24 /tmp/rules.log
           echo "===== EXIT CODE: $code ====="
           exit $code
