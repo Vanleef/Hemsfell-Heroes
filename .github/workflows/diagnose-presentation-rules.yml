@@ -30,6 +30,8 @@ jobs:
           script = textwrap.dedent(workflow[start:end])
           subprocess.run(['python3', '-c', script], check=True)
           PY
+      - name: Remove staged mutating workflow before validation
+        run: rm .github/workflows/apply-presentation-order-levelup-optimization.yml
       - name: Install dependencies
         run: npm ci
       - name: Capture full rules failure
