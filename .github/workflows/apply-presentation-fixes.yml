@@ -1,0 +1,54 @@
+name: Apply presentation fixes
+
+on:
+  push:
+    branches:
+      - feat/presentation-system-pr1
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Patch sources
+        run: python3 scripts/tmp-apply-presentation-fixes.py
+
+      - name: Remove temporary tooling
+        run: rm scripts/tmp-apply-presentation-fixes.py .github/workflows/apply-presentation-fixes.yml
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate canonical state
+        run: npm run prepare:project
+
+      - name: Focused presentation tests
+        run: node --test tests/combat-animation-flow.test.mjs tests/presentation-dedupe-regression.test.mjs
+
+      - name: Full rules suite
+        run: npm run test:rules
+
+      - name: Production build
+        run: npm run vercel-build
+
+      - name: Commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix: reveal opponent plays and enforce presentation UI guards"
+          git push origin HEAD:feat/presentation-system-pr1
