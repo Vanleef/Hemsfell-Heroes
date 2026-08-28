@@ -221,3 +221,68 @@ html.hh-presentation-locked .screen-game .search-deck-overlay {
     transition-duration: .12s !important;
   }
 }
+
+
+/* Ordered spell resolution: the source card remains readable in a
+   neutral resolution zone before target indication and impact. */
+.hh-spell-resolver {
+  z-index: 4;
+  filter: drop-shadow(0 0 18px rgba(118, 168, 255, .48)) drop-shadow(0 0 34px rgba(234, 203, 106, .26));
+}
+
+.hh-target-reticle {
+  position: fixed;
+  z-index: 8;
+  pointer-events: none;
+  box-sizing: border-box;
+  border: 2px solid rgba(255, 222, 112, .92);
+  border-radius: 14px;
+  box-shadow: 0 0 0 2px rgba(86, 151, 255, .34), 0 0 20px rgba(255, 220, 112, .58), inset 0 0 16px rgba(83, 145, 255, .2);
+}
+
+.hh-target-reticle::before,
+.hh-target-reticle::after {
+  content: "";
+  position: absolute;
+  inset: 14%;
+  border: 1px solid rgba(255, 244, 192, .78);
+  border-radius: 50%;
+}
+
+.hh-target-reticle::after {
+  inset: 36%;
+  background: rgba(255, 226, 120, .18);
+  box-shadow: 0 0 14px rgba(255, 226, 120, .72);
+}
+
+.hh-spell-impact {
+  position: fixed;
+  z-index: 9;
+  width: clamp(42px, 5.4vw, 88px);
+  aspect-ratio: 1;
+  pointer-events: none;
+  border: 2px solid rgba(247, 224, 147, .92);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.88) 0 8%, rgba(114,166,255,.52) 18%, rgba(111,74,208,.28) 44%, transparent 68%);
+  box-shadow: 0 0 18px rgba(135, 182, 255, .7), 0 0 38px rgba(116, 74, 210, .46);
+}
+
+.hh-spell-impact.is-charge {
+  width: clamp(54px, 7vw, 104px);
+  opacity: .86;
+}
+
+.hh-state-hold.is-deferred-death {
+  z-index: 3;
+  filter: drop-shadow(0 0 8px rgba(255,255,255,.08));
+}
+
+.hh-hero-impact {
+  will-change: transform;
+  transform-origin: 50% 50%;
+}
+
+.hh-float.is-negative {
+  z-index: 12;
+  text-shadow: 0 2px 2px rgba(0,0,0,.9), 0 0 10px rgba(255,50,48,.72);
+}

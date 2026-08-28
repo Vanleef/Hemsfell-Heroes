@@ -35,15 +35,17 @@ test("presentation identity is assigned once by the bridge and reused by the run
   assert.match(runtime, /seenPresentationIds/);
 });
 
-test("child animations are awaited before presentation idle", () => {
+test("blocking child animations are ordered while readable damage gates visual state commit", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
   assert.match(runtime, /await Promise\.all\(\[movement, \.\.\.ambient\]\)/);
   assert.match(runtime, /await Promise\.all\(completion\)/);
-  assert.match(runtime, /await Promise\.all\(labels\)/);
+  assert.match(runtime, /const completion = Promise\.all\(labels\)/);
+  assert.match(runtime, /if \(settle\) await completion/);
   assert.doesNotMatch(runtime, /flight\.targets\?\.forEach\(\(target\) => effectBeam/);
   assert.match(runtime, /const heldState = holdChangedState/);
-  assert.match(runtime, /finally \{\s*releaseChangedState\(heldState\)/);
-  assert.ok(runtime.indexOf("releaseChangedState(heldState)") < runtime.indexOf("await presentDeltas"));
+  assert.match(runtime, /releaseReadableState\(heldState\)/);
+  assert.match(runtime, /await presentDeltas[\s\S]*finally \{\s*releaseChangedState\(heldState\)/);
+  assert.ok(runtime.indexOf("await presentDeltas") < runtime.indexOf("releaseChangedState(heldState)"));
 });
 
 test("only an authoritative local command may publish a presentation transition", () => {
