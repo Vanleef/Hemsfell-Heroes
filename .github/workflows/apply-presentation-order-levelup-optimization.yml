@@ -1,0 +1,224 @@
+name: Apply presentation ordering and level-up fixes
+
+on:
+  push:
+    branches:
+      - feat/presentation-system-pr1
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+
+      - name: Patch presentation pipeline
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              if old not in text:
+                  raise AssertionError(f"missing anchor: {label}")
+              return text.replace(old, new, 1)
+
+          # -----------------------------------------------------------------
+          # Direct Hero attacks: sword only. No impact pulse and no Hero shake.
+          # -----------------------------------------------------------------
+          cue_path = Path('app/presentation-action-cues.ts')
+          cue = cue_path.read_text()
+          cue = replace_once(
+              cue,
+              '''  if (cue.hero) {\n    await animateSword(layer, cue.attacker, cue.hero);\n    await impact(layer, cue.hero, "combat");\n  }''',
+              '''  if (cue.hero) {\n    // Direct Hero attacks intentionally stop at the sword contact. The Hero\n    // never moves; the red life delta is owned by GamePresentationRuntime.\n    await animateSword(layer, cue.attacker, cue.hero);\n  }''',
+              'direct hero cue',
+          )
+          cue_path.write_text(cue)
+
+          # -----------------------------------------------------------------
+          # Presentation runtime: hold every visible effect until its animation,
+          # add blocking level-up theatre, and remove hot-path snapshot churn.
+          # -----------------------------------------------------------------
+          runtime_path = Path('app/game-presentation-runtime.tsx')
+          runtime = runtime_path.read_text()
+
+          state_anchor = '''const stateFields = (player: any) => [\n  ...(player?.board || []),\n  ...(player?.support || []),\n  ...(player?.terrain ? [player.terrain] : []),\n];\n'''
+          state_extra = state_anchor + '''const unitPresentationFingerprint = (card: any) => JSON.stringify({\n  damage: card?.damage,\n  bonusAtk: card?.bonusAtk,\n  bonusHp: card?.bonusHp,\n  temporaryAtk: card?.temporaryAtk,\n  temporaryHp: card?.temporaryHp,\n  markers: card?.markers,\n  modifiers: card?.modifiers,\n  tags: card?.tags,\n  temporaryTags: card?.temporaryTags,\n  temporarySubtypes: card?.temporarySubtypes,\n  grantedKeywords: card?.grantedKeywords,\n  staticModifiers: card?.staticModifiers,\n  exhausted: card?.exhausted,\n  summoning: card?.summoning,\n  frozen: card?.frozen,\n  stunned: card?.stunned,\n  suffocated: card?.suffocated,\n  immobilized: card?.immobilized,\n  activatedThisTurn: card?.activatedThisTurn,\n  attachedTo: card?.attachedTo,\n});\n'''
+          if 'const unitPresentationFingerprint' not in runtime:
+              runtime = replace_once(runtime, state_anchor, state_extra, 'unit presentation fingerprint')
+
+          old_held_type = '''type HeldStateVisual = {\n  destination: HTMLElement | null;\n  overlay: HTMLElement;\n  uid?: string;\n  deferredDeath: boolean;\n  released: boolean;\n};'''
+          new_held_type = '''type HeldStateVisual = {\n  destination: HTMLElement | null;\n  overlay: HTMLElement;\n  uid?: string;\n  deferredDeath: boolean;\n  levelUp: boolean;\n  released: boolean;\n};'''
+          runtime = replace_once(runtime, old_held_type, new_held_type, 'held state type')
+
+          old_hold_visual = '''function holdStateVisual(layer: HTMLElement, destination: HTMLElement | null, face: HTMLElement, rect: RectLike, uid?: string, deferredDeath = false): HeldStateVisual {\n  destination?.classList.add("hh-presentation-hidden");\n  const overlay = document.createElement("div");\n  overlay.className = `hh-flight-card hh-state-hold${deferredDeath ? " is-deferred-death" : ""}`;\n  overlay.style.left = `${rect.left}px`;\n  overlay.style.top = `${rect.top}px`;\n  overlay.style.width = `${Math.max(1, rect.width)}px`;\n  overlay.style.height = `${Math.max(1, rect.height)}px`;\n  overlay.append(createFlightFace(cloneRendered(face)));\n  layer.append(overlay);\n  return { destination, overlay, uid, deferredDeath, released: false };\n}'''
+          new_hold_visual = '''function holdStateVisual(layer: HTMLElement, destination: HTMLElement | null, face: HTMLElement, rect: RectLike, uid?: string, deferredDeath = false, levelUp = false): HeldStateVisual {\n  destination?.classList.add("hh-presentation-hidden");\n  const overlay = document.createElement("div");\n  overlay.className = `hh-flight-card hh-state-hold${deferredDeath ? " is-deferred-death" : ""}${levelUp ? " is-level-up-hold" : ""}`;\n  overlay.style.left = `${rect.left}px`;\n  overlay.style.top = `${rect.top}px`;\n  overlay.style.width = `${Math.max(1, rect.width)}px`;\n  overlay.style.height = `${Math.max(1, rect.height)}px`;\n  overlay.append(createFlightFace(cloneRendered(face)));\n  layer.append(overlay);\n  return { destination, overlay, uid, deferredDeath, levelUp, released: false };\n}'''
+          runtime = replace_once(runtime, old_hold_visual, new_hold_visual, 'holdStateVisual')
+
+          hold_pattern = re.compile(r'function holdChangedState\(layer: HTMLElement, before: DomSnapshot, after: DomSnapshot\) \{.*?\n  return held;\n\}', re.S)
+          hold_match = hold_pattern.search(runtime)
+          if not hold_match:
+              raise AssertionError('missing holdChangedState')
+          new_hold_changed = '''function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSnapshot, detail: PresentationDetail) {\n  const held: HeldStateVisual[] = [];\n  for (const [uid, fresh] of after.units) {\n    const old = before.units.get(uid);\n    const oldState = stateUnitById(detail.before, uid);\n    const freshState = stateUnitById(detail.after, uid);\n    // Statuses, markers, exhaustion, granted keywords and stat changes are all\n    // player-visible effects. Keep the old rendering until the matching cue\n    // has reached its readable checkpoint.\n    if (!old || !oldState || !freshState || unitPresentationFingerprint(oldState) === unitPresentationFingerprint(freshState)) continue;\n    held.push(holdStateVisual(layer, fresh.element, old.clone, old.rect, uid));\n  }\n  for (const owner of [0, 1] as const) {\n    const old = before.heroes.get(owner), fresh = after.heroes.get(owner);\n    const levelUp = Number(detail.after?.players?.[owner]?.level || 0) > Number(detail.before?.players?.[owner]?.level || 0);\n    if (!old || !fresh || old.life === fresh.life && !levelUp) continue;\n    held.push(holdStateVisual(layer, fresh.element, old.clone, old.rect, undefined, false, levelUp));\n  }\n  /* A lethal target has already disappeared from React's post-command DOM.\n     Keep its pre-command rendering pinned in place until the ordered death\n     stage begins, so damage never looks like an unexplained teleport. */\n  for (const [uid, old] of before.units) {\n    if (after.units.has(uid)) continue;\n    held.push(holdStateVisual(layer, null, old.clone, old.rect, uid, true));\n  }\n  return held;\n}'''
+          runtime = runtime[:hold_match.start()] + new_hold_changed + runtime[hold_match.end():]
+
+          runtime = replace_once(
+              runtime,
+              '''function releaseReadableState(held: HeldStateVisual[]) {\n  held.filter((visual) => !visual.deferredDeath).forEach(releaseHeldVisual);\n}\n''',
+              '''function releaseReadableState(held: HeldStateVisual[]) {\n  held.filter((visual) => !visual.deferredDeath && !visual.levelUp).forEach(releaseHeldVisual);\n}\n\nfunction releaseLevelState(held: HeldStateVisual[], destination?: HTMLElement | null) {\n  held.filter((visual) => visual.levelUp && (!destination || visual.destination === destination)).forEach(releaseHeldVisual);\n}\n''',
+              'readable/level state release',
+          )
+
+          changed_pattern = re.compile(r'function changedTargetRects\(before: DomSnapshot, after: DomSnapshot\) \{.*?\n\}', re.S)
+          changed_match = changed_pattern.search(runtime)
+          if not changed_match:
+              raise AssertionError('missing changedTargetRects')
+          new_changed = '''function changedTargetRects(detail: PresentationDetail, before: DomSnapshot, after: DomSnapshot) {\n  const rects: RectLike[] = [];\n  for (const [uid, old] of before.units) {\n    const fresh = after.units.get(uid);\n    const oldState = stateUnitById(detail.before, uid);\n    const freshState = stateUnitById(detail.after, uid);\n    if (!fresh || !oldState || !freshState || unitPresentationFingerprint(oldState) !== unitPresentationFingerprint(freshState)) rects.push(fresh?.rect || old.rect);\n  }\n  for (const owner of [0, 1] as const) {\n    const old = before.heroes.get(owner), fresh = after.heroes.get(owner);\n    if (old && fresh && old.life !== fresh.life) rects.push(fresh.rect);\n  }\n  return uniqueRects(rects);\n}'''
+          runtime = runtime[:changed_match.start()] + new_changed + runtime[changed_match.end():]
+
+          level_anchor = 'async function floatingLabel(layer: HTMLElement, rect: RectLike, text: string, tone: "positive" | "negative" | "neutral") {'
+          level_helper = '''async function animateHeroLevelUp(layer: HTMLElement, detail: PresentationDetail, afterDom: DomSnapshot, held: HeldStateVisual[]) {\n  for (const owner of [0, 1] as const) {\n    const previousLevel = Number(detail.before?.players?.[owner]?.level || 0);\n    const nextLevel = Number(detail.after?.players?.[owner]?.level || 0);\n    if (nextLevel <= previousLevel) continue;\n\n    const hero = afterDom.heroes.get(owner);\n    const overlay = document.createElement("section");\n    overlay.className = `hh-hero-level-up owner-${owner}`;\n    overlay.setAttribute("aria-live", "polite");\n\n    const panel = document.createElement("div");\n    const crest = document.createElement("i");\n    crest.textContent = "✦";\n    const eyebrow = document.createElement("b");\n    eyebrow.textContent = owner === 0 ? "ASCENSÃO DO HERÓI" : "ASCENSÃO DO HERÓI ADVERSÁRIO";\n    const level = document.createElement("strong");\n    level.textContent = `NÍVEL ${nextLevel}`;\n    const name = document.createElement("span");\n    name.textContent = hero?.element.querySelector<HTMLElement>(".hero-short-name")?.textContent?.trim()\n      || String(detail.after?.players?.[owner]?.heroId || "Herói");\n    panel.append(crest, eyebrow, level, name);\n    overlay.append(panel);\n    layer.append(overlay);\n\n    const reduced = prefersReducedMotion();\n    await overlay.animate([\n      { opacity: 0, transform: "scale(.74)" },\n      { offset: .72, opacity: 1, transform: "scale(1.04)" },\n      { opacity: 1, transform: "scale(1)" },\n    ], { duration: reduced ? 90 : 280, easing: EASING, fill: "forwards" }).finished.catch(() => undefined);\n\n    // The new level becomes visible only once the central ascension cue has\n    // actually appeared. Until this point the old Hero rendering stays pinned.\n    releaseLevelState(held, hero?.element);\n    await new Promise<void>((resolve) => window.setTimeout(resolve, reduced ? 90 : 520));\n\n    await overlay.animate([\n      { opacity: 1, transform: "scale(1)" },\n      { opacity: 0, transform: "scale(1.08)" },\n    ], { duration: reduced ? 90 : 260, easing: EASING, fill: "forwards" }).finished.catch(() => undefined);\n    overlay.remove();\n  }\n}\n\n'''
+          if 'async function animateHeroLevelUp' not in runtime:
+              runtime = replace_once(runtime, level_anchor, level_helper + level_anchor, 'level-up animation helper')
+
+          runtime = replace_once(runtime, 'const heldState = holdChangedState(layers.motion, beforeDom, afterDom);', 'const heldState = holdChangedState(layers.motion, beforeDom, afterDom, detail);', 'held state call')
+          runtime = replace_once(runtime, 'const impacts = explicitTargets.length ? explicitTargets : changedTargetRects(beforeDom, afterDom);', 'const impacts = explicitTargets.length ? explicitTargets : changedTargetRects(detail, beforeDom, afterDom);', 'spell changed targets')
+
+          old_combat = '''      } else if (cue?.kind === "combat") {\n        await animateActionCue(layers.effect, cue);\n        const heroShake = animateHeroShake(heldState, beforeDom, afterDom);\n        await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable, cue.hero == null);\n        await heroShake;'''
+          new_combat = '''      } else if (cue?.kind === "combat") {\n        await animateActionCue(layers.effect, cue);\n        const directHeroAttack = !!cue.hero && !cue.defender;\n        const heroShake = directHeroAttack ? Promise.resolve() : animateHeroShake(heldState, beforeDom, afterDom);\n        await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable, cue.hero == null);\n        await heroShake;'''
+          runtime = replace_once(runtime, old_combat, new_combat, 'direct hero combat branch')
+
+          final_branch_anchor = '''        for (const flight of resultArrivals) await animateCardMove(layers.motion, layers.effect, flight);\n      }\n    } finally {'''
+          final_branch_replacement = '''        for (const flight of resultArrivals) await animateCardMove(layers.motion, layers.effect, flight);\n      }\n      await animateHeroLevelUp(layers.effect, detail, afterDom, heldState);\n    } finally {'''
+          runtime = replace_once(runtime, final_branch_anchor, final_branch_replacement, 'level-up stage in transaction')
+          runtime = replace_once(runtime, '    stableDom = snapshotDom();', '    stableDom = afterDom;', 'reuse post-state snapshot')
+
+          observer_pattern = re.compile(r'    const observer = new MutationObserver\(\(records\) => \{.*?    observer\.observe\(document\.body, \{ childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: \["class", "data-unit-id"\] \}\);', re.S)
+          observer_match = observer_pattern.search(runtime)
+          if not observer_match:
+              raise AssertionError('missing mutation observer block')
+          new_observer = '''    const mutationTouchesPresentationState = (record: MutationRecord) => {\n      const target = record.target instanceof Element ? record.target : record.target.parentElement;\n      if (!target || target.closest(".hh-motion-layer,.hh-effect-layer")) return false;\n      const relevantSelector = ".card-frame,.player-hand,.opponent-hand,.player-hero,.player-piles,.enemy-piles,.player-field,.enemy-field,.player-terrain,.enemy-terrain";\n      if (target.closest(relevantSelector)) return true;\n      if (record.type !== "childList") return false;\n      return [...record.addedNodes, ...record.removedNodes].some((node) => node instanceof Element && (node.matches(relevantSelector) || !!node.querySelector(relevantSelector)));\n    };\n\n    const observer = new MutationObserver((records) => {\n      if (queued) return;\n      // Ignore clocks, logs and unrelated UI churn. Previously every text tick\n      // could clone the entire board, which caused avoidable jank in long games.\n      if (!records.some(mutationTouchesPresentationState) || refreshFrame) return;\n      refreshFrame = requestAnimationFrame(() => {\n        refreshFrame = 0;\n        if (!queued) stableDom = snapshotDom();\n      });\n    });\n    observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["class", "data-unit-id"] });'''
+          runtime = runtime[:observer_match.start()] + new_observer + runtime[observer_match.end():]
+          runtime_path.write_text(runtime)
+
+          # -----------------------------------------------------------------
+          # Page-level sequencing: no AI/online follow-up command may leap over
+          # the presentation barrier. Level-up theatre is owned by runtime only.
+          # -----------------------------------------------------------------
+          page_path = Path('app/page.tsx')
+          page = page_path.read_text()
+
+          legacy_start = page.find('/* The canonical presentation runtime owns ordinary cards, combat and targeted')
+          legacy_end = page.find('const applyRoomSnapshot=', legacy_start)
+          if legacy_start < 0 or legacy_end < 0:
+              raise AssertionError('missing queueOnlineSnapshotFx block')
+          page = page[:legacy_start] + '''/* Online milestones use the same authoritative presentation transaction as local play.\n   Keeping this hook as a no-op preserves the call sites without scheduling a second theatre. */\nconst queueOnlineSnapshotFx=(_previous:Game|null,_next:Game)=>{};\n''' + page[legacy_end:]
+
+          page = replace_once(
+              page,
+              'const runRulesCommand=async(command:Record<string,unknown>,owner:0|1=0):Promise<boolean>=>{try{if(mode==="online")',
+              'const runRulesCommand=async(command:Record<string,unknown>,owner:0|1=0):Promise<boolean>=>{try{if((window as Window&{__hemsfellPresentationBusy?:boolean}).__hemsfellPresentationBusy)return false;if(mode==="online")',
+              'runRulesCommand presentation guard',
+          )
+          page = replace_once(page, '  if(visualFx||visualFxQueue.length||shufflingDeck!==null)return;', '  if(presentationBusy||visualFx||visualFxQueue.length||shufflingDeck!==null)return;', 'playCard presentation guard')
+
+          level_pattern = re.compile(r' const levelUp=\(\)=>\{if\(!game\|\|game\.active!==0\)return;.*?\n const legalDefenders=', re.S)
+          level_match = level_pattern.search(page)
+          if not level_match:
+              raise AssertionError('missing levelUp function')
+          level_original = level_match.group(0)
+          level_prefix = level_original[:level_original.rfind('\n const legalDefenders=')]
+          level_simplified = re.sub(r'void runRulesCommand\(\{type:"evolveHero"\},0\)\.then\(accepted=>\{if\(accepted&&mode!=="online"\)\{showFx\("ability","ASCENSÃO DO HERÓI",`\$\{deckById\(p\.heroId\)\.name\} alcançou o nível \$\{p\.level\+1\}`\);setSharedResponse\(\{responder:1,actor:0,action:"evolução do herói"\}\)\}\}\)', 'void runRulesCommand({type:"evolveHero"},0)', level_prefix)
+          if level_simplified == level_prefix:
+              raise AssertionError('levelUp legacy theatre replacement failed')
+          page = page[:level_match.start()] + level_simplified + '\n const legalDefenders=' + page[level_match.end():]
+
+          page = replace_once(
+              page,
+              'const decision=game?.pendingDecision;if(!game||mode!=="bot"||!decision||(decision.owner!==1&&decision.context?.decisionOwner!==1))return;',
+              'const decision=game?.pendingDecision;if(!game||presentationBlocked||mode!=="bot"||!decision||(decision.owner!==1&&decision.context?.decisionOwner!==1))return;',
+              'AI decision presentation guard',
+          )
+          page = replace_once(page, ' },[game,mode,difficulty]);\n\n useEffect(()=>{\n  if(!game||game.active!==1', ' },[game,mode,difficulty,presentationBlocked]);\n\n useEffect(()=>{\n  if(!game||presentationBlocked||game.active!==1', 'AI decision deps / action guard')
+          page = replace_once(page, '||game.phase==="combate"||visualFx||visualFxQueue.length)return;', '||game.phase==="combate")return;', 'AI action duplicate visual guards')
+          page = replace_once(page, ' },[game,mode,difficulty,responseWindow,combatAction,visualFx,visualFxQueue.length]);', ' },[game,mode,difficulty,responseWindow,combatAction,presentationBlocked]);', 'AI action deps')
+
+          page = replace_once(
+              page,
+              'useEffect(()=>{const pending=game?.pendingResponse;if(mode!=="bot"||pending?.responder!==0||!pending.deadline||pending.deadline>clockNow)return;',
+              'useEffect(()=>{const pending=game?.pendingResponse;if(presentationBlocked||mode!=="bot"||pending?.responder!==0||!pending.deadline||pending.deadline>clockNow)return;',
+              'priority timeout presentation guard',
+          )
+
+          poll_old = 'const r = await res.json();announceOnlineSnapshot(id,hostRole,r);setRoomError(current=>current==="Reconectando à sala…"?"":current);const incomingRevision=Number(r.revision??-1);if(incomingRevision<=roomRevisionRef.current)return; setRoomInfo(r);'
+          poll_new = 'const r = await res.json();setRoomError(current=>current==="Reconectando à sala…"?"":current);const incomingRevision=Number(r.revision??-1);if(incomingRevision<=roomRevisionRef.current)return;announceOnlineSnapshot(id,hostRole,r); setRoomInfo(r);'
+          page = replace_once(page, poll_old, poll_new, 'online unchanged-snapshot fast path')
+          page_path.write_text(page)
+
+          # -----------------------------------------------------------------
+          # Central level-up visual.
+          # -----------------------------------------------------------------
+          css_path = Path('app/game-presentation.css')
+          css = css_path.read_text()
+          if '.hh-hero-level-up {' not in css:
+              css += '''\n\n/* Hero ascension is a blocking presentation stage shared by local, AI and online play. */\n.hh-hero-level-up {\n  position: fixed;\n  inset: 0;\n  z-index: 30;\n  display: grid;\n  place-items: center;\n  pointer-events: none;\n  background: radial-gradient(circle at 50% 50%, rgb(255 221 117 / .12), transparent 34%);\n  will-change: transform, opacity;\n}\n\n.hh-hero-level-up > div {\n  position: relative;\n  display: grid;\n  justify-items: center;\n  gap: .28rem;\n  min-width: min(78vw, 24rem);\n  padding: clamp(1rem, 2.2vw, 1.55rem) clamp(1.4rem, 3vw, 2.4rem);\n  border: 1px solid rgb(255 225 137 / .72);\n  border-radius: 1rem;\n  background: linear-gradient(180deg, rgb(22 25 39 / .96), rgb(8 10 19 / .94));\n  box-shadow: 0 0 0 .12rem rgb(115 170 255 / .18), 0 0 2.4rem rgb(255 207 91 / .34), 0 1rem 2.6rem rgb(0 0 0 / .62);\n  overflow: hidden;\n}\n\n.hh-hero-level-up > div::before {\n  content: "";\n  position: absolute;\n  inset: -45%;\n  background: conic-gradient(from 0deg, transparent, rgb(255 224 124 / .22), transparent 18%, rgb(115 169 255 / .18), transparent 38%);\n  animation: hh-level-up-spin 1.25s linear infinite;\n}\n\n.hh-hero-level-up :is(i,b,strong,span) { position: relative; z-index: 1; }\n.hh-hero-level-up i { font-style: normal; font-size: clamp(1.8rem, 4vw, 3rem); color: #ffe49a; text-shadow: 0 0 1rem rgb(255 208 91 / .78); }\n.hh-hero-level-up b { font: 800 clamp(.62rem, 1.1vw, .82rem)/1 system-ui,sans-serif; letter-spacing: .18em; color: #dce9ff; }\n.hh-hero-level-up strong { font: 950 clamp(1.65rem, 4.2vw, 3.25rem)/.92 system-ui,sans-serif; letter-spacing: .04em; color: #fff2bb; text-shadow: 0 0 1.15rem rgb(255 205 76 / .56); }\n.hh-hero-level-up span { font: 800 clamp(.78rem, 1.5vw, 1.05rem)/1.1 system-ui,sans-serif; color: #f4f6ff; }\n.hh-state-hold.is-level-up-hold { z-index: 5; }\n@keyframes hh-level-up-spin { to { transform: rotate(360deg); } }\n\n@media (prefers-reduced-motion: reduce) {\n  .hh-hero-level-up > div::before { animation: none !important; }\n}\n'''
+          css_path.write_text(css)
+
+          # -----------------------------------------------------------------
+          # Regression coverage for exact player-visible ordering and hot paths.
+          # -----------------------------------------------------------------
+          test_path = Path('tests/combat-animation-flow.test.mjs')
+          test = test_path.read_text()
+
+          old_direct = re.compile(r'test\("direct hero damage only shakes the anchored presentation clone", \(\) => \{.*?\n\}\);', re.S)
+          match = old_direct.search(test)
+          if not match:
+              raise AssertionError('missing old direct hero regression')
+          new_direct = '''test("direct hero attacks use only sword travel plus the red life delta", () => {\n  const runtime = read("app/game-presentation-runtime.tsx");\n  const cues = read("app/presentation-action-cues.ts");\n  const heroCueStart = cues.indexOf("if (cue.hero) {");\n  const heroCue = cues.slice(heroCueStart, cues.indexOf("}", heroCueStart) + 1);\n  assert.match(heroCue, /await animateSword/);\n  assert.doesNotMatch(heroCue, /impact\(/);\n  const combatStart = runtime.indexOf('} else if (cue?.kind === "combat")');\n  const combatEnd = runtime.indexOf('} else {', combatStart);\n  const combat = runtime.slice(combatStart, combatEnd);\n  assert.match(combat, /const directHeroAttack = !!cue\.hero && !cue\.defender/);\n  assert.match(combat, /directHeroAttack \? Promise\.resolve\(\) : animateHeroShake/);\n  assert.match(combat, /await presentDeltas/);\n});'''
+          test = test[:match.start()] + new_direct + test[match.end():]
+
+          additions = '''\n\ntest("spell and ability state cannot become visible before their presentation cue", () => {\n  const runtime = read("app/game-presentation-runtime.tsx");\n  assert.match(runtime, /const unitPresentationFingerprint/);\n  assert.match(runtime, /holdChangedState\(layers\.motion, beforeDom, afterDom, detail\)/);\n  assert.match(runtime, /unitPresentationFingerprint\(oldState\) === unitPresentationFingerprint\(freshState\)/);\n  assert.match(runtime, /changedTargetRects\(detail, beforeDom, afterDom\)/);\n  assert.match(runtime, /!visual\.deferredDeath && !visual\.levelUp/);\n});\n\ntest("hero level-up is a central blocking presentation stage in every mode", () => {\n  const runtime = read("app/game-presentation-runtime.tsx");\n  const css = read("app/game-presentation.css");\n  const page = read("app/page.tsx");\n  const bridge = read("app/presentation-event-bridge.tsx");\n  assert.match(runtime, /async function animateHeroLevelUp/);\n  assert.match(runtime, /await animateHeroLevelUp\(layers\.effect, detail, afterDom, heldState\)/);\n  assert.match(runtime, /releaseLevelState\(held, hero\?\.element\)/);\n  assert.match(css, /\.hh-hero-level-up \{/);\n  assert.match(page, /const queueOnlineSnapshotFx=\(_previous:Game\|null,_next:Game\)=>\{\};/);\n  assert.match(bridge, /level: player\?\.level/);\n});\n\ntest("AI and online follow-up commands respect presentation idle", () => {\n  const page = read("app/page.tsx");\n  assert.match(page, /__hemsfellPresentationBusy\?\:boolean\}\)\.__hemsfellPresentationBusy\)return false/);\n  assert.match(page, /presentationBlocked\|\|mode!=="bot"\|\|!decision/);\n  assert.match(page, /if\(!game\|\|presentationBlocked\|\|game\.active!==1/);\n  assert.match(page, /if\(incomingRevision<=roomRevisionRef\.current\)return;announceOnlineSnapshot/);\n});\n\ntest("presentation snapshot maintenance ignores unrelated UI churn", () => {\n  const runtime = read("app/game-presentation-runtime.tsx");\n  assert.match(runtime, /const mutationTouchesPresentationState = \(record: MutationRecord\)/);\n  assert.match(runtime, /Ignore clocks, logs and unrelated UI churn/);\n  assert.match(runtime, /stableDom = afterDom;/);\n});\n'''
+          if 'spell and ability state cannot become visible before their presentation cue' not in test:
+              test += additions
+          test_path.write_text(test)
+          PY
+
+      - name: Remove temporary workflow before validation
+        run: git rm .github/workflows/apply-presentation-order-levelup-optimization.yml
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate canonical state
+        run: npm run prepare:project
+
+      - name: Focused presentation tests
+        run: node --test tests/combat-animation-flow.test.mjs tests/presentation-dedupe-regression.test.mjs
+
+      - name: Full rules suite
+        run: npm run test:rules
+
+      - name: Production build
+        run: npm run vercel-build
+
+      - name: Commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/page.tsx app/game-presentation-runtime.tsx app/game-presentation.css app/presentation-action-cues.ts tests/combat-animation-flow.test.mjs .github/workflows/apply-presentation-order-levelup-optimization.yml
+          git commit -m "fix: order combat effects and add hero ascension presentation"
+          git push origin HEAD:feat/presentation-system-pr1
