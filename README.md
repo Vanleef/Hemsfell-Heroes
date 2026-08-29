@@ -190,13 +190,13 @@ Ordem de armazenamento das salas:
 ### Visão geral
 
 ```mermaid
-flowchart TD
-    View[View / Presentation] --> App[Application / Session]
-    App --> Rules[Model / Rules Engine]
-    Catalog[Data / Catalog] --> Rules
-    Infra[Infrastructure] --> Rules
-    Rules --> Result[Estado + eventos]
-    Result --> View
+flowchart TB
+    viewLayer["View e Presentation"] --> appLayer["Application e Session"]
+    appLayer --> rulesLayer["Model e Rules Engine"]
+    catalogLayer["Data e Catalog"] --> rulesLayer
+    infraLayer["Infrastructure"] --> rulesLayer
+    rulesLayer --> resultState["Estado e eventos"]
+    resultState --> viewLayer
 ```
 
 ### Arquivos e responsabilidades

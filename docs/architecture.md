@@ -80,11 +80,11 @@ Este documento descreve a arquitetura que existe hoje e a direção segura de ev
 
 ```mermaid
 flowchart TD
-    Input[Interação do jogador] --> Command[Comando]
-    Command --> Engine[Validação e motor]
-    AI[Decisão da IA] --> Command
-    Engine --> State[Novo estado + eventos]
-    State --> View[React e apresentação]
+    playerInput["Interação do jogador"] --> gameCommand["Comando"]
+    gameCommand --> localEngine["Validação e motor"]
+    aiDecision["Decisão da IA"] --> gameCommand
+    localEngine --> nextState["Novo estado e eventos"]
+    nextState --> gameView["React e apresentação"]
 ```
 
 O estado do motor local é autoritativo. A IA usa as mesmas ações legais e o mesmo caminho de execução que o jogador.
@@ -93,12 +93,12 @@ O estado do motor local é autoritativo. A IA usa as mesmas ações legais e o m
 
 ```mermaid
 flowchart TD
-    Client[Cliente envia intenção] --> Route[API da sala]
-    Route --> Machine[Máquina autoritativa]
-    Machine --> Engine[Motor e integridade]
-    Engine --> Revision[Persistência + nova revisão]
-    Revision --> Snapshot[Snapshot orientado e privado]
-    Snapshot --> Client
+    gameClient["Cliente envia intenção"] --> roomApi["API da sala"]
+    roomApi --> roomMachine["Máquina autoritativa"]
+    roomMachine --> onlineEngine["Motor e integridade"]
+    onlineEngine --> roomRevision["Persistência e nova revisão"]
+    roomRevision --> privateSnapshot["Snapshot orientado e privado"]
+    privateSnapshot --> gameClient
 ```
 
 O cliente não confirma a própria ação. A interface apresenta o snapshot da nova revisão; conflitos de revisão são rejeitados e sincronizados novamente.
