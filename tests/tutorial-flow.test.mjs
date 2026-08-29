@@ -9,6 +9,7 @@ const [page, layout, tutorial, tutorialContent, css] = await Promise.all([
   readFile(new URL("../app/data/content/tutorial-content.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/presentation/styles/tutorial.css", import.meta.url), "utf8"),
 ]);
+const tutorialSource = `${tutorial}\n${tutorialContent}`;
 
 test("tutorial is reachable from the main menu and uses the presentation style layer", () => {
   assert.match(page, /type Screen=[^;]*"tutorial"/);
@@ -26,7 +27,7 @@ test("tutorial is intentionally reduced to three focused sections", () => {
 
 test("quick start teaches the four turn stages, core controls and win condition", () => {
   for (const topic of ["Manutenção", "Principal", "Combate", "Finalização", "Energia", "Reserva", "Vida do Herói rival a 0"]) {
-    assert.match(tutorial, new RegExp(topic, "i"));
+    assert.match(tutorialSource, new RegExp(topic, "i"));
   }
   for (const command of ["Hover por 1s", "Segurar por 1s", "Arrastar", "Clique", "⚡", "Passar"]) {
     assert.match(tutorialContent, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
@@ -48,7 +49,7 @@ test("combat tutorial matches the current one-attacker flow", () => {
   assert.match(tutorialContent, /3\. Defenda/);
   assert.match(tutorialContent, /4\. Resolva o dano/);
   assert.match(tutorialContent, /bloqueador legal ou aceita o ataque sem bloqueio/i);
-  assert.doesNotMatch(tutorial + tutorialContent, /atacantes e bloqueadores são confirmados como grupos/i);
+  assert.doesNotMatch(tutorialSource, /atacantes e bloqueadores são confirmados como grupos/i);
 });
 
 test("tutorial keyword copy stays derived from the canonical glossary but shows a concise subset", () => {
