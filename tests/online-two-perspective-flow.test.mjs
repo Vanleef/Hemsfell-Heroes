@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { executeOnlineCommand } from "../app/rules-engine/online-priority-engine.mjs";
-import { orientOnlineGameForRole } from "../app/online-state-orientation.mjs";
+import { orientOnlineGameForRole } from "../app/application/session/online-state-orientation.mjs";
 
 const unit = (id, slot, atk = 2, hp = 3) => ({ uid: id, id, name: id, type: "Criatura", slot, atk, hp, text: "", tags: [], abilities: [], modifiers: [], damage: 0, exhausted: false, summoning: false, stunned: false, immobilized: false, suffocated: false, defenseUses: 0, attackLimit: 1, attacksThisTurn: 0, attackedThisTurn: false, markers: 0 });
 const player = (heroId) => ({ heroId, level: 1, life: 30, maxLife: 30, energy: 2, maxEnergy: 3, reserve: 0, hand: [], deck: [], extraDeck: [], grave: [], obscuro: [], board: [], support: [], terrain: null, abilityUses: {}, markers: {}, heroXP: 0, levelUpsThisTurn: 0, cardsPlayed: 0, turnCardsPlayed: 0, turnSpellsPlayed: 0, spellsPlayed: 0, coffeeSpells: 0, damageDealt: 0, turnDeaths: 0, pendingTranqueira: false, nextCardDiscount: 0, nextNonCreatureDiscount: 0, nextSpellDiscount: 0, nextSummonPaysLife: false, nextCreaturePaysLife: false, catsEnteredThisTurn: 0 });

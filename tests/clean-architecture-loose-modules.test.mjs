@@ -1,47 +1,17 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readdir } from "node:fs/promises";
 import test from "node:test";
 
-const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
-
-test("loose card helpers are compatibility facades over rules-engine cores", async () => {
-  const [activationFacade, keywordsFacade, rulesFacade, activationCore] = await Promise.all([
-    read("app/card-activation.mjs"),
-    read("app/card-keywords.mjs"),
-    read("app/game-rules.mjs"),
-    read("app/rules-engine/cards/card-activation.mjs"),
-  ]);
-
-  assert.match(activationFacade, /rules-engine\/cards\/card-activation\.mjs/);
-  assert.match(keywordsFacade, /rules-engine\/cards\/card-keywords\.mjs/);
-  assert.match(rulesFacade, /rules-engine\/game-rules\.mjs/);
-  assert.match(activationCore, /from "\.\.\/compiler\.mjs"/);
-  assert.doesNotMatch(activationFacade, /canActivateCard\s*\(/);
-  assert.doesNotMatch(keywordsFacade, /intrinsicKeywordNames\s*\(/);
+test("app root contains only Next App Router entry files", async () => {
+  const entries = await readdir(new URL("../app/", import.meta.url), { withFileTypes: true });
+  const files = entries.filter((entry) => entry.isFile()).map((entry) => entry.name).sort();
+  assert.deepEqual(files, ["globals.css", "layout.tsx", "page.tsx"]);
 });
 
 test("rules-engine card core exposes activation and keyword semantics", async () => {
   const cardsIndex = await import("../app/rules-engine/cards/index.mjs");
   assert.equal(typeof cardsIndex.canActivateCard, "function");
   assert.equal(typeof cardsIndex.intrinsicKeywordNames, "function");
-});
-
-test("remaining loose domain and infrastructure files are compatibility facades", async () => {
-  const [deckFacade, deckTypesFacade, authFacade, combatFacade, tifonFacade] = await Promise.all([
-    read("app/user-deck.mjs"),
-    read("app/user-deck.d.mts"),
-    read("app/chatgpt-auth.ts"),
-    read("app/combat-presentation.mjs"),
-    read("app/tifon-picker-normalizer.tsx"),
-  ]);
-
-  assert.match(deckFacade, /model\/decks\/user-deck\.mjs/);
-  assert.match(deckTypesFacade, /model\/decks\/user-deck\.mjs/);
-  assert.match(authFacade, /infrastructure\/auth\/chatgpt-auth/);
-  assert.match(combatFacade, /presentation\/combat\/combat-presentation\.mjs/);
-  assert.match(tifonFacade, /presentation\/setup\/tifon-picker-normalizer/);
-  assert.doesNotMatch(deckFacade, /suppliedDeckPages\s*=\s*Object\.freeze/);
-  assert.doesNotMatch(authFacade, /safeRelativeReturnPath\s*\(/);
 });
 
 test("organized cores retain their public contracts", async () => {

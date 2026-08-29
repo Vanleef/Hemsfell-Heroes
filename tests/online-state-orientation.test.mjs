@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { orientOnlineGameForRole } from "../app/online-state-orientation.mjs";
+import { orientOnlineGameForRole } from "../app/application/session/online-state-orientation.mjs";
 
 const fixture = () => ({
   players: [{ heroId: "gimble" }, { heroId: "saymon" }],

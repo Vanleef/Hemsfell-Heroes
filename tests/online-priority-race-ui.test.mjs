@@ -4,7 +4,7 @@ import test from "node:test";
 
 const [page, css] = await Promise.all([
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../app/match-ui.css", import.meta.url), "utf8"),
+  readFile(new URL("../app/presentation/styles/match-ui.css", import.meta.url), "utf8"),
 ]);
 
 test("an obsolete automatic priority pass is reconciled without exposing an engine error", () => {

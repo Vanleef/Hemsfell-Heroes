@@ -3,7 +3,7 @@ import test from "node:test";
 import fs from "node:fs";
 
 const source=fs.readFileSync(new URL("../app/page.tsx",import.meta.url),"utf8");
-const runtime=fs.readFileSync(new URL("../app/match-ui-runtime.tsx",import.meta.url),"utf8");
+const runtime=fs.readFileSync(new URL("../app/presentation/match/match-ui-runtime.tsx",import.meta.url),"utf8");
 
 test("hero inspector resolves guide by canonical hero page",()=>{
  assert.match(source,/const deckByHeroPage=\(page:number\)=>deckDefs\.find\(d=>d\.heroPage===page\)/);

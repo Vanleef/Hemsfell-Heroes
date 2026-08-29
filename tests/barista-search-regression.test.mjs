@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import cards from '../app/cards.generated.json' with { type: 'json' };
+import cards from '../app/data/catalog/cards.generated.json' with { type: 'json' };
 import { compileCard } from '../app/rules-engine/compiler.mjs';
 import { executeCommand } from '../app/rules-engine/engine.mjs';
 

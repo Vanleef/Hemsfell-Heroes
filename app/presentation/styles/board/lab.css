@@ -1,4 +1,4 @@
-@import "./lab-legacy.css";
+@import "../legacy/lab-legacy.css";
 @import "./board-layout.css";
 @import "./board-tuning.css";
 @import "./lab-overrides.css";

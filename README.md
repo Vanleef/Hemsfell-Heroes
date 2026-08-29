@@ -209,7 +209,7 @@ flowchart TB
 | Prioridade e combate | `priority-state.mjs`, `priority.mjs`, `combat.mjs`, `online-*.mjs` | Pilha LIFO, janelas de resposta, checkpoints e resolução. |
 | IA e simulação | `ai.mjs`, `simulator.mjs` | Escolha de comandos legais e execução headless determinística e limitada. |
 | Aplicação e sessão | `app/application/`, `app/online-*.tsx`, `app/match/` | Despacha intenções, mantém sessão, reconecta e orienta snapshots. |
-| Apresentação | `app/presentation/`, `app/presentation-*.{ts,tsx}`, `app/game-presentation-runtime.tsx` | Converte alterações confirmadas em cues e animações sem controlar regras. |
+| Apresentação | `app/presentation/`, `app/presentation-*.{ts,tsx}` | Converte alterações confirmadas em cues e animações sem controlar regras. |
 | Catálogo | `app/data/catalog/`, `cards.generated.json`, `card-rules.mjs`, `subtypes.mjs`, `hero-evolution.mjs` | Templates de cartas, exceções explícitas, subtipos e evolução. |
 | Tutorial/glossário | `tutorial-screen.tsx`, `tutorial-content.ts`, `game-glossary.ts` | Interface didática e texto canônico de palavras-chave. |
 | Artes | `remote-card-art.tsx`, `app/api/hemsfell-card-catalog.pdf/` | Cache e renderização das páginas reais do catálogo PDF. |
@@ -393,8 +393,8 @@ Para adicionar ou corrigir uma palavra-chave:
 
 1. confirme a regra nos documentos de design;
 2. atualize a compilação/tags ou a regra explícita correspondente no motor;
-3. atualize `app/game-glossary.ts`, fonte canônica da explicação exibida pela interface;
-4. inclua o termo em `app/tutorial-content.ts` quando ele for essencial ao onboarding;
+3. atualize `app/data/content/game-glossary.ts`, fonte canônica da explicação exibida pela interface;
+4. inclua o termo em `app/data/content/tutorial-content.ts` quando ele for essencial ao onboarding;
 5. cubra interação com alvos, combate, pilha e Sufocado quando aplicável;
 6. valide o mesmo comportamento no PvAI e no motor autoritativo online.
 
@@ -762,7 +762,7 @@ Ao entrar no projeto, comece nesta ordem:
 4. `app/rules-engine/engine.mjs`;
 5. `app/rules-engine/card-rules.mjs` e `effects.mjs`;
 6. `app/api/rooms/machine.ts`;
-7. `app/presentation-event-bridge.tsx`;
+7. `app/presentation/runtime/presentation-event-bridge.tsx`;
 8. `app/page.tsx` e, por último, a cascata CSS importada por `app/layout.tsx`.
 
 Essa ordem mostra primeiro o comportamento esperado, depois as regras e, por último, a interface.

@@ -5,7 +5,7 @@ import {
   claimOncePerTurn,
   earthquakeDamage,
   elementalChainFrom,
-} from "../app/game-rules.mjs";
+} from "../app/rules-engine/game-rules.mjs";
 
 test("Uruk elemental chain follows the declared successor order", () => {
   assert.deepEqual(elementalChainFrom("Terra"), { element: "Fogo", effect: "Sufocado" });

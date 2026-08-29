@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const source = await readFile(new URL("../app/match-ui-guard.tsx", import.meta.url), "utf8");
+const source = await readFile(new URL("../app/presentation/match/match-ui-guard.tsx", import.meta.url), "utf8");
 
 test("deck picker enrichment is idempotent under MutationObserver", () => {
   assert.match(source, /const setTextIfChanged\s*=\s*\(/);

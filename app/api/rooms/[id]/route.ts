@@ -6,8 +6,8 @@ import { shiftOnlineDeadlines } from "../online-clock.mjs";
 import { parseOnlineCommand } from "../online-command-schema.mjs";
 import { isPlainRecord, isRoomId, readSafeJson } from "../validation";
 import rawCards from "../../../data/catalog/generated-card-catalog";
-import { validateUserDeck } from "../../../user-deck.mjs";
-import type { DeckCatalogCard } from "../../../user-deck.mjs";
+import { validateUserDeck } from "../../../model/decks/user-deck.mjs";
+import type { DeckCatalogCard } from "../../../model/decks/user-deck.mjs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

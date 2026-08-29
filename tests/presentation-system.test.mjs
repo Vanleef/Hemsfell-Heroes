@@ -14,7 +14,7 @@ test("presentation runtimes are mounted after card preview and before the game p
   const children = layout.indexOf("{children}");
   assert.ok(glossary >= 0 && preview > glossary && bridge > preview && interaction > bridge && runtime > interaction && children > runtime);
   assert.doesNotMatch(layout, /GameActionCuesRuntime/);
-  assert.ok(layout.indexOf('import "./game-presentation.css"') < layout.indexOf('import "./command-bar-fixes.css"'));
+  assert.ok(layout.indexOf('import "./presentation/styles/game-presentation.css"') < layout.indexOf('import "./presentation/styles/command-bar-fixes.css"'));
 });
 
 test("canonical glossary feeds the legacy semantic spans used by card preview", () => {
@@ -42,7 +42,7 @@ test("rules core stays isolated behind a browser instrumentation facade", () => 
 });
 
 test("presentation bridge deduplicates material transitions and recovers resolved combat once", () => {
-  const bridge = read("app/presentation-event-bridge.tsx");
+  const bridge = read("app/presentation/runtime/presentation-event-bridge.tsx");
   for (const command of ["declareAttack", "selectDefender", "reposition", "confirmReposition", "surrender"]) {
     assert.match(bridge, new RegExp(`\\"${command}\\"`));
   }
@@ -60,7 +60,7 @@ test("presentation bridge deduplicates material transitions and recovers resolve
 });
 
 test("guest online presentation mirrors nested priority ownership", () => {
-  const bridge = read("app/presentation-event-bridge.tsx");
+  const bridge = read("app/presentation/runtime/presentation-event-bridge.tsx");
   const orientation = read("app/application/session/online-state-orientation.mjs");
   assert.match(bridge, /import \{ orientOnlineGameForRole \}/);
   assert.match(bridge, /orientOnlineGameForRole\(game, isHost \? "host" : "guest"\)/);
@@ -110,7 +110,7 @@ test("combat and targeted effects have explicit one-shot visual cues", () => {
 });
 
 test("presentation runtime serializes confirmed before-after clips and exposes pacing signals", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
   assert.match(runtime, /const afterReactCommit = nextFrame/);
   assert.match(runtime, /installArrivalGate\(detail\)/);
   assert.match(runtime, /__hemsfellPresentationBusy/);
@@ -126,7 +126,7 @@ test("presentation runtime serializes confirmed before-after clips and exposes p
 });
 
 test("presentation CSS dims the hand while locked and styles combat/effect cues", () => {
-  const css = read("app/game-presentation.css");
+  const css = read("app/presentation/styles/game-presentation.css");
   assert.match(css, /html\.hh-presentation-locked \.screen-game \.player-hand/);
   assert.match(css, /cursor: not-allowed/);
   assert.match(css, /pointer-events: none/);

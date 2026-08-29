@@ -14,15 +14,15 @@ This branch is restricted to structural cleanup. Gameplay, AI, rules, timing, se
 
 ## Current organization
 
-- Historical CSS files remain direct compatibility sources because regression tests inspect selectors and raw text. There are no active `app/styles/` mirrors on `main`.
-- `app/layout.tsx` retains direct imports and the established runtime/component order.
-- Match-specific controllers and views live in `app/match/`; presentation bridges and runtimes remain explicit files in `app/`.
-- Tutorial data is isolated in `app/tutorial-content.ts`, while `app/tutorial-screen.tsx` owns rendering and interaction. Keyword copy is derived from `app/game-glossary.ts`.
+- Presentation CSS is organized under `app/presentation/styles/`; `globals.css` remains the App Router entrypoint for the base, board and effect cascade.
+- `app/layout.tsx` retains the established runtime/component order while importing organized modules directly.
+- Match-specific controllers and views live in `app/match/`; presentation bridges and runtimes live under `app/presentation/`.
+- Tutorial data is isolated in `app/data/content/tutorial-content.ts`, while `app/presentation/tutorial/tutorial-screen.tsx` owns rendering and interaction. Keyword copy is derived from `app/data/content/game-glossary.ts`.
 - Shared match types are owned by `app/model/game-state.ts`; `page.tsx` no longer declares the domain model.
 - React sends intents through `app/application/commands/game-command-service.mjs` instead of importing the engine facade.
-- Online session/orientation implementations live in `app/application/session/`; legacy root modules are compatibility facades.
+- Online session/orientation implementations live in `app/application/session/` with no legacy root facades.
 - Material presentation fingerprints live in `app/presentation/state/` and are independent from the event bridge lifecycle.
-- UI/API catalog consumers use `app/data/catalog/`; scripts keep direct access to the generated source of truth.
+- UI, API and script catalog consumers use the generated source of truth in `app/data/catalog/`.
 - Room routes use `app/infrastructure/rooms/room-repository.ts`; the historical runtime module is a compatibility facade.
 - The current layer map and dependency direction are documented in `docs/architecture.md`; this document defines the stricter front-end refactor guardrails.
 

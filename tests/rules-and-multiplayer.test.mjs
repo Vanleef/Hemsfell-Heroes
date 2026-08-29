@@ -5,8 +5,8 @@ import test from "node:test";
 const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
 const gameStateModel=await readFile(new URL("../app/model/game-state.ts",import.meta.url),"utf8");
 const css=(await Promise.all([
- readFile(new URL("../app/lab.css",import.meta.url),"utf8"),
- readFile(new URL("../app/lab-legacy.css",import.meta.url),"utf8"),
+ readFile(new URL("../app/presentation/styles/board/lab.css",import.meta.url),"utf8"),
+ readFile(new URL("../app/presentation/styles/legacy/lab-legacy.css",import.meta.url),"utf8"),
 ])).join("\n");
 const roomApi=await readFile(new URL("../app/api/rooms/[id]/route.ts",import.meta.url),"utf8");
 const roomMachine=await readFile(new URL("../app/api/rooms/machine.ts",import.meta.url),"utf8");
@@ -16,8 +16,8 @@ const catalogRoute=await readFile(new URL("../app/api/hemsfell-card-catalog.pdf/
 const roomValidation=await readFile(new URL("../app/api/rooms/validation.ts",import.meta.url),"utf8");
 const nextConfig=await readFile(new URL("../next.config.ts",import.meta.url),"utf8");
 const roomConstants=await readFile(new URL("../app/api/rooms/constants.ts",import.meta.url),"utf8");
-const remoteCardArt=await readFile(new URL("../app/remote-card-art.tsx",import.meta.url),"utf8");
-const uiOverrides=await readFile(new URL("../app/ui-overrides.css",import.meta.url),"utf8");
+const remoteCardArt=await readFile(new URL("../app/presentation/cards/remote-card-art.tsx",import.meta.url),"utf8");
+const uiOverrides=await readFile(new URL("../app/presentation/styles/base/ui-overrides.css",import.meta.url),"utf8");
 
 test("decision panels explain each action and the hand limit explicitly",()=>{
  assert.match(page,/eyebrow:"LIMITE DE MÃO"/);

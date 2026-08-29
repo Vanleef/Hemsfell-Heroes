@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { compileCard } from "../app/rules-engine/compiler.mjs";
 import { executeCommand } from "../app/rules-engine/engine.mjs";
 
-const cards = JSON.parse(fs.readFileSync(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
+const cards = JSON.parse(fs.readFileSync(new URL("../app/data/catalog/cards.generated.json", import.meta.url), "utf8"));
 const raw = (page) => cards.find((card) => Number(card.page) === page);
 const player = () => ({ heroId: "rasmus", level: 1, heroXP: 0, levelUpsThisTurn: 0, life: 30, maxEnergy: 10, energy: 10, reserve: 0, deck: [], extraDeck: [], hand: [], board: [], support: [], terrain: null, grave: [], obscuro: [], cardsPlayed: 0, turnCardsPlayed: 0, turnSpellsPlayed: 0, spellsPlayed: 0, coffeeSpells: 0, damageDealt: 0, turnDeaths: 0, abilityUses: {}, pendingTranqueira: false, nextCardDiscount: 0, nextNonCreatureDiscount: 0, nextSpellDiscount: 0, nextSummonPaysLife: false, catsEnteredThisTurn: 0 });
 

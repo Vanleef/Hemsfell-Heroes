@@ -5,7 +5,7 @@ import { canEndCombat, listAttackCapableCreatures, listLegalBlockers, listPendin
 import { runHeadlessGames } from "../app/rules-engine/simulator.mjs";
 import { isValidTarget, targetPolicy } from "../app/rules-engine/targeting.mjs";
 
-const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
+const cards = JSON.parse(await readFile(new URL("../app/data/catalog/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
 const pool = cards.filter((card) => !card.hero && !card.imageCard && canExecuteCard(card));
 const imagePool = cards.filter((card) => card.imageCard);
 const value = (name, fallback) => Number(process.argv.find((arg) => arg.startsWith(`--${name}=`))?.split("=")[1] || fallback);

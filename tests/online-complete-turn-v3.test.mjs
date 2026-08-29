@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { executeOnlineCommand } from "../app/rules-engine/online-priority-engine.mjs";
-import { orientOnlineGameForRole } from "../app/online-state-orientation.mjs";
+import { orientOnlineGameForRole } from "../app/application/session/online-state-orientation.mjs";
 
 const drawCard = (id) => ({ id, uid: id, name: id, type: "Criatura", cost: 1, atk: 1, hp: 1, text: "", tags: [], subtypes: [], abilities: [], modifiers: [] });
 const unit = (id, slot, atk = 2, hp = 3) => ({ uid: id, id, name: id, type: "Criatura", slot, atk, hp, text: "", tags: [], abilities: [], modifiers: [], damage: 0, exhausted: false, summoning: false, stunned: false, frozen: false, immobilized: false, suffocated: false, defenseUses: 0, attackLimit: 1, attacksThisTurn: 0, attackedThisTurn: false, markers: 0 });

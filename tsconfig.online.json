@@ -8,10 +8,10 @@
     "skipLibCheck": true
   },
   "include": [
-    "app/online-match-runtime.tsx",
-    "app/online-reconnect-runtime.tsx",
-    "app/online-state-orientation.mjs",
-    "app/remote-card-art.tsx",
+    "app/application/online/online-match-runtime.tsx",
+    "app/application/online/online-reconnect-runtime.tsx",
+    "app/application/session/online-state-orientation.mjs",
+    "app/presentation/cards/remote-card-art.tsx",
     "app/api/rooms/**/*.ts",
     "app/api/rooms/**/*.mjs",
     "app/rules-engine/online-*.mjs",

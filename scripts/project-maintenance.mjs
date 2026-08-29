@@ -28,14 +28,14 @@ const assertOrdered = (source, tokens, label) => {
 
 const requiredFiles = [
   "app/page.tsx",
-  "app/cards.generated.json",
+  "app/data/catalog/cards.generated.json",
   "app/globals.css",
   "app/presentation/styles/match-ui.css",
   "app/presentation/styles/game-presentation.css",
   "app/presentation/styles/tutorial.css",
   "app/presentation/match/match-ui-runtime.tsx",
   "app/presentation/runtime/game-presentation-runtime.tsx",
-  "app/match-ui-guard.tsx",
+  "app/presentation/match/match-ui-guard.tsx",
   "app/rules-engine/card-rules.mjs",
   "app/rules-engine/compiler.mjs",
   "app/rules-engine/effects.mjs",
@@ -67,8 +67,8 @@ const workflowFiles = (await list(workflowsDir)).filter((name) => /\.ya?ml$/i.te
 const historicalWorkflows = workflowFiles.filter((name) => historicalWorkflowPattern.test(name));
 if (historicalWorkflows.length) fail(`Historical source-mutating workflows were reintroduced: ${historicalWorkflows.join(", ")}`);
 
-const cards = JSON.parse(await read("app/cards.generated.json"));
-if (!Array.isArray(cards) || !cards.length) fail("app/cards.generated.json must contain the canonical card array.");
+const cards = JSON.parse(await read("app/data/catalog/cards.generated.json"));
+if (!Array.isArray(cards) || !cards.length) fail("app/data/catalog/cards.generated.json must contain the canonical card array.");
 else {
   const duplicateIds = [...new Set(cards.map((card) => card.id).filter((id, index, all) => id && all.indexOf(id) !== index))];
   const duplicatePages = [...new Set(cards.map((card) => card.page).filter((page, index, all) => page != null && all.indexOf(page) !== index))];
@@ -98,19 +98,19 @@ await validateCssImports("app/globals.css");
 await validateCssImports("app/presentation/styles/match-ui.css");
 
 const [labStructure, matchStructure, responseStructure, layoutStructure] = await Promise.all([
-  read("app/lab.css"),
+  read("app/presentation/styles/board/lab.css"),
   read("app/presentation/styles/match-ui.css"),
   read("app/presentation/styles/response-window.css"),
   read("app/layout.tsx"),
 ]);
 
 assertOrdered(labStructure, [
-  '@import "./lab-legacy.css";',
+  '@import "../legacy/lab-legacy.css";',
   '@import "./board-layout.css";',
   '@import "./board-tuning.css";',
   '@import "./lab-overrides.css";',
   '@import "./lab-interaction-responsive.css";',
-], "app/lab.css cascade");
+], "app/presentation/styles/board/lab.css cascade");
 
 assertOrdered(matchStructure, [
   '@import "./command-bar-fixes.css";',
@@ -137,7 +137,7 @@ assertOrdered(layoutStructure, [
   'import "./globals.css";',
   'import "./presentation/styles/match-ui.css";',
   'import "./presentation/styles/online-match-runtime.css";',
-  'import MatchUiGuard from "./match-ui-guard";',
+  'import MatchUiGuard from "./presentation/match/match-ui-guard";',
   'import MatchUiRuntime from "./presentation/match/match-ui-runtime";',
   '<MatchUiGuard />',
   '<MatchUiRuntime />',

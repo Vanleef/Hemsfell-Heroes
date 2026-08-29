@@ -1,6 +1,6 @@
 "use client";
 
-import { RemoteCardArt } from "../remote-card-art";
+import { RemoteCardArt } from "../presentation/cards/remote-card-art";
 
 type CombatStage = "declared" | "priority" | "choosing" | "charging" | "impact" | "resolved";
 type CombatCard = { page: number; name: string };

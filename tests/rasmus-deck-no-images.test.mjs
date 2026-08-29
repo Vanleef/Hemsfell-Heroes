@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import cards from "../app/cards.generated.json" with { type: "json" };
-import { suppliedDeckPages } from "../app/user-deck.mjs";
+import cards from "../app/data/catalog/cards.generated.json" with { type: "json" };
+import { suppliedDeckPages } from "../app/model/decks/user-deck.mjs";
 
 test("Rasmus supplied deck contains 49 real cards and zero Images",()=>{
   const pairs=suppliedDeckPages.rasmus;

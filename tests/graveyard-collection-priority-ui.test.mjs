@@ -13,7 +13,7 @@ test("graveyard uses printed cards and its own copy instead of the Extra Deck la
 test("collection exposes copy counts and bounded responsive lists", async () => {
   const [page, css] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/ui-overrides.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/styles/base/ui-overrides.css", import.meta.url), "utf8"),
   ]);
   assert.match(page, /collectionQuantity:entry\.quantity/);
   assert.match(page, /activeUserDeck\.main\.flatMap/);

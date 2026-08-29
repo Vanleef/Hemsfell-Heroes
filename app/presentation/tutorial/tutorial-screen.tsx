@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type KeyboardEvent } from "react";
-import { RemoteCardArt } from "./remote-card-art";
+import { RemoteCardArt } from "../cards/remote-card-art";
 import {
   BASIC_COMMANDS,
   BOARD_ZONES,

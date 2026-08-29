@@ -1,4 +1,4 @@
-import generatedCards from "../../cards.generated.json";
+import generatedCards from "./cards.generated.json";
 import type { CardDef } from "../../model/game-state";
 
 /** Immutable templates. Runtime damage, counters and ownership live in GameState. */

@@ -10,7 +10,7 @@ test("bot response window is mirrored into authoritative game state",()=>{
 });
 
 test("opponent hand raises its stacking context while a revealed card tooltip is hovered",()=>{
-  const css=fs.readFileSync(new URL("../app/ui-overrides.css", import.meta.url),"utf8");
+  const css=fs.readFileSync(new URL("../app/presentation/styles/base/ui-overrides.css", import.meta.url),"utf8");
   assert.match(css,/\.hs-board \.opponent-hand:has\(\.original-card:hover\).*z-index:\s*1200/s);
   assert.match(css,/\.opponent-hand \.original-card:hover \.card-tooltip.*z-index:\s*1400/s);
 });

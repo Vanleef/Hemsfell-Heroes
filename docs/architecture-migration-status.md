@@ -31,18 +31,11 @@ O onboarding foi reduzido de cinco áreas densas e sete capítulos ilustrados pa
 
 O tutorial não tenta mais substituir o manual. Definições completas continuam vindo do glossário canônico e aparecem nos tooltips durante a partida.
 
-## Compatibilidade temporária
+## Raiz do App Router
 
-Alguns arquivos históricos na raiz de `app/` continuam existindo como fachadas ou, quando testes de regressão inspecionam seu texto bruto, como fontes de compatibilidade byte-equivalentes. Isso é deliberado: o caminho canônico novo define a responsabilidade arquitetural, enquanto o caminho antigo preserva consumidores legados até a migração completa.
-
-`app/layout.tsx` já importa os runtimes e estilos canônicos em `app/presentation/`. Marcadores textuais dos caminhos antigos permanecem temporariamente para ferramentas de regressão estática. Eles não são imports executáveis e não duplicam runtimes em produção.
-
-Não remover uma fonte de compatibilidade só porque buscas por import não retornam consumidores. Há testes estáticos e contratos de build que verificam conteúdo e ordem diretamente.
+A raiz de `app/` contém somente `layout.tsx`, `page.tsx` e `globals.css`. Runtimes, modelos, catálogo, conteúdo e estilos são consumidos diretamente de suas camadas; não permanecem fachadas de compatibilidade na raiz.
 
 ## Próxima ordem segura
 
-1. Migrar `presentation-event-bridge.tsx` para a árvore de apresentação e atualizar em conjunto os testes que ainda leem o caminho histórico.
-2. Transformar as cópias históricas de `match-ui-runtime.tsx`, `game-presentation-runtime.tsx` e estilos raiz em fachadas assim que os últimos testes de inspeção textual forem migrados.
-3. Consolidar `match-ui-guard.tsx` e responsabilidades auxiliares restantes na camada de apresentação.
-4. Reduzir `app/page.tsx` por responsabilidade — setup, coleção, partida e modais — nunca por divisão mecânica do arquivo.
-5. Só depois remover definitivamente os caminhos de compatibilidade.
+1. Reduzir `app/page.tsx` por responsabilidade — setup, coleção, partida e modais — nunca por divisão mecânica do arquivo.
+2. Manter os contratos do App Router e a ordem global dos runtimes durante essas extrações.

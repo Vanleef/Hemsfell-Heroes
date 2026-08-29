@@ -95,7 +95,7 @@ test("Ilusão Dracônica Maior auto-replaces a single Dragão Jovem", () => {
 
 
 test("Draconic Illusions are spells and never remain as permanents", async () => {
-  const rawCards = (await import("../app/cards.generated.json", { with: { type: "json" } })).default;
+  const rawCards = (await import("../app/data/catalog/cards.generated.json", { with: { type: "json" } })).default;
   for (const page of [12, 13, 14]) {
     const compiled = compileCard(rawCards.find((card) => Number(card.page) === page));
     assert.equal(compiled.type, "Feitiço", `p${page} must compile as Feitiço`);
@@ -156,7 +156,7 @@ test("Ilusão Dracônica keeps its declared discount if the hatchling leaves dur
 });
 
 test("reserved cost is generic: hand-size cards are not overcharged after responses change the hand", async () => {
-  const rawCards = (await import("../app/cards.generated.json", { with: { type: "json" } })).default;
+  const rawCards = (await import("../app/data/catalog/cards.generated.json", { with: { type: "json" } })).default;
   const accumulator = compileCard(rawCards.find((card) => Number(card.page) === 88));
   const game = baseState();
   game.players[0].energy = 8;

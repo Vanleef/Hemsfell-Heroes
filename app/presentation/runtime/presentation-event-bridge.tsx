@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect } from "react";
-import { orientOnlineGameForRole } from "./application/session/online-state-orientation.mjs";
-import { cardIdentity, hasPresentableDelta, presentationTransitionKey } from "./presentation/state/presentation-state";
+import { orientOnlineGameForRole } from "../../application/session/online-state-orientation.mjs";
+import { cardIdentity, hasPresentableDelta, presentationTransitionKey } from "../state/presentation-state";
 
 const RULES_RESOLVED_EVENT = "hemsfell:rules-command-resolved";
 const PRESENTATION_EVENT = "hemsfell:presentation-action";
+const PRESENTATION_CATCH_UP_EVENT = "hemsfell:presentation-catch-up";
 const ONLINE_SNAPSHOT_EVENT = "hemsfell:online-room-snapshot";
 const EXCLUDED_COMMANDS = new Set(["declareAttack", "selectDefender", "reposition", "confirmReposition", "surrender"]);
 const MAX_SEEN_TRANSITIONS = 256;
@@ -107,6 +108,20 @@ export default function PresentationEventBridge() {
     const seenTransitionKeys = new Set<string>();
     const seenOrder: string[] = [];
     let localSequence = 0;
+    let skipNextOnlinePresentation = document.visibilityState === "hidden";
+
+    const requestCatchUp = () => {
+      window.dispatchEvent(new CustomEvent(PRESENTATION_CATCH_UP_EVENT));
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        skipNextOnlinePresentation = true;
+        requestCatchUp();
+      } else {
+        requestCatchUp();
+      }
+    };
 
     const rememberTransition = (key: string) => {
       if (seenTransitionKeys.has(key)) return false;
@@ -120,6 +135,10 @@ export default function PresentationEventBridge() {
     };
 
     const emit = (detail: PresentationPayload) => {
+      if (document.visibilityState === "hidden") {
+        requestCatchUp();
+        return;
+      }
       const command = presentedCommand(detail.before, detail.after, detail.command);
       if (!command) return;
       const base = { ...detail, command: clone(command) };
@@ -154,6 +173,14 @@ export default function PresentationEventBridge() {
       const previous = snapshots.get(roomId);
       snapshots.set(roomId, { revision, game: clone(after), isHost });
       if (!previous || revision <= previous.revision) return;
+
+      const revisionGap = revision - previous.revision;
+      if (skipNextOnlinePresentation || document.visibilityState === "hidden" || revisionGap > 1) {
+        skipNextOnlinePresentation = false;
+        confirmed.delete(`${roomId}:${revision}`);
+        requestCatchUp();
+        return;
+      }
 
       const key = `${roomId}:${revision}`;
       const ack = confirmed.get(key);
@@ -204,10 +231,12 @@ export default function PresentationEventBridge() {
 
     window.addEventListener(RULES_RESOLVED_EVENT, onLocalResolution as EventListener);
     window.addEventListener(ONLINE_SNAPSHOT_EVENT, onOnlineSnapshot as EventListener);
+    document.addEventListener("visibilitychange", onVisibilityChange);
     return () => {
       window.fetch = originalFetch;
       window.removeEventListener(RULES_RESOLVED_EVENT, onLocalResolution as EventListener);
       window.removeEventListener(ONLINE_SNAPSHOT_EVENT, onOnlineSnapshot as EventListener);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       snapshots.clear();
       confirmed.clear();
       seenTransitionKeys.clear();

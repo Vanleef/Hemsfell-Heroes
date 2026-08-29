@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
 import { explicitCardRules } from "../app/rules-engine/card-rules.mjs";
-import { suppliedDeckPages } from "../app/user-deck.mjs";
+import { suppliedDeckPages } from "../app/model/decks/user-deck.mjs";
 
 const pageSource = fs.readFileSync(new URL("../app/page.tsx", import.meta.url), "utf8");
 

@@ -6,8 +6,8 @@ const [runtime, page, remoteCardArt, matchCss, collectionCss, packageJson] = awa
   readFile(new URL("../app/presentation/cards/card-preview-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/presentation/cards/remote-card-art.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../app/match-ui.css", import.meta.url), "utf8"),
-  readFile(new URL("../app/ui-overrides.css", import.meta.url), "utf8"),
+  readFile(new URL("../app/presentation/styles/match-ui.css", import.meta.url), "utf8"),
+  readFile(new URL("../app/presentation/styles/base/ui-overrides.css", import.meta.url), "utf8"),
   readFile(new URL("../package.json", import.meta.url), "utf8").then(JSON.parse),
 ]);
 
@@ -25,9 +25,9 @@ test("card preview uses Floating UI middleware and a body-level portal", () => {
 test("card preview runtime is mounted globally in the root layout", async () => {
   const [layout, matchRuntime] = await Promise.all([
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/match-ui-runtime.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/match/match-ui-runtime.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(layout, /import CardPreviewRuntime from ["']\.\/card-preview-runtime["']/);
+  assert.match(layout, /import CardPreviewRuntime from ["']\.\/presentation\/cards\/card-preview-runtime["']/);
   assert.match(layout, /<CardPreviewRuntime\s*\/>/);
   assert.doesNotMatch(matchRuntime, /CardPreviewRuntime/);
 });

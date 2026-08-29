@@ -5,7 +5,7 @@ import { listPendingIndomitableAttackers } from "../../rules-engine/combat.mjs";
 import { shouldAutoPass } from "../../rules-engine/priority.mjs";
 import { chooseAIDecision } from "../../rules-engine/ai.mjs";
 import { logOnlineDiagnostic } from "./online-diagnostics.mjs";
-import type { UserDeck } from "../../user-deck.mjs";
+import type { UserDeck } from "../../model/decks/user-deck.mjs";
 
 /* `executeOnlineCommand` is the Online timing wrapper around the authoritative
  * rules-engine executeCommand path; room clients still never mutate rules

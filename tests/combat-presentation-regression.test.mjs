@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { immediateDirectCombatPresentation, resolvedCombatPresentation } from "../app/combat-presentation.mjs";
+import { immediateDirectCombatPresentation, resolvedCombatPresentation } from "../app/presentation/combat/combat-presentation.mjs";
 
 const card = (uid, name, extra = {}) => ({
   uid, id: uid, page: 1, name, type: "Criatura", text: "", tags: [],

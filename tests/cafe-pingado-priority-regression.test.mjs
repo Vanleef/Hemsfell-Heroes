@@ -8,7 +8,7 @@ const player = () => ({ heroId: "rasmus", level: 1, life: 30, energy: 3, reserve
 const creature = (uid) => ({ uid, id: uid, name: uid, type: "Criatura", cost: 1, atk: 1, hp: 1, text: "", tags: [], subtypes: [], abilities: [], slot: 0, damage: 0, exhausted: false, summoning: false, stunned: false, frozen: false, suffocated: false, immobilized: false, defenseUses: 0, markers: 0 });
 
 test("Café Pingado is canonically Accelerated", () => {
-  const cards = JSON.parse(fs.readFileSync(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
+  const cards = JSON.parse(fs.readFileSync(new URL("../app/data/catalog/cards.generated.json", import.meta.url), "utf8"));
   const raw = cards.find((card) => card.page === 236);
   assert.ok(raw);
   assert.ok((raw.tags || []).some((tag) => /acelerado/i.test(String(tag))));
@@ -18,7 +18,7 @@ test("Café Pingado is canonically Accelerated", () => {
 });
 
 test("Café Pingado appears as a legal response when priority, reserve and a valid target allow it", () => {
-  const cards = JSON.parse(fs.readFileSync(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
+  const cards = JSON.parse(fs.readFileSync(new URL("../app/data/catalog/cards.generated.json", import.meta.url), "utf8"));
   const cafe = compileCard(cards.find((card) => card.page === 236));
   const p0 = player(), p1 = player();
   p0.hand = [cafe];
@@ -29,7 +29,7 @@ test("Café Pingado appears as a legal response when priority, reserve and a val
 });
 
 test("Café Pingado is not legal off-turn without enough reserve", () => {
-  const cards = JSON.parse(fs.readFileSync(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
+  const cards = JSON.parse(fs.readFileSync(new URL("../app/data/catalog/cards.generated.json", import.meta.url), "utf8"));
   const cafe = compileCard(cards.find((card) => card.page === 236));
   const p0 = player(), p1 = player();
   p0.reserve = 0;
@@ -40,7 +40,7 @@ test("Café Pingado is not legal off-turn without enough reserve", () => {
 });
 
 test("Café Pingado does not hold Assisted priority when there is no valid creature target", () => {
-  const cards = JSON.parse(fs.readFileSync(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
+  const cards = JSON.parse(fs.readFileSync(new URL("../app/data/catalog/cards.generated.json", import.meta.url), "utf8"));
   const cafe = compileCard(cards.find((card) => card.page === 236));
   const p0 = player(), p1 = player();
   p0.hand = [cafe];

@@ -49,14 +49,14 @@ test("command envelope separates shape validation from rules validation", () => 
   assert.throws(() => assertGameCommandEnvelope({ type: "playCard", owner: 3 }), /invalid-owner/);
 });
 
-test("legacy module paths are compatibility facades only", async () => {
-  const [sessionFacade, orientationFacade, storeFacade] = await Promise.all([
-    read("app/online-session.mjs"),
-    read("app/online-state-orientation.mjs"),
+test("organized application modules expose contracts without root facades", async () => {
+  const [session, orientation, storeFacade] = await Promise.all([
+    import("../app/application/session/online-session.mjs"),
+    import("../app/application/session/online-state-orientation.mjs"),
     read("app/api/rooms/store-runtime.ts"),
   ]);
-  assert.match(sessionFacade, /export \* from "\.\/application\/session\/online-session\.mjs"/);
-  assert.match(orientationFacade, /export \* from "\.\/application\/session\/online-state-orientation\.mjs"/);
+  assert.equal(typeof session.loadOnlineSession, "function");
+  assert.equal(typeof orientation.orientOnlineGameForRole, "function");
   assert.match(storeFacade, /export \* from "\.\.\/\.\.\/infrastructure\/rooms\/room-repository"/);
 });
 
