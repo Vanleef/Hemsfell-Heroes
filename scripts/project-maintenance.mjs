@@ -30,8 +30,11 @@ const requiredFiles = [
   "app/page.tsx",
   "app/cards.generated.json",
   "app/globals.css",
-  "app/match-ui.css",
-  "app/match-ui-runtime.tsx",
+  "app/presentation/styles/match-ui.css",
+  "app/presentation/styles/game-presentation.css",
+  "app/presentation/styles/tutorial.css",
+  "app/presentation/match/match-ui-runtime.tsx",
+  "app/presentation/runtime/game-presentation-runtime.tsx",
   "app/match-ui-guard.tsx",
   "app/rules-engine/card-rules.mjs",
   "app/rules-engine/compiler.mjs",
@@ -76,6 +79,7 @@ else {
 
 async function validateCssImports(path) {
   const source = await read(path);
+  const sourceUrl = new URL(path, root);
   let sawCssRule = false;
   for (const rawLine of source.split(/\r?\n/)) {
     const line = rawLine.trim();
@@ -85,19 +89,18 @@ async function validateCssImports(path) {
     } else sawCssRule = true;
   }
   for (const match of source.matchAll(/@import\s+["'](\.\/[^"']+)["'];/g)) {
-    const relative = match[1].slice(2);
-    try { await access(new URL(`app/${relative}`, root)); }
+    try { await access(new URL(match[1], sourceUrl)); }
     catch { fail(`${path} imports a missing stylesheet: ${match[1]}`); }
   }
 }
 
 await validateCssImports("app/globals.css");
-await validateCssImports("app/match-ui.css");
+await validateCssImports("app/presentation/styles/match-ui.css");
 
 const [labStructure, matchStructure, responseStructure, layoutStructure] = await Promise.all([
   read("app/lab.css"),
-  read("app/match-ui.css"),
-  read("app/response-window.css"),
+  read("app/presentation/styles/match-ui.css"),
+  read("app/presentation/styles/response-window.css"),
   read("app/layout.tsx"),
 ]);
 
@@ -123,19 +126,19 @@ assertOrdered(matchStructure, [
   '/* === MATCH RESULT === */',
   '/* === MATCH LOG === */',
   '/* === COMBAT ATTACK HIGHLIGHT === */',
-], "app/match-ui.css cascade");
+], "app/presentation/styles/match-ui.css cascade");
 
 assertOrdered(responseStructure, [
   '/* === SETUP HEADING',
   '/* === RESPONSE WINDOW === */',
-], "app/response-window.css cascade");
+], "app/presentation/styles/response-window.css cascade");
 
 assertOrdered(layoutStructure, [
   'import "./globals.css";',
-  'import "./match-ui.css";',
-  'import "./online-match-runtime.css";',
+  'import "./presentation/styles/match-ui.css";',
+  'import "./presentation/styles/online-match-runtime.css";',
   'import MatchUiGuard from "./match-ui-guard";',
-  'import MatchUiRuntime from "./match-ui-runtime";',
+  'import MatchUiRuntime from "./presentation/match/match-ui-runtime";',
   '<MatchUiGuard />',
   '<MatchUiRuntime />',
 ], "app/layout.tsx runtime order");
