@@ -4,7 +4,7 @@ import test from "node:test";
 import ts from "typescript";
 
 const [runtime, layout, css, machine, clock, page, packageJson] = await Promise.all([
-  readFile(new URL("../app/online-match-runtime.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/application/online/online-match-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/online-match-runtime.css", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
