@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("effect cues have one semantic target owner", () => {
-  const runtime = read("app/presentation-action-cues.ts");
+  const runtime = read("app/presentation/cues/presentation-action-cues.ts");
   assert.match(runtime, /"onlineSnapshot"/);
   assert.match(runtime, /explicit\.length \? explicit/);
   assert.match(runtime, /inferred\.length <= MAX_TARGETS/);
@@ -37,7 +37,7 @@ test("presentation identity is assigned once by the bridge and reused by the run
 
 test("triggered effects preserve their real source through the engine trace", () => {
   const engine = read("app/rules-engine/engine-base.mjs");
-  const cues = read("app/presentation-action-cues.ts");
+  const cues = read("app/presentation/cues/presentation-action-cues.ts");
   assert.match(engine, /sourceId: traceContext\.sourceId/);
   assert.match(engine, /targetIds: traceContext\.targetIds/);
   assert.match(cues, /reverse\(\)\.find\(\(entry\) => entry\.kind === "effect" && entry\.sourceId\)/);
