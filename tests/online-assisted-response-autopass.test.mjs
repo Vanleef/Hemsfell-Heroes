@@ -35,7 +35,7 @@ test("a genuinely executable Acelerado keeps the response window open", () => {
 });
 test("Assisted auto-pass keeps one client recovery path and one authoritative server drain after client extraction", async () => {
   const [runtime, page, machine, hook, policy] = await Promise.all([
-    readFile(new URL("../app/online-match-runtime.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/application/online/online-match-runtime.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/match/use-priority-control.ts", import.meta.url), "utf8"),
