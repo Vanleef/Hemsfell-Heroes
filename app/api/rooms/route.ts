@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { roomView, type Room, writeRoom } from "./store-runtime";
+import { roomView, type Room, writeRoom } from "../../infrastructure/rooms/room-repository";
 import { defaultSettings, participant, sanitizeSettings } from "./machine";
 import { isPlainRecord, readSafeJson } from "./validation";
 

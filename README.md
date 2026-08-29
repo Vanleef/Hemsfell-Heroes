@@ -204,16 +204,17 @@ flowchart TB
 | Área | Arquivos principais | Responsabilidade |
 | --- | --- | --- |
 | Shell legado | `app/page.tsx`, `app/layout.tsx` | Orquestra a tela principal e a ordem global dos runtimes. Preserve seus contratos durante refactors. |
-| Motor | `app/rules-engine/engine*.mjs`, `effects.mjs`, `targeting.mjs` | Valida comandos, paga custos e produz estado/eventos. |
+| Modelo | `app/model/game-state.ts` | Contratos compartilhados de carta, instância, jogador, combate e partida. |
+| Motor | `app/rules-engine/engine*.mjs`, `commands/`, `state/`, `effects.mjs`, `targeting.mjs` | Valida comandos, paga custos e produz estado/eventos. |
 | Prioridade e combate | `priority-state.mjs`, `priority.mjs`, `combat.mjs`, `online-*.mjs` | Pilha LIFO, janelas de resposta, checkpoints e resolução. |
 | IA e simulação | `ai.mjs`, `simulator.mjs` | Escolha de comandos legais e execução headless determinística e limitada. |
-| Sessão | `app/online-*.{mjs,tsx}`, `app/match/` | Sincronização, reconexão, orientação de estado e controles de prioridade. |
-| Apresentação | `app/presentation-*.{ts,tsx}`, `app/game-presentation-runtime.tsx` | Converte alterações confirmadas em cues e animações sem controlar regras. |
-| Catálogo | `cards.generated.json`, `card-rules.mjs`, `subtypes.mjs`, `hero-evolution.mjs` | Templates de cartas, exceções explícitas, subtipos e evolução. |
+| Aplicação e sessão | `app/application/`, `app/online-*.tsx`, `app/match/` | Despacha intenções, mantém sessão, reconecta e orienta snapshots. |
+| Apresentação | `app/presentation/`, `app/presentation-*.{ts,tsx}`, `app/game-presentation-runtime.tsx` | Converte alterações confirmadas em cues e animações sem controlar regras. |
+| Catálogo | `app/data/catalog/`, `cards.generated.json`, `card-rules.mjs`, `subtypes.mjs`, `hero-evolution.mjs` | Templates de cartas, exceções explícitas, subtipos e evolução. |
 | Tutorial/glossário | `tutorial-screen.tsx`, `tutorial-content.ts`, `game-glossary.ts` | Interface didática e texto canônico de palavras-chave. |
 | Artes | `remote-card-art.tsx`, `app/api/hemsfell-card-catalog.pdf/` | Cache e renderização das páginas reais do catálogo PDF. |
 | Online/API | `app/api/rooms/` | Máquina autoritativa, revisões, privacidade, validação e persistência. |
-| Infraestrutura | `scripts/`, `tests/`, `db/`, `worker/` | Build, auditoria, simulação, regressão e pipelines alternativos. |
+| Infraestrutura | `app/infrastructure/`, `app/api/`, `scripts/`, `tests/`, `db/`, `worker/` | Persistência, HTTP, build, auditoria, simulação e regressão. |
 
 O detalhamento de dependências, fluxos PvAI/Online e limites de extração está em [docs/architecture.md](docs/architecture.md). `app/page.tsx` ainda contém integração legada; novas regras pertencem ao motor, enquanto a página deve apenas transformar interação em intenção e renderizar o resultado.
 

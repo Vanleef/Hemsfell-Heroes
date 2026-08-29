@@ -2,19 +2,20 @@
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import rawCards from "./cards.generated.json";
+import rawCards from "./data/catalog/generated-card-catalog";
+import type { CardDef, CardType, CombatAction, ElementName, GameState as Game, MatchSettings, OnlineSession, PendingDecision, PendingResponse, Phase, PlayerState as Player, Unit } from "./model/game-state";
 import { RemoteCardArt } from "./remote-card-art";
 import { canActivateCard, hasActivatableEffect } from "./card-activation.mjs";
 import { compileCard } from "./rules-engine/compiler.mjs";
 import { hasIntrinsicKeyword, intrinsicKeywordNames } from "./card-keywords.mjs";
-import { canExecuteCard, executeCommand } from "./rules-engine/engine.mjs";
+import { canExecuteCard, executeCommand } from "./application/commands/game-command-service.mjs";
 import { legalPriorityResponses } from "./rules-engine/priority.mjs";
 import { orderAIAttackers } from "./rules-engine/ai.mjs";
 import { chooseAdvancedAIAction, chooseAdvancedAIDecision, chooseAdvancedAIBlock, chooseAdvancedAIResponse, planAdvancedAIAttacks, resetAdvancedAI } from "./rules-engine/ai-system/runtime";
 import { hasSubtype } from "./rules-engine/subtypes.mjs";
 import { cardPlayTargetPolicy, isValidTarget, targetPolicy, TargetScope } from "./rules-engine/targeting.mjs";
 import { applyCloneRetaliation, claimOncePerTurn, earthquakeDamage, elementalChainFrom as ruleElementalChainFrom } from "./game-rules.mjs";
-import { clearOnlineSession, loadOnlineSession, saveOnlineSession } from "./online-session.mjs";
+import { clearOnlineSession, loadOnlineSession, saveOnlineSession } from "./application/session/online-session.mjs";
 import { MAIN_DECK_SIZE, defaultUserDeck, disabledDeckCardIds as sharedDisabledDeckCardIds, expandUserDeckMain, removedCatalogPages as sharedRemovedCatalogPages, resolveUserDeckExtra, suppliedDeckPages as sharedSuppliedDeckPages, validateUserDeck } from "./user-deck.mjs";
 import type { UserDeck } from "./user-deck.mjs";
 import { CombatAnimation } from "./match/combat-animation";
@@ -22,27 +23,14 @@ import { PriorityControlToggle, ResponseModal } from "./match/priority-ui";
 import { usePriorityControl } from "./match/use-priority-control";
 import { TutorialScreen } from "./tutorial-screen";
 
-type CardType="Criatura"|"Feitiço"|"Artefato"|"Encanto"|"Terreno"|"Herói";
-type CardDef={page:number;id:string;name:string;type:CardType;cost:number;atk?:number;hp?:number;text:string;tags:string[];image:string;hero:boolean;imageCard:boolean;revealed?:boolean;revealedTo?:number[];subtypes?:string[];abilities?:any[];rules?:unknown;diagnostics?:{source?:string;unsupported?:number};generatedImage?:boolean;collectionQuantity?:number};
 const immediateCardEffectText=(card:CardDef)=>card.text.split(/neste turno,\s*seu próximo/i)[0];
 const cardPlayEffectText=(card:CardDef)=>card.type!=="Criatura"?immediateCardEffectText(card):card.text.match(/primeiro ato\s*:\s*([\s\S]*?)(?=(?:último suspiro|fura-fila)\s*:|$)/i)?.[1]?.trim()||"";
-type Unit=CardDef&{uid:string;slot:number;enteredRound?:number;damage:number;bonusAtk:number;bonusHp:number;temporaryAtk?:number;temporaryHp?:number;temporaryTags?:string[];temporarySubtypes?:string[];combatRestrictions?:Array<{cannotCombatSubtype?:string;duration?:string}>;attackLimit?:number;attacksThisTurn?:number;markers:number;modifiers?:Array<{attack?:number;health?:number;duration?:string;sourceId?:string}>;grantedKeywords?:string[];staticModifiers?:any[];lastDamagedBy?:string;damagedOwnersThisTurn?:number[];activatedThisTurn?:boolean;attackedThisTurn?:boolean;exhausted:boolean;summoning:boolean;frozen:boolean;stunned:boolean;suffocated:boolean;immobilized:boolean;impacting?:boolean;defenseUses:number;attachedTo?:string;temporary?:boolean;generatedImage?:boolean};
-type ElementName="Fogo"|"Água"|"Terra"|"Ar";
-type Player={heroId:string;level:number;heroXP:number;markers?:number|Record<string,number>;levelUpsThisTurn:number;life:number;lifeLostThisTurn?:number;lifeLossEvents?:number;maxEnergy:number;energy:number;reserve:number;noReserveStorageThisTurn?:boolean;nextCardDiscounts?:Array<{amount:number;type?:CardType;typeNot?:CardType;expiresRound?:number}>;deck:CardDef[];extraDeck:CardDef[];hand:CardDef[];board:Unit[];support:Unit[];terrain:Unit|null;grave:CardDef[];obscuro:CardDef[];cardsPlayed:number;turnCardsPlayed:number;goblinTurnCardsPlayed?:number;turnSpellsPlayed:number;spellsPlayed:number;coffeeSpells:number;damageDealt:number;turnDeaths:number;abilityUses:Record<string,number>;pendingTranqueira:boolean;nextCardDiscount:number;nextNonCreatureDiscount:number;nextSpellDiscount:number;nextSummonPaysLife:boolean;nextCreaturePaysLife?:boolean;catsEnteredThisTurn:number;fieldSubtypeCounts?:Record<string,number>;elementChain?:{element:ElementName;effect:"Sufocado"|"Atordoado"|"Congelado"|"Imobilizado"};nextElementEffects?:Array<{element:ElementName;keyword:string;expires?:string}>;lastElement?:ElementName;lastElementSource?:string};
-type Phase="manutencao"|"principal"|"combate"|"fim";
 /* Heroes are valid targets only for explicit damage or healing effects. */
 const allowsHeroTarget=(card:CardDef|undefined,step=0)=>!!card&&(targetPolicy({...card,text:cardPlayEffectText(card)}).steps?.[step]?.scope??targetPolicy({...card,text:cardPlayEffectText(card)}).scope)===TargetScope.ANY_CHARACTER;
-type Game={players:[Player,Player];active:0|1;phase:Phase;round:number;log:{id:string;text:string;tone?:string}[];winner:number|null;selectedAttackers:string[];events:number;combatAction?:CombatAction|null;pendingAction?:Record<string,unknown>;priorityStack?:Array<{kind?:string;actor?:0|1;label?:string;command?:Record<string,unknown>}>;pendingResponse?:PendingResponse|null;pendingDecision?:PendingDecision|null;pendingReposition?:{owners:Array<0|1>;confirmed:Array<0|1>;activeOwner?:0|1;moveAttachments:boolean;sourceId?:string;deadline?:number}|null;turnDeadline?:number|null};
 type Screen="menu"|"setup"|"decks"|"tutorial"|"game";
 type Targeting={kind:"attach"|"spell"|"elemental-optional"|"gimble"|"natureza"|"saymon"|"saymon-life"|"ngoro"|"uruk-fire"|"tranqueira-attach";source:string;cardIndex?:number;amount?:number;response?:boolean;fieldSlot?:number;required?:number;minimum?:number;selected?:string[];chosenElement?:ElementName;sourceUid?:string;allowedIds?:string[]};
 type ImageChoice={cardIndex:number;cardName:string;options:string[];fieldSlot?:number};
 type CafeChoice="cats"|"heal"|"draw"|"level";
-type PendingResponse={responder:0|1;actor:0|1;action:string;deadline?:number;passes?:number};
-type PendingDecision={kind:string;owner:0|1;effect:{choices?:any[];cards?:CardDef[];targetOwner?:0|1;replayEffects?:any[];minimum?:number;maximum?:number;amount?:number;types?:string[];subtype?:string;vanillaOnly?:boolean;minCost?:number;maxCost?:number;maxCostFromMarkerAmount?:boolean;markerCost?:number;nameIncludes?:string;name?:string;targetOwner?:0|1;creatureSlots?:number[];supportSlots?:number[]};context?:Record<string,any>;targetSteps?:Array<{scope:string;role?:string;requiredSubtype?:string;requiredName?:string;imageOnly?:boolean;excludeIds?:string[];allowedIds?:string[];maxCost?:number;requireExhausted?:boolean;requiresDamagedOwnerThisTurn?:boolean;requiresEffectAppliedThisTurn?:boolean;requiresMarker?:boolean;optional?:boolean}>;sourceName?:string};
-type MatchSettings={startingLife:number;responseSeconds:number;turnSeconds:number};
-type OnlineSession={roomId:string;token:string;isHost:boolean};
-type CombatStage="declared"|"priority"|"choosing"|"charging"|"impact"|"resolved";
-type CombatAction={attackerOwner:0|1;attackerUid:string;attackerCard:CardDef;defenderUid?:string;defenderCard?:CardDef;targetHero?:boolean;stage:CombatStage;result?:string;destroyed?:Array<"attacker"|"defender">;winnerText?:string;attackDamage?:number;counterDamage?:number};
 type VisualFx={id:string;kind:"summon"|"spell"|"artifact"|"terrain"|"ability"|"damage";theme:"blood"|"dragon"|"goblin"|"recruit"|"divine"|"nature"|"arcane"|"chaos"|"order"|"neutral";card?:CardDef;target?:CardDef;label:string;detail:string};
 type SearchRequest={id:string;owner:0|1;sourceName:string;sourcePage:number;text:string;limit:number;filterLabel:string;destination:"hand"|"field";reveal:boolean;optional:boolean;maxCost?:number};
 

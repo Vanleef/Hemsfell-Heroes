@@ -61,11 +61,13 @@ test("presentation bridge deduplicates material transitions and recovers resolve
 
 test("guest online presentation mirrors nested priority ownership", () => {
   const bridge = read("app/presentation-event-bridge.tsx");
-  assert.match(bridge, /const flipOwner/);
-  assert.match(bridge, /pendingAction = \{ \.\.\.clone\(game\.pendingAction\), owner: flipOwner/);
-  assert.match(bridge, /priorityStack = game\.priorityStack\.map/);
-  assert.match(bridge, /owner: flipOwner\(frame\.command\.owner\)/);
-  assert.match(bridge, /responder: flipOwner\(game\.pendingResponse\.responder\)/);
+  const orientation = read("app/application/session/online-state-orientation.mjs");
+  assert.match(bridge, /import \{ orientOnlineGameForRole \}/);
+  assert.match(bridge, /orientOnlineGameForRole\(game, isHost \? "host" : "guest"\)/);
+  assert.match(orientation, /pendingAction = orientCommand/);
+  assert.match(orientation, /priorityStack = game\.priorityStack\.map/);
+  assert.match(orientation, /command: orientCommand\(frame\.command\)/);
+  assert.match(orientation, /responder: flip\(game\.pendingResponse\.responder\)/);
 });
 
 test("AI keeps its original runtime shape and waits for the single presentation transaction", () => {

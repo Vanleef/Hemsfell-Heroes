@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { orientOnlineGameForRole } from "./online-state-orientation.mjs";
+import { orientOnlineGameForRole } from "./application/session/online-state-orientation.mjs";
 
 type Session = { id: string; isHost: boolean };
 type PriorityView = {

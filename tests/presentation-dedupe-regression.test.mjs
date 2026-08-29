@@ -146,10 +146,10 @@ test("resolved combat has a single visual owner", () => {
 });
 
 test("presentation bridge ignores bookkeeping-only updates", () => {
-  const bridge = read("app/presentation-event-bridge.tsx");
-  const start = bridge.indexOf("const presentationFingerprint");
-  const end = bridge.indexOf("const hasPresentableDelta");
-  const fingerprint = bridge.slice(start, end);
+  const presentationState = read("app/presentation/state/presentation-state.ts");
+  const start = presentationState.indexOf("export const presentationFingerprint");
+  const end = presentationState.indexOf("export const hasPresentableDelta");
+  const fingerprint = presentationState.slice(start, end);
   assert.doesNotMatch(fingerprint, /\bround:|\bphase:|\bactive:|\bevents:/);
   assert.match(fingerprint, /\bwinner:/);
   assert.match(fingerprint, /\bplayers:/);

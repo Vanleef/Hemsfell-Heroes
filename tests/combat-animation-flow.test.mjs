@@ -171,12 +171,14 @@ test("hero level-up is a central blocking presentation stage in every mode", () 
   const css = read("app/game-presentation.css");
   const page = read("app/page.tsx");
   const bridge = read("app/presentation-event-bridge.tsx");
+  const presentationState = read("app/presentation/state/presentation-state.ts");
   assert.match(runtime, /async function animateHeroLevelUp/);
   assert.match(runtime, /await animateHeroLevelUp\(layers\.effect, detail, afterDom, heldState\)/);
   assert.match(runtime, /releaseLevelState\(held, hero\?\.element\)/);
   assert.match(css, /\.hh-hero-level-up \{/);
   assert.match(page, /const queueOnlineSnapshotFx=\(_previous:Game\|null,_next:Game\)=>\{\};/);
-  assert.match(bridge, /level: player\?\.level/);
+  assert.match(bridge, /presentationTransitionKey/);
+  assert.match(presentationState, /level: player\?\.level/);
 });
 
 test("AI and online follow-up commands respect presentation idle", () => {

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import { orientOnlineGameForRole } from "./application/session/online-state-orientation.mjs";
+import { cardIdentity, hasPresentableDelta, presentationTransitionKey } from "./presentation/state/presentation-state";
 
 const RULES_RESOLVED_EVENT = "hemsfell:rules-command-resolved";
 const PRESENTATION_EVENT = "hemsfell:presentation-action";
@@ -16,85 +18,12 @@ const clone = <T,>(value: T): T => {
   try { return structuredClone(value); }
   catch { return value; }
 };
-const flipOwner = (value: unknown) => value === 0 ? 1 : value === 1 ? 0 : value;
-const orientGame = (game: any, isHost: boolean) => {
-  if (!game) return null;
-  const oriented = clone(game);
-  if (isHost || !Array.isArray(game.players) || game.players.length < 2) return oriented;
-  // Presentation always addresses the local player as owner 0. Flip every
-  // owner-bearing nested field together so an animation never crosses sides.
-  oriented.players = [clone(game.players[1]), clone(game.players[0])];
-  oriented.active = flipOwner(game.active);
-  oriented.winner = game.winner == null ? null : flipOwner(game.winner);
-  if (game.combatAction) oriented.combatAction = { ...clone(game.combatAction), attackerOwner: flipOwner(game.combatAction.attackerOwner) };
-  if (game.pendingResponse) oriented.pendingResponse = { ...clone(game.pendingResponse), responder: flipOwner(game.pendingResponse.responder), actor: flipOwner(game.pendingResponse.actor) };
-  if (game.pendingAction) oriented.pendingAction = { ...clone(game.pendingAction), owner: flipOwner(game.pendingAction.owner) };
-  if (Array.isArray(game.priorityStack)) oriented.priorityStack = game.priorityStack.map((frame: any) => ({
-    ...clone(frame),
-    actor: flipOwner(frame?.actor),
-    command: frame?.command ? { ...clone(frame.command), owner: flipOwner(frame.command.owner) } : frame?.command,
-  }));
-  if (game.pendingDecision) {
-    oriented.pendingDecision = { ...clone(game.pendingDecision), owner: flipOwner(game.pendingDecision.owner) };
-    if (oriented.pendingDecision.context && typeof oriented.pendingDecision.context === "object") {
-      oriented.pendingDecision.context = {
-        ...oriented.pendingDecision.context,
-        owner: flipOwner(oriented.pendingDecision.context.owner),
-        decisionOwner: flipOwner(oriented.pendingDecision.context.decisionOwner),
-      };
-    }
-    if (oriented.pendingDecision.effect && typeof oriented.pendingDecision.effect.targetOwner === "number") {
-      oriented.pendingDecision.effect.targetOwner = flipOwner(oriented.pendingDecision.effect.targetOwner);
-    }
-  }
-  if (game.pendingReposition) oriented.pendingReposition = {
-    ...clone(game.pendingReposition),
-    owners: (game.pendingReposition.owners || []).map(flipOwner),
-    confirmed: (game.pendingReposition.confirmed || []).map(flipOwner),
-    activeOwner: flipOwner(game.pendingReposition.activeOwner),
-  };
-  return oriented;
-};
+const orientGame = (game: any, isHost: boolean) => game
+  ? orientOnlineGameForRole(game, isHost ? "host" : "guest")
+  : null;
 
-const cardIdentity = (card: any) => String(card?.uid || card?.id || `${card?.page ?? ""}:${card?.name ?? ""}`);
-const unitFingerprint = (unit: any) => ({
-  id: cardIdentity(unit), slot: unit?.slot, damage: unit?.damage, bonusAtk: unit?.bonusAtk, bonusHp: unit?.bonusHp,
-  temporaryAtk: unit?.temporaryAtk, temporaryHp: unit?.temporaryHp, markers: unit?.markers,
-  exhausted: unit?.exhausted, summoning: unit?.summoning, frozen: unit?.frozen, stunned: unit?.stunned,
-  suffocated: unit?.suffocated, immobilized: unit?.immobilized, tags: unit?.tags, temporaryTags: unit?.temporaryTags,
-  modifiers: unit?.modifiers, grantedKeywords: unit?.grantedKeywords,
-});
-// Interaction metadata is deliberately absent: priority/timer-only revisions
-// must not replay a card animation when the material board did not change.
-const presentationFingerprint = (game: any) => JSON.stringify({
-  winner: game?.winner,
-  players: (game?.players || []).map((player: any) => ({
-    life: player?.life,
-    level: player?.level,
-    heroXP: player?.heroXP,
-    markers: player?.markers,
-    hand: (player?.hand || []).map(cardIdentity),
-    board: (player?.board || []).map(unitFingerprint),
-    support: (player?.support || []).map(unitFingerprint),
-    terrain: player?.terrain ? unitFingerprint(player.terrain) : null,
-    grave: (player?.grave || []).map(cardIdentity),
-    obscuro: (player?.obscuro || []).map(cardIdentity),
-    extraDeck: (player?.extraDeck || []).map(cardIdentity),
-  })),
-});
-const hasPresentableDelta = (before: any, after: any) => !!before && !!after && presentationFingerprint(before) !== presentationFingerprint(after);
-const hashText = (value: string) => {
-  let hash = 2166136261;
-  for (let index = 0; index < value.length; index++) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(36);
-};
 const transitionKey = (detail: PresentationPayload) => {
-  const before = presentationFingerprint(detail.before);
-  const after = presentationFingerprint(detail.after);
-  return `${detail.revision == null ? "local" : `rev:${detail.revision}`}:${hashText(before)}>${hashText(after)}`;
+  return presentationTransitionKey(detail);
 };
 const attackFromCombat = (combat: any) => combat?.attackerUid ? {
   type: "attack",

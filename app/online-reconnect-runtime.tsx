@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { loadOnlineSession } from "./online-session.mjs";
+import { loadOnlineSession } from "./application/session/online-session.mjs";
 
 function activeRoomSession() {
   const roomId = new URLSearchParams(window.location.search).get("room");

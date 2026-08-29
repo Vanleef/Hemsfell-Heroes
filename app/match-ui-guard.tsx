@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import rawCards from "./cards.generated.json";
+import rawCards from "./data/catalog/generated-card-catalog";
 import { abilitiesForLevel, getExplicitCardRule } from "./rules-engine/card-rules.mjs";
 
 type HeroMeta = {

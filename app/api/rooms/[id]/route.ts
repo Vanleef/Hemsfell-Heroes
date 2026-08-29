@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { readRoomFast as readRoom, roleFor, roomView, writeRoom, type Room } from "../store-runtime";
+import { readRoomFast as readRoom, roleFor, roomView, writeRoom, type Room } from "../../../infrastructure/rooms/room-repository";
 import { applyRulesCommand, applyTimeout, bothDecksLocked, deadline, participant, prepareCoin, sanitizeSettings } from "../machine";
 import { createInitialOnlineGame } from "../initial-game";
 import { shiftOnlineDeadlines } from "../online-clock.mjs";
 import { parseOnlineCommand } from "../online-command-schema.mjs";
 import { isPlainRecord, isRoomId, readSafeJson } from "../validation";
-import rawCards from "../../../cards.generated.json";
+import rawCards from "../../../data/catalog/generated-card-catalog";
 import { validateUserDeck } from "../../../user-deck.mjs";
 import type { DeckCatalogCard } from "../../../user-deck.mjs";
 

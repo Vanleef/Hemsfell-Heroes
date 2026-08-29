@@ -20,11 +20,13 @@ test("level-up and visible card state stay behind the shared presentation barrie
   const runtime = read("app/game-presentation-runtime.tsx");
   const page = read("app/page.tsx");
   const bridge = read("app/presentation-event-bridge.tsx");
+  const presentationState = read("app/presentation/state/presentation-state.ts");
   assert.match(runtime, /unitPresentationFingerprint/);
   assert.match(runtime, /await animateHeroLevelUp\(layers\.effect, detail, afterDom, heldState\)/);
   assert.match(runtime, /setBusy\(true\)/);
   assert.match(page, /__hemsfellPresentationBusy/);
-  assert.match(bridge, /level: player\?\.level/);
+  assert.match(bridge, /presentationTransitionKey/);
+  assert.match(presentationState, /level: player\?\.level/);
 });
 
 test("presentation snapshot refresh ignores unrelated UI mutations", () => {

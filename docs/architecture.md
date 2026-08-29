@@ -20,6 +20,23 @@ Este documento descreve a arquitetura que existe hoje e a direção segura de ev
 | Data / Catalog | Modelos de cartas, regras explícitas, subtipos, heróis, glossário e conteúdo do tutorial | `app/cards.generated.json`, `card-rules.mjs`, `subtypes.mjs`, `hero-evolution.mjs`, `game-glossary.ts`, `tutorial-content.ts` |
 | Infrastructure | Salas, persistência, validação de payload, catálogo PDF, scripts, CI e testes | `app/api/`, `db/`, `worker/`, `scripts/`, `tests/` |
 
+## Fronteiras implementadas
+
+A reorganização preserva os caminhos históricos que são consumidos por testes e ferramentas, mas as implementações novas seguem dependências explícitas:
+
+| Fronteira | Implementação | Consumidores migrados |
+| --- | --- | --- |
+| Estado do domínio | `app/model/game-state.ts` | `app/page.tsx` |
+| FSM de turno e zonas | `app/rules-engine/state/match-state.mjs` | `engine-base.mjs`, testes e serviços |
+| Envelope de comandos | `app/rules-engine/commands/game-command.mjs` | serviço de aplicação |
+| Command service | `app/application/commands/game-command-service.mjs` | View principal |
+| Sessão e orientação | `app/application/session/` | página, reconexão, HUD e bridge de apresentação |
+| Catálogo gerado | `app/data/catalog/generated-card-catalog.ts` | página, guardas de UI e bootstrap/API online |
+| Estado de apresentação | `app/presentation/state/presentation-state.ts` | bridge de eventos |
+| Repositório de salas | `app/infrastructure/rooms/room-repository.ts` | rotas de sala |
+
+`app/online-session.mjs`, `app/online-state-orientation.mjs` e `app/api/rooms/store-runtime.ts` permanecem como fachadas de compatibilidade. Eles não possuem mais implementações paralelas.
+
 ### Model / Rules Engine
 
 - `compiler.mjs` transforma texto/tags do catálogo em habilidades estruturadas.
@@ -33,6 +50,8 @@ Este documento descreve a arquitetura que existe hoje e a direção segura de ev
 - `match-integrity.mjs` verifica invariantes antes/depois de transições sensíveis.
 - `ai.mjs` escolhe intenções; não possui um segundo conjunto de regras.
 - `simulator.mjs` executa partidas headless com limites contra loops.
+- `state/match-state.mjs` declara a ordem das fases e valida o envelope mínimo compartilhado por local, Online e simulação.
+- `commands/game-command.mjs` valida somente o formato da intenção; legalidade continua em `engine-core.mjs`.
 
 ### Application / Session
 
@@ -46,6 +65,8 @@ Este documento descreve a arquitetura que existe hoje e a direção segura de ev
 - `app/online-reconnect-runtime.tsx` restaura a sessão após perda temporária de conexão.
 - `app/presentation-event-bridge.tsx` converte diferenças confirmadas em eventos visuais.
 - `app/presentation-interaction-runtime.tsx` coordena bloqueios exclusivamente visuais durante cues/animações.
+- `app/application/commands/game-command-service.mjs` é a porta usada pela View para executar intenções sem importar o motor diretamente.
+- `app/application/session/` concentra credenciais e orientação de perspectiva de snapshots.
 
 ### View / Presentation
 
@@ -55,6 +76,7 @@ Este documento descreve a arquitetura que existe hoje e a direção segura de ev
 - `app/tutorial-screen.tsx` renderiza os capítulos e ilustrações; `tutorial-content.ts` contém navegação e textos estruturados.
 - `app/remote-card-art.tsx` renderiza cartas reais do PDF e mantém cache de documento/página.
 - As folhas CSS históricas continuam importadas diretamente. Ordem de importação, classes, IDs e `data-*` usados por testes não devem mudar numa reorganização estrutural.
+- `app/presentation/state/presentation-state.ts` calcula deltas materiais e IDs de transição; revisões apenas de timer/prioridade não repetem animações.
 
 ### Data / Catalog
 
@@ -64,6 +86,7 @@ Este documento descreve a arquitetura que existe hoje e a direção segura de ev
 - `hero-evolution.mjs` mantém requisitos e transições de evolução.
 - `game-glossary.ts` é a fonte canônica de texto curto e detalhado das palavras-chave na interface.
 - `tutorial-content.ts` deriva exemplos de palavras-chave do glossário para impedir divergência de texto.
+- `data/catalog/generated-card-catalog.ts` oferece uma fronteira tipada para consumidores da aplicação; scripts de geração/auditoria continuam lendo a fonte JSON diretamente.
 
 ### Infrastructure
 
@@ -73,6 +96,7 @@ Este documento descreve a arquitetura que existe hoje e a direção segura de ev
 - `app/api/hemsfell-card-catalog.pdf/route.ts` fornece o PDF usado por `RemoteCardArt`.
 - `tests/` cobre motor, multiplayer, contratos estáticos da interface e fluxos do tutorial.
 - `scripts/` contém auditoria de cartas, simulação e validação de build/artefato.
+- `infrastructure/rooms/room-repository.ts` seleciona armazenamento volátil ou persistente; as rotas não decidem mais essa política.
 
 ## Fluxo de comando
 
