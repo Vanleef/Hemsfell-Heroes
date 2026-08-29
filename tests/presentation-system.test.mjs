@@ -19,7 +19,7 @@ test("presentation runtimes are mounted after card preview and before the game p
 
 test("canonical glossary feeds the legacy semantic spans used by card preview", () => {
   const glossary = read("app/data/content/game-glossary.ts");
-  const runtime = read("app/game-glossary-runtime.tsx");
+  const runtime = read("app/presentation/glossary/game-glossary-runtime.tsx");
   assert.match(glossary, /export function gameGlossaryEntry/);
   assert.match(runtime, /import \{ gameGlossaryEntry \} from "\.\/game-glossary"/);
   assert.match(runtime, /\.keyword-term,\.keyword-badge,\[data-keyword\],\[data-status\]/);
