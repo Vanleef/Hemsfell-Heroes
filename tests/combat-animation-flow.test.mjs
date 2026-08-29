@@ -41,7 +41,7 @@ test("lethal targets remain on board until their ordered departure starts", () =
 
 test("direct hero attacks use only sword travel plus the red life delta", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
-  const cues = read("app/presentation-action-cues.ts");
+  const cues = read("app/presentation/cues/presentation-action-cues.ts");
   const heroCueStart = cues.indexOf("if (cue.hero) {");
   const heroCue = cues.slice(heroCueStart, cues.indexOf("}", heroCueStart) + 1);
   assert.match(heroCue, /await animateSword/);
@@ -139,7 +139,7 @@ test("graveyard and extra-deck results stay behind their effect animation", () =
 
 test("opponent plays reveal their actual face at the start of presentation", () => {
   const runtime = read("app/game-presentation-runtime.tsx");
-  const art = read("app/remote-card-art.tsx");
+  const art = read("app/presentation/cards/remote-card-art.tsx");
   const bridge = read("app/presentation-event-bridge.tsx");
   assert.match(art, /export async function renderRemoteCardArtToCanvas/);
   assert.match(runtime, /async function revealOpponentPlayedCard/);
