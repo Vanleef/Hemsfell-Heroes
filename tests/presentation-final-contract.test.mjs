@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
 test("direct Hero attack is sword-only before the red life delta", () => {
-  const cues = read("app/presentation-action-cues.ts");
+  const cues = read("app/presentation/cues/presentation-action-cues.ts");
   const runtime = read("app/game-presentation-runtime.tsx");
   const heroStart = cues.indexOf("if (cue.hero) {");
   const heroEnd = cues.indexOf("\n  }", heroStart);
