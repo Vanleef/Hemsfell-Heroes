@@ -12,23 +12,20 @@ This branch is restricted to structural cleanup. Gameplay, AI, rules, timing, se
 - DOM class names, ids and data attributes
 - CSS selector text, declaration values and cascade order
 
-## Applied organization
+## Current organization
 
-- `app/styles/base/` documents ownership of the stable global cascade entrypoints.
-- `app/styles/board/` groups byte-identical mirrors of board geometry, tuning and legacy board layers.
-- `app/styles/match/` groups byte-identical mirrors of match overlays, response, decisions, inspectors, card lists and result/log presentation.
-- Historical CSS paths remain full compatibility sources because regression tests inspect their raw text; they are not converted to forwarding shims.
-- `app/ui/runtime/` provides an optional grouped export boundary for the existing client runtime modules; `layout.tsx` deliberately retains its historical direct imports and component order.
-- `app/ui/components/` provides a stable component export boundary without relocating rendering implementations.
-- `scripts/verify-frontend-structure.mjs` verifies CSS mirror identity plus cascade/runtime ordering on every `prepare:project` run.
+- Historical CSS files remain direct compatibility sources because regression tests inspect selectors and raw text. There are no active `app/styles/` mirrors on `main`.
+- `app/layout.tsx` retains direct imports and the established runtime/component order.
+- Match-specific controllers and views live in `app/match/`; presentation bridges and runtimes remain explicit files in `app/`.
+- Tutorial data is isolated in `app/tutorial-content.ts`, while `app/tutorial-screen.tsx` owns rendering and interaction. Keyword copy is derived from `app/game-glossary.ts`.
+- The current layer map and dependency direction are documented in `docs/architecture.md`; this document defines the stricter front-end refactor guardrails.
 
 ## Safety rules
 
-1. Organized stylesheet mirrors are byte-identical to their historical compatibility files.
-2. Stylesheet import order is preserved exactly.
-3. No CSS selector is renamed or rewritten.
-4. No rule-engine or advanced-AI source is modified by this refactor.
-5. `app/page.tsx` and the runtime contents of `app/layout.tsx` remain unchanged from the branch base.
-6. Uncertain code is retained; no usage is inferred from filename/search absence alone.
-7. Match UI runtime component order remains `MatchUiGuard` then `MatchUiRuntime`.
-8. Every structural invariant is checked without mutating source.
+1. Stylesheet import order is preserved exactly.
+2. No CSS selector, class, ID or `data-*` contract is renamed during a structural-only change.
+3. No rule-engine or advanced-AI source is modified by this refactor.
+4. `app/page.tsx` and the runtime contents of `app/layout.tsx` remain unchanged from the branch base.
+5. Uncertain code is retained; no usage is inferred from filename/search absence alone.
+6. Match UI runtime component order remains `MatchUiGuard` then `MatchUiRuntime`.
+7. Every structural invariant is verified with tests/typechecks before merge.

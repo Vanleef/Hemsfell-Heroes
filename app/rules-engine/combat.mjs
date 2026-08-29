@@ -23,6 +23,8 @@ export function listAttackCapableCreatures(state, owner) {
     const attackerId = cardId(unit);
     if (!attackerId) return false;
     try {
+      // executeCommand is the legality oracle. Running it on a clone avoids a
+      // second, inevitably drifting implementation for AI and presentation.
       executeCommand(clone(state), { type: "declareAttack", owner, attackerId }, { priority: false });
       return true;
     } catch {
@@ -41,6 +43,8 @@ export function listLegalBlockers(state, defenderOwner, attackerOrId) {
     const defenderId = cardId(unit);
     if (!defenderId) return false;
     try {
+      // The simulated resolution may be more expensive than a predicate, but
+      // it also covers every keyword and card-specific restriction uniformly.
       executeCommand(clone(state), {
         type: "attack",
         owner: attackerOwner,

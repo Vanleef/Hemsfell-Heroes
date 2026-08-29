@@ -21,6 +21,8 @@ const orientGame = (game: any, isHost: boolean) => {
   if (!game) return null;
   const oriented = clone(game);
   if (isHost || !Array.isArray(game.players) || game.players.length < 2) return oriented;
+  // Presentation always addresses the local player as owner 0. Flip every
+  // owner-bearing nested field together so an animation never crosses sides.
   oriented.players = [clone(game.players[1]), clone(game.players[0])];
   oriented.active = flipOwner(game.active);
   oriented.winner = game.winner == null ? null : flipOwner(game.winner);
@@ -62,6 +64,8 @@ const unitFingerprint = (unit: any) => ({
   suffocated: unit?.suffocated, immobilized: unit?.immobilized, tags: unit?.tags, temporaryTags: unit?.temporaryTags,
   modifiers: unit?.modifiers, grantedKeywords: unit?.grantedKeywords,
 });
+// Interaction metadata is deliberately absent: priority/timer-only revisions
+// must not replay a card animation when the material board did not change.
 const presentationFingerprint = (game: any) => JSON.stringify({
   winner: game?.winner,
   players: (game?.players || []).map((player: any) => ({

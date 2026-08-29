@@ -66,6 +66,8 @@ export function usePriorityControl({
     const key = pendingKey;
     if (!key) return;
     const timer = window.setTimeout(() => {
+      // A server revision may replace the window while the short assisted delay
+      // is running. Rechecking the key prevents passing a newer interaction.
       if (priorityWindowKey(getCurrentPendingRef.current()) !== key) return;
       void onAutoPassRef.current();
     }, autoPassDelayMs);

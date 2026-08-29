@@ -133,6 +133,8 @@ export function assertOnlineInteractionInvariant(state) {
 }
 
 export function canonicalStack(state) {
+  // New snapshots expose priorityStack directly. The fallbacks keep older room
+  // revisions and in-flight combat snapshots inspectable during reconnection.
   if (state?.priorityStack?.length) {
     return state.priorityStack.map((frame, index) => ({
       id: frame.id || `priority-${index}`,
@@ -177,6 +179,8 @@ export function syncPriorityMetadata(state, overrides = {}) {
         ? PriorityMode.RESOLVING
         : overrides.mode || PriorityMode.ACTION;
   const owner = hasWinner ? null : pending ? pending.responder : overrides.owner ?? derivedOwner;
+  // This function intentionally mutates the supplied authoritative snapshot:
+  // room persistence expects metadata and legacy fields to share one revision.
   state.priority = {
     model: "online-v3",
     mode,

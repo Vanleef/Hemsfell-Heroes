@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [page, layout, tutorial, css] = await Promise.all([
+const [page, layout, tutorial, tutorialContent, css] = await Promise.all([
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/tutorial-screen.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/tutorial-content.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/tutorial.css", import.meta.url), "utf8"),
 ]);
 
@@ -45,4 +46,29 @@ test("tutorial layout remains usable on tablet and mobile", () => {
   assert.match(css, /@media\(max-width:48rem\)/);
   assert.match(css, /\.tutorial-tabs\{grid-template-columns:repeat\(5,max-content\);overflow-x:auto\}/);
   assert.match(css, /\.tutorial-chapter,[^{]*\{grid-template-columns:1fr\}/);
+});
+
+test("tutorial explains priority controls, game modes and top-only LIFO resolution", () => {
+  assert.match(tutorial, /Modo: Assistido/);
+  assert.match(tutorial, /Modo: Manual/);
+  assert.match(tutorial, /FULL CONTROL · NUNCA AUTO-PASSA/);
+  assert.match(tutorial, /Dois passes resolvem somente o item do topo/);
+  assert.match(tutorial, /VS IA/);
+  assert.match(tutorial, /ONLINE 1×1/);
+  assert.match(tutorial, /Servidor autoritativo/);
+});
+
+test("tutorial keyword copy is derived from the canonical game glossary", () => {
+  assert.match(tutorialContent, /import \{ GAME_GLOSSARY/);
+  assert.match(tutorialContent, /GAME_GLOSSARY\[key\]/);
+  for (const keyword of ["Acelerado", "Primeiro Ato", "Último Suspiro", "Enjoo de Invocação", "Voar", "Veloz", "Atropelar", "Sufocado"]) {
+    assert.match(tutorialContent, new RegExp(`keyword\\("${keyword}"`));
+  }
+});
+
+test("tutorial tabs support keyboard navigation and reduced motion", () => {
+  assert.match(tutorial, /ArrowLeft/);
+  assert.match(tutorial, /ArrowRight/);
+  assert.match(tutorial, /aria-labelledby=\{`tutorial-tab-/);
+  assert.match(css, /prefers-reduced-motion:\s*reduce/);
 });

@@ -7,29 +7,35 @@ O projeto oferece partidas contra IA e multiplayer por salas, seleção de heró
 - Aplicação em produção: https://hemsfell.dealradar.games/
 - Repositório: https://github.com/Vanleef/Hemsfell-Heroes
 - Branch oficial: `main`
-- Branch ativa de mecânicas: `fix/cards_mechanics`
 - Catálogo visual: PDF configurado no servidor e renderizado sob demanda pelo cliente
 
 > O jogo continua em desenvolvimento. Mudanças de regra devem ser acompanhadas por testes automatizados no motor de regras.
 
 ## Sumário
 
-1. [Tecnologias](#tecnologias)
-2. [Requisitos](#requisitos)
+1. [Primeiros 15 minutos](#primeiros-15-minutos)
+2. [Tecnologias](#tecnologias)
 3. [Como executar localmente](#como-executar-localmente)
-4. [Variáveis de ambiente](#variáveis-de-ambiente)
-5. [Comandos disponíveis](#comandos-disponíveis)
-6. [Arquitetura](#arquitetura)
-7. [Estado e fluxo de uma partida](#estado-e-fluxo-de-uma-partida)
-8. [Motor de regras](#motor-de-regras)
-9. [Cartas e catálogo](#cartas-e-catálogo)
-10. [Multiplayer](#multiplayer)
-11. [Artes das cartas](#artes-das-cartas)
-12. [Testes e simulações](#testes-e-simulações)
-13. [Como implementar cartas e mecânicas](#como-implementar-cartas-e-mecânicas)
-14. [Deploy](#deploy)
-15. [Diagnóstico de problemas](#diagnóstico-de-problemas)
-16. [Boas práticas para contribuição](#boas-práticas-para-contribuição)
+4. [Arquitetura](#arquitetura)
+5. [Estado e fluxo de uma partida](#estado-e-fluxo-de-uma-partida)
+6. [Motor de regras](#motor-de-regras)
+7. [Cartas e catálogo](#cartas-e-catálogo)
+8. [Multiplayer](#multiplayer)
+9. [Testes e simulações](#testes-e-simulações)
+10. [Como implementar cartas e mecânicas](#como-implementar-cartas-e-mecânicas)
+11. [Documentos de design e implementação](#documentos-de-design-e-implementação)
+12. [Boas práticas para contribuição](#boas-práticas-para-contribuição)
+
+## Primeiros 15 minutos
+
+1. Rode `npm ci`, copie a configuração mínima `HEMSFELL_ROOM_STORE=memory` para `.env.local` e inicie com `npm run dev`.
+2. Abra o tutorial no menu principal para conhecer turno, prioridade, pilha, combate e controles.
+3. Leia [a arquitetura atual](docs/architecture.md) e [as regras do motor](docs/rules-engine.md).
+4. Use `app/rules-engine/engine.mjs` como fachada do motor e `tests/rules-engine.test.mjs` como catálogo de comportamento esperado.
+5. Antes de alterar prioridade ou online, leia [o fluxo de prioridade](docs/online-priority-flow-rework.md) e [a implementação autoritativa](docs/online-priority-implementation.md).
+6. Valide alterações com `npm run typecheck:ai`, `npm run typecheck:online`, `npm run test:node` e `npm run vercel-build`.
+
+Regra mental: a UI envia **comandos**, o motor valida e produz **estado + eventos**, e a camada de apresentação mostra apenas resultados confirmados.
 
 ## Tecnologias
 
@@ -82,11 +88,10 @@ git switch main
 git pull origin main
 ```
 
-Para trabalhar nas mecânicas em desenvolvimento:
+Para uma mudança, crie uma branch focada a partir da principal:
 
 ```bash
-git switch fix/cards_mechanics
-git pull origin fix/cards_mechanics
+git switch -c feat/minha-mudanca
 ```
 
 ### 3. Instalar dependências
@@ -186,67 +191,31 @@ Ordem de armazenamento das salas:
 
 ```mermaid
 flowchart TD
-    UI[app/page.tsx] --> Catalog[cards.generated.json]
-    UI --> Rules[Motor de regras]
-    UI --> Rooms[API de salas]
-    Rules --> Compiler[compiler.mjs]
-    Rules --> Effects[effects.mjs]
-    Rules --> Targeting[targeting.mjs]
-    Rooms --> Machine[machine.ts]
-    Rooms --> Store[store.ts]
-    Store --> Supabase[(Supabase)]
-    Store --> Blob[(Vercel Blob)]
-    Store --> Memory[(Memória local)]
-    UI --> Art[remote-card-art.tsx]
-    Art --> PDF[API do catálogo PDF]
+    View[View / Presentation] --> App[Application / Session]
+    App --> Rules[Model / Rules Engine]
+    Catalog[Data / Catalog] --> Rules
+    Infra[Infrastructure] --> Rules
+    Rules --> Result[Estado + eventos]
+    Result --> View
 ```
 
 ### Arquivos e responsabilidades
 
-#### Interface e orquestração
+| Área | Arquivos principais | Responsabilidade |
+| --- | --- | --- |
+| Shell legado | `app/page.tsx`, `app/layout.tsx` | Orquestra a tela principal e a ordem global dos runtimes. Preserve seus contratos durante refactors. |
+| Motor | `app/rules-engine/engine*.mjs`, `effects.mjs`, `targeting.mjs` | Valida comandos, paga custos e produz estado/eventos. |
+| Prioridade e combate | `priority-state.mjs`, `priority.mjs`, `combat.mjs`, `online-*.mjs` | Pilha LIFO, janelas de resposta, checkpoints e resolução. |
+| IA e simulação | `ai.mjs`, `simulator.mjs` | Escolha de comandos legais e execução headless determinística e limitada. |
+| Sessão | `app/online-*.{mjs,tsx}`, `app/match/` | Sincronização, reconexão, orientação de estado e controles de prioridade. |
+| Apresentação | `app/presentation-*.{ts,tsx}`, `app/game-presentation-runtime.tsx` | Converte alterações confirmadas em cues e animações sem controlar regras. |
+| Catálogo | `cards.generated.json`, `card-rules.mjs`, `subtypes.mjs`, `hero-evolution.mjs` | Templates de cartas, exceções explícitas, subtipos e evolução. |
+| Tutorial/glossário | `tutorial-screen.tsx`, `tutorial-content.ts`, `game-glossary.ts` | Interface didática e texto canônico de palavras-chave. |
+| Artes | `remote-card-art.tsx`, `app/api/hemsfell-card-catalog.pdf/` | Cache e renderização das páginas reais do catálogo PDF. |
+| Online/API | `app/api/rooms/` | Máquina autoritativa, revisões, privacidade, validação e persistência. |
+| Infraestrutura | `scripts/`, `tests/`, `db/`, `worker/` | Build, auditoria, simulação, regressão e pipelines alternativos. |
 
-- `app/page.tsx`: tela principal, estado visual, setup, IA, tabuleiro, mão, fases, animações, seleção de alvos, decisões do motor e sincronização online.
-- `app/lab.css`: layout do tabuleiro, cartas, tooltips, estados visuais, combate, janelas de resposta e animações.
-- `app/layout.tsx`: layout raiz do Next.js.
-- `app/globals.css`: estilos globais e importação da folha principal.
-- `app/remote-card-art.tsx`: carrega o PDF com PDF.js, guarda o documento e as páginas em cache e renderiza a página de cada carta em canvas.
-
-`app/page.tsx` ainda contém lógica legada e integração visual em um arquivo grande. Novas regras devem preferencialmente entrar em `app/rules-engine/`; a página deve apenas coletar a intenção do jogador, mostrar decisões e renderizar o estado resultante.
-
-#### Catálogo e ativação
-
-- `app/cards.generated.json`: dados gerados do catálogo: página, ID, nome, tipo, custo, atributos, texto, tags, subtipos e metadados da arte.
-- `app/card-activation.mjs`: identifica efeitos ativáveis e verifica custos/condições de ativação.
-- `app/game-rules.mjs`: funções de regra compartilhadas que ainda não foram integralmente movidas para o motor modular.
-
-#### Motor de regras
-
-- `app/rules-engine/compiler.mjs`: converte uma definição de carta e seu texto em habilidades estruturadas.
-- `app/rules-engine/card-rules.mjs`: regras explícitas para cartas complexas ou cujo texto não deve depender de interpretação genérica.
-- `app/rules-engine/engine.mjs`: recebe comandos, valida o estado, controla prioridade/pilha, paga custos, abre decisões e processa eventos.
-- `app/rules-engine/effects.mjs`: primitivas reutilizáveis como dano, cura, compra, descarte, modificadores, destruição, retorno, marcadores e criação de Imagens.
-- `app/rules-engine/targeting.mjs`: escopos de alvo e validação de alvo aliado, inimigo, criatura, constante ou herói.
-- `app/rules-engine/subtypes.mjs`: normalização e consulta de subtipos.
-- `app/rules-engine/priority.mjs`: respostas legais, controle assistido e decisões automáticas da IA.
-- `app/rules-engine/simulation.mjs`: execução headless e proteção contra partidas/simulações não limitadas.
-
-#### Multiplayer
-
-- `app/api/rooms/route.ts`: criação de salas.
-- `app/api/rooms/[id]/route.ts`: convite, entrada, seleção de deck, mulligan, sincronização e comandos de partida.
-- `app/api/rooms/machine.ts`: máquina de estados da sala, moeda, deadlines, orientação host/guest, autopass e comandos autoritativos.
-- `app/api/rooms/store.ts`: persistência em memória, Supabase ou Vercel Blob e ocultação de zonas privadas.
-- `app/api/rooms/validation.ts`: limites, JSON seguro e bloqueio de chaves como `__proto__`, `prototype` e `constructor`.
-- `app/api/rooms/constants.ts`: limites centralizados do multiplayer.
-
-#### Infraestrutura
-
-- `next.config.ts`: headers de segurança, configuração do Next.js e origens de desenvolvimento.
-- `.github/workflows/ci.yml`: instala dependências, executa testes e valida o build do Next.js.
-- `scripts/build-verified.sh`: build Vinext limitado por timeout.
-- `scripts/install-ci.sh`: instalação validada do pipeline Sites.
-- `scripts/validate-artifact.sh`: inspeção do artefato gerado.
-- `db/`, `drizzle.config.ts` e `worker/`: integração alternativa Drizzle/Cloudflare.
+O detalhamento de dependências, fluxos PvAI/Online e limites de extração está em [docs/architecture.md](docs/architecture.md). `app/page.tsx` ainda contém integração legada; novas regras pertencem ao motor, enquanto a página deve apenas transformar interação em intenção e renderizar o resultado.
 
 ## Estado e fluxo de uma partida
 
@@ -289,6 +258,8 @@ Ações importantes são comandos. Exemplos:
 
 No multiplayer, o cliente deve enviar intenção, não substituir livremente o estado. A máquina da sala executa o mesmo motor usado nos testes.
 
+Uma ação respondível abre uma janela de prioridade. Uma nova ação zera a sequência de passes; dois passes consecutivos resolvem **somente o topo** da pilha LIFO. A resolução pode gerar triggers e abrir outra janela antes que o jogo continue. Na Finalização, a energia elegível vai para a Reserva antes da limpeza e da troca do jogador ativo.
+
 ## Motor de regras
 
 ### Componentes
@@ -313,6 +284,15 @@ Exemplo conceitual:
   ]
 }
 ```
+
+O caminho esperado é:
+
+```text
+catálogo/texto -> compiler -> command -> validation -> costs -> effects/triggers
+                 -> state-based actions -> novo estado + eventos -> apresentação
+```
+
+`engine.mjs` é a fachada pública instrumentada, `engine-core.mjs` implementa a execução e `engine-base.mjs` fornece operações fundamentais. Evite importar detalhes internos quando a fachada já expõe o contrato necessário.
 
 ### Triggers comuns
 
@@ -406,7 +386,31 @@ O campo `page` liga a carta à página do PDF universal. Por isso cada item não
 
 Não edite o JSON gerado como única fonte de verdade sem verificar o processo de geração/banco. Mudanças de catálogo devem preservar IDs e páginas sempre que possível, porque partidas, testes e regras explícitas referenciam esses valores.
 
+### Palavras-chave
+
+Para adicionar ou corrigir uma palavra-chave:
+
+1. confirme a regra nos documentos de design;
+2. atualize a compilação/tags ou a regra explícita correspondente no motor;
+3. atualize `app/game-glossary.ts`, fonte canônica da explicação exibida pela interface;
+4. inclua o termo em `app/tutorial-content.ts` quando ele for essencial ao onboarding;
+5. cubra interação com alvos, combate, pilha e Sufocado quando aplicável;
+6. valide o mesmo comportamento no PvAI e no motor autoritativo online.
+
 ## Multiplayer
+
+### Online 1x1 versus PvAI
+
+| Aspecto | PvAI/local | Online 1x1 |
+| --- | --- | --- |
+| Autoridade | Motor local | Máquina da sala no servidor |
+| Fonte da decisão adversária | `ai.mjs` | Comando do outro cliente |
+| Sincronização | Imediata no mesmo processo | Revisões persistidas e snapshots orientados |
+| Informação privada | Mantida no estado local | Filtrada pelo servidor antes do snapshot |
+| Reconexão | Não se aplica | Recupera a revisão confirmada da sala |
+| Prioridade | Mesmo modelo de regras, ritmo local | Timers, auto-pass e checkpoints autoritativos |
+
+Os dois modos compartilham o motor e os comandos. O que muda é a fonte da decisão, a autoridade e o transporte; não deve existir uma versão paralela das regras na UI online.
 
 ### Estados da sala
 
@@ -508,7 +512,14 @@ node --test --test-name-pattern="Brutamontes" tests/rules-engine.test.mjs
 Execute todos:
 
 ```bash
-node --test tests/*.test.mjs
+npm run test:node
+```
+
+Typechecks por domínio:
+
+```bash
+npm run typecheck:ai
+npm run typecheck:online
 ```
 
 Audite cartas:
@@ -603,6 +614,17 @@ Ao criar `effect("novoEfeito")`:
 - Informações privadas permanecem ocultas no multiplayer?
 - A operação é limitada e não cria loop infinito?
 
+## Documentos de design e implementação
+
+- [Arquitetura atual e direção de dependências](docs/architecture.md)
+- [Motor de regras](docs/rules-engine.md)
+- [Fluxo de prioridade online](docs/online-priority-flow-rework.md)
+- [Implementação de prioridade online](docs/online-priority-implementation.md)
+- [Sistema de apresentação e animações](docs/presentation-system.md)
+- [Limites do refactor estrutural de front-end](docs/frontend-structure-refactor.md)
+- [Roadmap de qualidade do jogo web](docs/web-card-game-quality-roadmap.md)
+- [Auditoria de autoridade online](docs/online-authority-audit-2026-08-19.md)
+
 ## Deploy
 
 ### Vercel
@@ -639,7 +661,7 @@ Verifique o primeiro erro de TypeScript, CSS, importação ou rota. Não corrija
 
 ### CSS: “Missing opening {”
 
-Inspecione a linha citada em `app/lab.css`. Normalmente existe:
+Inspecione a folha citada pelo build e a ordem de imports em `app/layout.tsx`. Normalmente existe:
 
 - seletor sem abertura;
 - chave de fechamento excedente;
@@ -734,12 +756,12 @@ O projeto possui motor modular e testes automatizados, mas ainda mantém partes 
 Ao entrar no projeto, comece nesta ordem:
 
 1. este README;
-2. `tests/rules-engine.test.mjs`;
-3. `app/rules-engine/card-rules.mjs`;
+2. `docs/architecture.md`;
+3. `tests/rules-engine.test.mjs`;
 4. `app/rules-engine/engine.mjs`;
-5. `app/rules-engine/effects.mjs`;
+5. `app/rules-engine/card-rules.mjs` e `effects.mjs`;
 6. `app/api/rooms/machine.ts`;
-7. `app/page.tsx`;
-8. `app/lab.css`.
+7. `app/presentation-event-bridge.tsx`;
+8. `app/page.tsx` e, por último, a cascata CSS importada por `app/layout.tsx`.
 
 Essa ordem mostra primeiro o comportamento esperado, depois as regras e, por último, a interface.
