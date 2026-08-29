@@ -7,7 +7,7 @@ const [route, machine, clock, presence, runtime, layout] = await Promise.all([
   readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/online-clock.mjs", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/presence.mjs", import.meta.url), "utf8"),
-  readFile(new URL("../app/online-reconnect-runtime.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/application/online/online-reconnect-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
 ]);
 
