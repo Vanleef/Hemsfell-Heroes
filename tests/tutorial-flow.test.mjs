@@ -6,7 +6,7 @@ const [page, layout, tutorial, tutorialContent, css] = await Promise.all([
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/tutorial-screen.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../app/tutorial-content.ts", import.meta.url), "utf8"),
+  readFile(new URL("../app/data/content/tutorial-content.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/tutorial.css", import.meta.url), "utf8"),
 ]);
 
