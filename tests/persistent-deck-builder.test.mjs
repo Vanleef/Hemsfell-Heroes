@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const page=await readFile(new URL("../app/page.tsx",import.meta.url),"utf8");
-const model=await readFile(new URL("../app/user-deck.mjs",import.meta.url),"utf8");
+const model=await readFile(new URL("../app/model/decks/user-deck.mjs",import.meta.url),"utf8");
 const matchCss=await readFile(new URL("../app/match-ui.css",import.meta.url),"utf8");
 const commandCss=await readFile(new URL("../app/command-bar-fixes.css",import.meta.url),"utf8");
 const runtime=await readFile(new URL("../app/match-ui-runtime.tsx",import.meta.url),"utf8");
