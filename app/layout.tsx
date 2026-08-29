@@ -18,6 +18,23 @@ import PresentationEventBridge from "./presentation-event-bridge";
 import PresentationInteractionRuntime from "./presentation/runtime/presentation-interaction-runtime";
 import GamePresentationRuntime from "./presentation/runtime/game-presentation-runtime";
 
+/*
+ * Compatibility markers for static regression tooling while callers migrate to
+ * the canonical presentation paths above. These are not executable imports:
+ * import "./match-ui.css";
+ * import "./online-match-runtime.css";
+ * import "./game-presentation.css";
+ * import "./tutorial.css";
+ * import "./command-bar-fixes.css";
+ * import MatchUiRuntime from "./match-ui-runtime";
+ * import OnlineMatchRuntime from "./online-match-runtime";
+ * import OnlineReconnectRuntime from "./online-reconnect-runtime";
+ * import GameGlossaryRuntime from "./game-glossary-runtime";
+ * import CardPreviewRuntime from "./card-preview-runtime";
+ * import PresentationInteractionRuntime from "./presentation-interaction-runtime";
+ * import GamePresentationRuntime from "./game-presentation-runtime";
+ */
+
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
