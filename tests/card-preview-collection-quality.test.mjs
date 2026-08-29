@@ -3,9 +3,9 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const [runtime, page, remoteCardArt, matchCss, collectionCss, packageJson] = await Promise.all([
-  readFile(new URL("../app/card-preview-runtime.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/presentation/cards/card-preview-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../app/remote-card-art.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/presentation/cards/remote-card-art.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/match-ui.css", import.meta.url), "utf8"),
   readFile(new URL("../app/ui-overrides.css", import.meta.url), "utf8"),
   readFile(new URL("../package.json", import.meta.url), "utf8").then(JSON.parse),
