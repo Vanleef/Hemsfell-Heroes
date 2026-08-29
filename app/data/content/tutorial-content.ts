@@ -1,6 +1,12 @@
-import { GAME_GLOSSARY, type GameGlossaryTone } from "./game-glossary";
+import {
+  GAME_GLOSSARY,
+  type GameGlossaryEntry,
+  type GameGlossaryTone,
+} from "./game-glossary";
 
-export type TutorialTabId = "start" | "combat" | "reference";
+export type TutorialViewId = "guide" | "glossary";
+export type TutorialChapterId = "first-duel" | "cards" | "board" | "turn" | "combat";
+export type GlossaryRangeId = "all" | "symbols-d" | "e-l" | "m-s" | "t-z";
 
 export type TutorialReference = {
   title: string;
@@ -12,10 +18,33 @@ export type TutorialKeyword = TutorialReference & {
   tone: GameGlossaryTone;
 };
 
-export const TUTORIAL_TABS: Array<{ id: TutorialTabId; label: string; description: string }> = [
-  { id: "start", label: "Como jogar", description: "O essencial em poucos passos" },
-  { id: "combat", label: "Combate", description: "Ataque, resposta e defesa" },
-  { id: "reference", label: "Referência", description: "Zonas, cartas e palavras-chave" },
+export type TutorialGlossaryEntry = GameGlossaryEntry & {
+  key: string;
+};
+
+export const TUTORIAL_VIEWS: Array<{ id: TutorialViewId; label: string }> = [
+  { id: "guide", label: "Como jogar" },
+  { id: "glossary", label: "Glossário" },
+];
+
+export const TUTORIAL_CHAPTERS: Array<{
+  id: TutorialChapterId;
+  label: string;
+  description: string;
+}> = [
+  { id: "first-duel", label: "Seu primeiro duelo", description: "Objetivo e recursos" },
+  { id: "cards", label: "Leia uma carta", description: "Custos, tipos e atributos" },
+  { id: "board", label: "Conheça o campo", description: "Zonas e posicionamento" },
+  { id: "turn", label: "Jogue seu turno", description: "Etapas e comandos" },
+  { id: "combat", label: "Entre em combate", description: "Ataque, defesa e dano" },
+];
+
+export const GLOSSARY_RANGES: Array<{ id: GlossaryRangeId; label: string }> = [
+  { id: "all", label: "Todos" },
+  { id: "symbols-d", label: "#–D" },
+  { id: "e-l", label: "E–L" },
+  { id: "m-s", label: "M–S" },
+  { id: "t-z", label: "T–Z" },
 ];
 
 export const QUICK_FACTS: TutorialReference[] = [
@@ -23,6 +52,13 @@ export const QUICK_FACTS: TutorialReference[] = [
   { title: "Deck Principal", description: "Seu deck de partida contém 49 cartas válidas.", badge: "49" },
   { title: "Mão inicial", description: "Você começa com 7 cartas antes do mulligan.", badge: "7" },
   { title: "Reserva", description: "Guarda até 3 de Energia para respostas e efeitos permitidos.", badge: "3" },
+];
+
+export const CARD_ANATOMY: TutorialReference[] = [
+  { title: "Custo", description: "A Energia necessária para jogar a carta.", badge: "1" },
+  { title: "Tipo", description: "Define onde a carta entra e se permanece no campo.", badge: "2" },
+  { title: "Efeito", description: "Explica alvos, condições e o que acontece ao resolver.", badge: "3" },
+  { title: "Atributos", description: "Criaturas usam Ofensividade e Vitalidade no combate.", badge: "4" },
 ];
 
 export const TURN_STEPS: TutorialReference[] = [
@@ -37,16 +73,16 @@ export const BASIC_COMMANDS: TutorialReference[] = [
   { title: "Segurar por 1s", description: "Abre a inspeção detalhada da carta." },
   { title: "Arrastar", description: "Joga a carta em uma zona válida." },
   { title: "Clique", description: "Escolhe alvos, cartas e opções destacadas." },
-  { title: "⚡", description: "Ativa uma habilidade disponível da carta." },
+  { title: "Habilidade", description: "Ativa uma habilidade disponível da carta." },
   { title: "Passar", description: "Devolve a prioridade ou avança quando a interface permitir." },
 ];
 
 export const BOARD_ZONES: TutorialReference[] = [
-  { title: "Herói", description: "Mostra Vida, nível, evolução e habilidades.", badge: "30 ♥" },
-  { title: "Criaturas", description: "Cinco espaços usados para atacar e bloquear.", badge: "5" },
-  { title: "Auxiliares", description: "Cinco espaços para Artefatos, Encantos e outras constantes.", badge: "5" },
-  { title: "Terreno Cruel", description: "Zona reservada ao seu Terreno ativo.", badge: "1" },
-  { title: "Deck / Mão", description: "O Deck compra cartas; a Mão guarda suas opções atuais.", badge: "Privado" },
+  { title: "Herói", description: "Mostra Vida, nível, evolução e habilidades.", badge: "30 Vida" },
+  { title: "Criaturas", description: "Cinco espaços usados para atacar e bloquear.", badge: "5 espaços" },
+  { title: "Auxiliares", description: "Cinco espaços para Artefatos, Encantos e outras constantes.", badge: "5 espaços" },
+  { title: "Terreno Cruel", description: "Zona reservada ao seu Terreno ativo.", badge: "1 espaço" },
+  { title: "Deck e Mão", description: "O Deck compra cartas; a Mão guarda suas opções atuais.", badge: "Privado" },
   { title: "Cemitério", description: "Recebe cartas destruídas, descartadas e Feitiços resolvidos.", badge: "Público" },
   { title: "Obscuro", description: "Recebe cartas banidas. É diferente do Cemitério.", badge: "Público" },
   { title: "Deck Extra", description: "Guarda Imagens acessadas por efeitos específicos.", badge: "Imagens" },
@@ -74,8 +110,8 @@ const keyword = (key: string): TutorialKeyword => {
   return { title: entry.label, description: entry.description, tone: entry.tone };
 };
 
-// O tutorial mostra apenas o vocabulário mais frequente. O glossário completo
-// continua sendo a fonte canônica usada pelos tooltips durante a partida.
+// Estes termos formam o primeiro vocabulário do jogador. Todas as definições,
+// inclusive as exibidas no guia, continuam vindo do glossário canônico.
 export const TUTORIAL_KEYWORDS: TutorialKeyword[] = [
   keyword("Acelerado"),
   keyword("Primeiro Ato"),
@@ -90,3 +126,7 @@ export const TUTORIAL_KEYWORDS: TutorialKeyword[] = [
   keyword("Fura-Fila"),
   keyword("Sufocado"),
 ];
+
+export const GLOSSARY_ENTRIES: TutorialGlossaryEntry[] = Object.entries(GAME_GLOSSARY)
+  .map(([key, entry]) => ({ key, ...entry }))
+  .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));

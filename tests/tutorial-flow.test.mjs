@@ -11,35 +11,40 @@ const [page, layout, tutorial, tutorialContent, css] = await Promise.all([
 ]);
 const tutorialSource = `${tutorial}\n${tutorialContent}`;
 
-test("tutorial is reachable from the main menu and uses the presentation style layer", () => {
+test("tutorial is reachable from the main menu and uses the presentation layer", () => {
   assert.match(page, /type Screen=[^;]*"tutorial"/);
   assert.match(page, /setScreen\("tutorial"\)/);
   assert.match(page, /screen==="tutorial"&&<TutorialScreen/);
+  assert.match(page, /from "\.\/presentation\/tutorial"/);
   assert.match(layout, /presentation\/styles\/tutorial\.css/);
 });
 
-test("tutorial is intentionally reduced to three focused sections", () => {
-  assert.match(tutorialContent, /TutorialTabId = "start" \| "combat" \| "reference"/);
-  for (const label of ["Como jogar", "Combate", "Referência"]) assert.match(tutorialContent, new RegExp(label));
-  assert.equal((tutorialContent.match(/id: "(?:start|combat|reference)"/g) || []).length, 3);
-  assert.doesNotMatch(tutorialContent, /Fluxo completo|Mecânicas|Comandos", description/);
+test("tutorial separates the guided learning path from the searchable glossary", () => {
+  assert.match(tutorialContent, /TutorialViewId = "guide" \| "glossary"/);
+  for (const label of ["Como jogar", "Glossário", "Seu primeiro duelo", "Leia uma carta", "Conheça o campo", "Jogue seu turno", "Entre em combate"]) {
+    assert.match(tutorialContent, new RegExp(label));
+  }
+  assert.equal((tutorialContent.match(/id: "(?:first-duel|cards|board|turn|combat)"/g) || []).length, 5);
+  assert.match(tutorial, /tutorial-chapter-rail/);
+  assert.match(tutorial, /tutorial-lesson-nav/);
 });
 
-test("quick start teaches the four turn stages, core controls and win condition", () => {
-  for (const topic of ["Manutenção", "Principal", "Combate", "Finalização", "Energia", "Reserva", "Vida do Herói rival a 0"]) {
+test("guided path teaches objective, cards, board, turn and core controls", () => {
+  for (const topic of ["Vida do Herói rival a 0", "Custo", "Tipo", "Efeito", "Atributos", "Manutenção", "Principal", "Combate", "Finalização", "Energia", "Reserva"]) {
     assert.match(tutorialSource, new RegExp(topic, "i"));
   }
-  for (const command of ["Hover por 1s", "Segurar por 1s", "Arrastar", "Clique", "⚡", "Passar"]) {
+  for (const command of ["Hover por 1s", "Segurar por 1s", "Arrastar", "Clique", "Habilidade", "Passar"]) {
     assert.match(tutorialContent, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
 });
 
-test("tutorial keeps only useful real-card visuals instead of a visual for every paragraph", () => {
+test("tutorial uses real cards only where they teach a board concept", () => {
   assert.match(tutorial, /function TutorialCard[\s\S]*<RemoteCardArt/);
   assert.match(tutorial, /<BoardVisual\/>/);
   assert.match(tutorial, /<CombatVisual\/>/);
   assert.match(tutorial, /Gimble, Presenteado Sortudo/);
-  assert.doesNotMatch(tutorial, /Chapter|PriorityVisual|GameModesVisual|ControlModesVisual/);
+  assert.match(tutorial, /CARD_ANATOMY/);
+  assert.doesNotMatch(tutorial, /PriorityVisual|GameModesVisual|ControlModesVisual/);
 });
 
 test("combat tutorial matches the current one-attacker flow", () => {
@@ -52,21 +57,25 @@ test("combat tutorial matches the current one-attacker flow", () => {
   assert.doesNotMatch(tutorialSource, /atacantes e bloqueadores são confirmados como grupos/i);
 });
 
-test("tutorial keyword copy stays derived from the canonical glossary but shows a concise subset", () => {
-  assert.match(tutorialContent, /import \{ GAME_GLOSSARY/);
+test("guide and complete searchable glossary derive from the canonical glossary", () => {
+  assert.match(tutorialContent, /import \{[\s\S]*GAME_GLOSSARY/);
   assert.match(tutorialContent, /GAME_GLOSSARY\[key\]/);
   for (const keyword of ["Acelerado", "Primeiro Ato", "Último Suspiro", "Enjoo de Invocação", "Voar", "Veloz", "Atropelar", "Sufocado"]) {
     assert.match(tutorialContent, new RegExp(`keyword\\("${keyword}"`));
   }
-  assert.match(tutorialContent, /O tutorial mostra apenas o vocabulário mais frequente/);
+  assert.match(tutorialContent, /Object\.entries\(GAME_GLOSSARY\)/);
+  assert.match(tutorial, /type="search"/);
+  assert.match(tutorial, /entryMatchesRange/);
+  assert.match(tutorialContent, /#–D/);
 });
 
 test("tutorial stays responsive, keyboard navigable and reduced-motion safe", () => {
   assert.match(tutorial, /ArrowLeft/);
   assert.match(tutorial, /ArrowRight/);
-  assert.match(tutorial, /aria-labelledby=\{`tutorial-tab-/);
-  assert.match(css, /\.tutorial-tabs\{position:sticky/);
-  assert.match(css, /@media\(max-width:54rem\)/);
-  assert.match(css, /@media\(max-width:36rem\)/);
+  assert.match(tutorial, /aria-labelledby=\{\`tutorial-view-/);
+  assert.match(tutorial, /aria-current=\{activeChapter/);
+  assert.match(css, /\.tutorial-chapter-rail\{position:sticky/);
+  assert.match(css, /@media\(max-width:48rem\)/);
+  assert.match(css, /@media\(max-width:34rem\)/);
   assert.match(css, /prefers-reduced-motion:reduce/);
 });

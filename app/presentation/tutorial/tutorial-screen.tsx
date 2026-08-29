@@ -1,26 +1,41 @@
 "use client";
 
-import { useState, type KeyboardEvent } from "react";
+import { useMemo, useState, type KeyboardEvent } from "react";
 import { RemoteCardArt } from "../cards/remote-card-art";
 import {
   BASIC_COMMANDS,
   BOARD_ZONES,
+  CARD_ANATOMY,
   CARD_TYPES,
   COMBAT_STEPS,
+  GLOSSARY_ENTRIES,
+  GLOSSARY_RANGES,
   QUICK_FACTS,
   TURN_STEPS,
+  TUTORIAL_CHAPTERS,
   TUTORIAL_KEYWORDS,
-  TUTORIAL_TABS,
-  type TutorialTabId,
+  TUTORIAL_VIEWS,
+  type GlossaryRangeId,
+  type TutorialChapterId,
+  type TutorialGlossaryEntry,
+  type TutorialViewId,
 } from "./tutorial-content";
 
 function TutorialCard({ page, name, className = "" }: { page: number; name: string; className?: string }) {
   return <RemoteCardArt page={page} name={name} className={`tutorial-card-art ${className}`.trim()} />;
 }
 
-function SectionHeading({ eyebrow, title, description }: { eyebrow: string; title: string; description: string }) {
-  return <header className="tutorial-section-heading">
-    <span>{eyebrow}</span>
+function LessonHeading({
+  step,
+  title,
+  description,
+}: {
+  step: string;
+  title: string;
+  description: string;
+}) {
+  return <header className="tutorial-lesson-heading">
+    <span>{step}</span>
     <h2>{title}</h2>
     <p>{description}</p>
   </header>;
@@ -42,7 +57,7 @@ function BoardVisual() {
     <div className="tutorial-board-row enemy"><i/><i/><TutorialCard page={35} name="Bombardeiro Gente Boa"/><i/><i/></div>
     <div className="tutorial-board-row support"><i/><i/><i/><i/><i/></div>
     <div className="tutorial-board-terrain"><span>TERRENO CRUEL</span><TutorialCard page={22} name="Alpes Dracônicos"/></div>
-    <div className="tutorial-board-row"><i/><TutorialCard page={3} name="Valorian, o pseudodragão"/><i/><TutorialCard page={4} name="Dr.Elizabeth"/><i/></div>
+    <div className="tutorial-board-row"><i/><TutorialCard page={3} name="Valorian, o pseudodragão"/><i/><TutorialCard page={4} name="Dr. Elizabeth"/><i/></div>
     <div className="tutorial-board-row support"><i/><TutorialCard page={19} name="Coração de Rubi"/><i/><i/><i/></div>
     <span className="tutorial-board-side player">VOCÊ</span>
   </div>;
@@ -56,105 +71,231 @@ function CombatVisual() {
   </div>;
 }
 
-function StartTab() {
-  return <div className="tutorial-tab-content">
-    <SectionHeading eyebrow="COMECE AQUI" title="O jogo em menos de dois minutos" description="Aprenda o fluxo básico primeiro. Os detalhes aparecem nos tooltips durante a partida."/>
-
-    <section className="tutorial-quick-facts">{QUICK_FACTS.map(item => <article key={item.title}>
-      <b>{item.badge}</b><div><h3>{item.title}</h3><p>{item.description}</p></div>
-    </article>)}</section>
-
-    <section className="tutorial-simple-block">
-      <div>
-        <SectionHeading eyebrow="SEU TURNO" title="Quatro etapas" description="Siga esta ordem e use o botão de etapa quando terminar o que deseja fazer."/>
-        <TurnFlowVisual/>
-        <ol className="tutorial-step-list">{TURN_STEPS.map(step => <li key={step.title}><b>{step.title}</b><span>{step.description}</span></li>)}</ol>
-      </div>
-      <aside className="tutorial-card-example">
-        <TutorialCard page={2} name="Gimble, Presenteado Sortudo"/>
-        <div><small>OBJETIVO</small><b>Leve a Vida do Herói rival a 0.</b><span>Você também pode vencer por outras condições previstas pelas regras ou pela rendição do oponente.</span></div>
-      </aside>
+function FirstDuelLesson() {
+  return <>
+    <LessonHeading step="ETAPA 1 DE 5" title="Vença o duelo, não o manual" description="Comece pelo objetivo e pelos quatro números que orientam sua primeira partida."/>
+    <section className="tutorial-fact-grid" aria-label="Números essenciais da partida">
+      {QUICK_FACTS.map(item => <article key={item.title}>
+        <b>{item.badge}</b><div><h3>{item.title}</h3><p>{item.description}</p></div>
+      </article>)}
     </section>
-
-    <SectionHeading eyebrow="CONTROLES" title="Só seis interações para lembrar" description="A interface destaca o que é válido; você não precisa decorar atalhos para começar."/>
-    <section className="tutorial-command-grid">{BASIC_COMMANDS.map(command => <article key={command.title}><b>{command.title}</b><p>{command.description}</p></article>)}</section>
-
-    <aside className="tutorial-rule-note"><b>Energia</b><span>Gaste Energia para jogar cartas. A Energia principal não usada pode abastecer a Reserva, até 3, para respostas e efeitos permitidos.</span></aside>
-  </div>;
+    <section className="tutorial-lesson-split">
+      <div className="tutorial-objective-copy">
+        <span>OBJETIVO PRINCIPAL</span>
+        <h3>Leve a Vida do Herói rival a 0.</h3>
+        <p>Você também pode vencer por outras condições previstas pelas regras ou pela rendição do oponente.</p>
+        <aside className="tutorial-rule-note"><b>Energia e Reserva</b><span>Gaste Energia para jogar cartas. Até 3 de Energia não usada pode abastecer a Reserva para respostas e efeitos permitidos.</span></aside>
+      </div>
+      <TutorialCard page={2} name="Gimble, Presenteado Sortudo" className="tutorial-hero-card"/>
+    </section>
+  </>;
 }
 
-function CombatTab() {
-  return <div className="tutorial-tab-content">
-    <SectionHeading eyebrow="COMBATE" title="Ataque uma criatura por vez" description="O fluxo é sempre: declarar, responder, defender e resolver."/>
+function CardsLesson() {
+  return <>
+    <LessonHeading step="ETAPA 2 DE 5" title="Leia uma carta de cima para baixo" description="Custo, tipo, efeito e atributos dizem quando jogar a carta e o que esperar dela."/>
+    <section className="tutorial-card-anatomy">
+      <div className="tutorial-card-stage">
+        <TutorialCard page={3} name="Valorian, o pseudodragão"/>
+        {CARD_ANATOMY.map(item => <i key={item.badge} data-marker={item.badge}>{item.badge}</i>)}
+      </div>
+      <ol>
+        {CARD_ANATOMY.map(item => <li key={item.title}><b>{item.badge}</b><div><h3>{item.title}</h3><p>{item.description}</p></div></li>)}
+      </ol>
+    </section>
+    <section className="tutorial-type-grid" aria-label="Tipos de carta">
+      {CARD_TYPES.map(type => <article key={type.title}><h3>{type.title}</h3><p>{type.description}</p></article>)}
+    </section>
+  </>;
+}
+
+function BoardLesson() {
+  return <>
+    <LessonHeading step="ETAPA 3 DE 5" title="Conheça o seu lado do campo" description="A interface ilumina destinos válidos; estas são as zonas que você verá durante o duelo."/>
+    <section className="tutorial-board-layout">
+      <BoardVisual/>
+      <div className="tutorial-zone-grid">
+        {BOARD_ZONES.map(zone => <article key={zone.title}><span>{zone.badge}</span><h3>{zone.title}</h3><p>{zone.description}</p></article>)}
+      </div>
+    </section>
+  </>;
+}
+
+function TurnLesson() {
+  return <>
+    <LessonHeading step="ETAPA 4 DE 5" title="Jogue um turno em quatro etapas" description="Faça suas escolhas no ritmo do tabuleiro e use Passar quando terminar ou não quiser responder."/>
+    <TurnFlowVisual/>
+    <ol className="tutorial-step-list">
+      {TURN_STEPS.map(step => <li key={step.title}><b>{step.title}</b><span>{step.description}</span></li>)}
+    </ol>
+    <section className="tutorial-command-grid" aria-label="Controles básicos">
+      {BASIC_COMMANDS.map(command => <article key={command.title}><b>{command.title}</b><p>{command.description}</p></article>)}
+    </section>
+  </>;
+}
+
+function CombatLesson() {
+  return <>
+    <LessonHeading step="ETAPA 5 DE 5" title="Ataque uma criatura por vez" description="O fluxo é sempre declarar, responder, defender e resolver."/>
     <section className="tutorial-combat-layout">
       <CombatVisual/>
-      <ol className="tutorial-step-list combat">{COMBAT_STEPS.map(step => <li key={step.title}><b>{step.title}</b><span>{step.description}</span></li>)}</ol>
+      <ol className="tutorial-step-list combat">
+        {COMBAT_STEPS.map(step => <li key={step.title}><b>{step.title}</b><span>{step.description}</span></li>)}
+      </ol>
     </section>
-
-    <section className="tutorial-rule-cards">
+    <section className="tutorial-rule-grid">
       <article><b>Enjoo de Invocação</b><p>Normalmente impede atacar e pagar custos de Virar no turno em que a criatura entra. Ela ainda pode bloquear.</p></article>
       <article><b>Sem bloqueio</b><p>O dano do ataque vai para o Herói defensor quando nenhuma criatura bloqueia.</p></article>
       <article><b>Prioridade</b><p>Use um Acelerado, uma habilidade legal ou passe. Respostas resolvem do topo para baixo.</p></article>
-      <article><b>Assistido x Manual</b><p>Assistido auto-passa quando não há resposta legal. Manual mantém as suas janelas abertas.</p></article>
+      <article><b>No turno rival</b><p>Feitiços Acelerados usam a Reserva. Guarde recursos se quiser responder.</p></article>
     </section>
-
-    <aside className="tutorial-rule-note"><b>No turno do oponente</b><span>Feitiços Acelerados usam a Reserva. Guarde recursos se quiser responder.</span></aside>
-  </div>;
+  </>;
 }
 
-function ReferenceTab() {
-  return <div className="tutorial-tab-content">
-    <SectionHeading eyebrow="TABULEIRO" title="Onde cada coisa fica" description="As zonas válidas ficam destacadas quando você arrasta ou escolhe uma carta."/>
-    <section className="tutorial-board-layout">
-      <BoardVisual/>
-      <div className="tutorial-zone-grid">{BOARD_ZONES.map(zone => <article key={zone.title}><span>{zone.badge}</span><h3>{zone.title}</h3><p>{zone.description}</p></article>)}</div>
+function GuideLesson({ chapter }: { chapter: TutorialChapterId }) {
+  if (chapter === "first-duel") return <FirstDuelLesson/>;
+  if (chapter === "cards") return <CardsLesson/>;
+  if (chapter === "board") return <BoardLesson/>;
+  if (chapter === "turn") return <TurnLesson/>;
+  return <CombatLesson/>;
+}
+
+const normalizeText = (value: string) => value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+
+function entryMatchesRange(entry: TutorialGlossaryEntry, range: GlossaryRangeId) {
+  if (range === "all") return true;
+  const initial = normalizeText(entry.label).charAt(0).toUpperCase();
+  if (range === "symbols-d") return initial < "E";
+  if (range === "e-l") return initial >= "E" && initial <= "L";
+  if (range === "m-s") return initial >= "M" && initial <= "S";
+  return initial >= "T";
+}
+
+function GlossaryView() {
+  const [query, setQuery] = useState("");
+  const [range, setRange] = useState<GlossaryRangeId>("all");
+  const normalizedQuery = normalizeText(query.trim());
+  const entries = useMemo(() => GLOSSARY_ENTRIES.filter(entry => {
+    const searchable = [entry.label, entry.description, ...(entry.aliases ?? [])].map(normalizeText).join(" ");
+    return entryMatchesRange(entry, range) && (!normalizedQuery || searchable.includes(normalizedQuery));
+  }), [normalizedQuery, range]);
+
+  const showTerm = (term: string) => {
+    setQuery(term);
+    setRange("all");
+    document.getElementById("tutorial-glossary-search")?.focus();
+  };
+
+  return <section className="tutorial-glossary" aria-labelledby="tutorial-glossary-title">
+    <header className="tutorial-glossary-heading">
+      <span>REFERÊNCIA RÁPIDA</span>
+      <h2 id="tutorial-glossary-title">Glossário de Hemsfell</h2>
+      <p>Pesquise regras, estados, ações e palavras-chave sem sair do jogo.</p>
+    </header>
+
+    <section className="tutorial-featured-terms" aria-labelledby="tutorial-featured-title">
+      <div><span>PRIMEIROS TERMOS</span><h3 id="tutorial-featured-title">Vocabulário para a primeira partida</h3></div>
+      <div>{TUTORIAL_KEYWORDS.slice(0, 8).map(entry => <button type="button" data-tone={entry.tone} onClick={() => showTerm(entry.title)} key={entry.title}>{entry.title}</button>)}</div>
     </section>
 
-    <SectionHeading eyebrow="TIPOS DE CARTA" title="O básico de cada tipo" description="O tipo define onde a carta vai e se ela permanece no campo."/>
-    <section className="tutorial-type-grid">{CARD_TYPES.map(type => <article key={type.title}><h3>{type.title}</h3><p>{type.description}</p></article>)}</section>
+    <div className="tutorial-glossary-tools">
+      <label htmlFor="tutorial-glossary-search">
+        <span>Buscar no glossário</span>
+        <input
+          id="tutorial-glossary-search"
+          type="search"
+          value={query}
+          onChange={event => setQuery(event.target.value)}
+          placeholder="Ex.: Voar, Reserva, destruir..."
+          autoComplete="off"
+        />
+      </label>
+      <div className="tutorial-range-filter" role="group" aria-label="Filtrar termos por letra">
+        {GLOSSARY_RANGES.map(item => <button type="button" aria-pressed={range === item.id} onClick={() => setRange(item.id)} key={item.id}>{item.label}</button>)}
+      </div>
+      <output aria-live="polite">{entries.length} {entries.length === 1 ? "termo" : "termos"}</output>
+    </div>
 
-    <SectionHeading eyebrow="PALAVRAS-CHAVE" title="As mais comuns" description="Este é só o resumo. Passe o mouse sobre palavras-chave durante a partida para ver a definição completa."/>
-    <section className="tutorial-keyword-grid">{TUTORIAL_KEYWORDS.map(entry => <article data-tone={entry.tone} key={entry.title}><h3>{entry.title}</h3><p>{entry.description}</p></article>)}</section>
-
-    <aside className="tutorial-rule-note"><b>Não precisa memorizar tudo</b><span>Alvos válidos, habilidades disponíveis, custos e palavras-chave são explicados pela própria interface enquanto você joga.</span></aside>
-  </div>;
+    {entries.length ? <div className="tutorial-glossary-list">
+      {entries.map(entry => <article data-tone={entry.tone} key={entry.key}>
+        <header><h3>{entry.label}</h3><span>{entry.tone}</span></header>
+        <p>{entry.description}</p>
+        {entry.aliases?.length ? <small>Também aparece como: {entry.aliases.join(", ")}</small> : null}
+      </article>)}
+    </div> : <div className="tutorial-glossary-empty">
+      <h3>Nenhum termo encontrado</h3>
+      <p>Tente outra palavra ou volte ao filtro “Todos”.</p>
+      <button type="button" onClick={() => { setQuery(""); setRange("all"); }}>Limpar busca</button>
+    </div>}
+  </section>;
 }
 
 export function TutorialScreen({ onBack }: { onBack: () => void }) {
-  const [activeTab, setActiveTab] = useState<TutorialTabId>("start");
-  const activeIndex = Math.max(0, TUTORIAL_TABS.findIndex(tab => tab.id === activeTab));
-  const active = TUTORIAL_TABS[activeIndex];
+  const [activeView, setActiveView] = useState<TutorialViewId>("guide");
+  const [activeChapter, setActiveChapter] = useState<TutorialChapterId>("first-duel");
+  const chapterIndex = Math.max(0, TUTORIAL_CHAPTERS.findIndex(chapter => chapter.id === activeChapter));
+  const chapter = TUTORIAL_CHAPTERS[chapterIndex];
 
-  const selectAdjacentTab = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+  const selectAdjacentView = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
     const direction = event.key === "ArrowRight" ? 1 : -1;
-    const next = TUTORIAL_TABS[(index + direction + TUTORIAL_TABS.length) % TUTORIAL_TABS.length];
-    setActiveTab(next.id);
-    document.getElementById(`tutorial-tab-${next.id}`)?.focus();
+    const next = TUTORIAL_VIEWS[(index + direction + TUTORIAL_VIEWS.length) % TUTORIAL_VIEWS.length];
+    setActiveView(next.id);
+    document.getElementById(`tutorial-view-${next.id}`)?.focus();
+  };
+
+  const goToChapter = (index: number) => {
+    const next = TUTORIAL_CHAPTERS[index];
+    if (!next) return;
+    setActiveChapter(next.id);
+    requestAnimationFrame(() => document.getElementById("tutorial-lesson")?.focus());
   };
 
   return <section className="tutorial-screen">
-    <header className="tutorial-hero">
-      <button type="button" onClick={onBack}>← Menu</button>
-      <div><p>TUTORIAL</p><h1>Aprenda a jogar</h1><span>O essencial para começar uma partida sem atravessar um manual inteiro.</span></div>
+    <header className="tutorial-header">
+      <button type="button" className="tutorial-back" onClick={onBack} aria-label="Voltar ao menu">← <span>Menu</span></button>
+      <div><p>ACADEMIA DE HEMSFELL</p><h1>Aprenda a jogar</h1></div>
+      <nav className="tutorial-view-tabs" role="tablist" aria-label="Áreas do tutorial">
+        {TUTORIAL_VIEWS.map((view, index) => <button
+          id={`tutorial-view-${view.id}`}
+          type="button"
+          role="tab"
+          aria-selected={activeView === view.id}
+          aria-controls="tutorial-content"
+          tabIndex={activeView === view.id ? 0 : -1}
+          onClick={() => setActiveView(view.id)}
+          onKeyDown={event => selectAdjacentView(event, index)}
+          key={view.id}
+        >{view.label}</button>)}
+      </nav>
     </header>
 
-    <nav className="tutorial-tabs" role="tablist" aria-label="Seções do tutorial">{TUTORIAL_TABS.map((tab, index) => <button
-      id={`tutorial-tab-${tab.id}`}
-      type="button"
-      role="tab"
-      aria-selected={activeTab === tab.id}
-      aria-controls="tutorial-panel"
-      tabIndex={activeTab === tab.id ? 0 : -1}
-      className={activeTab === tab.id ? "active" : ""}
-      onClick={() => setActiveTab(tab.id)}
-      onKeyDown={event => selectAdjacentTab(event, index)}
-      key={tab.id}
-    ><b>{tab.label}</b><span>{tab.description}</span></button>)}</nav>
+    <main id="tutorial-content" className="tutorial-content" role="tabpanel" aria-labelledby={`tutorial-view-${activeView}`}>
+      {activeView === "guide" ? <div className="tutorial-guide">
+        <aside className="tutorial-chapter-rail" aria-label="Capítulos do guia">
+          <header><span>SUA JORNADA</span><b>{chapterIndex + 1} de {TUTORIAL_CHAPTERS.length}</b></header>
+          <div className="tutorial-progress" aria-hidden="true"><i style={{ width: `${((chapterIndex + 1) / TUTORIAL_CHAPTERS.length) * 100}%` }}/></div>
+          <nav>{TUTORIAL_CHAPTERS.map((item, index) => <button
+            type="button"
+            className={activeChapter === item.id ? "active" : ""}
+            aria-current={activeChapter === item.id ? "step" : undefined}
+            onClick={() => goToChapter(index)}
+            key={item.id}
+          ><i>{index + 1}</i><span><b>{item.label}</b><small>{item.description}</small></span></button>)}</nav>
+        </aside>
 
-    <main id="tutorial-panel" className="tutorial-panel" role="tabpanel" tabIndex={0} aria-labelledby={`tutorial-tab-${active.id}`}>
-      {activeTab === "start" ? <StartTab/> : activeTab === "combat" ? <CombatTab/> : <ReferenceTab/>}
+        <article id="tutorial-lesson" className="tutorial-lesson" tabIndex={-1}>
+          <GuideLesson chapter={activeChapter}/>
+          <footer className="tutorial-lesson-nav">
+            <button type="button" onClick={() => goToChapter(chapterIndex - 1)} disabled={chapterIndex === 0}>← Anterior</button>
+            <span>{chapter.label}</span>
+            {chapterIndex < TUTORIAL_CHAPTERS.length - 1
+              ? <button type="button" className="primary" onClick={() => goToChapter(chapterIndex + 1)}>Próximo →</button>
+              : <button type="button" className="primary" onClick={() => setActiveView("glossary")}>Abrir glossário →</button>}
+          </footer>
+        </article>
+      </div> : <GlossaryView/>}
     </main>
   </section>;
 }
