@@ -25,3 +25,33 @@ test("rules-engine card core exposes activation and keyword semantics", async ()
   assert.equal(typeof cardsIndex.canActivateCard, "function");
   assert.equal(typeof cardsIndex.intrinsicKeywordNames, "function");
 });
+
+test("remaining loose domain and infrastructure files are compatibility facades", async () => {
+  const [deckFacade, deckTypesFacade, authFacade, combatFacade, tifonFacade] = await Promise.all([
+    read("app/user-deck.mjs"),
+    read("app/user-deck.d.mts"),
+    read("app/chatgpt-auth.ts"),
+    read("app/combat-presentation.mjs"),
+    read("app/tifon-picker-normalizer.tsx"),
+  ]);
+
+  assert.match(deckFacade, /model\/decks\/user-deck\.mjs/);
+  assert.match(deckTypesFacade, /model\/decks\/user-deck\.mjs/);
+  assert.match(authFacade, /infrastructure\/auth\/chatgpt-auth/);
+  assert.match(combatFacade, /presentation\/combat\/combat-presentation\.mjs/);
+  assert.match(tifonFacade, /presentation\/setup\/tifon-picker-normalizer/);
+  assert.doesNotMatch(deckFacade, /suppliedDeckPages\s*=\s*Object\.freeze/);
+  assert.doesNotMatch(authFacade, /safeRelativeReturnPath\s*\(/);
+});
+
+test("organized cores retain their public contracts", async () => {
+  const [deckCore, combatCore] = await Promise.all([
+    import("../app/model/decks/user-deck.mjs"),
+    import("../app/presentation/combat/combat-presentation.mjs"),
+  ]);
+
+  assert.equal(deckCore.MAIN_DECK_SIZE, 49);
+  assert.equal(typeof deckCore.validateUserDeck, "function");
+  assert.equal(typeof combatCore.resolvedCombatPresentation, "function");
+  assert.equal(typeof combatCore.immediateDirectCombatPresentation, "function");
+});
