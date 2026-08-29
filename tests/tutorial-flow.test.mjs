@@ -29,7 +29,7 @@ test("quick start teaches the four turn stages, core controls and win condition"
     assert.match(tutorial, new RegExp(topic, "i"));
   }
   for (const command of ["Hover por 1s", "Segurar por 1s", "Arrastar", "Clique", "⚡", "Passar"]) {
-    assert.match(tutorialContent, new RegExp(command.replace(/[⚡]/g, "\\$&")));
+    assert.match(tutorialContent, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
 });
 
@@ -47,8 +47,8 @@ test("combat tutorial matches the current one-attacker flow", () => {
   assert.match(tutorialContent, /2\. Responda/);
   assert.match(tutorialContent, /3\. Defenda/);
   assert.match(tutorialContent, /4\. Resolva o dano/);
-  assert.match(tutorial, /bloqueador legal ou aceita o ataque sem bloqueio/i);
-  assert.doesNotMatch(tutorial, /atacantes e bloqueadores são confirmados como grupos/i);
+  assert.match(tutorialContent, /bloqueador legal ou aceita o ataque sem bloqueio/i);
+  assert.doesNotMatch(tutorial + tutorialContent, /atacantes e bloqueadores são confirmados como grupos/i);
 });
 
 test("tutorial keyword copy stays derived from the canonical glossary but shows a concise subset", () => {
