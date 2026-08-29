@@ -85,7 +85,7 @@ test("AI keeps its original runtime shape and waits for the single presentation 
 });
 
 test("player interaction is blocked for the full presentation lifetime", () => {
-  const runtime = read("app/presentation-interaction-runtime.tsx");
+  const runtime = read("app/presentation/runtime/presentation-interaction-runtime.tsx");
   assert.match(runtime, /__hemsfellPresentationBusy/);
   assert.doesNotMatch(runtime, /PresentationCueBusy|presentation-cue/);
   assert.match(runtime, /pointerdown/);
@@ -97,7 +97,7 @@ test("player interaction is blocked for the full presentation lifetime", () => {
 });
 
 test("combat and targeted effects have explicit one-shot visual cues", () => {
-  const runtime = read("app/presentation-action-cues.ts");
+  const runtime = read("app/presentation/cues/presentation-action-cues.ts");
   assert.match(runtime, /hh-combat-sword/);
   assert.match(runtime, /hh-effect-orb/);
   assert.match(runtime, /animateActionCue/);
