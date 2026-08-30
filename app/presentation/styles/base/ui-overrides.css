@@ -921,20 +921,20 @@
 
 /* The opponent hand occupies a real responsive row. Both energy tracks are
    centered in equal-height rows, so their distance to the battlefield is
-   mathematically symmetrical. Taking 1fr from the upper hand row and adding
-   it below the local energy track lifts the complete battlefield by 1cqh. */
+   mathematically symmetrical. Taking 3fr from the upper hand row and adding
+   it below the local energy track lifts the complete battlefield by 3cqh. */
 .screen-game .game-stage>.game-content.hs-board{
- grid-template-rows:minmax(0,4.5fr) minmax(0,14.5fr) minmax(0,4fr) minmax(0,24fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,15fr)!important;
+ grid-template-rows:minmax(0,4.5fr) minmax(0,11.5fr) minmax(0,4fr) minmax(0,24fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,18fr)!important;
 }
 .screen-game .game-stage>.game-content.hs-board>.opponent-hand{
- align-self:start!important;height:14.5cqh!important;padding-bottom:clamp(.08rem,.2cqh,.18rem)!important;
+ align-self:start!important;height:11.5cqh!important;padding-bottom:clamp(.08rem,.2cqh,.18rem)!important;
 }
 .screen-game .game-stage>.game-content.hs-board>.enemy-energy{
  align-self:center!important;margin-top:0!important;margin-bottom:0!important;
 }
 @container hemsfell-board (max-width:60rem){
- .screen-game .game-stage>.game-content.hs-board{grid-template-rows:minmax(0,4.5fr) minmax(0,14.5fr) minmax(0,4fr) minmax(0,24fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,15fr)!important}
- .screen-game .game-stage>.game-content.hs-board>.opponent-hand{height:14.5cqh!important}
+ .screen-game .game-stage>.game-content.hs-board{grid-template-rows:minmax(0,4.5fr) minmax(0,11.5fr) minmax(0,4fr) minmax(0,24fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,18fr)!important}
+ .screen-game .game-stage>.game-content.hs-board>.opponent-hand{height:11.5cqh!important}
 }
 
 /* Hero abilities inside priority response windows. */

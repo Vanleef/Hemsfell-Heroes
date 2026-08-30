@@ -146,6 +146,7 @@
 
 .deck-picker {
   min-width: 0;
+  overflow: hidden;
   border: .0625rem solid color-mix(in srgb, var(--deck, #d6a74f) 46%, #24303a) !important;
   border-radius: clamp(.75rem, 1.2vw, 1rem);
   background:
@@ -153,13 +154,13 @@
   box-shadow: inset 0 .0625rem 0 color-mix(in srgb, white 5%, transparent), 0 .65rem 1.6rem rgba(0,0,0,.14);
   padding: clamp(.8rem, 1.25vw, 1.15rem) !important;
   display: grid !important;
-  grid-template-columns: clamp(4.8rem, 7.5vw, 7rem) minmax(0, 1fr) !important;
+  grid-template-columns: clamp(4.6rem, 6.1vw, 5.75rem) minmax(0, 1fr) !important;
   grid-template-areas:
     "label label"
     "art select"
     "art faction"
     "art plan" !important;
-  column-gap: clamp(.75rem, 1.25vw, 1.1rem) !important;
+  column-gap: clamp(.9rem, 1.35vw, 1.2rem) !important;
   row-gap: clamp(.28rem, .55vw, .5rem) !important;
   align-content: start;
 }
@@ -178,6 +179,12 @@
 .deck-picker > :has(> img):not(.deck-picker-summary) {
   grid-area: art;
   align-self: start;
+  justify-self: center;
+  width: 100% !important;
+  max-width: 5.75rem !important;
+  height: auto !important;
+  aspect-ratio: 5 / 7;
+  object-fit: contain;
 }
 
 .deck-picker > select {
@@ -185,12 +192,14 @@
   width: 100%;
   min-width: 0;
   align-self: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .deck-picker > .deck-picker-faction {
   grid-area: faction;
   align-self: end;
-  margin: clamp(.1rem, .4vw, .25rem) 0 0;
+  margin: clamp(.15rem, .35vw, .3rem) 0 0;
   color: var(--faction-color, var(--deck, #d6a74f)) !important;
   font-size: clamp(1.05rem, 1.5vw, 1.45rem) !important;
   line-height: 1;
@@ -212,6 +221,7 @@
   padding-top: clamp(.45rem, .75vw, .7rem);
   border-top: .0625rem solid color-mix(in srgb, var(--faction-color, currentColor) 30%, transparent);
   text-align: left;
+  overflow: hidden;
 }
 
 .deck-picker-summary .deck-plan {
@@ -221,6 +231,7 @@
   line-height: 1.5;
   opacity: .92;
   text-wrap: pretty;
+  overflow-wrap: anywhere;
 }
 
 .match-setup .versus {
@@ -519,7 +530,7 @@
     transform: none !important;
   }
   .deck-picker {
-    grid-template-columns: clamp(4.5rem, 20vw, 6rem) minmax(0,1fr) !important;
+    grid-template-columns: clamp(4.2rem, 18vw, 5.25rem) minmax(0,1fr) !important;
   }
   .host-settings {
     grid-template-columns: 1fr;
