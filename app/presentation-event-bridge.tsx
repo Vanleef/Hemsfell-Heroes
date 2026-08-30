@@ -8,7 +8,7 @@ const ONLINE_SNAPSHOT_EVENT = "hemsfell:online-room-snapshot";
 const EXCLUDED_COMMANDS = new Set(["declareAttack", "selectDefender", "reposition", "confirmReposition", "surrender"]);
 const MAX_SEEN_TRANSITIONS = 256;
 
-type SnapshotEntry = { revision: number; game: any; isHost: boolean };
+type SnapshotEntry = { revision: number; game: any; isHost: boolean; status: string };
 type ConfirmedAck = { before: any; command: Record<string, any>; commandId: string; revision: number };
 type PresentationPayload = { before: any; after: any; command: Record<string, any>; trace?: any[]; commandId: string; presentationId?: string; revision?: number };
 
@@ -83,6 +83,7 @@ const presentationFingerprint = (game: any) => JSON.stringify({
   })),
 });
 const hasPresentableDelta = (before: any, after: any) => !!before && !!after && presentationFingerprint(before) !== presentationFingerprint(after);
+const crossesMulligan = (beforeStatus: string, afterStatus: string) => beforeStatus === "mulligan" || afterStatus === "mulligan";
 const hashText = (value: string) => {
   let hash = 2166136261;
   for (let index = 0; index < value.length; index++) {
@@ -219,12 +220,20 @@ export default function PresentationEventBridge() {
       const isHost = !!detail?.session?.isHost;
       const room = detail?.room;
       const revision = Number(room?.revision ?? -1);
+      const status = String(room?.status || "");
       const after = orientGame(room?.game, isHost);
       if (!roomId || !after || !Number.isFinite(revision)) return;
 
       const previous = snapshots.get(roomId);
-      snapshots.set(roomId, { revision, game: clone(after), isHost });
+      snapshots.set(roomId, { revision, game: clone(after), isHost, status });
       if (!previous || revision <= previous.revision) return;
+
+      /* Mulligan replaces the complete hand as preparation, not as an in-game
+         card movement. Suppress every revision inside it and its final
+         transition to started; otherwise the generic snapshot diff animates
+         the returned/drawn cards and polling can make that sequence appear
+         more than once. */
+      if (crossesMulligan(previous.status, status)) return;
 
       const key = `${roomId}:${revision}`;
       const ack = confirmed.get(key);
