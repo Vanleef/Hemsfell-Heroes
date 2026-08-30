@@ -6,6 +6,8 @@ import "./presentation/styles/match-ui.css";
 import "./presentation/styles/online-match-runtime.css";
 import "./presentation/styles/game-presentation.css";
 import "./presentation/styles/tutorial.css";
+/* Final geometry contract shared by desktop and mobile match boards. */
+import "./presentation/styles/board/reference-board-layout.css";
 /* Keep the command-bar typography as the final CSS cascade authority. */
 import "./presentation/styles/command-bar-fixes.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";

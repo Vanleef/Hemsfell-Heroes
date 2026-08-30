@@ -470,30 +470,3 @@
   .screen-game .side-piles small { display: none !important; }
   .screen-game .player-hand :is(.card-frame, .original-card) { width: clamp(3rem, 5.7cqw, 5.9rem) !important; }
 }
-
-/* Portrait/mobile: keep the landscape board at a readable size and expose the
- * stage as a two-axis viewport. Compressing 16:9 into the phone width makes
- * every card and control illegible; the user must be able to pan the same
- * proportional surface in either direction, including while browser zoom is
- * active. */
-@media (orientation: portrait) and (max-width: 60rem) {
-  .screen-game .game-stage {
-    display: block !important;
-    overflow: auto !important;
-    overscroll-behavior: contain;
-    touch-action: pan-x pan-y;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  .screen-game .game-stage::-webkit-scrollbar { display: none; }
-  .screen-game .game-stage > .game-content.hs-board {
-    width: max(62rem, calc(120dvh * 16 / 9)) !important;
-    height: max(34.875rem, 120dvh) !important;
-    min-width: 62rem !important;
-    min-height: 34.875rem !important;
-    max-width: none !important;
-    max-height: none !important;
-    margin: 0 !important;
-  }
-  .screen-game .player-hand { justify-content: center !important; }
-}

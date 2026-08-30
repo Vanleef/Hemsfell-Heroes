@@ -919,24 +919,6 @@
  .screen-game .hero-clue-counter{right:.08rem;bottom:.08rem}
 }
 
-/* The opponent hand occupies a real responsive row. Both energy tracks are
-   centered in equal-height rows, so their distance to the battlefield is
-   mathematically symmetrical. The compact upper hand row makes the movement
-   visible on desktop and lifts the complete battlefield by 7cqh. */
-.screen-game .game-stage>.game-content.hs-board{
- grid-template-rows:minmax(0,4.5fr) minmax(0,7.5fr) minmax(0,4fr) minmax(0,24fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,22fr)!important;
-}
-.screen-game .game-stage>.game-content.hs-board>.opponent-hand{
- align-self:start!important;height:7.5cqh!important;padding-bottom:clamp(.04rem,.1cqh,.1rem)!important;
-}
-.screen-game .game-stage>.game-content.hs-board>.enemy-energy{
- align-self:center!important;margin-top:0!important;margin-bottom:0!important;
-}
-@container hemsfell-board (max-width:60rem){
- .screen-game .game-stage>.game-content.hs-board{grid-template-rows:minmax(0,4.5fr) minmax(0,7.5fr) minmax(0,4fr) minmax(0,24fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,22fr)!important}
- .screen-game .game-stage>.game-content.hs-board>.opponent-hand{height:7.5cqh!important}
-}
-
 /* Hero abilities inside priority response windows. */
 .screen-game .response-hero-abilities{display:flex;flex-direction:column;gap:clamp(.3rem,.55cqh,.55rem);padding:0 clamp(.65rem,1.15cqw,1rem) clamp(.55rem,1cqh,.9rem)}
 .screen-game .response-hero-abilities>button{display:grid;grid-template-columns:clamp(1.5rem,2.25cqw,2rem) minmax(0,1fr);align-items:center;gap:clamp(.35rem,.65cqw,.6rem);width:100%;padding:clamp(.42rem,.72cqh,.65rem) clamp(.5rem,.85cqw,.75rem);border:1px solid rgb(100 205 255/.58);border-radius:clamp(.3rem,.5cqw,.48rem);background:linear-gradient(135deg,rgb(21 79 126/.78),rgb(7 25 42/.96));color:#eaf8ff;text-align:left;box-shadow:0 0 clamp(.25rem,.55cqw,.5rem) rgb(65 170 255/.18)}
