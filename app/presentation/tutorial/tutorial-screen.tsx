@@ -13,7 +13,6 @@ import {
   QUICK_FACTS,
   TURN_STEPS,
   TUTORIAL_CHAPTERS,
-  TUTORIAL_KEYWORDS,
   TUTORIAL_VIEWS,
   type GlossaryRangeId,
   type TutorialChapterId,
@@ -52,27 +51,46 @@ function TurnFlowVisual() {
 }
 
 function BoardVisual() {
-  const slots = (prefix: string) => <div className="tutorial-empty-slots" aria-hidden="true">
+  const slots = (prefix: string) => <div className="tutorial-board-slot-row" aria-hidden="true">
     {Array.from({ length: 5 }, (_, index) => <i key={`${prefix}-${index}`}/>) }
   </div>;
-  return <div className="tutorial-board-visual" aria-label="Tabuleiro vazio com as zonas do oponente e do jogador identificadas">
-    <section className="tutorial-board-half opponent" aria-label="Campo do oponente">
-      <header><b>CAMPO DO OPONENTE</b><span>As cartas ficam voltadas para o lado do oponente.</span></header>
-      <div className="tutorial-board-fields">
-        <div className="tutorial-board-zone auxiliary"><span><b>5 ESPAÇOS AUXILIARES</b><small>Encantos, Artefatos e Imagens auxiliares</small></span>{slots("opponent-auxiliary")}</div>
-        <div className="tutorial-board-zone creature"><span><b>5 ESPAÇOS DE CRIATURA</b><small>Criaturas e Imagens de Criatura</small></span>{slots("opponent-creature")}</div>
+  const backs = (prefix: string) => <div className="tutorial-board-hand" aria-hidden="true">
+    {Array.from({ length: 7 }, (_, index) => <i key={`${prefix}-${index}`}/>) }
+  </div>;
+  const piles = (owner: "opponent" | "player") => <div className={`tutorial-board-piles ${owner}`} aria-hidden="true">
+    <i>DECK</i><i>EXTRA</i><i>CEM.</i><i>OBS.</i>
+  </div>;
+  return <div className="tutorial-board-diagram">
+    <div className="tutorial-board-visual" aria-label="Representação do tabuleiro vazio do jogo com as zonas do oponente e do jogador">
+      <div className="tutorial-board-phase">MANUTENÇÃO · PRINCIPAL · COMBATE · FINALIZAÇÃO</div>
+      <div className="tutorial-board-hand-area opponent">{backs("opponent-hand")}</div>
+      <div className="tutorial-board-resource opponent"><span>ENERGIA E RESERVA DO OPONENTE</span><i/></div>
+      <div className="tutorial-board-playfield">
+        <div className="tutorial-board-heroes" aria-hidden="true"><i><b>♥ 30</b></i><i><b>♥ 30</b></i></div>
+        <div className="tutorial-board-terrains">
+          <div><b>3</b><i/><small>TERRENO</small></div>
+          <div><b>6</b><i/><small>TERRENO</small></div>
+        </div>
+        <div className="tutorial-board-rows">
+          <div className="tutorial-field-zone opponent auxiliary"><b>1</b>{slots("opponent-auxiliary")}</div>
+          <div className="tutorial-field-zone opponent creature"><b>2</b>{slots("opponent-creature")}</div>
+          <div className="tutorial-field-divider"><i/><span>CAMPO CENTRAL</span><i/></div>
+          <div className="tutorial-field-zone player creature"><b>4</b>{slots("player-creature")}</div>
+          <div className="tutorial-field-zone player auxiliary"><b>5</b>{slots("player-auxiliary")}</div>
+        </div>
+        <div className="tutorial-board-side-piles">{piles("opponent")}{piles("player")}</div>
       </div>
-      <div className="tutorial-board-zone terrain"><span><b>TERRENO CRUEL</b><small>1 Terreno do oponente</small></span><i aria-hidden="true"/></div>
-    </section>
-    <div className="tutorial-board-center" aria-hidden="true"><i/><span>LINHA CENTRAL</span><i/></div>
-    <section className="tutorial-board-half player" aria-label="Seu campo">
-      <header><b>SEU CAMPO</b><span>Jogue cartas somente nos espaços destacados como válidos.</span></header>
-      <div className="tutorial-board-fields">
-        <div className="tutorial-board-zone creature"><span><b>5 ESPAÇOS DE CRIATURA</b><small>Criaturas e Imagens de Criatura</small></span>{slots("player-creature")}</div>
-        <div className="tutorial-board-zone auxiliary"><span><b>5 ESPAÇOS AUXILIARES</b><small>Encantos, Artefatos e Imagens auxiliares</small></span>{slots("player-auxiliary")}</div>
-      </div>
-      <div className="tutorial-board-zone terrain"><span><b>TERRENO CRUEL</b><small>1 Terreno seu</small></span><i aria-hidden="true"/></div>
-    </section>
+      <div className="tutorial-board-resource player"><span>SUA ENERGIA E RESERVA</span><i/></div>
+      <div className="tutorial-board-hand-area player">{backs("player-hand")}</div>
+    </div>
+    <div className="tutorial-board-legend" aria-label="Tipos permitidos em cada zona">
+      <article><b>1</b><span><strong>Auxiliares do oponente</strong><small>Encantos, Artefatos e Imagens auxiliares.</small></span></article>
+      <article><b>2</b><span><strong>Criaturas do oponente</strong><small>Criaturas e Imagens de Criatura.</small></span></article>
+      <article><b>3</b><span><strong>Terreno Cruel do oponente</strong><small>Um Terreno.</small></span></article>
+      <article><b>4</b><span><strong>Suas criaturas</strong><small>Criaturas e Imagens de Criatura.</small></span></article>
+      <article><b>5</b><span><strong>Seus auxiliares</strong><small>Encantos, Artefatos e Imagens auxiliares.</small></span></article>
+      <article><b>6</b><span><strong>Seu Terreno Cruel</strong><small>Um Terreno.</small></span></article>
+    </div>
   </div>;
 }
 
@@ -195,23 +213,11 @@ function GlossaryView() {
     return entryMatchesRange(entry, range) && (!normalizedQuery || searchable.includes(normalizedQuery));
   }), [normalizedQuery, range]);
 
-  const showTerm = (term: string) => {
-    setQuery(term);
-    setRange("all");
-    document.getElementById("tutorial-glossary-search")?.focus();
-  };
-
   return <section className="tutorial-glossary" aria-labelledby="tutorial-glossary-title">
     <header className="tutorial-glossary-heading">
-      <span>REFERÊNCIA RÁPIDA</span>
-      <h2 id="tutorial-glossary-title">Glossário de Hemsfell</h2>
-      <p>Pesquise regras, estados, ações e palavras-chave sem sair do jogo.</p>
+      <h2 id="tutorial-glossary-title">Glossário</h2>
+      <p>Consulte regras e palavras-chave.</p>
     </header>
-
-    <section className="tutorial-featured-terms" aria-labelledby="tutorial-featured-title">
-      <div><span>PRIMEIROS TERMOS</span><h3 id="tutorial-featured-title">Vocabulário para a primeira partida</h3></div>
-      <div>{TUTORIAL_KEYWORDS.slice(0, 8).map(entry => <button type="button" data-tone={entry.tone} onClick={() => showTerm(entry.title)} key={entry.title}>{entry.title}</button>)}</div>
-    </section>
 
     <div className="tutorial-glossary-tools">
       <label htmlFor="tutorial-glossary-search">

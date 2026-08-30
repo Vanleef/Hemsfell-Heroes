@@ -51,13 +51,23 @@ test("card anatomy markers and empty board zones match the actual interface", ()
   const anatomy = tutorialContent.slice(tutorialContent.indexOf("export const CARD_ANATOMY"), tutorialContent.indexOf("export const TURN_STEPS"));
   assert.equal((anatomy.match(/badge: "[1-5]"/g) || []).length, 5);
   for (const marker of ["1", "2", "3", "4", "5"]) assert.match(css, new RegExp(`data-marker=\\"${marker}\\"`));
-  assert.match(tutorial, /Tabuleiro vazio com as zonas do oponente e do jogador identificadas/);
-  assert.equal((tutorial.match(/5 ESPAÇOS DE CRIATURA/g) || []).length, 2);
-  assert.equal((tutorial.match(/5 ESPAÇOS AUXILIARES/g) || []).length, 2);
-  assert.equal((tutorial.match(/<b>TERRENO CRUEL<\/b>/g) || []).length, 2);
+  assert.match(anatomy, /faixa final, abaixo da descrição/);
+  assert.match(css, /data-marker="4"\]\{--marker-x:50%;--marker-y:97%/);
+  assert.match(tutorial, /Representação do tabuleiro vazio do jogo/);
+  for (const section of ["tutorial-board-heroes", "tutorial-board-terrains", "tutorial-board-rows", "tutorial-board-side-piles", "tutorial-board-hand", "tutorial-board-resource"]) assert.match(tutorial, new RegExp(section));
+  assert.equal((tutorial.match(/tutorial-field-zone /g) || []).length, 4);
+  assert.match(tutorial, /<b>3<\/b><i\/><small>TERRENO/);
+  assert.match(tutorial, /<b>6<\/b><i\/><small>TERRENO/);
   assert.match(tutorial, /Criaturas e Imagens de Criatura/);
   assert.match(tutorial, /Encantos, Artefatos e Imagens auxiliares/);
   assert.doesNotMatch(tutorial, /Vença o duelo, não o manual|SUA JORNADA/);
+});
+
+test("glossary header is concise and isolated from the search controls", () => {
+  assert.match(tutorial, /<h2 id="tutorial-glossary-title">Glossário<\/h2>/);
+  assert.match(tutorial, /<p>Consulte regras e palavras-chave\.<\/p>/);
+  assert.doesNotMatch(tutorial, /REFERÊNCIA RÁPIDA|PRIMEIROS TERMOS|Glossário de Hemsfell|Vocabulário para a primeira partida/);
+  assert.match(css, /\.tutorial-glossary-heading\{display:grid/);
 });
 
 test("combat tutorial matches the current one-attacker flow", () => {

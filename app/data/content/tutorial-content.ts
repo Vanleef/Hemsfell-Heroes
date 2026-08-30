@@ -58,7 +58,7 @@ export const CARD_ANATOMY: TutorialReference[] = [
   { title: "Custo", description: "A Energia necessária para jogar a carta.", badge: "1" },
   { title: "Ofensividade", description: "O dano que a criatura causa em combate.", badge: "2" },
   { title: "Vitalidade", description: "O dano que a criatura suporta antes de ser destruída.", badge: "3" },
-  { title: "Tipo e subtipo", description: "Indicam a categoria da carta e grupos como Dragão, Goblin ou Recruta.", badge: "4" },
+  { title: "Tipo e subtipo", description: "Ficam na faixa final, abaixo da descrição, no formato “Criatura — Goblin”.", badge: "4" },
   { title: "Nome e descrição", description: "O painel informa o nome, as condições, os alvos e os efeitos da carta.", badge: "5" },
 ];
 
