@@ -49,7 +49,7 @@
 .tutorial-rule-note b{flex:none;color:#f0ca72;font-size:.73rem}
 .tutorial-rule-note span{color:#bdc5c9;font-size:.71rem;line-height:1.45}
 .tutorial-card-anatomy{display:grid;grid-template-columns:minmax(13rem,.8fr) minmax(18rem,1.2fr);gap:2rem;align-items:center;padding:1rem 0;border-bottom:1px solid var(--tutorial-line)}
-.tutorial-card-stage{display:grid;place-items:center;min-height:27rem;padding:2.75rem;background:radial-gradient(circle at 50% 42%,#263137,#111619 72%);overflow:hidden}
+.tutorial-card-stage{position:relative;display:grid;place-items:center;min-height:27rem;padding:2.75rem;background:radial-gradient(circle at 50% 42%,#263137,#111619 72%);overflow:visible}
 .tutorial-card-blueprint{position:relative;width:12rem;aspect-ratio:5/7}
 .tutorial-card-blueprint .tutorial-card-art{width:100%;height:100%}
 .tutorial-card-blueprint>i{--marker-x:0;--marker-y:0;position:absolute;z-index:3;left:var(--marker-x);top:var(--marker-y);width:0;height:0;border-top:2px solid #f0c96c;font-style:normal;filter:drop-shadow(0 2px 3px #000)}
@@ -75,7 +75,7 @@
 .tutorial-board-visual::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,#59210b22,transparent 18% 82%,#59210b22),repeating-linear-gradient(118deg,#fff0 0 38px,#ffffff05 39px,#fff0 40px)}
 .tutorial-board-phase{z-index:1;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #c79c4a40;background:#050b0ddd;color:#d6bd7a;font-size:clamp(.28rem,.55vw,.46rem);font-weight:900;letter-spacing:.12em}
 .tutorial-board-hand-area{z-index:1;display:grid;place-items:center}.tutorial-board-hand{display:flex;justify-content:center;height:100%}.tutorial-board-hand>i{height:100%;aspect-ratio:5/7;margin-left:-.18rem;border:1px solid #8c6135;border-radius:2px;background:linear-gradient(135deg,#52205c,#11182f 55%,#93213d)}
-.tutorial-board-hand-area.player .tutorial-board-hand>i{background:linear-gradient(145deg,#2d3336,#101416)}
+.tutorial-board-hand-area.is-player .tutorial-board-hand>i{background:linear-gradient(145deg,#2d3336,#101416)}
 .tutorial-board-resource{z-index:1;display:flex;align-items:center;justify-content:center;gap:.45rem;color:#d6c795;font-size:clamp(.25rem,.48vw,.42rem);font-weight:900;letter-spacing:.08em}.tutorial-board-resource>i{display:block;width:48%;height:3px;border:1px solid #385e67;background:linear-gradient(90deg,#d2ab44 0 22%,#163b43 22%)}
 .tutorial-board-playfield{position:relative;z-index:1;display:grid;grid-template-columns:11% 9% minmax(0,1fr) 15%;gap:1%;min-height:0;padding:0 1.5%}
 .tutorial-board-heroes,.tutorial-board-terrains,.tutorial-board-side-piles{display:grid;grid-template-rows:1fr 1fr;align-items:center;gap:8%}

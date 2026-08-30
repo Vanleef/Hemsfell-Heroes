@@ -56,6 +56,10 @@ test("card anatomy markers and empty board zones match the actual interface", ()
   assert.match(tutorial, /Representação do tabuleiro vazio do jogo/);
   for (const section of ["tutorial-board-heroes", "tutorial-board-terrains", "tutorial-board-rows", "tutorial-board-side-piles", "tutorial-board-hand", "tutorial-board-resource"]) assert.match(tutorial, new RegExp(section));
   assert.equal((tutorial.match(/tutorial-field-zone /g) || []).length, 4);
+  assert.doesNotMatch(tutorial, /className="[^"]* (?:player|opponent)(?: |")/);
+  assert.match(tutorial, /is-opponent/);
+  assert.match(tutorial, /is-player/);
+  assert.match(css, /\.tutorial-card-stage\{[^}]*overflow:visible/);
   assert.match(tutorial, /<b>3<\/b><i\/><small>TERRENO/);
   assert.match(tutorial, /<b>6<\/b><i\/><small>TERRENO/);
   assert.match(tutorial, /Criaturas e Imagens de Criatura/);
