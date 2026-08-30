@@ -6,8 +6,9 @@ const layout = fs.readFileSync(new URL("../app/presentation/styles/board/board-l
 const overrides = fs.readFileSync(new URL("../app/presentation/styles/base/ui-overrides.css", import.meta.url), "utf8");
 const interactions = fs.readFileSync(new URL("../app/presentation/styles/board/lab-overrides.css", import.meta.url), "utf8");
 const runtime = fs.readFileSync(new URL("../app/presentation/match/match-ui-runtime.tsx", import.meta.url), "utf8");
+const guard = fs.readFileSync(new URL("../app/presentation/match/match-ui-guard.tsx", import.meta.url), "utf8");
 
-const liftedRows = /minmax\(0,4\.5fr\)\s*minmax\(0,11\.5fr\)\s*minmax\(0,4fr\)\s*minmax\(0,24fr\)\s*minmax\(0,5fr\)\s*minmax\(0,29fr\)\s*minmax\(0,4fr\)\s*minmax\(0,18fr\)/s;
+const liftedRows = /minmax\(0,4\.5fr\)\s*minmax\(0,7\.5fr\)\s*minmax\(0,4fr\)\s*minmax\(0,24fr\)\s*minmax\(0,5fr\)\s*minmax\(0,29fr\)\s*minmax\(0,4fr\)\s*minmax\(0,22fr\)/s;
 
 test("the battlefield is lifted while both energy gaps remain symmetrical", () => {
   assert.match(overrides, liftedRows);
@@ -20,9 +21,11 @@ test("the battlefield is lifted while both energy gaps remain symmetrical", () =
 test("portrait mode keeps the board readable and pans on both axes", () => {
   assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?overflow: auto !important/s);
   assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?touch-action: pan-x pan-y/s);
-  assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?width: max\(62rem, calc\(100dvh \* 16 \/ 9\)\) !important/s);
-  assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?height: max\(34\.875rem, 100dvh\) !important/s);
+  assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?width: max\(62rem, calc\(120dvh \* 16 \/ 9\)\) !important/s);
+  assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?height: max\(34\.875rem, 120dvh\) !important/s);
   assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?max-width: none !important/s);
+  assert.match(guard, /stage\.scrollLeft = Math\.max\(0, \(stage\.scrollWidth - stage\.clientWidth\) \/ 2\)/);
+  assert.match(guard, /stage\.scrollTop = Math\.max\(0, \(stage\.scrollHeight - stage\.clientHeight\) \/ 2\)/);
 });
 
 test("floating match UI uses stable sectors of the responsive 16:9 board", () => {

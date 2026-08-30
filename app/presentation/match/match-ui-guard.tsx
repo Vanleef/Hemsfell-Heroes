@@ -309,6 +309,26 @@ function layoutHandLimitChoices() {
   grid.dataset.handLimitFit = "true";
 }
 
+function initializePortraitBoardPan() {
+  const stage = document.querySelector<HTMLElement>(".screen-game .game-stage");
+  if (!stage) return;
+
+  const portrait = window.matchMedia("(orientation: portrait) and (max-width: 60rem)").matches;
+  if (!portrait) {
+    delete stage.dataset.hhPanInitialized;
+    return;
+  }
+  if (stage.dataset.hhPanInitialized) return;
+  stage.dataset.hhPanInitialized = "pending";
+
+  requestAnimationFrame(() => {
+    if (!stage.isConnected) return;
+    stage.scrollLeft = Math.max(0, (stage.scrollWidth - stage.clientWidth) / 2);
+    stage.scrollTop = Math.max(0, (stage.scrollHeight - stage.clientHeight) / 2);
+    stage.dataset.hhPanInitialized = "true";
+  });
+}
+
 export default function MatchUiGuard() {
   useEffect(() => {
     let wasInMatch = !!document.querySelector(".game-stage");
@@ -331,6 +351,7 @@ export default function MatchUiGuard() {
       enhanceDecisionChoiceSummaries();
       layoutTargetBannerInSafeLane();
       layoutHandLimitChoices();
+      initializePortraitBoardPan();
     };
 
     const scheduleSync = () => {

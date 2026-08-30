@@ -487,8 +487,8 @@
   }
   .screen-game .game-stage::-webkit-scrollbar { display: none; }
   .screen-game .game-stage > .game-content.hs-board {
-    width: max(62rem, calc(100dvh * 16 / 9)) !important;
-    height: max(34.875rem, 100dvh) !important;
+    width: max(62rem, calc(120dvh * 16 / 9)) !important;
+    height: max(34.875rem, 120dvh) !important;
     min-width: 62rem !important;
     min-height: 34.875rem !important;
     max-width: none !important;
