@@ -7,17 +7,17 @@ const overrides = fs.readFileSync(new URL("../app/presentation/styles/base/ui-ov
 const interactions = fs.readFileSync(new URL("../app/presentation/styles/board/lab-overrides.css", import.meta.url), "utf8");
 const runtime = fs.readFileSync(new URL("../app/presentation/match/match-ui-runtime.tsx", import.meta.url), "utf8");
 const guard = fs.readFileSync(new URL("../app/presentation/match/match-ui-guard.tsx", import.meta.url), "utf8");
-const legacy = fs.readFileSync(new URL("../app/presentation/styles/legacy/lab-legacy.css", import.meta.url), "utf8");
+const seal = fs.readFileSync(new URL("../app/presentation/styles/board/board-cascade-seal.css", import.meta.url), "utf8");
+const rootLayout = fs.readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8");
 
 const liftedRows = /minmax\(0,4\.5fr\)\s*minmax\(0,7\.5fr\)\s*minmax\(0,4fr\)\s*minmax\(0,24fr\)\s*minmax\(0,5fr\)\s*minmax\(0,29fr\)\s*minmax\(0,4fr\)\s*minmax\(0,22fr\)/s;
 
 test("the battlefield is lifted while both energy gaps remain symmetrical", () => {
   assert.match(overrides, liftedRows);
   assert.match(overrides, />\.enemy-energy\{[^}]*align-self:center!important;[^}]*margin-top:0!important;[^}]*margin-bottom:0!important/s);
-  assert.match(legacy, />\.player-energy\{\s*grid-column:3!important;\s*grid-row:7!important/s);
-  assert.match(legacy, />\.enemy-energy\{[^}]*align-self:center!important;[^}]*margin-top:0!important;[^}]*margin-bottom:0!important/s);
-  assert.match(legacy, />\.player-energy\{[^}]*align-self:center!important;[^}]*margin-top:0!important;[^}]*margin-bottom:0!important/s);
-  assert.doesNotMatch(legacy, />\.player-energy\{\s*grid-column:3!important;\s*grid-row:6!important/s);
+  assert.match(seal, /> \.player-energy \{[^}]*grid-row: 7 !important;[^}]*align-self: center !important;[^}]*margin-top: 0 !important;[^}]*margin-bottom: 0 !important/s);
+  assert.match(seal, /> \.enemy-energy \{[^}]*grid-row: 3 !important;[^}]*align-self: center !important;[^}]*margin-top: 0 !important;[^}]*margin-bottom: 0 !important/s);
+  assert.match(rootLayout, /import "\.\/presentation\/styles\/command-bar-fixes\.css";[\s\S]*import "\.\/presentation\/styles\/board\/board-cascade-seal\.css";/s);
   assert.match(layout, /> \.enemy-energy \{ grid-column: 3 !important; grid-row: 3 !important; \}/);
   assert.match(layout, /> \.player-energy \{ grid-column: 3 !important; grid-row: 7 !important; \}/);
   assert.match(layout, /minmax\(0, 4fr\)[\s\S]*minmax\(0, 24fr\)[\s\S]*minmax\(0, 5fr\)[\s\S]*minmax\(0, 29fr\)[\s\S]*minmax\(0, 4fr\)/);

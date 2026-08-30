@@ -1,0 +1,57 @@
+/*
+ * Production cascade seal for the canonical board geometry.
+ *
+ * Turbopack may split nested CSS imports into separate chunks. These critical
+ * placements are loaded directly and last from layout.tsx so historical
+ * geometry can never move the player energy rail back into the field row.
+ */
+.screen-game .game-stage > .game-content.hs-board {
+  grid-template-rows:
+    minmax(0, 4.5fr)
+    minmax(0, 7.5fr)
+    minmax(0, 4fr)
+    minmax(0, 24fr)
+    minmax(0, 5fr)
+    minmax(0, 29fr)
+    minmax(0, 4fr)
+    minmax(0, 22fr) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .opponent-hand {
+  grid-column: 3 !important;
+  grid-row: 2 !important;
+  align-self: start !important;
+  height: 7.5cqh !important;
+  padding-bottom: clamp(.04rem, .1cqh, .1rem) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .enemy-energy {
+  grid-column: 3 !important;
+  grid-row: 3 !important;
+  align-self: center !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > :is(.enemy-field, .enemy-terrain) {
+  grid-column: 3 !important;
+  grid-row: 4 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > :is(.player-field, .player-terrain) {
+  grid-column: 3 !important;
+  grid-row: 6 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-energy {
+  grid-column: 3 !important;
+  grid-row: 7 !important;
+  align-self: center !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-hand {
+  grid-column: 3 !important;
+  grid-row: 8 !important;
+}
