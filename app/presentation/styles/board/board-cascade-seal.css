@@ -41,6 +41,8 @@
 .screen-game .game-stage > .game-content.hs-board > :is(.player-field, .player-terrain) {
   grid-column: 3 !important;
   grid-row: 6 !important;
+  align-self: end !important;
+  transform: translateY(-2.5cqh) !important;
 }
 
 .screen-game .game-stage > .game-content.hs-board > .player-energy {
@@ -49,6 +51,7 @@
   align-self: center !important;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  transform: translateY(-2cqh) !important;
 }
 
 .screen-game .game-stage > .game-content.hs-board > .player-hand {

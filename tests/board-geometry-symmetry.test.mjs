@@ -17,6 +17,8 @@ test("the battlefield is lifted while both energy gaps remain symmetrical", () =
   assert.match(overrides, />\.enemy-energy\{[^}]*align-self:center!important;[^}]*margin-top:0!important;[^}]*margin-bottom:0!important/s);
   assert.match(seal, /> \.player-energy \{[^}]*grid-row: 7 !important;[^}]*align-self: center !important;[^}]*margin-top: 0 !important;[^}]*margin-bottom: 0 !important/s);
   assert.match(seal, /> \.enemy-energy \{[^}]*grid-row: 3 !important;[^}]*align-self: center !important;[^}]*margin-top: 0 !important;[^}]*margin-bottom: 0 !important/s);
+  assert.match(seal, /:is\(\.player-field, \.player-terrain\) \{[^}]*align-self: end !important;[^}]*translateY\(-2\.5cqh\)/s);
+  assert.match(seal, /> \.player-energy \{[^}]*translateY\(-2cqh\)/s);
   assert.match(rootLayout, /import "\.\/presentation\/styles\/command-bar-fixes\.css";[\s\S]*import "\.\/presentation\/styles\/board\/board-cascade-seal\.css";/s);
   assert.match(layout, /> \.enemy-energy \{ grid-column: 3 !important; grid-row: 3 !important; \}/);
   assert.match(layout, /> \.player-energy \{ grid-column: 3 !important; grid-row: 7 !important; \}/);
