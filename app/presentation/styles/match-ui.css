@@ -211,67 +211,13 @@ body > [data-floating-ui-portal] { position: relative; z-index: 2147483000; }
 }
 
 /* === MATCH RESULT === */
-.enhanced-match-result{
-  position:relative!important;
-  width:min(92vw,58rem)!important;
-  min-height:clamp(22rem,62dvh,34rem)!important;
-  padding:clamp(2rem,4cqw,3.4rem) clamp(2rem,4cqw,3.5rem) clamp(2rem,4cqh,3rem) clamp(16rem,33cqw,24rem)!important;
-  box-sizing:border-box!important;
-  overflow:hidden!important;
-}
-
-.match-result-hero-art{
-  position:absolute;
-  left:clamp(1.2rem,2.8cqw,2.2rem);
-  top:50%;
-  width:clamp(11.5rem,23cqw,17.5rem);
-  transform:translateY(-50%);
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  gap:clamp(.35rem,.75cqh,.6rem);
-  text-align:center;
-  z-index:2;
-}
-
-.match-result-hero-art .remote-card-art{
-  display:block;
-  width:100%!important;
-  height:auto!important;
-  max-height:min(58dvh,28rem)!important;
-  object-fit:contain;
-  border-radius:clamp(.55rem,1cqw,.9rem);
-  box-shadow:0 1rem 2.8rem rgba(0,0,0,.48),0 0 0 1px rgba(255,212,111,.28);
-}
-
-.match-result-hero-art small{
-  margin-top:.15rem;
-  font-size:clamp(.58rem,.76cqw,.76rem);
-  letter-spacing:.16em;
-  color:#d8ad55;
-  font-weight:800;
-}
-
-.match-result-hero-art b{
-  max-width:100%;
-  font-size:clamp(.82rem,1.25cqw,1.15rem);
-  line-height:1.12;
-  color:#f5efe4;
-}
-
-@media (max-width:760px),(max-height:620px){
-  .enhanced-match-result{
-    min-height:min(88dvh,39rem)!important;
-    padding:clamp(11rem,38dvh,16rem) clamp(1rem,4vw,2rem) clamp(1.5rem,4dvh,2.4rem)!important;
-  }
-  .match-result-hero-art{
-    left:50%;
-    top:clamp(1rem,3dvh,1.7rem);
-    width:clamp(8.5rem,27vw,12rem);
-    transform:translateX(-50%);
-  }
-  .match-result-hero-art .remote-card-art{max-height:clamp(8rem,30dvh,13rem)!important;}
-}
+.match-result-card{position:relative;width:min(94vw,34rem);max-height:94dvh;display:grid;grid-template-rows:auto minmax(9rem,1fr) auto auto auto;justify-items:center;gap:clamp(.35rem,1.1vh,.75rem);padding:clamp(1rem,2.7vmin,2rem);overflow:auto;text-align:center;border:1px solid rgba(226,183,88,.45);border-radius:clamp(.8rem,1.8vmin,1.25rem);background:radial-gradient(circle at 50% 22%,rgba(35,74,78,.92),rgba(8,15,22,.98) 55%,rgba(5,9,14,.99));box-shadow:0 2rem 6rem rgba(0,0,0,.72),inset 0 0 0 1px rgba(255,255,255,.035)}
+.match-result-card::before{content:"";position:absolute;inset:.5rem;pointer-events:none;border:1px solid rgba(226,183,88,.14);border-radius:calc(clamp(.8rem,1.8vmin,1.25rem) - .3rem)}
+.match-result-heading{position:relative;z-index:1}.match-result-heading small{display:block;margin-bottom:.25rem;color:#d9b45e;font-size:clamp(.58rem,1.2vmin,.72rem);font-weight:900;letter-spacing:.2em}.match-result-heading h2{max-width:27rem;margin:0;color:#f7f1e7;font-family:Georgia,serif;font-size:clamp(1.25rem,3.4vmin,2rem);line-height:1.08;text-wrap:balance}
+.match-result-portrait{position:relative;z-index:1;display:grid;place-items:center;min-height:0}.match-result-portrait .remote-card-art{display:block;width:auto!important;height:min(46dvh,24rem)!important;max-width:min(70vw,17rem)!important;object-fit:contain;border-radius:.75rem;filter:drop-shadow(0 1.2rem 1.7rem rgba(0,0,0,.55)) drop-shadow(0 0 1.2rem rgba(213,171,78,.18))}
+.match-result-winner{position:relative;z-index:1;color:#efc969;font-family:Georgia,serif;font-size:clamp(1.05rem,2.7vmin,1.55rem);letter-spacing:.08em;text-transform:uppercase}.match-result-summary,.match-result-rematch-status{position:relative;z-index:1;margin:0;color:#aeb9be;font-size:clamp(.72rem,1.5vmin,.88rem)}.match-result-rematch-status{color:#e5cf98;min-height:1.2em}
+.match-result-actions{position:relative;z-index:1;width:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(.65rem,2vw,1.25rem);margin-top:clamp(.35rem,1vh,.7rem)}.match-result-actions button{width:100%;min-height:2.8rem}.match-result-menu{justify-self:start}.match-result-rematch{justify-self:end}.match-result-rematch:disabled{cursor:wait;opacity:.72}
+@media (max-width:34rem),(max-height:42rem){.match-result-card{width:min(96vw,30rem);padding:.85rem;gap:.3rem}.match-result-portrait .remote-card-art{height:min(39dvh,17rem)!important}.match-result-actions{gap:.5rem}.match-result-actions button{min-width:0!important;padding-inline:.65rem!important;font-size:.7rem!important}}
 
 /* === MATCH LOG === */
 /* Match history panel: compact, readable and responsive without changing game layout. */

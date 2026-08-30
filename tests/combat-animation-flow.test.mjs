@@ -186,7 +186,7 @@ test("AI and online follow-up commands respect presentation idle", () => {
   assert.match(page, /__hemsfellPresentationBusy\?\:boolean\}\)\.__hemsfellPresentationBusy\)return false/);
   assert.match(page, /presentationBusy\|\|mode!=="bot"\|\|!decision/);
   assert.match(page, /if\(!game\|\|presentationBusy\|\|game\.active!==1/);
-  assert.match(page, /if\(incomingRevision<=roomRevisionRef\.current\)return;announceOnlineSnapshot/);
+  assert.match(page, /if\(incomingRevision<=roomRevisionRef\.current\)return;[\s\S]*?announceOnlineSnapshot/);
 });
 
 test("presentation snapshot maintenance ignores unrelated UI churn", () => {

@@ -5,6 +5,7 @@ import test from "node:test";
 import { compileCard } from "../app/rules-engine/compiler.mjs";
 import { explicitCardRules } from "../app/rules-engine/card-rules.mjs";
 import { executeCommand } from "../app/rules-engine/engine.mjs";
+import { chooseAIDecision } from "../app/rules-engine/ai.mjs";
 
 const goblin = (uid, slot) => ({ uid, id: uid, name: `Goblin ${uid}`, type: "Criatura", cost: 1, atk: 1, hp: 3, damage: 0, tags: [], subtypes: ["Goblin"], abilities: [], modifiers: [], slot, exhausted: false, summoning: false, defenseUses: 0 });
 const tranqueira = () => ({ ...compileCard({ page: 46, id: "p46", name: "TRANQUEIRA-MÁTICA ELETROSTÁTICA", type: "Feitiço", cost: 1, text: "", tags: [] }), uid: "tranqueira", slot: 0, enteredRound: 1, damage: 0, exhausted: false, summoning: false, modifiers: [], cardsPlayedAfterSelf: 6, remainUntilTurnEnd: true });
@@ -91,4 +92,23 @@ test("local bot UI asks for a Goblin when multiple hosts exist and honors the ch
   assert.match(page, /chosenTranqueiraHostUid=uid/);
   assert.match(page, /summonImage\(g,owner,"TRAMBUCO DO PIPOCO",undefined,false,\(x as any\)\.chosenTranqueiraHostUid\)/);
   assert.match(page, /attachedToUid\?:string/);
+});
+
+test("Sr. Goblin AI resolves the mandatory Trambique image attachment without locking the turn", async () => {
+  const game = state();
+  game.active = 1;
+  game.players[1].board.push(goblin("ai-g1", 0), goblin("ai-g2", 1));
+  game.players[1].support.push(tranqueira());
+  const waiting = executeCommand(game, { type: "advancePhase", owner: 1 }).state;
+  assert.equal(waiting.pendingDecision?.owner, 1);
+  const decision = chooseAIDecision(waiting, 1, "Difícil");
+  assert.equal(decision?.type, "resolveDecision");
+  assert.equal(decision?.targetIds?.length, 1);
+  const resolved = executeCommand(waiting, decision).state;
+  assert.equal(resolved.pendingDecision ?? null, null);
+  assert.ok(resolved.players[1].support.some((card) => card.page === 38 && card.attachedTo));
+
+  const runtime = await readFile(new URL("../app/rules-engine/ai-system/runtime.ts", import.meta.url), "utf8");
+  assert.match(runtime, /const decision = chooseAIDecision\(/);
+  assert.match(runtime, /return decision \?\? chooseAdvancedAIAction/);
 });

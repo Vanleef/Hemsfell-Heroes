@@ -198,51 +198,6 @@ function enhanceDeckPickers() {
   document.querySelectorAll<HTMLElement>(".deck-picker").forEach(enrichDeckPicker);
 }
 
-function enhanceMatchResult() {
-  const overlays = Array.from(document.querySelectorAll<HTMLElement>(".overlay"));
-  const result = overlays.find((overlay) => overlay.textContent?.includes("FIM DO TESTE"));
-  if (!result) return;
-  result.classList.add("match-result-overlay");
-  const panel = result.querySelector<HTMLElement>(".maintenance");
-  if (!panel || panel.dataset.enhancedResult === "true") return;
-  panel.dataset.enhancedResult = "true";
-
-  const victory = panel.textContent?.includes("Vitória") ?? false;
-  const localHero = document.querySelector<HTMLElement>(".player-hero:not(.enemy)");
-  const enemyHero = document.querySelector<HTMLElement>(".player-hero.enemy");
-  const winnerHero = victory ? localHero : enemyHero;
-  const opponentHero = victory ? enemyHero : localHero;
-  const winnerName = winnerHero?.querySelector<HTMLElement>(".hero-short-name")?.textContent?.trim() || "Herói vencedor";
-  const opponentName = opponentHero?.querySelector<HTMLElement>(".hero-short-name")?.textContent?.trim() || "Adversário";
-  const image = winnerHero?.querySelector<HTMLImageElement>("img")?.cloneNode(true) as HTMLImageElement | undefined;
-  if (image) {
-    const art = document.createElement("div");
-    art.className = "result-hero-art";
-    art.append(image);
-    panel.prepend(art);
-  }
-  const meta = document.createElement("div");
-  meta.className = "result-match-meta";
-  meta.append(createText("span", "", `Vencedor · ${winnerName}`), createText("span", "", `Adversário · ${opponentName}`));
-  const actions = panel.querySelector<HTMLElement>(":scope > div:last-child");
-  if (actions) panel.insertBefore(meta, actions);
-
-  if (document.querySelector(".match-clock")) {
-    const rematch = actions?.querySelector<HTMLButtonElement>("button.gold");
-    if (rematch) {
-      rematch.disabled = true;
-      rematch.hidden = true;
-    }
-  }
-  if (actions && !actions.querySelector(".result-menu-button")) {
-    const menu = document.createElement("button");
-    menu.className = "result-menu-button";
-    menu.textContent = "Voltar ao menu";
-    menu.addEventListener("click", () => document.querySelector<HTMLButtonElement>(".game-bar > button:first-child")?.click());
-    actions.append(menu);
-  }
-}
-
 function clearOrphanedMatchUi() {
   document.querySelectorAll(".engine-decision-backdrop,.defense-decision,.target-banner,.response-waiting,.match-reconnect-overlay,.priority-stack-indicator,.visual-effect,.deck-shuffle-effect,.combat-cinematic").forEach((node) => node.remove());
 }
@@ -373,7 +328,6 @@ export default function MatchUiGuard() {
       wasInMatch = inMatch;
       ensureLandingGuide();
       enhanceDeckPickers();
-      enhanceMatchResult();
       enhanceDecisionChoiceSummaries();
       layoutTargetBannerInSafeLane();
       layoutHandLimitChoices();

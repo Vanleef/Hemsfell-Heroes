@@ -22,6 +22,7 @@ import { CombatAnimation } from "./match/combat-animation";
 import { PriorityControlToggle, ResponseModal } from "./match/priority-ui";
 import { usePriorityControl } from "./match/use-priority-control";
 import { TutorialScreen } from "./presentation/tutorial";
+import { MatchResultOverlay } from "./presentation/match/match-result-overlay";
 
 const immediateCardEffectText=(card:CardDef)=>card.text.split(/neste turno,\s*seu próximo/i)[0];
 const cardPlayEffectText=(card:CardDef)=>card.type!=="Criatura"?immediateCardEffectText(card):card.text.match(/primeiro ato\s*:\s*([\s\S]*?)(?=(?:último suspiro|fura-fila)\s*:|$)/i)?.[1]?.trim()||"";
@@ -324,6 +325,7 @@ const [lobbyActionPending,setLobbyActionPending]=useState(false);
 const [joinPending,setJoinPending]=useState(false);
 const [createRoomPending,setCreateRoomPending]=useState(false);
 const [mulliganActionPending,setMulliganActionPending]=useState(false);
+const [rematchActionPending,setRematchActionPending]=useState(false);
 const onlineCommandFlightsRef=useRef<Map<string,Promise<boolean>>>(new Map());
 const joinRoomFlightRef=useRef<Promise<void>|null>(null);
 const createRoomFlightRef=useRef<Promise<void>|null>(null);
@@ -371,8 +373,9 @@ const stopPolling = ()=>{pollGenerationRef.current++;if(pollRef.current){window.
 const roomUrl=(id:string)=>`${location.origin}/?room=${id}`;
 const rememberOnlineSession=(session:OnlineSession)=>{saveOnlineSession(localStorage,session);setActiveOnlineSession(session);history.replaceState({},"",`/?room=${encodeURIComponent(session.roomId)}`)};
 const forgetOnlineSession=(id?:string)=>{clearOnlineSession(localStorage,id);setActiveOnlineSession(null);history.replaceState({},"",location.pathname)};
-const signalOnlineDisconnect=(id=roomId,token=roomToken)=>{if(!id||!token)return;const body=JSON.stringify({action:"disconnect",token});if(!navigator.sendBeacon?.(`/api/rooms/${id}`,new Blob([body],{type:"application/json"}))){void fetch(`/api/rooms/${id}`,{method:"POST",headers:{"content-type":"application/json"},body,keepalive:true})}};
-const leaveOnlineMatch=(destination:"menu"|"setup"="menu")=>{if(roomInfo?.status!=="finished")signalOnlineDisconnect();stopPolling();if(roomId)forgetOnlineSession(roomId);setRoomId(null);setRoomToken(null);setRoomLink(null);setRoomInfo(null);setInviteRoomId(null);setInvitePreview(null);setGame(null);currentGameRef.current=null;setResponseWindow(null);setCombatAction(null);setMode(destination==="setup"?"online":"bot");setScreen(destination)};
+const signalOnlineDeparture=(id=roomId,token=roomToken,status=roomInfo?.status)=>{if(!id||!token)return;const body=JSON.stringify({action:status==="finished"?"leave":"disconnect",token});if(!navigator.sendBeacon?.(`/api/rooms/${id}`,new Blob([body],{type:"application/json"}))){void fetch(`/api/rooms/${id}`,{method:"POST",headers:{"content-type":"application/json"},body,keepalive:true})}};
+const clearOnlineMatch=()=>{stopPolling();if(roomId)forgetOnlineSession(roomId);setRoomId(null);setRoomToken(null);setRoomLink(null);setRoomInfo(null);setInviteRoomId(null);setInvitePreview(null);setGame(null);currentGameRef.current=null;setResponseWindow(null);setCombatAction(null);setRematchActionPending(false);setMode("bot");setScreen("menu")};
+const leaveOnlineMatch=()=>{signalOnlineDeparture();clearOnlineMatch()};
 const openOnlineSnapshot=(data:any,session:OnlineSession)=>{
   setMode("online");setRoomId(session.roomId);setRoomToken(session.token);setIsHost(session.isHost);setRoomLink(roomUrl(session.roomId));setRoomInfo(data);setSettings(data.settings??settings);roomRevisionRef.current=data.revision??0;
   if(data.game){const oriented=session.isHost?structuredClone(data.game):mirrorOnlineGame(data.game);currentGameRef.current=oriented;setGame(oriented);setResponseWindow(oriented.pendingResponse??null);setScreen("game")}else setScreen("setup");
@@ -453,7 +456,7 @@ const selectHeroInRoom = async (heroId:string)=>{
 /* Online milestones use the same authoritative presentation transaction as local play.
    Keeping this hook as a no-op preserves the call sites without scheduling a second theatre. */
 const queueOnlineSnapshotFx=(_previous:Game|null,_next:Game)=>{};
-const applyRoomSnapshot=(data:any)=>{const incomingRevision=Number(data?.revision??-1);if(Number.isFinite(incomingRevision)&&incomingRevision<roomRevisionRef.current)return false;setRoomInfo(data);if(roomId)announceOnlineSnapshot(roomId,isHost,data);roomRevisionRef.current=data.revision??roomRevisionRef.current;if(data.status==="finished"&&roomId)forgetOnlineSession(roomId);if(data.game){const next=fromCanonicalGame(data.game),previous=currentGameRef.current;queueOnlineSnapshotFx(previous,next);currentGameRef.current=next;setGame(next);setResponseWindow(next.pendingResponse??null);setScreen("game")}return true};
+const applyRoomSnapshot=(data:any)=>{const incomingRevision=Number(data?.revision??-1);if(Number.isFinite(incomingRevision)&&incomingRevision<roomRevisionRef.current)return false;if(data.status==="closed"){clearOnlineMatch();setRoomError("A partida online foi encerrada.");return true}setRoomInfo(data);if(roomId)announceOnlineSnapshot(roomId,isHost,data);roomRevisionRef.current=data.revision??roomRevisionRef.current;if(data.game){const next=fromCanonicalGame(data.game),previous=currentGameRef.current;queueOnlineSnapshotFx(previous,next);currentGameRef.current=next;setGame(next);setResponseWindow(next.pendingResponse??null);setScreen("game")}return true};
 const roomAction=(action:string,extra:Record<string,unknown>={})=>{
  if(!roomId||!roomToken)return Promise.resolve(null);
  const execute=async(staleRetries=0,networkRetries=0):Promise<any>=>{try{
@@ -461,7 +464,7 @@ const roomAction=(action:string,extra:Record<string,unknown>={})=>{
   const res=await fetch(`/api/rooms/${roomId}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
   const data=await res.json();
   const staleRevision=res.status===409&&data?.error==="stale revision";
-  const retryableStale=staleRevision&&(action==="command"||action==="choose_start"||action==="select"||action==="mulligan");
+  const retryableStale=staleRevision&&(action==="command"||action==="choose_start"||action==="select"||action==="mulligan"||action==="rematch");
   if(retryableStale){applyRoomSnapshot(data);const participant=isHost?data?.host:data?.guest;if(action==="select"&&participant?.deckLocked&&participant?.heroId===extra.heroId)return data;if(action==="choose_start"&&["mulligan","started","finished"].includes(data?.status))return data;if(staleRetries<3){await new Promise(resolve=>window.setTimeout(resolve,0));return execute(staleRetries+1,networkRetries)}}
   if(res.status>=500&&networkRetries<2){await new Promise(resolve=>window.setTimeout(resolve,150*(networkRetries+1)));return execute(staleRetries,networkRetries+1)}
   const requestedCommand=extra.command as Record<string,unknown>|undefined;
@@ -477,10 +480,11 @@ const roomAction=(action:string,extra:Record<string,unknown>={})=>{
 };
 const chooseStarter=async(startSelf:boolean)=>{if(lobbyActionPending)return;setLobbyActionPending(true);const chooseStartRequestId=crypto.randomUUID();try{await roomAction("choose_start",{startSelf,chooseStartRequestId})}finally{setLobbyActionPending(false)}};
 const confirmMulligan=async(keep:boolean)=>{if(mulliganPendingRef.current)return;mulliganPendingRef.current=true;setMulliganActionPending(true);const mulliganRequestId=crypto.randomUUID();try{await roomAction("mulligan",{keep,mulliganRequestId})}finally{mulliganPendingRef.current=false;setMulliganActionPending(false)}};
+const requestOnlineRematch=async()=>{if(rematchActionPending||roomInfo?.status!=="finished")return;setRematchActionPending(true);const rematchRequestId=crypto.randomUUID();try{await roomAction("rematch",{rematchRequestId})}finally{setRematchActionPending(false)}};
 
 const pollRoom = (id:string,token:string,hostRole:boolean)=>{
     stopPolling();const generation=++pollGenerationRef.current;
-    const fn = async ()=>{ try{ const res = await fetch(`/api/rooms/${id}`,{cache:"no-store",headers:{authorization:`Bearer ${token}`}}); if(!res.ok) return; const r = await res.json();setRoomError(current=>current==="Reconectando à sala…"?"":current);const incomingRevision=Number(r.revision??-1);if(incomingRevision<=roomRevisionRef.current)return;announceOnlineSnapshot(id,hostRole,r); setRoomInfo(r);setSettings(r.settings??settings);roomRevisionRef.current=incomingRevision;if(r.status==="finished")forgetOnlineSession(id);if(r.game){
+    const fn = async ()=>{ try{ const res = await fetch(`/api/rooms/${id}`,{cache:"no-store",headers:{authorization:`Bearer ${token}`}}); if(!res.ok) return; const r = await res.json();setRoomError(current=>current==="Reconectando à sala…"?"":current);const incomingRevision=Number(r.revision??-1);if(incomingRevision<=roomRevisionRef.current)return;if(r.status==="closed"){clearOnlineMatch();setRoomError("A partida online foi encerrada.");return}announceOnlineSnapshot(id,hostRole,r); setRoomInfo(r);setSettings(r.settings??settings);roomRevisionRef.current=incomingRevision;if(r.game){
             const oriented=hostRole?structuredClone(r.game):mirrorOnlineGame(r.game),previous=currentGameRef.current;queueOnlineSnapshotFx(previous,oriented);currentGameRef.current=oriented;setResponseWindow(oriented.pendingResponse??null);setScreen('game');setGame(oriented); }
     }catch(e){setRoomError("Reconectando à sala…")}finally{if(generation===pollGenerationRef.current)pollRef.current=window.setTimeout(fn,600)} };
     void fn();
@@ -494,10 +498,10 @@ useEffect(()=>{
 },[]);
 useEffect(()=>{
  if(mode!=="online"||!roomId||!roomToken)return;
- const notifyDisconnect=()=>signalOnlineDisconnect(roomId,roomToken);
+ const notifyDisconnect=()=>signalOnlineDeparture(roomId,roomToken,roomInfo?.status);
  window.addEventListener("pagehide",notifyDisconnect);
  return()=>window.removeEventListener("pagehide",notifyDisconnect);
-},[mode,roomId,roomToken]);
+},[mode,roomId,roomToken,roomInfo?.status]);
 useEffect(()=>{const id=window.setInterval(()=>setClockNow(Date.now()),1000);return()=>window.clearInterval(id)},[]);
 useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadline=game.pendingResponse?.deadline??game.turnDeadline;if(!deadline||deadline>clockNow)return;const key=`${game.round}-${game.pendingResponse?.action??"turn"}-${deadline}`;if(timeoutSentRef.current===key)return;timeoutSentRef.current=key;roomAction("timeout")},[clockNow,mode,roomId,roomToken,game?.pendingResponse?.deadline,game?.turnDeadline]);
 useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const participant=isHost?roomInfo?.host:roomInfo?.guest,deadline=participant?.mulliganDeadline;if(participant?.mulliganDone||!deadline||deadline>clockNow)return;const key=`mulligan-${deadline}`;if(timeoutSentRef.current===key)return;timeoutSentRef.current=key;void roomAction("timeout")},[clockNow,mode,isHost,roomInfo?.status,roomInfo?.host?.mulliganDone,roomInfo?.host?.mulliganDeadline,roomInfo?.guest?.mulliganDone,roomInfo?.guest?.mulliganDeadline]);
@@ -866,6 +870,8 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
  const filteredSelectedPool=selectedPool.filter(collectionMatches),filteredSelectedExtra=selectedExtra.filter(collectionMatches);
  const myRoomParticipant=isHost?roomInfo?.host:roomInfo?.guest;
  const opponentRoomParticipant=isHost?roomInfo?.guest:roomInfo?.host;
+ const winnerDeck=game?.winner!=null?deckById(game.players[game.winner].heroId):null;
+ const winnerDisplayName=winnerDeck?`${mode==="bot"&&game?.winner===1?"(IA) ":""}${winnerDeck.name}`:"";
  const reconnectDeadline=(opponentRoomParticipant?.disconnectedAt??0)+60000;
  const reconnectRemaining=Math.max(0,Math.ceil((reconnectDeadline-clockNow)/1000));
  const opponentReconnecting=mode==="online"&&(roomInfo?.status==="mulligan"||roomInfo?.status==="started")&&!!opponentRoomParticipant?.disconnectedAt&&reconnectRemaining>0;
@@ -1067,7 +1073,7 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
    {extraView&&<CardZoneModal kind={extraView.kind??(cleanName(extraView.title).includes("cemiterio")?"grave":"extra")} title={extraView.title} cards={extraView.cards} onClose={()=>setExtraView(null)}/>}
    {!presentationBlocked&&searchChoice&&<SearchDeckModal key={searchChoice.id} request={searchChoice} cards={game.players[searchChoice.owner].deck} onConfirm={completeSearch}/>}
    {confirmSurrender&&game.winner===null&&<div className="overlay surrender-overlay"><section className="surrender-dialog"><i>⚑</i><p>ENCERRAR PARTIDA</p><h2>Deseja realmente se render?</h2><span>A vitória será concedida imediatamente ao oponente.</span><div><button onClick={()=>setConfirmSurrender(false)}>Continuar jogando</button><button className="confirm-surrender" onClick={()=>{setConfirmSurrender(false);setCombatAction(null);setResponseWindow(null);if(mode==="online"){void runRulesCommand({type:"surrender"},0);return}update(g=>{g.winner=1;log(g,"Você se rendeu. A vitória foi concedida ao oponente.","danger")})}}>Confirmar rendição</button></div></section></div>}
-   {game.winner!==null&&<div className="overlay"><div className="maintenance"><p>FIM DO TESTE</p><h2>{game.winner===0?"Vitória":"Derrota"}</h2><span>{deckById(game.players[game.winner].heroId).name} venceu após {game.round} turnos.</span><div>{mode==="online"?<><button className="gold" onClick={()=>leaveOnlineMatch("setup")}>Nova partida online</button><button onClick={()=>leaveOnlineMatch("menu")}>Voltar ao menu</button></>:<><button className="gold" onClick={begin}>Revanche</button><button onClick={()=>setScreen("setup")}>Trocar decks</button></>}</div></div></div>}
+   {game.winner!==null&&winnerDeck&&<MatchResultOverlay heroPage={winnerDeck.heroPage} heroName={winnerDisplayName} rounds={game.round} online={mode==="online"} rematchPending={rematchActionPending} rematchRequestedByMe={!!myRoomParticipant?.rematchRequested} rematchRequestedByOpponent={!!opponentRoomParticipant?.rematchRequested} onMenu={()=>{if(mode==="online")leaveOnlineMatch();else{setGame(null);currentGameRef.current=null;setScreen("menu")}}} onRematch={()=>{if(mode==="online")void requestOnlineRematch();else begin()}}/>}
   </section></div>}
  {showInspector&&<div className="overlay inspector card-focus-layer" onClick={()=>setShowInspector(null)} role="dialog" aria-modal="true" aria-label={`Detalhes de ${showInspector.name}`}><div onClick={event=>event.stopPropagation()}><button className="inspector-close" onClick={()=>setShowInspector(null)} aria-label="Fechar carta ampliada">×</button><RemoteCardArt page={showInspector.page} name={showInspector.name} priority/><aside>{deckByHeroPage(showInspector.page)?<div className="inspector-hero-guide"><HeroGuide deck={deckByHeroPage(showInspector.page)!}/><small>Carta {showInspector.page} · clique fora ou pressione o botão × para fechar</small></div>:<><p>{showInspector.imageCard?"IMAGEM · ":""}{showInspector.type} · custo {showInspector.cost}{showInspector.atk!=null?` · ${showInspector.atk}/${showInspector.hp}`:""}</p><h2>{showInspector.name}</h2>{showInspector.subtypes?.length?<section className="inspector-section"><b>SUBTIPOS</b><div className="inspector-subtypes">{showInspector.subtypes.map(subtype=><span key={subtype} title={`Esta carta pertence ao subtipo ${subtype}.`}>{subtype}</span>)}</div></section>:null}<section className="inspector-section"><b>EFEITO COMPLETO</b><RichCardText text={showInspector.text||"Esta carta não possui texto de efeito."}/></section><section className="inspector-section"><b>PALAVRAS-CHAVE</b><div className="inspector-keywords">{showInspector.tags.length?showInspector.tags.map(tag=><KeywordBadge name={tag} key={tag}/>):<span>Sem palavra-chave</span>}</div></section><small>Carta {showInspector.page} · clique fora ou pressione o botão × para fechar</small></>}</aside></div></div>}
  </main>
