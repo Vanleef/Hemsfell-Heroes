@@ -313,19 +313,26 @@ function initializePortraitBoardPan() {
   const stage = document.querySelector<HTMLElement>(".screen-game .game-stage");
   if (!stage) return;
 
-  const portrait = window.matchMedia("(orientation: portrait) and (max-width: 60rem)").matches;
-  if (!portrait) {
+  const portrait = window.matchMedia("(orientation: portrait)").matches;
+  const touchDevice = navigator.maxTouchPoints > 0;
+  const narrowPhysicalScreen = Math.min(window.screen.width, window.screen.height) <= 960;
+  const mobilePortrait = portrait && (window.innerWidth <= 960 || touchDevice || narrowPhysicalScreen);
+  if (!mobilePortrait) {
+    delete stage.dataset.hhMobilePan;
     delete stage.dataset.hhPanInitialized;
     return;
   }
+  stage.dataset.hhMobilePan = "true";
   if (stage.dataset.hhPanInitialized) return;
   stage.dataset.hhPanInitialized = "pending";
 
   requestAnimationFrame(() => {
-    if (!stage.isConnected) return;
-    stage.scrollLeft = Math.max(0, (stage.scrollWidth - stage.clientWidth) / 2);
-    stage.scrollTop = Math.max(0, (stage.scrollHeight - stage.clientHeight) / 2);
-    stage.dataset.hhPanInitialized = "true";
+    requestAnimationFrame(() => {
+      if (!stage.isConnected) return;
+      stage.scrollLeft = Math.max(0, (stage.scrollWidth - stage.clientWidth) / 2);
+      stage.scrollTop = Math.max(0, (stage.scrollHeight - stage.clientHeight) / 2);
+      stage.dataset.hhPanInitialized = "true";
+    });
   });
 }
 

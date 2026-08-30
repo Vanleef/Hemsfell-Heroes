@@ -497,3 +497,25 @@
   }
   .screen-game .player-hand { justify-content: center !important; }
 }
+
+/* Browsers may expose a desktop-sized CSS viewport when "site para
+ * computador" is enabled on a phone. MatchUiGuard marks the real touch/
+ * portrait stage so the same two-axis canvas remains active in that mode. */
+.screen-game .game-stage[data-hh-mobile-pan="true"] {
+  display: block !important;
+  overflow: auto !important;
+  overscroll-behavior: contain;
+  touch-action: pan-x pan-y;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.screen-game .game-stage[data-hh-mobile-pan="true"]::-webkit-scrollbar { display: none; }
+.screen-game .game-stage[data-hh-mobile-pan="true"] > .game-content.hs-board {
+  width: max(62rem, calc(120dvh * 16 / 9)) !important;
+  height: max(34.875rem, 120dvh) !important;
+  min-width: 62rem !important;
+  min-height: 34.875rem !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+}
