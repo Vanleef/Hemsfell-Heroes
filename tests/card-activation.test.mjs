@@ -4,7 +4,7 @@ import {
   activationInsideTriggeredEffect,
   hasActivatableEffectText,
   canActivateCard,
-} from "../app/card-activation.mjs";
+} from "../app/rules-engine/cards/card-activation.mjs";
 
 const context = (overrides = {}) => ({ energy: 3, reserve: 0, hasSacrificeTarget: true, ...overrides });
 const card = (text, overrides = {}) => ({ text, markers: 0, exhausted: false, summoning: false, activatedThisTurn: false, suffocated: false, ...overrides });

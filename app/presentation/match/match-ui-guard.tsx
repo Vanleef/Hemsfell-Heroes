@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import rawCards from "./cards.generated.json";
-import { abilitiesForLevel, getExplicitCardRule } from "./rules-engine/card-rules.mjs";
+import rawCards from "../../data/catalog/generated-card-catalog";
+import { abilitiesForLevel, getExplicitCardRule } from "../../rules-engine/card-rules.mjs";
 
 type HeroMeta = {
   faction: "Natureza" | "Caos" | "Divino" | "Ordem" | "Neutro";

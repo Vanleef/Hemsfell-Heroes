@@ -4,9 +4,9 @@ import test from "node:test";
 import ts from "typescript";
 
 const [runtime, layout, css, machine, clock, page, packageJson] = await Promise.all([
-  readFile(new URL("../app/online-match-runtime.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/application/online/online-match-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../app/online-match-runtime.css", import.meta.url), "utf8"),
+  readFile(new URL("../app/presentation/styles/online-match-runtime.css", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/online-clock.mjs", import.meta.url), "utf8"),
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
@@ -24,8 +24,8 @@ test("staged Online runtime is syntactically valid TypeScript", () => {
 });
 
 test("root layout mounts the Online HUD after the canonical match UI runtime", () => {
-  assert.match(layout, /import OnlineMatchRuntime from "\.\/online-match-runtime"/);
-  assert.match(layout, /import "\.\/online-match-runtime\.css"/);
+  assert.match(layout, /import OnlineMatchRuntime from "\.\/application\/online\/online-match-runtime"/);
+  assert.match(layout, /import "\.\/presentation\/styles\/online-match-runtime\.css"/);
   assert.match(layout, /<MatchUiRuntime \/>[\s\S]*?<OnlineMatchRuntime \/>/);
 });
 

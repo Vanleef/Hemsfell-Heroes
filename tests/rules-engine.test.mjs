@@ -11,7 +11,7 @@ import { executeOnlineCommand } from "../app/rules-engine/online-priority-engine
 import { runHeadlessGames } from "../app/rules-engine/simulator.mjs";
 import { PriorityState, chooseAIResponse, isAccelerated, legalPriorityResponses, priorityView, shouldAutoPass } from "../app/rules-engine/priority.mjs";
 import { aiDifficultyProfile, canAIPlayLifeCost, legalAIAttackers, orderAIAttackers, preferredAISlot } from "../app/rules-engine/ai.mjs";
-import { canActivateCard } from "../app/card-activation.mjs";
+import { canActivateCard } from "../app/rules-engine/cards/card-activation.mjs";
 
 const state = () => ({ active: 0, phase: "principal", round: 1, players: [0, 1].map(() => ({ life: 30, maxLife: 30, energy: 5, maxEnergy: 5, reserve: 0, deck: [], hand: [], board: [], support: [], terrain: null, grave: [], obscuro: [] })) });
 
@@ -986,7 +986,7 @@ test("Indomável enters ready, must attack and cannot defend", () => {
 });
 
 test("migration coverage is explicit and simple cards use the command engine", async () => {
-  const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
+  const cards = JSON.parse(await readFile(new URL("../app/data/catalog/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   const migrated = cards.filter((card) => canExecuteCard(card));
   const pending = cards.filter((card) => !canExecuteCard(card));
   assert.equal(migrated.length, 299); assert.equal(pending.length, 0);
@@ -994,7 +994,7 @@ test("migration coverage is explicit and simple cards use the command engine", a
 });
 
 test("the complete generated catalog has full classified coverage", async () => {
-  const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
+  const cards = JSON.parse(await readFile(new URL("../app/data/catalog/cards.generated.json", import.meta.url), "utf8"));
   const report = auditCards(cards);
   const errors = report.issues.filter((issue) => issue.severity === "error");
   assert.equal(report.cards, 299);
@@ -1141,11 +1141,11 @@ test("online priority passes update the local response window from the authorita
 test("game client routes migrated cards through the command engine", async () => {
   const [page, lab, legacy, board, tuning, interaction] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/lab.css", import.meta.url), "utf8"),
-    readFile(new URL("../app/lab-legacy.css", import.meta.url), "utf8"),
-    readFile(new URL("../app/board-layout.css", import.meta.url), "utf8"),
-    readFile(new URL("../app/board-tuning.css", import.meta.url), "utf8"),
-    readFile(new URL("../app/lab-interaction-responsive.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/styles/board/lab.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/styles/legacy/lab-legacy.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/styles/board/board-layout.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/styles/board/board-tuning.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/styles/board/lab-interaction-responsive.css", import.meta.url), "utf8"),
   ]);
   const css = [lab, legacy, board, tuning, interaction].join("\n");
   assert.match(page, /canExecuteCard\(snapshot\)/);
@@ -1409,7 +1409,7 @@ test("Saymon level 3 life costs can never reduce life below one", () => {
 });
 
 test("every generated card is executable by the authoritative engine", async () => {
-  const cards = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
+  const cards = JSON.parse(await readFile(new URL("../app/data/catalog/cards.generated.json", import.meta.url), "utf8")).map(compileCard);
   assert.deepEqual(cards.filter((card) => !canExecuteCard(card)).map((card) => card.id), []);
 });
 
@@ -1524,7 +1524,7 @@ test("online actions share one serialized request queue and reconcile stale revi
 
 test("field keyword icons render outside the card button at its lower edge", async () => {
   const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
-  const css = await readFile(new URL("../app/lab-legacy.css", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/presentation/styles/legacy/lab-legacy.css", import.meta.url), "utf8");
   const buttonClose = page.indexOf("</button>", page.indexOf("function OriginalCard"));
   const keywordStrip = page.indexOf('className="field-keywords"', page.indexOf("function OriginalCard"));
   assert.ok(keywordStrip > buttonClose);
@@ -1559,7 +1559,7 @@ test("game viewport and stage use the canonical responsive shell", async () => {
 });
 
 test("board layout preserves the approved 16:9 composition proportionally", async () => {
-  const css = await readFile(new URL("../app/board-layout.css", import.meta.url), "utf8");
+  const css = await readFile(new URL("../app/presentation/styles/board/board-layout.css", import.meta.url), "utf8");
   assert.match(css, /\.screen-game \.game-stage > \.game-content\.hs-board/);
   assert.match(css, /display:\s*grid\s*!important/);
   assert.match(css, /aspect-ratio:\s*16\s*\/\s*9\s*!important/);
@@ -1571,8 +1571,8 @@ test("board layout preserves the approved 16:9 composition proportionally", asyn
 
 test("cards, fields, piles and hand remain proportional without coordinate reflow", async () => {
   const [board, lab] = await Promise.all([
-    readFile(new URL("../app/board-layout.css", import.meta.url), "utf8"),
-    readFile(new URL("../app/lab.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/styles/board/board-layout.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/styles/board/lab.css", import.meta.url), "utf8"),
   ]);
   const css = board + "\n" + lab;
   assert.match(css, /--hh-slot-w:\s*clamp\([^;]*4cqw/);
@@ -1586,9 +1586,9 @@ test("cards, fields, piles and hand remain proportional without coordinate reflo
 
 test("final stage seal outranks legacy fixed-position board rules", async () => {
   const [lab, board, interaction] = await Promise.all([
-    readFile(new URL("../app/lab.css", import.meta.url), "utf8"),
-    readFile(new URL("../app/board-layout.css", import.meta.url), "utf8"),
-    readFile(new URL("../app/lab-interaction-responsive.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/styles/board/lab.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/styles/board/board-layout.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/styles/board/lab-interaction-responsive.css", import.meta.url), "utf8"),
   ]);
   assert.match(lab, /@import "\.\/board-layout\.css"/);
   assert.match(lab, /@import "\.\/board-tuning\.css"/);

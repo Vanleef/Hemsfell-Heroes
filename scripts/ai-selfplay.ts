@@ -23,7 +23,7 @@ async function main() {
   const difficulty1 = difficulty("difficulty1", "Hard");
   const outDir = resolve(arg("out") || "reports/ai");
 
-  const rawCards = JSON.parse(await readFile(resolve(process.cwd(), "app/cards.generated.json"), "utf8"));
+  const rawCards = JSON.parse(await readFile(resolve(process.cwd(), "app/data/catalog/cards.generated.json"), "utf8"));
   const catalog = rawCards.map(compileCard);
   const pool = catalog.filter((card: any) => !card.hero && !card.imageCard && canExecuteCard(card));
   const imagePool = catalog.filter((card: any) => card.imageCard);

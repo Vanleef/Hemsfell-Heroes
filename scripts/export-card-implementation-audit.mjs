@@ -1,5 +1,5 @@
 import { writeFile } from "node:fs/promises";
-import rawCards from "../app/cards.generated.json" with { type: "json" };
+import rawCards from "../app/data/catalog/cards.generated.json" with { type: "json" };
 import { compileCard } from "../app/rules-engine/compiler.mjs";
 import { canExecuteCard } from "../app/rules-engine/engine.mjs";
 

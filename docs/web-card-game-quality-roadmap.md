@@ -111,11 +111,11 @@ type MatchEvent = {
 
 ## Arquivos desta etapa
 
-- `app/card-preview-runtime.tsx`: Floating UI, portal, hover/foco e long-press.
-- `app/match-ui-runtime.tsx`: monta o runtime global de preview.
+- `app/presentation/cards/card-preview-runtime.tsx`: Floating UI, portal, hover/foco e long-press.
+- `app/presentation/match/match-ui-runtime.tsx`: monta o runtime global de preview.
 - `app/page.tsx`: expõe metadados/tooltip de todas as cartas e adiciona filtros/validação da Collection.
-- `app/match-ui.css`: aparência e limites responsivos do preview.
-- `app/ui-overrides.css`: toolbar, filtros, validação e estado vazio da Collection.
+- `app/presentation/styles/match-ui.css`: aparência e limites responsivos do preview.
+- `app/presentation/styles/base/ui-overrides.css`: toolbar, filtros, validação e estado vazio da Collection.
 - `package.json` / `package-lock.json`: dependência `@floating-ui/react`.
 
 ## Checklist de aceite

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { ACTIVE_ONLINE_SESSION_KEY, clearOnlineSession, loadOnlineSession, saveOnlineSession } from "../app/online-session.mjs";
+import { ACTIVE_ONLINE_SESSION_KEY, clearOnlineSession, loadOnlineSession, saveOnlineSession } from "../app/application/session/online-session.mjs";
 
 const memoryStorage = () => {
   const values = new Map();

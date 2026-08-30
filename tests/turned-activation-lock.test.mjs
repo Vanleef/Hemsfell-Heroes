@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFileSync } from "node:fs";
-import cards from "../app/cards.generated.json" with { type: "json" };
-import { canActivateCard } from "../app/card-activation.mjs";
+import cards from "../app/data/catalog/cards.generated.json" with { type: "json" };
+import { canActivateCard } from "../app/rules-engine/cards/card-activation.mjs";
 import { compileCard } from "../app/rules-engine/compiler.mjs";
 import { executeCommand } from "../app/rules-engine/engine.mjs";
 
@@ -34,7 +34,7 @@ test("authoritative engine rejects an activated effect from a turned permanent",
 });
 
 test("turned cards do not expose a clickable activation control", () => {
-  const css = readFileSync(new URL("../app/magic-barrier.css", import.meta.url), "utf8");
+  const css = readFileSync(new URL("../app/presentation/styles/effects/magic-barrier.css", import.meta.url), "utf8");
   assert.match(css, /card-frame:has\(> \.original-card\.is-exhausted\) > \.card-frame-activation/);
   assert.match(css, /visibility:\s*hidden\s*!important/);
   assert.match(css, /pointer-events:\s*none\s*!important/);

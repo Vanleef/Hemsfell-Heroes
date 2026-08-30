@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 test("target banner stays compact while centered inside measured safe lane", () => {
-  const guard = fs.readFileSync(new URL("../app/match-ui-guard.tsx", import.meta.url), "utf8");
-  const css = fs.readFileSync(new URL("../app/ui-overrides.css", import.meta.url), "utf8");
-  const decision = fs.readFileSync(new URL("../app/decision-lane-position.css", import.meta.url), "utf8");
-  const anchor = fs.readFileSync(new URL("../app/target-banner-anchor.css", import.meta.url), "utf8");
+  const guard = fs.readFileSync(new URL("../app/presentation/match/match-ui-guard.tsx", import.meta.url), "utf8");
+  const css = fs.readFileSync(new URL("../app/presentation/styles/base/ui-overrides.css", import.meta.url), "utf8");
+  const decision = fs.readFileSync(new URL("../app/presentation/styles/decision-lane-position.css", import.meta.url), "utf8");
+  const anchor = fs.readFileSync(new URL("../app/presentation/styles/target-banner-anchor.css", import.meta.url), "utf8");
   assert.match(guard, /function layoutTargetBannerInSafeLane\(\)/);
   assert.match(guard, /hero-command-bar/);
   assert.match(guard, /paired-field \.creature-slot/);

@@ -5,70 +5,90 @@ import test from "node:test";
 const [page, layout, tutorial, tutorialContent, css] = await Promise.all([
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../app/tutorial-screen.tsx", import.meta.url), "utf8"),
-  readFile(new URL("../app/tutorial-content.ts", import.meta.url), "utf8"),
-  readFile(new URL("../app/tutorial.css", import.meta.url), "utf8"),
+  readFile(new URL("../app/presentation/tutorial/tutorial-screen.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/data/content/tutorial-content.ts", import.meta.url), "utf8"),
+  readFile(new URL("../app/presentation/styles/tutorial.css", import.meta.url), "utf8"),
 ]);
+const tutorialSource = `${tutorial}\n${tutorialContent}`;
 
-test("tutorial is reachable from the main menu and shell navigation", () => {
+test("tutorial is reachable from the main menu and uses the presentation layer", () => {
   assert.match(page, /type Screen=[^;]*"tutorial"/);
   assert.match(page, /setScreen\("tutorial"\)/);
   assert.match(page, /screen==="tutorial"&&<TutorialScreen/);
-  assert.match(layout, /import "\.\/tutorial\.css"/);
+  assert.match(page, /from "\.\/presentation\/tutorial"/);
+  assert.match(layout, /presentation\/styles\/tutorial\.css/);
 });
 
-test("tutorial covers the full match flow in focused tabs", () => {
-  for (const label of ["Fluxo completo", "Tabuleiro", "Comandos", "Combate", "Mecânicas"]) {
-    assert.match(tutorial, new RegExp(label));
+test("tutorial separates the guided learning path from the searchable glossary", () => {
+  assert.match(tutorialContent, /TutorialViewId = "guide" \| "glossary"/);
+  for (const label of ["Como jogar", "Glossário", "Seu primeiro duelo", "Leia uma carta", "Conheça o campo", "Jogue seu turno", "Entre em combate"]) {
+    assert.match(tutorialContent, new RegExp(label));
   }
-  for (const topic of ["Manutenção", "Principal", "Combate", "Finalização", "mulligan", "Energia", "Reserva", "prioridade", "vida do herói inimigo a 0"]) {
-    assert.match(tutorial, new RegExp(topic, "i"));
-  }
-  assert.match(tutorial, /Hover · 1s/);
-  assert.match(tutorial, /Segure · 1s/);
-  assert.match(tutorial, /Arraste/);
+  assert.equal((tutorialContent.match(/id: "(?:first-duel|cards|board|turn|combat)"/g) || []).length, 5);
+  assert.match(tutorial, /tutorial-chapter-rail/);
+  assert.match(tutorial, /tutorial-lesson-nav/);
 });
 
-test("each flow chapter has an illustrated game visual with real card art", () => {
+test("guided path teaches objective, cards, board, turn and core controls", () => {
+  for (const topic of ["Vida do Herói rival a 0", "Custo", "Ofensividade", "Vitalidade", "Tipo e subtipo", "Nome e descrição", "Manutenção", "Principal", "Combate", "Finalização", "Energia", "Reserva"]) {
+    assert.match(tutorialSource, new RegExp(topic, "i"));
+  }
+  for (const command of ["Hover por 1s", "Segurar por 1s", "Arrastar", "Clique", "Habilidade", "Passar"]) {
+    assert.match(tutorialContent, new RegExp(command.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+});
+
+test("tutorial uses real cards only where they teach a board concept", () => {
   assert.match(tutorial, /function TutorialCard[\s\S]*<RemoteCardArt/);
-  assert.match(tutorial, /<Chapter number="01"[\s\S]*<Chapter number="07"/);
-  assert.match(tutorial, /<SetupVisual\/>/);
   assert.match(tutorial, /<BoardVisual\/>/);
-  assert.match(tutorial, /<CommandVisual\/>/);
   assert.match(tutorial, /<CombatVisual\/>/);
-  assert.match(tutorial, /<PriorityVisual\/>/);
-  assert.match(tutorial, /<VictoryVisual\/>/);
-  assert.doesNotMatch(tutorial, /<RemoteCardArt[^>]*priority/);
+  assert.match(tutorial, /Gimble, Presenteado Sortudo/);
+  assert.match(tutorial, /CARD_ANATOMY/);
+  assert.doesNotMatch(tutorial, /PriorityVisual|GameModesVisual|ControlModesVisual/);
 });
 
-test("tutorial layout remains usable on tablet and mobile", () => {
-  assert.match(css, /\.tutorial-tabs\s*\{[\s\S]*position:sticky/);
-  assert.match(css, /@media\(max-width:48rem\)/);
-  assert.match(css, /\.tutorial-tabs\{grid-template-columns:repeat\(5,max-content\);overflow-x:auto\}/);
-  assert.match(css, /\.tutorial-chapter,[^{]*\{grid-template-columns:1fr\}/);
+test("card anatomy markers and empty board zones match the actual interface", () => {
+  const anatomy = tutorialContent.slice(tutorialContent.indexOf("export const CARD_ANATOMY"), tutorialContent.indexOf("export const TURN_STEPS"));
+  assert.equal((anatomy.match(/badge: "[1-5]"/g) || []).length, 5);
+  for (const marker of ["1", "2", "3", "4", "5"]) assert.match(css, new RegExp(`data-marker=\\"${marker}\\"`));
+  assert.match(tutorial, /Tabuleiro vazio com as zonas do oponente e do jogador identificadas/);
+  assert.equal((tutorial.match(/5 ESPAÇOS DE CRIATURA/g) || []).length, 2);
+  assert.equal((tutorial.match(/5 ESPAÇOS AUXILIARES/g) || []).length, 2);
+  assert.equal((tutorial.match(/<b>TERRENO CRUEL<\/b>/g) || []).length, 2);
+  assert.match(tutorial, /Criaturas e Imagens de Criatura/);
+  assert.match(tutorial, /Encantos, Artefatos e Imagens auxiliares/);
+  assert.doesNotMatch(tutorial, /Vença o duelo, não o manual|SUA JORNADA/);
 });
 
-test("tutorial explains priority controls, game modes and top-only LIFO resolution", () => {
-  assert.match(tutorial, /Modo: Assistido/);
-  assert.match(tutorial, /Modo: Manual/);
-  assert.match(tutorial, /FULL CONTROL · NUNCA AUTO-PASSA/);
-  assert.match(tutorial, /Dois passes resolvem somente o item do topo/);
-  assert.match(tutorial, /VS IA/);
-  assert.match(tutorial, /ONLINE 1×1/);
-  assert.match(tutorial, /Servidor autoritativo/);
+test("combat tutorial matches the current one-attacker flow", () => {
+  assert.match(tutorial, /Ataque com uma criatura por vez/);
+  assert.match(tutorialContent, /1\. Escolha quem ataca/);
+  assert.match(tutorialContent, /2\. Responda/);
+  assert.match(tutorialContent, /3\. Defenda/);
+  assert.match(tutorialContent, /4\. Resolva o dano/);
+  assert.match(tutorialContent, /bloqueador legal ou aceita o ataque sem bloqueio/i);
+  assert.doesNotMatch(tutorialSource, /atacantes e bloqueadores são confirmados como grupos/i);
 });
 
-test("tutorial keyword copy is derived from the canonical game glossary", () => {
-  assert.match(tutorialContent, /import \{ GAME_GLOSSARY/);
+test("guide and complete searchable glossary derive from the canonical glossary", () => {
+  assert.match(tutorialContent, /import \{[\s\S]*GAME_GLOSSARY/);
   assert.match(tutorialContent, /GAME_GLOSSARY\[key\]/);
   for (const keyword of ["Acelerado", "Primeiro Ato", "Último Suspiro", "Enjoo de Invocação", "Voar", "Veloz", "Atropelar", "Sufocado"]) {
     assert.match(tutorialContent, new RegExp(`keyword\\("${keyword}"`));
   }
+  assert.match(tutorialContent, /Object\.entries\(GAME_GLOSSARY\)/);
+  assert.match(tutorial, /type="search"/);
+  assert.match(tutorial, /entryMatchesRange/);
+  assert.match(tutorialContent, /#–D/);
 });
 
-test("tutorial tabs support keyboard navigation and reduced motion", () => {
+test("tutorial stays responsive, keyboard navigable and reduced-motion safe", () => {
   assert.match(tutorial, /ArrowLeft/);
   assert.match(tutorial, /ArrowRight/);
-  assert.match(tutorial, /aria-labelledby=\{`tutorial-tab-/);
-  assert.match(css, /prefers-reduced-motion:\s*reduce/);
+  assert.match(tutorial, /aria-labelledby=\{\`tutorial-view-/);
+  assert.match(tutorial, /aria-current=\{activeChapter/);
+  assert.match(css, /\.tutorial-chapter-rail\{position:sticky/);
+  assert.match(css, /@media\(max-width:48rem\)/);
+  assert.match(css, /@media\(max-width:34rem\)/);
+  assert.match(css, /prefers-reduced-motion:reduce/);
 });

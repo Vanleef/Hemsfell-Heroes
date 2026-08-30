@@ -6,8 +6,8 @@ This directory contains reusable project tooling only.
 
 - Do not add one-off `fix-*`, `repair-*`, `apply-*`, `normalize-*`, `prepare-card*`, or `finalize-*` patch scripts.
 - Make durable changes directly in the canonical source files instead of layering source mutators.
-- Match UI DOM guards remain at the compatibility entrypoints `app/match-ui-runtime.tsx` and `app/match-ui-guard.tsx`; no barrel-only facade is required.
-- Match CSS is imported through the single `app/match-ui.css` entry point. Board CSS continues through `app/lab.css` while the historical `lab-legacy.css` remains isolated from the modern geometry layers.
+- Match UI DOM guards remain at the compatibility entrypoints `app/presentation/match/match-ui-runtime.tsx` and `app/presentation/match/match-ui-guard.tsx`; no barrel-only facade is required.
+- Match CSS is imported through the single `app/presentation/styles/match-ui.css` entry point. Board CSS continues through `app/presentation/styles/board/lab.css` while the historical `lab-legacy.css` remains isolated from the modern geometry layers.
 - Do not add byte-identical CSS mirror trees; responsibility is documented by the canonical runtime files themselves.
 - GitHub Actions should use the canonical CI workflow rather than accumulating temporary fix workflows.
 - `scripts/project-maintenance.mjs` validates canonical files, stylesheet import/cascade order, match runtime order, card catalog invariants and the absence of one-off source mutators.

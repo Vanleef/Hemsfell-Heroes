@@ -1,4 +1,4 @@
-import { compileCard, compileCardText, splitTriggeredSections } from "./rules-engine/compiler.mjs";
+import { compileCard, compileCardText, splitTriggeredSections } from "../compiler.mjs";
 
 const isExplicitBoardCost = (cost) => ["tap", "removeMarkers", "sacrifice"].includes(cost.type);
 export const activationInsideTriggeredEffect = (text = "") => splitTriggeredSections(text).some((section) => section.label && /\b(vire|virar|virada|remova|remover|sacrifique|sacrificar)\b/i.test(section.text));

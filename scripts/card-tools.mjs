@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { execFileSync } from "node:child_process";
 
 const command = process.argv[2];
-const cardsUrl = new URL("../app/cards.generated.json", import.meta.url);
+const cardsUrl = new URL("../app/data/catalog/cards.generated.json", import.meta.url);
 const manualCardsUrl = new URL("./manual-cards.json", import.meta.url);
 const manualAnalysisUrl = new URL("./manual-analysis.json", import.meta.url);
 

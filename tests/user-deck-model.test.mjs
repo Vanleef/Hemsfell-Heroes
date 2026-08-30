@@ -9,9 +9,9 @@ import {
   defaultUserDeck,
   validateUserDeck,
   validateUserDeckDraft,
-} from "../app/user-deck.mjs";
+} from "../app/model/decks/user-deck.mjs";
 
-const catalog = JSON.parse(await readFile(new URL("../app/cards.generated.json", import.meta.url), "utf8"));
+const catalog = JSON.parse(await readFile(new URL("../app/data/catalog/cards.generated.json", import.meta.url), "utf8"));
 
 test("every canonical hero deck normalizes to the shared 49-card model", () => {
   for (const heroId of deckIds) {

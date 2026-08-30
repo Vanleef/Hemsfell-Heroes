@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 import { compileCard } from "../app/rules-engine/compiler.mjs";
-import { hasIntrinsicKeyword, intrinsicKeywordNames } from "../app/card-keywords.mjs";
+import { hasIntrinsicKeyword, intrinsicKeywordNames } from "../app/rules-engine/cards/card-keywords.mjs";
 
 test("Liaz rules text does not activate conditional Furtivo or Barreira Magica", () => {
   const liaz = compileCard({

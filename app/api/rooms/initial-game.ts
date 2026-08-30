@@ -1,7 +1,7 @@
-import rawCards from "../../cards.generated.json";
+import rawCards from "../../data/catalog/generated-card-catalog";
 import { compileCard } from "../../rules-engine/compiler.mjs";
-import { deckRanges, disabledDeckCardIds, expandUserDeckMain, removedCatalogPages, resolveUserDeckExtra, suppliedDeckPages, validateUserDeck } from "../../user-deck.mjs";
-import type { UserDeck } from "../../user-deck.mjs";
+import { deckRanges, disabledDeckCardIds, expandUserDeckMain, removedCatalogPages, resolveUserDeckExtra, suppliedDeckPages, validateUserDeck } from "../../model/decks/user-deck.mjs";
+import type { UserDeck } from "../../model/decks/user-deck.mjs";
 
 /**
  * Server-owned Online match bootstrap.

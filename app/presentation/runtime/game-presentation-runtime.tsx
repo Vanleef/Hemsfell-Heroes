@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { animateActionCue, captureActionCue, type ActionCue } from "./presentation-action-cues";
-import { renderRemoteCardArtToCanvas } from "./remote-card-art";
+import { animateActionCue, captureActionCue, type ActionCue } from "../cues/presentation-action-cues";
+import { renderRemoteCardArtToCanvas } from "../cards/remote-card-art";
 
 type Owner = 0 | 1;
 type RectLike = { left: number; top: number; width: number; height: number; right: number; bottom: number };
@@ -58,10 +58,11 @@ type PresentationWindow = Window & { __hemsfellPresentationBusy?: boolean };
 const ACTION_EVENT = "hemsfell:presentation-action";
 const BUSY_EVENT = "hemsfell:presentation-busy";
 const IDLE_EVENT = "hemsfell:presentation-idle";
+const CATCH_UP_EVENT = "hemsfell:presentation-catch-up";
 const EASING = "cubic-bezier(.18,.8,.28,1)";
 const MAX_SEEN_COMMANDS = 256;
 const MAX_FLIGHTS = 8;
-const MAX_FLOATS = 12;
+const MAX_FLOATS = 8;
 
 const rectOf = (element: Element): RectLike => {
   const rect = element.getBoundingClientRect();
@@ -1121,6 +1122,7 @@ export default function GamePresentationRuntime() {
     const seenOrder: string[] = [];
     const activeReservations = new Set<PresentationReservation>();
     let disposed = false;
+    let presentationGeneration = 0;
 
     const setBusy = (busy: boolean) => {
       if (!!presentationWindow.__hemsfellPresentationBusy === busy) return;
@@ -1141,13 +1143,15 @@ export default function GamePresentationRuntime() {
       return true;
     };
 
-    const present = async (detail: PresentationDetail, capturedDom: DomSnapshot, cue: ActionCue | null, reservation: PresentationReservation) => {
+    const present = async (detail: PresentationDetail, capturedDom: DomSnapshot, cue: ActionCue | null, reservation: PresentationReservation, generation: number) => {
     const { arrivalGate, stateGate, heldUnits } = reservation;
+    const aborted = () => disposed || generation !== presentationGeneration || document.visibilityState === "hidden";
     const afterDom = await committedDom(detail.after);
-    if (disposed) { arrivalGate?.remove(); stateGate?.remove(); releaseChangedState(heldUnits); return; }
+    if (aborted()) { arrivalGate?.remove(); stateGate?.remove(); releaseChangedState(heldUnits); return; }
     const beforeDom = expectedUnitScore(detail.before, stableDom) > expectedUnitScore(detail.before, capturedDom) ? stableDom : capturedDom;
     const flights = buildFlights(detail, beforeDom, afterDom);
     await revealOpponentPlayedCard(detail, flights);
+    if (aborted()) return;
     const spellFlight = flights.find((flight) => flight.kind === "cast") || null;
     const arrivals = flights.filter((flight) => flight.kind !== "destroy" && flight.kind !== "banish" && flight.kind !== "cast");
     const departures = flights.filter((flight) => flight.kind === "destroy" || flight.kind === "banish");
@@ -1177,45 +1181,75 @@ export default function GamePresentationRuntime() {
     try {
       if (spellFlight) {
         const avatar = await animateSpellEntry(layers.motion, layers.effect, spellFlight);
+        if (aborted()) return;
         const explicitTargets = spellFlight.targets || [];
         const reticles = await animateSpellTargeting(layers.effect, explicitTargets);
+        if (aborted()) return;
         const impacts = explicitTargets.length ? explicitTargets : changedTargetRects(detail, beforeDom, afterDom);
         await animateSpellImpact(layers.effect, avatar.rect, impacts, reticles);
+        if (aborted()) return;
         const heroShake = animateHeroShake(heldState, beforeDom, afterDom);
         const { completion: deltaCompletion } = await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable);
+        if (aborted()) return;
         await heroShake;
+        if (aborted()) return;
         await animateSpellExit(layers.motion, avatar, spellFlight.to);
+        if (aborted()) return;
         for (const flight of departures) {
           const reservedWrapper = releaseDepartureHold(heldState, flight.uid);
           await animateCardMove(layers.motion, layers.effect, flight, reservedWrapper);
+          if (aborted()) return;
         }
-        for (const flight of resultArrivals) await animateCardMove(layers.motion, layers.effect, flight);
+        for (const flight of resultArrivals) {
+          await animateCardMove(layers.motion, layers.effect, flight);
+          if (aborted()) return;
+        }
         await deltaCompletion;
       } else if (cue?.kind === "combat") {
         await animateActionCue(layers.effect, cue);
+        if (aborted()) return;
         const directHeroAttack = !!cue.hero && !cue.defender;
         const heroShake = directHeroAttack ? Promise.resolve() : animateHeroShake(heldState, beforeDom, afterDom);
         const { completion: deltaCompletion } = await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable);
+        if (aborted()) return;
         await heroShake;
+        if (aborted()) return;
         for (const flight of departures) {
           const reservedWrapper = releaseDepartureHold(heldState, flight.uid);
           await animateCardMove(layers.motion, layers.effect, flight, reservedWrapper);
+          if (aborted()) return;
         }
-        for (const flight of arrivals) await animateCardMove(layers.motion, layers.effect, flight);
+        for (const flight of arrivals) {
+          await animateCardMove(layers.motion, layers.effect, flight);
+          if (aborted()) return;
+        }
         await deltaCompletion;
       } else {
-        for (const flight of sourceArrivals) await animateCardMove(layers.motion, layers.effect, flight);
-        if (cue?.kind === "effect") await animateActionCue(layers.effect, cue);
+        for (const flight of sourceArrivals) {
+          await animateCardMove(layers.motion, layers.effect, flight);
+          if (aborted()) return;
+        }
+        if (cue?.kind === "effect") {
+          await animateActionCue(layers.effect, cue);
+          if (aborted()) return;
+        }
         const heroShake = animateHeroShake(heldState, beforeDom, afterDom);
         const { completion: deltaCompletion } = await presentDeltas(detail, beforeDom, afterDom, layers.effect, releaseReadable);
+        if (aborted()) return;
         await heroShake;
+        if (aborted()) return;
         for (const flight of departures) {
           const reservedWrapper = releaseDepartureHold(heldState, flight.uid);
           await animateCardMove(layers.motion, layers.effect, flight, reservedWrapper);
+          if (aborted()) return;
         }
-        for (const flight of resultArrivals) await animateCardMove(layers.motion, layers.effect, flight);
+        for (const flight of resultArrivals) {
+          await animateCardMove(layers.motion, layers.effect, flight);
+          if (aborted()) return;
+        }
         await deltaCompletion;
       }
+      if (aborted()) return;
       await animateHeroLevelUp(layers.effect, detail, afterDom, heldState);
     } finally {
       arrivalGate?.remove();
@@ -1223,12 +1257,39 @@ export default function GamePresentationRuntime() {
       releaseChangedState(heldState);
       arrivals.forEach((flight) => flight.destination?.classList.remove("hh-presentation-hidden"));
     }
-    stableDom = afterDom;
+    if (!aborted()) stableDom = afterDom;
   };
+
+  const cancelAndSnap = () => {
+      presentationGeneration += 1;
+      layers.motion.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
+      layers.effect.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
+      activeReservations.forEach((reservation) => {
+        reservation.arrivalGate?.remove();
+        reservation.stateGate?.remove();
+        releaseChangedState(reservation.heldUnits);
+      });
+      activeReservations.clear();
+      layers.motion.replaceChildren();
+      layers.effect.replaceChildren();
+      document.querySelectorAll<HTMLElement>(".hh-presentation-hidden").forEach((element) => element.classList.remove("hh-presentation-hidden"));
+      queued = 0;
+      sequence = Promise.resolve();
+      setBusy(false);
+      if (refreshFrame) cancelAnimationFrame(refreshFrame);
+      refreshFrame = requestAnimationFrame(() => {
+        refreshFrame = 0;
+        if (!disposed) stableDom = snapshotDom();
+      });
+    };
 
   const onAction = (event: Event) => {
       const detail = (event as CustomEvent<PresentationDetail>).detail;
       if (!detail?.before || !detail?.after || !detail?.command || !rememberPresentation(detail)) return;
+      if (document.visibilityState === "hidden") {
+        cancelAndSnap();
+        return;
+      }
       const capturedDom = snapshotDom();
       const cue = captureActionCue(detail);
       // Install this synchronously, before React commits `detail.after`. A card
@@ -1241,7 +1302,8 @@ export default function GamePresentationRuntime() {
       activeReservations.add(reservation);
       queued += 1;
       setBusy(true);
-      sequence = sequence.catch(() => undefined).then(() => present(detail, capturedDom, cue, reservation)).finally(() => {
+      const generation = presentationGeneration;
+      sequence = sequence.catch(() => undefined).then(() => present(detail, capturedDom, cue, reservation, generation)).finally(() => {
         reservation.arrivalGate?.remove();
         reservation.stateGate?.remove();
         releaseChangedState(reservation.heldUnits);
@@ -1251,6 +1313,11 @@ export default function GamePresentationRuntime() {
       });
     };
     window.addEventListener(ACTION_EVENT, onAction as EventListener);
+    window.addEventListener(CATCH_UP_EVENT, cancelAndSnap);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "hidden") cancelAndSnap();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     const mutationTouchesPresentationState = (record: MutationRecord) => {
       const target = record.target instanceof Element ? record.target : record.target.parentElement;
@@ -1278,6 +1345,8 @@ export default function GamePresentationRuntime() {
       if (refreshFrame) cancelAnimationFrame(refreshFrame);
       observer.disconnect();
       window.removeEventListener(ACTION_EVENT, onAction as EventListener);
+      window.removeEventListener(CATCH_UP_EVENT, cancelAndSnap);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       presentationWindow.__hemsfellPresentationBusy = false;
       activeReservations.forEach((reservation) => {
         reservation.arrivalGate?.remove();

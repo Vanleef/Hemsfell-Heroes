@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
-import { RemoteCardArt } from "./remote-card-art";
+import { RemoteCardArt } from "../cards/remote-card-art";
 
 /*
  * Consolidated client-side UI runtime.

@@ -6,7 +6,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 
 // These regressions intentionally encode what the player is allowed to see, not just final engine state.
 test("spell presentation follows entry target impact damage cleanup death order", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
   const start = runtime.indexOf("if (spellFlight) {");
   const end = runtime.indexOf("} else if (cue?.kind === \"combat\")", start);
   const flow = runtime.slice(start, end);
@@ -20,7 +20,7 @@ test("spell presentation follows entry target impact damage cleanup death order"
 });
 
 test("changed stats stay visually old until damage number becomes readable", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
   assert.match(runtime, /holdStateVisual\(layer, fresh\.element, old\.clone, old\.rect/);
   assert.match(runtime, /FloatingLabelLifecycle/);
   assert.match(runtime, /await Promise\.all\(labels\.map\(\(label\) => label\.readable\)\)/);
@@ -30,7 +30,7 @@ test("changed stats stay visually old until damage number becomes readable", () 
 });
 
 test("lethal targets remain on board until their ordered departure starts", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
   assert.match(runtime, /reserveChangedUnits\(layers\.motion, capturedDom, detail\)/);
   assert.match(runtime, /!afterIds\.has\(uid\)/);
   assert.match(runtime, /deferredDeath/);
@@ -40,8 +40,8 @@ test("lethal targets remain on board until their ordered departure starts", () =
 });
 
 test("direct hero attacks use only sword travel plus the red life delta", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
-  const cues = read("app/presentation-action-cues.ts");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
+  const cues = read("app/presentation/cues/presentation-action-cues.ts");
   const heroCueStart = cues.indexOf("if (cue.hero) {");
   const heroCue = cues.slice(heroCueStart, cues.indexOf("}", heroCueStart) + 1);
   assert.match(heroCue, /await animateSword/);
@@ -55,7 +55,7 @@ test("direct hero attacks use only sword travel plus the red life delta", () => 
 });
 
 test("spell flights are physically deduplicated and AI combat waits for presentation idle", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
   const page = read("app/page.tsx");
   assert.match(runtime, /const seenFlights = new Set<string>\(\)/);
   assert.match(runtime, /if \(seenFlights\.has\(key\)\) return false/);
@@ -65,7 +65,7 @@ test("spell flights are physically deduplicated and AI combat waits for presenta
 });
 
 test("presentation CSS exposes dedicated target, impact and hero feedback layers", () => {
-  const css = read("app/game-presentation.css");
+  const css = read("app/presentation/styles/game-presentation.css");
   assert.match(css, /\.hh-target-reticle/);
   assert.match(css, /\.hh-spell-impact/);
   assert.match(css, /\.hh-state-hold\.is-deferred-death/);
@@ -74,8 +74,8 @@ test("presentation CSS exposes dedicated target, impact and hero feedback layers
 
 // Damage presentation clones must keep field-scale stats and an anchored Hero portrait.
 test("presentation clones preserve live stat badge geometry", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
-  const css = read("app/game-presentation.css");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
+  const css = read("app/presentation/styles/game-presentation.css");
   assert.match(runtime, /function freezePresentationCardMetrics/);
   assert.match(runtime, /live-atk.*live-hp/);
   assert.match(runtime, /freezePresentationCardMetrics\(element, clone\)/);
@@ -87,14 +87,14 @@ test("presentation clones preserve live stat badge geometry", () => {
 
 // Direct damage must never animate or replace the Hero portrait itself.
 test("legacy hero-hurt fallback cannot move or scale the Hero portrait", () => {
-  const css = read("app/ui-overrides.css");
+  const css = read("app/presentation/styles/base/ui-overrides.css");
   assert.match(css, /player-hero\.hero-hurt>\.hero-power-trigger\{animation:none!important;transform:none!important;transition:none!important\}/);
   assert.doesNotMatch(css, /@keyframes heroDamagePulse/);
 });
 
 test("Hero damage holds only the life badge instead of cloning the Hero portrait", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
-  const css = read("app/game-presentation.css");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
+  const css = read("app/presentation/styles/game-presentation.css");
   assert.match(runtime, /function holdHeroLifeVisual/);
   assert.match(runtime, /fresh\.lifeElement, old\.life, old\.lifeRect/);
   assert.match(runtime, /Damage feedback must never replace the Hero portrait/);
@@ -105,8 +105,8 @@ test("Hero damage holds only the life badge instead of cloning the Hero portrait
 
 test("turned cards keep the same visible orientation through state changes and departure", () => {
   const page = read("app/page.tsx");
-  const runtime = read("app/game-presentation-runtime.tsx");
-  const css = read("app/game-presentation.css");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
+  const css = read("app/presentation/styles/game-presentation.css");
   assert.match(page, /unit\.exhausted&&!activeEffect&&!unit\.impacting/);
   assert.match(runtime, /toUpperCase\(\) === "VIRADA"/);
   assert.match(runtime, /dataset\.hhPresentationOrientation = "turned"/);
@@ -117,7 +117,7 @@ test("turned cards keep the same visible orientation through state changes and d
 });
 
 test("graveyard and extra-deck results stay behind their effect animation", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
   const page = read("app/page.tsx");
   assert.match(runtime, /for \(const kind of \["grave", "extra"\] as const\)/);
   assert.match(runtime, /!visual\.zoneTransfer/);
@@ -138,9 +138,9 @@ test("graveyard and extra-deck results stay behind their effect animation", () =
 });
 
 test("opponent plays reveal their actual face at the start of presentation", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
-  const art = read("app/remote-card-art.tsx");
-  const bridge = read("app/presentation-event-bridge.tsx");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
+  const art = read("app/presentation/cards/remote-card-art.tsx");
+  const bridge = read("app/presentation/runtime/presentation-event-bridge.tsx");
   assert.match(art, /export async function renderRemoteCardArtToCanvas/);
   assert.match(runtime, /async function revealOpponentPlayedCard/);
   assert.match(runtime, /owner !== 1/);
@@ -156,7 +156,7 @@ test("opponent plays reveal their actual face at the start of presentation", () 
 
 
 test("spell and ability state cannot become visible before their presentation cue", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
   assert.match(runtime, /const unitPresentationFingerprint/);
   assert.match(runtime, /holdChangedState\(layers\.motion, beforeDom, afterDom, detail, heldUnits\)/);
   assert.match(runtime, /const stateGate = installStateGate\(detail\)/);
@@ -167,16 +167,18 @@ test("spell and ability state cannot become visible before their presentation cu
 });
 
 test("hero level-up is a central blocking presentation stage in every mode", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
-  const css = read("app/game-presentation.css");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
+  const css = read("app/presentation/styles/game-presentation.css");
   const page = read("app/page.tsx");
-  const bridge = read("app/presentation-event-bridge.tsx");
+  const bridge = read("app/presentation/runtime/presentation-event-bridge.tsx");
+  const presentationState = read("app/presentation/state/presentation-state.ts");
   assert.match(runtime, /async function animateHeroLevelUp/);
   assert.match(runtime, /await animateHeroLevelUp\(layers\.effect, detail, afterDom, heldState\)/);
   assert.match(runtime, /releaseLevelState\(held, hero\?\.element\)/);
   assert.match(css, /\.hh-hero-level-up \{/);
   assert.match(page, /const queueOnlineSnapshotFx=\(_previous:Game\|null,_next:Game\)=>\{\};/);
-  assert.match(bridge, /level: player\?\.level/);
+  assert.match(bridge, /presentationTransitionKey/);
+  assert.match(presentationState, /level: player\?\.level/);
 });
 
 test("AI and online follow-up commands respect presentation idle", () => {
@@ -188,7 +190,7 @@ test("AI and online follow-up commands respect presentation idle", () => {
 });
 
 test("presentation snapshot maintenance ignores unrelated UI churn", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
   assert.match(runtime, /const mutationTouchesPresentationState = \(record: MutationRecord\)/);
   assert.match(runtime, /Ignore clocks, logs and unrelated UI churn/);
   assert.match(runtime, /stableDom = afterDom;/);
@@ -196,7 +198,7 @@ test("presentation snapshot maintenance ignores unrelated UI churn", () => {
 
 
 test("presentation busy releases from animation completion instead of wall-clock holds", () => {
-  const runtime = read("app/game-presentation-runtime.tsx");
+  const runtime = read("app/presentation/runtime/game-presentation-runtime.tsx");
   const page = read("app/page.tsx");
   assert.doesNotMatch(runtime, /window\.setTimeout/);
   assert.match(runtime, /await deltaCompletion/);
@@ -208,8 +210,8 @@ test("presentation busy releases from animation completion instead of wall-clock
 });
 
 test("command bar measures overflow and scales PASSIVA ATIVA copy to fit", () => {
-  const runtime = read("app/match-ui-runtime.tsx");
-  const css = read("app/command-bar-fixes.css");
+  const runtime = read("app/presentation/match/match-ui-runtime.tsx");
+  const css = read("app/presentation/styles/command-bar-fixes.css");
   assert.match(runtime, /commandChipFits/);
   assert.match(runtime, /for \(let index = 0; index < 8; index \+= 1\)/);
   assert.match(runtime, /COMMAND_MIN_TITLE_PX = 7/);

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import cards from '../app/cards.generated.json' with { type: 'json' };
+import cards from '../app/data/catalog/cards.generated.json' with { type: 'json' };
 import { compileCard } from '../app/rules-engine/compiler.mjs';
 import { executeCommand } from '../app/rules-engine/engine.mjs';
 
@@ -12,7 +12,7 @@ const unit=(page,uid,slot=0,overrides={})=>({...printed(page),uid,slot,enteredRo
 
 test('Rasmus evolution counts Cats across both players fields in engine and UI guide',()=>{
  const engine=fs.readFileSync(new URL('../app/rules-engine/engine-base.mjs',import.meta.url),'utf8');
- const runtime=fs.readFileSync(new URL('../app/match-ui-runtime.tsx',import.meta.url),'utf8');
+ const runtime=fs.readFileSync(new URL('../app/presentation/match/match-ui-runtime.tsx',import.meta.url),'utf8');
  assert.match(engine,/catsInAllFieldsAtLeast[^\n]+state\.players\.flatMap\(\(candidate\) => candidate\.board\)/);
  assert.match(runtime,/Controle simultaneamente a quantidade indicada de Gatos considerando ambos os campos/);
  assert.match(runtime,/Existam \$\{n\} Gatos simultaneamente somando os dois campos/);
@@ -65,7 +65,7 @@ test('Café Especial keeps its four canonical choices',()=>{
 });
 
 test('Café Expresso choice popup derives concise summaries from canonical effects',()=>{
- const guard=fs.readFileSync(new URL('../app/match-ui-guard.tsx',import.meta.url),'utf8');
+ const guard=fs.readFileSync(new URL('../app/presentation/match/match-ui-guard.tsx',import.meta.url),'utf8');
  assert.match(guard,/case "modifyStats"/);
  assert.match(guard,/Ofensividade/);
  assert.match(guard,/Vitalidade/);
@@ -82,9 +82,9 @@ test('Gato Multidimensional cannot be replaced by another played creature',()=>{
 });
 
 test('hero inspector uses one normal-flow structured guide for all heroes',()=>{
- const css=fs.readFileSync(new URL('../app/hero-inspector-fix.css',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../app/presentation/styles/hero-inspector-fix.css',import.meta.url),'utf8');
  const page=fs.readFileSync(new URL('../app/page.tsx',import.meta.url),'utf8');
- const runtime=fs.readFileSync(new URL('../app/match-ui-runtime.tsx',import.meta.url),'utf8');
+ const runtime=fs.readFileSync(new URL('../app/presentation/match/match-ui-runtime.tsx',import.meta.url),'utf8');
  assert.match(css,/hero-abilities-guide\s*>\s*div:last-child/);
  assert.match(css,/flex-direction:\s*column\s*!important/);
  assert.match(page,/deckByHeroPage\(showInspector\.page\)\?<div className="inspector-hero-guide"/);

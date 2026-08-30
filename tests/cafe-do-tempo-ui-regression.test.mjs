@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const css = await readFile(new URL("../app/cafe-time-placement.css", import.meta.url), "utf8");
+const css = await readFile(new URL("../app/presentation/styles/effects/cafe-time-placement.css", import.meta.url), "utf8");
 const globals = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
 test("Café do Tempo placement prompt stays in the right-side safe lane", () => {
@@ -12,5 +12,5 @@ test("Café do Tempo placement prompt stays in the right-side safe lane", () => 
 });
 
 test("Café do Tempo placement styles are loaded by globals", () => {
-  assert.match(globals, /@import\s+["']\.\/cafe-time-placement\.css["'];/);
+  assert.match(globals, /@import\s+["']\.\/presentation\/styles\/effects\/cafe-time-placement\.css["'];/);
 });

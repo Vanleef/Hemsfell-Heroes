@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import cards from '../app/cards.generated.json' with { type: 'json' };
+import cards from '../app/data/catalog/cards.generated.json' with { type: 'json' };
 import { compileCard } from '../app/rules-engine/compiler.mjs';
 import { executeCommand } from '../app/rules-engine/engine.mjs';
 
@@ -37,6 +37,8 @@ test('Gato do Barista searches only Café cards and confirms one into hand', () 
 
 test('search decision UI applies nameIncludes before enabling card confirmation', () => {
   const page = fs.readFileSync(new URL('../app/page.tsx', import.meta.url), 'utf8');
-  assert.match(page, /nameIncludes\?:string/);
+  const model = fs.readFileSync(new URL('../app/model/game-state.ts', import.meta.url), 'utf8');
+  assert.match(model, /nameIncludes\?: string/);
+  assert.match(page, /from "\.\/model\/game-state"/);
   assert.match(page, /engineDecision\.effect\.nameIncludes/);
 });

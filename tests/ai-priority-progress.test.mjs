@@ -15,6 +15,6 @@ test("bot priority effect contains a stale-window watchdog",()=>{
 });
 
 test("stack indicator is slightly below geometric center",()=>{
-  const css=fs.readFileSync(new URL("../app/ui-overrides.css",import.meta.url),"utf8");
+  const css=fs.readFileSync(new URL("../app/presentation/styles/base/ui-overrides.css",import.meta.url),"utf8");
   assert.match(css,/priority-stack-indicator\{[^}]*left:50%!important;top:52\.5%!important/s);
 });

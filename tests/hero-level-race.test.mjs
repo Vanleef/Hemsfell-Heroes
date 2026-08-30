@@ -16,7 +16,7 @@ test("Ngoro evolution still uses current clue progress and 5/10 thresholds",()=>
 });
 
 test("command bar typography remains responsive and slightly smaller",()=>{
- const css=fs.readFileSync(new URL("../app/ui-overrides.css",import.meta.url),"utf8");
+ const css=fs.readFileSync(new URL("../app/presentation/styles/base/ui-overrides.css",import.meta.url),"utf8");
  assert.match(css,/Slightly denser command-bar typography/);
  assert.match(css,/hero-command-bar \.hero-ability-chip p\{font-size:clamp\(\.255rem,3\.72cqi,\.455rem\)/);
 });

@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 const [css, page, priorityUi] = await Promise.all([
-  readFile(new URL("../app/match-ui.css", import.meta.url), "utf8"),
+  readFile(new URL("../app/presentation/styles/match-ui.css", import.meta.url), "utf8"),
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/match/priority-ui.tsx", import.meta.url), "utf8"),
 ]);

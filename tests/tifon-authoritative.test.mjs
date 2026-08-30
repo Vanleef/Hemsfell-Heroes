@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import cardsJson from "../app/cards.generated.json" with { type: "json" };
+import cardsJson from "../app/data/catalog/cards.generated.json" with { type: "json" };
 import { compileCard } from "../app/rules-engine/compiler.mjs";
 import { getExplicitCardRule, abilitiesForLevel } from "../app/rules-engine/card-rules.mjs";
 import { hasSubtype } from "../app/rules-engine/subtypes.mjs";

@@ -29,7 +29,7 @@ test("architecture documents authority, layers and presentation boundary", () =>
 });
 
 test("frontend refactor plan describes the repository that exists on main", () => {
-  assert.match(frontendPlan, /There are no active `app\/styles\/` mirrors on `main`/);
-  assert.match(frontendPlan, /app\/tutorial-content\.ts/);
+  assert.match(frontendPlan, /app\/presentation\/styles/);
+  assert.match(frontendPlan, /app\/data\/content\/tutorial-content\.ts/);
   assert.doesNotMatch(frontendPlan, /scripts\/verify-frontend-structure\.mjs/);
 });

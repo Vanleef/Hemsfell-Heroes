@@ -13,7 +13,11 @@ const readJson = (storage, key) => {
   catch { return null; }
 };
 
-/** @param {Storage | null | undefined} storage @param {string | null | undefined} [preferredRoomId] */
+/**
+ * Read credentials without coupling the application service to localStorage.
+ * @param {Storage | null | undefined} storage
+ * @param {string | null | undefined} [preferredRoomId]
+ */
 export function loadOnlineSession(storage, preferredRoomId = null) {
   if (!storage) return null;
   if (preferredRoomId) {
@@ -23,6 +27,7 @@ export function loadOnlineSession(storage, preferredRoomId = null) {
   return validSession(readJson(storage, ACTIVE_ONLINE_SESSION_KEY));
 }
 
+/** @param {Storage | null | undefined} storage @param {unknown} session */
 export function saveOnlineSession(storage, session) {
   const normalized = validSession(session);
   if (!storage || !normalized) return null;
@@ -31,6 +36,7 @@ export function saveOnlineSession(storage, session) {
   return normalized;
 }
 
+/** @param {Storage | null | undefined} storage @param {string | null | undefined} [roomId] */
 export function clearOnlineSession(storage, roomId = null) {
   if (!storage) return;
   const active = validSession(readJson(storage, ACTIVE_ONLINE_SESSION_KEY));

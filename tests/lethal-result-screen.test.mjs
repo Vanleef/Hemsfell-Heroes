@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import test from 'node:test';
-import cards from '../app/cards.generated.json' with { type: 'json' };
+import cards from '../app/data/catalog/cards.generated.json' with { type: 'json' };
 import { compileCard } from '../app/rules-engine/compiler.mjs';
 import { executeCommand } from '../app/rules-engine/engine.mjs';
 
@@ -19,8 +19,8 @@ test('authoritative engine declares defeat immediately when own action leaves he
 });
 
 test('result screen renders winner hero art and menu actions through consolidated UI runtime',()=>{
- const runtime=fs.readFileSync(new URL('../app/match-ui-runtime.tsx',import.meta.url),'utf8');
- const guard=fs.readFileSync(new URL('../app/match-ui-guard.tsx',import.meta.url),'utf8');
+ const runtime=fs.readFileSync(new URL('../app/presentation/match/match-ui-runtime.tsx',import.meta.url),'utf8');
+ const guard=fs.readFileSync(new URL('../app/presentation/match/match-ui-guard.tsx',import.meta.url),'utf8');
  assert.match(runtime,/const RESULT_HEROES/);
  assert.match(runtime,/className="match-result-hero-art"/);
  assert.match(runtime,/<RemoteCardArt page=\{result\.page\} name=\{result\.name\} priority/);
@@ -30,7 +30,7 @@ test('result screen renders winner hero art and menu actions through consolidate
 });
 
 test('match result has responsive dedicated styling in the canonical match stylesheet',()=>{
- const css=fs.readFileSync(new URL('../app/match-ui.css',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../app/presentation/styles/match-ui.css',import.meta.url),'utf8');
  assert.match(css,/\/\* === MATCH RESULT === \*\//);
  assert.match(css,/\.enhanced-match-result\{/);
  assert.match(css,/\.match-result-hero-art\{/);
@@ -38,7 +38,7 @@ test('match result has responsive dedicated styling in the canonical match style
 });
 
 test('match result overlay remains centered and self-contained above board layout rules',()=>{
- const css=fs.readFileSync(new URL('../app/match-ui-guard.css',import.meta.url),'utf8');
+ const css=fs.readFileSync(new URL('../app/presentation/styles/match-ui-guard.css',import.meta.url),'utf8');
  assert.match(css,/Canonical match-result seal/);
  assert.match(css,/\.screen-game \.hs-board > \.match-result-overlay/);
  assert.match(css,/position:\s*fixed\s*!important/);
