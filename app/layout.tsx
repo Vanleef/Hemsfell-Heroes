@@ -8,8 +8,6 @@ import "./presentation/styles/game-presentation.css";
 import "./presentation/styles/tutorial.css";
 /* Keep the command-bar typography as the final CSS cascade authority. */
 import "./presentation/styles/command-bar-fixes.css";
-/* Keep canonical board geometry after every historical/feature stylesheet. */
-import "./presentation/styles/board/board-cascade-seal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
