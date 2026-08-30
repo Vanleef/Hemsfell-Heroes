@@ -17,12 +17,12 @@ test("the battlefield is lifted while both energy gaps remain symmetrical", () =
   assert.match(layout, /minmax\(0, 4fr\)[\s\S]*minmax\(0, 24fr\)[\s\S]*minmax\(0, 5fr\)[\s\S]*minmax\(0, 29fr\)[\s\S]*minmax\(0, 4fr\)/);
 });
 
-test("portrait mode contains the whole board instead of creating a clipped canvas", () => {
-  assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?width: min\(100dvw, calc\(100dvh \* 16 \/ 9\)\) !important/s);
-  assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?height: min\(100dvh, calc\(100dvw \* 9 \/ 16\)\) !important/s);
-  assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?min-width: 0 !important/s);
-  assert.doesNotMatch(layout, /min-width:\s*62rem/);
-  assert.doesNotMatch(layout, /width:\s*max\(100dvw/);
+test("portrait mode keeps the board readable and pans on both axes", () => {
+  assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?overflow: auto !important/s);
+  assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?touch-action: pan-x pan-y/s);
+  assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?width: max\(62rem, calc\(100dvh \* 16 \/ 9\)\) !important/s);
+  assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?height: max\(34\.875rem, 100dvh\) !important/s);
+  assert.match(layout, /@media \(orientation: portrait\)[\s\S]*?max-width: none !important/s);
 });
 
 test("floating match UI uses stable sectors of the responsive 16:9 board", () => {
