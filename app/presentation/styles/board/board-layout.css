@@ -39,6 +39,10 @@
   --hh-gap: clamp(.12rem, .38cqw, .5rem);
   --hh-slot-w: clamp(2.6rem, 4cqw, 4.9rem);
   --hh-terrain-w: clamp(2.75rem, 4.15cqw, 5rem);
+  --hh-board-center-y: 50cqh;
+  --hh-stack-sector-y: 52.5cqh;
+  --hh-effect-rail-right: 16.6cqw;
+  --hh-defense-sector-x: 28.75cqw;
 
   position: relative !important;
   inset: auto !important;
@@ -55,13 +59,13 @@
   /* header | opp hand | opp energy | opp field | center | player field | player energy | hand */
   grid-template-rows:
     minmax(0, 4.5fr)
-    minmax(0, 5.5fr)
+    minmax(0, 14.5fr)
     minmax(0, 4fr)
-    minmax(0, 30fr)
-    minmax(0, 8fr)
-    minmax(0, 30fr)
+    minmax(0, 24fr)
+    minmax(0, 5fr)
+    minmax(0, 29fr)
     minmax(0, 4fr)
-    minmax(0, 14fr) !important;
+    minmax(0, 15fr) !important;
 
   width: min(100dvw, calc(100dvh * 16 / 9)) !important;
   height: min(100dvh, calc(100dvw * 9 / 16)) !important;

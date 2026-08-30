@@ -919,20 +919,22 @@
  .screen-game .hero-clue-counter{right:.08rem;bottom:.08rem}
 }
 
-/* The opponent hand occupies a real responsive row. Its energy follows the
-   visible card bottoms with a small gap instead of overlapping their art. */
+/* The opponent hand occupies a real responsive row. Both energy tracks are
+   centered in equal-height rows, so their distance to the battlefield is
+   mathematically symmetrical. Taking 1fr from the upper hand row and adding
+   it below the local energy track lifts the complete battlefield by 1cqh. */
 .screen-game .game-stage>.game-content.hs-board{
- grid-template-rows:minmax(0,4.5fr) minmax(0,15.5fr) minmax(0,4fr) minmax(0,24fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,14fr)!important;
+ grid-template-rows:minmax(0,4.5fr) minmax(0,14.5fr) minmax(0,4fr) minmax(0,24fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,15fr)!important;
 }
 .screen-game .game-stage>.game-content.hs-board>.opponent-hand{
- align-self:start!important;height:15.5cqh!important;padding-bottom:clamp(.08rem,.2cqh,.18rem)!important;
+ align-self:start!important;height:14.5cqh!important;padding-bottom:clamp(.08rem,.2cqh,.18rem)!important;
 }
 .screen-game .game-stage>.game-content.hs-board>.enemy-energy{
- align-self:start!important;margin-top:clamp(.08rem,.25cqh,.2rem)!important;
+ align-self:center!important;margin-top:0!important;margin-bottom:0!important;
 }
 @container hemsfell-board (max-width:60rem){
- .screen-game .game-stage>.game-content.hs-board{grid-template-rows:minmax(0,4.5fr) minmax(0,14fr) minmax(0,4fr) minmax(0,25.5fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,14fr)!important}
- .screen-game .game-stage>.game-content.hs-board>.opponent-hand{height:14cqh!important}
+ .screen-game .game-stage>.game-content.hs-board{grid-template-rows:minmax(0,4.5fr) minmax(0,14.5fr) minmax(0,4fr) minmax(0,24fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,15fr)!important}
+ .screen-game .game-stage>.game-content.hs-board>.opponent-hand{height:14.5cqh!important}
 }
 
 /* Hero abilities inside priority response windows. */
@@ -958,7 +960,7 @@
 .screen-game .game-content > .opponent-hand:has(.original-card:hover){overflow:visible!important;z-index:2400!important}
 .screen-game .game-content > .opponent-hand:has(.original-card:hover) .original-card,.screen-game .game-content > .opponent-hand:has(.original-card:hover) .card-tooltip{overflow:visible!important}
 .screen-game .game-content > .opponent-hand:has(.original-card:hover) .card-tooltip{z-index:2600!important}
-.screen-game .game-content > .priority-stack-indicator{position:absolute!important;inset:auto!important;left:50%!important;top:52.5%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:max-content!important;max-width:min(28cqw,16rem)!important;min-width:0!important;padding:clamp(.22rem,.48cqh,.42rem) clamp(.5rem,.8cqw,.9rem)!important;z-index:900!important;pointer-events:none!important}
+.screen-game .game-content > .priority-stack-indicator{position:absolute!important;inset:auto!important;left:50%!important;top:var(--hh-stack-sector-y,52.5cqh)!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:max-content!important;max-width:min(28cqw,16rem)!important;min-width:0!important;padding:clamp(.22rem,.48cqh,.42rem) clamp(.5rem,.8cqw,.9rem)!important;z-index:900!important;pointer-events:none!important}
 .screen-game .priority-stack-indicator span,.screen-game .priority-stack-indicator b{font-size:clamp(.42rem,.62cqw,.68rem)!important}
 
 

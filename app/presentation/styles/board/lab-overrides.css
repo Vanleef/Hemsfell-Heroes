@@ -311,7 +311,7 @@
 /* ========================================================================== 
    FINAL BOARD INTERACTION AUTHORITY — former v8
    ========================================================================== */
-.screen-game .game-stage > .game-content.hs-board > .defense-decision { position: absolute !important; left: 28.75cqw !important; top: 50cqh !important; right: auto !important; bottom: auto !important; transform: translate(-50%, -50%) !important; width: clamp(8rem, 10.8cqw, 11.2rem) !important; min-width: clamp(8rem, 10.8cqw, 11.2rem) !important; max-width: min(11.2rem, 12cqw) !important; height: auto !important; min-height: 0 !important; padding: clamp(.26rem,.48cqh,.42rem) clamp(.34rem,.54cqw,.54rem) !important; gap: clamp(.12rem,.26cqh,.24rem) !important; align-content: start !important; box-sizing: border-box !important; }
+.screen-game .game-stage > .game-content.hs-board > .defense-decision { position: absolute !important; left: var(--hh-defense-sector-x,28.75cqw) !important; top: var(--hh-board-center-y,50cqh) !important; right: auto !important; bottom: auto !important; transform: translate(-50%, -50%) !important; width: clamp(8rem, 10.8cqw, 11.2rem) !important; min-width: clamp(8rem, 10.8cqw, 11.2rem) !important; max-width: min(11.2rem, 12cqw) !important; height: auto !important; min-height: 0 !important; padding: clamp(.26rem,.48cqh,.42rem) clamp(.34rem,.54cqw,.54rem) !important; gap: clamp(.12rem,.26cqh,.24rem) !important; align-content: start !important; box-sizing: border-box !important; }
 .screen-game .defense-decision > :is(b,span) { margin: 0 !important; line-height: 1.12 !important; }
 .screen-game .defense-decision > b { font-size: clamp(.34rem,min(.5cqw,.84cqh),.56rem) !important; }
 .screen-game .defense-decision > span { font-size: clamp(.39rem,min(.56cqw,.94cqh),.62rem) !important; }
@@ -344,7 +344,7 @@
 .screen-game .hero-command-bar > .hero-ability-chip:disabled { pointer-events: none !important; }
 .screen-game .game-stage > .game-content.hs-board > .side-piles :is(b,strong) { font-size: clamp(.34rem,min(.58cqw,.96cqh),.66rem) !important; line-height: 1.02 !important; }
 .screen-game .game-stage > .game-content.hs-board > .side-piles small { font-size: clamp(.235rem,min(.39cqw,.66cqh),.45rem) !important; line-height: 1.06 !important; }
-.screen-game .game-stage > .game-content.hs-board > :is(.visual-effect,.combat-cinematic) { left: auto !important; right: clamp(15.7cqw,16.6cqw,17.2cqw) !important; top: 50% !important; transform: translateY(-50%) !important; width: clamp(10.5rem,min(13.8cqw,30cqh),15.5rem) !important; max-width: min(13.8cqw,30cqh) !important; }
+.screen-game .game-stage > .game-content.hs-board > :is(.visual-effect,.combat-cinematic) { left: auto !important; right: var(--hh-effect-rail-right,16.6cqw) !important; top: var(--hh-board-center-y,50cqh) !important; transform: translateY(-50%) !important; width: clamp(10.5rem,min(13.8cqw,30cqh),15.5rem) !important; max-width: min(13.8cqw,30cqh) !important; }
 .screen-game .game-stage > .game-content.hs-board > .visual-effect.fx-targeted { width: clamp(11rem,min(14.5cqw,31.5cqh),16rem) !important; max-width: min(14.5cqw,31.5cqh) !important; }
 @container hemsfell-board (max-height: 44rem) {
   .screen-game .player-hero { --hero-side-stack-width: clamp(4.2rem,6.9cqw,6.95rem); }
