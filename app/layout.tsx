@@ -6,8 +6,10 @@ import "./presentation/styles/match-ui.css";
 import "./presentation/styles/online-match-runtime.css";
 import "./presentation/styles/game-presentation.css";
 import "./presentation/styles/tutorial.css";
-/* Keep the command-bar typography as the final CSS cascade authority. */
+/* Keep the command-bar typography as the final legacy CSS authority. */
 import "./presentation/styles/command-bar-fixes.css";
+/* Final geometry authority: matches the approved board reference on desktop and mobile. */
+import "./presentation/styles/board/reference-layout.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
