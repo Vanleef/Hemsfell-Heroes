@@ -63,9 +63,9 @@
     minmax(0, 4fr)
     minmax(0, 24fr)
     minmax(0, 5fr)
-    minmax(0, 29fr)
+    minmax(0, 24fr)
     minmax(0, 4fr)
-    minmax(0, 18fr) !important;
+    minmax(0, 23fr) !important;
 
   width: min(100dvw, calc(100dvh * 16 / 9)) !important;
   height: min(100dvh, calc(100dvw * 9 / 16)) !important;
