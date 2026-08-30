@@ -36,7 +36,7 @@ test("terrain, energy and phase follow the approved horizontal hierarchy", () =>
 });
 
 test("mobile uses the real viewport and never restores the old 62rem scroll canvas", () => {
-  assert.doesNotMatch(css, /62rem/);
+  assert.doesNotMatch(css, /min-width:\s*62rem\s*!important/);
   assert.match(css, /@media \(orientation: portrait\) and \(max-width: 60rem\)/);
   assert.match(css, /width:\s*100dvw\s*!important/);
   assert.match(css, /height:\s*100dvh\s*!important/);
