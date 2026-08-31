@@ -59,6 +59,13 @@ test("presentation bridge deduplicates material transitions and recovers resolve
   assert.match(bridge, /hemsfell:presentation-action/);
 });
 
+test("mulligan hand replacement never creates card movement presentation", () => {
+  const bridge = read("app/presentation/runtime/presentation-event-bridge.tsx");
+  assert.match(bridge, /type SnapshotEntry = \{ revision: number; game: any; isHost: boolean; status: string \}/);
+  assert.match(bridge, /const crossesMulligan = \(beforeStatus: string, afterStatus: string\) => beforeStatus === "mulligan" \|\| afterStatus === "mulligan"/);
+  assert.ok(bridge.indexOf("if (crossesMulligan(previous.status, status)) return") < bridge.indexOf("const key = `${roomId}:${revision}`"));
+});
+
 test("guest online presentation mirrors nested priority ownership", () => {
   const bridge = read("app/presentation/runtime/presentation-event-bridge.tsx");
   const orientation = read("app/application/session/online-state-orientation.mjs");

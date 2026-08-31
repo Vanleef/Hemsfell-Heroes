@@ -30,7 +30,7 @@ test("tutorial separates the guided learning path from the searchable glossary",
 });
 
 test("guided path teaches objective, cards, board, turn and core controls", () => {
-  for (const topic of ["Vida do Herói rival a 0", "Custo", "Tipo", "Efeito", "Atributos", "Manutenção", "Principal", "Combate", "Finalização", "Energia", "Reserva"]) {
+  for (const topic of ["Vida do Herói rival a 0", "Custo", "Ofensividade", "Vitalidade", "Tipo e subtipo", "Nome e descrição", "Manutenção", "Principal", "Combate", "Finalização", "Energia", "Reserva"]) {
     assert.match(tutorialSource, new RegExp(topic, "i"));
   }
   for (const command of ["Hover por 1s", "Segurar por 1s", "Arrastar", "Clique", "Habilidade", "Passar"]) {
@@ -47,8 +47,35 @@ test("tutorial uses real cards only where they teach a board concept", () => {
   assert.doesNotMatch(tutorial, /PriorityVisual|GameModesVisual|ControlModesVisual/);
 });
 
+test("card anatomy markers and empty board zones match the actual interface", () => {
+  const anatomy = tutorialContent.slice(tutorialContent.indexOf("export const CARD_ANATOMY"), tutorialContent.indexOf("export const TURN_STEPS"));
+  assert.equal((anatomy.match(/badge: "[1-5]"/g) || []).length, 5);
+  for (const marker of ["1", "2", "3", "4", "5"]) assert.match(css, new RegExp(`data-marker=\\"${marker}\\"`));
+  assert.match(anatomy, /faixa final, abaixo da descrição/);
+  assert.match(css, /data-marker="4"\]\{--marker-x:50%;--marker-y:97%/);
+  assert.match(tutorial, /Representação do tabuleiro vazio do jogo/);
+  for (const section of ["tutorial-board-heroes", "tutorial-board-terrains", "tutorial-board-rows", "tutorial-board-side-piles", "tutorial-board-hand", "tutorial-board-resource"]) assert.match(tutorial, new RegExp(section));
+  assert.equal((tutorial.match(/tutorial-field-zone /g) || []).length, 4);
+  assert.doesNotMatch(tutorial, /className="[^"]* (?:player|opponent)(?: |")/);
+  assert.match(tutorial, /is-opponent/);
+  assert.match(tutorial, /is-player/);
+  assert.match(css, /\.tutorial-card-stage\{[^}]*overflow:visible/);
+  assert.match(tutorial, /<b>3<\/b><i\/><small>TERRENO/);
+  assert.match(tutorial, /<b>6<\/b><i\/><small>TERRENO/);
+  assert.match(tutorial, /Criaturas e Imagens de Criatura/);
+  assert.match(tutorial, /Encantos, Artefatos e Imagens auxiliares/);
+  assert.doesNotMatch(tutorial, /Vença o duelo, não o manual|SUA JORNADA/);
+});
+
+test("glossary header is concise and isolated from the search controls", () => {
+  assert.match(tutorial, /<h2 id="tutorial-glossary-title">Glossário<\/h2>/);
+  assert.match(tutorial, /<p>Consulte regras e palavras-chave\.<\/p>/);
+  assert.doesNotMatch(tutorial, /REFERÊNCIA RÁPIDA|PRIMEIROS TERMOS|Glossário de Hemsfell|Vocabulário para a primeira partida/);
+  assert.match(css, /\.tutorial-glossary-heading\{display:grid/);
+});
+
 test("combat tutorial matches the current one-attacker flow", () => {
-  assert.match(tutorial, /Ataque uma criatura por vez/);
+  assert.match(tutorial, /Ataque com uma criatura por vez/);
   assert.match(tutorialContent, /1\. Escolha quem ataca/);
   assert.match(tutorialContent, /2\. Responda/);
   assert.match(tutorialContent, /3\. Defenda/);

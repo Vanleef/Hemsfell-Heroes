@@ -1,5 +1,7 @@
 import { AIController } from "./controller";
 import { legalPriorityResponses } from "../priority.mjs";
+import { chooseAIDecision } from "../ai.mjs";
+import { legacyDifficultyLabel, normalizeDifficulty } from "./config";
 import type { AIAction, AIGameState, AIObservation } from "./types";
 
 const controllers = new Map<number, AIController>();
@@ -244,7 +246,13 @@ export async function chooseAdvancedAIAction(state: AIGameState, owner: number, 
 
 export async function chooseAdvancedAIDecision(state: AIGameState, owner: number, difficulty: string): Promise<AIAction | null> {
   if (!state.pendingDecision) return null;
-  return chooseAdvancedAIAction(state, owner, difficulty);
+  await waitForPresentationIdle();
+  /* Mandatory engine decisions are already validated and bounded. Resolve
+     them deterministically instead of sending them through MCTS: a generated
+     Image attachment (such as Tranqueira -> Trambuco) must never stall the
+     turn because a strategic search yielded no action. */
+  const decision = chooseAIDecision(state, owner, legacyDifficultyLabel(normalizeDifficulty(difficulty))) as AIAction | null;
+  return decision ?? chooseAdvancedAIAction(state, owner, difficulty);
 }
 
 export function planAdvancedAIAttacks(state: AIGameState, owner: number, difficulty: string): string[] {

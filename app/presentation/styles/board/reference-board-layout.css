@@ -1,0 +1,134 @@
+/*
+ * Match-board reference contract
+ * ------------------------------
+ * This layer reproduces the approved reference without changing the canonical
+ * grid. Every requested region receives the same container-relative Y offset,
+ * so the composition remains identical at every viewport size and browser
+ * zoom. The phase control scales from the same board container.
+ */
+
+.screen-game .game-stage > .game-content.hs-board {
+  --hh-reference-shift-y: clamp(.7rem, 4.6cqh, 2.85rem);
+  --hh-reference-orb-size: clamp(3rem, min(5.55cqw, 9.6cqh), 5.9rem);
+  --hh-board-center-y: calc(50cqh + var(--hh-reference-shift-y));
+  --hh-stack-sector-y: calc(52.5cqh + var(--hh-reference-shift-y));
+}
+
+/* One X for both energy rails, both fields, both terrains, both pile groups
+ * and both hero command bars. `translate` is independent from the terrain's
+ * horizontal transform and therefore cannot disturb its rail alignment. */
+.screen-game .game-stage > .game-content.hs-board > :is(
+  .enemy-energy,
+  .player-energy,
+  .enemy-field,
+  .player-field,
+  .enemy-terrain,
+  .player-terrain,
+  .enemy-piles,
+  .player-piles,
+  .hero-abilities.enemy,
+  .hero-abilities:not(.enemy),
+  .hero-command-bar.enemy,
+  .hero-command-bar:not(.enemy)
+) {
+  translate: 0 var(--hh-reference-shift-y) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .phase-orb {
+  width: var(--hh-reference-orb-size) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .phase-orb > button,
+.screen-game .game-stage > .game-content.hs-board > .phase-orb::before {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: clamp(.2rem, .4cqw, .46rem) !important;
+  font-size: clamp(.32rem, min(.5cqw, .86cqh), .58rem) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .phase-orb > button span {
+  font-size: clamp(.72rem, min(1.2cqw, 2cqh), 1.2rem) !important;
+}
+
+/* Portrait uses the same complete 16:9 surface as desktop. It is fitted, not
+ * replaced by an oversized pannable canvas, which keeps every edge reachable
+ * and prevents touch/desktop-mode detection from changing the composition. */
+@media (orientation: portrait) and (max-width: 60rem) {
+  .screen-game .game-stage {
+    display: grid !important;
+    place-items: center !important;
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+    touch-action: manipulation !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board {
+    width: min(100dvw, calc(100dvh * 16 / 9)) !important;
+    height: min(100dvh, calc(100dvw * 9 / 16)) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100dvw !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+  }
+
+  /* Remove desktop readability floors only while the full board is scaled to
+   * portrait width. All dimensions continue to derive from cqw/cqh. */
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-reference-shift-y: 4.6cqh;
+    --hh-reference-orb-size: min(5.55cqw, 9.6cqh);
+    --hh-slot-w: min(4cqw, 7.2cqh);
+    --hh-terrain-w: min(4.15cqw, 7.45cqh);
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .phase-orb,
+  .screen-game .player-hero .hero-power-trigger,
+  .screen-game .player-hero .hero-level,
+  .screen-game .player-hero .hero-evolution,
+  .screen-game .player-hero > .level-button {
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .field-energy {
+    height: 3.45cqh !important;
+    min-height: 0 !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(
+    .official-card-back,
+    .opponent-card-back,
+    .card-frame
+  ) {
+    flex-basis: min(3.45cqw, 6.4cqh) !important;
+    width: min(3.45cqw, 6.4cqh) !important;
+    min-width: 0 !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+    flex-basis: min(6.15cqw, 11cqh) !important;
+    width: min(6.15cqw, 11cqh) !important;
+    min-width: 0 !important;
+  }
+
+  .screen-game .phase-track > div {
+    min-width: 0 !important;
+    width: 4.7cqw !important;
+  }
+}
+
+/* The same composition survives short landscape screens and browser zoom;
+ * only the proportional amplitude is allowed to contract. */
+@container hemsfell-board (max-height: 36rem) {
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-reference-shift-y: clamp(.5rem, 4.15cqh, 1.55rem);
+    --hh-reference-orb-size: clamp(2.35rem, min(5.1cqw, 8.8cqh), 4.45rem);
+  }
+}

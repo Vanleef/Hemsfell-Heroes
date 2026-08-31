@@ -38,7 +38,8 @@ test("background throttling is harmless while close, navigation and menu exit ar
   assert.match(presence, /missing polls must never be interpreted as a disconnect/);
   assert.doesNotMatch(route, /persistStalePresence|PRESENCE_STALE_MS/);
   assert.match(page, /window\.addEventListener\("pagehide",notifyDisconnect\)/);
-  assert.match(page, /leaveOnlineMatch=[\s\S]*?signalOnlineDisconnect\(\)/);
+  assert.match(page, /leaveOnlineMatch=[\s\S]*?signalOnlineDeparture\(\)/);
+  assert.match(page, /status==="finished"\?"leave":"disconnect"/);
   assert.match(page, /Você foi desconectado por inatividade/);
   assert.match(page, /Retornar à partida/);
 });

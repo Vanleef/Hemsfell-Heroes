@@ -919,22 +919,6 @@
  .screen-game .hero-clue-counter{right:.08rem;bottom:.08rem}
 }
 
-/* The opponent hand occupies a real responsive row. Its energy follows the
-   visible card bottoms with a small gap instead of overlapping their art. */
-.screen-game .game-stage>.game-content.hs-board{
- grid-template-rows:minmax(0,4.5fr) minmax(0,15.5fr) minmax(0,4fr) minmax(0,24fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,14fr)!important;
-}
-.screen-game .game-stage>.game-content.hs-board>.opponent-hand{
- align-self:start!important;height:15.5cqh!important;padding-bottom:clamp(.08rem,.2cqh,.18rem)!important;
-}
-.screen-game .game-stage>.game-content.hs-board>.enemy-energy{
- align-self:start!important;margin-top:clamp(.08rem,.25cqh,.2rem)!important;
-}
-@container hemsfell-board (max-width:60rem){
- .screen-game .game-stage>.game-content.hs-board{grid-template-rows:minmax(0,4.5fr) minmax(0,14fr) minmax(0,4fr) minmax(0,25.5fr) minmax(0,5fr) minmax(0,29fr) minmax(0,4fr) minmax(0,14fr)!important}
- .screen-game .game-stage>.game-content.hs-board>.opponent-hand{height:14cqh!important}
-}
-
 /* Hero abilities inside priority response windows. */
 .screen-game .response-hero-abilities{display:flex;flex-direction:column;gap:clamp(.3rem,.55cqh,.55rem);padding:0 clamp(.65rem,1.15cqw,1rem) clamp(.55rem,1cqh,.9rem)}
 .screen-game .response-hero-abilities>button{display:grid;grid-template-columns:clamp(1.5rem,2.25cqw,2rem) minmax(0,1fr);align-items:center;gap:clamp(.35rem,.65cqw,.6rem);width:100%;padding:clamp(.42rem,.72cqh,.65rem) clamp(.5rem,.85cqw,.75rem);border:1px solid rgb(100 205 255/.58);border-radius:clamp(.3rem,.5cqw,.48rem);background:linear-gradient(135deg,rgb(21 79 126/.78),rgb(7 25 42/.96));color:#eaf8ff;text-align:left;box-shadow:0 0 clamp(.25rem,.55cqw,.5rem) rgb(65 170 255/.18)}
@@ -958,7 +942,7 @@
 .screen-game .game-content > .opponent-hand:has(.original-card:hover){overflow:visible!important;z-index:2400!important}
 .screen-game .game-content > .opponent-hand:has(.original-card:hover) .original-card,.screen-game .game-content > .opponent-hand:has(.original-card:hover) .card-tooltip{overflow:visible!important}
 .screen-game .game-content > .opponent-hand:has(.original-card:hover) .card-tooltip{z-index:2600!important}
-.screen-game .game-content > .priority-stack-indicator{position:absolute!important;inset:auto!important;left:50%!important;top:52.5%!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:max-content!important;max-width:min(28cqw,16rem)!important;min-width:0!important;padding:clamp(.22rem,.48cqh,.42rem) clamp(.5rem,.8cqw,.9rem)!important;z-index:900!important;pointer-events:none!important}
+.screen-game .game-content > .priority-stack-indicator{position:absolute!important;inset:auto!important;left:50%!important;top:var(--hh-stack-sector-y,52.5cqh)!important;right:auto!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:max-content!important;max-width:min(28cqw,16rem)!important;min-width:0!important;padding:clamp(.22rem,.48cqh,.42rem) clamp(.5rem,.8cqw,.9rem)!important;z-index:900!important;pointer-events:none!important}
 .screen-game .priority-stack-indicator span,.screen-game .priority-stack-indicator b{font-size:clamp(.42rem,.62cqw,.68rem)!important}
 
 

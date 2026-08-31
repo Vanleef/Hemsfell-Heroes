@@ -19,22 +19,24 @@ test('authoritative engine declares defeat immediately when own action leaves he
 });
 
 test('result screen renders winner hero art and menu actions through consolidated UI runtime',()=>{
- const runtime=fs.readFileSync(new URL('../app/presentation/match/match-ui-runtime.tsx',import.meta.url),'utf8');
- const guard=fs.readFileSync(new URL('../app/presentation/match/match-ui-guard.tsx',import.meta.url),'utf8');
- assert.match(runtime,/const RESULT_HEROES/);
- assert.match(runtime,/className="match-result-hero-art"/);
- assert.match(runtime,/<RemoteCardArt page=\{result\.page\} name=\{result\.name\} priority/);
- assert.match(runtime,/enhanced-match-result/);
- assert.match(guard,/result-menu-button/);
- assert.match(guard,/Voltar ao menu/);
+ const result=fs.readFileSync(new URL('../app/presentation/match/match-result-overlay.tsx',import.meta.url),'utf8');
+ const page=fs.readFileSync(new URL('../app/page.tsx',import.meta.url),'utf8');
+ assert.match(result,/className="match-result-portrait"/);
+ assert.match(result,/<RemoteCardArt page=\{heroPage\}/);
+ assert.match(result,/<h2 id="match-result-winner-name">\{heroName\}<\/h2>/);
+ assert.match(result,/>Vencedor<\/strong>/);
+ assert.match(result,/Voltar ao menu/);
+ assert.match(result,/Jogar novamente/);
+ assert.match(page,/mode==="bot"&&game\?\.winner===1\?"\(IA\) "/);
 });
 
 test('match result has responsive dedicated styling in the canonical match stylesheet',()=>{
  const css=fs.readFileSync(new URL('../app/presentation/styles/match-ui.css',import.meta.url),'utf8');
  assert.match(css,/\/\* === MATCH RESULT === \*\//);
- assert.match(css,/\.enhanced-match-result\{/);
- assert.match(css,/\.match-result-hero-art\{/);
- assert.match(css,/@media \(max-width:760px\),\(max-height:620px\)/);
+ assert.match(css,/\.match-result-card\{/);
+ assert.match(css,/\.match-result-portrait\{/);
+ assert.match(css,/\.match-result-actions\{/);
+ assert.match(css,/@media \(max-width:34rem\),\(max-height:42rem\)/);
 });
 
 test('match result overlay remains centered and self-contained above board layout rules',()=>{
@@ -43,6 +45,5 @@ test('match result overlay remains centered and self-contained above board layou
  assert.match(css,/\.screen-game \.hs-board > \.match-result-overlay/);
  assert.match(css,/position:\s*fixed\s*!important/);
  assert.match(css,/place-items:\s*center\s*!important/);
- assert.match(css,/grid-template-areas:[\s\S]*"art eyebrow"[\s\S]*"art actions"/);
  assert.match(css,/@media \(max-width: 46rem\), \(max-height: 38rem\)/);
 });

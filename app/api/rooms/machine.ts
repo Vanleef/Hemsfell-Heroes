@@ -12,7 +12,7 @@ import type { UserDeck } from "../../model/decks/user-deck.mjs";
  * state directly. */
 
 export type RoomRole = "host" | "guest";
-export type RoomStatus = "waiting" | "deck-selection" | "coin-choice" | "mulligan" | "started" | "finished";
+export type RoomStatus = "waiting" | "deck-selection" | "coin-choice" | "mulligan" | "started" | "finished" | "closed";
 
 export type MatchSettings = {
   startingLife: number;
@@ -51,6 +51,8 @@ export type Participant = {
   lastNoActionTimeoutRound?: number | null;
   probationRound?: number | null;
   disconnectAfterOpponentMaintenance?: boolean;
+  rematchRequested?: boolean;
+  lastRematchRequestId?: string;
 };
 
 export type Room = {
@@ -86,7 +88,7 @@ export function sanitizeSettings(value: Partial<MatchSettings> | Record<string, 
 }
 
 export function participant(token: string, accepted = true): Participant {
-  return { heroId: null, token, accepted, deckLocked: false, userDeck: null, mulliganDone: false, mulliganCount: 0, disconnectedAt: null, lastSeenAt: Date.now(), recentCommandIds: [], turnHadAction: false, noActionTimeouts: 0, lastNoActionTimeoutRound: null, probationRound: null, disconnectAfterOpponentMaintenance: false };
+  return { heroId: null, token, accepted, deckLocked: false, userDeck: null, mulliganDone: false, mulliganCount: 0, disconnectedAt: null, lastSeenAt: Date.now(), recentCommandIds: [], turnHadAction: false, noActionTimeouts: 0, lastNoActionTimeoutRound: null, probationRound: null, disconnectAfterOpponentMaintenance: false, rematchRequested: false };
 }
 
 export function bothDecksLocked(room: Room) {

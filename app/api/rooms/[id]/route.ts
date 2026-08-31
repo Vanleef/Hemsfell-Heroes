@@ -8,6 +8,7 @@ import { isPlainRecord, isRoomId, readSafeJson } from "../validation";
 import rawCards from "../../../data/catalog/generated-card-catalog";
 import { validateUserDeck } from "../../../model/decks/user-deck.mjs";
 import type { DeckCatalogCard } from "../../../model/decks/user-deck.mjs";
+import { closeFinishedRoom, requestOnlineRematch } from "../online-rematch.mjs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -138,6 +139,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const activeParticipant = room[role];
     if (!activeParticipant) return NextResponse.json({ error: "player not connected" }, { status: 409, ...noStore });
 
+    if (body.action === "leave") {
+      if (!closeFinishedRoom(room)) return NextResponse.json({ error: "finished match required" }, { status: 409, ...noStore });
+      room.revision++;
+      await writeRoom(room);
+      return NextResponse.json(roomView(room, true, role), noStore);
+    }
+
     if (body.action === "disconnect") {
       if (activeParticipant.disconnectedAt) return NextResponse.json(roomView(room, true, role), noStore);
       const disconnectedAt = Date.now();
@@ -156,7 +164,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     if (activeParticipant.disconnectedAt) return NextResponse.json({ error: "resume required", ...roomView(room, true, role) }, { status: 409, ...noStore });
 
-    if (body.action === "select") {
+    if (body.action === "rematch") {
+      if (!validJoinRequestId(body.rematchRequestId)) return NextResponse.json({ error: "invalid rematch request" }, { status: 400, ...noStore });
+      if (activeParticipant.lastRematchRequestId === body.rematchRequestId) return NextResponse.json(roomView(room, true, role), noStore);
+      const result = requestOnlineRematch(room, role, createInitialOnlineGame);
+      if (!result.ok) return NextResponse.json({ error: result.error }, { status: 409, ...noStore });
+      activeParticipant.lastRematchRequestId = body.rematchRequestId;
+      room.revision++;
+    } else if (body.action === "select") {
       const current = room[role];
       if (!current) return NextResponse.json({ error: "player not connected" }, { status: 409, ...noStore });
       if (!validJoinRequestId(body.selectRequestId)) return NextResponse.json({ error: "invalid select request" }, { status: 400, ...noStore });

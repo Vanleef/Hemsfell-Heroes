@@ -6,14 +6,10 @@ import "./presentation/styles/match-ui.css";
 import "./presentation/styles/online-match-runtime.css";
 import "./presentation/styles/game-presentation.css";
 import "./presentation/styles/tutorial.css";
-/* Keep the command-bar typography as the final legacy CSS authority. */
+/* Final geometry contract shared by desktop and mobile match boards. */
+import "./presentation/styles/board/reference-board-layout.css";
+/* Keep the command-bar typography as the final CSS cascade authority. */
 import "./presentation/styles/command-bar-fixes.css";
-/* Reference geometry owns the board regions and lane hierarchy. */
-import "./presentation/styles/board/reference-layout.css";
-/* Final visual calibration: approved desktop composition + mobile landscape UX. */
-import "./presentation/styles/final-responsive-layout.css";
-/* Coarse-pointer phones need smaller cqh-driven floors to visually match PC. */
-import "./presentation/styles/mobile-landscape-pc-parity.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";

@@ -11,7 +11,7 @@ const ONLINE_SNAPSHOT_EVENT = "hemsfell:online-room-snapshot";
 const EXCLUDED_COMMANDS = new Set(["declareAttack", "selectDefender", "reposition", "confirmReposition", "surrender"]);
 const MAX_SEEN_TRANSITIONS = 256;
 
-type SnapshotEntry = { revision: number; game: any; isHost: boolean };
+type SnapshotEntry = { revision: number; game: any; isHost: boolean; status: string };
 type ConfirmedAck = { before: any; command: Record<string, any>; commandId: string; revision: number };
 type PresentationPayload = { before: any; after: any; command: Record<string, any>; trace?: any[]; commandId: string; presentationId?: string; revision?: number };
 
@@ -23,6 +23,7 @@ const orientGame = (game: any, isHost: boolean) => game
   ? orientOnlineGameForRole(game, isHost ? "host" : "guest")
   : null;
 
+const crossesMulligan = (beforeStatus: string, afterStatus: string) => beforeStatus === "mulligan" || afterStatus === "mulligan";
 const transitionKey = (detail: PresentationPayload) => {
   return presentationTransitionKey(detail);
 };
@@ -167,12 +168,20 @@ export default function PresentationEventBridge() {
       const isHost = !!detail?.session?.isHost;
       const room = detail?.room;
       const revision = Number(room?.revision ?? -1);
+      const status = String(room?.status || "");
       const after = orientGame(room?.game, isHost);
       if (!roomId || !after || !Number.isFinite(revision)) return;
 
       const previous = snapshots.get(roomId);
-      snapshots.set(roomId, { revision, game: clone(after), isHost });
+      snapshots.set(roomId, { revision, game: clone(after), isHost, status });
       if (!previous || revision <= previous.revision) return;
+
+      /* Mulligan replaces the complete hand as preparation, not as an in-game
+         card movement. Suppress every revision inside it and its final
+         transition to started; otherwise the generic snapshot diff animates
+         the returned/drawn cards and polling can make that sequence appear
+         more than once. */
+      if (crossesMulligan(previous.status, status)) return;
 
       const revisionGap = revision - previous.revision;
       if (skipNextOnlinePresentation || document.visibilityState === "hidden" || revisionGap > 1) {

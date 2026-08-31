@@ -56,9 +56,10 @@ export const QUICK_FACTS: TutorialReference[] = [
 
 export const CARD_ANATOMY: TutorialReference[] = [
   { title: "Custo", description: "A Energia necessária para jogar a carta.", badge: "1" },
-  { title: "Tipo", description: "Define onde a carta entra e se permanece no campo.", badge: "2" },
-  { title: "Efeito", description: "Explica alvos, condições e o que acontece ao resolver.", badge: "3" },
-  { title: "Atributos", description: "Criaturas usam Ofensividade e Vitalidade no combate.", badge: "4" },
+  { title: "Ofensividade", description: "O dano que a criatura causa em combate.", badge: "2" },
+  { title: "Vitalidade", description: "O dano que a criatura suporta antes de ser destruída.", badge: "3" },
+  { title: "Tipo e subtipo", description: "Ficam na faixa final, abaixo da descrição, no formato “Criatura — Goblin”.", badge: "4" },
+  { title: "Nome e descrição", description: "O painel informa o nome, as condições, os alvos e os efeitos da carta.", badge: "5" },
 ];
 
 export const TURN_STEPS: TutorialReference[] = [
@@ -78,13 +79,9 @@ export const BASIC_COMMANDS: TutorialReference[] = [
 ];
 
 export const BOARD_ZONES: TutorialReference[] = [
-  { title: "Herói", description: "Mostra Vida, nível, evolução e habilidades.", badge: "30 Vida" },
-  { title: "Criaturas", description: "Cinco espaços usados para atacar e bloquear.", badge: "5 espaços" },
-  { title: "Auxiliares", description: "Cinco espaços para Artefatos, Encantos e outras constantes.", badge: "5 espaços" },
-  { title: "Terreno Cruel", description: "Zona reservada ao seu Terreno ativo.", badge: "1 espaço" },
+  { title: "Herói", description: "Mostra Vida, nível, evolução e habilidades disponíveis.", badge: "30 Vida" },
   { title: "Deck e Mão", description: "O Deck compra cartas; a Mão guarda suas opções atuais.", badge: "Privado" },
-  { title: "Cemitério", description: "Recebe cartas destruídas, descartadas e Feitiços resolvidos.", badge: "Público" },
-  { title: "Obscuro", description: "Recebe cartas banidas. É diferente do Cemitério.", badge: "Público" },
+  { title: "Cemitério e Obscuro", description: "O Cemitério recebe cartas descartadas, destruídas e Feitiços resolvidos. O Obscuro recebe cartas banidas.", badge: "Públicos" },
   { title: "Deck Extra", description: "Guarda Imagens acessadas por efeitos específicos.", badge: "Imagens" },
 ];
 
