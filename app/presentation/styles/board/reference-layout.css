@@ -8,10 +8,10 @@
  * Reference contract:
  * - hero rail on the left;
  * - Cruel Terrain between the hero rail and the battlefield;
- * - five creature spaces grouped together, followed by five auxiliary spaces;
+ * - five paired lanes: creatures on the first row and auxiliaries below them;
  * - opponent energy immediately above the opponent creature group;
  * - player energy immediately below the player creature group (mirrored gap);
- * - phase orb below the local auxiliary group;
+ * - phase orb in the center-right corridor between both battle lines;
  * - side piles stay on the outside rail;
  * - every size is derived from the board container/viewport, never from a
  *   desktop-only minimum canvas.
@@ -21,14 +21,14 @@
   --hh-ref-card-ratio: 5 / 7;
   --hh-ref-slot-w: clamp(1.2rem, min(4.25cqw, 10cqh), 4.65rem);
   --hh-ref-field-gap: clamp(.08rem, .34cqw, .42rem);
-  --hh-ref-group-gap: clamp(.4rem, 1.05cqw, 1.15rem);
   --hh-ref-edge: clamp(.12rem, .42cqw, .5rem);
 
   grid-template-columns:
     minmax(0, 19fr)
-    minmax(0, 5fr)
-    minmax(0, 59fr)
-    minmax(0, 17fr) !important;
+    minmax(0, 8fr)
+    minmax(0, 47fr)
+    minmax(0, 11fr)
+    minmax(0, 15fr) !important;
   grid-template-rows:
     minmax(0, 4.5fr)
     minmax(0, 7fr)
@@ -62,7 +62,7 @@
   grid-row: 4 !important;
 }
 .screen-game .game-stage > .game-content.hs-board > .enemy-piles {
-  grid-column: 4 !important;
+  grid-column: 5 !important;
   grid-row: 2 / 5 !important;
 }
 .screen-game .game-stage > .game-content.hs-board > .player-field {
@@ -78,7 +78,7 @@
   grid-row: 7 !important;
 }
 .screen-game .game-stage > .game-content.hs-board > .player-piles {
-  grid-column: 4 !important;
+  grid-column: 5 !important;
   grid-row: 5 / 8 !important;
 }
 .screen-game .game-stage > .game-content.hs-board > .player-hand {
@@ -103,26 +103,24 @@
 }
 
 /* -------------------------------------------------------------------------
-   BATTLEFIELD: creature group | breathing room | auxiliary group
+   BATTLEFIELD: five paired lanes (creature row over auxiliary row)
    ------------------------------------------------------------------------- */
 .screen-game .game-stage > .game-content.hs-board > .paired-field {
   position: relative !important;
   inset: auto !important;
   display: grid !important;
-  grid-template-columns:
-    repeat(5, minmax(0, 1fr))
-    minmax(var(--hh-ref-group-gap), .8fr)
-    repeat(5, minmax(0, 1fr)) !important;
-  grid-template-rows: minmax(0, 1fr) !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
   align-items: center !important;
   justify-items: center !important;
   align-self: center !important;
-  justify-self: stretch !important;
-  width: 100% !important;
-  height: min(18cqh, 100%) !important;
+  justify-self: end !important;
+  width: min(82%, 41cqw) !important;
+  height: min(20.5cqh, 100%) !important;
   max-width: none !important;
   max-height: none !important;
-  gap: 0 !important;
+  column-gap: var(--hh-ref-field-gap) !important;
+  row-gap: clamp(.16rem, 1.15cqh, .72rem) !important;
   padding: 0 var(--hh-ref-edge) !important;
   margin: 0 !important;
   overflow: visible !important;
@@ -150,18 +148,19 @@
   transform: none !important;
 }
 
-/* Preserve lane order while separating the two zone types visually. */
+/* Preserve lane order while mirroring the two reference rows. */
 .screen-game .paired-field .creature-slot[data-slot="1"] { grid-column: 1 !important; }
 .screen-game .paired-field .creature-slot[data-slot="2"] { grid-column: 2 !important; }
 .screen-game .paired-field .creature-slot[data-slot="3"] { grid-column: 3 !important; }
 .screen-game .paired-field .creature-slot[data-slot="4"] { grid-column: 4 !important; }
 .screen-game .paired-field .creature-slot[data-slot="5"] { grid-column: 5 !important; }
-.screen-game .paired-field .auxiliary-slot[data-slot="1"] { grid-column: 7 !important; }
-.screen-game .paired-field .auxiliary-slot[data-slot="2"] { grid-column: 8 !important; }
-.screen-game .paired-field .auxiliary-slot[data-slot="3"] { grid-column: 9 !important; }
-.screen-game .paired-field .auxiliary-slot[data-slot="4"] { grid-column: 10 !important; }
-.screen-game .paired-field .auxiliary-slot[data-slot="5"] { grid-column: 11 !important; }
-.screen-game .paired-field :is(.creature-slot, .auxiliary-slot) { grid-row: 1 !important; }
+.screen-game .paired-field .auxiliary-slot[data-slot="1"] { grid-column: 1 !important; }
+.screen-game .paired-field .auxiliary-slot[data-slot="2"] { grid-column: 2 !important; }
+.screen-game .paired-field .auxiliary-slot[data-slot="3"] { grid-column: 3 !important; }
+.screen-game .paired-field .auxiliary-slot[data-slot="4"] { grid-column: 4 !important; }
+.screen-game .paired-field .auxiliary-slot[data-slot="5"] { grid-column: 5 !important; }
+.screen-game .paired-field .creature-slot { grid-row: 1 !important; }
+.screen-game .paired-field .auxiliary-slot { grid-row: 2 !important; }
 
 .screen-game .paired-field .field-slot :is(.card-frame, .original-card, .remote-card-art),
 .screen-game .terrain-slot :is(.card-frame, .original-card, .remote-card-art) {
@@ -208,7 +207,7 @@
   position: relative !important;
   inset: auto !important;
   justify-self: start !important;
-  width: 47.2% !important;
+  width: calc(100% - 2 * var(--hh-ref-edge)) !important;
   height: clamp(.72rem, min(2.45cqh, 1.35rem), 1.45rem) !important;
   margin: 0 0 0 var(--hh-ref-edge) !important;
   transform: none !important;
@@ -234,19 +233,19 @@
 }
 
 /* -------------------------------------------------------------------------
-   PHASE ORB: larger and centered below the local auxiliary group
+   PHASE ORB: larger and centered in the corridor between both fields
    ------------------------------------------------------------------------- */
 .screen-game .game-stage > .game-content.hs-board > .phase-orb {
-  grid-column: 3 !important;
-  grid-row: 7 !important;
+  grid-column: 4 !important;
+  grid-row: 4 / 7 !important;
   position: relative !important;
   inset: auto !important;
   align-self: center !important;
-  justify-self: end !important;
+  justify-self: center !important;
   width: clamp(2.35rem, min(5.15cqw, 10.5cqh), 5.35rem) !important;
   height: auto !important;
   aspect-ratio: 1 / 1 !important;
-  margin: 0 22.2% 0 0 !important;
+  margin: 0 !important;
   transform: none !important;
   overflow: visible !important;
   z-index: 90 !important;
@@ -455,9 +454,10 @@
     --hh-ref-slot-w: clamp(1.55rem, min(9.2cqw, 7.6cqh), 3rem);
     grid-template-columns:
       minmax(0, 24fr)
+      minmax(0, 6fr)
+      minmax(0, 53fr)
       minmax(0, 7fr)
-      minmax(0, 54fr)
-      minmax(0, 15fr) !important;
+      minmax(0, 10fr) !important;
     width: 100dvw !important;
     height: 100dvh !important;
     min-width: 0 !important;
@@ -497,7 +497,7 @@
     justify-self: center !important;
     width: clamp(1.75rem, min(10cqw, 5.8cqh), 3rem) !important;
     margin-right: 0 !important;
-    translate: 25% 0 !important;
+    translate: none !important;
   }
   .screen-game .game-stage > .game-content.hs-board > .side-piles {
     width: min(13.2cqw, 14cqh) !important;

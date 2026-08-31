@@ -15,23 +15,28 @@ test("approved reference layout is the final board geometry authority", () => {
   assert.ok(referenceAuthority > legacyAuthority);
 });
 
-test("desktop battlefield separates creature and auxiliary groups without changing slot DOM", () => {
+test("desktop battlefield keeps five paired creature and auxiliary lanes", () => {
   assert.match(page, /field-slot creature-slot/);
   assert.match(page, /field-slot auxiliary-slot/);
   assert.match(page, /data-slot=\{slot\+1\}/);
   assert.match(css, /> \.paired-field > \.field-column\s*\{[\s\S]*?display:\s*contents\s*!important/);
+  assert.match(css, /> \.paired-field\s*\{[\s\S]*?grid-template-columns:\s*repeat\(5, minmax\(0, 1fr\)\)\s*!important[\s\S]*?grid-template-rows:\s*repeat\(2, minmax\(0, 1fr\)\)\s*!important/);
 
   for (let slot = 1; slot <= 5; slot += 1) {
     assert.match(css, new RegExp(`creature-slot\\[data-slot="${slot}"\\] \\{ grid-column: ${slot} !important; \\}`));
-    assert.match(css, new RegExp(`auxiliary-slot\\[data-slot="${slot}"\\] \\{ grid-column: ${slot + 6} !important; \\}`));
+    assert.match(css, new RegExp(`auxiliary-slot\\[data-slot="${slot}"\\] \\{ grid-column: ${slot} !important; \\}`));
   }
+  assert.match(css, /\.paired-field \.creature-slot\s*\{ grid-row:\s*1\s*!important/);
+  assert.match(css, /\.paired-field \.auxiliary-slot\s*\{ grid-row:\s*2\s*!important/);
 });
 
 test("terrain, energy and phase follow the approved horizontal hierarchy", () => {
   assert.match(css, /> \.enemy-terrain\s*\{[\s\S]*?grid-column:\s*2\s*!important/);
   assert.match(css, /> \.player-terrain\s*\{[\s\S]*?grid-column:\s*2\s*!important/);
-  assert.match(css, /> \.field-energy\s*\{[\s\S]*?justify-self:\s*start\s*!important[\s\S]*?width:\s*47\.2%\s*!important/);
-  assert.match(css, /> \.phase-orb\s*\{[\s\S]*?grid-column:\s*3\s*!important[\s\S]*?grid-row:\s*7\s*!important/);
+  assert.match(css, /> \.field-energy\s*\{[\s\S]*?justify-self:\s*start\s*!important[\s\S]*?width:\s*calc\(100% - 2 \* var\(--hh-ref-edge\)\)\s*!important/);
+  assert.match(css, /> \.phase-orb\s*\{[\s\S]*?grid-column:\s*4\s*!important[\s\S]*?grid-row:\s*4 \/ 7\s*!important/);
+  assert.match(css, /> \.enemy-piles\s*\{[\s\S]*?grid-column:\s*5\s*!important/);
+  assert.match(css, /> \.player-piles\s*\{[\s\S]*?grid-column:\s*5\s*!important/);
   assert.match(css, /width:\s*clamp\(2\.35rem, min\(5\.15cqw, 10\.5cqh\), 5\.35rem\)\s*!important/);
 });
 
