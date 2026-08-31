@@ -20,6 +20,8 @@ import "./presentation/styles/mobile-landscape-pc-parity.css";
 import "./presentation/styles/match-stability-polish.css";
 /* Fine-pointer shallow/ultrawide desktops retain the approved reference scale. */
 import "./presentation/styles/desktop-reference-calibration.css";
+/* Terminal reference parity: mirrored board spacing for desktop and mobile. */
+import "./presentation/styles/reference-composition-parity.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";

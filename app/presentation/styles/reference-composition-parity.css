@@ -1,0 +1,471 @@
+/* Final match composition calibrated from the approved 16:9 mock-up.
+   This last stylesheet owns geometry only; rules and the five real lanes stay
+   in React. All dimensions derive from the board container. */
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board {
+  --hh-gold: #9b762d;
+  --hh-gold-soft: #72571f;
+  --hh-ref-edge: clamp(.12rem, .34cqw, .42rem);
+  --hh-ref-slot-w: min(7.25cqh, 4.15cqw);
+  grid-template-columns: minmax(0,16fr) minmax(0,10.5fr) minmax(0,50fr) minmax(0,9fr) minmax(0,14.5fr) !important;
+  grid-template-rows: minmax(0,5.1fr) minmax(0,11.7fr) minmax(0,5fr) minmax(0,22.8fr) minmax(0,2.2fr) minmax(0,22.8fr) minmax(0,5fr) minmax(0,25.4fr) !important;
+  background: radial-gradient(ellipse at 50% 50%,#173e48 0,#0a252c 43%,#06171c 75%,#030a0d 100%) !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board::before {
+  inset: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: inset 0 0 0 1px #80652c66,inset 0 0 3.2cqw #000b !important;
+  pointer-events: none !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 45.35cqh .72cqw auto !important;
+  height: max(1px,.13cqh) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: linear-gradient(90deg,transparent,#84642b 5%,#b88d3c 50%,#84642b 95%,transparent) !important;
+  box-shadow: 0 1px #02090b,0 0 .35cqh #b7863538 !important;
+  opacity: .72 !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
+}
+
+/* Five functional lanes distributed across the central stage. */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field {
+  justify-self: stretch !important;
+  align-self: stretch !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: .8cqh 1.35cqw !important;
+  column-gap: 0 !important;
+  row-gap: 1.05cqh !important;
+  margin: 0 !important;
+  translate: 0 !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field {
+  row-gap: 1.8cqh !important;
+}
+
+body .screen-game.screen-game .paired-field .field-slot {
+  width: min(9.7cqh,5.55cqw) !important;
+  max-height: none !important;
+  aspect-ratio: 1/1 !important;
+  border-color: color-mix(in srgb,var(--hh-gold) 58%,#17343b) !important;
+  border-radius: clamp(.2rem,.42cqw,.46rem) !important;
+  background: radial-gradient(circle at 50% 45%,#183943 0,#0a2229 62%,#051116 100%) !important;
+  box-shadow: inset 0 0 0 1px #ffffff0a,0 .45cqh .8cqh #0008 !important;
+}
+
+/* Tessália's central commander lane keeps its red identity after the shared
+   slot sizing pass. */
+html body .screen-game.screen-game .paired-field .field-slot.creature-slot.commander-slot {
+  border-color: #f0444f !important;
+  background: radial-gradient(circle at 50% 35%,#bf232f6b,#40060dcc 70%) !important;
+  box-shadow: inset 0 0 1.7rem #ef313f57,0 0 .8rem #de233057 !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.enemy-field,.player-field) {
+  margin: 0 !important;
+  translate: 0 !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .field-energy {
+  justify-self: stretch !important;
+  align-self: center !important;
+  width: calc(100% - 2.2cqw) !important;
+  height: min(3.8cqh,2.1rem) !important;
+  margin: 0 1.1cqw !important;
+  translate: 0 !important;
+  border-color: var(--hh-gold-soft) !important;
+  background: linear-gradient(90deg,#092127f2,#0b2a30e8 55%,#081c22f2) !important;
+}
+
+body .screen-game.screen-game .field-energy > div {
+  grid-template-columns: clamp(2.3rem,4.4cqw,4.8rem) minmax(0,1fr) clamp(1rem,2cqw,2rem) !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot {
+  justify-self: center !important;
+  align-self: center !important;
+  width: min(7.2cqh,4.1cqw) !important;
+  margin: 0 !important;
+  translate: 0 !important;
+  border-color: color-mix(in srgb,var(--hh-gold) 62%,#12404a) !important;
+  background: linear-gradient(160deg,#12313aeb,#07191ee8) !important;
+}
+
+/* Hands */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .opponent-hand {
+  align-self: start !important;
+  justify-self: center !important;
+  width: 92% !important;
+  height: 100% !important;
+  gap: clamp(.08rem,.72cqh,.45rem) !important;
+  padding: .55cqh 0 0 !important;
+  translate: 0 !important;
+  overflow: visible !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(.official-card-back,.opponent-card-back,.card-frame) {
+  flex: 0 0 min(6.9cqh,3.9cqw) !important;
+  width: min(6.9cqh,3.9cqw) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  aspect-ratio: 5/7 !important;
+  border-color: var(--hh-gold) !important;
+  box-shadow: 0 .45cqh .75cqh #000a !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand {
+  grid-column: 2/5 !important;
+  grid-row: 8 !important;
+  align-self: end !important;
+  justify-self: stretch !important;
+  width: 100% !important;
+  height: 100% !important;
+  gap: clamp(.08rem,.72cqh,.48rem) !important;
+  padding: .55cqh .7cqw max(1.2cqh,env(safe-area-inset-bottom)) !important;
+  translate: 0 !important;
+  overflow: visible !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+  flex: 0 1 min(12.9cqh,7.15cqw) !important;
+  width: min(12.9cqh,7.15cqw) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  aspect-ratio: 2/3 !important;
+  box-shadow: 0 .5cqh 1.15cqh #000c !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand :is(.original-card,.remote-card-art) {
+  width: 100% !important;
+  height: 100% !important;
+  aspect-ratio: 2/3 !important;
+}
+
+/* Outer pile rails. */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles {
+  justify-self: center !important;
+  align-self: center !important;
+  width: min(13.8cqw,24.5cqh) !important;
+  max-width: 94% !important;
+  max-height: 92% !important;
+  aspect-ratio: 1.12/1 !important;
+  gap: clamp(.08rem,.5cqh,.32rem) !important;
+  translate: 0 !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone {
+  aspect-ratio: 4/5 !important;
+  border-color: color-mix(in srgb,var(--hh-gold) 72%,#223238) !important;
+  border-radius: clamp(.25rem,.65cqw,.7rem) !important;
+  background: linear-gradient(155deg,#10252bd9,#061216f2) !important;
+  box-shadow: inset 0 0 0 1px #ffffff08,0 .45cqh .75cqh #0008 !important;
+}
+
+body .screen-game.screen-game .side-piles .pile-card { width: 68% !important; }
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .enemy-piles { align-self: start !important; margin-top: 4.5cqh !important; }
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-piles { align-self: end !important; margin-bottom: 1.35cqh !important; }
+
+/* Hero and sibling ability list form one visual portrait panel. */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero {
+  justify-self: center !important;
+  align-self: stretch !important;
+  width: min(14.8cqw,26.5cqh) !important;
+  height: auto !important;
+  margin: 1.05cqh 0 !important;
+  padding: 2.8cqh .55cqw 16.2cqh !important;
+  translate: 0 !important;
+  border: 1px solid color-mix(in srgb,var(--deck) 62%,var(--hh-gold)) !important;
+  border-radius: clamp(.35rem,.85cqw,.9rem) !important;
+  background: linear-gradient(180deg,color-mix(in srgb,var(--deck) 14%,#101a1d),#071518f4 58%,#050d0ff8) !important;
+  box-shadow: inset 0 0 0 1px #d8ad4a2d,inset 0 0 2cqw #0009,0 .55cqh 1cqh #0009 !important;
+  overflow: hidden !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero.enemy { align-self: stretch !important; margin-top: 1.05cqh !important; }
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) {
+  align-self: start !important;
+  height: 40.5cqh !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  overflow: visible !important;
+}
+
+body .screen-game.screen-game .player-hero {
+  --hero-card-w: 100% !important;
+  --hero-meta-gap: 0 !important;
+  --hero-meta-w: 100% !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-power-trigger {
+  position: relative !important;
+  width: 100% !important;
+  height: 14.6cqh !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  aspect-ratio: auto !important;
+  overflow: hidden !important;
+  border-radius: .45cqw !important;
+  background: #0a171a !important;
+  z-index: 45 !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-power-trigger > .remote-card-art {
+  position: absolute !important;
+  left: -29% !important;
+  top: -105% !important;
+  width: 158% !important;
+  height: auto !important;
+  max-width: none !important;
+  aspect-ratio: 5/7 !important;
+  object-fit: initial !important;
+  object-position: initial !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  filter: saturate(.9) contrast(1.06) brightness(.82) !important;
+  z-index: 1 !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-power-trigger::after {
+  content: "" !important;
+  position: absolute !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  height: 19% !important;
+  z-index: 2 !important;
+  pointer-events: none !important;
+  background: linear-gradient(transparent,#061518 78%) !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-short-name {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: .3cqh !important;
+  z-index: 8 !important;
+  display: block !important;
+  width: auto !important;
+  max-width: none !important;
+  transform: none !important;
+  color: #f6f1df !important;
+  text-align: center !important;
+  font-size: clamp(.42rem,min(.82cqw,1.35cqh),.82rem) !important;
+  font-weight: 900 !important;
+  text-shadow: 0 2px 4px #000 !important;
+  border-radius: 999px !important;
+  background: #061115df !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-life {
+  right: .25cqw !important;
+  left: auto !important;
+  bottom: auto !important;
+  top: 62% !important;
+  min-width: 4.6cqh !important;
+  padding: .25cqh .48cqw !important;
+  font-size: clamp(.55rem,min(1.15cqw,2cqh),1.1rem) !important;
+  border-color: #b34a4e !important;
+  border-radius: 999px !important;
+  background: linear-gradient(#74262c,#421117) !important;
+  z-index: 60 !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-level {
+  left: 0 !important;
+  top: 15.05cqh !important;
+  width: 42% !important;
+  height: 2.25cqh !important;
+  min-height: 0 !important;
+  font-size: clamp(.3rem,min(.55cqw,.95cqh),.55rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero .hero-power-trigger > .hero-level {
+  left: 0 !important;
+  top: calc(100% + .35cqh) !important;
+  width: 42% !important;
+  height: 2.25cqh !important;
+  transform: none !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-evolution {
+  left: 44% !important;
+  top: 17.85cqh !important;
+  width: 56% !important;
+  height: 3.25cqh !important;
+  min-height: 0 !important;
+  padding: .18cqh .28cqw !important;
+  transform: translateY(-2.8cqh) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+  left: calc(.55cqw + 44%) !important;
+  top: 48.5% !important;
+  width: calc(56% - 1.1cqw) !important;
+  height: 3.25cqh !important;
+  transform: none !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-evolution > :is(small,strong) {
+  font-size: clamp(.25rem,min(.48cqw,.82cqh),.47rem) !important;
+}
+
+body .screen-game.screen-game .player-hero > .level-button {
+  left: 0 !important;
+  top: auto !important;
+  bottom: .45cqh !important;
+  width: 78% !important;
+  height: 2.4cqh !important;
+  min-height: 0 !important;
+  font-size: clamp(.28rem,min(.52cqw,.88cqh),.5rem) !important;
+  z-index: 8 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) > .level-button {
+  left: 11% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 1.4cqh !important;
+  width: 78% !important;
+  transform: none !important;
+}
+
+body .screen-game.screen-game .player-hero:not(.enemy) .hero-status-cues.local {
+  left: 0 !important;
+  right: auto !important;
+  top: calc(100% + 6px) !important;
+  bottom: auto !important;
+  width: 100% !important;
+  transform: none !important;
+  z-index: 230 !important;
+}
+
+body .screen-game.screen-game .player-hero:not(.enemy) .hero-status-cues.local span {
+  min-width: 0 !important;
+  width: 100% !important;
+  padding: .4cqh .35cqw !important;
+  font-size: clamp(.25rem,min(.5cqw,.82cqh),.48rem) !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities,.hero-command-bar) {
+  justify-self: center !important;
+  align-self: end !important;
+  width: min(13.7cqw,24.5cqh) !important;
+  max-height: none !important;
+  height: 15.3cqh !important;
+  margin: 0 0 .5cqh !important;
+  padding: 0 !important;
+  gap: .2cqh !important;
+  translate: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  z-index: 75 !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities:not(.enemy),.hero-command-bar:not(.enemy)) {
+  translate: 0 15cqh !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities,.hero-command-bar) > header { display: none !important; }
+
+body .screen-game.screen-game :is(.hero-abilities .ability,.hero-command-bar .hero-ability-chip) {
+  flex: 1 1 0 !important;
+  min-height: 0 !important;
+  padding: .18cqh .28cqw !important;
+  border-color: color-mix(in srgb,var(--deck) 68%,#7a652f) !important;
+  border-radius: .3cqw !important;
+  background: linear-gradient(90deg,color-mix(in srgb,var(--deck) 14%,#071217),#071217ec 72%) !important;
+}
+
+body .screen-game.screen-game .hero-command-bar .hero-ability-chip > i {
+  width: 1.65cqh !important;
+  height: 1.65cqh !important;
+  font-size: clamp(.3rem,min(.55cqw,.9cqh),.52rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board .hero-command-bar > .hero-ability-chip > span {
+  margin-left: .2cqw !important;
+  padding: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board .hero-command-bar > .hero-ability-chip > span > b {
+  font-size: clamp(.25rem,min(.48cqw,.8cqh),.46rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board .hero-command-bar > .hero-ability-chip > span > p {
+  font-size: clamp(.34rem,min(.65cqw,1.04cqh),.62rem) !important;
+  line-height: 1.1 !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb {
+  justify-self: center !important;
+  align-self: center !important;
+  width: min(13cqh,7.3cqw) !important;
+  margin: 0 !important;
+  translate: 0 !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot {
+  width: min(9.1cqh,5.15cqw) !important;
+  transform: none !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .game-bar {
+  padding-left: max(.7cqw,env(safe-area-inset-left)) !important;
+  padding-right: max(.7cqw,env(safe-area-inset-right)) !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-control-toggle {
+  top: 6.3cqh !important;
+  right: max(1.1cqw,env(safe-area-inset-right)) !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .surrender-button {
+  right: max(1.1cqw,env(safe-area-inset-right)) !important;
+  bottom: max(1.7cqh,env(safe-area-inset-bottom)) !important;
+}
+
+@media (orientation: landscape) and (max-width:64rem), (orientation:landscape) and (max-height:32rem) {
+  body .screen-game.screen-game .game-stage > .game-content.hs-board {
+    --hh-ref-slot-w: min(7.05cqh,4.25cqw);
+    grid-template-columns: 17fr 9fr 50fr 9fr 15fr !important;
+  }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board::before {
+    border-left-width: .55cqw !important;
+    border-right-width: .55cqw !important;
+    border-bottom-width: 3.4cqh !important;
+  }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field { padding-inline: .7cqw !important; row-gap: .65cqh !important; }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .field-energy { width: calc(100% - 1.1cqw) !important; margin-inline: .55cqw !important; height: 3.7cqh !important; }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot { width: min(8.6cqh,5cqw) !important; transform: none !important; }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles { width: min(14.2cqw,25cqh) !important; gap: .2cqw !important; }
+  body .screen-game.screen-game .side-piles small { display: none !important; }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero { width: min(15.8cqw,27.5cqh) !important; margin-block: .65cqh !important; padding: 2.55cqh .45cqw 15.6cqh !important; }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) { height: 40.5cqh !important; margin-top: 0 !important; margin-bottom: 0 !important; }
+  body .screen-game.screen-game .player-hero .hero-power-trigger { height: 13.9cqh !important; }
+  body .screen-game.screen-game .player-hero .hero-level { top: 14.25cqh !important; }
+  body .screen-game.screen-game .player-hero .hero-evolution { top: 17.05cqh !important; }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities,.hero-command-bar) { width: min(14.7cqw,25.5cqh) !important; height: 14.7cqh !important; margin-bottom: .45cqh !important; }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities:not(.enemy),.hero-command-bar:not(.enemy)) { translate: 0 15cqh !important; }
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board .hero-command-bar > .hero-ability-chip > span > p { font-size: clamp(.3rem,.8cqw,.62rem) !important; line-height: 1.06 !important; }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .opponent-hand { gap: .32cqw !important; padding-top: .35cqh !important; }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(.official-card-back,.opponent-card-back,.card-frame) { flex-basis: min(6.7cqh,3.8cqw) !important; width: min(6.7cqh,3.8cqw) !important; }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand { gap: .24cqw !important; padding: .35cqh .45cqw max(.75cqh,env(safe-area-inset-bottom)) !important; }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame { flex-basis: min(12.4cqh,7.3cqw) !important; width: min(12.4cqh,7.3cqw) !important; }
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb { width: min(12.2cqh,7.2cqw) !important; }
+}
+
+@media (orientation:portrait) {
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero,
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame,
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(.official-card-back,.opponent-card-back,.card-frame) { min-width: 0 !important; }
+}
