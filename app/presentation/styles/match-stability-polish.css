@@ -1,0 +1,114 @@
+/*
+ * Match stability polish
+ * ----------------------
+ * Final presentation-only corrections that must outrank the historical match
+ * cascade. Keep this layer small: geometry belongs to board-layout/reference-
+ * board-layout and animation sequencing belongs to the presentation runtime.
+ */
+
+/* -------------------------------------------------------------------------
+   OPPONENT HAND / ENERGY SYMMETRY
+   -------------------------------------------------------------------------
+   reference-board-layout shifts the opponent battlefield/energy downward to
+   match the approved composition, but the opponent hand was left behind in
+   its original grid row. That created an artificial empty band and could push
+   the top of the card backs into the board chrome. Move the hand with the same
+   reference offset plus a tiny inward nudge, mirroring the compact player
+   hand -> energy spacing at the bottom of the board.
+ */
+.screen-game .game-stage > .game-content.hs-board > .opponent-hand {
+  translate: 0 calc(var(--hh-reference-shift-y, 0px) + clamp(.08rem, .55cqh, .34rem)) !important;
+  align-self: center !important;
+  overflow: visible !important;
+  z-index: 76 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(
+  .official-card-back,
+  .opponent-card-back,
+  .card-frame
+) {
+  height: auto !important;
+  max-height: none !important;
+  overflow: visible !important;
+  clip-path: none !important;
+}
+
+/* Pull the opponent energy/field cluster a fraction upward relative to the
+   shared reference shift. This keeps the top composition visually symmetric
+   with player field -> energy -> hand without changing lane X coordinates. */
+.screen-game .game-stage > .game-content.hs-board > .enemy-energy {
+  translate: 0 calc(var(--hh-reference-shift-y, 0px) - clamp(.08rem, .45cqh, .28rem)) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > :is(.enemy-field, .enemy-terrain) {
+  translate: 0 calc(var(--hh-reference-shift-y, 0px) - clamp(.04rem, .22cqh, .16rem)) !important;
+}
+
+/* -------------------------------------------------------------------------
+   TARGET CARD BADGE STABILITY
+   -------------------------------------------------------------------------
+   Keyword/status/marker/activation badges are siblings of .original-card.
+   Legacy hover/target transforms only move/scale the card button, which makes
+   those siblings appear to jump or change scale while choosing an animated
+   target. A target keeps its normal battlefield geometry; feedback is supplied
+   by outline/filter only.
+ */
+.screen-game .card-frame:has(> .original-card:is(.target-ally, .target-enemy)) {
+  translate: none !important;
+  scale: 1 !important;
+  transform-origin: 50% 50% !important;
+}
+
+.screen-game .card-frame > .original-card:is(.target-ally, .target-enemy),
+.screen-game .card-frame > .original-card:is(.target-ally, .target-enemy):hover,
+.screen-game .card-frame > .original-card:is(.target-ally, .target-enemy):focus-visible {
+  translate: none !important;
+  scale: 1 !important;
+  margin: 0 !important;
+  transform-origin: 50% 50% !important;
+}
+
+/* Preserve the normal exhausted orientation while still suppressing the
+   target-hover zoom. The rotation is owned by the exhausted presentation rule. */
+.screen-game .card-frame > .original-card:is(.target-ally, .target-enemy):not(.is-exhausted) {
+  transform: none !important;
+}
+
+.screen-game .card-frame:has(> .original-card:is(.target-ally, .target-enemy)) > :is(
+  .field-keywords,
+  .field-negative-statuses,
+  .card-frame-marker,
+  .card-frame-activation
+),
+.screen-game .card-frame:has(> .original-card:is(.target-ally, .target-enemy)) > .original-card > :is(
+  .live-atk,
+  .live-hp,
+  .summoning-sickness-badge,
+  .status,
+  .effective-cost
+) {
+  translate: none !important;
+  scale: 1 !important;
+  transform-origin: 50% 50% !important;
+  transition-property: opacity, filter, background-color, border-color, box-shadow !important;
+}
+
+/* The target pulse must never animate geometry. */
+@keyframes hh-stable-valid-target {
+  0%, 100% { filter: brightness(1); outline-offset: 0; }
+  50% { filter: brightness(1.2); outline-offset: clamp(.08rem, .16cqw, .16rem); }
+}
+
+.screen-game .original-card:is(.target-ally, .target-enemy) {
+  animation-name: hh-stable-valid-target !important;
+  animation-duration: 1.15s !important;
+  animation-timing-function: ease-in-out !important;
+  animation-iteration-count: infinite !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-game .original-card:is(.target-ally, .target-enemy) {
+    animation: none !important;
+  }
+}
