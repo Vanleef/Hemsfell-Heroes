@@ -10,6 +10,10 @@ import "./presentation/styles/tutorial.css";
 import "./presentation/styles/command-bar-fixes.css";
 /* Approved reference geometry must outrank every legacy board rule. */
 import "./presentation/styles/board/reference-layout.css";
+/* Calibrate the approved reference across desktop and short landscape screens. */
+import "./presentation/styles/final-responsive-layout.css";
+/* High-DPR coarse-pointer phones remove desktop rem floors without reflow. */
+import "./presentation/styles/mobile-landscape-pc-parity.css";
 /* Terminal match polish: opponent symmetry and transform-safe target badges. */
 import "./presentation/styles/match-stability-polish.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
