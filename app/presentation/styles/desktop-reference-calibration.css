@@ -1,0 +1,88 @@
+/*
+ * Desktop reference calibration
+ * -----------------------------
+ * The approved reference was captured on a conventional desktop aspect ratio.
+ * Very wide and/or shallow fine-pointer viewports must keep that composition
+ * instead of growing every cqw-based region or letting the lower field cover
+ * the player energy rail. Mobile/touch layouts are intentionally excluded.
+ */
+
+/* Wide desktop: cap permanent UI at the physical proportions of the approved
+   reference while still letting the backdrop fill the whole viewport. */
+@media (min-width: 100rem) and (hover: hover) and (pointer: fine) {
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-ref-slot-w: clamp(1.9rem, min(3.1cqw, 9cqh), 3.7rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .paired-field {
+    width: min(82%, 44rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .field-energy {
+    width: min(82%, 44rem) !important;
+    justify-self: end !important;
+    margin-inline: 0 !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .terrain-slot {
+    width: min(4.05cqw, 3.85rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities, .hero-command-bar) {
+    width: min(18.15cqw, 17.5rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .side-piles {
+    width: min(11.25cqw, 11rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(
+    .official-card-back,
+    .opponent-card-back,
+    .card-frame
+  ) {
+    flex-basis: min(3.55cqw, 3rem) !important;
+    width: min(3.55cqw, 3rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+    flex-basis: min(5.5cqw, 5.2rem) !important;
+    width: min(5.5cqw, 5.2rem) !important;
+  }
+}
+
+/* Shallow desktop: preserve the PC layout, but pull the battlefield toward the
+   central corridor so the lower energy rail remains visibly separated from the
+   hand. Height by itself is never treated as a mobile signal. */
+@media (min-width: 64.01rem) and (max-height: 52rem) and (hover: hover) and (pointer: fine) {
+  .screen-game .game-stage > .game-content.hs-board > .enemy-energy {
+    translate: 0 -1.9cqh !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .enemy-field {
+    margin-top: clamp(.06rem, 1.35cqh, .62rem) !important;
+    translate: 0 -1.35cqh !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .enemy-terrain {
+    translate: 0 -1.35cqh !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-field {
+    translate: 0 -2.8cqh !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-terrain {
+    translate: 0 -2.35cqh !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-energy {
+    align-self: start !important;
+    translate: 0 -4.8cqh !important;
+    z-index: 84 !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .phase-orb {
+    translate: 0 -1.15cqh !important;
+  }
+}
