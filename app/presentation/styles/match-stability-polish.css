@@ -132,3 +132,56 @@
     animation: none !important;
   }
 }
+
+/* -------------------------------------------------------------------------
+   MOBILE SETUP MERGE GUARD
+   -------------------------------------------------------------------------
+   The latest tutorial/docs merge dropped the compact setup rules from the
+   active cascade. Keep setup inside the viewport and retain readable difficulty
+   controls without affecting the match board.
+ */
+@media (max-width: 48rem) {
+  .match-setup {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: clip !important;
+    box-sizing: border-box !important;
+  }
+
+  .match-setup .deck-picker {
+    min-width: 0 !important;
+    grid-template-areas:
+      "label label"
+      "art select"
+      "art faction"
+      "plan plan" !important;
+  }
+
+  .match-setup .deck-picker > select {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  .match-setup > .difficulty {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: clamp(.3rem, 1.5vw, .55rem) !important;
+    width: 100% !important;
+    max-width: 30rem !important;
+    margin-inline: auto !important;
+  }
+
+  .match-setup > .difficulty > span {
+    grid-column: 1 / -1 !important;
+    min-width: 0 !important;
+    text-align: center !important;
+  }
+
+  .match-setup > .difficulty > button {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+}
