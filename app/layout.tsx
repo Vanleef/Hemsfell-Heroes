@@ -6,10 +6,10 @@ import "./presentation/styles/match-ui.css";
 import "./presentation/styles/online-match-runtime.css";
 import "./presentation/styles/game-presentation.css";
 import "./presentation/styles/tutorial.css";
-/* Final geometry contract shared by desktop and mobile match boards. */
-import "./presentation/styles/board/reference-board-layout.css";
-/* Keep the command-bar typography as the final CSS cascade authority. */
+/* Keep the command-bar typography as the final legacy CSS authority. */
 import "./presentation/styles/command-bar-fixes.css";
+/* Approved reference geometry must outrank every legacy board rule. */
+import "./presentation/styles/board/reference-layout.css";
 /* Terminal match polish: opponent symmetry and transform-safe target badges. */
 import "./presentation/styles/match-stability-polish.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
