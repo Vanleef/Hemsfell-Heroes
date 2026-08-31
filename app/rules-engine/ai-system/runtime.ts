@@ -9,6 +9,7 @@ const lastObservedState = new Map<number, AIGameState>();
 const priorityInFlight = new Map<string, Promise<AIAction>>();
 const recentlySettledPriority = new Map<string, number>();
 const PRIORITY_HARD_TIMEOUT_MS = 850;
+const PRIORITY_PRESENTATION_TIMEOUT_MS = 4200;
 const PRESENTATION_IDLE_FAILSAFE_MS = 20000;
 const PRESENTATION_IDLE_EVENTS = ["hemsfell:presentation-idle"] as const;
 let thinkingIndicatorInstalled = false;
@@ -24,9 +25,15 @@ const presentationBusy = () => {
   return !!presentationWindow.__hemsfellPresentationBusy;
 };
 
-async function waitForPresentationIdle(): Promise<void> {
-  if (!presentationBusy()) return;
-  await new Promise<void>((resolve) => {
+/**
+ * Wait for presentation without allowing a stale visual reservation to hold
+ * authoritative priority forever. Normal AI actions keep the generous global
+ * failsafe; priority uses a much shorter bound and releases a presentation that
+ * has demonstrably stopped reporting idle.
+ */
+async function waitForPresentationIdle(timeoutMs = PRESENTATION_IDLE_FAILSAFE_MS, releaseStale = false): Promise<boolean> {
+  if (!presentationBusy()) return true;
+  return await new Promise<boolean>((resolve) => {
     let settled = false;
     const cleanup = () => {
       PRESENTATION_IDLE_EVENTS.forEach((eventName) => window.removeEventListener(eventName, onIdle));
@@ -36,15 +43,24 @@ async function waitForPresentationIdle(): Promise<void> {
       if (settled || presentationBusy()) return;
       settled = true;
       cleanup();
-      resolve();
+      resolve(true);
     };
     const onIdle = () => finish();
     const failsafe = window.setTimeout(() => {
       if (settled) return;
+      const stillBusy = presentationBusy();
       settled = true;
       cleanup();
-      resolve();
-    }, PRESENTATION_IDLE_FAILSAFE_MS);
+      if (stillBusy && releaseStale) {
+        const presentationWindow = window as PresentationWindow;
+        presentationWindow.__hemsfellPresentationBusy = false;
+        /* Catch-up asks the presentation layer to discard stale visual work;
+           idle wakes every waiter, including the priority flow in page.tsx. */
+        window.dispatchEvent(new CustomEvent("hemsfell:presentation-catch-up", { detail: { reason: "ai-priority-liveness" } }));
+        window.dispatchEvent(new CustomEvent("hemsfell:presentation-idle", { detail: { forced: true, reason: "ai-priority-liveness" } }));
+      }
+      resolve(!stillBusy);
+    }, Math.max(0, timeoutMs));
     PRESENTATION_IDLE_EVENTS.forEach((eventName) => window.addEventListener(eventName, onIdle));
     queueMicrotask(finish);
   });
@@ -235,13 +251,17 @@ function installDebugTelemetry(): void {
   });
 }
 
-export async function chooseAdvancedAIAction(state: AIGameState, owner: number, difficulty: string): Promise<AIAction | null> {
-  await waitForPresentationIdle();
+async function chooseAdvancedAIActionReady(state: AIGameState, owner: number, difficulty: string): Promise<AIAction | null> {
   const controller = controllerFor(owner, difficulty);
   observePublicDelta(controller, state, owner);
   const result = await controller.chooseAction(state, owner);
   lastObservedState.set(owner, structuredClone(state));
   return result.action;
+}
+
+export async function chooseAdvancedAIAction(state: AIGameState, owner: number, difficulty: string): Promise<AIAction | null> {
+  await waitForPresentationIdle();
+  return chooseAdvancedAIActionReady(state, owner, difficulty);
 }
 
 export async function chooseAdvancedAIDecision(state: AIGameState, owner: number, difficulty: string): Promise<AIAction | null> {
@@ -252,7 +272,7 @@ export async function chooseAdvancedAIDecision(state: AIGameState, owner: number
      Image attachment (such as Tranqueira -> Trambuco) must never stall the
      turn because a strategic search yielded no action. */
   const decision = chooseAIDecision(state, owner, legacyDifficultyLabel(normalizeDifficulty(difficulty))) as AIAction | null;
-  return decision ?? chooseAdvancedAIAction(state, owner, difficulty);
+  return decision ?? chooseAdvancedAIActionReady(state, owner, difficulty);
 }
 
 export function planAdvancedAIAttacks(state: AIGameState, owner: number, difficulty: string): string[] {
@@ -265,12 +285,14 @@ export function chooseAdvancedAIBlock(state: AIGameState, owner: number, attacke
 }
 
 /**
- * Priority uses the same imperfect-information controller. Presentation pacing
- * is awaited before the response search starts; the existing 850 ms hard
- * deadline still bounds the actual response computation once the board is idle.
+ * Priority must always make forward progress. It may wait briefly for a normal
+ * presentation to finish, but a stale presentation is forcibly released after
+ * 4.2 s and the AI then passes. Once idle, the strategic search itself remains
+ * bounded by the independent 850 ms deadline.
  */
 export async function chooseAdvancedAIResponse(state: AIGameState, owner: number, difficulty: string): Promise<AIAction> {
-  await waitForPresentationIdle();
+  const presentationReady = await waitForPresentationIdle(PRIORITY_PRESENTATION_TIMEOUT_MS, true);
+  if (!presentationReady) return passPriority(owner);
   const pending = state.pendingResponse as any;
   if (!pending || pending.responder !== owner) return passPriority(owner);
   if (pending.actor === owner && Number(pending.passes || 0) > 0) return passPriority(owner);
@@ -283,7 +305,7 @@ export async function chooseAdvancedAIResponse(state: AIGameState, owner: number
   const settledAt = recentlySettledPriority.get(signature);
   if (settledAt != null && clock() - settledAt < 2500) return passPriority(owner);
 
-  const task = boundedPrioritySearch(chooseAdvancedAIAction(state, owner, difficulty), owner)
+  const task = boundedPrioritySearch(chooseAdvancedAIActionReady(state, owner, difficulty), owner)
     .finally(() => {
       priorityInFlight.delete(signature);
       recentlySettledPriority.set(signature, clock());
