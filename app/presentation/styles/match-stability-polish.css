@@ -45,8 +45,32 @@
   translate: 0 clamp(-.22rem, -.22cqh, -.03rem) !important;
 }
 
-/* Short landscape phones need the same relationship, not desktop rem floors. */
-@media (orientation: landscape) and (max-height: 44rem) {
+/* Battlefield rows are mirrored around the center line. For the local player,
+   creatures are the upper row and auxiliaries stay behind them near the hand.
+   The opponent must be the exact inverse: auxiliaries near its hand/energy and
+   creatures on the lower row facing the center. The generic reference layer
+   uses the local ordering for both sides, so terminal selectors correct only
+   the opponent without changing slot numbers or attachment relationships. */
+.screen-game .game-stage > .game-content.hs-board > .enemy-field .creature-slot {
+  grid-row: 2 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .enemy-field .auxiliary-slot {
+  grid-row: 1 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-field .creature-slot {
+  grid-row: 1 !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .player-field .auxiliary-slot {
+  grid-row: 2 !important;
+}
+
+/* Short touch landscapes need the same relationship, not desktop rem floors.
+   Height alone is not a mobile signal: a short desktop browser must keep the
+   calibrated PC composition. */
+@media (orientation: landscape) and (max-height: 44rem) and (hover: none) and (pointer: coarse) {
   .screen-game .game-stage > .game-content.hs-board > .opponent-hand {
     translate: 0 clamp(.2rem, 3.35cqh, .9rem) !important;
   }
