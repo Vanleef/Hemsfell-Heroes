@@ -37,7 +37,15 @@ test("terrain, energy and phase follow the approved horizontal hierarchy", () =>
   assert.match(css, /> \.phase-orb\s*\{[\s\S]*?grid-column:\s*4\s*!important[\s\S]*?grid-row:\s*4 \/ 7\s*!important/);
   assert.match(css, /> \.enemy-piles\s*\{[\s\S]*?grid-column:\s*5\s*!important/);
   assert.match(css, /> \.player-piles\s*\{[\s\S]*?grid-column:\s*5\s*!important/);
-  assert.match(css, /width:\s*clamp\(2\.35rem, min\(5\.15cqw, 10\.5cqh\), 5\.35rem\)\s*!important/);
+  assert.match(css, /width:\s*clamp\(2\.35rem, min\(4\.35cqw, 8\.7cqh\), 4\.65rem\)\s*!important/);
+});
+
+test("reference proportions anchor every permanent region without free coordinates", () => {
+  assert.match(css, /minmax\(0, 19fr\)[\s\S]*?minmax\(0, 8\.5fr\)[\s\S]*?minmax\(0, 46fr\)[\s\S]*?minmax\(0, 12\.5fr\)[\s\S]*?minmax\(0, 14fr\)/);
+  assert.match(css, /minmax\(0, 4\.5fr\)[\s\S]*?minmax\(0, 8\.5fr\)[\s\S]*?minmax\(0, 9\.5fr\)[\s\S]*?minmax\(0, 27\.5fr\)[\s\S]*?minmax\(0, 5\.5fr\)[\s\S]*?minmax\(0, 23fr\)[\s\S]*?minmax\(0, 4\.5fr\)[\s\S]*?minmax\(0, 17fr\)/);
+  assert.match(css, /> \.player-hero\.enemy\s*\{[\s\S]*?align-self:\s*start\s*!important/);
+  assert.match(css, /> \.player-hero:not\(\.enemy\)\s*\{[\s\S]*?align-self:\s*end\s*!important/);
+  assert.doesNotMatch(css, /(?:top|left|right|bottom):\s*\d+(?:\.\d+)?(?:px|vw|vh)\s*!important/);
 });
 
 test("mobile uses the real viewport and never restores the old 62rem scroll canvas", () => {

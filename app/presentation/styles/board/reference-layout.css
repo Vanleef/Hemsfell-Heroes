@@ -19,25 +19,25 @@
 
 .screen-game .game-stage > .game-content.hs-board {
   --hh-ref-card-ratio: 5 / 7;
-  --hh-ref-slot-w: clamp(1.2rem, min(4.25cqw, 10cqh), 4.65rem);
+  --hh-ref-slot-w: clamp(1.2rem, min(4cqw, 10cqh), 4.5rem);
   --hh-ref-field-gap: clamp(.08rem, .34cqw, .42rem);
   --hh-ref-edge: clamp(.12rem, .42cqw, .5rem);
 
   grid-template-columns:
     minmax(0, 19fr)
-    minmax(0, 8fr)
-    minmax(0, 47fr)
-    minmax(0, 11fr)
-    minmax(0, 15fr) !important;
+    minmax(0, 8.5fr)
+    minmax(0, 46fr)
+    minmax(0, 12.5fr)
+    minmax(0, 14fr) !important;
   grid-template-rows:
     minmax(0, 4.5fr)
-    minmax(0, 7fr)
-    minmax(0, 4fr)
-    minmax(0, 28fr)
-    minmax(0, 6fr)
-    minmax(0, 28fr)
-    minmax(0, 4fr)
-    minmax(0, 18.5fr) !important;
+    minmax(0, 8.5fr)
+    minmax(0, 9.5fr)
+    minmax(0, 27.5fr)
+    minmax(0, 5.5fr)
+    minmax(0, 23fr)
+    minmax(0, 4.5fr)
+    minmax(0, 17fr) !important;
 }
 
 /* Keep every permanent board region inside the reference grid. */
@@ -116,7 +116,7 @@
   align-self: center !important;
   justify-self: end !important;
   width: min(82%, 41cqw) !important;
-  height: min(20.5cqh, 100%) !important;
+  height: min(22.5cqh, 100%) !important;
   max-width: none !important;
   max-height: none !important;
   column-gap: var(--hh-ref-field-gap) !important;
@@ -190,11 +190,11 @@
   position: relative !important;
   inset: auto !important;
   align-self: center !important;
-  justify-self: center !important;
-  width: clamp(1.35rem, min(3.9cqw, 9.5cqh), 4.2rem) !important;
+  justify-self: end !important;
+  width: clamp(1.35rem, min(4.05cqw, 10.2cqh), 4.35rem) !important;
   height: auto !important;
   aspect-ratio: var(--hh-ref-card-ratio) !important;
-  margin: 0 !important;
+  margin: 0 clamp(.12rem, .65cqw, .7rem) 0 0 !important;
   transform: none !important;
   overflow: visible !important;
   z-index: 48 !important;
@@ -208,7 +208,7 @@
   inset: auto !important;
   justify-self: start !important;
   width: calc(100% - 2 * var(--hh-ref-edge)) !important;
-  height: clamp(.72rem, min(2.45cqh, 1.35rem), 1.45rem) !important;
+  height: clamp(.82rem, min(3.75cqh, 2.05rem), 2.15rem) !important;
   margin: 0 0 0 var(--hh-ref-edge) !important;
   transform: none !important;
   z-index: 52 !important;
@@ -229,7 +229,7 @@
   gap: clamp(.05rem, .24cqw, .3rem) !important;
 }
 .screen-game .field-energy :is(b, strong) {
-  font-size: clamp(.24rem, .42cqw, .5rem) !important;
+  font-size: clamp(.28rem, .52cqw, .58rem) !important;
 }
 
 /* -------------------------------------------------------------------------
@@ -242,7 +242,7 @@
   inset: auto !important;
   align-self: center !important;
   justify-self: center !important;
-  width: clamp(2.35rem, min(5.15cqw, 10.5cqh), 5.35rem) !important;
+  width: clamp(2.35rem, min(4.35cqw, 8.7cqh), 4.65rem) !important;
   height: auto !important;
   aspect-ratio: 1 / 1 !important;
   margin: 0 !important;
@@ -272,7 +272,7 @@
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
-  width: min(14.25cqw, 27cqh) !important;
+  width: min(11.8cqw, 25cqh) !important;
   height: auto !important;
   max-width: 94% !important;
   max-height: 84% !important;
@@ -311,6 +311,14 @@
   transform: none !important;
   overflow: visible !important;
 }
+.screen-game .game-stage > .game-content.hs-board > .player-hero.enemy {
+  align-self: start !important;
+  margin-top: clamp(.15rem, 1.45cqh, .9rem) !important;
+}
+.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) {
+  align-self: end !important;
+  margin-bottom: clamp(.15rem, 1.65cqh, 1rem) !important;
+}
 .screen-game .player-hero {
   --hero-card-w: clamp(2.65rem, min(6.45cqw, 12.2cqh), 6.65rem) !important;
   --hero-meta-gap: clamp(.1rem, .3cqw, .34rem) !important;
@@ -343,11 +351,15 @@
 }
 .screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities.enemy, .hero-command-bar.enemy) {
   align-self: end !important;
-  translate: 0 clamp(.05rem, .8cqh, .55rem) !important;
+  max-height: 18cqh !important;
+  margin-bottom: clamp(.12rem, 1.45cqh, .9rem) !important;
+  translate: none !important;
 }
 .screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities:not(.enemy), .hero-command-bar:not(.enemy)) {
   align-self: start !important;
-  translate: 0 clamp(-.55rem, -0.8cqh, -.05rem) !important;
+  max-height: 18cqh !important;
+  margin-top: clamp(.12rem, 1.15cqh, .72rem) !important;
+  translate: none !important;
 }
 
 /* -------------------------------------------------------------------------
@@ -363,10 +375,10 @@
   overflow: hidden !important;
 }
 .screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(.official-card-back, .card-frame) {
-  flex: 0 1 clamp(.72rem, 2.05cqw, 2.25rem) !important;
-  width: clamp(.72rem, 2.05cqw, 2.25rem) !important;
+  flex: 0 1 clamp(.92rem, min(3.1cqw, 8.5cqh), 3rem) !important;
+  width: clamp(.92rem, min(3.1cqw, 8.5cqh), 3rem) !important;
   min-width: .58rem !important;
-  max-width: 2.25rem !important;
+  max-width: 3rem !important;
   height: auto !important;
   aspect-ratio: var(--hh-ref-card-ratio) !important;
 }
@@ -430,11 +442,11 @@
     margin: 0 !important;
   }
   .screen-game .game-stage > .game-content.hs-board > .side-piles {
-    width: min(13.4cqw, 26cqh) !important;
+    width: min(11.8cqw, 25cqh) !important;
   }
   .screen-game .side-piles small { display: none !important; }
   .screen-game .game-stage > .game-content.hs-board > .phase-orb {
-    width: clamp(2rem, min(5cqw, 10cqh), 4.55rem) !important;
+    width: clamp(2rem, min(4.35cqw, 8.7cqh), 4.35rem) !important;
   }
 }
 
@@ -608,20 +620,20 @@
 @media (orientation: landscape) and (max-height: 30rem) {
   .screen-game .game-stage > .game-content.hs-board {
     grid-template-rows:
-      minmax(0, 5fr)
-      minmax(0, 7fr)
-      minmax(0, 4fr)
-      minmax(0, 27fr)
-      minmax(0, 5fr)
-      minmax(0, 27fr)
-      minmax(0, 4fr)
-      minmax(0, 21fr) !important;
+      minmax(0, 4.5fr)
+      minmax(0, 8.5fr)
+      minmax(0, 9.5fr)
+      minmax(0, 27.5fr)
+      minmax(0, 5.5fr)
+      minmax(0, 23fr)
+      minmax(0, 4.5fr)
+      minmax(0, 17fr) !important;
   }
   .screen-game .game-stage > .game-content.hs-board > .paired-field {
-    height: min(19cqh, 100%) !important;
+    height: min(22.5cqh, 100%) !important;
   }
   .screen-game .game-stage > .game-content.hs-board > .phase-orb {
-    width: clamp(1.8rem, min(4.6cqw, 9.4cqh), 3.7rem) !important;
+    width: clamp(1.8rem, min(4.35cqw, 8.7cqh), 3.7rem) !important;
   }
   .screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
     flex-basis: clamp(1.9rem, min(5.2cqw, 13cqh), 4.8rem) !important;
