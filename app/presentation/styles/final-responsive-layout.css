@@ -1,0 +1,519 @@
+/*
+ * Final responsive composition pass.
+ *
+ * This stylesheet is intentionally imported after reference-layout.css. The
+ * desktop values are calibrated against the approved 1536x943 composition,
+ * while phones use a dedicated landscape arrangement instead of shrinking a
+ * desktop canvas into portrait.
+ */
+
+/* -------------------------------------------------------------------------
+   DESKTOP REFERENCE — preserve the approved 1536x943 composition
+   ------------------------------------------------------------------------- */
+@media (min-width: 64.01rem) and (min-aspect-ratio: 4 / 3) {
+  .screen-game .game-stage,
+  .screen-game .game-stage > .game-content.hs-board {
+    width: 100dvw !important;
+    height: 100dvh !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100dvw !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-ref-slot-w: clamp(1.9rem, min(3.85cqw, 10cqh), 4.15rem) !important;
+    --hh-ref-field-gap: clamp(.14rem, .34cqw, .42rem) !important;
+    --hh-ref-edge: clamp(.16rem, .42cqw, .5rem) !important;
+    grid-template-columns:
+      minmax(0, 19fr)
+      minmax(0, 8.5fr)
+      minmax(0, 46fr)
+      minmax(0, 12.5fr)
+      minmax(0, 14fr) !important;
+    grid-template-rows:
+      minmax(0, 4.5fr)
+      minmax(0, 8.5fr)
+      minmax(0, 9.5fr)
+      minmax(0, 27.5fr)
+      minmax(0, 5.5fr)
+      minmax(0, 23fr)
+      minmax(0, 4.5fr)
+      minmax(0, 17fr) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .paired-field {
+    width: min(82%, 41cqw) !important;
+    height: min(22.5cqh, 12cqw, 100%) !important;
+  }
+
+  .screen-game .player-hero {
+    --hero-card-w: clamp(2.85rem, min(6.8cqw, 12.2cqh), 6.65rem) !important;
+    --hero-meta-w: clamp(2.9rem, min(6.55cqw, 11.8cqh), 6.55rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities, .hero-command-bar) {
+    width: min(18.15cqw, 96%) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .side-piles {
+    width: min(11.25cqw, 24cqh) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+    flex-basis: clamp(2.35rem, min(5.5cqw, 11.8cqh), 5.65rem) !important;
+    width: clamp(2.35rem, min(5.5cqw, 11.8cqh), 5.65rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(.official-card-back, .card-frame) {
+    flex-basis: clamp(1rem, min(3.55cqw, 8.4cqh), 3.4rem) !important;
+    width: clamp(1rem, min(3.55cqw, 8.4cqh), 3.4rem) !important;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   PHONE / SMALL TABLET LANDSCAPE — purpose-built compact board
+   ------------------------------------------------------------------------- */
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 44rem) {
+  html:has(body[data-match-active="true"]),
+  body[data-match-active="true"] {
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    overscroll-behavior: none !important;
+  }
+
+  body[data-match-active="true"] .screen-game,
+  .screen-game .game-stage,
+  .screen-game .game-stage > .game-content.hs-board {
+    width: 100dvw !important;
+    height: 100dvh !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: 100dvw !important;
+    max-height: 100dvh !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+  }
+
+  body[data-match-active="true"] .screen-game {
+    position: fixed !important;
+    inset: 0 !important;
+  }
+
+  .screen-game .game-stage {
+    display: grid !important;
+    place-items: stretch !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board {
+    --hh-ref-slot-w: clamp(1.45rem, min(4.45cqw, 10.2cqh), 2.75rem) !important;
+    --hh-ref-field-gap: clamp(.04rem, .34cqw, .2rem) !important;
+    --hh-ref-edge: clamp(.06rem, .32cqw, .2rem) !important;
+    grid-template-columns:
+      minmax(0, 19fr)
+      minmax(0, 7.5fr)
+      minmax(0, 50fr)
+      minmax(0, 10.5fr)
+      minmax(0, 13fr) !important;
+    grid-template-rows:
+      minmax(0, 7fr)
+      minmax(0, 8fr)
+      minmax(0, 9fr)
+      minmax(0, 26fr)
+      minmax(0, 5.5fr)
+      minmax(0, 22.5fr)
+      minmax(0, 5fr)
+      minmax(0, 17fr) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .paired-field {
+    width: min(91%, 47cqw) !important;
+    height: min(24cqh, 100%) !important;
+    column-gap: var(--hh-ref-field-gap) !important;
+    row-gap: clamp(.08rem, .7cqh, .28rem) !important;
+    padding-inline: var(--hh-ref-edge) !important;
+  }
+
+  .screen-game .paired-field .field-slot,
+  .screen-game .game-stage > .game-content.hs-board > .terrain-slot {
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .terrain-slot {
+    width: clamp(1.35rem, min(4.2cqw, 10cqh), 2.55rem) !important;
+    margin-right: clamp(.04rem, .35cqw, .2rem) !important;
+    translate: none !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .enemy-field {
+    margin-top: clamp(.08rem, 2.1cqh, .55rem) !important;
+    padding-bottom: .05rem !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-field {
+    padding-top: .05rem !important;
+    translate: 0 clamp(-.2rem, -.55cqh, -.04rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .field-energy {
+    width: calc(100% - 2 * var(--hh-ref-edge)) !important;
+    height: clamp(.72rem, 4.3cqh, 1.35rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .field-energy > div {
+    grid-template-columns: clamp(1.7rem, 5.7cqw, 3.2rem) minmax(0, 1fr) clamp(1rem, 3cqw, 1.55rem) !important;
+    gap: clamp(.03rem, .24cqw, .14rem) !important;
+  }
+
+  .screen-game .field-energy :is(b, strong) {
+    font-size: clamp(.3rem, 1.25cqw, .5rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .enemy-energy {
+    translate: 0 clamp(.02rem, .45cqh, .16rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-energy {
+    translate: 0 clamp(-.45rem, -1.1cqh, -.06rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .phase-orb {
+    justify-self: center !important;
+    width: clamp(2.4rem, min(7cqw, 14cqh), 3.7rem) !important;
+    margin: 0 !important;
+    translate: 0 clamp(-.35rem, -1.1cqh, -.06rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
+    font-size: clamp(.3rem, 1.1cqw, .48rem) !important;
+    padding: clamp(.08rem, .35cqw, .18rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .phase-orb > button span {
+    font-size: clamp(.66rem, 2.3cqw, 1rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .side-piles {
+    width: min(12.1cqw, 27cqh) !important;
+    max-width: 94% !important;
+    max-height: 82% !important;
+    gap: clamp(.03rem, .24cqw, .12rem) !important;
+  }
+
+  .screen-game .side-piles small {
+    display: none !important;
+  }
+
+  .screen-game .side-piles :is(b, strong) {
+    font-size: clamp(.2rem, .9cqw, .38rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .enemy-piles {
+    translate: 0 clamp(-.6rem, -2cqh, -.08rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-piles {
+    translate: 0 clamp(.08rem, 2cqh, .6rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-hero {
+    width: min(18.6cqw, 98%) !important;
+    height: min(22cqh, 92%) !important;
+  }
+
+  .screen-game .player-hero {
+    --hero-card-w: clamp(2.35rem, min(7.4cqw, 18cqh), 3.75rem) !important;
+    --hero-meta-gap: clamp(.04rem, .3cqw, .14rem) !important;
+    --hero-meta-w: clamp(2.45rem, min(8.2cqw, 18cqh), 4.05rem) !important;
+  }
+
+  .screen-game .player-hero .hero-level {
+    min-height: .85rem !important;
+    height: min(3.5cqh, 1.15rem) !important;
+    font-size: clamp(.24rem, .95cqw, .4rem) !important;
+  }
+
+  .screen-game .player-hero .hero-evolution {
+    top: min(4.4cqh, 1.55rem) !important;
+    min-height: 1.05rem !important;
+    height: min(5.2cqh, 1.65rem) !important;
+    padding: .05rem !important;
+  }
+
+  .screen-game .player-hero .hero-evolution > small,
+  .screen-game .player-hero .hero-evolution > strong {
+    font-size: clamp(.2rem, .82cqw, .36rem) !important;
+  }
+
+  .screen-game .player-hero > .level-button {
+    top: min(10.1cqh, 3.25rem) !important;
+    min-height: .8rem !important;
+    height: min(3.7cqh, 1.1rem) !important;
+    font-size: clamp(.2rem, .78cqw, .34rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities, .hero-command-bar) {
+    width: min(18.3cqw, 96%) !important;
+    max-height: 18.5cqh !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities.enemy, .hero-command-bar.enemy) {
+    margin-top: clamp(.12rem, 2.3cqh, .65rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities:not(.enemy), .hero-command-bar:not(.enemy)) {
+    margin-top: clamp(.06rem, .7cqh, .22rem) !important;
+  }
+
+  .screen-game :is(.hero-abilities .ability, .hero-command-bar .hero-ability-chip) {
+    min-height: 0 !important;
+    padding: clamp(.05rem, .5cqh, .16rem) clamp(.08rem, .45cqw, .2rem) !important;
+  }
+
+  .screen-game :is(.hero-abilities .ability p, .hero-command-bar .hero-ability-chip p) {
+    font-size: clamp(.22rem, .95cqw, .4rem) !important;
+    line-height: 1.03 !important;
+    margin: 0 !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .opponent-hand {
+    padding-inline: .08rem !important;
+    translate: 0 clamp(.08rem, 1.6cqh, .42rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(.official-card-back, .card-frame) {
+    flex-basis: clamp(1.35rem, min(4cqw, 9.2cqh), 2.25rem) !important;
+    width: clamp(1.35rem, min(4cqw, 9.2cqh), 2.25rem) !important;
+    min-width: 0 !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-hand {
+    gap: clamp(.02rem, .2cqw, .08rem) !important;
+    padding: .04rem var(--hh-ref-edge) max(.12rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+    flex-basis: clamp(1.9rem, min(5.45cqw, 12.6cqh), 3rem) !important;
+    width: clamp(1.9rem, min(5.45cqw, 12.6cqh), 3rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .game-bar {
+    min-height: 0 !important;
+    height: 100% !important;
+    padding-left: max(.3rem, env(safe-area-inset-left)) !important;
+    padding-right: max(.3rem, env(safe-area-inset-right)) !important;
+    gap: clamp(.06rem, .45cqw, .24rem) !important;
+    font-size: clamp(.28rem, .9cqw, .45rem) !important;
+    letter-spacing: .04em !important;
+  }
+
+  .screen-game .game-bar .phase-track {
+    gap: clamp(.02rem, .22cqw, .08rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .priority-control-toggle {
+    top: max(.25rem, env(safe-area-inset-top)) !important;
+    right: max(.3rem, env(safe-area-inset-right)) !important;
+    bottom: auto !important;
+    left: auto !important;
+    max-width: min(17cqw, 7rem) !important;
+    padding: clamp(.12rem, .6cqh, .28rem) clamp(.2rem, .75cqw, .4rem) !important;
+    font-size: clamp(.34rem, 1.05cqw, .52rem) !important;
+    line-height: 1 !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .surrender-button {
+    right: max(.25rem, env(safe-area-inset-right)) !important;
+    bottom: max(.2rem, env(safe-area-inset-bottom)) !important;
+    max-width: 14cqw !important;
+    padding: clamp(.12rem, .6cqh, .28rem) clamp(.18rem, .65cqw, .34rem) !important;
+    font-size: clamp(.28rem, .86cqw, .42rem) !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   PHONE PORTRAIT — explicit orientation gate, no unusable miniature board
+   ------------------------------------------------------------------------- */
+@media (max-width: 64rem) and (orientation: portrait) {
+  body[data-match-active="true"] .screen-game,
+  .screen-game {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 100dvw !important;
+    height: 100dvh !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    overflow: hidden !important;
+    background:
+      radial-gradient(circle at 50% 42%, #17383c 0, #0a1b22 42%, #050b10 78%),
+      #050b10 !important;
+    isolation: isolate !important;
+  }
+
+  .screen-game .game-stage {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
+  .screen-game::before {
+    content: "↻";
+    position: absolute;
+    z-index: 10000;
+    left: 50%;
+    top: 39%;
+    translate: -50% -50%;
+    display: grid;
+    place-items: center;
+    width: clamp(4.5rem, 22vw, 7rem);
+    aspect-ratio: 1;
+    border: 1px solid #d9ad5570;
+    border-radius: 50%;
+    background: #08141bcc;
+    color: #f4c865;
+    box-shadow: 0 0 2.2rem #d9ad5520, inset 0 0 1.4rem #0008;
+    font: 400 clamp(2.5rem, 13vw, 4.5rem)/1 Georgia, serif;
+    text-align: center;
+  }
+
+  .screen-game::after {
+    content: "Gire o celular para jogar\A O tabuleiro foi otimizado para o modo paisagem.";
+    position: absolute;
+    z-index: 10000;
+    left: 50%;
+    top: 57%;
+    translate: -50% -50%;
+    width: min(84vw, 30rem);
+    color: #f4ead5;
+    white-space: pre-line;
+    text-align: center;
+    text-wrap: balance;
+    font: 700 clamp(.9rem, 4.4vw, 1.25rem)/1.45 Arial, sans-serif;
+    letter-spacing: .025em;
+    text-shadow: 0 .1rem .3rem #000;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   SETUP ON PHONE — keep deck choice readable before entering the match
+   ------------------------------------------------------------------------- */
+@media (max-width: 42rem) and (orientation: portrait) {
+  .match-setup {
+    width: 100% !important;
+    max-width: 34rem !important;
+    min-height: calc(100dvh - 4rem) !important;
+    padding: clamp(.75rem, 3vw, 1.15rem) !important;
+  }
+
+  .match-setup > .back {
+    padding: .55rem .72rem !important;
+    font-size: .65rem !important;
+  }
+
+  .setup-head {
+    padding-inline: .25rem !important;
+  }
+
+  .setup-head p {
+    margin: .7rem 0 .3rem !important;
+    font-size: clamp(.58rem, 2.5vw, .72rem) !important;
+  }
+
+  .setup-head h2 {
+    margin: .2rem 0 .45rem !important;
+    font-size: clamp(1.8rem, 8vw, 2.55rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  .setup-head > span {
+    max-width: 28rem !important;
+    margin-inline: auto !important;
+    font-size: clamp(.82rem, 3.2vw, 1rem) !important;
+    line-height: 1.45 !important;
+  }
+
+  .match-setup > .versus {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: .55rem !important;
+    width: 100% !important;
+    max-width: 30rem !important;
+    margin: 1.1rem auto !important;
+  }
+
+  .match-setup > .versus > strong {
+    font-size: 1rem !important;
+    line-height: 1 !important;
+  }
+
+  .match-setup .deck-picker {
+    grid-template-columns: clamp(4.5rem, 23vw, 5.75rem) minmax(0, 1fr) !important;
+    gap: .28rem .65rem !important;
+    padding: .7rem !important;
+    min-width: 0 !important;
+  }
+
+  .match-setup .deck-picker > span {
+    grid-column: 1 / 3 !important;
+    font-size: .58rem !important;
+  }
+
+  .match-setup .deck-picker img {
+    width: 100% !important;
+    max-width: 5.75rem !important;
+  }
+
+  .match-setup .deck-picker select {
+    min-width: 0 !important;
+    padding: .55rem .5rem !important;
+    font-size: .78rem !important;
+  }
+
+  .match-setup .deck-picker b {
+    font-size: 1rem !important;
+  }
+
+  .match-setup .deck-picker small {
+    font-size: .7rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .match-setup > .difficulty {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: .38rem !important;
+    width: 100% !important;
+    max-width: 30rem !important;
+    margin: .85rem auto !important;
+  }
+
+  .match-setup > .difficulty > span {
+    grid-column: 1 / -1 !important;
+    text-align: center !important;
+    font-size: .72rem !important;
+  }
+
+  .match-setup > .difficulty > button {
+    min-width: 0 !important;
+    padding: .7rem .35rem !important;
+    font-size: .62rem !important;
+  }
+
+  .match-setup > .difficulty > button:last-child {
+    grid-column: 1 / -1 !important;
+    width: 50% !important;
+    justify-self: center !important;
+  }
+
+  .match-setup > .start {
+    width: min(100%, 30rem) !important;
+    margin: 1rem auto !important;
+    padding: .9rem .75rem !important;
+    font-size: .72rem !important;
+  }
+}
