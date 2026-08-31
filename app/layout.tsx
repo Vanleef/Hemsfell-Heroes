@@ -10,6 +10,8 @@ import "./presentation/styles/tutorial.css";
 import "./presentation/styles/board/reference-board-layout.css";
 /* Keep the command-bar typography as the final CSS cascade authority. */
 import "./presentation/styles/command-bar-fixes.css";
+/* Terminal match polish: opponent symmetry and transform-safe target badges. */
+import "./presentation/styles/match-stability-polish.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
