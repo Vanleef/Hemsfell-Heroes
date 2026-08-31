@@ -8,7 +8,9 @@ import "./presentation/styles/game-presentation.css";
 import "./presentation/styles/tutorial.css";
 /* Keep the command-bar typography as the final legacy CSS authority. */
 import "./presentation/styles/command-bar-fixes.css";
-/* Approved reference geometry must outrank every legacy board rule. */
+/* Shared 16:9 board sectors/displacement used by floating presentation UI. */
+import "./presentation/styles/board/reference-board-layout.css";
+/* Approved permanent-region geometry must outrank every legacy board rule. */
 import "./presentation/styles/board/reference-layout.css";
 /* Calibrate the approved reference across desktop and short landscape screens. */
 import "./presentation/styles/final-responsive-layout.css";
