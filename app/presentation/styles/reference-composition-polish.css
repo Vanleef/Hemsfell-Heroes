@@ -1,0 +1,393 @@
+/*
+ * Final composition polish for the approved match-board reference.
+ *
+ * This layer intentionally stays geometry/presentation-only. It is imported
+ * after reference-composition-parity.css so later legacy selectors cannot
+ * re-tighten the board, hide Tessalia's commander lane or put hero metadata
+ * back on top of the portrait.
+ */
+
+/* Remove the brown frame/bands around the play surface. */
+body .screen-game.screen-game,
+body .screen-game.screen-game .game-stage,
+body .screen-game.screen-game .game-stage::before,
+body .screen-game.screen-game .game-stage::after {
+  background: #06171c !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board {
+  --hh-polish-gold: #9b762d;
+  --hh-polish-slot-w: min(9.05cqh, 5.05cqw);
+  --hh-polish-meta-w: min(7.35cqw, 12.6cqh);
+
+  /* Give the battlefield slightly more room while keeping both outside rails
+     useful. The right rail remains large enough for visibly larger piles. */
+  grid-template-columns:
+    minmax(0, 15.5fr)
+    minmax(0, 9.2fr)
+    minmax(0, 52fr)
+    minmax(0, 8.2fr)
+    minmax(0, 15.1fr) !important;
+  grid-template-rows:
+    minmax(0, 5.1fr)
+    minmax(0, 10.8fr)
+    minmax(0, 4.7fr)
+    minmax(0, 24.4fr)
+    minmax(0, 2.6fr)
+    minmax(0, 24.4fr)
+    minmax(0, 4.7fr)
+    minmax(0, 23.3fr) !important;
+
+  background: radial-gradient(ellipse at 50% 49%, #173e48 0, #0a252c 44%, #06171c 76%, #030a0d 100%) !important;
+  box-shadow: none !important;
+}
+
+/* Historical hand-zone decoration is what visually reads as a brown frame on
+   the current composition. The cards remain untouched. */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.opponent-hand, .player-hand) {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.opponent-hand, .player-hand)::before,
+body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.opponent-hand, .player-hand)::after {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* -------------------------------------------------------------------------
+   Battlefield spacing
+   ------------------------------------------------------------------------- */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field {
+  width: 100% !important;
+  height: 100% !important;
+  justify-self: stretch !important;
+  align-self: stretch !important;
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
+  column-gap: clamp(.45rem, .92cqw, 1.1rem) !important;
+  row-gap: clamp(.55rem, 2.65cqh, 1.45rem) !important;
+  padding: 1.05cqh 1.7cqw !important;
+  overflow: visible !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column {
+  display: contents !important;
+}
+
+/* A tiny reduction in slot size creates breathing room for card badges,
+   markers and activation icons without making the playable targets feel small. */
+body .screen-game.screen-game .paired-field .field-slot {
+  width: var(--hh-polish-slot-w) !important;
+  max-width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 1 / 1 !important;
+  overflow: visible !important;
+}
+
+/* Keep an occupied card proportional instead of letting a square placeholder
+   squeeze a 5:7/2:3 card illustration. */
+body .screen-game.screen-game .paired-field .field-slot > :is(.card-frame, .original-card),
+body .screen-game.screen-game .paired-field .field-slot > .support-card,
+body .screen-game.screen-game .paired-field .field-slot > .support-card > :is(.card-frame, .original-card) {
+  max-width: 100% !important;
+  max-height: 100% !important;
+}
+
+/* Tessalia: this is a gameplay-significant lane identity. Use a stronger
+   terminal selector so general field-slot styling can never wash it out. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board .paired-field .field-slot.creature-slot.commander-slot,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board .paired-field .field-slot.creature-slot.commander-slot:hover {
+  border: max(2px, .16cqh) solid #f0444f !important;
+  outline: max(1px, .08cqh) solid #ff7a83 !important;
+  outline-offset: max(1px, .08cqh) !important;
+  background: radial-gradient(circle at 50% 35%, #d52b386e 0, #760f1a99 48%, #30050bcf 100%) !important;
+  box-shadow: inset 0 0 1.9rem #ff4a5966, 0 0 .9rem #e728396b, 0 .42cqh .8cqh #0009 !important;
+}
+
+/* -------------------------------------------------------------------------
+   Hands
+   ------------------------------------------------------------------------- */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand {
+  gap: clamp(.1rem, .54cqh, .42rem) !important;
+  padding: .35cqh .75cqw max(.7cqh, env(safe-area-inset-bottom)) !important;
+}
+
+/* The old hand scale ate too much of the lower board. Slightly smaller cards
+   keep eight-card hands readable while making the battlefield feel less tight. */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+  flex: 0 1 min(11.45cqh, 6.35cqw) !important;
+  width: min(11.45cqh, 6.35cqw) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .opponent-hand {
+  padding-top: .35cqh !important;
+  gap: clamp(.08rem, .56cqh, .4rem) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Larger side piles + response-mode clearance
+   ------------------------------------------------------------------------- */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles {
+  width: min(14.85cqw, 27.5cqh) !important;
+  max-width: 97% !important;
+  max-height: 90% !important;
+  gap: clamp(.12rem, .62cqh, .42rem) !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone {
+  padding: clamp(.08rem, .24cqw, .3rem) !important;
+}
+
+body .screen-game.screen-game .side-piles .pile-card {
+  width: 74% !important;
+  max-width: none !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .enemy-piles {
+  align-self: start !important;
+  margin-top: 7.4cqh !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-piles {
+  align-self: end !important;
+  margin-bottom: 1.1cqh !important;
+}
+
+/* Move Assisted/Manual mode into the phase corridor instead of laying it over
+   the opponent pile rail. */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-control-toggle {
+  top: 6.05cqh !important;
+  right: max(16.15cqw, env(safe-area-inset-right)) !important;
+  z-index: 140 !important;
+}
+
+/* -------------------------------------------------------------------------
+   Hero portrait + external metadata rail
+   ------------------------------------------------------------------------- */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero {
+  width: min(14.75cqw, 26.4cqh) !important;
+  margin-block: .75cqh !important;
+  padding: 2.55cqh .55cqw 15.2cqh !important;
+  overflow: visible !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) {
+  height: 40.8cqh !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* More of the hero occupies the panel now that progress/evolve/effects live
+   outside. The source is still the canonical card canvas until permanent
+   clean portrait assets are committed to /public. */
+body .screen-game.screen-game .player-hero .hero-power-trigger {
+  height: 17.15cqh !important;
+  border-radius: .45cqw !important;
+  overflow: hidden !important;
+  background: #071418 !important;
+}
+
+/* Make the name read as the header of the portrait instead of a pill floating
+   over the hero's face. */
+body .screen-game.screen-game .player-hero .hero-short-name {
+  left: 0 !important;
+  right: 0 !important;
+  top: 0 !important;
+  height: 2.35cqh !important;
+  min-height: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 .35cqw !important;
+  border-radius: .42cqw .42cqw 0 0 !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--deck) 60%, var(--hh-polish-gold)) !important;
+  background: #061115f5 !important;
+  box-shadow: 0 .22cqh .45cqh #0009 !important;
+}
+
+/* Keep the useful face crop but push the card canvas beneath the name header.
+   This also prevents the title/name strip from visually cutting through hair
+   or facial features. */
+body .screen-game.screen-game .player-hero .hero-power-trigger > .remote-card-art {
+  left: -25% !important;
+  top: calc(-96% + 2.25cqh) !important;
+  width: 150% !important;
+  max-width: none !important;
+  height: auto !important;
+  filter: saturate(.95) contrast(1.05) brightness(.9) !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-life {
+  top: auto !important;
+  right: .25cqw !important;
+  bottom: .35cqh !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-level,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero .hero-power-trigger > .hero-level {
+  left: .25cqw !important;
+  top: auto !important;
+  bottom: .35cqh !important;
+  width: auto !important;
+  min-width: 4.8cqh !important;
+  height: 2.25cqh !important;
+  padding-inline: .35cqw !important;
+  transform: none !important;
+  z-index: 62 !important;
+}
+
+/* 1. level progress */
+body .screen-game.screen-game .player-hero > .hero-evolution,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+  left: calc(100% + .55cqw) !important;
+  right: auto !important;
+  top: 15.25cqh !important;
+  bottom: auto !important;
+  width: var(--hh-polish-meta-w) !important;
+  height: 3.55cqh !important;
+  min-height: 0 !important;
+  padding: .24cqh .35cqw !important;
+  transform: none !important;
+  z-index: 135 !important;
+  box-shadow: 0 .35cqh .7cqh #0008 !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-evolution > :is(small, strong) {
+  font-size: clamp(.26rem, min(.5cqw, .84cqh), .5rem) !important;
+}
+
+/* 2. evolve button */
+body .screen-game.screen-game .player-hero > .level-button,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) > .level-button {
+  left: calc(100% + .55cqw) !important;
+  right: auto !important;
+  top: 19.35cqh !important;
+  bottom: auto !important;
+  width: var(--hh-polish-meta-w) !important;
+  height: 2.85cqh !important;
+  min-height: 0 !important;
+  transform: none !important;
+  font-size: clamp(.29rem, min(.52cqw, .88cqh), .52rem) !important;
+  z-index: 136 !important;
+}
+
+/* 3. active player effects */
+body .screen-game.screen-game .player-hero:not(.enemy) .hero-status-cues.local {
+  left: calc(100% + .55cqw) !important;
+  right: auto !important;
+  top: 22.75cqh !important;
+  bottom: auto !important;
+  width: var(--hh-polish-meta-w) !important;
+  max-height: 8.7cqh !important;
+  overflow: visible !important;
+  transform: none !important;
+  z-index: 137 !important;
+}
+
+body .screen-game.screen-game .player-hero:not(.enemy) .hero-status-cues.local span {
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: .38cqh .32cqw !important;
+  font-size: clamp(.25rem, min(.48cqw, .8cqh), .47rem) !important;
+  line-height: 1.08 !important;
+}
+
+/* Fill the now-free hero panel with the information that belongs there. */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities, .hero-command-bar) {
+  width: min(13.75cqw, 24.8cqh) !important;
+  height: 17.1cqh !important;
+  gap: .32cqh !important;
+}
+
+body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities:not(.enemy), .hero-command-bar:not(.enemy)) {
+  translate: 0 14.15cqh !important;
+}
+
+body .screen-game.screen-game :is(.hero-abilities .ability, .hero-command-bar .hero-ability-chip) {
+  padding: .25cqh .32cqw !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board .hero-command-bar > .hero-ability-chip > span > p {
+  font-size: clamp(.35rem, min(.66cqw, 1.08cqh), .64rem) !important;
+  line-height: 1.12 !important;
+}
+
+/* Keep the Cruel Terrain comfortably clear of the new hero metadata rail. */
+body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot {
+  width: min(8.75cqh, 4.95cqw) !important;
+  justify-self: end !important;
+  margin-right: .55cqw !important;
+}
+
+/* -------------------------------------------------------------------------
+   Landscape phones / short screens
+   ------------------------------------------------------------------------- */
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 32rem) {
+  body .screen-game.screen-game .game-stage > .game-content.hs-board {
+    --hh-polish-slot-w: min(8.45cqh, 5.1cqw);
+    --hh-polish-meta-w: min(7.1cqw, 12.1cqh);
+    grid-template-columns: 15.8fr 8.8fr 51.6fr 8.3fr 15.5fr !important;
+    grid-template-rows: 5.1fr 10.4fr 4.6fr 24.8fr 2.6fr 24.8fr 4.6fr 23.1fr !important;
+  }
+
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field {
+    padding: .8cqh .85cqw !important;
+    column-gap: .5cqw !important;
+    row-gap: 2.15cqh !important;
+  }
+
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+    flex-basis: min(10.85cqh, 6.45cqw) !important;
+    width: min(10.85cqh, 6.45cqw) !important;
+  }
+
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles {
+    width: min(15.15cqw, 26.2cqh) !important;
+    gap: .28cqw !important;
+  }
+
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .enemy-piles {
+    margin-top: 7.8cqh !important;
+  }
+
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-control-toggle {
+    right: max(16.25cqw, env(safe-area-inset-right)) !important;
+  }
+
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero {
+    width: min(15.1cqw, 26.2cqh) !important;
+    padding: 2.35cqh .45cqw 14.65cqh !important;
+  }
+
+  body .screen-game.screen-game .player-hero .hero-power-trigger {
+    height: 16.55cqh !important;
+  }
+
+  body .screen-game.screen-game .player-hero > .hero-evolution,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+    top: 14.8cqh !important;
+  }
+
+  body .screen-game.screen-game .player-hero > .level-button,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) > .level-button {
+    top: 18.9cqh !important;
+  }
+
+  body .screen-game.screen-game .player-hero:not(.enemy) .hero-status-cues.local {
+    top: 22.25cqh !important;
+  }
+
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities, .hero-command-bar) {
+    width: min(14.05cqw, 24.7cqh) !important;
+    height: 16.55cqh !important;
+  }
+
+  body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities:not(.enemy), .hero-command-bar:not(.enemy)) {
+    translate: 0 13.9cqh !important;
+  }
+}
