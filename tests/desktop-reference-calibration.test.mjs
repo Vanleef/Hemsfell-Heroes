@@ -14,18 +14,25 @@ test("desktop reference calibration is terminal after shared match polish", () =
   assert.ok(desktop > stability);
 });
 
-test("ultrawide desktop caps board chrome without changing the backdrop", () => {
-  assert.match(css, /@media \(min-width: 100rem\) and \(hover: hover\) and \(pointer: fine\)/);
-  assert.match(css, /--hh-ref-slot-w:[^;]+3\.7rem/);
-  assert.match(css, /> \.field-energy \{[\s\S]*?width: min\(82%, 44rem\)/s);
-  assert.match(css, /> :is\(\.hero-abilities, \.hero-command-bar\) \{[\s\S]*?17\.5rem/s);
-  assert.match(css, /> \.side-piles \{[\s\S]*?11rem/s);
+test("ultrawide desktop is detected by aspect ratio and caps board chrome", () => {
+  assert.match(css, /@media \(min-width: 64\.01rem\) and \(min-aspect-ratio: 2 \/ 1\) and \(hover: hover\) and \(pointer: fine\)/);
+  assert.match(css, /--hh-ref-slot-w:[^;]+3\.35rem/);
+  assert.match(css, /> \.field-energy \{[\s\S]*?width: min\(82%, 42\.5rem\)/s);
+  assert.match(css, /> :is\(\.hero-abilities, \.hero-command-bar\) \{[\s\S]*?16\.5rem/s);
+  assert.match(css, /> \.side-piles \{[\s\S]*?10\.4rem/s);
+  assert.match(css, /> \.player-hand > \.card-frame \{[\s\S]*?4\.7rem/s);
+});
+
+test("desktop hero metadata shares one visual x axis beside hero art", () => {
+  assert.match(css, /> \.player-hero > \.hero-power-trigger > \.hero-level \{[\s\S]*?left: calc\(100% \+ var\(--hero-meta-gap\)\)[\s\S]*?transform: none !important/s);
+  assert.match(css, /> \.player-hero > :is\(\.hero-evolution, \.level-button\) \{[\s\S]*?var\(--hero-card-left, 0rem\)[\s\S]*?var\(--hero-meta-w\)[\s\S]*?transform: none !important/s);
 });
 
 test("shallow desktop keeps player energy clear of the hand", () => {
   assert.match(css, /@media \(min-width: 64\.01rem\) and \(max-height: 52rem\) and \(hover: hover\) and \(pointer: fine\)/);
-  assert.match(css, /> \.player-field \{[\s\S]*?-2\.8cqh/s);
-  assert.match(css, /> \.player-energy \{[\s\S]*?-4\.8cqh[\s\S]*?z-index: 84/s);
-  assert.match(css, /> \.enemy-energy \{[\s\S]*?-1\.9cqh/s);
+  assert.match(css, /> \.player-field \{[\s\S]*?-3\.2cqh/s);
+  assert.match(css, /> \.player-energy \{[\s\S]*?-6\.7cqh[\s\S]*?z-index: 84/s);
+  assert.match(css, /> \.player-hand \{[\s\S]*?\.9cqh[\s\S]*?transform: none !important/s);
+  assert.match(css, /> \.enemy-energy \{[\s\S]*?-2\.15cqh/s);
   assert.doesNotMatch(css, /pointer: coarse/);
 });
