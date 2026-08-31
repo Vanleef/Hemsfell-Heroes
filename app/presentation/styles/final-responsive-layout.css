@@ -75,9 +75,13 @@
 
 /* -------------------------------------------------------------------------
    PHONE / SMALL TABLET LANDSCAPE — purpose-built compact board
-   ------------------------------------------------------------------------- */
+   -------------------------------------------------------------------------
+   Height alone must never classify a desktop browser as a phone. A wide PC
+   viewport can be short because of browser chrome, window tiling or display
+   aspect ratio. The short-height branch therefore requires coarse touch input.
+ */
 @media (orientation: landscape) and (max-width: 64rem),
-       (orientation: landscape) and (max-height: 44rem) {
+       (orientation: landscape) and (max-height: 44rem) and (hover: none) and (pointer: coarse) {
   html:has(body[data-match-active="true"]),
   body[data-match-active="true"] {
     width: 100% !important;
