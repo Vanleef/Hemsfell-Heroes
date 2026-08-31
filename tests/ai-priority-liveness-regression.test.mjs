@@ -4,13 +4,15 @@ import { readFile } from "node:fs/promises";
 
 const runtimeUrl = new URL("../app/rules-engine/ai-system/runtime.ts", import.meta.url);
 
-test("AI priority has an end-to-end presentation deadline before strategic search", async () => {
+test("AI priority has bounded presentation and strategic deadlines", async () => {
   const runtime = await readFile(runtimeUrl, "utf8");
   assert.match(runtime, /PRIORITY_PRESENTATION_TIMEOUT_MS = 4200/);
-  assert.match(runtime, /waitForPresentationIdle\(PRIORITY_PRESENTATION_TIMEOUT_MS, true\)/);
+  assert.match(runtime, /PRESENTATION_IDLE_FAILSAFE_MS = 20000/);
+  assert.match(runtime, /Math\.min\(PRESENTATION_IDLE_FAILSAFE_MS, PRIORITY_PRESENTATION_TIMEOUT_MS\)/);
+  assert.match(runtime, /const presentationReady = await waitForPresentationIdle\(\)/);
   assert.match(runtime, /if \(!presentationReady\) return passPriority\(owner\)/);
   assert.match(runtime, /PRIORITY_HARD_TIMEOUT_MS = 850/);
-  assert.match(runtime, /boundedPrioritySearch\(chooseAdvancedAIActionReady\(state, owner, difficulty\), owner\)/);
+  assert.match(runtime, /boundedPrioritySearch\(chooseAdvancedAIAction\(state, owner, difficulty\), owner\)/);
 });
 
 test("stale presentation can never keep AI priority locked indefinitely", async () => {
@@ -21,11 +23,9 @@ test("stale presentation can never keep AI priority locked indefinitely", async 
   assert.match(runtime, /reason: "ai-priority-liveness"/);
 });
 
-test("mandatory AI decisions do not wait for presentation twice", async () => {
+test("all advanced AI entry points retain the shared presentation boundary", async () => {
   const runtime = await readFile(runtimeUrl, "utf8");
-  const decision = runtime.match(/export async function chooseAdvancedAIDecision[\s\S]*?\n}\n\nexport function planAdvancedAIAttacks/)?.[0] || "";
-  assert.ok(decision);
-  assert.match(decision, /await waitForPresentationIdle\(\)/);
-  assert.match(decision, /decision \?\? chooseAdvancedAIActionReady\(state, owner, difficulty\)/);
-  assert.doesNotMatch(decision, /decision \?\? chooseAdvancedAIAction\(state, owner, difficulty\)/);
+  assert.match(runtime, /export async function chooseAdvancedAIAction[\s\S]*?await waitForPresentationIdle\(\)/);
+  assert.match(runtime, /export async function chooseAdvancedAIDecision[\s\S]*?await waitForPresentationIdle\(\)/);
+  assert.match(runtime, /export async function chooseAdvancedAIResponse[\s\S]*?await waitForPresentationIdle\(\)/);
 });
