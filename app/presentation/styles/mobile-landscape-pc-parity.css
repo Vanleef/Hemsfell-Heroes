@@ -1,0 +1,266 @@
+/*
+ * Mobile landscape parity with the short-height desktop composition.
+ *
+ * final-responsive-layout.css intentionally shares one short-landscape layout
+ * between desktop and mobile. On coarse-pointer phones, however, the CSS
+ * viewport is much smaller than the physical screenshot because browser chrome
+ * and device pixel ratio reduce the available CSS height. The old rem floors
+ * inside clamp() therefore won over cqh and made the board look artificially
+ * zoomed.
+ *
+ * Keep the desktop geometry and lane centers untouched. This pass only removes
+ * those oversized mobile floors and scales the permanent UI from the available
+ * board height, which makes a landscape phone visually track the PC layout.
+ */
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  .screen-game .game-stage > .game-content.hs-board {
+    /* Preserve the PC lane positions; only reduce the visual footprint. */
+    --hh-ref-slot-w: clamp(.95rem, min(4cqw, 8.65cqh), 2.2rem) !important;
+    --hh-ref-field-gap: clamp(.025rem, .3cqw, .17rem) !important;
+    --hh-ref-edge: clamp(.035rem, .27cqw, .15rem) !important;
+  }
+
+  /* The five lanes stay where desktop puts them, while the cards/slots stop
+     overflowing their row height on very short browser viewports. */
+  .screen-game .game-stage > .game-content.hs-board > .paired-field {
+    height: min(23.5cqh, 100%) !important;
+    row-gap: clamp(.035rem, .48cqh, .16rem) !important;
+  }
+
+  .screen-game .paired-field .field-slot {
+    min-width: 0 !important;
+    min-height: 0 !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .terrain-slot {
+    width: clamp(.9rem, min(3.75cqw, 7.7cqh), 1.9rem) !important;
+    margin-right: clamp(.025rem, .28cqw, .14rem) !important;
+  }
+
+  /* ENERGY --------------------------------------------------------------- */
+  /* Desktop uses a thin rail. The former .72rem minimum became ~30+ physical
+     pixels on a high-DPR phone, which is why the mobile bars were so tall. */
+  .screen-game .game-stage > .game-content.hs-board > .field-energy {
+    min-height: 0 !important;
+    height: clamp(.42rem, 2.72cqh, .88rem) !important;
+    padding: clamp(.015rem, .18cqh, .07rem) clamp(.06rem, .36cqw, .2rem) !important;
+    box-sizing: border-box !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .field-energy > div {
+    min-height: 0 !important;
+    grid-template-columns:
+      clamp(1.05rem, 4.05cqw, 2.35rem)
+      minmax(0, 1fr)
+      clamp(.62rem, 1.75cqw, 1.05rem) !important;
+    gap: clamp(.02rem, .2cqw, .11rem) !important;
+  }
+
+  .screen-game .field-energy :is(b, strong) {
+    font-size: clamp(.17rem, min(.52cqw, 1.55cqh), .32rem) !important;
+    line-height: 1 !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .enemy-energy {
+    translate: 0 clamp(.01rem, .55cqh, .11rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-energy {
+    translate: 0 clamp(-.45rem, -2.65cqh, -.08rem) !important;
+  }
+
+  /* PHASE ORB ------------------------------------------------------------ */
+  .screen-game .game-stage > .game-content.hs-board > .phase-orb {
+    width: clamp(1.25rem, min(5.25cqw, 10.9cqh), 2.75rem) !important;
+    translate: 0 clamp(-.28rem, -.95cqh, -.035rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
+    padding: clamp(.04rem, .24cqw, .12rem) !important;
+    font-size: clamp(.18rem, min(.72cqw, 1.65cqh), .34rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .phase-orb > button span {
+    margin-left: 0 !important;
+    font-size: clamp(.42rem, min(1.5cqw, 3.5cqh), .78rem) !important;
+  }
+
+  /* HEROES --------------------------------------------------------------- */
+  /* Size these from cqh instead of the desktop rem floors. The hero card keeps
+     its 5/7 ratio and the meta stack remains beside it just like on PC. */
+  .screen-game .game-stage > .game-content.hs-board > .player-hero {
+    width: min(17.5cqw, 35cqh, 98%) !important;
+    height: min(19cqh, 92%) !important;
+    --hero-card-w: clamp(1rem, min(6.25cqw, 11.4cqh), 2.75rem) !important;
+    --hero-meta-gap: clamp(.02rem, .22cqw, .1rem) !important;
+    --hero-meta-w: clamp(1.35rem, min(7.1cqw, 15.3cqh), 3.25rem) !important;
+    --hero-stack-width: var(--hero-meta-w) !important;
+    --hero-side-stack-width: var(--hero-meta-w) !important;
+    --hero-stack-v11-width: var(--hero-meta-w) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-hero.enemy {
+    margin-top: clamp(.015rem, .45cqh, .09rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) {
+    margin-bottom: clamp(.35rem, 4.6cqh, .9rem) !important;
+  }
+
+  .screen-game .player-hero .hero-level,
+  .screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-power-trigger > .hero-level {
+    min-height: .42rem !important;
+    height: clamp(.42rem, 2.45cqh, .78rem) !important;
+    top: clamp(.16rem, 1.15cqh, .42rem) !important;
+    font-size: clamp(.16rem, min(.62cqw, 1.45cqh), .29rem) !important;
+    padding-inline: clamp(.02rem, .18cqw, .08rem) !important;
+  }
+
+  .screen-game .player-hero .hero-evolution,
+  .screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+    top: calc(var(--hero-card-top, 0px) + clamp(.7rem, 3.25cqh, 1.08rem)) !important;
+    min-height: .62rem !important;
+    height: clamp(.62rem, 4.05cqh, 1.18rem) !important;
+    padding: clamp(.015rem, .16cqh, .055rem) !important;
+  }
+
+  .screen-game .player-hero .hero-evolution > small,
+  .screen-game .player-hero .hero-evolution > strong {
+    font-size: clamp(.15rem, min(.56cqw, 1.35cqh), .27rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  .screen-game .player-hero > .level-button,
+  .screen-game .game-stage > .game-content.hs-board > .player-hero > .level-button {
+    top: calc(var(--hero-card-top, 0px) + clamp(1.55rem, 7.55cqh, 2.2rem)) !important;
+    min-height: .42rem !important;
+    height: clamp(.42rem, 2.75cqh, .78rem) !important;
+    padding: clamp(.01rem, .12cqh, .04rem) clamp(.025rem, .18cqw, .08rem) !important;
+    font-size: clamp(.14rem, min(.5cqw, 1.2cqh), .25rem) !important;
+  }
+
+  /* Hero command bars already occupy the correct horizontal rail. Keep their
+     hit area, but reduce the text/padding that looked oversized on the phone. */
+  .screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities, .hero-command-bar) {
+    width: min(18.3cqw, 96%) !important;
+    max-height: 18.2cqh !important;
+  }
+
+  .screen-game :is(.hero-abilities .ability, .hero-command-bar .hero-ability-chip) {
+    min-height: 0 !important;
+    padding: clamp(.02rem, .32cqh, .09rem) clamp(.035rem, .34cqw, .13rem) !important;
+  }
+
+  .screen-game :is(.hero-abilities .ability p, .hero-command-bar .hero-ability-chip p) {
+    font-size: clamp(.18rem, min(.72cqw, 1.78cqh), .34rem) !important;
+    line-height: 1.03 !important;
+  }
+
+  .screen-game .hero-command-bar .hero-ability-chip > span > b {
+    font-size: clamp(.15rem, min(.58cqw, 1.4cqh), .27rem) !important;
+    line-height: 1 !important;
+  }
+
+  .screen-game .hero-command-bar .hero-ability-chip > i {
+    width: clamp(.65rem, 3.7cqh, 1.05rem) !important;
+    height: clamp(.65rem, 3.7cqh, 1.05rem) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    font-size: clamp(.16rem, min(.58cqw, 1.5cqh), .28rem) !important;
+  }
+
+  /* Re-anchor the local temporary-effect badge below the now smaller hero
+     instead of allowing old fixed rem offsets to push it out of the viewport. */
+  .screen-game .player-hero:not(.enemy) .hero-status-cues.local {
+    left: calc(var(--hero-card-w) + var(--hero-meta-gap)) !important;
+    top: clamp(2.5rem, 16.1cqh, 3.8rem) !important;
+    width: clamp(2.8rem, 17.5cqh, 4.5rem) !important;
+    max-width: none !important;
+    gap: clamp(.02rem, .2cqh, .07rem) !important;
+  }
+
+  .screen-game .player-hero:not(.enemy) .hero-status-cues.local span,
+  .screen-game .player-hero:not(.enemy) .hero-status-cues.local .cue-empty {
+    padding: clamp(.035rem, .28cqh, .09rem) clamp(.05rem, .28cqw, .12rem) !important;
+    font-size: clamp(.15rem, min(.5cqw, 1.25cqh), .25rem) !important;
+    line-height: 1.04 !important;
+  }
+
+  /* HANDS ---------------------------------------------------------------- */
+  /* Smaller rem minima allow the same card count to occupy roughly the same
+     percentage of the screen as the PC hand instead of becoming a wide strip. */
+  .screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(.official-card-back, .card-frame) {
+    flex-basis: clamp(.72rem, min(3.45cqw, 8.05cqh), 1.8rem) !important;
+    width: clamp(.72rem, min(3.45cqw, 8.05cqh), 1.8rem) !important;
+    min-width: 0 !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-hand {
+    height: 16cqh !important;
+    gap: clamp(.01rem, .16cqw, .06rem) !important;
+    padding-bottom: max(.045rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+    flex-basis: clamp(1rem, min(4.85cqw, 10.15cqh), 2.55rem) !important;
+    width: clamp(1rem, min(4.85cqw, 10.15cqh), 2.55rem) !important;
+    min-width: 0 !important;
+  }
+
+  /* TOP BAR -------------------------------------------------------------- */
+  /* Small-screen legacy CSS hides the phase names. The PC target keeps them,
+     so restore the labels and tighten the track instead of showing only 1-4. */
+  .screen-game .game-stage > .game-content.hs-board > .game-bar {
+    gap: clamp(.025rem, .3cqw, .14rem) !important;
+    padding-left: max(.16rem, env(safe-area-inset-left)) !important;
+    padding-right: max(.16rem, env(safe-area-inset-right)) !important;
+    font-size: clamp(.17rem, min(.6cqw, 1.5cqh), .31rem) !important;
+  }
+
+  .screen-game .game-bar .phase-track {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: clamp(.025rem, .24cqw, .1rem) !important;
+  }
+
+  .screen-game .game-bar .phase-track > div {
+    display: flex !important;
+    min-width: 0 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: clamp(.015rem, .12cqw, .055rem) !important;
+  }
+
+  .screen-game .game-bar .phase-track > div > span {
+    display: inline !important;
+    margin-left: 0 !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+    font-size: clamp(.14rem, min(.48cqw, 1.25cqh), .26rem) !important;
+    letter-spacing: .025em !important;
+  }
+
+  .screen-game .game-bar .phase-track > div > i {
+    width: clamp(.52rem, 3.15cqh, .88rem) !important;
+    height: clamp(.52rem, 3.15cqh, .88rem) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    font-size: clamp(.15rem, min(.52cqw, 1.35cqh), .27rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .priority-control-toggle {
+    max-width: min(13.5cqw, 31cqh) !important;
+    padding: clamp(.035rem, .34cqh, .11rem) clamp(.07rem, .45cqw, .2rem) !important;
+    font-size: clamp(.18rem, min(.66cqw, 1.65cqh), .34rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .surrender-button {
+    max-width: 11.5cqw !important;
+    padding: clamp(.035rem, .34cqh, .11rem) clamp(.06rem, .42cqw, .18rem) !important;
+    font-size: clamp(.16rem, min(.58cqw, 1.45cqh), .3rem) !important;
+  }
+}
