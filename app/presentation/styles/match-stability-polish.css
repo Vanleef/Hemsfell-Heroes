@@ -1,23 +1,21 @@
 /*
  * Match stability polish
  * ----------------------
- * Final presentation-only corrections that must outrank the historical match
- * cascade. Keep this layer small: geometry belongs to board-layout/reference-
- * board-layout and animation sequencing belongs to the presentation runtime.
+ * Terminal presentation-only corrections loaded after reference-layout.css.
+ * Geometry remains container-relative and no gameplay state is changed here.
  */
 
 /* -------------------------------------------------------------------------
    OPPONENT HAND / ENERGY SYMMETRY
    -------------------------------------------------------------------------
-   reference-board-layout shifts the opponent battlefield/energy downward to
-   match the approved composition, but the opponent hand was left behind in
-   its original grid row. That created an artificial empty band and could push
-   the top of the card backs into the board chrome. Move the hand with the same
-   reference offset plus a tiny inward nudge, mirroring the compact player
-   hand -> energy spacing at the bottom of the board.
+   Keep the opponent composition as the vertical mirror of the player's lower
+   composition. The hand is allowed to extend outside its narrow grid row, the
+   energy rail is pulled slightly toward it, and the enemy field follows by the
+   same small inward correction. This also prevents the top edge of card backs
+   from being clipped by the board chrome.
  */
 .screen-game .game-stage > .game-content.hs-board > .opponent-hand {
-  translate: 0 calc(var(--hh-reference-shift-y, 0px) + clamp(.08rem, .55cqh, .34rem)) !important;
+  translate: 0 clamp(.45rem, 3.6cqh, 2.1rem) !important;
   align-self: center !important;
   overflow: visible !important;
   z-index: 76 !important;
@@ -34,25 +32,46 @@
   clip-path: none !important;
 }
 
-/* Pull the opponent energy/field cluster a fraction upward relative to the
-   shared reference shift. This keeps the top composition visually symmetric
-   with player field -> energy -> hand without changing lane X coordinates. */
 .screen-game .game-stage > .game-content.hs-board > .enemy-energy {
-  translate: 0 calc(var(--hh-reference-shift-y, 0px) - clamp(.08rem, .45cqh, .28rem)) !important;
+  translate: 0 clamp(-.3rem, -.35cqh, -.04rem) !important;
 }
 
-.screen-game .game-stage > .game-content.hs-board > :is(.enemy-field, .enemy-terrain) {
-  translate: 0 calc(var(--hh-reference-shift-y, 0px) - clamp(.04rem, .22cqh, .16rem)) !important;
+.screen-game .game-stage > .game-content.hs-board > .enemy-field {
+  margin-top: clamp(.14rem, 2.8cqh, 1.65rem) !important;
+  translate: 0 clamp(-.22rem, -.22cqh, -.03rem) !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board > .enemy-terrain {
+  translate: 0 clamp(-.22rem, -.22cqh, -.03rem) !important;
+}
+
+/* Short landscape phones need the same relationship, not desktop rem floors. */
+@media (orientation: landscape) and (max-height: 44rem) {
+  .screen-game .game-stage > .game-content.hs-board > .opponent-hand {
+    translate: 0 clamp(.2rem, 3.35cqh, .9rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .enemy-energy {
+    translate: 0 clamp(-.16rem, -.32cqh, -.025rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .enemy-field {
+    margin-top: clamp(.08rem, 2.45cqh, .65rem) !important;
+    translate: 0 clamp(-.12rem, -.18cqh, -.02rem) !important;
+  }
+
+  .screen-game .game-stage > .game-content.hs-board > .enemy-terrain {
+    translate: 0 clamp(-.12rem, -.18cqh, -.02rem) !important;
+  }
 }
 
 /* -------------------------------------------------------------------------
    TARGET CARD BADGE STABILITY
    -------------------------------------------------------------------------
    Keyword/status/marker/activation badges are siblings of .original-card.
-   Legacy hover/target transforms only move/scale the card button, which makes
-   those siblings appear to jump or change scale while choosing an animated
-   target. A target keeps its normal battlefield geometry; feedback is supplied
-   by outline/filter only.
+   Legacy hover/target transforms move or scale only the card button, so those
+   siblings appear to jump relative to an animated target. A valid target keeps
+   normal battlefield geometry; feedback is outline/filter only.
  */
 .screen-game .card-frame:has(> .original-card:is(.target-ally, .target-enemy)) {
   translate: none !important;
@@ -69,8 +88,9 @@
   transform-origin: 50% 50% !important;
 }
 
-/* Preserve the normal exhausted orientation while still suppressing the
-   target-hover zoom. The rotation is owned by the exhausted presentation rule. */
+/* Non-turned targets must never inherit the generic small-card hover zoom.
+   Turned cards keep their existing orientation rule instead of being forced
+   upright by targeting. */
 .screen-game .card-frame > .original-card:is(.target-ally, .target-enemy):not(.is-exhausted) {
   transform: none !important;
 }
@@ -94,7 +114,7 @@
   transition-property: opacity, filter, background-color, border-color, box-shadow !important;
 }
 
-/* The target pulse must never animate geometry. */
+/* The target pulse deliberately contains no translate/scale keyframe. */
 @keyframes hh-stable-valid-target {
   0%, 100% { filter: brightness(1); outline-offset: 0; }
   50% { filter: brightness(1.2); outline-offset: clamp(.08rem, .16cqw, .16rem); }
