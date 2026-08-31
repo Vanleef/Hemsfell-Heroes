@@ -42,10 +42,13 @@ test("terrain, energy and phase follow the approved horizontal hierarchy", () =>
 
 test("mobile uses the real viewport and never restores the old 62rem scroll canvas", () => {
   assert.doesNotMatch(css, /min-width:\s*62rem\s*!important/);
-  assert.match(css, /@media \(orientation: portrait\) and \(max-width: 60rem\)/);
+  assert.match(css, /@media \(orientation: portrait\)\s*\{/);
+  assert.doesNotMatch(css, /@media \(orientation: portrait\) and \(max-width:/);
+  assert.match(css, /body\[data-match-active="true"\] \.screen-game\s*\{[\s\S]*?position:\s*fixed\s*!important[\s\S]*?inset:\s*0\s*!important/);
   assert.match(css, /width:\s*100dvw\s*!important/);
   assert.match(css, /height:\s*100dvh\s*!important/);
   assert.match(css, /min-width:\s*0\s*!important/);
   assert.match(css, /overflow:\s*hidden\s*!important/);
   assert.match(css, /grid-template-rows:\s*repeat\(2, minmax\(0, 1fr\)\)\s*!important/);
+  assert.match(css, /> \.priority-control-toggle\s*\{[\s\S]*?top:\s*clamp\(2\.2rem, 5\.2cqh, 3\.15rem\)\s*!important[\s\S]*?bottom:\s*auto\s*!important/);
 });

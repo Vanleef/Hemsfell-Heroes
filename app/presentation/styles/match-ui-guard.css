@@ -512,14 +512,101 @@
 
 @media (max-width: 48rem) {
   .landing-copy .landing-mode-guide { grid-template-columns: 1fr; }
+  .match-setup {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    padding:
+      max(1.35rem, env(safe-area-inset-top))
+      max(.85rem, env(safe-area-inset-right))
+      max(2rem, env(safe-area-inset-bottom))
+      max(.85rem, env(safe-area-inset-left)) !important;
+    overflow-x: clip;
+  }
+  .match-setup .setup-head,
+  .match-setup .versus,
+  .match-setup > .difficulty {
+    width: 100%;
+    min-width: 0;
+  }
+  .match-setup .setup-head > h2 {
+    max-width: 100%;
+    margin-inline: 0;
+    font-size: clamp(2rem, 12vw, 3.15rem);
+    line-height: 1;
+    text-wrap: balance;
+  }
+  .match-setup .setup-head > span {
+    font-size: clamp(.92rem, 4.7vw, 1.12rem);
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
   .match-setup .versus {
     grid-template-columns: 1fr !important;
+    gap: 1.1rem !important;
+    margin-inline: 0 !important;
   }
   .match-setup .versus > strong {
     transform: none !important;
+    min-width: 0;
+    padding: .35rem !important;
+    font-size: clamp(1.75rem, 9vw, 2.5rem);
   }
   .deck-picker {
-    grid-template-columns: clamp(4.5rem, 20vw, 6rem) minmax(0,1fr) !important;
+    grid-template-columns: clamp(4.5rem, 22vw, 5.75rem) minmax(0, 1fr) !important;
+    grid-template-areas:
+      "label label"
+      "art select"
+      "art faction"
+      "plan plan" !important;
+    column-gap: clamp(.55rem, 3vw, .85rem) !important;
+    padding: clamp(.75rem, 4vw, 1rem) !important;
+  }
+  .deck-picker > img,
+  .deck-picker > .remote-card-art,
+  .deck-picker > :has(> img):not(.deck-picker-summary) {
+    width: 100%;
+    max-width: 5.75rem;
+    aspect-ratio: 5 / 7;
+  }
+  .deck-picker > select {
+    min-width: 0;
+    max-width: 100%;
+    padding: clamp(.65rem, 3.2vw, .85rem);
+    font-size: clamp(.9rem, 4.3vw, 1.05rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .deck-picker > .deck-picker-faction {
+    min-width: 0;
+    font-size: clamp(1rem, 5.2vw, 1.3rem) !important;
+    overflow-wrap: anywhere;
+  }
+  .deck-picker .deck-picker-summary {
+    width: 100%;
+    min-width: 0;
+    padding-top: .65rem;
+  }
+  .deck-picker-summary .deck-plan {
+    font-size: clamp(.78rem, 3.8vw, .94rem);
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+  .match-setup > .difficulty {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .55rem;
+    margin-inline: 0;
+  }
+  .match-setup > .difficulty > span {
+    grid-column: 1 / -1;
+  }
+  .match-setup > .difficulty > button {
+    width: 100%;
+    min-width: 0;
+    padding-inline: .45rem;
+    font-size: clamp(.72rem, 3.7vw, .9rem);
   }
   .host-settings {
     grid-template-columns: 1fr;
