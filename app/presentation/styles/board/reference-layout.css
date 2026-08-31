@@ -17,6 +17,27 @@
  *   desktop-only minimum canvas.
  */
 
+/* The current reference uses the whole available screen. The board backdrop
+ * stretches with the viewport; cards and slots keep their own aspect ratios. */
+.screen-game .game-stage {
+  display: grid !important;
+  place-items: stretch !important;
+  width: 100dvw !important;
+  height: 100dvh !important;
+  overflow: hidden !important;
+}
+
+.screen-game .game-stage > .game-content.hs-board {
+  width: 100dvw !important;
+  height: 100dvh !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100dvw !important;
+  max-height: 100dvh !important;
+  aspect-ratio: auto !important;
+  margin: 0 !important;
+}
+
 .screen-game .game-stage > .game-content.hs-board {
   --hh-ref-card-ratio: 5 / 7;
   --hh-ref-slot-w: clamp(1.2rem, min(4cqw, 10cqh), 4.5rem);
@@ -116,7 +137,7 @@
   align-self: center !important;
   justify-self: end !important;
   width: min(82%, 41cqw) !important;
-  height: min(22.5cqh, 100%) !important;
+  height: min(22.5cqh, 12cqw, 100%) !important;
   max-width: none !important;
   max-height: none !important;
   column-gap: var(--hh-ref-field-gap) !important;
@@ -175,12 +196,14 @@
 /* Face the two battle lines toward the center while keeping their energy gap
  * symmetric. */
 .screen-game .game-stage > .game-content.hs-board > .enemy-field {
-  align-self: end !important;
+  align-self: start !important;
+  margin-top: clamp(.2rem, 3.8cqh, 2.25rem) !important;
   padding-bottom: clamp(.08rem, .55cqh, .42rem) !important;
 }
 .screen-game .game-stage > .game-content.hs-board > .player-field {
   align-self: start !important;
   padding-top: clamp(.08rem, .55cqh, .42rem) !important;
+  translate: 0 clamp(-.3rem, -.45cqh, -.08rem) !important;
 }
 
 /* -------------------------------------------------------------------------
@@ -196,6 +219,7 @@
   aspect-ratio: var(--hh-ref-card-ratio) !important;
   margin: 0 clamp(.12rem, .65cqw, .7rem) 0 0 !important;
   transform: none !important;
+  translate: 0 clamp(.15rem, 1.8cqh, 1.1rem) !important;
   overflow: visible !important;
   z-index: 48 !important;
 }
@@ -216,10 +240,12 @@
 .screen-game .game-stage > .game-content.hs-board > .enemy-energy {
   align-self: end !important;
   margin-bottom: clamp(.04rem, .22cqh, .18rem) !important;
+  translate: 0 clamp(.05rem, .85cqh, .5rem) !important;
 }
 .screen-game .game-stage > .game-content.hs-board > .player-energy {
   align-self: start !important;
   margin-top: clamp(.04rem, .22cqh, .18rem) !important;
+  translate: 0 clamp(-.9rem, -1.5cqh, -.08rem) !important;
 }
 .screen-game .game-stage > .game-content.hs-board > .field-energy > div {
   grid-template-columns:
@@ -242,11 +268,12 @@
   inset: auto !important;
   align-self: center !important;
   justify-self: center !important;
-  width: clamp(2.35rem, min(4.35cqw, 8.7cqh), 4.65rem) !important;
+  width: clamp(3rem, min(5.9cqw, 10.4cqh), 5.8rem) !important;
   height: auto !important;
   aspect-ratio: 1 / 1 !important;
   margin: 0 !important;
   transform: none !important;
+  translate: 0 clamp(-1.8rem, -3.1cqh, -.2rem) !important;
   overflow: visible !important;
   z-index: 90 !important;
 }
@@ -295,6 +322,12 @@
   width: min(68%, 3.5cqw) !important;
   height: auto !important;
   aspect-ratio: var(--hh-ref-card-ratio) !important;
+}
+.screen-game .game-stage > .game-content.hs-board > .enemy-piles {
+  translate: 0 clamp(-1.7rem, -2.8cqh, -.2rem) !important;
+}
+.screen-game .game-stage > .game-content.hs-board > .player-piles {
+  translate: 0 clamp(.2rem, 4.2cqh, 2.5rem) !important;
 }
 
 /* -------------------------------------------------------------------------
@@ -350,9 +383,9 @@
   overflow: visible !important;
 }
 .screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities.enemy, .hero-command-bar.enemy) {
-  align-self: end !important;
+  align-self: start !important;
   max-height: 18cqh !important;
-  margin-bottom: clamp(.12rem, 1.45cqh, .9rem) !important;
+  margin-top: clamp(.25rem, 4cqh, 2.35rem) !important;
   translate: none !important;
 }
 .screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities:not(.enemy), .hero-command-bar:not(.enemy)) {
@@ -372,13 +405,14 @@
   min-width: 0 !important;
   height: 100% !important;
   padding-inline: var(--hh-ref-edge) !important;
-  overflow: hidden !important;
+  overflow: visible !important;
+  translate: 0 clamp(.25rem, 2.25cqh, 1.4rem) !important;
 }
 .screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(.official-card-back, .card-frame) {
-  flex: 0 1 clamp(.92rem, min(3.1cqw, 8.5cqh), 3rem) !important;
-  width: clamp(.92rem, min(3.1cqw, 8.5cqh), 3rem) !important;
+  flex: 0 1 clamp(.92rem, min(3.6cqw, 8.5cqh), 3.45rem) !important;
+  width: clamp(.92rem, min(3.6cqw, 8.5cqh), 3.45rem) !important;
   min-width: .58rem !important;
-  max-width: 3rem !important;
+  max-width: 3.45rem !important;
   height: auto !important;
   aspect-ratio: var(--hh-ref-card-ratio) !important;
 }
@@ -395,7 +429,7 @@
   min-width: 0 !important;
   height: 100% !important;
   gap: clamp(.04rem, .25cqw, .34rem) !important;
-  padding: clamp(.08rem, .35cqh, .25rem) var(--hh-ref-edge) 0 !important;
+  padding: clamp(.08rem, .35cqh, .25rem) var(--hh-ref-edge) clamp(.2rem, 1.45cqh, .9rem) !important;
   margin: 0 !important;
   overflow: visible !important;
   transform: none !important;
@@ -446,7 +480,7 @@
   }
   .screen-game .side-piles small { display: none !important; }
   .screen-game .game-stage > .game-content.hs-board > .phase-orb {
-    width: clamp(2rem, min(4.35cqw, 8.7cqh), 4.35rem) !important;
+    width: clamp(2.2rem, min(5.6cqw, 10cqh), 5rem) !important;
   }
 }
 
@@ -633,7 +667,7 @@
     height: min(22.5cqh, 100%) !important;
   }
   .screen-game .game-stage > .game-content.hs-board > .phase-orb {
-    width: clamp(1.8rem, min(4.35cqw, 8.7cqh), 3.7rem) !important;
+    width: clamp(2rem, min(5.6cqw, 10cqh), 4.5rem) !important;
   }
   .screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
     flex-basis: clamp(1.9rem, min(5.2cqw, 13cqh), 4.8rem) !important;

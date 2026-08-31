@@ -15,6 +15,11 @@ test("approved reference layout is the final board geometry authority", () => {
   assert.ok(referenceAuthority > legacyAuthority);
 });
 
+test("reference board fills the live viewport without desktop letterboxing", () => {
+  assert.match(css, /\.screen-game \.game-stage\s*\{[\s\S]*?place-items:\s*stretch\s*!important[\s\S]*?width:\s*100dvw\s*!important[\s\S]*?height:\s*100dvh\s*!important/);
+  assert.match(css, /> \.game-content\.hs-board\s*\{[\s\S]*?width:\s*100dvw\s*!important[\s\S]*?height:\s*100dvh\s*!important[\s\S]*?aspect-ratio:\s*auto\s*!important/);
+});
+
 test("desktop battlefield keeps five paired creature and auxiliary lanes", () => {
   assert.match(page, /field-slot creature-slot/);
   assert.match(page, /field-slot auxiliary-slot/);
@@ -37,7 +42,7 @@ test("terrain, energy and phase follow the approved horizontal hierarchy", () =>
   assert.match(css, /> \.phase-orb\s*\{[\s\S]*?grid-column:\s*4\s*!important[\s\S]*?grid-row:\s*4 \/ 7\s*!important/);
   assert.match(css, /> \.enemy-piles\s*\{[\s\S]*?grid-column:\s*5\s*!important/);
   assert.match(css, /> \.player-piles\s*\{[\s\S]*?grid-column:\s*5\s*!important/);
-  assert.match(css, /width:\s*clamp\(2\.35rem, min\(4\.35cqw, 8\.7cqh\), 4\.65rem\)\s*!important/);
+  assert.match(css, /width:\s*clamp\(3rem, min\(5\.9cqw, 10\.4cqh\), 5\.8rem\)\s*!important/);
 });
 
 test("reference proportions anchor every permanent region without free coordinates", () => {
