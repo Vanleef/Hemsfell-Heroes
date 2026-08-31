@@ -4,20 +4,21 @@ import { readFile } from "node:fs/promises";
 
 const cssUrl = new URL("../app/presentation/styles/match-stability-polish.css", import.meta.url);
 
-test("terminal match polish loads after the reference board contract", async () => {
+test("terminal match polish loads after the canonical reference layout", async () => {
   const layout = await readFile(new URL("../app/layout.tsx", import.meta.url), "utf8");
-  const reference = layout.indexOf('import "./presentation/styles/board/reference-board-layout.css"');
+  const reference = layout.indexOf('import "./presentation/styles/board/reference-layout.css"');
   const stability = layout.indexOf('import "./presentation/styles/match-stability-polish.css"');
   assert.ok(reference >= 0);
   assert.ok(stability > reference);
 });
 
-test("opponent hand follows the shifted opponent cluster and stays unclipped", async () => {
+test("opponent hand and enemy cluster are nudged inward and stay unclipped", async () => {
   const css = await readFile(cssUrl, "utf8");
-  assert.match(css, /> \.opponent-hand \{[\s\S]*?var\(--hh-reference-shift-y, 0px\)[\s\S]*?overflow: visible !important/s);
+  assert.match(css, /> \.opponent-hand \{[\s\S]*?3\.6cqh[\s\S]*?overflow: visible !important/s);
   assert.match(css, /> \.opponent-hand > :is\([\s\S]*?\.official-card-back[\s\S]*?\.opponent-card-back[\s\S]*?clip-path: none !important/s);
-  assert.match(css, /> \.enemy-energy \{[\s\S]*?var\(--hh-reference-shift-y, 0px\) - clamp/s);
-  assert.match(css, /> :is\(\.enemy-field, \.enemy-terrain\) \{[\s\S]*?var\(--hh-reference-shift-y, 0px\) - clamp/s);
+  assert.match(css, /> \.enemy-energy \{[\s\S]*?translate: 0 clamp\(-\.3rem, -\.35cqh, -\.04rem\)/s);
+  assert.match(css, /> \.enemy-field \{[\s\S]*?margin-top: clamp\(\.14rem, 2\.8cqh, 1\.65rem\)/s);
+  assert.match(css, /> \.enemy-terrain \{[\s\S]*?translate: 0 clamp\(-\.22rem, -\.22cqh, -\.03rem\)/s);
 });
 
 test("target feedback cannot zoom card badges away from their anchors", async () => {
@@ -28,5 +29,6 @@ test("target feedback cannot zoom card badges away from their anchors", async ()
   assert.match(css, /\.card-frame-marker/);
   assert.match(css, /\.card-frame-activation/);
   assert.match(css, /scale: 1 !important/);
+  assert.match(css, /\.target-enemy\):not\(\.is-exhausted\)[\s\S]*?transform: none !important/s);
   assert.match(css, /@keyframes hh-stable-valid-target/);
 });
