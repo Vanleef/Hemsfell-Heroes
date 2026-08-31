@@ -406,7 +406,7 @@
   height: 100% !important;
   padding-inline: var(--hh-ref-edge) !important;
   overflow: visible !important;
-  translate: 0 clamp(.25rem, 2.25cqh, 1.4rem) !important;
+  translate: 0 clamp(.25rem, 3cqh, 1.8rem) !important;
 }
 .screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(.official-card-back, .card-frame) {
   flex: 0 1 clamp(.92rem, min(3.6cqw, 8.5cqh), 3.45rem) !important;
