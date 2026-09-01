@@ -6,6 +6,9 @@ const [layout, css] = await Promise.all([
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/presentation/styles/match-reference.css", import.meta.url), "utf8"),
 ]);
+const terminalAuthorityMarker = "Symmetric energy axis and complete hero-panel composition";
+const terminalAuthorityIndex = css.lastIndexOf(terminalAuthorityMarker);
+const terminalCss = css.slice(terminalAuthorityIndex);
 
 test("the match composition has one responsive stylesheet authority", () => {
   assert.match(layout, /import "\.\/presentation\/styles\/match-reference\.css"/);
@@ -34,14 +37,30 @@ test("energy uses one circumference with capacity and current-energy orbs", () =
   assert.match(css, /energy-dial:has\(\.energy-ring > i:not\(\.locked\)\)[\s\S]*?outline:\s*0[\s\S]*?box-shadow:\s*none/);
   assert.match(css, /energy-ring > i:not\(\.locked\)[\s\S]*?border:/);
   assert.match(css, /energy-ring > i\.filled[\s\S]*?background:/);
-  assert.match(css, /> \.phase-orb\s*\{[\s\S]*?translate:\s*0\s*!important/);
+  assert.ok(terminalAuthorityIndex > 0, "the terminal responsive authority must exist");
+  assert.match(terminalCss, /--hh-energy-axis-offset:\s*9\.6cqh/);
+  assert.match(terminalCss, /> :is\(\.enemy-energy, \.player-energy\)[\s\S]*?margin-top:\s*var\(--hh-energy-axis-offset\)/);
+  assert.match(terminalCss, /> \.player-energy\s*\{[\s\S]*?margin-top:\s*calc\(var\(--hh-energy-axis-offset\) \+ \.2cqh\)/);
+  assert.match(terminalCss, /> \.phase-orb\s*\{[\s\S]*?align-self:\s*center[\s\S]*?translate:\s*0\s*!important/);
+  assert.match(terminalCss, /energy-ring > i\s*\{[\s\S]*?width:\s*15%[\s\S]*?transform-origin:\s*50% 383%/);
+  assert.match(terminalCss, /energy-dial > strong\s*\{[\s\S]*?flex-direction:\s*row/);
+  assert.doesNotMatch(terminalCss, /player-energy[\s\S]*?margin-top:\s*(?:18\.5|19)cqh/);
 });
 
 test("hero panels reserve distinct portrait, progression, ability and evolve regions", () => {
-  assert.match(css, /> \.player-hero\.enemy\s*\{[\s\S]*?height:\s*41\.5cqh/);
-  assert.match(css, /> \.player-hero:not\(\.enemy\)\s*\{[\s\S]*?height:\s*43\.5cqh/);
-  assert.match(css, /> \.player-hero > \.hero-evolution\s*\{[\s\S]*?visibility:\s*visible[\s\S]*?z-index:\s*210/);
-  assert.match(css, /:is\(\.hero-abilities,\.hero-command-bar\)[\s\S]*?margin:\s*24\.2cqh 0 0/);
+  assert.match(terminalCss, /> \.player-hero\.enemy\s*\{[\s\S]*?height:\s*41\.5cqh/);
+  assert.match(terminalCss, /> \.player-hero:not\(\.enemy\)\s*\{[\s\S]*?height:\s*46cqh/);
+  assert.match(terminalCss, /> \.player-hero > \.hero-evolution\s*\{[\s\S]*?visibility:\s*visible[\s\S]*?z-index:\s*210/);
+  assert.match(terminalCss, /hero-evolution > \.evolution-track\s*\{[\s\S]*?display:\s*block[\s\S]*?height:\s*\.72cqh/);
+  assert.match(terminalCss, /:is\(\.hero-abilities, \.hero-command-bar\)[\s\S]*?margin-top:\s*var\(--hh-hero-abilities-top\)/);
+  assert.match(terminalCss, /> \.player-hero:not\(\.enemy\) > \.level-button\s*\{[\s\S]*?bottom:\s*\.8cqh[\s\S]*?z-index:\s*220/);
+  assert.doesNotMatch(terminalCss, /evolution-track\s*\{[\s\S]*?display:\s*none/);
+});
+
+test("the final reference removes the seam and gives each field an owner color", () => {
+  assert.match(terminalCss, /game-content\.hs-board::after\s*\{[\s\S]*?content:\s*none[\s\S]*?display:\s*none/);
+  assert.match(terminalCss, /enemy-field \.creature-slot[\s\S]*?border-color:\s*#a64b42/);
+  assert.match(terminalCss, /player-field \.creature-slot[\s\S]*?border-color:\s*#277c9b/);
 });
 
 test("short landscape and mobile setup remain explicitly responsive", () => {
