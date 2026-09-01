@@ -66,6 +66,20 @@ test("each hero and its ability bar share an isolated responsive stack", () => {
   assert.match(css, /\.hero-panel-stack > \.hero-command-bar\s*\{[\s\S]*?position:\s*absolute[\s\S]*?inset:\s*23\.9cqh/);
 });
 
+test("the canonical hero card follows the approved portrait metadata powers action model", () => {
+  const modelMarker = "Canonical hero card — measured from the approved Gimble reference";
+  const modelCss = css.slice(css.lastIndexOf(modelMarker));
+  assert.ok(modelCss.length > modelMarker.length, "the approved hero-card model must be terminal");
+  assert.match(modelCss, /--hh-hero-art-height:\s*19\.2cqh/);
+  assert.match(modelCss, /--hh-hero-meta-top:\s*19\.65cqh/);
+  assert.match(modelCss, /--hh-hero-powers-top:\s*23\.9cqh/);
+  assert.match(modelCss, /hero-short-name\s*\{[\s\S]*?place-items:\s*center[\s\S]*?font-weight:\s*900/);
+  assert.match(modelCss, /hero-evolution\s*\{[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\) \.58cqh/);
+  assert.match(modelCss, /hero-panel-stack > \.hero-command-bar\s*\{[\s\S]*?grid-template-rows:\s*repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(modelCss, /hero-panel-stack\.player > \.hero-command-bar\s*\{[\s\S]*?4\.55cqh/);
+  assert.match(modelCss, /level-button\s*\{[\s\S]*?clip-path:\s*polygon/);
+});
+
 test("the final reference removes the seam and gives each field an owner color", () => {
   assert.match(terminalCss, /game-content\.hs-board::after\s*\{[\s\S]*?content:\s*none[\s\S]*?display:\s*none/);
   assert.match(terminalCss, /enemy-field \.creature-slot[\s\S]*?enemy-terrain[\s\S]*?border-color:\s*#79504f/);
