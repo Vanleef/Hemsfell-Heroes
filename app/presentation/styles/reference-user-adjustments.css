@@ -1,0 +1,294 @@
+/*
+ * User-reference adjustments — September 2026.
+ *
+ * This is intentionally the terminal match-board layer. It only adjusts
+ * presentation geometry and leaves rules, hit targets and the responsive grid
+ * contract untouched.
+ */
+
+/* -------------------------------------------------------------------------
+   Creature / auxiliary slot pictograms
+   ------------------------------------------------------------------------- */
+
+/* The empty field rows still render legacy span placeholders. Give those
+   placeholders proper vector masks instead of stretched glyph/clip-path art.
+   The mask keeps its 1:1 viewBox on every aspect ratio and therefore cannot be
+   flattened by the 5:7 card target. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board span.slot-type-icon.creature-type-icon,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board span.slot-type-icon.auxiliary-type-icon {
+  display: grid !important;
+  place-items: center !important;
+  width: calc(var(--hh-polish-slot-w) * .52) !important;
+  height: calc(var(--hh-polish-slot-w) * .52) !important;
+  min-width: calc(var(--hh-polish-slot-w) * .52) !important;
+  min-height: calc(var(--hh-polish-slot-w) * .52) !important;
+  aspect-ratio: 1 / 1 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board span.slot-type-icon.creature-type-icon::before,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board span.slot-type-icon.auxiliary-type-icon::before {
+  content: "" !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  clip-path: none !important;
+  background: currentColor !important;
+  -webkit-mask-repeat: no-repeat !important;
+  mask-repeat: no-repeat !important;
+  -webkit-mask-position: center !important;
+  mask-position: center !important;
+  -webkit-mask-size: contain !important;
+  mask-size: contain !important;
+  filter: drop-shadow(0 0 .34cqw color-mix(in srgb, currentColor 62%, transparent)) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board span.slot-type-icon.creature-type-icon::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.3a9 9 0 0 0-9 9V18h3v4h3v-4h6v4h3v-4h3v-6.7a9 9 0 0 0-9-9Z'/%3E%3Cpath d='M10.7 5.7V15H6v-3.7a6 6 0 0 1 4.7-5.6Zm2.6 0a6 6 0 0 1 4.7 5.6V15h-4.7V5.7Z' fill='black'/%3E%3C/svg%3E") !important;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.3a9 9 0 0 0-9 9V18h3v4h3v-4h6v4h3v-4h3v-6.7a9 9 0 0 0-9-9Z'/%3E%3C/svg%3E") !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board span.slot-type-icon.auxiliary-type-icon::before {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13.7 2.1c.8 4.3-2.9 6-1.9 9.1.9-1.5 2.2-2.5 3.8-3.1-.1 3.2 3.3 4.6 2.5 8.5-.7 3.3-3.4 5.4-6.8 5.4C7.2 22 4 19 4 15.2c0-3.2 1.8-5.7 4.7-7.6-.4 2.4.4 3.9 2 5-.4-4.8 2.4-7.6 3-10.5Z'/%3E%3C/svg%3E") !important;
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M13.7 2.1c.8 4.3-2.9 6-1.9 9.1.9-1.5 2.2-2.5 3.8-3.1-.1 3.2 3.3 4.6 2.5 8.5-.7 3.3-3.4 5.4-6.8 5.4C7.2 22 4 19 4 15.2c0-3.2 1.8-5.7 4.7-7.6-.4 2.4.4 3.9 2 5-.4-4.8 2.4-7.6 3-10.5Z'/%3E%3C/svg%3E") !important;
+}
+
+html body .screen-game.screen-game .player-field span.creature-type-icon { color: #5296a3 !important; }
+html body .screen-game.screen-game .player-field span.auxiliary-type-icon { color: #658e96 !important; }
+html body .screen-game.screen-game .enemy-field span.creature-type-icon { color: #a86556 !important; }
+html body .screen-game.screen-game .enemy-field span.auxiliary-type-icon { color: #916154 !important; }
+
+/* -------------------------------------------------------------------------
+   Energy medallion — thin orbit + capacity orbs
+   ------------------------------------------------------------------------- */
+
+html body .screen-game.screen-game .field-energy > .energy-dial {
+  width: min(13.1cqh, 7.35cqw) !important;
+  aspect-ratio: 1 / 1 !important;
+  border: max(1px, .085cqh) solid color-mix(in srgb, var(--energy-wheel) 72%, #d9bd77) !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle, #07151bd9 0 48%, #07151b9c 49% 67%, transparent 68%) !important;
+  box-shadow: inset 0 0 .7cqw #000a, 0 0 .42cqw color-mix(in srgb, var(--energy-wheel) 28%, transparent) !important;
+}
+
+html body .screen-game.screen-game .field-energy .energy-ring > i {
+  left: 44.25% !important;
+  top: -5.75% !important;
+  width: 11.5% !important;
+  height: 11.5% !important;
+  border: max(1px, .07cqh) solid color-mix(in srgb, var(--energy-wheel) 74%, #f4dfae) !important;
+  border-radius: 50% !important;
+  background: #07141a !important;
+  opacity: .18 !important;
+  box-shadow: none !important;
+  transform-origin: 50% 485% !important;
+}
+
+/* The circumference represents maximum capacity. Current energy is the x/X
+   value in the center, so spent energy no longer punches holes in the orbit. */
+html body .screen-game.screen-game .field-energy .energy-ring > i:not(.locked) {
+  opacity: 1 !important;
+  background: var(--energy-wheel) !important;
+  box-shadow: 0 0 .34cqw color-mix(in srgb, var(--energy-wheel) 84%, transparent) !important;
+}
+html body .screen-game.screen-game .field-energy .energy-ring > i.locked {
+  opacity: .13 !important;
+  background: #061218 !important;
+}
+
+html body .screen-game.screen-game .field-energy .energy-dial > strong {
+  position: absolute !important;
+  inset: 50% auto auto 50% !important;
+  transform: translate(-50%, -50%) !important;
+  width: auto !important;
+  height: auto !important;
+  display: block !important;
+  text-align: center !important;
+  color: #f8f1df !important;
+  font: 900 clamp(.8rem, min(1.5cqw, 2.55cqh), 1.52rem)/1 Georgia, serif !important;
+  letter-spacing: -.03em !important;
+  text-shadow: 0 1px 2px #000, 0 0 .48cqw color-mix(in srgb, var(--energy-wheel) 48%, transparent) !important;
+}
+
+html body .screen-game.screen-game .field-energy .energy-dial > b {
+  top: -2.72cqh !important;
+  color: #e3bd63 !important;
+  font-size: clamp(.46rem, min(.74cqw, 1.22cqh), .76rem) !important;
+  letter-spacing: .115em !important;
+  line-height: 1 !important;
+}
+
+html body .screen-game.screen-game .field-energy > .reserve-track {
+  --reserve-wheel: #a45cf4;
+  top: calc(50% + min(4.55cqh, 2.7cqw)) !important;
+  gap: .72cqh !important;
+}
+html body .screen-game.screen-game .field-energy .reserve-track > b {
+  color: #e3bd63 !important;
+  font-size: clamp(.43rem, min(.68cqw, 1.12cqh), .7rem) !important;
+  letter-spacing: .115em !important;
+  line-height: 1 !important;
+}
+html body .screen-game.screen-game .field-energy .reserve-track > span {
+  gap: .5cqw !important;
+}
+html body .screen-game.screen-game .field-energy .reserve-track > span > i {
+  width: min(2.05cqh, 1.16cqw) !important;
+  height: min(2.05cqh, 1.16cqw) !important;
+  border: max(1px, .08cqh) solid color-mix(in srgb, var(--reserve-wheel) 72%, white) !important;
+  background: #080f18 !important;
+  box-shadow: 0 0 .28cqw color-mix(in srgb, var(--reserve-wheel) 36%, transparent) !important;
+}
+html body .screen-game.screen-game .field-energy .reserve-track > span > i.filled {
+  background: var(--reserve-wheel) !important;
+  box-shadow: 0 0 .38cqw color-mix(in srgb, var(--reserve-wheel) 78%, transparent) !important;
+}
+
+/* Keep the opponent where the approved composition already reads well and
+   lower the local medallion into the matching lower-half breathing lane. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-energy {
+  margin-top: 15.8cqh !important;
+  margin-bottom: 0 !important;
+}
+
+/* -------------------------------------------------------------------------
+   Hero reference hierarchy
+   ------------------------------------------------------------------------- */
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero {
+  width: min(15.45cqw, 27.5cqh) !important;
+  border-radius: .55cqw !important;
+  padding: 1.25cqh .62cqw .9cqh !important;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--deck) 12%, #0b171b) 0 52%, #071115 52% 100%) !important;
+  box-shadow: inset 0 0 0 1px #ffffff0a, inset 0 0 1.65cqw #0009, 0 .55cqh 1.1cqh #000b !important;
+}
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero.enemy {
+  height: 37.2cqh !important;
+}
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) {
+  height: 40.2cqh !important;
+}
+
+html body .screen-game.screen-game .player-hero .hero-power-trigger {
+  height: 19.15cqh !important;
+  border-radius: .42cqw .42cqw .18cqw .18cqw !important;
+  border: 1px solid color-mix(in srgb, var(--deck) 58%, #b78935) !important;
+  background: #071317 !important;
+  box-shadow: inset 0 0 1.15cqw #000a, 0 .22cqh .5cqh #0008 !important;
+}
+html body .screen-game.screen-game .player-hero .hero-short-name {
+  height: 2.48cqh !important;
+  font-size: clamp(.45rem, min(.76cqw, 1.28cqh), .76rem) !important;
+  letter-spacing: .055em !important;
+  background: linear-gradient(90deg, #061015, color-mix(in srgb, var(--deck) 11%, #182226), #061015) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--deck) 50%, #a67d36) !important;
+}
+html body .screen-game.screen-game .player-hero .hero-portrait {
+  top: 2.48cqh !important;
+}
+html body .screen-game.screen-game .player-hero .hero-life {
+  right: .34cqw !important;
+  bottom: .7cqh !important;
+}
+html body .screen-game.screen-game .player-hero .hero-level,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero .hero-power-trigger > .hero-level {
+  left: .32cqw !important;
+  bottom: .68cqh !important;
+}
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+  top: 20.15cqh !important;
+  left: calc(.62cqw + 42%) !important;
+  width: calc(58% - 1.24cqw) !important;
+  height: 3.35cqh !important;
+  border-radius: .34cqw !important;
+}
+
+/* The ability list remains a sibling in the DOM, but is aligned at the same
+   20.2cqh offset from each hero panel's top. Visually it becomes the lower
+   section of one framed hero card, like the approved reference. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities,.hero-command-bar) {
+  width: min(14.2cqw, 25.3cqh) !important;
+  height: 12.55cqh !important;
+  margin-bottom: 0 !important;
+  translate: 0 !important;
+  border: 1px solid color-mix(in srgb, var(--deck, #6ca5b7) 42%, #765a2b) !important;
+  border-radius: .38cqw !important;
+  background: linear-gradient(180deg, #0b171bfa, #061015fc) !important;
+  box-shadow: inset 0 0 .95cqw #0009, 0 .42cqh .78cqh #0009 !important;
+  overflow: hidden !important;
+}
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities.enemy,.hero-command-bar.enemy) {
+  align-self: start !important;
+  margin-top: 6.2cqh !important;
+}
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities:not(.enemy),.hero-command-bar:not(.enemy)) {
+  align-self: start !important;
+  margin-top: 20.2cqh !important;
+}
+html body .screen-game.screen-game .hero-command-bar > header {
+  min-height: 1.55cqh !important;
+  padding: .18cqh .3cqw !important;
+  border-bottom: 1px solid #b28a3b52 !important;
+  background: #071115f7 !important;
+  font-size: clamp(.31rem, min(.48cqw, .82cqh), .48rem) !important;
+  letter-spacing: .11em !important;
+}
+html body .screen-game.screen-game .hero-command-bar > .hero-ability-chip {
+  min-height: 0 !important;
+  padding: .3cqh .38cqw !important;
+  border-color: #ffffff11 !important;
+  background: linear-gradient(90deg, #0b1518, #0d1b1f) !important;
+}
+html body .screen-game.screen-game .hero-command-bar > .hero-ability-chip > span > p {
+  font-size: clamp(.39rem, min(.67cqw, 1.08cqh), .65rem) !important;
+  line-height: 1.12 !important;
+}
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) > .level-button {
+  bottom: .82cqh !important;
+  width: 70% !important;
+  height: 2.95cqh !important;
+  border-radius: .34cqw !important;
+}
+
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board span.slot-type-icon.creature-type-icon,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board span.slot-type-icon.auxiliary-type-icon {
+    width: calc(var(--hh-polish-slot-w) * .5) !important;
+    height: calc(var(--hh-polish-slot-w) * .5) !important;
+    min-width: calc(var(--hh-polish-slot-w) * .5) !important;
+    min-height: calc(var(--hh-polish-slot-w) * .5) !important;
+  }
+
+  html body .screen-game.screen-game .field-energy .energy-dial > b {
+    top: -2.48cqh !important;
+  }
+  html body .screen-game.screen-game .field-energy > .reserve-track {
+    top: calc(50% + min(4.2cqh, 2.7cqw)) !important;
+    gap: .6cqh !important;
+  }
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-energy {
+    margin-top: 14.9cqh !important;
+  }
+
+  html body .screen-game.screen-game .player-hero .hero-power-trigger {
+    height: 18.55cqh !important;
+  }
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
+    top: 19.55cqh !important;
+  }
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities.enemy,.hero-command-bar.enemy) {
+    margin-top: 5.65cqh !important;
+  }
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities:not(.enemy),.hero-command-bar:not(.enemy)) {
+    margin-top: 19.55cqh !important;
+  }
+}
