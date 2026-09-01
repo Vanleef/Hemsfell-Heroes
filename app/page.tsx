@@ -1178,14 +1178,22 @@ function ResourceSummary({me,foe,active}:{me:Player;foe:Player;active:0|1}){
 
 function EnergyPanel({player,enemy=false}:{player:Player;enemy?:boolean}){
  return <aside className={`field-energy ${enemy?"enemy-energy":"player-energy"}`} aria-label={`${player.energy} de ${player.maxEnergy} energias; ${player.reserve} de 3 reservas`}>
-  <div className="energy-dial"><b>ENERGIA</b><span className="energy-ring">{Array.from({length:10},(_,index)=><i key={index} className={`${index<player.energy?"filled":""} ${index>=player.maxEnergy?"locked":""}`}/>)}</span><strong><em>{player.energy}</em><small>/{player.maxEnergy}</small></strong></div>
+  <div className="energy-dial"><b>ENERGIA</b><span className="energy-ring">{Array.from({length:10},(_,index)=><i key={index} className={`${index<player.energy?"filled":""} ${index>=player.maxEnergy?"locked":""}`}/>)}</span><strong>{player.energy}/{player.maxEnergy}</strong></div>
   <div className="reserve-track"><b>RESERVA</b><span>{Array.from({length:3},(_,index)=><i key={index} className={index<player.reserve?"filled":""}/>)}</span><strong>{player.reserve}/3</strong></div>
  </aside>
 }
 
+function SlotTypeIcon({kind}:{kind:"terrain"|"creature"|"auxiliary"}){
+ return <svg className={`slot-type-icon ${kind}-type-icon`} viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+  {kind==="terrain"&&<><path d="M2.5 20.5 8.7 8.1l3.1 4.4L15.2 4l6.3 16.5h-19Z"/><path className="slot-icon-cut" d="m7 18 2-4 2.9 4.1 3-7.3 2.8 7.2H7Z"/></>}
+  {kind==="auxiliary"&&<path d="M13.7 2.1c.8 4.3-2.9 6-1.9 9.1.9-1.5 2.2-2.5 3.8-3.1-.1 3.2 3.3 4.6 2.5 8.5-.7 3.3-3.4 5.4-6.8 5.4C7.2 22 4 19 4 15.2c0-3.2 1.8-5.7 4.7-7.6-.4 2.4.4 3.9 2 5-.4-4.8 2.4-7.6 3-10.5Z"/>}
+  {kind==="creature"&&<><path d="M12 2.3a9 9 0 0 0-9 9V18h3v4h3v-4h6v4h3v-4h3v-6.7a9 9 0 0 0-9-9Z"/><path className="slot-icon-cut" d="M10.7 5.7V15H6v-3.7a6 6 0 0 1 4.7-5.6Zm2.6 0a6 6 0 0 1 4.7 5.6V15h-4.7V5.7Z"/></>}
+ </svg>
+}
+
 function TerrainSlot({card,enemy=false,drop=false,dragIndex,onDrop,targetClass="",onTarget}:{card:Unit|null;enemy?:boolean;drop?:boolean;dragIndex?:number;onDrop?:(i:number)=>void;targetClass?:string;onTarget?:()=>void}){
- return <div className={`terrain-slot ${enemy?"enemy-terrain":"player-terrain"} ${drop?"can-drop":""}`} onDragOver={e=>{if(drop){e.preventDefault();e.dataTransfer.dropEffect="move"}}} onDrop={e=>{e.preventDefault();if(drop)onDrop?.(dragIndex??Number(e.dataTransfer.getData("card-index")||e.dataTransfer.getData("text/plain")))}}>
-  {card?<OriginalCard card={card} small priority targetClass={targetClass} onClick={onTarget}/>:<span className="slot-type-icon terrain-type-icon" aria-label="Espaço de terreno">◇</span>}
+ return <div className={`terrain-slot ${enemy?"enemy-terrain":"player-terrain"} ${drop?"can-drop":""}`} aria-label={card?undefined:"Espaço de terreno cruel"} onDragOver={e=>{if(drop){e.preventDefault();e.dataTransfer.dropEffect="move"}}} onDrop={e=>{e.preventDefault();if(drop)onDrop?.(dragIndex??Number(e.dataTransfer.getData("card-index")||e.dataTransfer.getData("text/plain")))}}>
+  {card?<OriginalCard card={card} small priority targetClass={targetClass} onClick={onTarget}/>:<SlotTypeIcon kind="terrain"/>}
  </div>
 }
 
