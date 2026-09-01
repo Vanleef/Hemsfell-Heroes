@@ -4059,8 +4059,12 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   --hh-hero-meta-top: 19.65cqh;
   --hh-hero-meta-height: 3.85cqh;
   --hh-hero-powers-top: 23.9cqh;
-  width: min(15.8cqw, 27.4cqh) !important;
-  height: calc(100% - 1cqh) !important;
+  width: min(16.25cqw, 28.1cqh) !important;
+  height: 100% !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.enemy {
+  height: calc(100% + 1.8cqh) !important;
 }
 
 html body .screen-game.screen-game .hero-panel-stack > .player-hero {
@@ -4076,6 +4080,7 @@ html body .screen-game.screen-game .hero-panel-stack > .player-hero {
     inset 0 0 0 max(1px, .08cqh) #000b,
     inset 0 0 1.25cqw #000b,
     0 .42cqh .9cqh #000b !important;
+  overflow: visible !important;
 }
 
 html body .screen-game.screen-game .hero-panel-stack > .player-hero::before,
@@ -4181,6 +4186,8 @@ html body .screen-game.screen-game .hero-panel-stack > .player-hero > .hero-evol
   color: #ecd170 !important;
   background: linear-gradient(180deg, #0b1717f4, #071111f8) !important;
   box-shadow: inset 0 0 .45cqw #0009 !important;
+  overflow: visible !important;
+  cursor: help !important;
 }
 
 html body .screen-game.screen-game .hero-panel-stack .player-hero > .hero-evolution > :is(small, strong) {
@@ -4213,12 +4220,13 @@ html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar {
   width: auto !important;
   height: calc(100% - var(--hh-hero-powers-top) - .7cqh) !important;
   grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
-  gap: .1cqh !important;
-  padding: .3cqh .28cqw !important;
+  gap: .3cqh !important;
+  padding: .38cqh .32cqw !important;
   border: max(1px, .08cqh) solid color-mix(in srgb, var(--deck) 28%, #86703d) !important;
   border-radius: .26cqw !important;
   background: #051111f5 !important;
   box-shadow: inset 0 0 .8cqw #000b !important;
+  overflow: visible !important;
 }
 
 /* The old interface exposed powers as a hover flyout. Those adjacency rules
@@ -4244,14 +4252,17 @@ html body .screen-game.screen-game .hero-panel-stack.player > .hero-command-bar 
 
 html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip {
   grid-template-columns: minmax(2.55cqh, 1.55cqw) minmax(0, 1fr) !important;
-  gap: .34cqw !important;
-  padding: .24cqh .34cqw !important;
+  gap: .38cqw !important;
+  padding: .28cqh .36cqw !important;
   border: 0 !important;
   border-bottom: max(1px, .07cqh) solid #ffffff0a !important;
   border-radius: 0 !important;
   opacity: 1 !important;
   background: transparent !important;
   box-shadow: none !important;
+  overflow: visible !important;
+  position: relative !important;
+  pointer-events: auto !important;
 }
 
 html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip.is-active.is-available {
@@ -4260,7 +4271,7 @@ html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero
 }
 
 html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip[aria-disabled="true"] {
-  pointer-events: none !important;
+  pointer-events: auto !important;
   cursor: default !important;
 }
 
@@ -4279,7 +4290,8 @@ html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero
 }
 
 html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip > span {
-  gap: .12cqh !important;
+  gap: .26cqh !important;
+  overflow: hidden !important;
 }
 
 html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip > span > b {
@@ -4289,13 +4301,137 @@ html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero
 }
 
 html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip > span > p,
-html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip.copy-compact > span > p,
-html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip.copy-dense > span > p {
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip.copy-normal > span > p {
   color: #dce3df !important;
   font-size: clamp(.4rem, min(.64cqw, 1.07cqh), .65rem) !important;
   line-height: 1.12 !important;
   opacity: .94 !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip.copy-compact > span > p {
+  font-size: clamp(.36rem, min(.56cqw, .94cqh), .57rem) !important;
+  line-height: 1.08 !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 2 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip.copy-dense > span > p {
+  font-size: clamp(.32rem, min(.49cqw, .82cqh), .5rem) !important;
+  line-height: 1.04 !important;
+  display: -webkit-box !important;
+  -webkit-box-orient: vertical !important;
+  -webkit-line-clamp: 3 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Full-text reading panel for every power, including locked/passive powers. */
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip::after {
+  content: attr(data-ability-tooltip) !important;
+  position: absolute !important;
+  left: calc(100% + .72cqw) !important;
+  top: 50% !important;
+  width: clamp(14rem, 21cqw, 24rem) !important;
+  min-height: 6.8cqh !important;
+  padding: 1.15cqh .85cqw !important;
+  border: max(1px, .11cqh) solid color-mix(in srgb, var(--deck) 64%, #d0ad59) !important;
+  border-radius: .48cqw !important;
+  color: #edf3ef !important;
+  font: 650 clamp(.72rem, min(.92cqw, 1.54cqh), .98rem)/1.38 Arial, sans-serif !important;
+  letter-spacing: .01em !important;
+  text-align: left !important;
+  white-space: pre-line !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  background: linear-gradient(145deg, #0b1a1df7, #050d10fc) !important;
+  box-shadow: inset 0 0 1cqw #0008, 0 .7cqh 1.8cqh #000d !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translate(.55cqw, -50%) !important;
+  transition: opacity .14s ease, transform .14s ease, visibility .14s ease !important;
+  z-index: 9800 !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip:is(:hover, :focus-visible)::after {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translate(0, -50%) !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip:first-of-type::after {
+  top: 0 !important;
+  transform: translate(.55cqw, 0) !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip:first-of-type:is(:hover, :focus-visible)::after {
+  transform: translate(0, 0) !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip:last-of-type::after {
+  top: auto !important;
+  bottom: 0 !important;
+  transform: translate(.55cqw, 0) !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip:last-of-type:is(:hover, :focus-visible)::after {
+  transform: translate(0, 0) !important;
+}
+
+/* Restore the former evolution criteria tooltip within the canonical card. */
+html body .screen-game.screen-game .hero-panel-stack .hero-evolution > .evolution-tooltip {
+  left: calc(100% + .72cqw) !important;
+  top: 50% !important;
+  width: clamp(16rem, 24cqw, 27rem) !important;
+  min-height: 8.5cqh !important;
+  grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1fr) !important;
+  gap: .7cqw !important;
+  padding: 1.25cqh 1cqw !important;
+  border-radius: .55cqw !important;
+  border-color: color-mix(in srgb, var(--deck) 64%, #d0ad59) !important;
+  background: linear-gradient(145deg, #0b1a1df8, #050d10fd) !important;
+  box-shadow: inset 0 0 1cqw #0008, 0 .7cqh 1.8cqh #000d !important;
+  z-index: 9900 !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack .hero-evolution > .evolution-tooltip p,
+html body .screen-game.screen-game .hero-panel-stack .hero-evolution > .evolution-tooltip span {
+  color: #edf3ef !important;
+  font: 650 clamp(.68rem, min(.86cqw, 1.44cqh), .92rem)/1.35 Arial, sans-serif !important;
+  white-space: normal !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack .hero-evolution:is(:hover, :focus-within) > .evolution-tooltip {
+  display: grid !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: none !important;
+  transform: translate(0, -50%) !important;
+}
+
+/* Terrain ownership uses the same muted palette as its five card lanes. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain {
+  border-color: #79504f !important;
+  background: linear-gradient(145deg, #25191b, #111316 74%) !important;
+  box-shadow: inset 0 0 1.1cqw #4b24275c, 0 0 .3cqw #733b3b24 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
+  border-color: #466b76 !important;
+  background: linear-gradient(145deg, #10262c, #0a161a 74%) !important;
+  box-shadow: inset 0 0 1.1cqw #2549545c, 0 0 .3cqw #376c7b24 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain > .terrain-type-icon { color: #a76b67 !important; }
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain > .terrain-type-icon { color: #6f9eaa !important; }
 
 html body .screen-game.screen-game .hero-panel-stack > .player-hero:not(.enemy) > .level-button {
   left: 12% !important;
@@ -4336,7 +4472,7 @@ html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-status-c
     --hh-hero-meta-top: 17.72cqh;
     --hh-hero-meta-height: 3.55cqh;
     --hh-hero-powers-top: 21.62cqh;
-    width: min(16.4cqw, 28.2cqh) !important;
+    width: min(16.8cqw, 29cqh) !important;
   }
 
   html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-short-name {
@@ -4349,9 +4485,7 @@ html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-status-c
     height: calc(100% - 2.35cqh) !important;
   }
 
-  html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip > span > p,
-  html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip.copy-compact > span > p,
-  html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip.copy-dense > span > p {
+  html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip.copy-normal > span > p {
     font-size: clamp(.33rem, min(.59cqw, .98cqh), .56rem) !important;
     line-height: 1.08 !important;
   }
