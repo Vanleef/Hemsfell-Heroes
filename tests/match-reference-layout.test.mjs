@@ -2,10 +2,11 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [layout, page, css] = await Promise.all([
+const [layout, page, css, heroCss] = await Promise.all([
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/presentation/styles/match-reference.css", import.meta.url), "utf8"),
+  readFile(new URL("../app/presentation/styles/hero-panel-reference.css", import.meta.url), "utf8"),
 ]);
 const terminalAuthorityMarker = "Symmetric energy axis and complete hero-panel composition";
 const terminalAuthorityIndex = css.lastIndexOf(terminalAuthorityMarker);
@@ -13,6 +14,7 @@ const terminalCss = css.slice(terminalAuthorityIndex);
 
 test("the match composition has one responsive stylesheet authority", () => {
   assert.match(layout, /import "\.\/presentation\/styles\/match-reference\.css"/);
+  assert.match(layout, /match-reference\.css";[\s\S]*?hero-panel-reference\.css";/);
   for (const legacy of [
     "reference-board-layout", "reference-layout", "final-responsive-layout",
     "mobile-landscape-pc-parity", "match-stability-polish",
@@ -49,51 +51,42 @@ test("energy uses one circumference with capacity and current-energy orbs", () =
 });
 
 test("hero panels reserve distinct portrait, progression, ability and evolve regions", () => {
-  assert.match(terminalCss, /> \.player-hero\.enemy\s*\{[\s\S]*?height:\s*41\.5cqh/);
-  assert.match(terminalCss, /> \.player-hero:not\(\.enemy\)\s*\{[\s\S]*?height:\s*46cqh/);
-  assert.match(terminalCss, /> \.player-hero > \.hero-evolution\s*\{[\s\S]*?visibility:\s*visible[\s\S]*?z-index:\s*210/);
-  assert.match(terminalCss, /hero-evolution > \.evolution-track\s*\{[\s\S]*?display:\s*block[\s\S]*?height:\s*\.72cqh/);
-  assert.match(terminalCss, /:is\(\.hero-abilities, \.hero-command-bar\)[\s\S]*?margin-top:\s*var\(--hh-hero-abilities-top\)/);
-  assert.match(terminalCss, /> \.player-hero:not\(\.enemy\) > \.level-button\s*\{[\s\S]*?bottom:\s*\.8cqh[\s\S]*?z-index:\s*220/);
-  assert.doesNotMatch(terminalCss, /evolution-track\s*\{[\s\S]*?display:\s*none/);
+  assert.match(heroCss, /--hero-card-level-top:\s*calc\(var\(--hero-card-art-top\) \+ var\(--hero-card-art-height\) \+ var\(--hero-card-level-gap\)\)/);
+  assert.match(heroCss, /--hero-card-abilities-top:\s*calc\(var\(--hero-card-level-top\) \+ var\(--hero-card-level-height\) \+ var\(--hero-card-section-gap\)\)/);
+  assert.match(heroCss, /player-hero > \.hero-level-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 35%\) minmax\(0, 1fr\)/);
+  assert.match(heroCss, /canonical-hero-panel > \.hero-command-bar\s*\{[\s\S]*?grid-template-rows:\s*repeat\(3, minmax\(0, 1fr\)\)/);
+  assert.match(heroCss, /player-hero:not\(\.enemy\) > \.level-button\s*\{[\s\S]*?bottom:\s*\.72cqh[\s\S]*?z-index:\s*30/);
 });
 
 test("each hero and its ability bar share an isolated responsive stack", () => {
-  assert.match(page, /className="hero-panel-stack enemy"[\s\S]*?<PlayerHero[\s\S]*?<HeroAbilities player=\{foe\} enemy/);
-  assert.match(page, /className="hero-panel-stack player"[\s\S]*?<PlayerHero[\s\S]*?<HeroAbilities player=\{me\}/);
+  assert.match(page, /className="hero-panel-stack canonical-hero-panel enemy"[\s\S]*?<PlayerHero[\s\S]*?<HeroAbilities player=\{foe\} enemy/);
+  assert.match(page, /className="hero-panel-stack canonical-hero-panel player"[\s\S]*?<PlayerHero[\s\S]*?<HeroAbilities player=\{me\}/);
   assert.match(css, /> \.hero-panel-stack\.enemy\s*\{[\s\S]*?grid-row:\s*2 \/ 4/);
   assert.match(css, /> \.hero-panel-stack\.player\s*\{[\s\S]*?grid-row:\s*5 \/ 7/);
-  assert.match(css, /\.hero-panel-stack > \.hero-command-bar\s*\{[\s\S]*?position:\s*absolute[\s\S]*?inset:\s*23\.9cqh/);
+  assert.match(heroCss, /hero-panel-stack\.canonical-hero-panel\s*\{[\s\S]*?isolation:\s*isolate/);
 });
 
 test("the canonical hero card follows the approved portrait metadata powers action model", () => {
-  const modelMarker = "Canonical hero card — measured from the approved Gimble reference";
-  const modelCss = css.slice(css.lastIndexOf(modelMarker));
-  assert.ok(modelCss.length > modelMarker.length, "the approved hero-card model must be terminal");
-  assert.match(modelCss, /--hh-hero-art-height:\s*19\.2cqh/);
-  assert.match(modelCss, /--hh-hero-meta-top:\s*19\.65cqh/);
-  assert.match(modelCss, /--hh-hero-powers-top:\s*23\.9cqh/);
-  assert.match(modelCss, /hero-short-name\s*\{[\s\S]*?place-items:\s*center[\s\S]*?font-weight:\s*900/);
-  assert.match(modelCss, /hero-evolution\s*\{[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\) \.58cqh/);
-  assert.match(modelCss, /hero-panel-stack > \.hero-command-bar\s*\{[\s\S]*?grid-template-rows:\s*repeat\(3, minmax\(0, 1fr\)\)/);
-  assert.match(modelCss, /hero-panel-stack\.player > \.hero-command-bar\s*\{[\s\S]*?4\.55cqh/);
-  assert.match(modelCss, /level-button\s*\{[\s\S]*?clip-path:\s*polygon/);
+  assert.match(page, /hero-power-trigger[\s\S]*?hero-short-name[\s\S]*?<HeroPortrait[\s\S]*?hero-life/);
+  assert.match(page, /className="hero-level-row"[\s\S]*?className="hero-level"[\s\S]*?className="hero-evolution"/);
+  assert.match(page, /hero-evolution-copy[\s\S]*?PRÓX\. NÍVEL[\s\S]*?evolution-track/);
+  assert.match(page, /hero-ability-slot[\s\S]*?hero-ability-copy[\s\S]*?ATIVA[\s\S]*?PASSIVA/);
+  const abilitiesSource = page.slice(page.indexOf("function HeroAbilities"), page.indexOf("function ResourceSummary"));
+  assert.doesNotMatch(abilitiesSource, /<header>/);
 });
 
 test("hero hover can never hide the canonical in-card ability list", () => {
-  const modelCss = css.slice(css.lastIndexOf("Canonical hero card — measured from the approved Gimble reference"));
-  assert.match(modelCss, /player-hero:hover \+ \.hero-command-bar[\s\S]*?display:\s*grid\s*!important/);
-  assert.match(modelCss, /player-hero:focus-within \+ \.hero-command-bar/);
-  assert.match(modelCss, /hero-command-bar:hover[\s\S]*?opacity:\s*1\s*!important[\s\S]*?visibility:\s*visible\s*!important/);
-  assert.match(modelCss, /hero-ability-chip\.is-active\.is-available\s*\{[\s\S]*?pointer-events:\s*auto/);
+  assert.match(heroCss, /canonical-hero-panel > \.hero-command-bar\s*\{[\s\S]*?opacity:\s*1\s*!important[\s\S]*?visibility:\s*visible\s*!important/);
+  assert.match(page, /stateClass=locked\?"is-locked":active\?\(clickable\?"is-active is-available":"is-active is-unavailable"\):"is-passive"/);
 });
 
 test("long power text compacts in-card and expands into an accessible tooltip", () => {
   const modelCss = css.slice(css.lastIndexOf("Canonical hero card — measured from the approved Gimble reference"));
   assert.match(page, /data-ability-tooltip=\{abilityTooltip\}/);
   assert.match(page, /tabIndex=\{0\}/);
-  assert.match(modelCss, /hero-ability-chip\.copy-compact > span > p\s*\{[\s\S]*?font-size:[\s\S]*?-webkit-line-clamp:\s*2/);
-  assert.match(modelCss, /hero-ability-chip\.copy-dense > span > p\s*\{[\s\S]*?font-size:[\s\S]*?-webkit-line-clamp:\s*3/);
+  assert.match(heroCss, /hero-ability-chip\.copy-compact \.hero-ability-copy > p\s*\{[\s\S]*?-webkit-line-clamp:\s*unset[\s\S]*?font-size:/);
+  assert.match(heroCss, /hero-ability-chip\.copy-dense \.hero-ability-copy > p\s*\{[\s\S]*?-webkit-line-clamp:\s*unset[\s\S]*?font-size:/);
+  assert.match(heroCss, /hero-ability-copy > p[\s\S]*?white-space:\s*normal[\s\S]*?overflow-wrap:\s*anywhere[\s\S]*?text-wrap:\s*pretty/);
   assert.match(modelCss, /hero-ability-chip::after\s*\{[\s\S]*?content:\s*attr\(data-ability-tooltip\)[\s\S]*?width:\s*clamp\(14rem, 21cqw, 24rem\)/);
   assert.match(modelCss, /hero-ability-chip:is\(:hover, :focus-visible\)::after\s*\{[\s\S]*?opacity:\s*1/);
 });
@@ -107,18 +100,10 @@ test("player power tooltips open upward above the hand and remain readable", () 
 });
 
 test("hero life metadata and ability indices follow the reference alignment", () => {
-  const modelCss = css.slice(css.lastIndexOf("Canonical hero card — measured from the approved Gimble reference"));
-  assert.match(modelCss, /--hh-hero-meta-top:\s*calc\(\.62cqh \+ var\(--hh-hero-art-height\) \+ \.28cqh\)/);
-  assert.match(modelCss, /--hh-hero-powers-top:\s*calc\(var\(--hh-hero-meta-top\) \+ var\(--hh-hero-meta-height\) \+ \.52cqh\)/);
-  assert.match(modelCss, /player-hero \.hero-life\s*\{[\s\S]*?right:\s*\.52cqw[\s\S]*?bottom:\s*\.78cqh/);
-  assert.match(modelCss, /hero-power-trigger > \.hero-level\s*\{[\s\S]*?width:\s*32\.5%[\s\S]*?height:\s*calc\(var\(--hh-hero-meta-height\) - \.4cqh\)/);
-  assert.match(modelCss, /> \.player-hero > \.hero-evolution\s*\{[\s\S]*?left:\s*35%[\s\S]*?top:\s*var\(--hh-hero-meta-top\)/);
-  assert.match(modelCss, /hero-ability-chip > i\s*\{[\s\S]*?position:\s*static[\s\S]*?align-self:\s*center[\s\S]*?justify-self:\s*center/);
-  assert.match(modelCss, /hero-panel-stack\s*\{[\s\S]*?width:\s*min\(17\.35cqw, 29\.9cqh\)/);
-  assert.match(modelCss, /hero-power-trigger > \.hero-level\s*\{[\s\S]*?width:\s*35\.5%[\s\S]*?white-space:\s*nowrap/);
-  assert.match(modelCss, /> \.player-hero > \.hero-evolution\s*\{[\s\S]*?left:\s*38%[\s\S]*?width:\s*calc\(62% - \.52cqw\)/);
-  assert.match(modelCss, /hero-ability-chip > i\s*\{[\s\S]*?transform:\s*translateY\(\.18cqh\)/);
-  assert.match(modelCss, /max-height: 32rem\)[\s\S]*?hero-panel-stack\s*\{[\s\S]*?width:\s*min\(18\.4cqw, 31\.7cqh\)/);
+  assert.match(heroCss, /hero-power-trigger > \.hero-life\s*\{[\s\S]*?right:\s*\.46cqw[\s\S]*?bottom:\s*\.62cqh/);
+  assert.match(heroCss, /hero-level-row > \.hero-level\s*\{[\s\S]*?position:\s*static[\s\S]*?white-space:\s*nowrap/);
+  assert.match(heroCss, /hero-ability-chip > \.hero-ability-slot\s*\{[\s\S]*?align-self:\s*center[\s\S]*?justify-self:\s*center/);
+  assert.match(heroCss, /max-height: 32rem\)[\s\S]*?canonical-hero-panel\s*\{[\s\S]*?width:\s*min\(18\.4cqw, 31\.7cqh\)/);
 });
 
 test("evolution criteria and terrain ownership remain explicit", () => {
