@@ -4515,3 +4515,24 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.e
 html body .screen-game.screen-game .game-stage > .game-content.hs-board .slot-type-icon > path:not(.slot-icon-cut) {
   fill: currentColor !important;
 }
+
+/* Keep hero reading panels inside the board and above the hand. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack:is(:hover, :focus-within) {
+  z-index: 9950 !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip:is(:hover, :focus-visible)::after {
+  pointer-events: auto !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack.player > .hero-command-bar > .hero-ability-chip::after,
+html body .screen-game.screen-game .hero-panel-stack.player > .hero-command-bar > .hero-ability-chip:first-of-type::after {
+  top: auto !important;
+  bottom: 0 !important;
+  transform: translate(.55cqw, 0) !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack.player > .hero-command-bar > .hero-ability-chip:is(:hover, :focus-visible)::after,
+html body .screen-game.screen-game .hero-panel-stack.player > .hero-command-bar > .hero-ability-chip:first-of-type:is(:hover, :focus-visible)::after {
+  transform: translate(0, 0) !important;
+}
