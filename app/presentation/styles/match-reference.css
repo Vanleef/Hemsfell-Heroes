@@ -4157,7 +4157,7 @@ html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-life {
 html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-level,
 html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-power-trigger > .hero-level {
   left: .25cqw !important;
-  bottom: .52cqh !important;
+  bottom: calc(-1 * var(--hh-hero-meta-height) + .55cqh) !important;
   min-width: 4.4cqh !important;
   height: 2.2cqh !important;
   padding-inline: .36cqw !important;
@@ -4168,9 +4168,9 @@ html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-power-tr
 }
 
 html body .screen-game.screen-game .hero-panel-stack > .player-hero > .hero-evolution {
-  left: .5cqw !important;
+  left: calc(38% + .15cqw) !important;
   top: var(--hh-hero-meta-top) !important;
-  width: calc(100% - 1cqw) !important;
+  width: calc(62% - .65cqw) !important;
   height: var(--hh-hero-meta-height) !important;
   grid-template-columns: minmax(0, 1fr) auto !important;
   grid-template-rows: minmax(0, 1fr) .58cqh !important;
@@ -4221,6 +4221,23 @@ html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar {
   box-shadow: inset 0 0 .8cqw #000b !important;
 }
 
+/* The old interface exposed powers as a hover flyout. Those adjacency rules
+   must never hide or relocate the canonical in-card power list. */
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar,
+html body .screen-game.screen-game .hero-panel-stack > .player-hero:hover + .hero-command-bar,
+html body .screen-game.screen-game .hero-panel-stack > .player-hero:focus-within + .hero-command-bar,
+html body .screen-game.screen-game .hero-panel-stack > .player-hero:has(.hero-power-trigger:hover) + .hero-command-bar,
+html body .screen-game.screen-game .hero-panel-stack > .player-hero:has(.hero-power-trigger:focus-visible) + .hero-command-bar,
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar:hover,
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar:focus-within {
+  display: grid !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  translate: 0 !important;
+}
+
 html body .screen-game.screen-game .hero-panel-stack.player > .hero-command-bar {
   height: calc(100% - var(--hh-hero-powers-top) - 4.55cqh) !important;
 }
@@ -4235,6 +4252,16 @@ html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero
   opacity: 1 !important;
   background: transparent !important;
   box-shadow: none !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip.is-active.is-available {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip[aria-disabled="true"] {
+  pointer-events: none !important;
+  cursor: default !important;
 }
 
 html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip:last-child {
