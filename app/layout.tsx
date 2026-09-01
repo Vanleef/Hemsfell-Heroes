@@ -10,6 +10,8 @@ import "./presentation/styles/tutorial.css";
 import "./presentation/styles/command-bar-fixes.css";
 /* Single responsive authority for the complete match-table composition. */
 import "./presentation/styles/match-reference.css";
+/* Final, isolated authority for the canonical in-match hero card. */
+import "./presentation/styles/hero-panel-reference.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
