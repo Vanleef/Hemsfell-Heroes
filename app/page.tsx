@@ -1156,8 +1156,14 @@ function HeroAbilities({player,enemy=false,onAbility,interactionEnabled=true}:{p
    const action=d.id==="saymon"?"Pagar 2 de vida":clueCost?`Gastar ${clueCost} Pistas`:"Ativar";
    const title=locked?`Habilidade liberada no nível ${slot+1}.`:active?(used?"Habilidade já usada neste turno.":noResource?"Recursos insuficientes.":noValidTarget?"Não há alvo válido.":!interactionEnabled?"Aguarde a ação atual terminar.":`${action}: ${ability}`):"Habilidade passiva; resolve automaticamente.";
    const abilityCopy=ability.replace(/^[IVX]+ · /,"");
+   const abilityDetail=locked
+    ? `Desbloqueada quando o Herói alcançar o nível ${unlockLevel}.`
+    : active
+      ? `${action}. Depois de ativada, esta habilidade segue as condições e os alvos descritos acima.`
+      : "Efeito passivo: resolve automaticamente sempre que a condição descrita for atendida.";
+   const abilityTooltip=`${active?"ATIVA":"PASSIVA"} · NÍVEL ${unlockLevel}\n${abilityCopy}\n\n${abilityDetail}`;
    const copyDensity=abilityCopy.length>110?"copy-dense":abilityCopy.length>72?"copy-compact":"copy-normal";
-   return <button type="button" className={`ability hero-ability-chip ${stateClass} ${locked?"":"is-unlocked"} ${copyDensity}`} key={ability} aria-disabled={!clickable} tabIndex={clickable?0:-1} onClick={event=>{event.preventDefault();event.stopPropagation();if(clickable)onAbility?.(slot)}} title={title} aria-label={`${active?"Ativa":"Passiva"}: ${ability}`}><i aria-hidden="true">{slot+1}</i><span><b>{active?"ATIVA":"PASSIVA"}</b><p>{abilityCopy}</p></span></button>
+   return <button type="button" className={`ability hero-ability-chip ${stateClass} ${locked?"":"is-unlocked"} ${copyDensity}`} key={ability} aria-disabled={!clickable} tabIndex={0} onClick={event=>{event.preventDefault();event.stopPropagation();if(clickable)onAbility?.(slot)}} data-ability-tooltip={abilityTooltip} data-ability-state={title} aria-label={`${active?"Ativa":"Passiva"}: ${ability}`}><i aria-hidden="true">{slot+1}</i><span><b>{active?"ATIVA":"PASSIVA"}</b><p>{abilityCopy}</p></span></button>
   })}
  </aside>
 }
