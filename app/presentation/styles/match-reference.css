@@ -4490,3 +4490,28 @@ html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-status-c
     line-height: 1.08 !important;
   }
 }
+
+/* Owner palette is authoritative for every empty-slot glyph. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board .slot-type-icon {
+  background-image: none !important;
+  background-color: transparent !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .enemy-field .slot-type-icon,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain > .terrain-type-icon {
+  color: #a76b67 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-field .slot-type-icon,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain > .terrain-type-icon {
+  color: #6f9eaa !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.enemy-field, .player-field) span.slot-type-icon::before {
+  background: currentColor !important;
+  background-color: currentColor !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board .slot-type-icon > path:not(.slot-icon-cut) {
+  fill: currentColor !important;
+}
