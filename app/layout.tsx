@@ -8,26 +8,8 @@ import "./presentation/styles/game-presentation.css";
 import "./presentation/styles/tutorial.css";
 /* Keep the command-bar typography as the final legacy CSS authority. */
 import "./presentation/styles/command-bar-fixes.css";
-/* Shared 16:9 board sectors/displacement used by floating presentation UI. */
-import "./presentation/styles/board/reference-board-layout.css";
-/* Approved permanent-region geometry must outrank every legacy board rule. */
-import "./presentation/styles/board/reference-layout.css";
-/* Calibrate the approved reference across desktop and short landscape screens. */
-import "./presentation/styles/final-responsive-layout.css";
-/* High-DPR coarse-pointer phones remove desktop rem floors without reflow. */
-import "./presentation/styles/mobile-landscape-pc-parity.css";
-/* Terminal match polish: opponent symmetry and transform-safe target badges. */
-import "./presentation/styles/match-stability-polish.css";
-/* Fine-pointer shallow/ultrawide desktops retain the approved reference scale. */
-import "./presentation/styles/desktop-reference-calibration.css";
-/* Terminal reference parity: mirrored board spacing for desktop and mobile. */
-import "./presentation/styles/reference-composition-parity.css";
-/* Final visual pass: breathing room, hero metadata rail and pile clearance. */
-import "./presentation/styles/reference-composition-polish.css";
-/* User-approved final calibration for slots, energy medallions and hero panels. */
-import "./presentation/styles/reference-user-adjustments.css";
-/* Follow-up reference: larger semantic slots, single-ring energy and roomier heroes. */
-import "./presentation/styles/reference-user-adjustments-v2.css";
+/* Single responsive authority for the complete match-table composition. */
+import "./presentation/styles/match-reference.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";

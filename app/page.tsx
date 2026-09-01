@@ -1178,7 +1178,7 @@ function ResourceSummary({me,foe,active}:{me:Player;foe:Player;active:0|1}){
 
 function EnergyPanel({player,enemy=false}:{player:Player;enemy?:boolean}){
  return <aside className={`field-energy ${enemy?"enemy-energy":"player-energy"}`} aria-label={`${player.energy} de ${player.maxEnergy} energias; ${player.reserve} de 3 reservas`}>
-  <div className="energy-dial"><b>ENERGIA</b><span className="energy-ring">{Array.from({length:10},(_,index)=><i key={index} className={`${index<player.energy?"filled":""} ${index>=player.maxEnergy?"locked":""}`}/>)}</span><strong>{player.energy}/{player.maxEnergy}</strong></div>
+  <div className="energy-dial"><b>ENERGIA</b><span className="energy-ring">{Array.from({length:10},(_,index)=><i key={index} className={`${index<player.energy?"filled":""} ${index>=player.maxEnergy?"locked":""}`}/>)}</span><strong><em>{player.energy}</em><small>/{player.maxEnergy}</small></strong></div>
   <div className="reserve-track"><b>RESERVA</b><span>{Array.from({length:3},(_,index)=><i key={index} className={index<player.reserve?"filled":""}/>)}</span><strong>{player.reserve}/3</strong></div>
  </aside>
 }
