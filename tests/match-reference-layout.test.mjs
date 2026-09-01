@@ -88,6 +88,24 @@ test("hero hover can never hide the canonical in-card ability list", () => {
   assert.match(modelCss, /hero-ability-chip\.is-active\.is-available\s*\{[\s\S]*?pointer-events:\s*auto/);
 });
 
+test("long power text compacts in-card and expands into an accessible tooltip", () => {
+  const modelCss = css.slice(css.lastIndexOf("Canonical hero card — measured from the approved Gimble reference"));
+  assert.match(page, /data-ability-tooltip=\{abilityTooltip\}/);
+  assert.match(page, /tabIndex=\{0\}/);
+  assert.match(modelCss, /hero-ability-chip\.copy-compact > span > p\s*\{[\s\S]*?font-size:[\s\S]*?-webkit-line-clamp:\s*2/);
+  assert.match(modelCss, /hero-ability-chip\.copy-dense > span > p\s*\{[\s\S]*?font-size:[\s\S]*?-webkit-line-clamp:\s*3/);
+  assert.match(modelCss, /hero-ability-chip::after\s*\{[\s\S]*?content:\s*attr\(data-ability-tooltip\)[\s\S]*?width:\s*clamp\(14rem, 21cqw, 24rem\)/);
+  assert.match(modelCss, /hero-ability-chip:is\(:hover, :focus-visible\)::after\s*\{[\s\S]*?opacity:\s*1/);
+});
+
+test("evolution criteria and terrain ownership remain explicit", () => {
+  const modelCss = css.slice(css.lastIndexOf("Canonical hero card — measured from the approved Gimble reference"));
+  assert.match(modelCss, /hero-evolution > \.evolution-tooltip\s*\{[\s\S]*?width:\s*clamp\(16rem, 24cqw, 27rem\)/);
+  assert.match(modelCss, /hero-evolution:is\(:hover, :focus-within\) > \.evolution-tooltip\s*\{[\s\S]*?opacity:\s*1[\s\S]*?visibility:\s*visible/);
+  assert.match(modelCss, /terrain-slot\.enemy-terrain\s*\{[\s\S]*?border-color:\s*#79504f/);
+  assert.match(modelCss, /terrain-slot\.player-terrain\s*\{[\s\S]*?border-color:\s*#466b76/);
+});
+
 test("the final reference removes the seam and gives each field an owner color", () => {
   assert.match(terminalCss, /game-content\.hs-board::after\s*\{[\s\S]*?content:\s*none[\s\S]*?display:\s*none/);
   assert.match(terminalCss, /enemy-field \.creature-slot[\s\S]*?enemy-terrain[\s\S]*?border-color:\s*#79504f/);
