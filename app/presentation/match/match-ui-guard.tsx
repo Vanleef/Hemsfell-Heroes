@@ -228,7 +228,7 @@ function layoutTargetBannerInSafeLane() {
   const boardRect = board.getBoundingClientRect();
   if (!boardRect.width || !boardRect.height) return;
 
-  const commandBars = Array.from(board.querySelectorAll<HTMLElement>(":scope > .hero-command-bar"))
+  const commandBars = Array.from(board.querySelectorAll<HTMLElement>(".hero-panel-stack > .hero-command-bar"))
     .filter((node) => node.getClientRects().length > 0)
     .map((node) => node.getBoundingClientRect());
   const creatureSlots = Array.from(board.querySelectorAll<HTMLElement>(".paired-field .creature-slot"))
