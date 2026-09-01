@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [layout, css] = await Promise.all([
+const [layout, page, css] = await Promise.all([
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/presentation/styles/match-reference.css", import.meta.url), "utf8"),
 ]);
 const terminalAuthorityMarker = "Symmetric energy axis and complete hero-panel composition";
@@ -57,10 +58,23 @@ test("hero panels reserve distinct portrait, progression, ability and evolve reg
   assert.doesNotMatch(terminalCss, /evolution-track\s*\{[\s\S]*?display:\s*none/);
 });
 
+test("each hero and its ability bar share an isolated responsive stack", () => {
+  assert.match(page, /className="hero-panel-stack enemy"[\s\S]*?<PlayerHero[\s\S]*?<HeroAbilities player=\{foe\} enemy/);
+  assert.match(page, /className="hero-panel-stack player"[\s\S]*?<PlayerHero[\s\S]*?<HeroAbilities player=\{me\}/);
+  assert.match(css, /> \.hero-panel-stack\.enemy\s*\{[\s\S]*?grid-row:\s*2 \/ 4/);
+  assert.match(css, /> \.hero-panel-stack\.player\s*\{[\s\S]*?grid-row:\s*5 \/ 7/);
+  assert.match(css, /\.hero-panel-stack > \.hero-command-bar\s*\{[\s\S]*?position:\s*absolute[\s\S]*?inset:\s*23\.9cqh/);
+});
+
 test("the final reference removes the seam and gives each field an owner color", () => {
   assert.match(terminalCss, /game-content\.hs-board::after\s*\{[\s\S]*?content:\s*none[\s\S]*?display:\s*none/);
-  assert.match(terminalCss, /enemy-field \.creature-slot[\s\S]*?border-color:\s*#a64b42/);
-  assert.match(terminalCss, /player-field \.creature-slot[\s\S]*?border-color:\s*#277c9b/);
+  assert.match(terminalCss, /enemy-field \.creature-slot[\s\S]*?enemy-terrain[\s\S]*?border-color:\s*#79504f/);
+  assert.match(terminalCss, /player-field \.creature-slot[\s\S]*?player-terrain[\s\S]*?border-color:\s*#466b76/);
+});
+
+test("side piles use the enlarged terminal scale", () => {
+  assert.match(terminalCss, /> \.side-piles\s*\{[\s\S]*?width:\s*min\(15\.6cqw, 27\.8cqh\)/);
+  assert.match(terminalCss, /\.side-piles \.pile-card\s*\{\s*width:\s*82%/);
 });
 
 test("short landscape and mobile setup remain explicitly responsive", () => {
