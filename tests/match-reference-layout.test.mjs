@@ -114,6 +114,11 @@ test("hero life metadata and ability indices follow the reference alignment", ()
   assert.match(modelCss, /hero-power-trigger > \.hero-level\s*\{[\s\S]*?width:\s*32\.5%[\s\S]*?height:\s*calc\(var\(--hh-hero-meta-height\) - \.4cqh\)/);
   assert.match(modelCss, /> \.player-hero > \.hero-evolution\s*\{[\s\S]*?left:\s*35%[\s\S]*?top:\s*var\(--hh-hero-meta-top\)/);
   assert.match(modelCss, /hero-ability-chip > i\s*\{[\s\S]*?position:\s*static[\s\S]*?align-self:\s*center[\s\S]*?justify-self:\s*center/);
+  assert.match(modelCss, /hero-panel-stack\s*\{[\s\S]*?width:\s*min\(17\.35cqw, 29\.9cqh\)/);
+  assert.match(modelCss, /hero-power-trigger > \.hero-level\s*\{[\s\S]*?width:\s*35\.5%[\s\S]*?white-space:\s*nowrap/);
+  assert.match(modelCss, /> \.player-hero > \.hero-evolution\s*\{[\s\S]*?left:\s*38%[\s\S]*?width:\s*calc\(62% - \.52cqw\)/);
+  assert.match(modelCss, /hero-ability-chip > i\s*\{[\s\S]*?transform:\s*translateY\(\.18cqh\)/);
+  assert.match(modelCss, /max-height: 32rem\)[\s\S]*?hero-panel-stack\s*\{[\s\S]*?width:\s*min\(18\.4cqw, 31\.7cqh\)/);
 });
 
 test("evolution criteria and terrain ownership remain explicit", () => {
