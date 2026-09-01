@@ -24,6 +24,8 @@ import "./presentation/styles/desktop-reference-calibration.css";
 import "./presentation/styles/reference-composition-parity.css";
 /* Final visual pass: breathing room, hero metadata rail and pile clearance. */
 import "./presentation/styles/reference-composition-polish.css";
+/* User-approved final calibration for slots, energy medallions and hero panels. */
+import "./presentation/styles/reference-user-adjustments.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
