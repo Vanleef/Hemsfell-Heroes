@@ -26,6 +26,8 @@ import "./presentation/styles/reference-composition-parity.css";
 import "./presentation/styles/reference-composition-polish.css";
 /* User-approved final calibration for slots, energy medallions and hero panels. */
 import "./presentation/styles/reference-user-adjustments.css";
+/* Follow-up reference: larger semantic slots, single-ring energy and roomier heroes. */
+import "./presentation/styles/reference-user-adjustments-v2.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
