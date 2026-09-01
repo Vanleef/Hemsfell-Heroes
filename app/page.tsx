@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 65498)
-Total output lines: 1264
-
 "use client";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
@@ -407,7 +404,529 @@ const resumeOnlineSession=async(session:OnlineSession)=>{
   finally{setSessionRecoveryPending(false)}
 };
 
-/** Create a r…25498 tokens truncated…ngineTargetStep.allowedIds.includes(option.id))&&!(engineTargetStep.excludeIds||[]).includes(option.id)&&!engineTargetSelection.includes(option.id))):[];
+/** Create a room with a compact, readable request boundary. */
+const createRoom = async () => {
+  if(createRoomFlightRef.current)return createRoomFlightRef.current;
+  setCreateRoomPending(true);setRoomError("");
+  const task=(async()=>{try {
+    const response = await fetch("/api/rooms", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ settings }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data?.error || "failed");
+
+    const id = data.id as string;
+    rememberOnlineSession({roomId:id,token:data.token,isHost:true});
+    setMode("online");
+    setRoomId(id);
+    setRoomToken(data.token);
+    setRoomLink(roomUrl(id));
+    setRoomInfo(data);
+    setIsHost(true);
+    roomRevisionRef.current = data.revision ?? 0;
+    setScreen("setup");
+    pollRoom(id, data.token, true);
+  } catch (error) {
+    console.error("Could not create multiplayer room", error);
+    setRoomError(error instanceof Error ? error.message : "Não foi possível criar a sala.");
+  }})().finally(()=>{if(createRoomFlightRef.current===task)createRoomFlightRef.current=null;setCreateRoomPending(false)});
+  createRoomFlightRef.current=task;return task;
+};
+
+const joinRoomWithPost = (id:string)=>{
+    if(joinRoomFlightRef.current)return joinRoomFlightRef.current;
+    const joinRequestId=crypto.randomUUID();setJoinPending(true);setRoomError("");
+    const task=(async()=>{
+      let lastError:unknown=new Error("Não foi possível entrar na sala.");
+      for(let attempt=0;attempt<3;attempt++){
+        try{
+          const res=await fetch(`/api/rooms/${id}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({action:"join",joinRequestId})});
+          const data=await res.json();
+          if(res.ok){rememberOnlineSession({roomId:id,token:data.token,isHost:false});setMode("online");setRoomId(id);setInviteRoomId(null);setRoomToken(data.token);setRoomLink(roomUrl(id));setRoomInfo(data);setSettings(data.settings??settings);setIsHost(false);roomRevisionRef.current=data.revision??0;setScreen("setup");pollRoom(id,data.token,false);return}
+          if(res.status===409&&data?.error==="stale revision"){lastError=new Error("A sala mudou enquanto o convite era aceito.");continue}
+          if(res.status===409&&data?.error==="room full")throw new Error("A sala já está cheia.");
+          lastError=new Error(data?.error||"Não foi possível entrar na sala.");
+          if(res.status<500)throw lastError;
+        }catch(error){lastError=error;if(error instanceof Error&&error.message==="A sala já está cheia.")throw error}
+      }
+      throw lastError;
+    })().catch(error=>{setRoomError(error instanceof Error?error.message:"Não foi possível entrar na sala.")}).finally(()=>{if(joinRoomFlightRef.current===task)joinRoomFlightRef.current=null;setJoinPending(false)});
+    joinRoomFlightRef.current=task;return task;
+};
+
+const selectHeroInRoom = async (heroId:string)=>{
+    if(!roomId||!roomToken||lobbyActionPending)return;
+    const candidate=userDecks[heroId as DeckId],validation=validateUserDeck(candidate,cards);
+    if(!validation.ok||!validation.deck){setRoomError(`Deck inválido: ${validation.errors.slice(0,2).map(deckValidationLabel).join(" · ")}`);return}
+    setLobbyActionPending(true);setRoomError("");
+    const selectRequestId=crypto.randomUUID();
+    try{await roomAction("select",{heroId,userDeck:validation.deck,locked:true,selectRequestId})}
+    finally{setLobbyActionPending(false)}
+};
+
+/* Online milestones use the same authoritative presentation transaction as local play.
+   Keeping this hook as a no-op preserves the call sites without scheduling a second theatre. */
+const queueOnlineSnapshotFx=(_previous:Game|null,_next:Game)=>{};
+const applyRoomSnapshot=(data:any)=>{const incomingRevision=Number(data?.revision??-1);if(Number.isFinite(incomingRevision)&&incomingRevision<roomRevisionRef.current)return false;if(data.status==="closed"){clearOnlineMatch();setRoomError("A partida online foi encerrada.");return true}setRoomInfo(data);if(roomId)announceOnlineSnapshot(roomId,isHost,data);roomRevisionRef.current=data.revision??roomRevisionRef.current;if(data.game){const next=fromCanonicalGame(data.game),previous=currentGameRef.current;queueOnlineSnapshotFx(previous,next);currentGameRef.current=next;setGame(next);setResponseWindow(next.pendingResponse??null);setScreen("game")}return true};
+const roomAction=(action:string,extra:Record<string,unknown>={})=>{
+ if(!roomId||!roomToken)return Promise.resolve(null);
+ const execute=async(staleRetries=0,networkRetries=0):Promise<any>=>{try{
+  const payload={action,token:roomToken,...extra,...(action==="command"?{baseRevision:roomRevisionRef.current}:{})};
+  const res=await fetch(`/api/rooms/${roomId}`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(payload)});
+  const data=await res.json();
+  const staleRevision=res.status===409&&data?.error==="stale revision";
+  const retryableStale=staleRevision&&(action==="command"||action==="choose_start"||action==="select"||action==="mulligan"||action==="rematch");
+  if(retryableStale){applyRoomSnapshot(data);const participant=isHost?data?.host:data?.guest;if(action==="select"&&participant?.deckLocked&&participant?.heroId===extra.heroId)return data;if(action==="choose_start"&&["mulligan","started","finished"].includes(data?.status))return data;if(staleRetries<3){await new Promise(resolve=>window.setTimeout(resolve,0));return execute(staleRetries+1,networkRetries)}}
+  if(res.status>=500&&networkRetries<2){await new Promise(resolve=>window.setTimeout(resolve,150*(networkRetries+1)));return execute(staleRetries,networkRetries+1)}
+  const requestedCommand=extra.command as Record<string,unknown>|undefined;
+  const obsoleteAutomaticPriorityPass=action==="command"&&requestedCommand?.type==="passPriority"&&requestedCommand.auto===true&&["no-priority-window","not-your-priority"].includes(String(data?.error||""));
+  if(!res.ok&&obsoleteAutomaticPriorityPass){applyRoomSnapshot(data);setRoomError("");return data}
+  if(!res.ok){setRoomError(data?.error||"A sala recusou a ação.");return null}
+  setRoomError("");applyRoomSnapshot(data);return data;
+ }catch(error){if(networkRetries<2){await new Promise(resolve=>window.setTimeout(resolve,150*(networkRetries+1)));return execute(staleRetries,networkRetries+1)}throw error}
+ };
+ const task=syncQueueRef.current.then(()=>execute()).catch(()=>{setRoomError("Conexão instável. A ação será reconciliada com a sala.");return null});
+ syncQueueRef.current=task.then(()=>undefined,()=>undefined);
+ return task;
+};
+const chooseStarter=async(startSelf:boolean)=>{if(lobbyActionPending)return;setLobbyActionPending(true);const chooseStartRequestId=crypto.randomUUID();try{await roomAction("choose_start",{startSelf,chooseStartRequestId})}finally{setLobbyActionPending(false)}};
+const confirmMulligan=async(keep:boolean)=>{if(mulliganPendingRef.current)return;mulliganPendingRef.current=true;setMulliganActionPending(true);const mulliganRequestId=crypto.randomUUID();try{await roomAction("mulligan",{keep,mulliganRequestId})}finally{mulliganPendingRef.current=false;setMulliganActionPending(false)}};
+const requestOnlineRematch=async()=>{if(rematchActionPending||roomInfo?.status!=="finished")return;setRematchActionPending(true);const rematchRequestId=crypto.randomUUID();try{await roomAction("rematch",{rematchRequestId})}finally{setRematchActionPending(false)}};
+
+const pollRoom = (id:string,token:string,hostRole:boolean)=>{
+    stopPolling();const generation=++pollGenerationRef.current;
+    const fn = async ()=>{ try{ const res = await fetch(`/api/rooms/${id}`,{cache:"no-store",headers:{authorization:`Bearer ${token}`}}); if(!res.ok) return; const r = await res.json();setRoomError(current=>current==="Reconectando à sala…"?"":current);const incomingRevision=Number(r.revision??-1);if(incomingRevision<=roomRevisionRef.current)return;if(r.status==="closed"){clearOnlineMatch();setRoomError("A partida online foi encerrada.");return}announceOnlineSnapshot(id,hostRole,r); setRoomInfo(r);setSettings(r.settings??settings);roomRevisionRef.current=incomingRevision;if(r.game){
+            const oriented=hostRole?structuredClone(r.game):mirrorOnlineGame(r.game),previous=currentGameRef.current;queueOnlineSnapshotFx(previous,oriented);currentGameRef.current=oriented;setResponseWindow(oriented.pendingResponse??null);setScreen('game');setGame(oriented); }
+    }catch(e){setRoomError("Reconectando à sala…")}finally{if(generation===pollGenerationRef.current)pollRef.current=window.setTimeout(fn,600)} };
+    void fn();
+};
+
+useEffect(()=>{
+    const preferredRoomId=new URLSearchParams(location.search).get("room")||undefined;
+    const session=loadOnlineSession(localStorage,preferredRoomId) as OnlineSession|null;
+    if(session){void resumeOnlineSession(session)}else if(preferredRoomId){setMode("online");setScreen("setup");setInviteRoomId(preferredRoomId);setSessionRecoveryPending(false);fetch(`/api/rooms/${preferredRoomId}`).then(res=>res.json()).then(data=>{if(data.error)throw new Error(data.error);setInvitePreview(data);setSettings(data.settings??settings)}).catch(error=>setRoomError(error instanceof Error&&error.message?`Não foi possível carregar o convite: ${error.message}`:"A sala não existe ou o armazenamento está indisponível."))}else setSessionRecoveryPending(false);
+    return ()=>stopPolling();
+},[]);
+useEffect(()=>{
+ if(mode!=="online"||!roomId||!roomToken)return;
+ const notifyDisconnect=()=>signalOnlineDeparture(roomId,roomToken,roomInfo?.status);
+ window.addEventListener("pagehide",notifyDisconnect);
+ return()=>window.removeEventListener("pagehide",notifyDisconnect);
+},[mode,roomId,roomToken,roomInfo?.status]);
+useEffect(()=>{const id=window.setInterval(()=>setClockNow(Date.now()),1000);return()=>window.clearInterval(id)},[]);
+useEffect(()=>{if(mode!=="online"||!roomId||!roomToken||!game)return;const deadline=game.pendingResponse?.deadline??game.turnDeadline;if(!deadline||deadline>clockNow)return;const key=`${game.round}-${game.pendingResponse?.action??"turn"}-${deadline}`;if(timeoutSentRef.current===key)return;timeoutSentRef.current=key;roomAction("timeout")},[clockNow,mode,roomId,roomToken,game?.pendingResponse?.deadline,game?.turnDeadline]);
+useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const participant=isHost?roomInfo?.host:roomInfo?.guest,deadline=participant?.mulliganDeadline;if(participant?.mulliganDone||!deadline||deadline>clockNow)return;const key=`mulligan-${deadline}`;if(timeoutSentRef.current===key)return;timeoutSentRef.current=key;void roomAction("timeout")},[clockNow,mode,isHost,roomInfo?.status,roomInfo?.host?.mulliganDone,roomInfo?.host?.mulliganDeadline,roomInfo?.guest?.mulliganDone,roomInfo?.guest?.mulliganDeadline]);
+ /* One centralized life-loss dispatcher keeps damage/payment triggers consistent across cards and heroes. */
+ const resolveLifeLossTriggers=(g:Game,before:[number,number])=>{
+  g.players.forEach((p,index)=>{
+   const loss=Math.max(0,before[index]-p.life);if(!loss)return;
+   const foe=g.players[index===0?1:0] as Player;
+   if(p.heroId==="saymon"){p.heroXP+=1;log(g,"Saymon recebeu 1 marcador por perder vida.","effect")}
+   if(g.active===index)p.board.filter(unit=>unit.page===131&&!unit.suffocated).forEach(unit=>{unit.temporaryAtk=(unit.temporaryAtk||0)+1;log(g,`Discípulo de Sangue recebeu +1/+0 após perda de vida.`,"effect")});
+   const castle=p.terrain?.page===148&&!p.terrain.suffocated?p.terrain:null;if(g.active===index&&castle){const key=`castelo-carmesim-${g.round}`,count=(p.abilityUses[key]||0)+1;p.abilityUses[key]=count;if(count===1){draw(g,p);log(g,"Castelo Carmesim: primeira perda de vida comprou 1 carta.","effect")}else if(count===2){log(g,"Castelo Carmesim: escolha um alvo para receber 2 de dano.","effect")}else if(count===3){p.life=Math.min(30,p.life+2);log(g,"Castelo Carmesim: terceira perda de vida restaurou 2.","heal")}else if(count>=4){p.life=Math.min(30,p.life+1);log(g,"Castelo Carmesim: perda adicional restaurou 1 de vida.","heal")}}
+  })
+ };
+ const queueCafeDoTempoPlacement=(g:Game)=>{
+  if(g.pendingDecision)return;
+  const targetOwner=g.active;
+  for(const owner of [0,1] as const){
+   const source=g.players[owner].terrain?.page===212&&!g.players[owner].terrain?.suffocated?g.players[owner].terrain:null;if(!source)continue;
+   const target=g.players[targetOwner],creatureSlots=Array.from({length:5},(_,slot)=>slot).filter(slot=>!target.board.some(unit=>unit.slot===slot));
+   const supportSlots=g.players[owner].heroId==="rasmus"&&g.players[owner].level>=3?Array.from({length:5},(_,slot)=>slot).filter(slot=>!target.support.some(unit=>unit.slot===slot)):[];
+   if(!creatureSlots.length&&!supportSlots.length)continue;
+   g.pendingDecision={kind:"image-placement",owner,effect:{name:"Gato Multidimensional",targetOwner,creatureSlots,supportSlots},context:{owner,sourceId:source.uid,decisionOwner:owner},sourceName:"Café do Tempo"};return;
+  }
+ };
+ const update=(fn:(g:Game)=>void)=>setGame(old=>{if(!old)return old;const g=structuredClone(old),before:[number,number]=[g.players[0].life,g.players[1].life],cruelDamageBefore=new Map(g.players.flatMap(player=>player.board.filter(unit=>unit.page===165).map(unit=>[unit.uid,Number(unit.damage||0)] as const)));fn(g);syncDynamicFieldCounts(g);g.players.forEach(player=>player.board.filter(unit=>unit.page===165&&!unit.suffocated).forEach(unit=>{if(Number(unit.damage||0)>Number(cruelDamageBefore.get(unit.uid)||0)){unit.modifiers||=[];unit.modifiers.push({attack:1,health:0,duration:"permanent",sourceId:`escudeiro-cruel:${unit.uid}:${g.events}`});log(g,`${unit.name} recebeu +1 de Ofensividade permanente após sofrer dano.`,"effect")}}));resolveLifeLossTriggers(g,before);removeDead(g,(owner,card)=>resolveText(g,owner,card));syncDynamicFieldCounts(g);removeDead(g,(owner,card)=>resolveText(g,owner,card));syncDynamicFieldCounts(g);g.players.forEach((p,i)=>{if(p.life<=0)g.winner=i===0?1:0});return g});
+ const setSharedCombat=(action:CombatAction|null)=>{
+  setCombatAction(action);
+  // Combat animation/progress is local UI state. Persisting every transition
+  // alongside pendingResponse caused queued snapshots to resurrect an already
+  // passed priority window and alternate between defender/response modals.
+ };
+ const setSharedResponse=(response:PendingResponse|null,sharedAction:CombatAction|null=combatAction)=>{
+  /* Online response/combat checkpoints come only from authoritative room snapshots.
+     Local callers may animate, but must never manufacture or persist priority state. */
+  if(mode==="online")return;
+  const timed=response?{...response,deadline:response.deadline??Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000}:null;
+  setResponseWindow(timed);
+  /* Bot priority must live in the authoritative game snapshot too. Keeping this
+     only in responseWindow made the UI wait forever while the AI inspected a
+     currentGameRef with no pendingResponse and therefore never passed. */
+  /* Queue this mutation against React's latest game value instead of cloning
+     currentGameRef synchronously. Actions such as hero evolution update the
+     game and immediately open priority; cloning the ref here could restore the
+     pre-action snapshot and silently undo the evolution. */
+  setGame(old=>{if(!old)return old;const next=structuredClone(old);next.pendingResponse=timed?{...timed,passes:timed.passes??0}:null;next.combatAction=sharedAction;currentGameRef.current=next;return next});
+ };
+ useEffect(()=>{if(mode!=="online"||!game)return;/* Priority is interaction state, not presentation timing: expose the authoritative window immediately so pass/respond controls cannot lag behind server ownership. */setCombatAction(game.combatAction??null);setResponseWindow(game.pendingResponse??null)},[mode,game?.combatAction,game?.pendingResponse?.action,game?.pendingResponse?.deadline,game?.pendingResponse?.responder,game?.pendingResponse?.passes]);
+ useEffect(()=>{currentGameRef.current=game},[game]);
+ useEffect(()=>{if(!game){damageUiSnapshotRef.current=null;return}const units=[...game.players[0].board,...game.players[0].support,...(game.players[0].terrain?[game.players[0].terrain]:[]),...game.players[1].board,...game.players[1].support,...(game.players[1].terrain?[game.players[1].terrain]:[])],next={life:[game.players[0].life,game.players[1].life] as [number,number],damage:Object.fromEntries(units.map(unit=>[unit.uid,Number(unit.damage||0)]))},previous=damageUiSnapshotRef.current,presentationOwnsTransition=!!(window as Window&{__hemsfellPresentationBusy?:boolean}).__hemsfellPresentationBusy;const pulseDamageUi=(selector:string)=>{const node=document.querySelector<HTMLElement>(selector);if(!node)return;node.classList.remove("damage-hit");void node.offsetWidth;node.classList.add("damage-hit");window.setTimeout(()=>node.classList.remove("damage-hit"),540)};if(previous&&!presentationOwnsTransition){if(next.life[0]<previous.life[0])pulseDamageUi('[data-hero-role="ally"]');if(next.life[1]<previous.life[1])pulseDamageUi('[data-hero-role="enemy"]');for(const [uid,amount] of Object.entries(next.damage))if(amount>Number(previous.damage[uid]||0))pulseDamageUi(`[data-unit-id="${CSS.escape(uid)}"]`)}damageUiSnapshotRef.current=next},[game]);
+ useEffect(()=>{if(game?.active!==0||game.phase!=="manutencao"||game.winner!==null)return;setResponseWindow(null);setCombatAction(null);setAiAttackQueue([]);setMaintenanceOpen(true)},[game?.active,game?.phase,game?.winner]);
+ const me=game?.players[0],foe=game?.players[1];
+ const [visualFxQueue,setVisualFxQueue]=useState<VisualFx[]>([]);const [elementChoice,setElementChoice]=useState<{cardIndex:number;name:string}|null>(null);
+ const begin=()=>{const mineValidation=validateUserDeck(userDecks[mine],cards),enemyValidation=validateUserDeck(userDecks[enemy],cards);if(!mineValidation.ok||!mineValidation.deck){setScreen("decks");return}resetAdvancedAI(1);setTargeting(null);setImageChoice(null);setCafeChoice(null);setResponseWindow(null);setCombatAction(null);setAiAttackQueue([]);setVisualFx(null);setVisualFxQueue([]);setConfirmSurrender(false);setExtraView(null);setSearchChoice(null);setShufflingDeck(null);setDragging(null);setElementChoice(null);setMaintenanceOpen(true);setGame(start(mine,enemy,0,30,mineValidation.deck,enemyValidation.ok?enemyValidation.deck:null));setScreen("game")};
+ /* Card moments are deliberately serialized: a new spell or summon waits for the previous
+    animation to finish instead of replacing it halfway through. */
+ const showFx=(kind:VisualFx["kind"],label:string,detail:string,card?:CardDef,target?:CardDef,allowRepeat=false)=>{const signature=[kind,label,detail,card?.id||"",target?.id||""].join("|"),context=[kind,label,card?.id||""].join("|"),now=Date.now(),previous=visualFxDedupeRef.current.get(signature)||0,contextPrevious=visualFxContextRef.current.get(context)||0;if(!allowRepeat&&(now-previous<3600||now-contextPrevious<250))return;visualFxDedupeRef.current.set(signature,now);visualFxContextRef.current.set(context,now);setVisualFxQueue(queue=>[...queue,{id:uid(),kind,theme:effectTheme(card,target,kind,label,detail),label,detail,card,target}])};
+ const animateDeckShuffle=(owner:0|1)=>{setShufflingDeck(owner)};
+ const completeSearch=(selectedIds:string[])=>{if(!searchChoice)return;const request=searchChoice;update(g=>applySearchSelection(g,request,selectedIds));setSearchChoice(null);animateDeckShuffle(request.owner)};
+ const doMaintenance=(two=false)=>{
+  if(!game||game.active!==0||game.phase!=="manutencao"||game.winner!==null)return;
+  if(mode==="online"){void runRulesCommand({type:"maintenanceChoice",drawTwo:two},0).then(accepted=>{if(accepted)setMaintenanceOpen(false)});return}
+  update(g=>{
+   const p=g.players[0];
+   if(!p.deck.length){p.life=0;log(g,`${deckById(p.heroId).name} iniciou a Manutenção com o Deck vazio e perdeu a partida.`,"danger");return}
+   p.board.forEach(u=>{u.damage=0;u.summoning=false;u.activatedThisTurn=false;u.attackedThisTurn=false;u.attacksThisTurn=0;u.defenseUses=0;if(u.immobilized){u.exhausted=true;u.immobilized=false}else if(!u.stunned)u.exhausted=false;u.stunned=false;u.frozen=false;u.suffocated=false});p.support.forEach(u=>{u.exhausted=false;u.summoning=false;u.activatedThisTurn=false});
+   resetTurnState(p);
+   if(two&&g.round>1)draw(g,p,2);else{p.maxEnergy=Math.min(10,p.maxEnergy+1);draw(g,p)}
+    p.energy=p.maxEnergy;resolveMaintenanceTriggers(g,0);g.phase="principal";queueCafeDoTempoPlacement(g);
+   log(g,`${deckById(p.heroId).name} iniciou a etapa Principal com ${p.energy} de energia após ${two&&g.round>1?"comprar 2 cartas":"aumentar a energia máxima e comprar 1 carta"}.`,"phase");
+  });
+  setMaintenanceOpen(false);
+ };
+ useEffect(()=>{if(!visualFx&&visualFxQueue.length){setVisualFx(visualFxQueue[0]);setVisualFxQueue(queue=>queue.slice(1))}},[visualFx,visualFxQueue]);
+ const resolveText=(g:Game,owner:0|1,c:CardDef,targetUid?:string,selectedImageName?:string,cafeEffect?:CafeChoice,allowVisualRepeat=false,targetUids?:string[])=>{const p=g.players[owner],o=g.players[owner===0?1:0];const text=("suffocated" in c&&c.suffocated?"":c.text).toLowerCase(),primaryText=text.split(/neste turno, seu próximo/i)[0];let resolved=false;const selectedTargetIds=targetUids?.length?targetUids:targetUid?[targetUid]:[],chosenEnemies=selectedTargetIds.map(id=>o.board.find(x=>x.uid===id)||o.support.find(x=>x.uid===id)||(o.terrain?.uid===id?o.terrain:undefined)).filter((unit):unit is Unit=>!!unit),chosenAllies=selectedTargetIds.map(id=>p.board.find(x=>x.uid===id)||p.support.find(x=>x.uid===id)||(p.terrain?.uid===id?p.terrain:undefined)).filter((unit):unit is Unit=>!!unit),chosenEnemy=chosenEnemies[0],chosenAlly=chosenAllies[0],chosenUnits=[...chosenEnemies,...chosenAllies];if(!text){log(g,`${c.name} está Sufocada e não pode ativar efeitos.`,"danger");return}
+  const showTargetEffect=(label:string,target:CardDef|Unit)=>queueMicrotask(()=>showFx("ability",label,`${c.name} → ${target.name}`,baseCard(c),baseCard(target),allowVisualRepeat));
+  /* Rules resolve atomically. Animation is presentation-only and never owns a game transition. */
+  const deferUnitImpact=(target:Unit,targetOwner:0|1,label:string,apply:(live:Unit,player:Player,next:Game)=>void)=>{showTargetEffect(label,target);const player=g.players[targetOwner],live=[...player.board,...player.support,...(player.terrain?[player.terrain]:[])].find(unit=>unit.uid===target.uid);if(live)apply(live,player,g)};
+    if(c.page===10){const targets=g.players.flatMap(entry=>entry.board);targets.forEach(unit=>{unit.damage=(unit.damage||0)+2});log(g,`Dragão de Limo explodiu em ácido e causou 2 de dano a ${targets.length} criatura(s) em campo.`,"damage");resolved=true}
+    if(c.page===116){p.reserve=Math.min(3,p.reserve+1);log(g,"Conjurador concedeu 1 de energia à Reserva por Último Suspiro.","energy");resolved=true}
+    if(c.page===118){const slot=firstFreeSlot(p.board),index=p.grave.findIndex(card=>card.type==="Criatura"&&card.cost<=2);if(slot===undefined)log(g,"Reanimador não encontrou espaço para retornar uma criatura.","manual");else if(index<0)log(g,"Reanimador não encontrou criatura de custo 2 ou menos no Cemitério.","manual");else{const card=p.grave.splice(index,1)[0];p.board.push(asUnit(card,slot));log(g,`Reanimador retornou ${card.name} do Cemitério ao campo.`,"effect")}resolved=true}
+    if(c.page===119){const amount=g.players[0].turnDeaths+g.players[1].turnDeaths;if(amount>0){o.life-=amount;p.damageDealt+=amount;log(g,`Explosivo causou ${amount} de dano ao herói adversário por Último Suspiro.`,"damage")}else log(g,"Explosivo não causou dano: nenhuma criatura morreu neste turno.","effect");resolved=true}
+    if(c.page===256){const milled=o.deck.splice(0,2);o.grave.push(...milled);log(g,`Cria de Ladino fez o oponente triturar ${milled.length} carta(s).`,"effect");resolved=true}
+    if(c.page===95){const amount=p.grave.length;draw(g,p,amount);log(g,`Epifania comprou ${amount} carta(s) pelo seu Cemitério.`,"effect");resolved=true}
+  const searchRequest=searchRequestFor(owner,c,p);if(searchRequest){if(owner===0)queueMicrotask(()=>setSearchChoice(current=>current||searchRequest));else{const candidates=p.deck.filter(card=>matchesSearch(card,searchRequest)).slice(0,searchRequest.limit);applySearchSelection(g,searchRequest,candidates.map(card=>card.id));queueMicrotask(()=>animateDeckShuffle(owner))}log(g,`${c.name} iniciou Procure: ${searchRequest.filterLabel}.`,"effect");resolved=true}else if(/embaralhe|embaralhar/i.test(text)){if(/cartas do seu cemitério no seu deck/i.test(text)){p.deck.push(...p.grave);p.grave=[]}p.deck=shuffle(p.deck);log(g,`${c.name} embaralhou o Deck Principal.`,"shuffle");queueMicrotask(()=>animateDeckShuffle(owner));resolved=true}
+  const drawMatch=text.match(/compre\s+(\d+|uma?|duas?|dois|tr[eê]s)/);if(drawMatch&&c.page!==231){const amount=numericAmount(drawMatch[1]);draw(g,p,amount);log(g,`${c.name}: ${p.heroId===mine?"você":"IA"} comprou ${amount} carta(s).`,"effect");resolved=true}
+  const healMatch=text.match(/(?:cure|restaure|recupere)\s+(\d+|uma?|duas?|dois|tr[eê]s)/);if(healMatch&&c.page!==231){const n=numericAmount(healMatch[1]),creatureTarget=chosenEnemy||chosenAlly;if(/criatura/i.test(primaryText)&&creatureTarget){creatureTarget.damage=Math.max(0,creatureTarget.damage-n);showTargetEffect("RESTAURAÇÃO",creatureTarget);log(g,`${c.name} restaurou ${n} de vida de ${creatureTarget.name}.`,"heal")}else if(targetUid==="enemy-hero"){o.life=Math.min(30,o.life+n);log(g,`${c.name} restaurou ${n} de vida do herói adversário.`,"heal")}else{p.life=Math.min(30,p.life+n);log(g,`${c.name} restaurou ${n} de vida.`,"heal")}resolved=true}
+  /* Primeiro Ato resolves at the exact moment a creature (including an Image) enters.
+     Dragon Images add their adjacent splash after the chosen primary target is hit. */
+  const firstActDamage=/primeiro ato\s*:\s*pode causar\s+(\d+)\s+de dano/i.exec(primaryText);
+  if(firstActDamage){const n=Number(firstActDamage[1]),targets=chosenUnits;if(targets.length){for(const target of targets){const ally=p.board.some(x=>x.uid===target.uid)||p.support.some(x=>x.uid===target.uid)||p.terrain?.uid===target.uid,targetOwner=(ally?owner:owner===0?1:0) as 0|1;const splash=/adjacentes ao alvo/i.test(primaryText)?Number(primaryText.match(/e\s+(\d+)\s+de dano as criaturas adjacentes/i)?.[1]||0):0;deferUnitImpact(target,targetOwner,"PRIMEIRO ATO",(live,targetPlayer,next)=>{const reduced=Math.max(0,n-(hasKeyword(targetPlayer,live,"Robusto")?1:0));live.damage+=reduced;if(reduced>0)markCreatureDamage(c,targetOwner);if(c.tags.some(tag=>cleanName(tag)==="roubo de vida"))next.players[owner].life=Math.min(30,next.players[owner].life+reduced);if(splash)targetPlayer.board.filter(unit=>Math.abs(unit.slot-live.slot)===1).forEach(unit=>{deferUnitImpact(unit,targetOwner,"IMPACTO ADJACENTE",adjacent=>{adjacent.damage+=Math.max(0,splash-(hasKeyword(targetPlayer,adjacent,"Robusto")?1:0))})});log(next,`${c.name} ativou Primeiro Ato: ${reduced} de dano em ${live.name}${splash?` e ${splash} nas criaturas adjacentes`:""}.`,"damage")})}}else log(g,`${c.name} entrou em campo; Primeiro Ato não teve alvo para causar dano.`,"effect");resolved=true}
+  const isEarthquake=cleanName(c.name)==="terremoto";if(isEarthquake){const amount=earthquakeDamage(o.board.length);[...p.board,...o.board].forEach(unit=>{unit.damage+=amount;showTargetEffect("TERREMOTO",unit)});log(g,`${c.name} causou ${amount} de dano a cada criatura, igual ao número de criaturas inimigas em campo.`,"damage");resolved=true}
+  const damageMatch=primaryText.match(/cause\s+(\d+)\s+de dano/);if(damageMatch&&!firstActDamage&&!isEarthquake&&!/(?:todas?|cada)\s+(?:as?\s+)?criaturas/i.test(primaryText)){const n=Number(damageMatch[1]);if(chosenUnits.length){for(const target of chosenUnits){const ally=p.board.some(x=>x.uid===target.uid)||p.support.some(x=>x.uid===target.uid)||p.terrain?.uid===target.uid,targetOwner=(ally?owner:owner===0?1:0) as 0|1;deferUnitImpact(target,targetOwner,"EFEITO DE DANO",(live,targetPlayer,next)=>{const reduced=Math.max(0,n-(hasKeyword(targetPlayer,live,"Robusto")?1:0));live.damage+=reduced;if(c.tags.some(tag=>cleanName(tag)==="toque da morte")&&reduced>0&&!hasKeyword(targetPlayer,live,"Indestrutível"))live.damage=999;if(c.tags.some(tag=>cleanName(tag)==="roubo de vida"))next.players[owner].life=Math.min(30,next.players[owner].life+reduced);log(next,`${c.name} causou ${reduced} de dano em ${live.name}.`,"damage")})}}else{for(const id of selectedTargetIds){if(id==="enemy-hero"){o.life-=n;p.damageDealt+=n;if(n>0)markCreatureDamage(c,owner===0?1:0);if(c.tags.some(tag=>cleanName(tag)==="roubo de vida"))p.life=Math.min(30,p.life+n);log(g,`${c.name} causou ${n} de dano ao herói adversário.`,"damage")}else if(id==="ally-hero"){p.life-=n;if(n>0)markCreatureDamage(c,owner);log(g,`${c.name} causou ${n} de dano ao próprio herói.`,"damage")}}if(!selectedTargetIds.length)log(g,`${c.name} exige que o jogador escolha um alvo válido.`,"manual")}resolved=true}
+  if(/(?:destrua|elimine|derrote) (?:uma|a|duas|até duas)?\s*criatura/.test(text)&&chosenUnits.length){for(const target of chosenUnits){const ally=p.board.some(x=>x.uid===target.uid)||p.support.some(x=>x.uid===target.uid)||p.terrain?.uid===target.uid,targetOwner=(ally?owner:owner===0?1:0) as 0|1;deferUnitImpact(target,targetOwner,"DESTRUIÇÃO",(live,_player,next)=>{live.damage=999;log(next,`${c.name} destruiu ${live.name}.`,"danger")})}resolved=true}
+  if(/\bbana\b|\bbanir\b/.test(text)){const target=chosenAlly||chosenEnemy;if(target){const targetPlayer=chosenAlly?p:o,targetOwner=(chosenAlly?owner:owner===0?1:0) as 0|1;deferUnitImpact(target,targetOwner,"BANIMENTO",(live,player,next)=>{const isCreature=player.board.some(x=>x.uid===live.uid);if(isCreature)discardLinkedArtifacts(next,player,live.uid);player.board=player.board.filter(x=>x.uid!==live.uid);player.support=player.support.filter(x=>x.uid!==live.uid);if(player.terrain?.uid===live.uid)player.terrain=null;sendToObscuro(next,player,live)});resolved=true}}
+  if(/retorne .*criatura.*mão|devolva .*criatura.*mão/.test(text)){const target=chosenEnemy||chosenAlly||(!targetUid?o.board[0]:undefined);if(target){const targetPlayer=chosenAlly?p:o;discardLinkedArtifacts(g,targetPlayer,target.uid);targetPlayer.board=targetPlayer.board.filter(x=>x.uid!==target.uid);if(target.imageCard||target.generatedImage)returnImage(g,targetPlayer,target,"foi devolvida à mão");else targetPlayer.hand.push(baseCard(target));log(g,`${c.name} retornou ${target.name} à mão de ${targetPlayer===p?"seu controlador aliado":"seu controlador adversário"}.`,"effect");resolved=true}}
+  const buff=text.match(/(?:recebe|ganha|conceda|forneça|forneca|dê)[^\d+]*\+?(\d+)?\s*\/\s*\+?(\d+)?/);if(buff&&chosenAlly){const atk=Number(buff[1]||0),hp=Number(buff[2]||0),fleeting=/neste turno|até o fim deste turno|até o final deste turno|até o início do seu próximo turno|até o inicio do seu próximo turno/i.test(text);if(fleeting){chosenAlly.temporaryAtk=(chosenAlly.temporaryAtk||0)+atk;chosenAlly.temporaryHp=(chosenAlly.temporaryHp||0)+hp}else{chosenAlly.bonusAtk+=atk;chosenAlly.bonusHp+=hp}showTargetEffect(buffEffectLabel(c,chosenAlly,atk,hp),chosenAlly);log(g,`${c.name} fortaleceu ${chosenAlly.name}${fleeting?" até o fim do turno":""}.`,"effect");resolved=true}
+  if(chosenAlly&&/(conceda|forneça|forneca|dê|recebe|ganha)/i.test(primaryText)){for(const keyword of ["Voar","Barreira Mágica","Atropelar","Investida","Indomável","Furtivo","Veloz","Robusto","Roubo de Vida","Toque da Morte","Indestrutível"]){if(new RegExp(keyword,"i").test(primaryText)&&!hasKeyword(p,chosenAlly,keyword)){const fleeting=/neste turno|até o fim deste turno|até o final deste turno/i.test(primaryText);if(fleeting)chosenAlly.temporaryTags=[...(chosenAlly.temporaryTags||[]),keyword];else chosenAlly.tags.push(keyword);log(g,`${chosenAlly.name} recebeu ${keyword}${fleeting?" neste turno":""}.`,"effect");resolved=true}}}
+  const energyMatch=text.match(/(?:receba|adicione)\s+(\d+)\s+de energia/);if(energyMatch){p.energy+=Number(energyMatch[1]);log(g,`${c.name} gerou ${energyMatch[1]} energia.`,"energy");resolved=true}
+  const reserveFill=/preencha(?: sua)?(?: energia)? reserva/i.test(primaryText);if(reserveFill){p.reserve=3;log(g,`${c.name} preencheu a reserva de energia.`,"energy");resolved=true}
+  const maxEnergyMatch=primaryText.match(/(?:aumente|adicione)\s+(\d+)\s+de energia máxima/i);if(maxEnergyMatch){const n=Number(maxEnergyMatch[1]);p.maxEnergy=Math.min(10,p.maxEnergy+n);if(p.energy>p.maxEnergy)p.energy=p.maxEnergy;log(g,`${c.name} aumentou o limite de energia máxima em ${n}.`,"energy");resolved=true}
+  const lifeForSummon=/custa vida ao invés de energia|custar vida ao invés de energia|próxima criatura que for invocada nesse turno/i.test(primaryText);if(lifeForSummon){p.nextSummonPaysLife=true;log(g,`${c.name} fará a próxima criatura invocada pagar vida em vez de energia.`,"effect");resolved=true}
+  const discardMatch=/descarte sua mão e compre o mesmo número de cartas/i.test(primaryText);if(discardMatch){const hand=[...p.hand];p.hand=[];p.grave.push(...hand);draw(g,p,hand.length);log(g,`${c.name} descartou a mão e comprou ${hand.length} carta(s) novas.`,"effect");resolved=true}
+  const consumeEnergyMatch=/consuma toda a sua energia disponível|energia consumida/i.test(primaryText);if(consumeEnergyMatch){const spent=p.energy+p.reserve;p.energy=0;p.reserve=0;const target=chosenEnemy||(!targetUid?o.board[0]:undefined);if(target){target.damage+=spent;log(g,`${c.name} consumiu ${spent} de energia e causou ${spent} de dano em ${target.name}.`,"damage")}else{o.life-=spent;p.damageDealt+=spent;log(g,`${c.name} consumiu ${spent} de energia e causou ${spent} de dano ao herói adversário.`,"damage")}resolved=true}
+  const nextDiscount=primaryText.match(/próxim[ao]\s+carta[^.]*custa\s+(\d+)\s+a menos/i),nextNonCreature=primaryText.match(/próxim[ao]\s+carta não-criatura[^.]*custa\s+(\d+)\s+a menos/i),nextSpell=primaryText.match(/próxim[ao]\s+feitiço[^.]*custa\s+(\d+)\s+a menos/i);if(nextNonCreature){p.nextNonCreatureDiscount=Math.max(p.nextNonCreatureDiscount,Number(nextNonCreature[1]));log(g,`${c.name}: a próxima carta não-criatura custa ${nextNonCreature[1]} a menos neste turno.`,"energy");resolved=true}else if(nextSpell){p.nextSpellDiscount=Math.max(p.nextSpellDiscount,Number(nextSpell[1]));log(g,`${c.name}: o próximo Feitiço custa ${nextSpell[1]} a menos neste turno.`,"energy");resolved=true}else if(nextDiscount){p.nextCardDiscount=Math.max(p.nextCardDiscount,Number(nextDiscount[1]));log(g,`${c.name}: a próxima carta custa ${nextDiscount[1]} a menos neste turno.`,"energy");resolved=true}
+  if(/triture\s+(\d+|uma?|duas?|dois|tr[eê]s)/.test(primaryText)){const n=numericAmount(primaryText.match(/triture\s+(\d+|uma?|duas?|dois|tr[eê]s)/)?.[1]);for(let i=0;i<n;i++){const milled=o.deck.shift();if(milled)o.grave.push(milled)}log(g,`${c.name} triturou ${n} carta(s) para o Cemitério.`,"effect");resolved=true}
+  const investigateMatch=primaryText.match(/investigue\s+(\d+)/);if(investigateMatch){investigate(g,p,o,Number(investigateMatch[1]));resolved=true}
+  /* Global effects never request a target. Apply exactly to their declared scope. */
+  const globalCreatures=/(?:todas?\s+(?:as?\s+)?criaturas|cada\s+criatura)/i.test(primaryText);
+  if(globalCreatures){
+   const scope=/inimig/i.test(primaryText)?o.board:/aliad|suas?/i.test(primaryText)?p.board:[...p.board,...o.board];
+   const pair=primaryText.match(/receb(?:e|em)\s*([+-]\d+)\s*\/?\s*([+-]\d+)/i);
+   if(pair){scope.forEach(unit=>{unit.bonusAtk+=Number(pair[1]);unit.bonusHp+=Number(pair[2]);showTargetEffect("EFEITO GLOBAL",unit)});log(g,`${c.name} afetou ${scope.length} criatura(s) sem seleção de alvo.`,"effect");resolved=true}
+  }
+  const statusTargets=cleanName(c.name)==="clone de agua"?(chosenEnemy?[chosenEnemy]:[]):chosenEnemy?[chosenEnemy]:o.board;const statusOwner=(owner===0?1:0) as 0|1;if(/aplique\s+congelad|aplica\s+congelad/.test(primaryText)){statusTargets.forEach(unit=>deferUnitImpact(unit,statusOwner,"CONGELADO",(live,_player,next)=>{if(live.frozen)live.damage+=2;live.frozen=true;log(next,`${c.name} aplicou Congelado a ${live.name}.`,"effect")}));resolved=true}
+  if(/aplique\s+atordoad|aplica\s+atordoad/.test(primaryText)){statusTargets.forEach(unit=>deferUnitImpact(unit,statusOwner,"ATORDOADO",(live,_player,next)=>{live.stunned=true;live.exhausted=true;log(next,`${c.name} aplicou Atordoado a ${live.name}.`,"effect")}));resolved=true}
+   if(/aplique\s+sufoc|aplica\s+sufoc/.test(primaryText)){statusTargets.forEach(unit=>deferUnitImpact(unit,statusOwner,"SUFOCADO",(live,_player,next)=>{live.suffocated=true;log(next,`${c.name} aplicou Sufocado a ${live.name}, suprimindo temporariamente seus efeitos positivos.`,"effect")}));resolved=true}
+  if(/aplique\s+imobiliz|aplica\s+imobiliz/.test(primaryText)){statusTargets.forEach(unit=>deferUnitImpact(unit,statusOwner,"IMOBILIZADO",(live,_player,next)=>{live.immobilized=true;log(next,`${c.name} aplicou Imobilizado a ${live.name}.`,"effect")}));resolved=true}
+  /* An elemental promise belongs to the previous spell. A matching next
+     elemental spell consumes it, announces each impacted card and only then
+     applies the extra status. The current spell subsequently prepares its own
+     promise, preserving the intended one-spell-to-the-next chain. */
+  const element=cardElement(c),activeChain=element&&p.elementChain?.element===element?p.elementChain:undefined;
+  if(activeChain){
+   const affected=chosenEnemy?[chosenEnemy]:o.board;
+   affected.forEach(unit=>deferUnitImpact(unit,owner===0?1:0,`CADEIA · ${activeChain.effect.toUpperCase()}`,(live,_player,next)=>{
+    if(activeChain.effect==="Congelado")live.frozen=true;
+    else if(activeChain.effect==="Atordoado"){live.stunned=true;live.exhausted=true}
+    else if(activeChain.effect==="Sufocado")live.suffocated=true
+    else live.immobilized=true;
+    log(next,`Cadeia Elemental: ${c.name} aplicou ${activeChain.effect} adicional a ${live.name}.`,"elemental")
+   }));
+   p.elementChain=undefined;
+   log(g,`Cadeia Elemental consumida: o efeito adicional de ${activeChain.effect} foi ativado por ${c.name}.`,"elemental");
+   resolved=true
+  }
+  if(element){
+   p.elementChain=elementChainFrom(c);
+   if(p.elementChain)log(g,`${c.name} preparou ${p.elementChain.effect} para o próximo feitiço de ${p.elementChain.element}.`,"elemental")
+  }
+  const imageName=selectedImageName||directImages[c.page];if(imageName){if(c.page===13){const old=p.board.find(x=>cleanName(x.name)===cleanName("Dragão Filhote"));if(old){p.board=p.board.filter(x=>x.uid!==old.uid);returnImage(g,p,old,"foi substituído")}}if(c.page===14){const old=p.board.find(x=>cleanName(x.name)===cleanName("Dragão Jovem"));if(old){p.board=p.board.filter(x=>x.uid!==old.uid);returnImage(g,p,old,"foi substituído")}}const before=new Set([...p.board,...p.support].map(x=>x.uid));if(summonImage(g,owner,imageName)){const summoned=[...p.board,...p.support].find(x=>!before.has(x.uid));if(summoned){/* Queue the generated card itself after its source spell; this makes Extra Deck creation visible. */queueMicrotask(()=>showFx("summon","IMAGEM INVOCADA",summoned.name,baseCard(summoned)));if(hasKeyword(p,summoned,"Primeiro Ato")){log(g,`A Imagem ${summoned.name} entrou em campo e ativou Primeiro Ato.`,"image");resolveText(g,owner,summoned,targetUid,undefined,undefined,allowVisualRepeat)}}resolved=true}}
+  if(c.page===231&&cafeEffect){if(cafeEffect==="cats"){let created=0;for(let i=0;i<3;i++){const destination=(p.board.length<5?owner:owner===0?1:0) as 0|1;if(summonCreatedImage(g,destination,"Gato Multidimensional"))created++}log(g,`Café Especial criou ${created} Imagem(ns) de Gato Multidimensional, preenchendo primeiro o campo do jogador atual.`,"image")}else if(cafeEffect==="heal"){p.life=Math.min(30,p.life+10);log(g,"Café Especial curou 10 de vida.","heal")}else if(cafeEffect==="draw"){draw(g,p,3);log(g,"Café Especial comprou 3 cartas.","effect")}else{p.level=Math.min(3,p.level+1);log(g,`Café Especial elevou o herói ao nível ${p.level}.`,"effect")}resolved=true}
+  if(c.page===46){p.pendingTranqueira=true;log(g,"TRANQUEIRA-MÁTICA aguardará o fim do turno para gerar a Bugiganga correspondente.","image");resolved=true}
+  if(!resolved)log(g,`${c.name}: efeito registrado para resolução manual durante o teste.`,"manual");
+ };
+ /* Target selection is based only on the effect that resolves now. Deferred
+    clauses ("Neste turno, seu próximo...") describe a future spell and must
+    never make the source card request a target — notably Levantar Maré. */
+ const immediateEffectText=immediateCardEffectText;
+ const playEffectText=cardPlayEffectText;
+ const playTargetPolicy=(c:CardDef)=>cardPlayTargetPolicy({...c,text:playEffectText(c)});
+ const targetScopeAt=(c:CardDef,step=0)=>playTargetPolicy(c).steps?.[step]?.scope??playTargetPolicy(c).scope;
+ const targetRule=(c:CardDef,step=0):"ally"|"enemy"|"any"|"none"=>{const scope=targetScopeAt(c,step);return [TargetScope.ALLY_CREATURE,TargetScope.ALLY_PERMANENT].includes(scope)?"ally":[TargetScope.ENEMY_CREATURE,TargetScope.ENEMY_PERMANENT].includes(scope)?"enemy":scope===TargetScope.NONE?"none":"any"};
+ const targetSubtype=(c:CardDef)=>{const explicit=c.abilities?.flatMap((ability:any)=>ability.effects||[]).find((effect:any)=>effect.requiredSubtype)?.requiredSubtype as CardFaction|undefined;if(explicit)return explicit;const value=cleanName(playEffectText(c));return (["Dragão","Goblin","Gato","Vampiro","Recruta","Fênix"] as CardFaction[]).find(subtype=>new RegExp(`(?:destrua|bana|escolha|selecione|alvo)[^.]{0,35}\\b${cleanName(subtype)}s?\\b`,"i").test(value))};
+ const runRulesCommand=async(command:Record<string,unknown>,owner:0|1=0):Promise<boolean>=>{try{if((window as Window&{__hemsfellPresentationBusy?:boolean}).__hemsfellPresentationBusy)return false;if(mode==="online"){const logicalCommand={...command};delete logicalCommand.instanceId;const signature=`${owner}:${JSON.stringify(logicalCommand)}`,existing=onlineCommandFlightsRef.current.get(signature);if(existing)return existing;if(onlineCommandFlightsRef.current.size){setRoomError("Aguarde a ação anterior ser confirmada pela sala.");return false;}setOnlineCommandPending(true);const commandId=crypto.randomUUID();const task=roomAction("command",{command,commandId,baseRevision:roomRevisionRef.current}).then(result=>{return!!result}).finally(()=>{if(onlineCommandFlightsRef.current.get(signature)===task)onlineCommandFlightsRef.current.delete(signature);if(!onlineCommandFlightsRef.current.size)setOnlineCommandPending(false)});onlineCommandFlightsRef.current.set(signature,task);return task}const current=currentGameRef.current;if(!current)return false;const next=executeCommand(current,{...command,owner},{priority:true,presentation:true}).state as Game;if(next.pendingResponse&&!next.pendingResponse.deadline)next.pendingResponse={...next.pendingResponse,deadline:Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000};syncDynamicFieldCounts(next);currentGameRef.current=next;setGame(next);setResponseWindow(next.pendingResponse??null);return true}catch(error){setRoomError(error instanceof Error?`A regra recusou a ação: ${error.message}`:"A regra recusou a ação.");return false}};
+ const passPriorityWindow=async(owner:0|1,auto=false)=>{const current=currentGameRef.current;if(mode==="online"){if(current?.pendingResponse?.responder!==owner)return true;return runRulesCommand({type:"passPriority",auto},owner)}if(current?.pendingResponse?.responder===owner)return runRulesCommand({type:"passPriority",auto},owner);setResponseWindow(null);return true};
+ const canChooseAllTargets=(c:CardDef,steps:Array<{scope:string;role?:string;optional?:boolean;requireExhausted?:boolean;requiresDamagedOwnerThisTurn?:boolean;requiresEffectAppliedThisTurn?:boolean;requiresMarker?:boolean;allowedIds?:string[]}>)=>{if(!game)return false;const subtype=targetSubtype(c);const eligible=(unit:Unit,step:any,owner:number,kind:"creature"|"permanent")=>isValidTarget(step as any,0,owner,kind)&&(!step.requireExhausted||unit.exhausted)&&(!step.requiresDamagedOwnerThisTurn||(unit.damagedOwnersThisTurn||[]).includes(0))&&(!step.requiresEffectAppliedThisTurn||(unit as any).effectAppliedRound===game.round)&&(!step.requiresMarker||Number(typeof unit.markers==="number"?unit.markers:Object.values(unit.markers||{}).reduce((sum,value)=>sum+Number(value||0),0))>0)&&(!step.allowedIds?.length||step.allowedIds.includes(unit.uid))&&(!(step.role==="effect"&&subtype)||hasSubtype(unit,subtype));const candidates=steps.map(step=>{const ids:string[]=[];game.players.forEach((player,targetOwner)=>{player.board.forEach(unit=>{if(eligible(unit,step,targetOwner,"creature"))ids.push(unit.uid)});player.support.forEach(unit=>{if(eligible(unit,step,targetOwner,"permanent"))ids.push(unit.uid)});if(player.terrain&&eligible(player.terrain,step,targetOwner,"permanent"))ids.push(player.terrain.uid);if(isValidTarget(step as any,0,targetOwner,"hero")&&!step.requiresEffectAppliedThisTurn&&!step.requiresMarker&&!step.allowedIds?.length)ids.push(targetOwner===0?"ally-hero":"enemy-hero")});return ids});const choose=(index:number,used:Set<string>):boolean=>index>=candidates.length||(steps[index]?.optional&&choose(index+1,used))||candidates[index].some(id=>{if(used.has(id))return false;const next=new Set(used);next.add(id);return choose(index+1,next)});return choose(0,new Set())};
+ const requestPlay=(idx:number,zone:"creature"|"support"|"terrain",fieldSlot?:number)=>{setDragging(null);if(!game||game.active!==0||game.phase!=="principal"||onlineCommandPending)return;const p=game.players[0],c=p.hand[idx];if(!c)return;const catSupport=zone==="support"&&p.heroId==="rasmus"&&p.level>=3&&hasFaction(c,"Gato");if([55,56].includes(c.page)&&!game.players.some(player=>player.board.length)){update(g=>log(g,`${c.name} só pode ser jogada se houver ao menos uma criatura em campo.`,"danger"));return}if(!cardPlayRequirementMet(c,p,game,0)){update(g=>log(g,c.page===17?`${c.name} exige um Dragão desvirado seu e uma criatura inimiga em campo.`:`${c.name} só pode ser jogada se houver um Goblin no seu Cemitério.`,"danger"));return}const correct=c.type==="Criatura"?"creature":c.type==="Terreno"?"terrain":"support";if(zone!==correct&&!catSupport){update(g=>log(g,`${c.name} deve ser jogada na zona ${correct==="creature"?"de criaturas":correct==="terrain"?"de Terreno Cruel":"inferior"}.`,"danger"));return}if(zone==="creature"&&fieldSlot===undefined){update(g=>log(g,"Escolha um espaço de criatura.","danger"));return}if(zone==="creature"&&p.board.some(unit=>unit.slot===fieldSlot)&&p.board.length<5){update(g=>log(g,"Esse espaço já está ocupado. A substituição só é permitida quando as cinco posições de criatura estiverem preenchidas.","danger"));return}if(zone==="support"&&(fieldSlot===undefined||p.support.some(unit=>unit.slot===fieldSlot))){update(g=>log(g,"Escolha um espaço auxiliar vazio.","danger"));return}const host=c.type==="Artefato"?p.board.find(unit=>unit.slot===fieldSlot):undefined;if(c.type==="Artefato"&&!host&&c.page!==304){update(g=>log(g,`${c.name} só pode ocupar o espaço auxiliar diretamente abaixo de uma criatura aliada.`,"danger"));return}if(c.page===231){setCafeChoice(idx);return}if(cleanName(c.name)==="orbe cromatico"){setElementChoice({cardIndex:idx,name:c.name});return}const enhancedWater=[61,62].includes(c.page)&&(p.nextElementEffects||[]).some(effect=>cleanName(effect.element)===cleanName("Água"));if(enhancedWater&&game.players.some(player=>player.board.length)){setTargeting({kind:"elemental-optional",source:c.name,cardIndex:idx,fieldSlot,required:1,minimum:0,selected:[]});return}const options=imageChoices[c.page];if(options){setImageChoice({cardIndex:idx,cardName:c.name,options,fieldSlot});return}const policy=playTargetPolicy(c),duplicateFirstAct=c.type==="Criatura"&&p.heroId==="quarion"&&p.level>=3&&/primeiro ato/i.test(c.text)?2:1,required=policy.selections*duplicateFirstAct,minimum=Math.max(0,(policy.minimumSelections??policy.selections)*duplicateFirstAct);if(c.type==="Artefato"){playCard(idx,0,host?.uid,undefined,undefined,false,fieldSlot);return}const requiredSteps=Array.from({length:duplicateFirstAct},()=>policy.steps||[]).flat();if(policy.selections>0&&!canChooseAllTargets(c,requiredSteps)){if(c.type==="Criatura"){playCard(idx,0,undefined,undefined,undefined,false,fieldSlot);return}update(g=>log(g,`${c.name} não pode ser jogada porque não existem alvos válidos suficientes.`,"danger"));return}if(policy.selections>0){setTargeting({kind:"spell",source:policy.sacrifice?`${c.name} · cumpra o custo e escolha os alvos`:c.name,cardIndex:idx,fieldSlot,required,minimum,selected:[]});return}playCard(idx,0,undefined,undefined,undefined,false,fieldSlot,undefined,undefined,undefined,catSupport?"support":undefined)};
+ const playCard=(idx:number,owner:0|1=0,targetUid?:string,selectedImageName?:string,cafeEffect?:CafeChoice,asResponse=false,fieldSlot?:number,chosenElement?:ElementName,targetUids?:string[],elementalTargetId?:string,placementZone?:"support")=>{
+  if(presentationBusy||visualFx||visualFxQueue.length||shufflingDeck!==null)return;
+  const snapshot=game?.players[owner].hand[idx],snapshotPlayer=game?.players[owner],snapshotPolicy=snapshot?playTargetPolicy(snapshot):undefined,selectedIds=targetUids?.length?targetUids:targetUid?[targetUid]:[],effectIds=selectedIds.filter((_,index)=>snapshotPolicy?.steps?.[index]?.role!=="sacrifice"),primaryTargetUid=effectIds[0]??targetUid,antiMagicTarget=snapshot?.type==="Feitiço"&&game?.players.some(player=>player.board.some(unit=>unit.uid===primaryTargetUid&&unit.page===166));if(!game||!snapshot||!snapshotPlayer||mode==="online"&&!asResponse&&game.pendingResponse?.actor===owner)return;const cost=effectiveCost(snapshot,snapshotPlayer)+(antiMagicTarget?1:0),payLifeInstead=creaturePaysLife(snapshot,snapshotPlayer,asResponse),offTurnResponse=asResponse&&game.active!==owner,resource=playableResource(snapshot,snapshotPlayer,offTurnResponse);if(cost>resource||asResponse&&!isFast(snapshot))return;
+  const fxKind:VisualFx["kind"]=snapshot.type==="Criatura"?"summon":snapshot.type==="Artefato"||snapshot.type==="Encanto"?"artifact":snapshot.type==="Terreno"?"terrain":"spell",fxLabel=snapshot.type==="Criatura"?"INVOCAÇÃO":snapshot.type==="Feitiço"?"FEITIÇO CONJURADO":snapshot.type==="Terreno"?"NOVA REALIDADE":"CONSTANTE EM CAMPO";
+  if(canExecuteCard(snapshot)){const policy=playTargetPolicy(snapshot),allIds=targetUids?.length?targetUids:targetUid?[targetUid]:[],sacrificeIds=allIds.filter((_,index)=>policy.steps?.[index]?.role==="sacrifice"),effectTargetIds=allIds.filter((_,index)=>{const role=policy.steps?.[index]?.role;return role!=="sacrifice"&&role!=="attachment"}),slot=fieldSlot??(snapshot.type==="Criatura"?firstFreeSlot(snapshotPlayer.board):snapshot.type==="Terreno"?0:firstFreeSlot(snapshotPlayer.support));void runRulesCommand({type:"playCard",cardId:snapshot.id,instanceId:uid(),slot,attachedTo:snapshot.type==="Artefato"?targetUid:undefined,targetIds:effectTargetIds,sacrificeIds,hasPriority:asResponse,chosenElement,selectedImageName,cafeEffect,elementalTargetId,placementZone},owner);return}
+  if(mode==="online"){setRoomError(`${snapshot.name} ainda não possui uma execução autoritativa no modo Online.`);return}
+  showFx(fxKind,fxLabel,snapshot.name,snapshot);
+  update(g=>{
+   const p = g.players[owner]; let c = p.hand[idx];
+   if (!c) return;
+   if(chosenElement)c={...c,text:`${c.text} Elemento: ${chosenElement}`};
+    const policy=playTargetPolicy(c),allTargetIds=targetUids?.length?targetUids:targetUid?[targetUid]:[],sacrificeIds=allTargetIds.filter((_,index)=>policy.steps?.[index]?.role==="sacrifice"),effectTargetIds=allTargetIds.filter((_,index)=>policy.steps?.[index]?.role!=="sacrifice"),resolvedTargetUid=effectTargetIds[0]??targetUid;
+    const antiMagicTarget=c.type==="Feitiço"&&g.players.some(player=>player.board.some(unit=>unit.uid===resolvedTargetUid&&unit.page===166));
+    const paidCost = effectiveCost(c, p)+(antiMagicTarget?1:0);
+   if (asResponse) {
+    if (!isFast(c) || paidCost > playableEnergy(c,p,g.active!==owner)) return;
+   } else if (g.active !== owner || g.phase !== "principal" || paidCost > playableResource(c,p)) return;
+   const creatureSlot = fieldSlot ?? firstFreeSlot(p.board);
+   const host = c.type === "Artefato" ? p.board.find(x => x.uid === resolvedTargetUid) : undefined;
+   const supportSlot = fieldSlot ?? (c.type === "Artefato" ? host?.slot : firstFreeSlot(p.support));
+   if (c.type === "Criatura" && creatureSlot === undefined) {
+    log(g, "Escolha um espaço de criatura válido.", "danger");
+    return;
+   }
+   if ((c.type === "Artefato" || c.type === "Encanto") && (supportSlot === undefined || p.support.some(x => x.slot === supportSlot))) {
+    log(g, "O espaço auxiliar escolhido não está disponível.", "danger");
+    return;
+   }
+   if (c.type === "Artefato" && (!host || host.slot !== supportSlot)) {
+    log(g, `${c.name} precisa ser colocado diretamente abaixo da criatura à qual será vinculado.`, "danger");
+    return;
+   }
+   const furaTag=c.tags.some(tag=>cleanName(tag)==="fura fila"),furaActive=furaTag&&p.turnCardsPlayed>0,lifeLoss=Number(playEffectText(c).match(/\bperca\s+(\d+)\s+(?:de\s+)?vida/i)?.[1]||0);if(policy.sacrifice){const sacrifices=sacrificeIds.map(id=>p.board.find(unit=>unit.uid===id)).filter((unit):unit is Unit=>!!unit);if(sacrifices.length<(policy.sacrificeCount||1)){log(g,`${c.name} exige o sacrifício de ${policy.sacrificeCount||1} criatura(s) aliada(s).`,"danger");return}sacrifices.forEach(sacrifice=>{sacrifice.damage=999;log(g,`${sacrifice.name} foi sacrificada para jogar ${c.name}.`,"danger")})}if(lifeLoss){p.life=Math.max(p.heroId==="saymon"&&p.level>=3?1:0,p.life-lifeLoss);if(p.heroId==="saymon")p.heroXP++;log(g,`${c.name} fez ${deckById(p.heroId).name} perder ${lifeLoss} de vida.`,"damage")}if(payLifeInstead){p.life-=paidCost;if(p.heroId==="saymon")p.life=Math.max(1,p.life);p.nextSummonPaysLife=false}else spendCardEnergy(p,c,paidCost,asResponse&&g.active!==owner);p.hand.splice(idx,1);p.cardsPlayed++;if(g.active===owner)p.turnCardsPlayed++;if(g.active===owner&&p.heroId==="goblin")p.goblinTurnCardsPlayed=(p.goblinTurnCardsPlayed||0)+1;if(c.type==="Feitiço"&&g.active===owner)p.turnSpellsPlayed++;if(p.nextCardDiscount>0)p.nextCardDiscount=0;if(c.type!=="Criatura"&&p.nextNonCreatureDiscount>0)p.nextNonCreatureDiscount=0;if(c.type==="Feitiço"&&p.nextSpellDiscount>0)p.nextSpellDiscount=0;
+   if(payLifeInstead)p.nextCreaturePaysLife=false;
+   const archetype=deckById(p.heroId).id;if(archetype==="goblin"||archetype==="gimble"&&hasFaction(c,"Dragão")||archetype==="rasmus"&&hasFaction(c,"Gato")||archetype==="zayan"&&c.type==="Criatura"&&!c.text.trim())p.heroXP++;
+   log(g,`${deckById(p.heroId).name} ${asResponse?"respondeu com":"jogou"} ${c.name}${fieldSlot!==undefined?` no espaço ${fieldSlot+1}`:""}.`,asResponse?"response":"play");if(furaTag)log(g,`Fura-Fila de ${c.name} ${furaActive?"foi ativado":"não foi ativado porque era a primeira carta do turno"}.`,furaActive?"effect":"manual");
+   if(c.type==="Criatura"){
+    const replaced=p.board.find(existing=>existing.slot===creatureSlot);if(replaced){p.board=p.board.filter(existing=>existing.uid!==replaced.uid);sendToObscuro(g,p,replaced);const linkedCount=discardLinkedArtifacts(g,p,replaced.uid);log(g,`${replaced.name} foi banida para abrir o espaço ${creatureSlot!+1}; ${linkedCount} Artefato(s) vinculado(s) foram descartados.`,"obscuro")}
+    const unit=asUnit(c,creatureSlot!);p.board.push(unit);resolveCreatureEntryTriggers(g,owner,unit);if(furaActive){if(/recebe\s+Investida/i.test(c.text))unit.summoning=false;if(/recebe[^.]*Último Suspiro/i.test(c.text)&&!unit.tags.includes("Último Suspiro"))unit.tags.push("Último Suspiro");const pair=c.text.match(/Fura-fila:[^.]*\+([0-9]+)\s*\/\s*\+([0-9]+)/i);if(pair){const multiplier=/para cada carta/i.test(c.text)?p.turnCardsPlayed:1;unit.bonusAtk+=Number(pair[1])*multiplier;unit.bonusHp+=Number(pair[2])*multiplier}const attack=c.text.match(/Fura-fila:[^.]*\+([0-9]+)\s+de Ofensividade/i);if(attack)unit.bonusAtk+=Number(attack[1])}
+    if(hasKeyword(p,unit,"Primeiro Ato")){if(targetRule(c)!=="none"&&!effectTargetIds.length)log(g,`${c.name} entrou em campo sem alvo; seu Primeiro Ato de alvo não foi ativado.`,"manual");else{const activations=archetype==="quarion"&&p.level>=3?2:1,perActivation=Math.max(1,playTargetPolicy(c).selections);for(let activation=0;activation<activations;activation++){const activationTargets=effectTargetIds.slice(activation*perActivation,(activation+1)*perActivation);resolveText(g,owner,unit,activationTargets[0]??resolvedTargetUid,selectedImageName,cafeEffect,activation>0,activationTargets);if(activation===0&&activations===2)log(g,`Quarion duplicou o Primeiro Ato de ${c.name}.`,"effect")}}}
+   }else if(c.type==="Artefato"||c.type==="Encanto"){
+    const unit={...asUnit(c,supportSlot!),attachedTo:c.type==="Artefato"?resolvedTargetUid:undefined};p.support.push(unit);if(unit.attachedTo)log(g,`${c.name} foi vinculado a ${host!.name}; os atributos e palavras-chave concedidos já estão ativos.`,"effect");resolveText(g,owner,unit,targetUid,selectedImageName,cafeEffect)
+   }else if(c.type==="Terreno"){
+    if(p.terrain){const previous=p.terrain;sendToGrave(g,p,previous);log(g,`${previous.name} foi substituído pelo novo Terreno Cruel.`,"effect")}p.terrain=asUnit(c,0);resolveText(g,owner,p.terrain,targetUid,selectedImageName,cafeEffect)
+    }else{
+     p.spellsPlayed++;resolveSpellCastTriggers(g,owner,c,(label,detail,source,target)=>queueMicrotask(()=>showFx("ability",label,detail,baseCard(source),target)));if(archetype==="uruk")p.heroXP++;if(archetype==="rasmus"&&/café|cafe/i.test(c.name)){p.coffeeSpells++;if(p.coffeeSpells===10)summonImage(g,owner,"Café Especial","hand")}sendToGrave(g,p,c);resolveText(g,owner,c,resolvedTargetUid,selectedImageName,cafeEffect,false,effectTargetIds)
+   }
+   if(furaActive&&p.board.some(unit=>unit.page===33)){draw(g,p);log(g,"Fuscão, o Agiota comprou 1 carta pelo Fura-Fila ativado.","effect")}
+   if(mode==="online")g.pendingResponse=asResponse?null:{responder:owner===0?1:0,actor:owner,action:c.name,passes:0,deadline:Date.now()+(roomInfo?.settings?.responseSeconds??30)*1000};
+  });
+  if(mode!=="online"){if(asResponse)setSharedResponse(null);else window.setTimeout(()=>{const responder=(owner===0?1:0) as 0|1,current=currentGameRef.current;if(!current)return;const pending:PendingResponse={responder,actor:owner,action:snapshot.name,passes:0};if(mode==="bot"){const probe={...current,pendingResponse:pending} as Game;if(legalPriorityResponses(probe,responder).length===0){setSharedResponse(null);return}}setSharedResponse(pending)},1550)}
+ };
+ const activateAbility=(slot:number)=>{if(!game||game.active!==0)return;const p=game.players[0],d=deckById(p.heroId),key=`${d.id}-${slot}`;if(p.abilityUses[key])return;if(slot+1>p.level)return;const authoritativeId=d.id==="gimble"?(slot===1?"gimble-level-2":undefined):d.id==="saymon"?(slot===0?"saymon-level-1":slot===1?"saymon-level-2":undefined):d.id==="ngoro"?(slot===1?"ngoro-level-2":slot===2?"ngoro-level-3":undefined):d.id==="natureza"?(slot===0?"natureza-level-1":slot===2?"natureza-level-3":undefined):undefined;if(authoritativeId){void runRulesCommand({type:"activateHero",abilityId:authoritativeId},0);return}};
+ const activateSupport=(uid:string)=>{const card=game?.players[0].support.find(x=>x.uid===uid)||game?.players[0].board.find(x=>x.uid===uid);if(!card||game?.active!==0||game.phase!=="principal"||!canActivateUnit(game.players[0],card))return;const structured=activatedUnitAbility(card),compiled=card.abilities?.some(ability=>ability.trigger==="activated")?card:canonicalUnit(card),markerCost=structured?.costs?.some((cost:any)=>cost.type==="removeMarkers"&&cost.amount==="X")?markerAmount(card):undefined;if(structured&&canExecuteCard(compiled)){void runRulesCommand({type:"activate",sourceId:uid,abilityId:structured.id,markerAmount:markerCost},0);return}if(mode==="online"){setRoomError("Esta habilidade ainda não possui execução autoritativa.");return}showFx("ability","HABILIDADE DE CONSTANTE",card.name,baseCard(card));update(g=>{const p=g.players[0],current=p.support.find(x=>x.uid===uid)||p.board.find(x=>x.uid===uid);if(!current||!canActivateUnit(p,current))return;current.activatedThisTurn=true;const exhaust=()=>{if(current.exhausted){log(g,`${current.name} já foi virada ou usada neste turno.`,"danger");return false}if(current.summoning&&/\bvire\b/i.test(current.text)){log(g,`${current.name} acabou de entrar em campo e não pode ser virada neste turno.`,"danger");return false}current.exhausted=true;return true},destroySelf=()=>{const sourceId=current.uid,live=p.support.find(x=>x.uid===sourceId)||p.board.find(x=>x.uid===sourceId);if(!live)return;p.support=p.support.filter(x=>x.uid!==sourceId);p.board=p.board.filter(x=>x.uid!==sourceId);sendToGrave(g,p,live);log(g,`${live.name} foi destruído depois que seu efeito terminou de resolver.`,"danger")};if(current.page===229){if(!exhaust())return;if(!summonImage(g,0,"Café Expresso","hand"))current.exhausted=false;return}if(current.page===39){if(current.markers<5){log(g,`${current.name} precisa de 5 marcadores; possui ${current.markers}.`,"danger");return}if(summonImage(g,0,"SUPER MEGATANQUE CHUMBO 3000","field",true))current.markers-=5;return}if(current.page===20||current.page===306){if(!exhaust())return;p.maxEnergy=Math.min(10,p.maxEnergy+1);p.energy=Math.min(10,p.energy+1);destroySelf();log(g,`${current.name} foi destruído e aumentou o limite de energia máxima em 1.`,"energy");return}if(current.page===60||current.page===235){if(!exhaust())return;p.reserve=3;destroySelf();log(g,`${current.name} foi destruído e preencheu a Reserva.`,"energy");return}if(current.page===153){if(!exhaust())return;p.energy+=2;destroySelf();log(g,`${current.name} foi destruído e concedeu 2 de energia neste turno.`,"energy");return}if(current.page===267){if(!exhaust())return;const hasChaos=[...p.board,...p.support].some(x=>x.uid!==current.uid&&(/caos/i.test(x.text+x.tags.join(" "))||deckById(p.heroId).faction==="Caos"));if(!hasChaos){current.exhausted=false;log(g,`${current.name} exige ao menos uma constante de Caos.`,"danger");return}p.energy+=1;log(g,`${current.name} adicionou 1 energia até o fim do turno.`,"energy");return}const tap=/\bvire\b/i.test(current.text),remove=current.text.match(/remova\s+(\d+)\s+marcador/i);if(tap&&!exhaust())return;if(remove){const amount=Number(remove[1]);if((current.markers||0)<amount){if(tap)current.exhausted=false;log(g,`${current.name} precisa de ${amount} marcadores para ativar este efeito.`,"danger");return}current.markers=(current.markers||0)-amount}resolveText(g,0,current);log(g,`${current.name} ativou seu efeito de ${tap?"Vire":remove?"Remova marcadores":"custo"}.`,"effect")});setSharedResponse({responder:1,actor:0,action:`habilidade de ${card.name}`})};
+ const applyTarget=(uid:string)=>{if(!targeting||!game)return;const t=targeting,card=["spell","elemental-optional"].includes(t.kind)?game.players[0].hand[t.cardIndex!]:undefined,targetPlayer=game.players.find(p=>p.board.some(x=>x.uid===uid)||p.support.some(x=>x.uid===uid)||p.terrain?.uid===uid),targetUnit=targetPlayer&&(targetPlayer.board.find(x=>x.uid===uid)||targetPlayer.support.find(x=>x.uid===uid)||(targetPlayer.terrain?.uid===uid?targetPlayer.terrain:undefined));if(t.kind==="tranqueira-attach"){if(!t.sourceUid||!t.allowedIds?.includes(uid)||targetPlayer!==game.players[0]||!targetUnit||!hasFaction(targetUnit,"Goblin")){update(g=>log(g,"Escolha um Goblin aliado válido para receber o TRAMBUCO DO PIPOCO.","danger"));return}setTargeting(null);update(g=>{const source=g.players[0].support.find(card=>card.uid===t.sourceUid&&card.page===46);if(!source)return;(source as any).chosenTranqueiraHostUid=uid;const next=tranqueiraAttachmentChoice(g,0);if(next){queueMicrotask(()=>setTargeting({kind:"tranqueira-attach",source:"TRANQUEIRA-MÁTICA · escolha o Goblin que receberá TRAMBUCO DO PIPOCO",sourceUid:next.sourceUid,allowedIds:next.allowedIds}));return}finalizeLocalTurnState(g,0)});return}if(t.kind==="elemental-optional"){if(!targetUnit||targetUnit.type!=="Criatura"){update(g=>log(g,"O aprimoramento elemental só pode alvejar uma criatura.","danger"));return}playCard(t.cardIndex!,0,undefined,undefined,undefined,!!t.response,t.fieldSlot,t.chosenElement,undefined,uid);setTargeting(null);return}if(card){const policy=playTargetPolicy(card),selected=t.selected||[],stepIndex=selected.length,step:any=policy.steps?.[stepIndex]||{scope:policy.scope,role:"effect"},targetOwner=uid==="ally-hero"?0:uid==="enemy-hero"?1:targetPlayer===game.players[0]?0:1,targetKind=uid.endsWith("-hero")?"hero":"creature";if(!isValidTarget(step,0,targetOwner,targetKind)){update(g=>log(g,"Esse alvo não atende ao delimitador do efeito.","danger"));return}if(step.requiresDamagedOwnerThisTurn&&targetUnit&&!(targetUnit.damagedOwnersThisTurn||[]).includes(0)){update(g=>log(g,`${targetUnit.name} não causou dano a você ou a uma criatura sua neste turno.`,"danger"));return}if(step.requiresEffectAppliedThisTurn&&targetUnit&&(targetUnit as any).effectAppliedRound!==game.round){update(g=>log(g,`${targetUnit.name} ainda não recebeu um efeito aplicado neste turno.`,"danger"));return}if(step.requiresMarker&&targetUnit&&Number(typeof targetUnit.markers==="number"?targetUnit.markers:Object.values(targetUnit.markers||{}).reduce((sum,value)=>sum+Number(value||0),0))<1){update(g=>log(g,`${targetUnit.name} não possui marcadores para mover.`,"danger"));return}if(step.allowedIds?.length&&!step.allowedIds.includes(uid)){update(g=>log(g,"Esse alvo não pertence às opções válidas deste efeito.","danger"));return}const subtype=step.role==="effect"?targetSubtype(card):undefined;if(subtype&&targetUnit&&!hasSubtype(targetUnit,subtype)){update(g=>log(g,`${targetUnit.name} não possui o subtipo ${subtype}.`,"danger"));return}if(selected.includes(uid)){update(g=>log(g,"Escolha outro alvo para esta instância do efeito.","danger"));return}if(targetUnit&&hasKeyword(targetPlayer,targetUnit,"Barreira Mágica")&&!/ignora.*barreira mágica/i.test(card.text)){update(g=>log(g,`${targetUnit.name} não pode ser selecionada: Barreira Mágica está ativa.`,"danger"));return}const next=[...selected,uid],required=t.required||policy.selections||1;if(next.length<required){setTargeting({...t,selected:next,required,source:`${card.name} · alvo ${next.length+1} de ${required}`});return}playCard(t.cardIndex!,0,next[0],undefined,undefined,!!t.response,t.fieldSlot,t.chosenElement,next);setTargeting(null);return}if(t.kind==="attach"){playCard(t.cardIndex!,0,uid,undefined,undefined,!!t.response,t.fieldSlot);setTargeting(null);return}if(t.kind==="uruk-fire"){setTargeting(null);endTurn(uid);return}showFx("ability","HABILIDADE ATIVA",t.source);update(g=>{const p=g.players[0],o=g.players[1],key=`${p.heroId}-${t.kind==="saymon-life"?1:t.kind==="ngoro"?2:t.kind==="gimble"?1:0}`;if(t.kind==="gimble"){const u=p.board.find(x=>x.uid===uid&&hasFaction(x,"Dragão")&&x.exhausted);if(!u)return;u.exhausted=false;p.abilityUses[key]=1;log(g,`Gimble desvirou ${u.name}.`,"effect")}else if(t.kind==="natureza"){const u=p.board.find(x=>x.uid===uid);if(!u)return;u.markers+=2;p.heroXP+=2;p.abilityUses[key]=1;log(g,`${u.name} recebeu 2 marcadores de ação.`,"effect")}else if(t.kind==="saymon"){if(p.life<=2)return;p.life-=2;p.heroXP++;if(uid==="enemy-hero")o.life-=1;else{const u=o.board.find(x=>x.uid===uid);if(!u)return;u.damage+=1}p.abilityUses[key]=1;log(g,"Saymon pagou 2 de vida e causou 1 de dano.","damage")}else if(t.kind==="saymon-life"){const u=p.board.find(x=>x.uid===uid);if(!u||p.life<=2)return;p.life-=2;if(!u.tags.includes("Roubo de Vida"))u.tags.push("Roubo de Vida");p.abilityUses[key]=1;log(g,`${u.name} recebeu Roubo de Vida.`,"effect")}else if(t.kind==="ngoro"){const u=p.board.find(x=>x.uid===uid);if(!u||p.heroXP<3)return;p.heroXP-=3;if(!u.tags.includes("Furtivo"))u.tags.push("Furtivo");p.abilityUses[key]=1;log(g,`${u.name} recebeu Furtivo neste turno.`,"effect")}});setSharedResponse({responder:1,actor:0,action:t.source});setTargeting(null)};
+ const levelUp=()=>{if(!game||game.active!==0)return;const p=game.players[0],targets=levelTargets(p),need=targets[p.level-1]??999,cost=p.level===1?2:3,progress=heroEvolutionProgress(p);if(p.level>=3||progress<need||p.energy+p.reserve<cost||p.levelUpsThisTurn>0)return;void runRulesCommand({type:"evolveHero"},0)};
+ const legalDefenders=(attacker:Unit|undefined,attackerPlayer:Player,defenderPlayer:Player)=>{if(!attacker||hasKeyword(attackerPlayer,attacker,"Furtivo"))return[];return defenderPlayer.board.filter(defender=>!defender.exhausted&&(!defender.stunned||defender.suffocated)&&!attacker.combatRestrictions?.some(rule=>rule.cannotCombatSubtype&&hasSubtype(defender,rule.cannotCombatSubtype))&&!defender.combatRestrictions?.some(rule=>rule.cannotCombatSubtype&&hasSubtype(attacker,rule.cannotCombatSubtype))&&!(/não pode (bloquear|defender)/i.test(defender.text)&&!defender.suffocated)&&defender.defenseUses<defenderCapacity(defenderPlayer,defender)&&(!hasKeyword(attackerPlayer,attacker,"Voar")||hasKeyword(defenderPlayer,defender,"Voar"))) };
+ const beginAttack=(owner:0|1,attackerUid:string)=>{const pending=mode==="online"?game?.pendingResponse:responseWindow;if(!game||game.phase!=="combate"||game.active!==owner||combatAction||pending||presentationBusy)return;const attacker=game.players[owner].board.find(x=>x.uid===attackerUid),attacksUsed=attacker?.attacksThisTurn??(attacker?.attackedThisTurn?1:0);if(!attacker||attacker.exhausted||attacksUsed>=(attacker.attackLimit||1)||attacker.summoning||attacker.stunned||attacker.immobilized)return;
+  const player=game.players[owner],commander=player.board.find(unit=>unit.slot===2&&!unit.suffocated);
+  if(player.heroId==="tessalia"&&attacker.slot!==2&&!commander){if(mode!=="online")update(g=>log(g,"Tessália precisa de um Comandante no espaço central para atacar com outras criaturas.","danger"));return}
+  setTargeting(null);
+  if(mode==="online"){void runRulesCommand({type:"declareAttack",attackerId:attackerUid},owner);return}
+  if(player.heroId==="tessalia"&&attacker.slot===2)update(g=>{g.players[owner].heroXP++;log(g,"O Comandante de Tessália atacou: progresso de evolução +1.","effect")});
+  setSharedCombat({attackerOwner:owner,attackerUid,attackerCard:baseCard(attacker),stage:"declared"})};
+ const chooseAttacker=(uid:string)=>{if(targeting)return;beginAttack(0,uid)};
+ const chooseDefender=(uid:string)=>{if(!game||combatAction?.attackerOwner!==1||combatAction.stage!=="choosing")return;const attacker=game.players[1].board.find(x=>x.uid===combatAction.attackerUid),defender=game.players[0].board.find(x=>x.uid===uid);if(!attacker||!defender||!legalDefenders(attacker,game.players[1],game.players[0]).some(x=>x.uid===uid))return;if(mode==="online"){void runRulesCommand({type:"selectDefender",attackerId:combatAction.attackerUid,defenderId:uid,targetHero:false},0);return}setSharedCombat({...combatAction,targetHero:false,defenderUid:uid,defenderCard:baseCard(defender),stage:"charging"})};
+ const chooseDirectDefense=()=>{if(combatAction?.attackerOwner!==1||combatAction.stage!=="choosing")return;if(mode==="online"){void runRulesCommand({type:"selectDefender",attackerId:combatAction.attackerUid,targetHero:true},0);return}setSharedCombat({...combatAction,targetHero:true,defenderUid:undefined,defenderCard:undefined,stage:"charging"})};
+ const finishCombat=()=>{if(combatAction||responseWindow||!game)return;const forced=mandatoryIndomitableAttacker(game.players[0]);if(forced){update(g=>log(g,`${forced.name} é Indomável e precisa atacar antes de encerrar o combate.`,"danger"));return}setTargeting(null);setAiAttackQueue([]);void runRulesCommand({type:"advancePhase"},0)};
+ const finishImageEffects=(g:Game,owner:0|1)=>{const p=g.players[owner],foe=g.players[owner===0?1:0];
+ /* End-of-turn triggers resolve before temporary images leave. */
+ p.board.filter(x=>x.page===84&&!x.suffocated).forEach(x=>{p.life=Math.min(30,p.life+1);log(g,"UNDARIS restaura 1 de vida no fim do turno.","heal");queueMicrotask(()=>showFx("ability","GATILHO · UNDARIS","Restaura 1 de vida.",baseCard(x)));});
+ p.support.filter(x=>x.page===304&&!x.suffocated).forEach(x=>{p.life=Math.max(0,p.life-1);log(g,"RITUAL NOCTURNO causa 1 de dano no fim do turno.","damage");queueMicrotask(()=>showFx("damage","GATILHO · RITUAL","1 de dano ao controlador.",baseCard(x)));});
+ p.board.filter(x=>x.page===213&&!x.suffocated).forEach(x=>{if(p.catsEnteredThisTurn===0){p.life=Math.max(0,p.life-1);log(g,"O GATO-METRO detectou que nenhum Gato entrou: 1 de dano.","damage");queueMicrotask(()=>showFx("damage","GATILHO · GATO-METRO","Nenhum Gato entrou neste turno.",baseCard(x)));}});
+ const temporary=p.board.filter(x=>x.temporary||x.page===40);p.board=p.board.filter(x=>!temporary.includes(x));temporary.forEach(x=>returnImage(g,p,x,"permaneceu até o fim do turno"));const liveTranqueiras=p.support.filter(x=>x.page===46);if(liveTranqueiras.length){p.support=p.support.filter(x=>x.page!==46);liveTranqueiras.forEach(x=>sendToGrave(g,p,x));liveTranqueiras.forEach(x=>{const played=Math.max(0,Number((x as any).cardsPlayedAfterSelf||0));if(played>=7)summonImage(g,owner,"CARCAÇA CHUMBADA DE TANQUE");else if(played===6)summonImage(g,owner,"TRAMBUCO DO PIPOCO",undefined,false,(x as any).chosenTranqueiraHostUid);else if(played===5)summonImage(g,owner,"BUCHA DE CANHÃO");else if(played>0){p.life-=played;log(g,`TRANQUEIRA-MÁTICA falhou: ${p.heroId===mine?"você":"a IA"} sofreu ${played} de dano.`,"damage")}log(g,`${x.name} deixou o campo no fim do turno em que foi usada.`,"effect")});p.pendingTranqueira=false}else if(p.pendingTranqueira){const played=p.turnCardsPlayed;if(played>=7)summonImage(g,owner,"CARCAÇA CHUMBADA DE TANQUE");else if(played===6)summonImage(g,owner,"TRAMBUCO DO PIPOCO");else if(played===5)summonImage(g,owner,"BUCHA DE CANHÃO");else if(played>0){p.life-=played;log(g,`TRANQUEIRA-MÁTICA falhou: ${p.heroId===mine?"você":"a IA"} sofreu ${played} de dano.`,"damage")}p.pendingTranqueira=false}};
+ /* Uruk I resolves exactly once at the end of a turn. The spell trigger keeps
+    only the latest elemental spell of that turn, so it cannot replay older spells. */
+ const resolveUrukLevelOne=(g:Game,owner:0|1,targetUid?:string)=>{
+  const p=g.players[owner],foe=g.players[owner===0?1:0],element=p.heroId==="uruk"&&p.level>=1?p.lastElement:undefined;
+  if(!element)return false;
+  const heroCard=cards.find(card=>card.page===deckById(p.heroId).heroPage),spellName=p.lastElementSource||"último feitiço";
+  const announce=(detail:string,target?:CardDef|Unit)=>showFx("ability",`URUK I · ${element.toUpperCase()}`,detail,heroCard,target?baseCard(target):undefined);
+  if(element==="Fogo"){
+   const unit=foe.board.find(card=>card.uid===targetUid)||foe.support.find(card=>card.uid===targetUid)||(foe.terrain?.uid===targetUid?foe.terrain:undefined);
+   if(unit){
+    announce(`${spellName} → ${unit.name}: 1 de dano`,unit);unit.damage+=1;log(g,`Uruk I ativou Fogo de ${spellName}: 1 de dano em ${unit.name}.`,"elemental");
+   }else{foe.life-=1;p.damageDealt+=1;announce(`${spellName} → herói inimigo: 1 de dano`);log(g,`Uruk I ativou Fogo de ${spellName}: 1 de dano ao herói inimigo.`,"elemental")}
+  }else if(element==="Terra"){draw(g,p);announce(`${spellName}: compre 1 carta`);log(g,`Uruk I ativou Terra de ${spellName}: comprou 1 carta.`,"elemental")}
+  else if(element==="Água"){p.life=Math.min(30,p.life+1);announce(`${spellName}: restaure 1 de vida`);log(g,`Uruk I ativou Água de ${spellName}: restaurou 1 de vida.`,"elemental")}
+  else{p.energy=Math.min(p.maxEnergy,p.energy+1);announce(`${spellName}: receba 1 de energia`);log(g,`Uruk I ativou Ar de ${spellName}: recebeu 1 de energia.`,"elemental")}
+  p.lastElement=undefined;p.lastElementSource=undefined;
+  return true
+ };
+ function tranqueiraAttachmentChoice(state:Game,owner:0|1){
+  const p=state.players[owner],live=p.support.filter(card=>card.page===46),reserved=new Set(live.map(card=>(card as any).chosenTranqueiraHostUid).filter(Boolean));
+  for(const source of live){
+   if(Number((source as any).cardsPlayedAfterSelf||0)!==6||(source as any).chosenTranqueiraHostUid)continue;
+   const allowedIds=p.board.filter(unit=>hasFaction(unit,"Goblin")&&!reserved.has(unit.uid)&&!p.support.some(support=>support.page!==46&&support.slot===unit.slot)).map(unit=>unit.uid);
+   if(allowedIds.length>1)return{sourceUid:source.uid,allowedIds};
+  }
+  return null;
+ }
+ function finalizeLocalTurnState(g:Game,owner:0|1,urukTargetUid?:string){
+  resolveUrukLevelOne(g,owner,urukTargetUid);finishImageEffects(g,owner);const p=g.players[owner];p.nextElementEffects=[];p.elementChain=undefined;p.goblinTurnCardsPlayed=0;bankRemainingEnergy(p);g.players.forEach(entry=>[...entry.board,...entry.support,...(entry.terrain?[entry.terrain]:[])].forEach(unit=>{unit.temporaryAtk=0;unit.temporaryHp=0;unit.temporaryTags=[];unit.modifiers=(unit.modifiers||[]).filter(modifier=>modifier.duration!=="turn");unit.combatRestrictions=(unit.combatRestrictions||[]).filter(rule=>rule.duration!=="turn");unit.damageShields=(unit.damageShields||[]).filter(shield=>shield.duration!=="turn"&&shield.expires!=="turn")}));g.active=g.active===0?1:0;g.phase="manutencao";g.round++;g.turnDeadline=Date.now()+(roomInfo?.settings?.turnSeconds??120)*1000;log(g,`Turno ${g.round}: ${deckById(g.players[g.active].heroId).name}.`,"phase");
+ }
+ const endTurn=(urukTargetUid?:string)=>{
+  if(!game)return;
+  if(mode==="online"){if(!urukTargetUid)void runRulesCommand({type:"advancePhase"},0);return}
+  const activePlayer=game.players[game.active];
+  if(!urukTargetUid&&activePlayer.hand.length>9){update(g=>{g.pendingDecision={kind:"hand-limit-discard",owner:g.active,effect:{amount:g.players[g.active].hand.length-9},context:{owner:g.active},sourceName:"Limite de mão"} as any});return}
+  if(game.active===0&&activePlayer.heroId==="uruk"&&activePlayer.level>=1&&activePlayer.lastElement==="Fogo"&&!urukTargetUid){
+   setTargeting({kind:"uruk-fire",source:"Uruk I · Fogo: escolha uma criatura inimiga ou o herói inimigo"});
+   return
+  }
+  if(!urukTargetUid&&game.active===0){const choice=tranqueiraAttachmentChoice(game,0);if(choice){setTargeting({kind:"tranqueira-attach",source:"TRANQUEIRA-MÁTICA · escolha o Goblin que receberá TRAMBUCO DO PIPOCO",sourceUid:choice.sourceUid,allowedIds:choice.allowedIds});return}}
+  update(g=>finalizeLocalTurnState(g,g.active,urukTargetUid))
+ };
+
+ useEffect(()=>{
+  if(!combatAction||!game)return;const action=combatAction,defenderOwner=(action.attackerOwner===0?1:0) as 0|1;if(action.stage==="choosing"||action.stage==="priority"&&(responseWindow||targeting?.response))return;const onlineDriver=action.stage==="declared"?action.attackerOwner===0:action.stage==="priority"?action.attackerOwner===1:action.attackerOwner===0;if(mode==="online"&&!onlineDriver)return;
+  const frame=requestAnimationFrame(()=>{
+   const attackingPlayer=game.players[action.attackerOwner],defendingPlayer=game.players[defenderOwner],attacker=attackingPlayer.board.find(x=>x.uid===action.attackerUid);
+   if(action.stage==="declared"){if(mode==="online")return;const priorityAction={...action,stage:"priority" as const};setSharedCombat(priorityAction);setSharedResponse({responder:defenderOwner,actor:action.attackerOwner,action:`declaração de ataque de ${action.attackerCard.name}`},priorityAction);return}
+   if(action.stage==="priority"){
+    if(!attacker){setSharedCombat({...action,stage:"resolved",result:"O atacante deixou o campo durante a resposta.",winnerText:"ATAQUE CANCELADO",destroyed:["attacker"]});return}
+    const blockers=legalDefenders(attacker,attackingPlayer,defendingPlayer);if(!blockers.length){setSharedCombat({...action,targetHero:true,stage:"charging"});return}
+    if(action.attackerOwner===1){setSharedCombat({...action,stage:"choosing"});return}
+    const blockPlan=chooseAdvancedAIBlock(game,defenderOwner,attacker,difficulty);if(blockPlan.takeDamage||!blockPlan.defenderId){setSharedCombat({...action,targetHero:true,stage:"charging"});return}const defender=blockers.find(unit=>unit.uid===blockPlan.defenderId)||[...blockers].sort((a,b)=>currentHp(a,defendingPlayer)-currentHp(b,defendingPlayer))[0];setSharedCombat({...action,targetHero:false,defenderUid:defender.uid,defenderCard:baseCard(defender),stage:"charging"});return
+   }
+   if(action.stage==="charging"){setSharedCombat({...action,stage:"impact"});return}
+   if(action.stage==="impact"){
+    if(!attacker){setSharedCombat({...action,stage:"resolved",result:"O atacante deixou o campo.",winnerText:"ATAQUE CANCELADO",destroyed:["attacker"]});return}
+    if(mode==="online"){
+     const defenderId=action.targetHero?undefined:action.defenderUid;
+     void runRulesCommand({type:"attack",attackerId:action.attackerUid,defenderId},action.attackerOwner).then(accepted=>{
+      if(accepted){setCombatAction({...action,stage:"resolved",targetHero:action.targetHero,defenderUid:action.defenderUid,result:action.targetHero?"Dano direto resolvido pelo servidor":"Combate resolvido pelo servidor",winnerText:"COMBATE RESOLVIDO"})}
+      else setCombatAction({...action,stage:"resolved",result:"O servidor recusou o ataque.",winnerText:"ATAQUE CANCELADO"});
+     });
+     return
+    }
+    const defender=defendingPlayer.board.find(x=>x.uid===action.defenderUid),targetHero=action.targetHero||!defender;
+    const attackDamage=currentAtk(attacker,attackingPlayer),counterDamage=defender?currentAtk(defender,defendingPlayer):undefined;
+    void runRulesCommand({type:"attack",attackerId:action.attackerUid,defenderId:defender?.uid,skipPriority:true},action.attackerOwner).then(accepted=>{
+     if(!accepted){setSharedCombat({...action,stage:"resolved",result:"O motor de regras recusou o ataque.",winnerText:"ATAQUE CANCELADO"});return}
+     const resolved=currentGameRef.current,attackerAlive=!!resolved?.players[action.attackerOwner].board.some(unit=>unit.uid===action.attackerUid),defenderAlive=!defender||!!resolved?.players[defenderOwner].board.some(unit=>unit.uid===defender.uid),destroyed:Array<"attacker"|"defender">=[];
+     if(!attackerAlive)destroyed.push("attacker");if(defender&&!defenderAlive)destroyed.push("defender");
+     const winnerText=!attackerAlive&&!defenderAlive?"AMBAS FORAM DESTRUÍDAS":defender&&!defenderAlive?`${attacker.name} VENCEU O CONFRONTO`:!attackerAlive?`${defender?.name||"O defensor"} VENCEU O CONFRONTO`:targetHero?"DANO DIRETO AO HERÓI":"AMBAS SOBREVIVERAM";
+     setSharedCombat({...action,targetHero,defenderUid:defender?.uid,defenderCard:defender?baseCard(defender):undefined,stage:"resolved",attackDamage,counterDamage,destroyed,winnerText,result:targetHero?`${attackDamage} de dano direto`:`${attackDamage} × ${counterDamage||0}`})
+    });return
+   }
+   setSharedCombat(null)
+  });return()=>cancelAnimationFrame(frame)
+ },[combatAction,game,responseWindow,targeting,difficulty,mode]);
+
+ useEffect(()=>{
+  const decision=game?.pendingDecision;if(!game||presentationBusy||mode!=="bot"||!decision||(decision.owner!==1&&decision.context?.decisionOwner!==1))return;
+  const decisionKey=`${game.round}:${game.events}:${decision.kind}`;
+  const timer=window.setTimeout(()=>{void chooseAdvancedAIDecision(game,1,difficulty).then(command=>{const current=currentGameRef.current,currentDecision=current?.pendingDecision;if(!command||!current||`${current.round}:${current.events}:${currentDecision?.kind||""}`!==decisionKey)return;void runRulesCommand(command,1)})},120);
+  return()=>window.clearTimeout(timer)
+ },[game,mode,difficulty,presentationBusy]);
+
+ useEffect(()=>{
+  if(!game||presentationBusy||game.active!==1||game.winner!==null||mode!=="bot"||responseWindow||combatAction||game.pendingDecision||game.pendingReposition||game.phase==="combate")return;
+  const timer=window.setTimeout(()=>{
+   if(game.phase==="manutencao"){
+    update(g=>{const p=g.players[1];if(!p.deck.length){p.life=0;log(g,`${deckById(p.heroId).name} iniciou a Manutenção com o Deck vazio e perdeu a partida.`,"danger");return}p.board.forEach(u=>{u.damage=0;u.summoning=false;u.activatedThisTurn=false;u.attackedThisTurn=false;u.attacksThisTurn=0;u.defenseUses=0;if(u.immobilized){u.exhausted=true;u.immobilized=false}else u.exhausted=false;u.stunned=false;u.frozen=false;u.suffocated=false});p.support.forEach(u=>{u.exhausted=false;u.summoning=false;u.activatedThisTurn=false});resetTurnState(p);p.maxEnergy=Math.min(10,p.maxEnergy+1);draw(g,p);p.energy=p.maxEnergy;resolveMaintenanceTriggers(g,1);g.phase="principal";queueCafeDoTempoPlacement(g);log(g,"A IA concluiu a manutenção.","phase")});return
+   }
+   const player=game.players[1],searchKey=`${game.round}:${game.events}:${game.phase}:${player.hand.length}:${player.energy}:${player.reserve}`;
+   void chooseAdvancedAIAction(game,1,difficulty).then(command=>{
+    const current=currentGameRef.current,currentPlayer=current?.players?.[1],currentKey=current&&currentPlayer?`${current.round}:${current.events}:${current.phase}:${currentPlayer.hand.length}:${currentPlayer.energy}:${currentPlayer.reserve}`:"";
+    if(!command||currentKey!==searchKey||current?.winner!=null||current?.pendingDecision||current?.pendingResponse)return;
+    void runRulesCommand(command,1)
+   })
+  },80);
+  return()=>window.clearTimeout(timer)
+ },[game,mode,difficulty,responseWindow,combatAction,presentationBusy]);
+
+ useEffect(()=>{
+  if(!game||mode!=="bot"||game.active!==1||game.phase!=="combate"||game.winner!==null||combatAction||responseWindow||presentationBusy)return;
+  const t=setTimeout(()=>{
+   const legal=orderAIAttackers(game.players[1],difficulty) as Unit[],legalIds=new Set(legal.map(unit=>unit.uid));
+   const planned=planAdvancedAIAttacks(game,1,difficulty).filter(uid=>legalIds.has(uid));
+   const queued=aiAttackQueue.find(uid=>legalIds.has(uid)&&planned.includes(uid));
+   if(queued){setAiAttackQueue(aiAttackQueue.filter(uid=>uid!==queued));beginAttack(1,queued);return}
+   const ready=planned;
+   if(ready.length){setAiAttackQueue(ready.slice(1));beginAttack(1,ready[0]);return}
+   setAiAttackQueue([]);update(g=>{if(g.active===1&&g.phase==="combate"){g.players.forEach(player=>player.board.forEach(unit=>{if(unit.defenseUses>0)unit.exhausted=true}));g.phase="fim";log(g,"A IA encerrou a etapa de combate.","phase")}});
+  },180);
+  return()=>clearTimeout(t);
+ },[game,mode,difficulty,combatAction,responseWindow,aiAttackQueue,presentationBusy]);
+
+ useEffect(()=>{const authoritativePending=game?.pendingResponse;if(authoritativePending?.responder!==1||mode!=="bot")return;const pendingKey=`${authoritativePending.actor}:${authoritativePending.responder}:${authoritativePending.passes??0}:${authoritativePending.action}`;const snapshot=currentGameRef.current;if(!snapshot||snapshot.winner!==null||snapshot.pendingResponse?.responder!==1)return;const delay=(authoritativePending.passes??0)>0?40:legalPriorityResponses(snapshot,1).length?90:40;const act=()=>{const current=currentGameRef.current;if(!current||current.winner!==null||mode!=="bot")return;const pending=current.pendingResponse;if(!pending||pending.responder!==1)return;const currentKey=`${pending.actor}:${pending.responder}:${pending.passes??0}:${pending.action}`;if(currentKey!==pendingKey)return;const fallback=async()=>{await passPriorityWindow(1,true)};if(pending.actor===1&&(pending.passes??0)>0){void fallback();return}void chooseAdvancedAIResponse(current,1,difficulty).then(command=>{const latest=currentGameRef.current,latestPending=latest?.pendingResponse;if(!latest||!latestPending||latestPending.responder!==1)return;const latestKey=`${latestPending.actor}:${latestPending.responder}:${latestPending.passes??0}:${latestPending.action}`;if(latestKey!==pendingKey)return;if(command.type==="passPriority"){void fallback();return}void runRulesCommand(command,1).then(accepted=>{if(!accepted)void fallback()})})};const t=setTimeout(act,delay);/* Last-resort progress guard: a failed search must never leave the match locked. */const watchdog=setTimeout(()=>{const current=currentGameRef.current,pending=current?.pendingResponse;if(!current||pending?.responder!==1)return;const currentKey=`${pending.actor}:${pending.responder}:${pending.passes??0}:${pending.action}`;if(currentKey===pendingKey)void passPriorityWindow(1,true)},3200);return()=>{clearTimeout(t);clearTimeout(watchdog)}},[game?.pendingResponse?.actor,game?.pendingResponse?.responder,game?.pendingResponse?.passes,game?.pendingResponse?.action,mode,difficulty]);
+ const responseBudget=(state:Game,owner:0|1)=>state.active===owner?state.players[owner].energy+state.players[owner].reserve:state.players[owner].reserve;
+ const legalAcceleratedResponseCommands=(state:Game,owner:0|1=0)=>legalPriorityResponses(state,owner).filter((command:any)=>command.type==="playCard");
+ const hasUsableAcceleratedResponse=(state:Game,owner:0|1=0)=>legalAcceleratedResponseCommands(state,owner).length>0;
+ const usableAcceleratedResponses=(state:Game,owner:0|1=0)=>{const player=state.players[owner],legalIds=new Set(legalAcceleratedResponseCommands(state,owner).map((command:any)=>String(command.cardId)));return player.hand.map((card,index)=>({card,index,cost:effectiveCost(card,player)})).filter(({card})=>legalIds.has(card.id))};
+ const heroPriorityResponses=(state:Game,owner:0|1=0)=>legalPriorityResponses(state,owner).filter((command:any)=>command.type==="activateHero").map((command:any)=>{const slot=command.abilityId==="gimble-level-2"?1:command.abilityId==="saymon-level-1"?0:command.abilityId==="saymon-level-2"?1:command.abilityId==="ngoro-level-2"?1:command.abilityId==="ngoro-level-3"?2:command.abilityId==="natureza-level-1"?0:command.abilityId==="natureza-level-3"?2:-1;return{abilityId:command.abilityId,label:slot>=0?deckById(state.players[owner].heroId).abilities[slot]:command.label||"Habilidade do Herói"}});
+ const hasUsablePriorityResponse=(state:Game,owner:0|1=0)=>hasUsableAcceleratedResponse(state,owner)||heroPriorityResponses(state,owner).length>0;
+ const presentationBlocked=presentationBusy||!!visualFx||visualFxQueue.length>0||shufflingDeck!==null;
+ const visibleResponseWindow=presentationBlocked?null:responseWindow;
+ const priorityInteractionActive=!!(game?.pendingResponse||responseWindow||game?.pendingAction||game?.priorityStack?.length||(combatAction&&["declared","priority"].includes(combatAction.stage))||targeting?.response);
+ const priorityControl=usePriorityControl({interactionActive:priorityInteractionActive,pendingResponse:visibleResponseWindow,hasUsableResponse:!!game&&hasUsablePriorityResponse(game,0),getCurrentPending:()=>presentationBlocked?null:currentGameRef.current?.pendingResponse??null,onAutoPass:()=>passPriorityWindow(0,true)});
+ useEffect(()=>{const pending=game?.pendingResponse;if(presentationBusy||mode!=="bot"||pending?.responder!==0||!pending.deadline||pending.deadline>clockNow)return;const key=`${pending.actor}:${pending.responder}:${pending.passes??0}:${pending.action}:${pending.deadline}`,current=currentGameRef.current?.pendingResponse,currentKey=current?`${current.actor}:${current.responder}:${current.passes??0}:${current.action}:${current.deadline??0}`:"";if(currentKey===key)void passPriorityWindow(0,true)},[clockNow,mode,game?.pendingResponse?.actor,game?.pendingResponse?.responder,game?.pendingResponse?.passes,game?.pendingResponse?.action,game?.pendingResponse?.deadline]);
+
+ const selectedDeck=deckById(mine),activeUserDeck=userDecks[mine]??defaultUserDeck(mine,cards,selectedDeck.name),deckValidation=validateUserDeck(activeUserDeck,cards);
+ const selectedPool=useMemo<CardDef[]>(()=>activeUserDeck.main.flatMap(entry=>{const card=cards.find(candidate=>candidate.id===entry.cardId);return card?[{...card,collectionQuantity:entry.quantity}]:[]}),[activeUserDeck]);
+ const selectedExtra=useMemo(()=>activeUserDeck.extra.map(cardId=>cards.find(card=>card.id===cardId)).filter((card):card is CardDef=>!!card),[activeUserDeck]);
+ const mainDeckCopies=deckValidation.mainCount,deckListValid=deckValidation.ok;
+ const collectionMatches=(card:CardDef)=>{const query=cleanName(deferredCollectionQuery.trim());return (collectionType==="Todas"||card.type===collectionType)&&(!query||cleanName(`${card.name} ${card.type} ${card.text} ${(card.tags||[]).join(" ")} ${(card.subtypes||[]).join(" ")}`).includes(query))};
+ const filteredSelectedPool=selectedPool.filter(collectionMatches),filteredSelectedExtra=selectedExtra.filter(collectionMatches);
+ const myRoomParticipant=isHost?roomInfo?.host:roomInfo?.guest;
+ const opponentRoomParticipant=isHost?roomInfo?.guest:roomInfo?.host;
+ const winnerDeck=game?.winner!=null?deckById(game.players[game.winner].heroId):null;
+ const winnerDisplayName=winnerDeck?`${mode==="bot"&&game?.winner===1?"(IA) ":""}${winnerDeck.name}`:"";
+ const reconnectDeadline=(opponentRoomParticipant?.disconnectedAt??0)+60000;
+ const reconnectRemaining=Math.max(0,Math.ceil((reconnectDeadline-clockNow)/1000));
+ const opponentReconnecting=mode==="online"&&(roomInfo?.status==="mulligan"||roomInfo?.status==="started")&&!!opponentRoomParticipant?.disconnectedAt&&reconnectRemaining>0;
+ const myReconnectDeadline=(myRoomParticipant?.disconnectedAt??0)+60000;
+ const myReconnectRemaining=Math.max(0,Math.ceil((myReconnectDeadline-clockNow)/1000));
+ const reconnectingSelf=mode==="online"&&(roomInfo?.status==="mulligan"||roomInfo?.status==="started")&&!!myRoomParticipant?.disconnectedAt&&myReconnectRemaining>0;
+ const priorityLocked=(mode==="online"&&game?.pendingResponse?.actor===0)||opponentReconnecting||reconnectingSelf||onlineCommandPending;
+ const responseRemaining=Math.max(0,Math.ceil(((game?.pendingResponse?.deadline??clockNow)-clockNow)/1000));
+ const turnRemaining=Math.max(0,Math.ceil(((game?.turnDeadline??clockNow)-clockNow)/1000));
+ const formatClock=(seconds:number)=>`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")}`;
+ const defenseChoice=!!combatAction&&combatAction.attackerOwner===1&&combatAction.stage==="choosing";
+ const defendingAgainst=defenseChoice&&game?game.players[1].board.find(unit=>unit.uid===combatAction?.attackerUid):undefined;
+ const defenseTargets=defenseChoice&&game&&defendingAgainst?legalDefenders(defendingAgainst,game.players[1],game.players[0]).map(unit=>unit.uid):undefined;
+ const heroAbilityTargetIds=targeting?.kind==="gimble"&&game?game.players[0].board.filter(unit=>hasFaction(unit,"Dragão")&&unit.exhausted).map(unit=>unit.uid):undefined;
+ const tranqueiraTargetIds=targeting?.kind==="tranqueira-attach"?targeting.allowedIds:undefined;
+ const baseLocalTargetableCreatureIds=defenseChoice?defenseTargets:(tranqueiraTargetIds??heroAbilityTargetIds);
+ const allyTarget=(!!targeting&&["attach","elemental-optional","gimble","natureza","saymon-life","ngoro","tranqueira-attach"].includes(targeting.kind))||((!!targeting&&["spell","elemental-optional"].includes(targeting.kind)&&!!game)?["ally","any"].includes(targetRule(game.players[0].hand[targeting.cardIndex!]||cards[0],targeting.selected?.length||0)):false);
+ const enemyTarget=(!!targeting&&["saymon","uruk-fire","elemental-optional"].includes(targeting.kind))||((!!targeting&&["spell","elemental-optional"].includes(targeting.kind)&&!!game)?["enemy","any"].includes(targetRule(game.players[0].hand[targeting.cardIndex!]||cards[0],targeting.selected?.length||0)):false);
+ /* Texto Colado has priority: unrestricted damage and healing may select heroes;
+    creature-only and permanent-only effects may not. */
+ const targetCard=!!targeting&&["spell","elemental-optional"].includes(targeting.kind)&&game?game.players[0].hand[targeting.cardIndex!]:undefined;
+ const targetPolicyStep:any=targetCard?playTargetPolicy(targetCard).steps?.[targeting?.selected?.length||0]:undefined;
+ const conditionalSpellTargetIds=targetPolicyStep&&game&&(targetPolicyStep.requiresDamagedOwnerThisTurn||targetPolicyStep.requiresEffectAppliedThisTurn||targetPolicyStep.requiresMarker||targetPolicyStep.allowedIds?.length)?game.players.flatMap(player=>player.board.filter(unit=>(!targetPolicyStep.requiresDamagedOwnerThisTurn||(unit.damagedOwnersThisTurn||[]).includes(0))&&(!targetPolicyStep.requiresEffectAppliedThisTurn||(unit as any).effectAppliedRound===game.round)&&(!targetPolicyStep.requiresMarker||Number(typeof unit.markers==="number"?unit.markers:Object.values(unit.markers||{}).reduce((sum,value)=>sum+Number(value||0),0))>0)&&(!targetPolicyStep.allowedIds?.length||targetPolicyStep.allowedIds.includes(unit.uid))).map(unit=>unit.uid)):undefined;
+ const localTargetableCreatureIds=baseLocalTargetableCreatureIds??conditionalSpellTargetIds;
+ const enemyHeroTarget=targeting?.kind==="saymon"||targeting?.kind==="uruk-fire"||(targeting?.kind==="spell"&&allowsHeroTarget(targetCard,targeting?.selected?.length||0)&&enemyTarget);
+ const allyHeroTarget=targeting?.kind==="spell"&&allowsHeroTarget(targetCard,targeting?.selected?.length||0)&&allyTarget;
+ const currentScope=targeting?.kind==="elemental-optional"?TargetScope.ANY_CREATURE:targetCard?targetScopeAt(targetCard,targeting?.selected?.length||0):TargetScope.NONE,permanentTarget=[TargetScope.ANY_PERMANENT,TargetScope.ALLY_PERMANENT,TargetScope.ENEMY_PERMANENT].includes(currentScope),allyPermanentTarget=allyTarget&&permanentTarget,enemyPermanentTarget=enemyTarget&&permanentTarget;
+ const chooseResponse=(idx:number)=>{if(!game)return;const c=game.players[0].hand[idx],policy=c?playTargetPolicy(c):undefined;if(!c||!isFast(c)||effectiveCost(c,game.players[0])>responseBudget(game,0))return;if(policy&&policy.selections>0){if(!canChooseAllTargets(c,policy.steps||[])){update(g=>log(g,`${c.name} não pode responder porque não existem alvos válidos.`,"danger"));return}setResponseWindow(null);setTargeting({kind:c.type==="Artefato"?"attach":"spell",source:`Resposta: ${c.name}`,cardIndex:idx,response:true,required:policy.selections,selected:[]});return}playCard(idx,0,undefined,undefined,undefined,true)};
+ const chooseHeroResponse=(abilityId:string)=>{if(!game)return;const command=legalPriorityResponses(game,0).find((candidate:any)=>candidate.type==="activateHero"&&candidate.abilityId===abilityId);if(command)void runRulesCommand(command,0)};
+ const declineResponse=()=>{void passPriorityWindow(0)};
+ const engineDecision=presentationBlocked?null:game?.pendingDecision,decisionForLocal=!!engineDecision&&engineDecision.owner===0;
+ const decisionEffectLabel=(effect:any)=>effect?.type==="selectFirstAct"?`Ativar Primeiro Ato de ${effect.name}`:effect?.type==="investigate"?`Investigar ${effect.amount||1} no ${effect.target==="opponentDeck"?"deck adversário":"seu deck"}`:effect?.type==="createImagesAcrossFields"?`Criar ${effect.amount||1} Gatos Multidimensionais`:effect?.type==="levelHero"?"Subir o herói de nível":effect?.type==="draw"?`Comprar ${effect.amount||1} carta(s)`:effect?.type==="mill"?`Triturar ${effect.amount||1} carta(s)`:effect?.type==="loseLife"?`Perder ${effect.amount||1} de vida`:effect?.type==="moveTopToBottom"?"Mover o topo para o fundo":effect?.type==="heal"?`Restaurar ${effect.amount||1} de vida`:effect?.type==="damage"?`Causar ${effect.amount||1} de dano`:"Aplicar o efeito";
+ const resolveEngineChoice=(choiceIndex:number)=>{if(!decisionForLocal)return;const selectedCardId=engineDecision.kind==="replay-ability"?engineDecision.effect.choices?.[choiceIndex]?.[0]?.id:undefined;void runRulesCommand({type:"resolveDecision",choiceIndex,selectedCardId},0)};
+ const sacrificeDecision=engineDecision?.kind==="optional-sacrifice-buff";
+ const imagePlacementDecision=!!engineDecision&&engineDecision.kind==="image-placement"&&engineDecision.owner===0;
+ const imagePlacementTargetOwner=imagePlacementDecision?Number(engineDecision.effect.targetOwner):-1;
+ const imagePlacementCreatureSlots=imagePlacementDecision?(engineDecision.effect.creatureSlots||[]):[];
+ const imagePlacementSupportSlots=imagePlacementDecision?(engineDecision.effect.supportSlots||[]):[];
+ const chooseImagePlacement=(slot:number,zone:"creature"|"support")=>{if(!imagePlacementDecision)return;void runRulesCommand({type:"resolveDecision",slot,placementZone:zone},0)};
+ const engineTargetDecision=!!engineDecision&&["targets","activation-targets"].includes(engineDecision.kind);
+ const engineTargetStep=engineTargetDecision?engineDecision.targetSteps?.[engineTargetSelection.length]:undefined;
+ const engineTargetOptions=engineTargetStep&&game?game.players.flatMap((player,targetOwner)=>[...player.board.map(unit=>({id:unit.uid,label:unit.name,kind:"creature",card:unit as CardDef})),...player.support.map(unit=>({id:unit.uid,label:unit.name,kind:"permanent",card:unit as CardDef})),...(player.terrain?[{id:player.terrain.uid,label:player.terrain.name,kind:"permanent",card:player.terrain as CardDef}]:[]),{id:targetOwner===0?"ally-hero":"enemy-hero",label:`Herói: ${heroDisplayName(player.heroId)}`,kind:"hero",card:cards.find(card=>card.page===deckById(player.heroId).heroPage)!}].filter(option=>isValidTarget(engineTargetStep,0,targetOwner,option.kind)&&(!engineTargetStep.requiredSubtype||hasSubtype(option.card,engineTargetStep.requiredSubtype))&&(!engineTargetStep.requiredName||cleanName(option.card.name)===cleanName(engineTargetStep.requiredName))&&(!engineTargetStep.imageOnly||!!(option.card as any).generatedImage||!!(option.card as any).imageCard)&&(engineTargetStep.maxCost==null||option.card.cost<=engineTargetStep.maxCost)&&(!engineTargetStep.requiresEffectAppliedThisTurn||(option.card as any).effectAppliedRound===game.round)&&(!engineTargetStep.requiresMarker||Number(typeof (option.card as any).markers==="number"?(option.card as any).markers:Object.values((option.card as any).markers||{}).reduce((sum:any,value:any)=>sum+Number(value||0),0))>0)&&(!engineTargetStep.allowedIds?.length||engineTargetStep.allowedIds.includes(option.id))&&!(engineTargetStep.excludeIds||[]).includes(option.id)&&!engineTargetSelection.includes(option.id))):[];
  const engineTargetIds=engineTargetOptions.map(option=>option.id);
  const engineTargetConsequence=(engineDecision?.effect?.replayEffects||[]).map(decisionEffectLabel).join(" · ")||"Resolver o efeito indicado pela carta";
  const selectEngineTarget=(id:string)=>{if(!engineDecision||!["targets","activation-targets"].includes(engineDecision.kind))return;const next=[...engineTargetSelection,id],required=(engineDecision.targetSteps||[]).filter((step:any)=>!step.optional).length||1;if(next.length<required){setEngineTargetSelection(next);return}setEngineTargetSelection([]);void runRulesCommand({type:"resolveDecision",targetIds:next},0)};
