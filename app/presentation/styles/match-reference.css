@@ -4602,3 +4602,38 @@ html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero
   margin: 0 !important;
   transform: none !important;
 }
+
+/* Final optical calibration from the rendered hero card. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack {
+  width: min(17.35cqw, 29.9cqh) !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-power-trigger > .hero-level {
+  width: 35.5% !important;
+  padding-inline: .22cqw !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+  letter-spacing: .02em !important;
+  text-overflow: clip !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .player-hero > .hero-evolution {
+  left: 38% !important;
+  width: calc(62% - .52cqw) !important;
+  padding-inline: .32cqw !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack .player-hero > .hero-evolution > :is(small, strong) {
+  font-size: clamp(.4rem, min(.67cqw, 1.11cqh), .68rem) !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip > i {
+  transform: translateY(.18cqh) !important;
+}
+
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack {
+    width: min(18.4cqw, 31.7cqh) !important;
+  }
+}
