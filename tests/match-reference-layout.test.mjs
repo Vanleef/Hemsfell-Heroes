@@ -58,6 +58,15 @@ test("hero panels reserve distinct portrait, progression, ability and evolve reg
   assert.match(heroCss, /player-hero:not\(\.enemy\) > \.level-button\s*\{[\s\S]*?bottom:\s*\.72cqh[\s\S]*?z-index:\s*30/);
 });
 
+test("the progression badge and all three independent ability chips defeat legacy list styling", () => {
+  assert.match(heroCss, /hero-level-row > \.hero-evolution\s*\{[\s\S]*?display:\s*grid\s*!important[\s\S]*?border:[\s\S]*?opacity:\s*1\s*!important[\s\S]*?visibility:\s*visible\s*!important/);
+  assert.match(heroCss, /hero-evolution > \.evolution-track\s*\{[\s\S]*?display:\s*block\s*!important[\s\S]*?visibility:\s*visible\s*!important/);
+  assert.match(heroCss, /canonical-hero-panel > \.hero-command-bar\s*\{[\s\S]*?grid-template-rows:\s*repeat\(3, minmax\(0, 1fr\)\)[\s\S]*?gap:\s*\.68cqh\s*!important[\s\S]*?border:\s*0\s*!important[\s\S]*?background:\s*transparent\s*!important/);
+  assert.match(heroCss, /hero-command-bar > \.hero-ability-chip\s*\{[\s\S]*?display:\s*grid\s*!important[\s\S]*?border:[\s\S]*?border-radius:[\s\S]*?background:\s*linear-gradient/);
+  assert.match(heroCss, /hero-ability-chip\.is-locked\s*\{[\s\S]*?opacity:\s*\.5\s*!important/);
+  assert.match(heroCss, /hero-ability-chip > \.hero-ability-copy\s*\{[\s\S]*?grid-template-rows:\s*auto auto[\s\S]*?row-gap:\s*\.3cqh/);
+});
+
 test("each hero and its ability bar share an isolated responsive stack", () => {
   assert.match(page, /className="hero-panel-stack canonical-hero-panel enemy"[\s\S]*?<PlayerHero[\s\S]*?<HeroAbilities player=\{foe\} enemy/);
   assert.match(page, /className="hero-panel-stack canonical-hero-panel player"[\s\S]*?<PlayerHero[\s\S]*?<HeroAbilities player=\{me\}/);
