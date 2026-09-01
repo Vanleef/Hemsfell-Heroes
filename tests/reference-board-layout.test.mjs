@@ -7,6 +7,7 @@ const [css, layout, page] = await Promise.all([
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
 ]);
+const polish = await readFile(new URL("../app/presentation/styles/reference-composition-polish.css", import.meta.url), "utf8");
 
 test("approved reference layout is the final board geometry authority", () => {
   const legacyAuthority = layout.indexOf('import "./presentation/styles/command-bar-fixes.css"');
@@ -63,5 +64,5 @@ test("mobile uses the real viewport and never restores the old 62rem scroll canv
   assert.match(css, /min-width:\s*0\s*!important/);
   assert.match(css, /overflow:\s*hidden\s*!important/);
   assert.match(css, /grid-template-rows:\s*repeat\(2, minmax\(0, 1fr\)\)\s*!important/);
-  assert.match(css, /> \.priority-control-toggle\s*\{[\s\S]*?top:\s*clamp\(2\.2rem, 5\.2cqh, 3\.15rem\)\s*!important[\s\S]*?bottom:\s*auto\s*!important/);
+  assert.match(polish, /> \.priority-control-toggle\s*\{[\s\S]*?top:\s*\.45cqh\s*!important[\s\S]*?right:\s*clamp\(6\.4rem, 9\.2cqw, 8\.6rem\)\s*!important/);
 });

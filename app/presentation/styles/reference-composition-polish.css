@@ -17,26 +17,24 @@ body .screen-game.screen-game .game-stage::after {
 
 body .screen-game.screen-game .game-stage > .game-content.hs-board {
   --hh-polish-gold: #9b762d;
-  --hh-polish-slot-w: min(9.05cqh, 5.05cqw);
-  --hh-polish-meta-w: min(7.35cqw, 12.6cqh);
+  --hh-polish-slot-w: min(9cqh, 5.05cqw);
+  --hh-polish-meta-w: min(6.65cqw, 11.8cqh);
 
   /* Give the battlefield slightly more room while keeping both outside rails
      useful. The right rail remains large enough for visibly larger piles. */
   grid-template-columns:
-    minmax(0, 15.5fr)
-    minmax(0, 9.2fr)
-    minmax(0, 52fr)
-    minmax(0, 8.2fr)
-    minmax(0, 15.1fr) !important;
+    minmax(0, 17.5fr)
+    minmax(0, 10fr)
+    minmax(0, 42.5fr)
+    minmax(0, 13fr)
+    minmax(0, 17fr) !important;
   grid-template-rows:
-    minmax(0, 5.1fr)
-    minmax(0, 10.8fr)
-    minmax(0, 4.7fr)
-    minmax(0, 24.4fr)
-    minmax(0, 2.6fr)
-    minmax(0, 24.4fr)
-    minmax(0, 4.7fr)
-    minmax(0, 23.3fr) !important;
+    minmax(0, 5.6fr)
+    minmax(0, 14fr)
+    minmax(0, 26.2fr)
+    minmax(0, 1.7fr)
+    minmax(0, 29fr)
+    minmax(0, 23.5fr) !important;
 
   background: radial-gradient(ellipse at 50% 49%, #173e48 0, #0a252c 44%, #06171c 76%, #030a0d 100%) !important;
   box-shadow: none !important;
@@ -66,9 +64,9 @@ body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-fie
   align-self: stretch !important;
   grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
   grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
-  column-gap: clamp(.45rem, .92cqw, 1.1rem) !important;
-  row-gap: clamp(.55rem, 2.65cqh, 1.45rem) !important;
-  padding: 1.05cqh 1.7cqw !important;
+  column-gap: 0 !important;
+  row-gap: .6cqh !important;
+  padding: .3cqh .75cqw !important;
   overflow: visible !important;
 }
 
@@ -82,8 +80,15 @@ body .screen-game.screen-game .paired-field .field-slot {
   width: var(--hh-polish-slot-w) !important;
   max-width: 100% !important;
   height: auto !important;
-  aspect-ratio: 1 / 1 !important;
+  aspect-ratio: 5 / 7 !important;
   overflow: visible !important;
+}
+
+/* Auxiliary cards are visually subordinate to creatures, one row apart, so a
+   slightly smaller scale plus the extra row-gap above keeps their badges and
+   activation icons clear of the creature row and of neighboring lanes. */
+body .screen-game.screen-game .paired-field .field-slot.auxiliary-slot {
+  width: var(--hh-polish-slot-w) !important;
 }
 
 /* Keep an occupied card proportional instead of letting a square placeholder
@@ -117,8 +122,8 @@ body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-han
 /* The old hand scale ate too much of the lower board. Slightly smaller cards
    keep eight-card hands readable while making the battlefield feel less tight. */
 body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
-  flex: 0 1 min(11.45cqh, 6.35cqw) !important;
-  width: min(11.45cqh, 6.35cqw) !important;
+  flex: 0 0 min(13.5cqh, 7.4cqw) !important;
+  width: min(13.5cqh, 7.4cqw) !important;
   min-width: 0 !important;
   max-width: none !important;
 }
@@ -132,7 +137,7 @@ body .screen-game.screen-game .game-stage > .game-content.hs-board > .opponent-h
    Larger side piles + response-mode clearance
    ------------------------------------------------------------------------- */
 body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles {
-  width: min(14.85cqw, 27.5cqh) !important;
+  width: min(13.5cqw, 24cqh) !important;
   max-width: 97% !important;
   max-height: 90% !important;
   gap: clamp(.12rem, .62cqh, .42rem) !important;
@@ -153,15 +158,18 @@ body .screen-game.screen-game .game-stage > .game-content.hs-board > .enemy-pile
 }
 
 body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-piles {
-  align-self: end !important;
-  margin-bottom: 1.1cqh !important;
+  align-self: start !important;
+  margin-top: 1.7cqh !important;
+  margin-bottom: 0 !important;
 }
 
-/* Move Assisted/Manual mode into the phase corridor instead of laying it over
-   the opponent pile rail. */
+/* Move Assisted/Manual mode into the top bar, left of REGISTRO with clear gap
+   between the two (matches the designer reference top-right cluster). */
 body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-control-toggle {
-  top: 6.05cqh !important;
-  right: max(16.15cqw, env(safe-area-inset-right)) !important;
+  top: .45cqh !important;
+  right: clamp(6.4rem, 9.2cqw, 8.6rem) !important;
+  bottom: auto !important;
+  left: auto !important;
   z-index: 140 !important;
 }
 
@@ -169,14 +177,14 @@ body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-c
    Hero portrait + external metadata rail
    ------------------------------------------------------------------------- */
 body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero {
-  width: min(14.75cqw, 26.4cqh) !important;
+  width: min(15.2cqw, 27cqh) !important;
   margin-block: .75cqh !important;
-  padding: 2.55cqh .55cqw 15.2cqh !important;
+  padding: 1.8cqh .55cqw 15.8cqh !important;
   overflow: visible !important;
 }
 
 body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) {
-  height: 40.8cqh !important;
+  height: 39.5cqh !important;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
 }
@@ -185,10 +193,37 @@ body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-her
    outside. The source is still the canonical card canvas until permanent
    clean portrait assets are committed to /public. */
 body .screen-game.screen-game .player-hero .hero-power-trigger {
-  height: 17.15cqh !important;
+  height: 16.3cqh !important;
   border-radius: .45cqw !important;
   overflow: hidden !important;
   background: #071418 !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-portrait {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  overflow: hidden !important;
+  z-index: 1 !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-portrait > img,
+body .screen-game.screen-game .player-hero .hero-portrait > .remote-card-art {
+  position: absolute !important;
+  display: block !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-portrait > img {
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: var(--hero-portrait-position, center 20%) !important;
+}
+
+body .screen-game.screen-game .player-hero .hero-power-trigger::after {
+  height: 44% !important;
+  background: linear-gradient(transparent 8%, #061518e8 62%, #061518 100%) !important;
 }
 
 /* Make the name read as the header of the portrait instead of a pill floating
@@ -212,7 +247,7 @@ body .screen-game.screen-game .player-hero .hero-short-name {
 /* Keep the useful face crop but push the card canvas beneath the name header.
    This also prevents the title/name strip from visually cutting through hair
    or facial features. */
-body .screen-game.screen-game .player-hero .hero-power-trigger > .remote-card-art {
+body .screen-game.screen-game .player-hero .hero-portrait > .remote-card-art {
   left: -25% !important;
   top: calc(-96% + 2.25cqh) !important;
   width: 150% !important;
@@ -222,9 +257,27 @@ body .screen-game.screen-game .player-hero .hero-power-trigger > .remote-card-ar
 }
 
 body .screen-game.screen-game .player-hero .hero-life {
+  position: absolute !important;
+  display: grid !important;
+  place-items: center !important;
   top: auto !important;
-  right: .25cqw !important;
-  bottom: .35cqh !important;
+  right: .38cqw !important;
+  bottom: .65cqh !important;
+  min-width: clamp(2.65rem, 5.6cqh, 5rem) !important;
+  min-height: clamp(1.5rem, 3.05cqh, 2.8rem) !important;
+  padding: .26cqh .52cqw !important;
+  color: #fff4ed !important;
+  background: linear-gradient(#74262c, #421117) !important;
+  border: max(1px, .11cqh) solid #ff9b9e !important;
+  border-radius: 999px !important;
+  font-size: clamp(.72rem, min(1.32cqw, 2.25cqh), 1.25rem) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  text-shadow: 0 1px 2px #000 !important;
+  box-shadow: 0 0 0 max(1px, .08cqh) #13080a, 0 .25cqh .6cqh #000c !important;
+  pointer-events: none !important;
+  transform: none !important;
+  z-index: 100 !important;
 }
 
 body .screen-game.screen-game .player-hero .hero-level,
@@ -243,11 +296,11 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .playe
 /* 1. level progress */
 body .screen-game.screen-game .player-hero > .hero-evolution,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
-  left: calc(100% + .55cqw) !important;
+  left: calc(.55cqw + 43%) !important;
   right: auto !important;
-  top: 15.25cqh !important;
+  top: 18.1cqh !important;
   bottom: auto !important;
-  width: var(--hh-polish-meta-w) !important;
+  width: calc(57% - 1.1cqw) !important;
   height: 3.55cqh !important;
   min-height: 0 !important;
   padding: .24cqh .35cqw !important;
@@ -263,11 +316,11 @@ body .screen-game.screen-game .player-hero .hero-evolution > :is(small, strong) 
 /* 2. evolve button */
 body .screen-game.screen-game .player-hero > .level-button,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) > .level-button {
-  left: calc(100% + .55cqw) !important;
+  left: 15% !important;
   right: auto !important;
-  top: 19.35cqh !important;
-  bottom: auto !important;
-  width: var(--hh-polish-meta-w) !important;
+  top: auto !important;
+  bottom: .8cqh !important;
+  width: 70% !important;
   height: 2.85cqh !important;
   min-height: 0 !important;
   transform: none !important;
@@ -277,11 +330,11 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .playe
 
 /* 3. active player effects */
 body .screen-game.screen-game .player-hero:not(.enemy) .hero-status-cues.local {
-  left: calc(100% + .55cqw) !important;
+  left: 0 !important;
   right: auto !important;
-  top: 22.75cqh !important;
+  top: calc(100% + 5.2cqh) !important;
   bottom: auto !important;
-  width: var(--hh-polish-meta-w) !important;
+  width: 100% !important;
   max-height: 8.7cqh !important;
   overflow: visible !important;
   transform: none !important;
@@ -304,8 +357,9 @@ body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-a
 }
 
 body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities:not(.enemy), .hero-command-bar:not(.enemy)) {
-  translate: 0 14.15cqh !important;
+  translate: 0 6.2cqh !important;
 }
+body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities.enemy, .hero-command-bar.enemy) { translate: 0 -2.8cqh !important; }
 
 body .screen-game.screen-game :is(.hero-abilities .ability, .hero-command-bar .hero-ability-chip) {
   padding: .25cqh .32cqw !important;
@@ -318,9 +372,11 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board .hero-co
 
 /* Keep the Cruel Terrain comfortably clear of the new hero metadata rail. */
 body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot {
-  width: min(8.75cqh, 4.95cqw) !important;
-  justify-self: end !important;
-  margin-right: .55cqw !important;
+  width: min(8cqh, 4.5cqw) !important;
+  aspect-ratio: 1 / 2 !important;
+  justify-self: center !important;
+  margin-right: 0 !important;
+  translate: 0 2.5cqh !important;
 }
 
 /* -------------------------------------------------------------------------
@@ -329,10 +385,10 @@ body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-sl
 @media (orientation: landscape) and (max-width: 64rem),
        (orientation: landscape) and (max-height: 32rem) {
   body .screen-game.screen-game .game-stage > .game-content.hs-board {
-    --hh-polish-slot-w: min(8.45cqh, 5.1cqw);
-    --hh-polish-meta-w: min(7.1cqw, 12.1cqh);
-    grid-template-columns: 15.8fr 8.8fr 51.6fr 8.3fr 15.5fr !important;
-    grid-template-rows: 5.1fr 10.4fr 4.6fr 24.8fr 2.6fr 24.8fr 4.6fr 23.1fr !important;
+    --hh-polish-slot-w: min(8.7cqh, 5.15cqw);
+    --hh-polish-meta-w: min(6.65cqw, 11.2cqh);
+    grid-template-columns: 18fr 9.5fr 42fr 13fr 17.5fr !important;
+    grid-template-rows: 5.6fr 14fr 26.2fr 1.7fr 29fr 23.5fr !important;
   }
 
   body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field {
@@ -342,8 +398,8 @@ body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-sl
   }
 
   body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
-    flex-basis: min(10.85cqh, 6.45cqw) !important;
-    width: min(10.85cqh, 6.45cqw) !important;
+    flex-basis: min(9.7cqh, 5.6cqw) !important;
+    width: min(9.7cqh, 5.6cqw) !important;
   }
 
   body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles {
@@ -360,26 +416,27 @@ body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-sl
   }
 
   body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero {
-    width: min(15.1cqw, 26.2cqh) !important;
-    padding: 2.35cqh .45cqw 14.65cqh !important;
+    width: min(16.4cqw, 28cqh) !important;
+    padding: 1.7cqh .45cqw 15.1cqh !important;
   }
 
   body .screen-game.screen-game .player-hero .hero-power-trigger {
-    height: 16.55cqh !important;
+    height: 16.3cqh !important;
   }
 
   body .screen-game.screen-game .player-hero > .hero-evolution,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
-    top: 14.8cqh !important;
+    top: 18.1cqh !important;
   }
 
   body .screen-game.screen-game .player-hero > .level-button,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) > .level-button {
-    top: 18.9cqh !important;
+    top: auto !important;
+    bottom: .8cqh !important;
   }
 
   body .screen-game.screen-game .player-hero:not(.enemy) .hero-status-cues.local {
-    top: 22.25cqh !important;
+    top: calc(100% + 5.2cqh) !important;
   }
 
   body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities, .hero-command-bar) {
@@ -388,6 +445,137 @@ body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-sl
   }
 
   body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities:not(.enemy), .hero-command-bar:not(.enemy)) {
-    translate: 0 13.9cqh !important;
+    translate: 0 6.2cqh !important;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Final responsive tabletop details
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand {
+  grid-column: 2 / 5 !important;
+  width: min(60cqw, 100%) !important;
+  justify-self: center !important;
+  translate: -3cqw 0 !important;
+}
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+  flex: 0 0 min(12.4cqh, 6.8cqw) !important;
+  width: min(12.4cqh, 6.8cqw) !important;
+  aspect-ratio: 5 / 7 !important;
+}
+
+/* Every permanent target uses the physical card ratio and the same footprint. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board .paired-field .field-slot {
+  width: var(--hh-polish-slot-w) !important;
+  height: auto !important;
+  aspect-ratio: 5 / 7 !important;
+}
+
+body .screen-game.screen-game .slot-type-icon {
+  display: grid !important;
+  place-items: center !important;
+  width: 48% !important;
+  aspect-ratio: 1 !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: color-mix(in srgb, var(--hh-polish-gold) 72%, #6f9298) !important;
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: clamp(.75rem, min(1.65cqw, 2.8cqh), 1.65rem) !important;
+  line-height: 1 !important;
+  opacity: .54 !important;
+  text-shadow: 0 0 .65cqw #b9893159 !important;
+}
+body .screen-game.screen-game .creature-type-icon { color: #8b6254 !important; }
+body .screen-game.screen-game .player-field .creature-type-icon { color: #437d89 !important; }
+body .screen-game.screen-game .auxiliary-type-icon { transform: rotate(45deg) !important; }
+body .screen-game.screen-game .terrain-type-icon { width: 58% !important; color: #a97a37 !important; }
+body .screen-game.screen-game .terrain-slot > em { display: none !important; }
+
+/* Locked capacity is truly absent. Available maximum energy is an engraved
+   empty socket; current energy is the illuminated socket. */
+body .screen-game.screen-game .field-energy .energy-ring > i.locked {
+  opacity: 0 !important;
+  box-shadow: none !important;
+}
+body .screen-game.screen-game .field-energy .energy-ring > i:not(.locked):not(.filled) {
+  opacity: .72 !important;
+  background: #061016 !important;
+}
+body .screen-game.screen-game .field-energy > .energy-dial {
+  border-color: color-mix(in srgb, var(--energy-wheel) 34%, #a47627) !important;
+  background:
+    radial-gradient(circle, #06131a 0 43%, transparent 44%),
+    conic-gradient(from 22.5deg, #a9792645 0 2deg, transparent 2deg 43deg, #a9792645 43deg 45deg) !important;
+  box-shadow: 0 0 0 .2cqw #020609, 0 0 0 .38cqw #8c672632, inset 0 0 1.1cqw #000 !important;
+}
+body .screen-game.screen-game .field-energy > .energy-dial::before,
+body .screen-game.screen-game .field-energy > .energy-dial::after {
+  content: "◆" !important;
+  position: absolute !important;
+  left: 50% !important;
+  z-index: 4 !important;
+  translate: -50% 0 !important;
+  color: #b48633 !important;
+  font-size: clamp(.42rem, min(.72cqw, 1.2cqh), .72rem) !important;
+  text-shadow: 0 0 .45cqw #c89443 !important;
+}
+body .screen-game.screen-game .field-energy > .energy-dial::before { top: -10% !important; }
+body .screen-game.screen-game .field-energy > .energy-dial::after { bottom: -10% !important; transform: rotate(45deg) !important; }
+body .screen-game.screen-game .field-energy > .energy-dial:has(.energy-ring > i:not(.locked)) {
+  border-color: color-mix(in srgb, var(--energy-wheel) 72%, #b98d39) !important;
+  box-shadow: 0 0 0 .2cqw #020609, 0 0 0 .4cqw color-mix(in srgb, var(--energy-wheel) 42%, #9a712a), 0 0 1.2cqw color-mix(in srgb, var(--energy-wheel) 32%, transparent), inset 0 0 1.1cqw #000 !important;
+}
+
+/* The portrait, name and hero statistics own the complete upper half. */
+body .screen-game.screen-game .player-hero .hero-power-trigger { height: 18.1cqh !important; }
+body .screen-game.screen-game .player-hero .hero-portrait {
+  top: 2.35cqh !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+}
+body .screen-game.screen-game .player-hero .hero-short-name { z-index: 12 !important; }
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution { top: 18.45cqh !important; }
+
+/* Status effects only exist in the DOM while active. They use the quiet area
+   above/below each terrain card, close to the corresponding hero panel. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero .hero-status-cues {
+  position: absolute !important;
+  right: auto !important;
+  left: calc(100% + 1.1cqw) !important;
+  width: min(9.1cqw, 16cqh) !important;
+  max-height: 12cqh !important;
+  margin: 0 !important;
+  translate: 0 !important;
+  overflow: visible !important;
+  z-index: 145 !important;
+}
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero.enemy .hero-status-cues.enemy-cues {
+  top: 2.2cqh !important;
+  bottom: auto !important;
+}
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) .hero-status-cues.local {
+  top: 23cqh !important;
+  bottom: auto !important;
+}
+html body .screen-game.screen-game .player-hero .hero-status-cues > span {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand {
+    width: min(61cqw, 100%) !important;
+    translate: -2.2cqw 0 !important;
+  }
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+    flex-basis: min(11.8cqh, 6.75cqw) !important;
+    width: min(11.8cqh, 6.75cqw) !important;
+  }
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero .hero-status-cues {
+    left: calc(100% + .75cqw) !important;
+    width: min(9.2cqw, 15.5cqh) !important;
   }
 }
