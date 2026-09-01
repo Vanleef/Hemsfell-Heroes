@@ -4536,3 +4536,69 @@ html body .screen-game.screen-game .hero-panel-stack.player > .hero-command-bar 
 html body .screen-game.screen-game .hero-panel-stack.player > .hero-command-bar > .hero-ability-chip:first-of-type:is(:hover, :focus-visible)::after {
   transform: translate(0, 0) !important;
 }
+
+/* Reference hero metadata row: life over art, then level and progression. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack {
+  --hh-hero-meta-top: calc(.62cqh + var(--hh-hero-art-height) + .28cqh);
+  --hh-hero-powers-top: calc(var(--hh-hero-meta-top) + var(--hh-hero-meta-height) + .52cqh);
+}
+
+html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-life {
+  right: .52cqw !important;
+  bottom: .78cqh !important;
+  min-width: 6.25cqh !important;
+  min-height: 3.25cqh !important;
+  padding: .22cqh .52cqw !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-power-trigger > .hero-level {
+  left: .45cqw !important;
+  bottom: calc(-1 * var(--hh-hero-meta-height) + .12cqh) !important;
+  width: 32.5% !important;
+  min-width: 0 !important;
+  height: calc(var(--hh-hero-meta-height) - .4cqh) !important;
+  padding-inline: .3cqw !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: clamp(.43rem, min(.72cqw, 1.2cqh), .73rem) !important;
+  line-height: 1 !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .player-hero > .hero-evolution {
+  left: 35% !important;
+  top: var(--hh-hero-meta-top) !important;
+  width: calc(65% - .52cqw) !important;
+  height: var(--hh-hero-meta-height) !important;
+  align-items: center !important;
+  padding: .34cqh .42cqw .38cqh !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack .player-hero > .hero-evolution > small {
+  align-self: center !important;
+  white-space: nowrap !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack .player-hero > .hero-evolution > strong {
+  align-self: center !important;
+  justify-self: end !important;
+  white-space: nowrap !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip {
+  grid-template-columns: minmax(2.75cqh, 1.72cqw) minmax(0, 1fr) !important;
+  column-gap: .46cqw !important;
+  padding-inline: .3cqw .4cqw !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip > i {
+  position: static !important;
+  inset: auto !important;
+  align-self: center !important;
+  justify-self: center !important;
+  display: grid !important;
+  place-items: center !important;
+  width: min(2.65cqh, 1.58cqw) !important;
+  height: min(2.65cqh, 1.58cqw) !important;
+  margin: 0 !important;
+  transform: none !important;
+}
