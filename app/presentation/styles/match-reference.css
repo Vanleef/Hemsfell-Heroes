@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 43051)
+Total output lines: 4049
+
 /*
  * Canonical responsive match composition.
  *
@@ -2032,311 +2035,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .oppon
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .enemy-field { grid-column:3 !important;grid-row:3 !important; }
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .enemy-terrain { grid-column:2 !important;grid-row:3 !important; }
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .enemy-piles { grid-column:5 !important;grid-row:2/4 !important; }
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-field { grid-column:3 !important;grid-row:5 !important; }
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-terrain { grid-column:2 !important;grid-row:5 !important; }
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb { grid-column:4 !important;grid-row:3/6 !important; translate:0 -2.8cqh !important; }
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-piles { grid-column:5 !important;grid-row:5/7 !important; align-self:start !important;margin-top:1.7cqh !important;margin-bottom:0 !important; }
-
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .surrender-button {
-  right:max(1.5cqw,env(safe-area-inset-right)) !important;
-  bottom:max(2.2cqh,env(safe-area-inset-bottom)) !important;
-  width:min(10.4cqw,19cqh) !important;
-  min-width:0 !important;
-  height:6.2cqh !important;
-  min-height:0 !important;
-  font-size:clamp(.55rem,min(.95cqw,1.6cqh),.95rem) !important;
-}
-body .screen-game.screen-game,
-body .screen-game.screen-game .game-stage,
-body .screen-game.screen-game .game-stage::before,
-body .screen-game.screen-game .game-stage::after {
-  background: #06171c !important;
-}
-
-body .screen-game.screen-game .game-stage > .game-content.hs-board {
-  --hh-gold: #9b762d;
-  --hh-gold-soft: #72571f;
-  --hh-ref-edge: clamp(.12rem, .34cqw, .42rem);
-  --hh-ref-slot-w: min(7.25cqh, 4.15cqw);
-  grid-template-columns:
-    minmax(0, 17.5fr)
-    minmax(0, 10fr)
-    minmax(0, 42.5fr)
-    minmax(0, 13fr)
-    minmax(0, 17fr) !important;
-  grid-template-rows:
-    minmax(0, 5.6fr)
-    minmax(0, 14fr)
-    minmax(0, 26.2fr)
-    minmax(0, 1.7fr)
-    minmax(0, 29fr)
-    minmax(0, 23.5fr) !important;
-
-  background: radial-gradient(ellipse at 50% 49%, #173e48 0, #0a252c 44%, #06171c 76%, #030a0d 100%) !important;
-  --hh-slot-w: min(9cqh,5.05cqw);
-  --hh-polish-gold: #9b762d;
-  --hh-polish-slot-w: min(9cqh, 5.05cqw);
-  --hh-polish-meta-w: min(6.65cqw, 11.8cqh);
-  box-shadow: none !important;
-}
-body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.opponent-hand, .player-hand) {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.opponent-hand, .player-hand)::before,
-body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.opponent-hand, .player-hand)::after {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-}
-body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field {
-  justify-self: stretch !important;
-  align-self: stretch !important;
-  width: 100% !important;
-  height: 100% !important;
-  padding: .3cqh .75cqw !important;
-  column-gap: 0 !important;
-  row-gap: .6cqh !important;
-  margin: 0 !important;
-  translate: 0 !important;
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
-  grid-template-rows: repeat(2, minmax(0, 1fr)) !important;
-  overflow: visible !important;
-}
-
-body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column {
-  display: contents !important;
-}
-body .screen-game.screen-game .paired-field .field-slot {
-  width: var(--hh-polish-slot-w) !important;
-  max-height: none !important;
-  aspect-ratio: 5 / 7 !important;
-  border-color: color-mix(in srgb,var(--hh-gold) 58%,#17343b) !important;
-  border-radius: .35cqw !important;
-  background: linear-gradient(145deg,#13272d,#07161b 70%) !important;
-  box-shadow: inset 0 0 0 1px #ffffff0a,inset 0 0 1.3cqw #0007,0 .5cqh .8cqh #0009 !important;
-  height: auto !important;
-  border: 1px solid #9b6a2b !important;
-  max-width: 100% !important;
-  overflow: visible !important;
-}
-body .screen-game.screen-game .paired-field .field-slot.auxiliary-slot {
-  width: var(--hh-polish-slot-w) !important;
-}
-body .screen-game.screen-game .paired-field .field-slot > :is(.card-frame, .original-card),
-body .screen-game.screen-game .paired-field .field-slot > .support-card,
-body .screen-game.screen-game .paired-field .field-slot > .support-card > :is(.card-frame, .original-card) {
-  max-width: 100% !important;
-  max-height: 100% !important;
-}
-html body .screen-game.screen-game .game-stage > .game-content.hs-board .paired-field .field-slot.creature-slot.commander-slot,
-html body .screen-game.screen-game .game-stage > .game-content.hs-board .paired-field .field-slot.creature-slot.commander-slot:hover {
-  border: max(2px, .16cqh) solid #f0444f !important;
-  outline: max(1px, .08cqh) solid #ff7a83 !important;
-  outline-offset: max(1px, .08cqh) !important;
-  background: radial-gradient(circle at 50% 35%, #d52b386e 0, #760f1a99 48%, #30050bcf 100%) !important;
-  box-shadow: inset 0 0 1.9rem #ff4a5966, 0 0 .9rem #e728396b, 0 .42cqh .8cqh #0009 !important;
-}
-body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand {
-  grid-column: 2/5 !important;
-  grid-row: 8 !important;
-  align-self:end !important;
-  justify-self:stretch !important;
-  width:100% !important;
-  height:100% !important;
-  gap: clamp(.1rem, .54cqh, .42rem) !important;
-  padding: .35cqh .75cqw max(.7cqh, env(safe-area-inset-bottom)) !important;
-  translate: 0 !important;
-  overflow:visible !important;
-  align-items:flex-start !important;
-}
-body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
-  flex: 0 0 min(13.5cqh, 7.4cqw) !important;
-  width: min(13.5cqh, 7.4cqw) !important;
-  min-width: 0 !important;
-  max-width: none !important;
-  aspect-ratio:5/7 !important;
-  box-shadow: 0 .5cqh 1.15cqh #000c !important;
-}
-
-body .screen-game.screen-game .game-stage > .game-content.hs-board > .opponent-hand {
-  align-self: center !important;
-  justify-self: center !important;
-  width: 96% !important;
-  height: 100% !important;
-  gap: clamp(.08rem, .56cqh, .4rem) !important;
-  padding: .85cqh .35cqw .4cqh !important;
-  translate: 0 !important;
-  overflow: visible !important;
-  padding-top: .35cqh !important;
-}
-body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles {
-  justify-self:center !important;
-  align-self:center !important;
-  width: min(13.5cqw, 24cqh) !important;
-  max-width: 97% !important;
-  max-height: 90% !important;
-  aspect-ratio:1/1.28 !important;
-  gap: clamp(.12rem, .62cqh, .42rem) !important;
-  translate:0 !important;
-  margin:0 !important;
-}
-
-body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone {
-  aspect-ratio: 4/5 !important;
-  border-color: color-mix(in srgb,var(--hh-gold) 72%,#223238) !important;
-  border-radius: clamp(.25rem,.65cqw,.7rem) !important;
-  background: linear-gradient(155deg,#10252bd9,#061216f2) !important;
-  box-shadow: inset 0 0 0 1px #ffffff08,0 .45cqh .75cqh #0008 !important;
-  padding: clamp(.08rem, .24cqw, .3rem) !important;
-}
-
-body .screen-game.screen-game .side-piles .pile-card {
-  width: 74% !important;
-  max-width: none !important;
-}
-
-body .screen-game.screen-game .game-stage > .game-content.hs-board > .enemy-piles {
-  align-self: start !important;
-  margin-top: 7.4cqh !important;
-}
-
-body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-piles {
-  align-self: start !important;
-  margin-bottom: 0 !important;margin:1.5cqh 0 0 !important;
-  margin-top: 1.7cqh !important;
-}
-body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-control-toggle {
-  top: .45cqh !important;
-  right: clamp(6.4rem, 9.2cqw, 8.6rem) !important;
-  z-index: 140 !important;
-  bottom: auto !important;
-  left: auto !important;
-}
-body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero {
-  justify-self:center !important;
-  align-self:center !important;
-  width: min(15.2cqw, 27cqh) !important;
-  height:calc(100% - 2.6cqh) !important;
-  margin:0 !important;
-  padding: 1.8cqh .55cqw 15.8cqh !important;
-  translate: 0 !important;
-  border:1px solid color-mix(in srgb,var(--deck) 55%,#b58a35) !important;
-  border-radius:.45cqw !important;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--deck) 11%,#111b1e),#071215f7) !important;
-  box-shadow:inset 0 0 0 1px #d4a74a25,inset 0 0 1.8cqw #0009,0 .55cqh 1cqh #000a !important;
-  overflow: visible !important;
-  margin-block: .75cqh !important;
-}
-
-body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) {align-self:start !important;
-  height: 39.5cqh !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  overflow: visible !important;
-}
-
-body .screen-game.screen-game .player-hero .hero-portrait > img,
-body .screen-game.screen-game .player-hero .hero-portrait > .remote-card-art {
-  position: absolute !important;
-  display: block !important;
-}
-
-body .screen-game.screen-game .player-hero .hero-portrait > img {
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  object-position: var(--hero-portrait-position, center 20%) !important;
-}
-
-body .screen-game.screen-game .player-hero .hero-power-trigger::after {
-  content: "" !important;
-  position: absolute !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  height: 44% !important;
-  z-index: 2 !important;
-  pointer-events: none !important;
-  background: linear-gradient(transparent 8%, #061518e8 62%, #061518 100%) !important;
-}
-body .screen-game.screen-game .player-hero .hero-portrait > .remote-card-art {
-  left: -25% !important;
-  top: calc(-96% + 2.25cqh) !important;
-  width: 150% !important;
-  max-width: none !important;
-  height: auto !important;
-  filter: saturate(.95) contrast(1.05) brightness(.9) !important;
-}
-
-body .screen-game.screen-game .player-hero .hero-life {
-  right: .38cqw !important;
-  left: auto !important;
-  bottom: .65cqh !important;
-  top: auto !important;
-  min-width: clamp(2.65rem, 5.6cqh, 5rem) !important;
-  padding: .26cqh .52cqw !important;
-  font-size: clamp(.72rem, min(1.32cqw, 2.25cqh), 1.25rem) !important;
-  border-color: #b34a4e !important;
-  border-radius: 999px !important;
-  background: linear-gradient(#74262c, #421117) !important;
-  z-index: 100 !important;
-  position: absolute !important;
-  display: grid !important;
-  place-items: center !important;
-  min-height: clamp(1.5rem, 3.05cqh, 2.8rem) !important;
-  color: #fff4ed !important;
-  border: max(1px, .11cqh) solid #ff9b9e !important;
-  font-weight: 900 !important;
-  line-height: 1 !important;
-  text-shadow: 0 1px 2px #000 !important;
-  box-shadow: 0 0 0 max(1px, .08cqh) #13080a, 0 .25cqh .6cqh #000c !important;
-  pointer-events: none !important;
-  transform: none !important;
-}
-
-body .screen-game.screen-game .player-hero .hero-level,
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero .hero-power-trigger > .hero-level {
-  left: .25cqw !important;
-  top: auto !important;
-  bottom: .35cqh !important;
-  width: auto !important;
-  min-width: 4.8cqh !important;
-  height: 2.25cqh !important;
-  padding-inline: .35cqw !important;
-  transform: none !important;
-  z-index: 62 !important;
-}
-body .screen-game.screen-game .player-hero > .hero-evolution,
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero > .hero-evolution {
-  left: calc(.55cqw + 43%) !important;
-  right: auto !important;
-  top: 18.1cqh !important;
-  bottom: auto !important;
-  width: calc(57% - 1.1cqw) !important;
-  height: 3.55cqh !important;
-  min-height: 0 !important;
-  padding: .24cqh .35cqw !important;
-  transform: none !important;
-  z-index: 135 !important;
-  box-shadow: 0 .35cqh .7cqh #0008 !important;
-}
-
-body .screen-game.screen-game .player-hero .hero-evolution > :is(small, strong) {
-  font-size: clamp(.26rem, min(.5cqw, .84cqh), .5rem) !important;
-}
-body .screen-game.screen-game .player-hero > .level-button,
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hero:not(.enemy) > .level-button {
-  left: 15% !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: .8cqh !important;
-  width: 70% !important;
-  height: 2.85cqh !important;
-  min-height: 0 !important;
-  transform: none !important;
+html body .screen-game.screen-g…3051 tokens truncated…tant;
   font-size: clamp(.29rem, min(.52cqw, .88cqh), .52rem) !important;
   z-index: 136 !important;
 }
@@ -2457,6 +2156,160 @@ body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-sl
 
   body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.hero-abilities:not(.enemy), .hero-command-bar:not(.enemy)) {
     translate: 0 6.2cqh !important;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Hero stack, muted ownership lanes and larger side piles
+
+   Hero portrait, progression and abilities now share one containing block.
+   This removes the old cross-row margins that could place one hero's powers
+   over the opposite hero panel on short landscape screens.
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack {
+  position: relative !important;
+  inset: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  width: min(16.6cqw, 29.5cqh) !important;
+  height: calc(100% - 1.2cqh) !important;
+  align-self: center !important;
+  justify-self: center !important;
+  overflow: visible !important;
+  isolation: isolate !important;
+  z-index: 190 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.enemy {
+  grid-column: 1 !important;
+  grid-row: 2 / 4 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.player {
+  grid-column: 1 !important;
+  grid-row: 5 / 7 !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .player-hero {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: .72cqh .58cqw .75cqh !important;
+  overflow: hidden !important;
+  pointer-events: auto !important;
+  border: 1px solid color-mix(in srgb, var(--deck) 58%, #9b793c) !important;
+  border-radius: .52cqw !important;
+  outline: 1px solid color-mix(in srgb, var(--deck) 35%, #80622e) !important;
+  outline-offset: -.3cqh !important;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--deck) 10%, #0a171b) 0 51%, #061014 51% 100%) !important;
+  box-shadow: inset 0 0 0 1px #ffffff09, inset 0 0 1.45cqw #0009, 0 .42cqh .9cqh #000a !important;
+  z-index: 1 !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-power-trigger {
+  height: 19.2cqh !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .player-hero > .hero-evolution {
+  left: .58cqw !important;
+  top: 19.65cqh !important;
+  width: calc(100% - 1.16cqw) !important;
+  height: 3.85cqh !important;
+  grid-template-rows: minmax(0, 1fr) .62cqh !important;
+  padding: .28cqh .36cqw .34cqh !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar {
+  position: absolute !important;
+  inset: 23.9cqh .58cqw auto !important;
+  width: auto !important;
+  height: 14.3cqh !important;
+  margin: 0 !important;
+  translate: 0 !important;
+  align-self: auto !important;
+  justify-self: auto !important;
+  padding: .28cqh .28cqw !important;
+  gap: .2cqh !important;
+  overflow: hidden !important;
+  z-index: 6 !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip {
+  min-height: 0 !important;
+  height: 100% !important;
+  padding: .25cqh .34cqw !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar > .hero-ability-chip.is-locked {
+  opacity: .62 !important;
+}
+
+html body .screen-game.screen-game .hero-panel-stack > .player-hero:not(.enemy) > .level-button {
+  bottom: .72cqh !important;
+  height: 2.75cqh !important;
+  z-index: 8 !important;
+}
+
+/* Desaturated player ownership remains legible without competing with cards. */
+html body .screen-game.screen-game :is(.enemy-field .creature-slot, .enemy-field .auxiliary-slot, .enemy-terrain) {
+  border-color: #79504f !important;
+  background: linear-gradient(145deg, #25191b, #111316 74%) !important;
+  box-shadow: inset 0 0 1.1cqw #4b24275c, 0 0 .3cqw #733b3b24 !important;
+}
+
+html body .screen-game.screen-game :is(.player-field .creature-slot, .player-field .auxiliary-slot, .player-terrain) {
+  border-color: #466b76 !important;
+  background: linear-gradient(145deg, #10262c, #0a161a 74%) !important;
+  box-shadow: inset 0 0 1.1cqw #2549545c, 0 0 .3cqw #376c7b24 !important;
+}
+
+html body .screen-game.screen-game .enemy-field .slot-type-icon,
+html body .screen-game.screen-game .enemy-terrain > .terrain-type-icon { color: #a76b67 !important; }
+html body .screen-game.screen-game .player-field .slot-type-icon,
+html body .screen-game.screen-game .player-terrain > .terrain-type-icon { color: #6f9eaa !important; }
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles {
+  width: min(15.6cqw, 27.8cqh) !important;
+  max-width: 99% !important;
+  max-height: 96% !important;
+  gap: clamp(.14rem, .72cqh, .5rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone {
+  padding: clamp(.1rem, .3cqw, .34rem) !important;
+}
+
+html body .screen-game.screen-game .side-piles .pile-card {
+  width: 82% !important;
+}
+
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack {
+    width: min(17.2cqw, 30.5cqh) !important;
+    height: calc(100% - .8cqh) !important;
+  }
+
+  html body .screen-game.screen-game .hero-panel-stack .player-hero .hero-power-trigger {
+    height: 17.5cqh !important;
+  }
+
+  html body .screen-game.screen-game .hero-panel-stack > .player-hero > .hero-evolution {
+    top: 17.9cqh !important;
+    height: 3.65cqh !important;
+  }
+
+  html body .screen-game.screen-game .hero-panel-stack > .hero-command-bar {
+    inset: 21.9cqh .52cqw auto !important;
+    height: 13.65cqh !important;
+    padding: .22cqh .24cqw !important;
+    gap: .14cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles {
+    width: min(16.2cqw, 28.6cqh) !important;
   }
 }
 
@@ -3852,5 +3705,44 @@ html body .screen-game.screen-game .player-field .slot-type-icon { color: #58c3e
     margin-left: .55cqw !important;
     padding: .25cqh .25cqw !important;
     gap: .18cqh !important;
+  }
+}
+
+/* Terminal ownership palette and pile scale. Kept last so legacy calibration
+   cannot restore the brighter red/blue surfaces or shrink the pile cluster. */
+html body .screen-game.screen-game :is(.enemy-field .creature-slot, .enemy-field .auxiliary-slot, .enemy-terrain) {
+  border-color: #79504f !important;
+  background: linear-gradient(145deg, #25191b, #111316 74%) !important;
+  box-shadow: inset 0 0 1.1cqw #4b24275c, 0 0 .3cqw #733b3b24 !important;
+}
+
+html body .screen-game.screen-game :is(.player-field .creature-slot, .player-field .auxiliary-slot, .player-terrain) {
+  border-color: #466b76 !important;
+  background: linear-gradient(145deg, #10262c, #0a161a 74%) !important;
+  box-shadow: inset 0 0 1.1cqw #2549545c, 0 0 .3cqw #376c7b24 !important;
+}
+
+html body .screen-game.screen-game .enemy-field .slot-type-icon,
+html body .screen-game.screen-game .enemy-terrain > .terrain-type-icon { color: #a76b67 !important; }
+html body .screen-game.screen-game .player-field .slot-type-icon,
+html body .screen-game.screen-game .player-terrain > .terrain-type-icon { color: #6f9eaa !important; }
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles {
+  width: min(15.6cqw, 27.8cqh) !important;
+  max-width: 99% !important;
+  max-height: 96% !important;
+  gap: clamp(.14rem, .72cqh, .5rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone {
+  padding: clamp(.1rem, .3cqw, .34rem) !important;
+}
+
+html body .screen-game.screen-game .side-piles .pile-card { width: 82% !important; }
+
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles {
+    width: min(16.2cqw, 28.6cqh) !important;
   }
 }
