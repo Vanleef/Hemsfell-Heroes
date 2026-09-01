@@ -98,6 +98,14 @@ test("long power text compacts in-card and expands into an accessible tooltip", 
   assert.match(modelCss, /hero-ability-chip:is\(:hover, :focus-visible\)::after\s*\{[\s\S]*?opacity:\s*1/);
 });
 
+test("player power tooltips open upward above the hand and remain readable", () => {
+  const modelCss = css.slice(css.lastIndexOf("Canonical hero card — measured from the approved Gimble reference"));
+  assert.match(modelCss, /hero-panel-stack:is\(:hover, :focus-within\)\s*\{[\s\S]*?z-index:\s*9950/);
+  assert.match(modelCss, /hero-ability-chip:is\(:hover, :focus-visible\)::after\s*\{[\s\S]*?pointer-events:\s*auto/);
+  assert.match(modelCss, /hero-panel-stack\.player > \.hero-command-bar > \.hero-ability-chip::after,[\s\S]*?first-of-type::after\s*\{[\s\S]*?top:\s*auto[\s\S]*?bottom:\s*0/);
+  assert.match(modelCss, /hero-panel-stack\.player[\s\S]*?hero-ability-chip:is\(:hover, :focus-visible\)::after,[\s\S]*?transform:\s*translate\(0, 0\)/);
+});
+
 test("evolution criteria and terrain ownership remain explicit", () => {
   const modelCss = css.slice(css.lastIndexOf("Canonical hero card — measured from the approved Gimble reference"));
   assert.match(modelCss, /hero-evolution > \.evolution-tooltip\s*\{[\s\S]*?width:\s*clamp\(16rem, 24cqw, 27rem\)/);
