@@ -106,6 +106,16 @@ test("player power tooltips open upward above the hand and remain readable", () 
   assert.match(modelCss, /hero-panel-stack\.player[\s\S]*?hero-ability-chip:is\(:hover, :focus-visible\)::after,[\s\S]*?transform:\s*translate\(0, 0\)/);
 });
 
+test("hero life metadata and ability indices follow the reference alignment", () => {
+  const modelCss = css.slice(css.lastIndexOf("Canonical hero card — measured from the approved Gimble reference"));
+  assert.match(modelCss, /--hh-hero-meta-top:\s*calc\(\.62cqh \+ var\(--hh-hero-art-height\) \+ \.28cqh\)/);
+  assert.match(modelCss, /--hh-hero-powers-top:\s*calc\(var\(--hh-hero-meta-top\) \+ var\(--hh-hero-meta-height\) \+ \.52cqh\)/);
+  assert.match(modelCss, /player-hero \.hero-life\s*\{[\s\S]*?right:\s*\.52cqw[\s\S]*?bottom:\s*\.78cqh/);
+  assert.match(modelCss, /hero-power-trigger > \.hero-level\s*\{[\s\S]*?width:\s*32\.5%[\s\S]*?height:\s*calc\(var\(--hh-hero-meta-height\) - \.4cqh\)/);
+  assert.match(modelCss, /> \.player-hero > \.hero-evolution\s*\{[\s\S]*?left:\s*35%[\s\S]*?top:\s*var\(--hh-hero-meta-top\)/);
+  assert.match(modelCss, /hero-ability-chip > i\s*\{[\s\S]*?position:\s*static[\s\S]*?align-self:\s*center[\s\S]*?justify-self:\s*center/);
+});
+
 test("evolution criteria and terrain ownership remain explicit", () => {
   const modelCss = css.slice(css.lastIndexOf("Canonical hero card — measured from the approved Gimble reference"));
   assert.match(modelCss, /hero-evolution > \.evolution-tooltip\s*\{[\s\S]*?width:\s*clamp\(16rem, 24cqw, 27rem\)/);
