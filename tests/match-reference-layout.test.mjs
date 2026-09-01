@@ -80,6 +80,14 @@ test("the canonical hero card follows the approved portrait metadata powers acti
   assert.match(modelCss, /level-button\s*\{[\s\S]*?clip-path:\s*polygon/);
 });
 
+test("hero hover can never hide the canonical in-card ability list", () => {
+  const modelCss = css.slice(css.lastIndexOf("Canonical hero card — measured from the approved Gimble reference"));
+  assert.match(modelCss, /player-hero:hover \+ \.hero-command-bar[\s\S]*?display:\s*grid\s*!important/);
+  assert.match(modelCss, /player-hero:focus-within \+ \.hero-command-bar/);
+  assert.match(modelCss, /hero-command-bar:hover[\s\S]*?opacity:\s*1\s*!important[\s\S]*?visibility:\s*visible\s*!important/);
+  assert.match(modelCss, /hero-ability-chip\.is-active\.is-available\s*\{[\s\S]*?pointer-events:\s*auto/);
+});
+
 test("the final reference removes the seam and gives each field an owner color", () => {
   assert.match(terminalCss, /game-content\.hs-board::after\s*\{[\s\S]*?content:\s*none[\s\S]*?display:\s*none/);
   assert.match(terminalCss, /enemy-field \.creature-slot[\s\S]*?enemy-terrain[\s\S]*?border-color:\s*#79504f/);
