@@ -106,6 +106,15 @@ test("evolution criteria and terrain ownership remain explicit", () => {
   assert.match(modelCss, /terrain-slot\.player-terrain\s*\{[\s\S]*?border-color:\s*#466b76/);
 });
 
+test("every empty-slot glyph inherits the muted palette of its owner", () => {
+  const modelCss = css.slice(css.lastIndexOf("Canonical hero card — measured from the approved Gimble reference"));
+  assert.match(modelCss, /\.slot-type-icon\s*\{[\s\S]*?background-image:\s*none\s*!important/);
+  assert.match(modelCss, /> \.enemy-field \.slot-type-icon,[\s\S]*?enemy-terrain > \.terrain-type-icon\s*\{[\s\S]*?color:\s*#a76b67/);
+  assert.match(modelCss, /> \.player-field \.slot-type-icon,[\s\S]*?player-terrain > \.terrain-type-icon\s*\{[\s\S]*?color:\s*#6f9eaa/);
+  assert.match(modelCss, /:is\(\.enemy-field, \.player-field\) span\.slot-type-icon::before\s*\{[\s\S]*?background:\s*currentColor/);
+  assert.match(modelCss, /\.slot-type-icon > path:not\(\.slot-icon-cut\)\s*\{[\s\S]*?fill:\s*currentColor/);
+});
+
 test("the final reference removes the seam and gives each field an owner color", () => {
   assert.match(terminalCss, /game-content\.hs-board::after\s*\{[\s\S]*?content:\s*none[\s\S]*?display:\s*none/);
   assert.match(terminalCss, /enemy-field \.creature-slot[\s\S]*?enemy-terrain[\s\S]*?border-color:\s*#79504f/);
