@@ -96,49 +96,70 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
 }
 
 /* --- Defender decision -------------------------------------------------- */
-/* Inline runtime geometry puts this panel at the far-left board rail and caps
- * its right edge before the first creature slot. These rules only define its
- * internal readability; they never move it back over the fields. */
+/* Geometry is supplied inline by MatchFeedbackRuntime from the rendered board
+ * scale. This terminal block removes every legacy minimum and uses the narrow
+ * left rail vertically, so text never has to share a row with the button. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision {
   z-index: 145 !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
+  min-width: 0 !important;
+  min-inline-size: 0 !important;
+  box-sizing: border-box !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto auto !important;
   grid-template-areas:
-    "message action"
-    "or action" !important;
+    "message"
+    "or"
+    "action" !important;
   justify-items: stretch !important;
   align-items: center !important;
-  gap: clamp(.22rem, .46cqh, .42rem) clamp(.58rem, .9cqw, .95rem) !important;
-  padding: clamp(.64rem, 1cqh, .9rem) clamp(.76rem, 1.02cqw, 1.02rem) !important;
-  box-sizing: border-box !important;
+  gap: clamp(.28rem, .52cqh, .46rem) !important;
+  padding: clamp(.58rem, .88cqh, .82rem) clamp(.62rem, .8cqw, .82rem) !important;
+  overflow: hidden !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision > span {
   grid-area: message !important;
+  min-width: 0 !important;
+  width: 100% !important;
   color: #fff4dc !important;
-  font: 950 clamp(.72rem, min(.94cqw, 1.5cqh), 1rem)/1.16 system-ui, sans-serif !important;
-  letter-spacing: .035em !important;
+  font: 950 clamp(.68rem, min(.9cqw, 1.42cqh), .96rem)/1.16 system-ui, sans-serif !important;
+  letter-spacing: .028em !important;
   text-align: left !important;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  hyphens: none !important;
   text-wrap: balance !important;
   text-shadow: 0 1px 1px #000, 0 0 .22rem rgb(0 0 0 / 52%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision > b {
   grid-area: or !important;
+  display: block !important;
   justify-self: start !important;
   color: #d6dce0 !important;
-  font-size: clamp(.6rem, min(.74cqw, 1.1cqh), .78rem) !important;
+  font-size: clamp(.58rem, min(.72cqw, 1.06cqh), .76rem) !important;
   font-weight: 900 !important;
+  line-height: 1 !important;
   letter-spacing: .08em !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision > button {
   grid-area: action !important;
-  min-width: clamp(6.8rem, 8.7cqw, 9rem) !important;
-  min-height: clamp(2.2rem, 4.8cqh, 3.1rem) !important;
-  padding-inline: clamp(.58rem, .82cqw, .9rem) !important;
-  font-size: clamp(.72rem, min(.9cqw, 1.4cqh), .96rem) !important;
+  justify-self: stretch !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: clamp(2.05rem, 4.35cqh, 2.85rem) !important;
+  padding: clamp(.4rem, .62cqh, .58rem) clamp(.48rem, .7cqw, .72rem) !important;
+  font-size: clamp(.68rem, min(.86cqw, 1.34cqh), .92rem) !important;
   font-weight: 950 !important;
-  line-height: 1.05 !important;
+  line-height: 1.04 !important;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  hyphens: none !important;
 }
 
 /* --- Central stack / AI state ------------------------------------------ */
@@ -218,6 +239,6 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision > span {
-    font-size: clamp(.64rem, min(.84cqw, 1.28cqh), .88rem) !important;
+    font-size: clamp(.62rem, min(.82cqw, 1.24cqh), .84rem) !important;
   }
 }
