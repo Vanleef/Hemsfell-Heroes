@@ -29,9 +29,10 @@ test("phase CTA has no left icon and arrow has no circular plate", () => {
   assert.match(css, /phase-orb > button > span[^}]*border: 0 !important[^}]*border-radius: 0 !important[^}]*background: transparent !important[^}]*box-shadow: none !important/);
 });
 
-test("real cards shown on side piles have no pile shadow or overlay", () => {
+test("real cards shown on side piles stay shadow-free while footer labels keep a short fade", () => {
   assert.match(css, /pile-zone > \.pile-card,[^{]*pile-zone > \.pile-card > :is\(\.remote-card-art, canvas, img\)[^}]*box-shadow: none !important[^}]*filter: none !important/);
-  assert.match(css, /pile-zone:has\(> \.pile-card > \.remote-card-art\)::after[^}]*content: none !important[^}]*display: none !important[^}]*background: none !important/);
+  assert.match(css, /pile-zone:has\(> \.pile-card > \.remote-card-art\)::after[^}]*content: "" !important[^}]*display: block !important[^}]*bottom: 0 !important[^}]*height: clamp\(\.58rem, 1\.06cqh, \.82rem\) !important[^}]*linear-gradient/);
+  assert.doesNotMatch(css, /pile-zone:has\(> \.pile-card > \.remote-card-art\)::after[^}]*content: none !important/);
 });
 
 test("graveyard top card remains neutral full bleed without crop or zoom", () => {
