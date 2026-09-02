@@ -4,6 +4,8 @@ import fs from "node:fs";
 
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/match-visual-terminal.css", "utf8").replace(/\s+/g, " ");
+const criticalCss = fs.readFileSync("app/presentation/styles/critical-flow-feedback.css", "utf8").replace(/\s+/g, " ");
+const phaseLegacyCss = fs.readFileSync("app/presentation/styles/phase-orb-copy-final.css", "utf8").replace(/\s+/g, " ");
 const pileTextShadowCss = fs.readFileSync("app/presentation/styles/side-pile-text-shadow-terminal.css", "utf8").replace(/\s+/g, " ");
 const phaseRuntime = fs.readFileSync("app/presentation/runtime/phase-action-runtime.tsx", "utf8").replace(/\s+/g, " ");
 
@@ -26,6 +28,17 @@ test("current phase uses a quiet kicker and stronger phase name", () => {
   assert.match(css, /phase-orb:has\(> button\)::before[^}]*content: none !important[^}]*display: none !important/);
   assert.match(css, /phase-current-kicker[^}]*font-size: clamp\(\.4rem[^}]*font-weight: 850 !important[^}]*letter-spacing: \.18em !important/);
   assert.match(css, /phase-current-name[^}]*font-size: clamp\(\.72rem[^}]*font-weight: 950 !important[^}]*color: #f6dc8f !important/);
+});
+
+test("legacy combined current-phase pseudo-copy is suppressed at matching specificity", () => {
+  const imports = [...layout.matchAll(/import\s+"([^"]+\.css)";/g)].map((match) => match[1]);
+  const legacyIndex = imports.indexOf("./presentation/styles/phase-orb-copy-final.css");
+  const guardIndex = imports.indexOf("./presentation/styles/critical-flow-feedback.css");
+
+  assert.ok(legacyIndex >= 0);
+  assert.ok(guardIndex > legacyIndex);
+  assert.match(phaseLegacyCss, /phase-orb:has\(> button\)\[data-phase-current\]::before[^}]*content: "FASE ATUAL · " attr\(data-phase-current\) !important/);
+  assert.match(criticalCss, /phase-orb:has\(> button\)\[data-phase-current\]::before[^}]*content: none !important[^}]*display: none !important/);
 });
 
 test("player phase CTA width follows the next action copy", () => {
