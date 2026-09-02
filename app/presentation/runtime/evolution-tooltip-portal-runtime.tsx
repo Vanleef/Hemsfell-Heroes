@@ -2,9 +2,8 @@
 
 import { useEffect } from "react";
 
-const PROGRESS_SELECTOR = ".screen-game .hero-evolution > .evolution-track";
-const EVOLUTION_SELECTOR = ".screen-game .hero-evolution";
-const SOURCE_SELECTOR = `${EVOLUTION_SELECTOR} > .evolution-tooltip:not(.evolution-tooltip-portal)`;
+const PROGRESS_SURFACE_SELECTOR = ".screen-game .hero-evolution";
+const SOURCE_SELECTOR = `${PROGRESS_SURFACE_SELECTOR} > .evolution-tooltip:not(.evolution-tooltip-portal)`;
 const PORTAL_CLASS = "evolution-tooltip-portal";
 
 type PopoverCapableElement = HTMLElement & {
@@ -16,8 +15,9 @@ export default function EvolutionTooltipPortalRuntime() {
   useEffect(() => {
     let portal: PopoverCapableElement | null = null;
     let source: HTMLElement | null = null;
-    let progressTrigger: HTMLElement | null = null;
+    let progressSurface: HTMLElement | null = null;
     let frame = 0;
+    let secondFrame = 0;
     let touchPinned = false;
 
     const suppressReactOwnedTooltips = () => {
@@ -34,67 +34,83 @@ export default function EvolutionTooltipPortalRuntime() {
       try {
         target.hidePopover?.();
       } catch {
-        // Fallback browsers simply remove the fixed element below.
+        // Older browsers use the fixed-position fallback below.
       }
       target.remove();
     };
 
     const hide = () => {
       cancelAnimationFrame(frame);
+      cancelAnimationFrame(secondFrame);
       frame = 0;
+      secondFrame = 0;
       closePortal(portal);
       portal = null;
       source = null;
-      progressTrigger = null;
+      progressSurface = null;
     };
 
-    const evolutionRootFor = (progress: HTMLElement) =>
-      progress.closest<HTMLElement>(EVOLUTION_SELECTOR);
-
     const place = () => {
-      if (!portal || !progressTrigger || !progressTrigger.isConnected) {
+      if (!portal || !progressSurface || !progressSurface.isConnected) {
         if (portal) hide();
         return;
       }
 
-      const evolutionRoot = evolutionRootFor(progressTrigger);
-      const panel = progressTrigger.closest<HTMLElement>(".hero-panel-stack.canonical-hero-panel");
-      const panelRect = (panel ?? evolutionRoot ?? progressTrigger).getBoundingClientRect();
-      const progressRect = progressTrigger.getBoundingClientRect();
-      const margin = Math.max(8, Math.min(18, window.innerWidth * 0.008));
+      const panel = progressSurface.closest<HTMLElement>(".hero-panel-stack.canonical-hero-panel");
+      const panelRect = (panel ?? progressSurface).getBoundingClientRect();
+      const progressRect = progressSurface.getBoundingClientRect();
+      const viewportMargin = Math.max(8, Math.min(16, window.innerWidth * 0.0075));
+      const sideGap = Math.max(8, Math.min(14, window.innerWidth * 0.006));
 
-      portal.style.left = "0px";
-      portal.style.top = "0px";
+      // Reset using inline !important values so browser popover UA styles can
+      // never pull the tooltip back to the top/center of the viewport.
+      portal.style.setProperty("position", "fixed", "important");
+      portal.style.setProperty("left", "0px", "important");
+      portal.style.setProperty("top", "0px", "important");
+      portal.style.setProperty("right", "auto", "important");
+      portal.style.setProperty("bottom", "auto", "important");
+      portal.style.setProperty("margin", "0", "important");
+
       const tooltipRect = portal.getBoundingClientRect();
 
-      let left = panelRect.right + margin;
-      if (left + tooltipRect.width > window.innerWidth - margin) {
-        left = Math.max(margin, panelRect.left - margin - tooltipRect.width);
+      let left = panelRect.right + sideGap;
+      if (left + tooltipRect.width > window.innerWidth - viewportMargin) {
+        left = panelRect.left - sideGap - tooltipRect.width;
       }
+      left = Math.max(
+        viewportMargin,
+        Math.min(left, window.innerWidth - tooltipRect.width - viewportMargin),
+      );
 
-      const localPlayer = panel?.classList.contains("player") ?? false;
-      let top = localPlayer
-        ? progressRect.bottom - tooltipRect.height
-        : progressRect.top;
-      top = Math.max(margin, Math.min(top, window.innerHeight - tooltipRect.height - margin));
+      let top = progressRect.top + (progressRect.height - tooltipRect.height) / 2;
+      top = Math.max(
+        viewportMargin,
+        Math.min(top, window.innerHeight - tooltipRect.height - viewportMargin),
+      );
 
-      portal.style.left = `${Math.round(left)}px`;
-      portal.style.top = `${Math.round(top)}px`;
+      portal.style.setProperty("left", `${Math.round(left)}px`, "important");
+      portal.style.setProperty("top", `${Math.round(top)}px`, "important");
     };
 
     const schedule = () => {
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(place);
+      cancelAnimationFrame(secondFrame);
+      frame = requestAnimationFrame(() => {
+        place();
+        // Popover promotion can finish one frame after insertion on Chromium.
+        // A second placement guarantees the final Top Layer box stays anchored
+        // beside the hero panel rather than flashing at the viewport origin.
+        secondFrame = requestAnimationFrame(place);
+      });
     };
 
-    const show = (nextProgress: HTMLElement) => {
-      const evolutionRoot = evolutionRootFor(nextProgress);
-      const nextSource = evolutionRoot?.querySelector<HTMLElement>(":scope > .evolution-tooltip");
-      if (!evolutionRoot || !nextSource) return;
+    const show = (nextSurface: HTMLElement) => {
+      const nextSource = nextSurface.querySelector<HTMLElement>(":scope > .evolution-tooltip");
+      if (!nextSource) return;
 
       suppressReactOwnedTooltips();
 
-      if (progressTrigger === nextProgress && portal) {
+      if (progressSurface === nextSurface && portal) {
         if (source !== nextSource) {
           source = nextSource;
           portal.innerHTML = nextSource.innerHTML;
@@ -104,11 +120,11 @@ export default function EvolutionTooltipPortalRuntime() {
       }
 
       hide();
-      progressTrigger = nextProgress;
+      progressSurface = nextSurface;
       source = nextSource;
 
       const nextPortal = document.createElement("div") as PopoverCapableElement;
-      nextPortal.className = `evolution-tooltip ${PORTAL_CLASS}`;
+      nextPortal.className = `ui-tooltip-portal evolution-tooltip ${PORTAL_CLASS}`;
       nextPortal.setAttribute("role", "tooltip");
       nextPortal.setAttribute("aria-hidden", "false");
       nextPortal.setAttribute("popover", "manual");
@@ -116,68 +132,59 @@ export default function EvolutionTooltipPortalRuntime() {
       document.body.appendChild(nextPortal);
       portal = nextPortal;
 
-      // Popover promotes the criteria into the browser Top Layer. No z-index,
-      // transform or stacking context owned by the board/hand can cover it.
+      // Native Popover puts the criteria in the browser Top Layer, above every
+      // board, hand, modal and transformed stacking context. CSS fixed-position
+      // rules remain as a fallback when Popover is unavailable.
       try {
         nextPortal.showPopover?.();
       } catch {
-        // Fixed-position CSS remains a safe fallback on older browsers.
+        // Safe fixed-position fallback.
       }
       schedule();
     };
 
-    const progressAtPoint = (clientX: number, clientY: number) => {
-      const progressTracks = document.querySelectorAll<HTMLElement>(PROGRESS_SELECTOR);
-      for (const candidate of progressTracks) {
-        const rect = candidate.getBoundingClientRect();
-        if (rect.width <= 0 || rect.height <= 0) continue;
-        if (
-          clientX >= rect.left &&
-          clientX <= rect.right &&
-          clientY >= rect.top &&
-          clientY <= rect.bottom
-        ) return candidate;
-      }
-      return null;
+    const surfaceFromEvent = (event: Event) =>
+      event.target instanceof Element
+        ? event.target.closest<HTMLElement>(PROGRESS_SURFACE_SELECTOR)
+        : null;
+
+    const onPointerOver = (event: PointerEvent) => {
+      if (event.pointerType === "touch" || touchPinned) return;
+      const nextSurface = surfaceFromEvent(event);
+      if (!nextSurface) return;
+      if (event.relatedTarget instanceof Node && nextSurface.contains(event.relatedTarget)) return;
+      show(nextSurface);
     };
 
-    // The criteria tooltip is intentionally tied only to the visible progress
-    // bar geometry. Hovering portrait/name/abilities never opens the criteria.
-    const onPointerMove = (event: PointerEvent) => {
-      if (event.pointerType === "touch" || touchPinned) return;
-      const nextProgress = progressAtPoint(event.clientX, event.clientY);
-      if (nextProgress) show(nextProgress);
-      else if (progressTrigger) hide();
+    const onPointerOut = (event: PointerEvent) => {
+      if (touchPinned) return;
+      const currentSurface = surfaceFromEvent(event);
+      if (!currentSurface || currentSurface !== progressSurface) return;
+      if (event.relatedTarget instanceof Node && currentSurface.contains(event.relatedTarget)) return;
+      hide();
     };
 
     const onPointerDown = (event: PointerEvent) => {
-      const nextProgress = progressAtPoint(event.clientX, event.clientY);
-      if (nextProgress) {
+      const nextSurface = surfaceFromEvent(event);
+      if (nextSurface) {
         touchPinned = event.pointerType === "touch";
-        show(nextProgress);
+        show(nextSurface);
         return;
       }
       touchPinned = false;
-      if (progressTrigger) hide();
-    };
-
-    const progressFromFocusEvent = (event: Event) => {
-      if (!(event.target instanceof Element)) return null;
-      const evolutionRoot = event.target.closest<HTMLElement>(EVOLUTION_SELECTOR);
-      return evolutionRoot?.querySelector<HTMLElement>(":scope > .evolution-track") ?? null;
+      if (progressSurface) hide();
     };
 
     const onFocusIn = (event: FocusEvent) => {
-      const nextProgress = progressFromFocusEvent(event);
-      if (nextProgress) show(nextProgress);
+      const nextSurface = surfaceFromEvent(event);
+      if (nextSurface) show(nextSurface);
     };
 
     const onFocusOut = (event: FocusEvent) => {
-      const currentProgress = progressFromFocusEvent(event);
-      if (!currentProgress || currentProgress !== progressTrigger || touchPinned) return;
+      const currentSurface = surfaceFromEvent(event);
+      if (!currentSurface || currentSurface !== progressSurface || touchPinned) return;
       const related = event.relatedTarget;
-      const evolutionRoot = evolutionRootFor(currentProgress);
-      if (related instanceof Node && evolutionRoot?.contains(related)) return;
+      if (related instanceof Node && currentSurface.contains(related)) return;
       hide();
     };
 
@@ -197,7 +204,8 @@ export default function EvolutionTooltipPortalRuntime() {
     sourceObserver.observe(document.body, { childList: true, subtree: true });
     suppressReactOwnedTooltips();
 
-    document.addEventListener("pointermove", onPointerMove, true);
+    document.addEventListener("pointerover", onPointerOver, true);
+    document.addEventListener("pointerout", onPointerOut, true);
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("focusin", onFocusIn, true);
     document.addEventListener("focusout", onFocusOut, true);
@@ -211,7 +219,8 @@ export default function EvolutionTooltipPortalRuntime() {
       touchPinned = false;
       hide();
       sourceObserver.disconnect();
-      document.removeEventListener("pointermove", onPointerMove, true);
+      document.removeEventListener("pointerover", onPointerOver, true);
+      document.removeEventListener("pointerout", onPointerOut, true);
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("focusin", onFocusIn, true);
       document.removeEventListener("focusout", onFocusOut, true);
