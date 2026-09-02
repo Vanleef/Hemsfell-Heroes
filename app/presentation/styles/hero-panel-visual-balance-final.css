@@ -93,6 +93,136 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   line-height: 1.12 !important;
 }
 
+/* -------------------------------------------------------------------------
+   Final identity hierarchy and expanded geometry.
+   Level and life form a symmetric top pair; the hero name is centered along
+   the bottom edge of the artwork. Expanded state reuses the same portrait and
+   progress coordinates as compact state, then gives the three abilities enough
+   natural height to read without growing the overall overlay.
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-life {
+  top: .48cqh !important;
+  right: .38cqw !important;
+  bottom: auto !important;
+  min-width: 5.75cqh !important;
+  height: 2.78cqh !important;
+  padding: .08cqh .4cqw !important;
+  border-radius: .38cqw !important;
+  font-size: clamp(.6rem, min(.92cqw, 1.4cqh), .9rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  z-index: 64 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-short-name {
+  left: 1.05cqw !important;
+  right: 1.05cqw !important;
+  top: auto !important;
+  bottom: .38cqh !important;
+  width: auto !important;
+  max-width: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #f6f2dc !important;
+  font-size: clamp(.62rem, min(.94cqw, 1.42cqh), .92rem) !important;
+  font-weight: 950 !important;
+  line-height: 1.02 !important;
+  text-align: center !important;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 92%) !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  z-index: 63 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
+  --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + .28cqh);
+  --hero-card-section-gap: .24cqh;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .player-hero > .hero-power-trigger {
+  left: 0 !important;
+  right: 0 !important;
+  top: var(--hero-card-art-top) !important;
+  width: 100% !important;
+  height: var(--hero-card-art-height) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .player-hero > .hero-level-row {
+  left: .14cqw !important;
+  right: .14cqw !important;
+  top: var(--hero-card-level-top) !important;
+  bottom: auto !important;
+  width: auto !important;
+  height: var(--hero-card-level-height) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .player-hero.level-ready > .level-button {
+  left: .14cqw !important;
+  right: .14cqw !important;
+  top: var(--hero-card-level-top) !important;
+  bottom: auto !important;
+  width: auto !important;
+  height: var(--hero-card-level-height) !important;
+  margin: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
+  top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + var(--hero-card-section-gap)) !important;
+  bottom: auto !important;
+  left: .12cqw !important;
+  right: .12cqw !important;
+  width: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  grid-template-rows: repeat(3, auto) !important;
+  align-content: start !important;
+  gap: .22cqh !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+  min-height: 4.18cqh !important;
+  height: auto !important;
+  grid-template-columns: 2.62cqh minmax(0, 1fr) !important;
+  column-gap: .62cqw !important;
+  align-items: center !important;
+  padding: .38cqh .42cqw !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
+  inline-size: 2.38cqh !important;
+  block-size: 2.38cqh !important;
+  width: 2.38cqh !important;
+  min-width: 2.38cqh !important;
+  max-width: 2.38cqh !important;
+  height: 2.38cqh !important;
+  min-height: 2.38cqh !important;
+  max-height: 2.38cqh !important;
+  font-size: clamp(.58rem, min(.84cqw, 1.26cqh), .8rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
+  font-size: clamp(.49rem, min(.71cqw, 1.06cqh), .7rem) !important;
+  line-height: 1.17 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-compact > .hero-ability-copy > p {
+  font-size: clamp(.47rem, min(.67cqw, 1cqh), .66rem) !important;
+  line-height: 1.15 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-dense > .hero-ability-copy > p {
+  font-size: clamp(.45rem, min(.63cqw, .94cqh), .62rem) !important;
+  line-height: 1.13 !important;
+}
+
 /* Short touch landscapes need a slightly tighter card while preserving the
    restored text breathing room. */
 @media (orientation: landscape) and (max-width: 64rem),
@@ -109,39 +239,56 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
+    --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + .22cqh);
+    --hero-card-section-gap: .18cqh;
     height: 46.2cqh !important;
     max-height: 46.2cqh !important;
   }
 
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-life {
+    top: .4cqh !important;
+    right: .32cqw !important;
+    min-width: 5.1cqh !important;
+    height: 2.48cqh !important;
+    font-size: clamp(.54rem, min(.8cqw, 1.22cqh), .78rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-short-name {
+    left: .9cqw !important;
+    right: .9cqw !important;
+    bottom: .3cqh !important;
+    font-size: clamp(.55rem, min(.82cqw, 1.2cqh), .8rem) !important;
+  }
+
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
-    left: .11cqw !important;
-    right: .11cqw !important;
-    gap: .17cqh !important;
+    left: .1cqw !important;
+    right: .1cqw !important;
+    gap: .16cqh !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
-    min-height: 3.48cqh !important;
+    min-height: 3.82cqh !important;
     grid-template-columns: 2.3cqh minmax(0, 1fr) !important;
-    column-gap: .5cqw !important;
-    padding: .27cqh .34cqw !important;
+    column-gap: .52cqw !important;
+    padding: .3cqh .35cqw !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
-    inline-size: 2.1cqh !important;
-    block-size: 2.1cqh !important;
-    width: 2.1cqh !important;
-    min-width: 2.1cqh !important;
-    max-width: 2.1cqh !important;
-    height: 2.1cqh !important;
-    min-height: 2.1cqh !important;
-    max-height: 2.1cqh !important;
-    font-size: clamp(.51rem, min(.74cqw, 1.1cqh), .71rem) !important;
+    inline-size: 2.12cqh !important;
+    block-size: 2.12cqh !important;
+    width: 2.12cqh !important;
+    min-width: 2.12cqh !important;
+    max-width: 2.12cqh !important;
+    height: 2.12cqh !important;
+    min-height: 2.12cqh !important;
+    max-height: 2.12cqh !important;
+    font-size: clamp(.52rem, min(.76cqw, 1.12cqh), .72rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
-    font-size: clamp(.43rem, min(.63cqw, .93cqh), .61rem) !important;
-    line-height: 1.14 !important;
+    font-size: clamp(.44rem, min(.64cqw, .95cqh), .62rem) !important;
+    line-height: 1.15 !important;
   }
 }
 
@@ -152,7 +299,13 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
-    min-height: clamp(2.2rem, 4.25cqh, 2.9rem) !important;
-    column-gap: clamp(.45rem, 1.35vw, .66rem) !important;
+    min-height: clamp(2.35rem, 4.55cqh, 3rem) !important;
+    column-gap: clamp(.48rem, 1.45vw, .7rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-short-name {
+    left: .75rem !important;
+    right: .75rem !important;
+    font-size: clamp(.72rem, 2.8vw, .96rem) !important;
   }
 }
