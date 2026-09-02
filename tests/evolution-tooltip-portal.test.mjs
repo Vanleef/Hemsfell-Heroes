@@ -4,38 +4,49 @@ import fs from "node:fs";
 
 const runtime = fs.readFileSync("app/presentation/runtime/evolution-tooltip-portal-runtime.tsx", "utf8");
 const portalCss = fs.readFileSync("app/presentation/styles/evolution-tooltip-portal-final.css", "utf8");
+const globalTooltipCss = fs.readFileSync("app/presentation/styles/global-tooltip-layer-final.css", "utf8");
 const terrainRuntime = fs.readFileSync("app/presentation/runtime/terrain-field-anchor-runtime.tsx", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 
-test("evolution criteria uses browser Top Layer and only progress-track hover geometry", () => {
-  assert.match(runtime, /PROGRESS_SELECTOR = "\.screen-game \.hero-evolution > \.evolution-track"/);
+test("evolution criteria uses browser Top Layer and is anchored to progress hover beside the hero", () => {
+  assert.match(runtime, /PROGRESS_SURFACE_SELECTOR = "\.screen-game \.hero-evolution"/);
   assert.match(runtime, /SOURCE_SELECTOR/);
   assert.match(runtime, /document\.body\.appendChild\(nextPortal\)/);
+  assert.match(runtime, /className = `ui-tooltip-portal evolution-tooltip \$\{PORTAL_CLASS\}`/);
   assert.match(runtime, /nextPortal\.setAttribute\("popover", "manual"\)/);
   assert.match(runtime, /nextPortal\.showPopover\?\.\(\)/);
   assert.match(runtime, /const suppressReactOwnedTooltips =/);
   assert.match(runtime, /style\.setProperty\("display", "none", "important"\)/);
-  assert.match(runtime, /const progressAtPoint = \(clientX: number, clientY: number\)/);
-  assert.match(runtime, /document\.addEventListener\("pointermove", onPointerMove, true\)/);
+  assert.match(runtime, /document\.addEventListener\("pointerover", onPointerOver, true\)/);
+  assert.match(runtime, /document\.addEventListener\("pointerout", onPointerOut, true\)/);
+  assert.match(runtime, /panelRect\.right \+ sideGap/);
+  assert.match(runtime, /progressRect\.top \+ \(progressRect\.height - tooltipRect\.height\) \/ 2/);
+  assert.match(runtime, /style\.setProperty\("left", `\$\{Math\.round\(left\)\}px`, "important"\)/);
+  assert.match(runtime, /style\.setProperty\("top", `\$\{Math\.round\(top\)\}px`, "important"\)/);
   assert.match(portalCss, /evolution-tooltip:not\(\.evolution-tooltip-portal\)[^}]*display:\s*none\s*!important/);
-  assert.match(portalCss, /position:\s*fixed\s*!important/);
-  assert.match(portalCss, /z-index:\s*2147483647\s*!important/);
+  assert.match(portalCss, /body > \.evolution-tooltip-portal:popover-open/);
+  assert.doesNotMatch(portalCss, /inset:\s*auto\s*!important/);
   assert.match(layout, /EvolutionTooltipPortalRuntime/);
   assert.match(layout, /evolution-tooltip-portal-final\.css/);
 });
 
-test("phase-orb direct label and arrow use larger black copy with a white outline", () => {
-  assert.match(portalCss, /color:\s*#080603\s*!important/);
-  assert.match(portalCss, /-webkit-text-fill-color:\s*#080603\s*!important/);
-  assert.match(portalCss, /-webkit-text-stroke:\s*\.55px #ffffff\s*!important/);
-  assert.match(portalCss, /font-size:\s*clamp\(\.62rem, min\(\.9cqw, 1\.38cqh\), \.92rem\)\s*!important/);
-  assert.match(portalCss, /button > span[^}]*font-size:\s*1\.3em\s*!important/);
+test("terminal tooltip authority keeps body portals above cards and overlays", () => {
+  assert.match(globalTooltipCss, /--hemsfell-tooltip-layer:\s*2147483647/);
+  assert.match(globalTooltipCss, /body > \[data-floating-ui-portal\]/);
+  assert.match(globalTooltipCss, /body > \.ui-tooltip-portal/);
+  const evolutionImport = layout.indexOf('import "./presentation/styles/evolution-tooltip-portal-final.css"');
+  const globalImport = layout.indexOf('import "./presentation/styles/global-tooltip-layer-final.css"');
+  assert.ok(evolutionImport >= 0 && globalImport > evolutionImport);
 });
 
-test("actionable phase-orb uses a vivid yellow-gold surface instead of burnt orange", () => {
-  assert.match(portalCss, /button:not\(:disabled\)[^}]*#f8dd55[^}]*#ddb61f[^}]*#a57a08/);
-  assert.match(portalCss, /border-color:\s*#fff09a\s*!important/);
-  assert.match(portalCss, /rgb\(255 224 74 \/ 58%\)/);
+test("phase-orb uses a luminous fantasy medallion while keeping outlined readable copy", () => {
+  assert.match(portalCss, /-webkit-text-stroke:\s*\.55px #ffffff\s*!important/);
+  assert.match(portalCss, /font-size:\s*clamp\(\.66rem, min\(\.96cqw, 1\.46cqh\), 1rem\)\s*!important/);
+  assert.match(portalCss, /button:not\(:disabled\)[^}]*background:\s*#d8b92d\s*!important/);
+  assert.match(portalCss, /#ffed75[^}]*#efd344[^}]*#caa51d[^}]*#8b6810/);
+  assert.match(portalCss, /phase-orb-ready-pulse 2\.15s/);
+  assert.match(portalCss, /button::after[^}]*inset:\s*7%/);
+  assert.match(portalCss, /button > span[^}]*font-size:\s*1\.32em\s*!important/);
 });
 
 test("Cruel Terrain has one responsive positioning authority with a half-gap gutter", () => {
