@@ -61,7 +61,8 @@ test("evolution progress track preserves the inline percentage as a visible fill
   assert.match(sheet, /hero-level-row > \.hero-evolution[^}]*grid-template-rows: minmax\(0, 1fr\) \.48cqh !important/);
   assert.match(sheet, /\.evolution-track[^}]*width: 100% !important[^}]*height: \.48cqh !important/);
   assert.match(sheet, /\.evolution-track > i[^}]*left: 0 !important[^}]*height: 100% !important[^}]*max-width: 100% !important/);
-  assert.doesNotMatch(sheet, /\.evolution-track > i[^}]*width:\s*[^}]+!important/);
+  const fillRule = sheet.match(/\.evolution-track > i\s*\{([^}]*)\}/)?.[1] ?? "";
+  assert.doesNotMatch(fillRule, /(?:^|;)\s*width\s*:/);
 });
 
 test("short landscape has its own compact but readable balance", () => {
