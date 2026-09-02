@@ -49,6 +49,13 @@ test("phase-orb uses a luminous fantasy medallion while keeping outlined readabl
   assert.match(portalCss, /button > span[^}]*font-size:\s*1\.32em\s*!important/);
 });
 
+test("disabled phase-orb keeps the medallion structure and readable copy instead of fading away", () => {
+  assert.match(portalCss, /button:disabled[^}]*background:\s*#515a60\s*!important/);
+  assert.match(portalCss, /button:disabled[^}]*opacity:\s*1\s*!important/);
+  assert.match(portalCss, /#89959c[^}]*#677178[^}]*#4b5358[^}]*#31373b/);
+  assert.match(portalCss, /button:disabled::after[^}]*border-color:\s*rgb\(226 238 244 \/ 34%\)\s*!important/);
+});
+
 test("Cruel Terrain has one responsive positioning authority with a half-gap gutter", () => {
   assert.match(terrainRuntime, /measuredGap \* 0\.50/);
   assert.match(terrainRuntime, /firstRect\.width \* 0\.08/);
