@@ -46,6 +46,8 @@ import "./presentation/styles/hero-panel-interaction-status-final.css";
 import "./presentation/styles/hero-status-visibility-final.css";
 /* Requested terminal polish: tooltip, larger HUD copy and phase-orb affordance. */
 import "./presentation/styles/requested-match-polish-final.css";
+/* Absolute terminal authority for tooltip stacking and active phase-orb readability. */
+import "./presentation/styles/match-overlay-visibility-final.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
