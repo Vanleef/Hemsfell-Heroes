@@ -1,59 +1,375 @@
 /*
- * Small follow-up calibration for the canonical hero panel.
- * This keeps the same absolute-positioning model from hero-panel-reference.css;
- * it only changes the requested vertical order and nameplate attachment.
+ * Compact / expanded hero presentation.
+ *
+ * hero-panel-reference.css remains the structural authority. This file only
+ * defines the two requested presentation states over that same absolute model:
+ * compact HUD by default and a readable detailed hero card on interaction.
  */
 
-/* Nameplate: centered over the artwork and physically attached to its top edge. */
+/* -------------------------------------------------------------------------
+   Shared portrait metadata
+   ------------------------------------------------------------------------- */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-short-name {
   left: 50% !important;
   right: auto !important;
   top: 0 !important;
   bottom: auto !important;
-  width: 52% !important;
+  width: 50% !important;
   transform: translateX(-50%) !important;
-  border-radius: 0 0 .34cqw .34cqw !important;
   border-top: 0 !important;
+  border-radius: 0 0 .34cqw .34cqw !important;
   margin: 0 !important;
+  z-index: 18 !important;
 }
 
-/* The local evolve action now owns a dedicated band immediately after the
-   full-width progression row and before the three ability rows. */
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero:not(.enemy) > .level-button {
-  left: 19% !important;
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger {
+  cursor: pointer !important;
+}
+
+/* -------------------------------------------------------------------------
+   Compact state — board HUD
+
+   Keep only portrait/name/life/level/progress/evolve. The ability controls
+   stay mounted and keep their live state, but do not consume board space.
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) {
+  --hero-card-art-top: .42cqh;
+  --hero-card-art-height: 16.15cqh;
+  --hero-card-level-gap: .28cqh;
+  --hero-card-level-height: 2.72cqh;
+  --hero-card-section-gap: .3cqh;
+  --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + var(--hero-card-level-gap));
+  --hero-card-abilities-top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + var(--hero-card-section-gap));
+  width: min(17.7cqw, 30.4cqh) !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  transition: width .18s ease, height .18s ease, filter .18s ease, box-shadow .18s ease !important;
+  z-index: 76 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) {
+  height: 23.05cqh !important;
+  align-self: start !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) {
+  height: 20.25cqh !important;
+  align-self: end !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) > .hero-command-bar {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .player-hero .hero-status-cues {
+  display: none !important;
+}
+
+/* The compact player keeps evolution immediately below progression. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero:not(.enemy) > .level-button {
+  left: 21% !important;
   right: auto !important;
-  top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .34cqh) !important;
+  top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .28cqh) !important;
   bottom: auto !important;
-  width: 62% !important;
-  height: 2.32cqh !important;
+  width: 58% !important;
+  height: 2.05cqh !important;
+  min-height: 0 !important;
   margin: 0 !important;
+  padding: .1cqh .35cqw !important;
+  border-radius: .32cqw !important;
+  font-size: clamp(.36rem, min(.58cqw, .94cqh), .58rem) !important;
+  line-height: 1 !important;
 }
 
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .hero-command-bar {
-  top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + 3.04cqh) !important;
+/* -------------------------------------------------------------------------
+   Expanded state — detailed hero card
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
+  --hero-card-art-top: .62cqh;
+  --hero-card-art-height: 17.2cqh;
+  --hero-card-level-gap: .34cqh;
+  --hero-card-level-height: 3.05cqh;
+  --hero-card-section-gap: 2.15cqh;
+  --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + var(--hero-card-level-gap));
+  --hero-card-abilities-top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + var(--hero-card-section-gap));
+  width: min(28.4cqw, 49cqh) !important;
+  height: 46cqh !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  max-height: 92cqh !important;
+  border: max(1px, .08cqh) solid color-mix(in srgb, var(--deck) 52%, #c0a45d) !important;
+  border-radius: clamp(.45rem, .68cqw, .78rem) !important;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--deck) 18%, transparent), transparent 33%),
+    linear-gradient(180deg, rgb(5 21 20 / 98%), rgb(2 11 13 / 99%)) !important;
+  box-shadow:
+    inset 0 0 0 max(1px, .04cqh) rgb(255 255 255 / 5%),
+    inset 0 -2cqh 3.8cqh rgb(0 0 0 / 20%),
+    0 1.15cqh 3.6cqh rgb(0 0 0 / 78%),
+    0 0 1.5cqw color-mix(in srgb, var(--deck) 18%, transparent) !important;
+  overflow: visible !important;
+  transition: width .18s ease, height .18s ease, filter .18s ease, box-shadow .18s ease !important;
+  z-index: 10020 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded {
+  align-self: start !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy.is-expanded {
+  align-self: end !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .player-hero {
+  inset: 0 !important;
+  border-radius: inherit !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .player-hero > .hero-power-trigger {
+  left: .72cqw !important;
+  right: .72cqw !important;
+  top: var(--hero-card-art-top) !important;
+  height: var(--hero-card-art-height) !important;
+  border-radius: .48cqw !important;
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-power-trigger > .hero-short-name {
+  width: 42% !important;
+  height: 2.18cqh !important;
+  font-size: clamp(.48rem, min(.75cqw, 1.22cqh), .78rem) !important;
+  box-shadow: 0 .22cqh .65cqh rgb(0 0 0 / 66%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-power-trigger > .hero-life,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-level-row > .hero-level {
+  height: 2.9cqh !important;
+  min-width: 5.9cqh !important;
+  font-size: clamp(.54rem, min(.86cqw, 1.42cqh), .88rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .player-hero > .hero-level-row {
+  left: .72cqw !important;
+  right: .72cqw !important;
+  height: var(--hero-card-level-height) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-level-row > .hero-evolution {
+  padding: .34cqh .72cqw .3cqh !important;
+  border-radius: .38cqw !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-evolution-copy > small::after,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-evolution-copy > strong {
+  font-size: clamp(.54rem, min(.84cqw, 1.36cqh), .86rem) !important;
+}
+
+/* Active status cues only reappear in the detailed card. They use the spacer
+   between progression and abilities instead of fighting the compact HUD. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .player-hero .hero-status-cues {
+  display: flex !important;
+  left: .86cqw !important;
+  right: .86cqw !important;
+  top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .36cqh) !important;
+  bottom: auto !important;
+  max-height: 1.45cqh !important;
+  min-height: 0 !important;
+  gap: .28cqw !important;
+  overflow: hidden !important;
+  z-index: 26 !important;
+}
+
+/* Three powers become the main reading area in expanded mode. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar {
+  display: grid !important;
+  left: .72cqw !important;
+  right: .72cqw !important;
+  top: var(--hero-card-abilities-top) !important;
   bottom: .72cqh !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+  gap: .72cqh !important;
+  padding: .25cqh 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
+  bottom: 3.75cqh !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+  grid-template-columns: minmax(3.65cqh, 2.15cqw) minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) !important;
+  align-items: center !important;
+  column-gap: .72cqw !important;
+  padding: .52cqh .74cqw .52cqh .5cqw !important;
+  border: max(1px, .075cqh) solid color-mix(in srgb, var(--deck) 42%, #aa9151) !important;
+  border-radius: .46cqw !important;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--deck) 9%, #041817), rgb(3 13 15 / 97%)) !important;
+  box-shadow: inset 0 0 .8cqw rgb(0 0 0 / 24%), 0 .16cqh .42cqh rgb(0 0 0 / 45%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
+  width: min(3.5cqh, 2.05cqw) !important;
+  height: min(3.5cqh, 2.05cqw) !important;
+  font-size: clamp(.62rem, min(.98cqw, 1.58cqh), .98rem) !important;
+  border-width: max(1px, .11cqh) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
+  align-content: center !important;
+  align-items: center !important;
+  row-gap: .28cqh !important;
+  column-gap: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-ability-copy > b {
+  display: block !important;
+  visibility: visible !important;
+  width: max-content !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: .17cqh .34cqw !important;
+  overflow: visible !important;
+  border: max(1px, .055cqh) solid color-mix(in srgb, var(--deck) 52%, #b69646) !important;
+  border-radius: .24cqw !important;
+  background: color-mix(in srgb, var(--deck) 14%, #07110f) !important;
+  color: color-mix(in srgb, var(--deck) 80%, #e3c56b) !important;
+  font-size: clamp(.48rem, min(.72cqw, 1.15cqh), .73rem) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: .065em !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-ability-copy > p,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-ability-chip.copy-normal .hero-ability-copy > p,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-ability-chip.copy-compact .hero-ability-copy > p,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-ability-chip.copy-dense .hero-ability-copy > p {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  white-space: normal !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+  text-wrap: pretty !important;
+  -webkit-line-clamp: unset !important;
+  line-clamp: unset !important;
+  color: #eef2ef !important;
+  font-size: clamp(.58rem, min(.84cqw, 1.3cqh), .86rem) !important;
+  font-weight: 650 !important;
+  line-height: 1.26 !important;
+  opacity: .98 !important;
+}
+
+/* The detailed card already exposes the full power copy and type, so the hover
+   tooltip is redundant there. It remains available anywhere abilities are
+   rendered outside the expanded card. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Compact has the evolve action below progress; expanded returns it to the
+   card footer, matching the champion/planeswalker reading hierarchy. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .player-hero:not(.enemy) > .level-button {
+  left: 24% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: .68cqh !important;
+  width: 52% !important;
+  height: 2.45cqh !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: .12cqh .42cqw !important;
+  border-radius: .36cqw !important;
+  font-size: clamp(.42rem, min(.65cqw, 1.04cqh), .65rem) !important;
+  line-height: 1 !important;
+  z-index: 32 !important;
 }
 
 @media (orientation: landscape) and (max-width: 64rem),
        (orientation: landscape) and (max-height: 32rem) {
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-short-name {
-    left: 50% !important;
-    right: auto !important;
-    top: 0 !important;
-    width: 50% !important;
-    transform: translateX(-50%) !important;
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) {
+    --hero-card-art-height: 14.65cqh;
+    --hero-card-level-height: 2.36cqh;
+    --hero-card-level-gap: .24cqh;
+    width: min(18.2cqw, 31.4cqh) !important;
   }
 
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero:not(.enemy) > .level-button {
-    left: 21% !important;
-    top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .28cqh) !important;
-    bottom: auto !important;
-    width: 58% !important;
-    height: 2.02cqh !important;
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) {
+    height: 20.6cqh !important;
   }
 
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .hero-command-bar {
-    top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + 2.66cqh) !important;
-    bottom: .56cqh !important;
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) {
+    height: 17.95cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero:not(.enemy) > .level-button {
+    top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .22cqh) !important;
+    width: 54% !important;
+    left: 23% !important;
+    height: 1.78cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
+    --hero-card-art-height: 15.5cqh;
+    --hero-card-level-height: 2.7cqh;
+    --hero-card-section-gap: 1.75cqh;
+    width: min(30cqw, 50.5cqh) !important;
+    height: 43.8cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar {
+    gap: .5cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
+    bottom: 3.35cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+    grid-template-columns: minmax(3.15cqh, 2.1cqw) minmax(0, 1fr) !important;
+    column-gap: .54cqw !important;
+    padding: .38cqh .58cqw .38cqh .4cqw !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
+    width: min(3cqh, 1.92cqw) !important;
+    height: min(3cqh, 1.92cqw) !important;
+    font-size: clamp(.54rem, min(1cqw, 1.42cqh), .82rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-ability-copy > p,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-ability-chip.copy-normal .hero-ability-copy > p,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-ability-chip.copy-compact .hero-ability-copy > p,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-ability-chip.copy-dense .hero-ability-copy > p {
+    font-size: clamp(.51rem, min(.9cqw, 1.15cqh), .73rem) !important;
+    line-height: 1.2 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .player-hero:not(.enemy) > .level-button {
+    bottom: .52cqh !important;
+    height: 2.08cqh !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel {
+    transition: none !important;
   }
 }
