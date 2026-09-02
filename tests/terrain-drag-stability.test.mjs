@@ -44,9 +44,10 @@ test("local Cruel Terrain keeps an independent visual sentinel for the full nati
   assert.match(sheet, /terrain-drag-sentinel\[data-active="true"\][^}]*display: grid !important[^}]*visibility: visible !important[^}]*opacity: 1 !important/);
 });
 
-test("Cruel Terrain clearance equals the live horizontal gap between neighboring field slots", () => {
+test("Cruel Terrain keeps half of the live horizontal field-slot gap", () => {
   assert.match(runtime, /secondRect\.left - firstRect\.right/);
-  assert.match(runtime, /clearance: measuredGap/);
+  assert.match(runtime, /measuredGap \* 0\.50/);
+  assert.match(runtime, /firstRect\.width \* 0\.08/);
   assert.doesNotMatch(runtime, /TERRAIN_GAP_MULTIPLIER/);
   assert.doesNotMatch(runtime, /TERRAIN_MIN_SLOT_CLEARANCE/);
   assert.match(runtime, /const clearance = geometry\.clearance \/ boardScale\.x/);
