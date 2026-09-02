@@ -5,6 +5,8 @@ import { useEffect } from "react";
 const BOARD_SELECTOR = ".screen-game .game-stage > .game-content.hs-board";
 const PANEL_SELECTOR = ":scope > .hero-panel-stack.canonical-hero-panel";
 const LEGACY_EVOLUTION_BANNER_SELECTOR = "[data-hemsfell-evolution-available]";
+const PRIORITY_BAND_X = "--hh-priority-band-x";
+const PRIORITY_BAND_Y = "--hh-priority-band-y";
 
 const visibleRects = (board: HTMLElement, selector: string) => {
   const boardRect = board.getBoundingClientRect();
@@ -15,6 +17,11 @@ const visibleRects = (board: HTMLElement, selector: string) => {
 
 const removeLegacyEvolutionBanner = () => {
   document.querySelector<HTMLElement>(LEGACY_EVOLUTION_BANNER_SELECTOR)?.remove();
+};
+
+const clearPriorityBand = () => {
+  document.documentElement.style.removeProperty(PRIORITY_BAND_X);
+  document.documentElement.style.removeProperty(PRIORITY_BAND_Y);
 };
 
 const syncEvolutionAvailability = (board: HTMLElement) => {
@@ -34,9 +41,39 @@ const syncEvolutionAvailability = (board: HTMLElement) => {
     else delete panel.dataset.evolutionAvailable;
   }
 
-  /* Older builds created a fixed banner under body. The canonical feedback now
-   * belongs to the hero panel itself, so remove an HMR/stale-runtime leftover. */
   removeLegacyEvolutionBanner();
+};
+
+const syncPriorityBand = (board: HTMLElement) => {
+  const enemyField = board.querySelector<HTMLElement>(":scope > .paired-field.enemy-field");
+  const playerField = board.querySelector<HTMLElement>(":scope > .paired-field.player-field");
+  if (!enemyField || !playerField) {
+    clearPriorityBand();
+    return;
+  }
+
+  const enemyRect = enemyField.getBoundingClientRect();
+  const playerRect = playerField.getBoundingClientRect();
+  if (!enemyRect.width || !enemyRect.height || !playerRect.width || !playerRect.height) {
+    clearPriorityBand();
+    return;
+  }
+
+  const sharedLeft = Math.max(enemyRect.left, playerRect.left);
+  const sharedRight = Math.min(enemyRect.right, playerRect.right);
+  const centerX = sharedRight > sharedLeft
+    ? sharedLeft + (sharedRight - sharedLeft) / 2
+    : (enemyRect.left + enemyRect.right + playerRect.left + playerRect.right) / 4;
+
+  const enemyAbove = enemyRect.top <= playerRect.top;
+  const upperRect = enemyAbove ? enemyRect : playerRect;
+  const lowerRect = enemyAbove ? playerRect : enemyRect;
+  const centerY = upperRect.bottom <= lowerRect.top
+    ? upperRect.bottom + (lowerRect.top - upperRect.bottom) / 2
+    : (upperRect.bottom + lowerRect.top) / 2;
+
+  document.documentElement.style.setProperty(PRIORITY_BAND_X, `${Math.round(centerX * 1000) / 1000}px`);
+  document.documentElement.style.setProperty(PRIORITY_BAND_Y, `${Math.round(centerY * 1000) / 1000}px`);
 };
 
 const positionDefenseDecision = (board: HTMLElement) => {
@@ -48,30 +85,38 @@ const positionDefenseDecision = (board: HTMLElement) => {
   const playerPanel = board.querySelector<HTMLElement>(":scope > .hero-panel-stack.canonical-hero-panel.player");
   const enemyRect = enemyPanel?.getBoundingClientRect() ?? null;
   const playerRect = playerPanel?.getBoundingClientRect() ?? null;
-  const playfieldRects = visibleRects(board, ".terrain-slot, .creature-slot, .auxiliary-slot");
+  const terrainRects = visibleRects(board, ":scope > .terrain-slot");
+  const fieldRects = visibleRects(board, ".paired-field .field-slot");
 
-  if (!enemyRect || !playerRect || !playfieldRects.length) return;
+  if (!enemyRect || !playerRect || !fieldRects.length) return;
 
-  /* The defender decision owns the SAME left HUD lane as the hero panels. It is
-   * centered only in the vertical gap between them and can never extend into
-   * the first terrain/field slot. */
   const scaleX = board.offsetWidth > 0 ? boardRect.width / board.offsetWidth : 1;
   const scaleY = board.offsetHeight > 0 ? boardRect.height / board.offsetHeight : 1;
-  const firstPlayfieldLeftViewport = Math.min(...playfieldRects.map((rect) => rect.left));
-  const fieldGap = Math.max(10, Math.min(22, boardRect.width * 0.011));
   const viewportPadding = Math.max(7, Math.min(14, boardRect.width * 0.0065));
+  const firstFieldLeftViewport = Math.min(...fieldRects.map((rect) => rect.left));
 
-  const heroLaneLeftViewport = Math.max(
-    boardRect.left + viewportPadding,
-    Math.min(enemyRect.left, playerRect.left),
-  );
-  const heroLaneNaturalRightViewport = Math.max(enemyRect.right, playerRect.right);
-  const heroLaneRightViewport = Math.min(heroLaneNaturalRightViewport, firstPlayfieldLeftViewport - fieldGap);
-  const renderedWidth = Math.max(0, heroLaneRightViewport - heroLaneLeftViewport);
+  /* Use the real terrain -> first field distance as the horizontal rhythm. The
+   * decision sits one equivalent gap to the LEFT of the terrain, which keeps it
+   * closer to gameplay than the hero rail without crowding the terrain card. */
+  const terrainBeforeField = terrainRects.filter((rect) => rect.right <= firstFieldLeftViewport + 2);
+  const referenceTerrain = terrainBeforeField.length
+    ? terrainBeforeField.reduce((best, rect) => rect.right > best.right ? rect : best)
+    : null;
+  const terrainFieldGap = referenceTerrain
+    ? Math.max(8, Math.min(28, firstFieldLeftViewport - referenceTerrain.right))
+    : Math.max(10, Math.min(22, boardRect.width * 0.011));
+  const decisionRightViewport = referenceTerrain
+    ? referenceTerrain.left - terrainFieldGap
+    : firstFieldLeftViewport - terrainFieldGap * 2;
 
+  const desiredRenderedWidth = Math.max(enemyRect.width, playerRect.width);
+  const leftLimitViewport = boardRect.left + viewportPadding;
+  const availableRenderedWidth = Math.max(0, decisionRightViewport - leftLimitViewport);
+  const renderedWidth = Math.max(0, Math.min(desiredRenderedWidth, availableRenderedWidth));
   if (renderedWidth <= 0) return;
 
-  const localLeft = (heroLaneLeftViewport - boardRect.left) / scaleX;
+  const decisionLeftViewport = Math.max(leftLimitViewport, decisionRightViewport - renderedWidth);
+  const localLeft = (decisionLeftViewport - boardRect.left) / scaleX;
   const localWidth = renderedWidth / scaleX;
 
   decision.style.setProperty("position", "absolute", "important");
@@ -88,8 +133,6 @@ const positionDefenseDecision = (board: HTMLElement) => {
   decision.style.setProperty("min-inline-size", "0", "important");
   decision.style.setProperty("max-inline-size", `${Math.round(localWidth * 1000) / 1000}px`, "important");
 
-  /* Width changes wrapping, so measure the final decision after lane width is
-   * applied and only then center it between the two hero cards. */
   const renderedDecisionHeight = decision.getBoundingClientRect().height;
   const verticalGapPadding = Math.max(6, Math.min(12, boardRect.height * 0.011));
   const gapTopViewport = enemyRect.bottom + verticalGapPadding;
@@ -102,7 +145,7 @@ const positionDefenseDecision = (board: HTMLElement) => {
   const localTop = (clampedTopViewport - boardRect.top) / scaleY;
 
   decision.style.setProperty("top", `${Math.round(localTop * 1000) / 1000}px`, "important");
-  decision.dataset.geometryAnchored = "hero-lane-between-panels";
+  decision.dataset.geometryAnchored = "left-of-terrain-reference-gap";
 };
 
 export default function MatchFeedbackRuntime() {
@@ -139,12 +182,19 @@ export default function MatchFeedbackRuntime() {
     const observeGeometry = (board: HTMLElement) => {
       if (!resizeObserver) return;
       resizeObserver.observe(board);
-      const enemyPanel = board.querySelector<HTMLElement>(":scope > .hero-panel-stack.canonical-hero-panel.enemy");
-      const playerPanel = board.querySelector<HTMLElement>(":scope > .hero-panel-stack.canonical-hero-panel.player");
-      const defenseDecision = board.querySelector<HTMLElement>(":scope > .defense-decision");
-      if (enemyPanel) resizeObserver.observe(enemyPanel);
-      if (playerPanel) resizeObserver.observe(playerPanel);
-      if (defenseDecision) resizeObserver.observe(defenseDecision);
+      const selectors = [
+        ":scope > .hero-panel-stack.canonical-hero-panel.enemy",
+        ":scope > .hero-panel-stack.canonical-hero-panel.player",
+        ":scope > .defense-decision",
+        ":scope > .paired-field.enemy-field",
+        ":scope > .paired-field.player-field",
+        ":scope > .terrain-slot.enemy-terrain",
+        ":scope > .terrain-slot.player-terrain",
+      ];
+      for (const selector of selectors) {
+        const node = board.querySelector<HTMLElement>(selector);
+        if (node) resizeObserver.observe(node);
+      }
     };
 
     const scan = () => {
@@ -152,10 +202,12 @@ export default function MatchFeedbackRuntime() {
       const board = document.querySelector<HTMLElement>(BOARD_SELECTOR);
       if (!board) {
         removeLegacyEvolutionBanner();
+        clearPriorityBand();
         return;
       }
       observeGeometry(board);
       syncEvolutionAvailability(board);
+      syncPriorityBand(board);
       positionDefenseDecision(board);
       scanLevelChanges(board);
     };
@@ -188,6 +240,7 @@ export default function MatchFeedbackRuntime() {
       flashTimers.forEach((timer) => window.clearTimeout(timer));
       flashTimers.clear();
       removeLegacyEvolutionBanner();
+      clearPriorityBand();
       window.removeEventListener("resize", schedule);
       window.removeEventListener("orientationchange", schedule);
       window.removeEventListener("scroll", schedule);
