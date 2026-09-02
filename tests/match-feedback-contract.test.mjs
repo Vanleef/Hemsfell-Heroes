@@ -27,8 +27,12 @@ test("defense decision sits close to terrain using a reduced terrain-to-field re
   assert.match(criticalSheet, /\.defense-decision[^}]*left: clamp\(5\.75rem, 8\.9cqw, 8\.6rem\) !important/);
 });
 
-test("defense choice darkens the board while keeping blocker selection readable", () => {
-  assert.match(criticalSheet, /hs-board:has\(> \.defense-decision\) > :not\(\.defense-decision\):not\(\.player-field\)[^}]*brightness\(\.3\)[^}]*opacity: \.54 !important/);
+test("defense choice spotlights the declared attacker while keeping blocker selection readable", () => {
+  assert.match(criticalSheet, /hs-board:has\(> \.defense-decision\) > :not\(\.defense-decision\):not\(\.player-field\):not\(\.enemy-field\)[^}]*brightness\(\.3\)[^}]*opacity: \.54 !important/);
+  assert.match(criticalSheet, /hs-board:has\(> \.defense-decision\) > \.enemy-field[^}]*filter: none !important[^}]*opacity: 1 !important/);
+  assert.match(criticalSheet, /> \.enemy-field \.field-slot:not\(:has\(\.original-card\.is-selected\)\)[^}]*brightness\(\.3\)[^}]*opacity: \.54 !important/);
+  assert.match(criticalSheet, /> \.enemy-field \.field-slot:has\(\.original-card\.is-selected\)[^}]*opacity: 1 !important[^}]*z-index: 2147482100 !important/);
+  assert.match(criticalSheet, /> \.enemy-field \.original-card\.is-selected[^}]*brightness\(1\.12\)[^}]*outline:[^}]*box-shadow:/);
   assert.match(criticalSheet, /hs-board:has\(> \.defense-decision\) > \.player-field[^}]*brightness\(\.72\)[^}]*opacity: \.9 !important/);
   assert.match(criticalSheet, /\.defense-decision[^}]*animation: hh-defense-decision-attention 1\.05s ease-in-out infinite !important/);
   assert.match(criticalCss, /@keyframes hh-defense-decision-attention/);
