@@ -96,7 +96,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
 /* -------------------------------------------------------------------------
    Final identity hierarchy and expanded geometry.
    Level and life form a symmetric top pair; the hero name is centered along
-   the bottom edge of the artwork. Expanded state reuses the same portrait and
+   the bottom edge of the artwork. Expanded state reuses the SAME portrait and
    progress coordinates as compact state, then gives the three abilities enough
    natural height to read without growing the overall overlay.
    ------------------------------------------------------------------------- */
@@ -138,8 +138,10 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   z-index: 63 !important;
 }
 
+/* Match compact geometry exactly in expanded state: same art bottom gap and
+   same progress/evolve horizontal inset. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
-  --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + .28cqh);
+  --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + .34cqh);
   --hero-card-section-gap: .24cqh;
 }
 
@@ -152,8 +154,8 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .player-hero > .hero-level-row {
-  left: .14cqw !important;
-  right: .14cqw !important;
+  left: .34cqw !important;
+  right: .34cqw !important;
   top: var(--hero-card-level-top) !important;
   bottom: auto !important;
   width: auto !important;
@@ -164,13 +166,59 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .player-hero.level-ready > .level-button {
-  left: .14cqw !important;
-  right: .14cqw !important;
+  left: .34cqw !important;
+  right: .34cqw !important;
   top: var(--hero-card-level-top) !important;
   bottom: auto !important;
   width: auto !important;
   height: var(--hero-card-level-height) !important;
   margin: 0 !important;
+}
+
+/* Progress fill: the inline percentage from PlayerHero remains authoritative;
+   these rules only make that percentage occupy a visible, stable track. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-level-row > .hero-evolution {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: minmax(0, 1fr) .48cqh !important;
+  align-content: stretch !important;
+  row-gap: .16cqh !important;
+  padding: .24cqh .46cqw .28cqh !important;
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .evolution-track {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  height: .48cqh !important;
+  min-height: .48cqh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  border-radius: 999px !important;
+  background: rgb(0 0 0 / 52%) !important;
+  box-shadow: inset 0 0 0 max(1px, .04cqh) rgb(255 255 255 / 12%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .evolution-track > i {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  right: auto !important;
+  display: block !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: inherit !important;
+  transform: none !important;
+  translate: none !important;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--deck) 72%, #d7bf62), #e5ca69) !important;
+  box-shadow: 0 0 .5cqh color-mix(in srgb, var(--deck) 56%, #d7bf62) !important;
+  transition: width 180ms ease-out !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
@@ -223,6 +271,26 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   line-height: 1.13 !important;
 }
 
+/* Cruel Terrain keeps the exact footprint of a normal field slot even when its
+   child changes from the empty icon to an OriginalCard. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.is-field-anchored {
+  width: var(--terrain-anchor-width) !important;
+  min-width: var(--terrain-anchor-width) !important;
+  max-width: var(--terrain-anchor-width) !important;
+  height: var(--terrain-anchor-height) !important;
+  min-height: var(--terrain-anchor-height) !important;
+  max-height: var(--terrain-anchor-height) !important;
+  box-sizing: border-box !important;
+}
+
+/* Reserve augments the displayed circular numerator without mutating game state.
+   The ring itself continues to represent main energy, while purple communicates
+   that the shown number includes spendable Reserve. */
+html body .screen-game.screen-game .field-energy .energy-dial.uses-reserve-total strong > em {
+  color: #b98cff !important;
+  text-shadow: 0 0 .38rem rgb(168 105 255 / 62%), 0 1px 1px rgb(0 0 0 / 82%) !important;
+}
+
 /* Short touch landscapes need a slightly tighter card while preserving the
    restored text breathing room. */
 @media (orientation: landscape) and (max-width: 64rem),
@@ -239,7 +307,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
-    --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + .22cqh);
+    --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + .27cqh);
     --hero-card-section-gap: .18cqh;
     height: 46.2cqh !important;
     max-height: 46.2cqh !important;
@@ -258,6 +326,12 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
     right: .9cqw !important;
     bottom: .3cqh !important;
     font-size: clamp(.55rem, min(.82cqw, 1.2cqh), .8rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .player-hero > .hero-level-row,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .player-hero.level-ready > .level-button {
+    left: .28cqw !important;
+    right: .28cqw !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
