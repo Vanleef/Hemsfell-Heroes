@@ -75,6 +75,46 @@ export default function TerrainFieldAnchorRuntime() {
       });
     };
 
+    const pinTerrainGeometry = (
+      terrainEl: HTMLElement,
+      x: number,
+      y: number,
+      slotWidth: number,
+      slotHeight: number,
+    ) => {
+      const px = (value: number) => `${Math.max(0, value)}px`;
+      terrainEl.style.setProperty("--terrain-anchor-x", px(x));
+      terrainEl.style.setProperty("--terrain-anchor-y", px(y));
+      terrainEl.style.setProperty("--terrain-anchor-width", `${slotWidth}px`);
+      terrainEl.style.setProperty("--terrain-anchor-height", `${slotHeight}px`);
+
+      /* React rewrites className when drag state toggles can-drop. Keep the
+         actual anchor geometry inline as well so losing a runtime-added class
+         for a render can never collapse or relocate the Cruel Terrain target. */
+      terrainEl.style.setProperty("position", "absolute", "important");
+      terrainEl.style.setProperty("left", px(x), "important");
+      terrainEl.style.setProperty("top", px(y), "important");
+      terrainEl.style.setProperty("right", "auto", "important");
+      terrainEl.style.setProperty("bottom", "auto", "important");
+      terrainEl.style.setProperty("width", `${slotWidth}px`, "important");
+      terrainEl.style.setProperty("min-width", `${slotWidth}px`, "important");
+      terrainEl.style.setProperty("max-width", `${slotWidth}px`, "important");
+      terrainEl.style.setProperty("height", `${slotHeight}px`, "important");
+      terrainEl.style.setProperty("min-height", `${slotHeight}px`, "important");
+      terrainEl.style.setProperty("max-height", `${slotHeight}px`, "important");
+      terrainEl.style.setProperty("margin", "0", "important");
+      terrainEl.style.setProperty("translate", "0 0", "important");
+      terrainEl.style.setProperty("transform", "none", "important");
+      terrainEl.style.setProperty("animation", "none", "important");
+      terrainEl.style.setProperty("visibility", "visible", "important");
+      terrainEl.style.setProperty("opacity", "1", "important");
+      terrainEl.style.setProperty("display", "grid", "important");
+      terrainEl.style.setProperty("place-items", "center", "important");
+      terrainEl.style.setProperty("box-sizing", "border-box", "important");
+      terrainEl.style.setProperty("z-index", "48", "important");
+      terrainEl.classList.add("is-field-anchored");
+    };
+
     const position = () => {
       const board = document.querySelector<HTMLElement>(BOARD_SELECTOR);
       syncEnergyDisplay();
@@ -90,14 +130,8 @@ export default function TerrainFieldAnchorRuntime() {
         const geometry = getFieldGeometry(fieldEl);
         if (!geometry) return;
 
-        /* A Cruel Terrain zone always uses the actual first field-slot footprint.
-           It therefore cannot collapse or jump while React swaps the empty icon
-           for the played terrain card during a drop. */
         const slotWidth = geometry.firstRect.width / boardScale.x;
         const slotHeight = geometry.firstRect.height / boardScale.y;
-        terrainEl.style.setProperty("--terrain-anchor-width", `${slotWidth}px`);
-        terrainEl.style.setProperty("--terrain-anchor-height", `${slotHeight}px`);
-
         const fieldRect = fieldEl.getBoundingClientRect();
         const firstSlotLeft = (geometry.firstRect.left - boardRect.left) / boardScale.x;
         const clearance = geometry.clearance / boardScale.x;
@@ -106,9 +140,7 @@ export default function TerrainFieldAnchorRuntime() {
         const x = firstSlotLeft - slotWidth - clearance;
         const y = fieldTop + (fieldHeight - slotHeight) / 2;
 
-        terrainEl.style.setProperty("--terrain-anchor-x", `${Math.max(0, x)}px`);
-        terrainEl.style.setProperty("--terrain-anchor-y", `${Math.max(0, y)}px`);
-        terrainEl.classList.add("is-field-anchored");
+        pinTerrainGeometry(terrainEl, x, y, slotWidth, slotHeight);
       });
     };
 
