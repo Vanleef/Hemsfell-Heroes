@@ -31,17 +31,17 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defen
 
 /* During blocker choice, de-emphasize every major region except the decision,
  * the defender's battlefield and the enemy field that contains the declared
- * attacker. The enemy field stays neutral as a container so the selected
- * attacker can remain at true full opacity; its other slots are dimmed below. */
+ * attacker. Keep the dimming readable rather than near-black: the board should
+ * remain understandable while the active combat decision receives priority. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision) > :not(.defense-decision):not(.player-field):not(.enemy-field) {
-  filter: brightness(.3) saturate(.54) !important;
-  opacity: .54 !important;
+  filter: brightness(.58) saturate(.72) !important;
+  opacity: .78 !important;
   transition: filter .14s ease, opacity .14s ease !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision) > .player-field {
-  filter: brightness(.72) saturate(.82) !important;
-  opacity: .9 !important;
+  filter: brightness(.84) saturate(.9) !important;
+  opacity: .96 !important;
   z-index: 120 !important;
   transition: filter .14s ease, opacity .14s ease !important;
 }
@@ -58,8 +58,8 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .d
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision)
   > .enemy-field .field-slot:not(:has(.original-card.is-selected)) {
-  filter: brightness(.3) saturate(.54) !important;
-  opacity: .54 !important;
+  filter: brightness(.58) saturate(.72) !important;
+  opacity: .78 !important;
   transition: filter .14s ease, opacity .14s ease !important;
 }
 
@@ -90,7 +90,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .d
  * can immediately see the alternative to the NÃO BLOQUEAR button. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision)
   > .player-field :is(.target-ally, .is-targetable, [data-targetable="true"]) {
-  filter: brightness(1.18) saturate(1.12) !important;
+  filter: brightness(1.12) saturate(1.08) !important;
   opacity: 1 !important;
 }
 
@@ -102,6 +102,16 @@ html body .screen-game .response-overlay .response-dialog {
   box-shadow:
     0 0 .7rem rgb(224 190 91 / 26%),
     0 1rem 2.8rem rgb(0 0 0 / 68%) !important;
+}
+
+/* phase-orb-copy-final.css still contains the old combined pseudo-label
+ * ("FASE ATUAL · PRINCIPAL"). The runtime now renders the canonical two-line
+ * phase heading as real nodes. Match the legacy selector's specificity here so
+ * this later authority reliably suppresses that duplicate pseudo-copy. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .phase-orb:has(> button)[data-phase-current]::before {
+  content: none !important;
+  display: none !important;
 }
 
 @keyframes hh-defense-decision-attention {
