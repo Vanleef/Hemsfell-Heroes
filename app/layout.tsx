@@ -16,6 +16,8 @@ import "./presentation/styles/hero-panel-reference.css";
 import "./presentation/styles/hero-panel-reference-tuning.css";
 /* Final narrow geometry pass for compact/expanded hero breathing room. */
 import "./presentation/styles/hero-panel-breathing-room.css";
+/* Compact portrait level badge and readable progress/evolve spacing. */
+import "./presentation/styles/hero-panel-compact-fix.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
