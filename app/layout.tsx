@@ -12,6 +12,8 @@ import "./presentation/styles/command-bar-fixes.css";
 import "./presentation/styles/match-reference.css";
 /* Final, isolated authority for the canonical in-match hero card. */
 import "./presentation/styles/hero-panel-reference.css";
+/* Small continuation of the same canonical positioning model. */
+import "./presentation/styles/hero-panel-reference-tuning.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
