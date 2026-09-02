@@ -1,0 +1,59 @@
+/* Terminal overlay/affordance pass.
+ * Keeps the evolution criteria above board cards and makes the active phase orb
+ * read as a warm yellow action without changing match geometry.
+ */
+
+/* The tooltip must win the board stacking contest, not only its local z-index. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel {
+  z-index: 16000 !important;
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-level-row,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution {
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution > .evolution-tooltip {
+  z-index: 32000 !important;
+  isolation: isolate !important;
+  box-shadow:
+    0 .72cqh 2cqh rgb(0 0 0 / 82%),
+    0 0 0 max(1px, .045cqh) rgb(255 226 128 / 12%),
+    inset 0 0 0 1px rgb(255 255 255 / 5%) !important;
+}
+
+/* Warm yellow = actionable. The disabled/opponent state remains neutral grey. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled) {
+  background:
+    radial-gradient(circle at 50% 30%, rgb(255 236 145 / 34%), transparent 45%),
+    linear-gradient(180deg, #a97518 0%, #80540b 54%, #4c2d05 100%) !important;
+  border-color: #f0c963 !important;
+  color: #fff2b6 !important;
+  box-shadow:
+    inset 0 0 1.2cqh rgb(255 225 121 / 22%),
+    0 0 .9cqh rgb(244 190 62 / 38%),
+    0 0 1.65cqh rgb(225 160 31 / 18%) !important;
+  filter: saturate(1.1) brightness(1.06) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button :is(span, strong, b, small, em, i) {
+  -webkit-text-stroke: .46px #050505 !important;
+  paint-order: stroke fill !important;
+  text-shadow:
+    -1px 0 #050505,
+    1px 0 #050505,
+    0 -1px #050505,
+    0 1px #050505,
+    0 .18cqh .24cqh rgb(0 0 0 / 96%),
+    0 .28cqh .58cqh rgb(0 0 0 / 72%) !important;
+}
+
+@media (orientation: landscape) and (max-height: 44rem),
+       (orientation: landscape) and (max-width: 64rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution > .evolution-tooltip {
+    z-index: 32000 !important;
+  }
+}
