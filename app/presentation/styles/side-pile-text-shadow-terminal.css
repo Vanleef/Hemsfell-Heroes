@@ -1,0 +1,72 @@
+/*
+ * Terminal side-pile footer treatment.
+ * The readability shadow is attached to the label/count themselves instead of
+ * being painted as a panel-wide overlay. This guarantees it cannot float over
+ * the top-card artwork when legacy :has() pseudo-element rules are present.
+ */
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone::after,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > .remote-card-art)::after,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > canvas)::after,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > img)::after {
+  content: none !important;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > :is(b, strong) {
+  position: relative !important;
+  align-self: end !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  width: max-content !important;
+  max-width: calc(100% - clamp(.18rem, .28cqw, .3rem)) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin-bottom: clamp(.08rem, .14cqh, .13rem) !important;
+  padding:
+    clamp(.05rem, .08cqh, .08rem)
+    clamp(.12rem, .2cqw, .2rem)
+    clamp(.08rem, .14cqh, .13rem) !important;
+  border-radius: clamp(.12rem, .16cqw, .18rem) !important;
+  background: linear-gradient(
+    180deg,
+    rgb(3 7 9 / 8%) 0%,
+    rgb(2 5 7 / 48%) 46%,
+    rgb(0 0 0 / 82%) 100%
+  ) !important;
+  box-shadow:
+    0 .08rem .22rem rgb(0 0 0 / 66%),
+    0 0 .2rem rgb(0 0 0 / 36%) !important;
+  isolation: isolate !important;
+  z-index: 4 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > b {
+  justify-self: start !important;
+  justify-content: flex-start !important;
+  margin-left: clamp(.08rem, .12cqw, .12rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > strong {
+  justify-self: end !important;
+  justify-content: flex-end !important;
+  margin-right: clamp(.08rem, .12cqw, .12rem) !important;
+}
+
+@media (orientation: landscape) and (max-height: 44rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > :is(b, strong) {
+    margin-bottom: clamp(.05rem, .1cqh, .09rem) !important;
+    padding:
+      clamp(.035rem, .06cqh, .06rem)
+      clamp(.1rem, .16cqw, .16rem)
+      clamp(.06rem, .1cqh, .09rem) !important;
+    box-shadow:
+      0 .06rem .18rem rgb(0 0 0 / 64%),
+      0 0 .16rem rgb(0 0 0 / 32%) !important;
+  }
+}
