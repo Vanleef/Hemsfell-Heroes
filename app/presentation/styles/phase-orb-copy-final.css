@@ -28,16 +28,36 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   isolation: isolate !important;
 }
 
-/* Small phase-context kicker above the actionable plate. */
+/* Small phase-context kicker above the actionable plate. Explicitly reset all
+ * geometry inherited from the legacy circular ::before implementation. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button)[data-phase-current]::before {
   content: "FASE ATUAL · " attr(data-phase-current) !important;
+  position: relative !important;
+  inset: auto !important;
+  top: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: auto !important;
   display: block !important;
   align-self: center !important;
   width: max-content !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
   max-width: 100% !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
   margin: 0 0 clamp(.22rem, .38cqh, .34rem) !important;
   padding: 0 clamp(.18rem, .28cqw, .3rem) !important;
+  border: 0 !important;
+  outline: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
   color: rgb(238 215 137 / 86%) !important;
+  -webkit-text-fill-color: rgb(238 215 137 / 86%) !important;
   font-family: Arial, Helvetica, sans-serif !important;
   font-size: clamp(.45rem, min(.58cqw, .86cqh), .64rem) !important;
   font-weight: 900 !important;
@@ -62,34 +82,27 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   height: auto !important;
   min-width: 0 !important;
   min-height: clamp(2.75rem, 6.4cqh, 3.85rem) !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
   margin: 0 !important;
   padding: clamp(.44rem, .68cqh, .64rem) clamp(.48rem, .7cqw, .72rem) !important;
   border: max(1px, .075cqh) solid rgb(232 188 64 / 88%) !important;
   outline: 0 !important;
   border-radius: clamp(.48rem, .68cqw, .72rem) !important;
-  background:
-    linear-gradient(180deg, rgb(111 71 10 / 98%) 0%, rgb(84 49 5 / 99%) 42%, rgb(49 28 4 / 100%) 100%) !important;
+  background: linear-gradient(180deg, rgb(111 71 10 / 98%) 0%, rgb(84 49 5 / 99%) 42%, rgb(49 28 4 / 100%) 100%) !important;
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;
   font-size: 0 !important;
   line-height: 0 !important;
   text-align: center !important;
   cursor: pointer !important;
-  box-shadow:
-    0 .24rem .65rem rgb(0 0 0 / 48%),
-    inset 0 1px 0 rgb(255 239 171 / 20%),
-    inset 0 -.12rem .28rem rgb(0 0 0 / 28%),
-    0 0 clamp(.35rem, .75cqh, .72rem) rgb(237 171 35 / 22%) !important;
+  box-shadow: 0 .24rem .65rem rgb(0 0 0 / 48%), inset 0 1px 0 rgb(255 239 171 / 20%), inset 0 -.12rem .28rem rgb(0 0 0 / 28%), 0 0 clamp(.35rem, .75cqh, .72rem) rgb(237 171 35 / 22%) !important;
   text-shadow: none !important;
   overflow: hidden !important;
-  transition:
-    transform 120ms ease,
-    filter 160ms ease,
-    border-color 160ms ease,
-    box-shadow 160ms ease !important;
+  transition: transform 120ms ease, filter 160ms ease, border-color 160ms ease, box-shadow 160ms ease !important;
 }
 
-/* Premium left seal: the runtime supplies an icon appropriate to the action. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::before {
   content: attr(data-phase-icon) !important;
   box-sizing: border-box !important;
@@ -100,8 +113,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   block-size: clamp(1.55rem, 2.75cqh, 2rem) !important;
   border: max(1px, .055cqh) solid rgb(255 224 122 / 56%) !important;
   border-radius: 50% !important;
-  background:
-    radial-gradient(circle at 38% 30%, rgb(255 236 161 / 20%), rgb(96 57 8 / 18%) 48%, rgb(18 13 5 / 34%) 100%) !important;
+  background: radial-gradient(circle at 38% 30%, rgb(255 236 161 / 20%), rgb(96 57 8 / 18%) 48%, rgb(18 13 5 / 34%) 100%) !important;
   color: #ffe79a !important;
   -webkit-text-fill-color: #ffe79a !important;
   font-family: Arial, Helvetica, sans-serif !important;
@@ -160,11 +172,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   transform: translateY(-1px) !important;
   border-color: rgb(255 218 104 / 100%) !important;
   filter: brightness(1.08) saturate(1.05) !important;
-  box-shadow:
-    0 .32rem .8rem rgb(0 0 0 / 54%),
-    inset 0 1px 0 rgb(255 242 188 / 28%),
-    inset 0 -.12rem .28rem rgb(0 0 0 / 24%),
-    0 0 clamp(.62rem, 1.18cqh, 1.1rem) rgb(247 182 43 / 38%) !important;
+  box-shadow: 0 .32rem .8rem rgb(0 0 0 / 54%), inset 0 1px 0 rgb(255 242 188 / 28%), inset 0 -.12rem .28rem rgb(0 0 0 / 24%), 0 0 clamp(.62rem, 1.18cqh, 1.1rem) rgb(247 182 43 / 38%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled):hover > span {
@@ -175,9 +183,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled):active {
   transform: translateY(1px) scale(.985) !important;
   filter: brightness(.96) !important;
-  box-shadow:
-    0 .12rem .34rem rgb(0 0 0 / 48%),
-    inset 0 .15rem .32rem rgb(0 0 0 / 30%) !important;
+  box-shadow: 0 .12rem .34rem rgb(0 0 0 / 48%), inset 0 .15rem .32rem rgb(0 0 0 / 30%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:focus-visible {
@@ -185,8 +191,6 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   outline-offset: clamp(.12rem, .2cqh, .2rem) !important;
 }
 
-/* Disabled is deliberately dark/desaturated, not merely low-opacity, so the
- * state remains readable and distinct from an enabled control. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled {
   cursor: not-allowed !important;
   animation: none !important;
@@ -205,7 +209,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
 }
 
 /* Opponent turn uses the same plate language instead of reviving the legacy
- * gray circle. */
+ * gray circle. Reset every circular pseudo-element property explicitly. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:empty {
   min-height: clamp(2.6rem, 5.8cqh, 3.45rem) !important;
 }
@@ -213,13 +217,21 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:empty::before {
   content: "TURNO DO OPONENTE" !important;
   box-sizing: border-box !important;
+  position: relative !important;
+  inset: auto !important;
   display: grid !important;
   place-items: center !important;
   width: 100% !important;
+  height: auto !important;
+  min-width: 0 !important;
   min-height: clamp(2.6rem, 5.8cqh, 3.45rem) !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
   margin: 0 !important;
   padding: clamp(.42rem, .62cqh, .58rem) clamp(.58rem, .78cqw, .82rem) !important;
   border: max(1px, .06cqh) solid rgb(116 124 125 / 64%) !important;
+  outline: 0 !important;
   border-radius: clamp(.48rem, .68cqw, .72rem) !important;
   background: linear-gradient(180deg, rgb(52 57 58 / 94%), rgb(26 31 32 / 98%)) !important;
   color: #c8cecd !important;
@@ -234,10 +246,10 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   text-wrap: balance !important;
   text-shadow: 0 1px 1px #000 !important;
   box-shadow: 0 .2rem .5rem rgb(0 0 0 / 38%), inset 0 1px 0 rgb(255 255 255 / 5%) !important;
+  filter: none !important;
+  transform: none !important;
 }
 
-/* Mandatory Indomitable attack warning remains attached to the CTA but has its
- * own readable panel below it. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb .phase-orb-warning,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > .phase-orb-warning {
   box-sizing: border-box !important;
@@ -263,18 +275,10 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
 
 @keyframes hh-phase-action-ready {
   0%, 100% {
-    box-shadow:
-      0 .24rem .65rem rgb(0 0 0 / 48%),
-      inset 0 1px 0 rgb(255 239 171 / 20%),
-      inset 0 -.12rem .28rem rgb(0 0 0 / 28%),
-      0 0 clamp(.35rem, .75cqh, .72rem) rgb(237 171 35 / 18%);
+    box-shadow: 0 .24rem .65rem rgb(0 0 0 / 48%), inset 0 1px 0 rgb(255 239 171 / 20%), inset 0 -.12rem .28rem rgb(0 0 0 / 28%), 0 0 clamp(.35rem, .75cqh, .72rem) rgb(237 171 35 / 18%);
   }
   50% {
-    box-shadow:
-      0 .28rem .72rem rgb(0 0 0 / 50%),
-      inset 0 1px 0 rgb(255 239 171 / 24%),
-      inset 0 -.12rem .28rem rgb(0 0 0 / 26%),
-      0 0 clamp(.58rem, 1.05cqh, .98rem) rgb(241 176 37 / 32%);
+    box-shadow: 0 .28rem .72rem rgb(0 0 0 / 50%), inset 0 1px 0 rgb(255 239 171 / 24%), inset 0 -.12rem .28rem rgb(0 0 0 / 26%), 0 0 clamp(.58rem, 1.05cqh, .98rem) rgb(241 176 37 / 32%);
   }
 }
 
