@@ -5,15 +5,17 @@ import fs from "node:fs";
 const runtime = fs.readFileSync("app/presentation/runtime/terrain-field-anchor-runtime.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/hero-panel-visual-balance-final.css", "utf8");
 const terminal = fs.readFileSync("app/presentation/styles/hero-panel-polish-terminal.css", "utf8");
+const dragCss = fs.readFileSync("app/presentation/styles/terrain-drag-stability.css", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 
 const compact = (value) => value.replace(/\s+/g, " ");
 const sheet = compact(css);
 const finalSheet = compact(terminal);
+const dragSheet = compact(dragCss);
 
-test("Cruel Terrain keeps proportional clearance and a field-slot-sized footprint", () => {
-  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 2\.05/);
-  assert.match(runtime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.34/);
+test("Cruel Terrain keeps approved proportional clearance and a field-slot-sized footprint", () => {
+  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 1\.85/);
+  assert.match(runtime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.28/);
   assert.match(runtime, /\.field-slot\[data-slot="1"\]/);
   assert.match(runtime, /\.field-slot\[data-slot="2"\]/);
   assert.match(runtime, /boardRect\.width \/ layoutWidth/);
@@ -27,6 +29,7 @@ test("Cruel Terrain keeps proportional clearance and a field-slot-sized footprin
   assert.doesNotMatch(runtime, /const terrainWidth = terrainRect\.width/);
   assert.match(finalSheet, /terrain-slot\.is-field-anchored[^}]*visibility: visible !important[^}]*opacity: 1 !important/);
   assert.match(finalSheet, /terrain-slot\.is-field-anchored > \.card-frame[^}]*inset: 0 !important[^}]*width: 100% !important[^}]*height: 100% !important/);
+  assert.match(dragSheet, /terrain-drag-sentinel\[data-active="true"\][^}]*visibility: visible !important[^}]*opacity: 1 !important/);
 });
 
 test("reserve-aware circular energy display uses the summed numerator only while reserve exists", () => {
@@ -77,5 +80,6 @@ test("terminal polish loads after every previous hero CSS authority", () => {
   const geometry = layout.indexOf('import "./presentation/styles/hero-panel-layout-final.css"');
   const balance = layout.indexOf('import "./presentation/styles/hero-panel-visual-balance-final.css"');
   const terminalIndex = layout.indexOf('import "./presentation/styles/hero-panel-polish-terminal.css"');
-  assert.ok(geometry >= 0 && balance > geometry && terminalIndex > balance);
+  const dragIndex = layout.indexOf('import "./presentation/styles/terrain-drag-stability.css"');
+  assert.ok(geometry >= 0 && balance > geometry && terminalIndex > balance && dragIndex > terminalIndex);
 });
