@@ -1,0 +1,136 @@
+/*
+ * Hero HUD breathing-room refinement.
+ *
+ * This file is intentionally narrow: it only adjusts the compact/expanded
+ * geometry introduced by hero-panel-reference-tuning.css. It does not change
+ * ability layout, board placement or any game logic.
+ */
+
+/* More portrait and clearer metadata in the normal compact HUD. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) {
+  --hero-card-art-height: 18.4cqh;
+  --hero-card-level-gap: .34cqh;
+  --hero-card-level-height: 3.15cqh;
+  --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + var(--hero-card-level-gap));
+  --hero-card-abilities-top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + var(--hero-card-section-gap));
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) {
+  height: 26.65cqh !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) {
+  height: 23.25cqh !important;
+}
+
+/* Level is an explicit portrait overlay again, aligned with the life badge. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) > .player-hero > .hero-level-row {
+  overflow: visible !important;
+  z-index: 32 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-level-row > .hero-level {
+  display: inline-grid !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  left: .5cqw !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: calc(100% + var(--hero-card-level-gap) + .58cqh) !important;
+  width: auto !important;
+  min-width: 5.8cqh !important;
+  height: 2.68cqh !important;
+  place-items: center !important;
+  padding: .12cqh .46cqw !important;
+  font-size: clamp(.46rem, min(.74cqw, 1.2cqh), .76rem) !important;
+  line-height: 1 !important;
+  z-index: 42 !important;
+}
+
+/* Give the progress plate enough vertical room for crisp text and track. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-level-row > .hero-evolution {
+  padding: .38cqh .58cqw .32cqh !important;
+  grid-template-rows: minmax(0, 1fr) .4cqh !important;
+  gap: .16cqh !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-evolution-copy > small::after,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-evolution-copy > strong {
+  font-size: clamp(.48rem, min(.76cqw, 1.24cqh), .78rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero:not(.enemy) > .level-button {
+  top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .34cqh) !important;
+  height: 2.45cqh !important;
+  width: 60% !important;
+  left: 20% !important;
+  padding: .15cqh .4cqw !important;
+  font-size: clamp(.4rem, min(.62cqw, 1.02cqh), .63rem) !important;
+}
+
+/* Expanded view also gets a little more artwork and breathing room. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
+  --hero-card-art-height: 19.4cqh;
+  --hero-card-level-height: 3.25cqh;
+  --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + var(--hero-card-level-gap));
+  --hero-card-abilities-top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + var(--hero-card-section-gap));
+  height: 49.2cqh !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .hero-level-row > .hero-level {
+  display: inline-grid !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 42 !important;
+}
+
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) {
+    --hero-card-art-height: 17.8cqh;
+    --hero-card-level-height: 2.9cqh;
+    --hero-card-level-gap: .3cqh;
+    --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + var(--hero-card-level-gap));
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) {
+    height: 25.55cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) {
+    height: 22.35cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-level-row > .hero-level {
+    min-width: 5.2cqh !important;
+    height: 2.42cqh !important;
+    bottom: calc(100% + var(--hero-card-level-gap) + .5cqh) !important;
+    font-size: clamp(.4rem, min(.78cqw, 1.08cqh), .66rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-power-trigger > .hero-life {
+    bottom: .5cqh !important;
+    height: 2.42cqh !important;
+    min-width: 5.2cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-level-row > .hero-evolution {
+    padding: .32cqh .5cqw .27cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero:not(.enemy) > .level-button {
+    top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .28cqh) !important;
+    width: 58% !important;
+    left: 21% !important;
+    height: 2.2cqh !important;
+    font-size: clamp(.36rem, min(.66cqw, .96cqh), .58rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
+    --hero-card-art-height: 17.8cqh;
+    --hero-card-level-height: 3cqh;
+    --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + var(--hero-card-level-gap));
+    --hero-card-abilities-top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + var(--hero-card-section-gap));
+    height: 47.2cqh !important;
+  }
+}
