@@ -44,10 +44,12 @@ test("local Cruel Terrain keeps an independent visual sentinel for the full nati
   assert.match(sheet, /terrain-drag-sentinel\[data-active="true"\][^}]*display: grid !important[^}]*visibility: visible !important[^}]*opacity: 1 !important/);
 });
 
-test("approved pre-regression terrain clearance is restored", () => {
-  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 1\.85/);
-  assert.match(runtime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.28/);
-  assert.match(runtime, /Math\.max\(measuredGap \* TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 8\)/);
+test("Cruel Terrain clearance equals the live horizontal gap between neighboring field slots", () => {
+  assert.match(runtime, /secondRect\.left - firstRect\.right/);
+  assert.match(runtime, /clearance: measuredGap/);
+  assert.doesNotMatch(runtime, /TERRAIN_GAP_MULTIPLIER/);
+  assert.doesNotMatch(runtime, /TERRAIN_MIN_SLOT_CLEARANCE/);
+  assert.match(runtime, /const clearance = geometry\.clearance \/ boardScale\.x/);
 });
 
 test("terrain drag stability is loaded after all hero and terrain polish", () => {
