@@ -38,6 +38,8 @@ import "./presentation/styles/hero-panel-visual-balance-final.css";
 import "./presentation/styles/hero-panel-polish-terminal.css";
 /* Drag-cycle invariant: terrain targets remain visible while React toggles can-drop. */
 import "./presentation/styles/terrain-drag-stability.css";
+/* Final responsive type/space distribution for expanded abilities and the match header. */
+import "./presentation/styles/match-readability-final.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
