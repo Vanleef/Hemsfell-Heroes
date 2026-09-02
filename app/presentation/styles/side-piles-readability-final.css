@@ -1,9 +1,9 @@
 /*
  * Side-pile readability contract.
  *
- * Each pile is split into a large visual stage plus a compact footer. The
- * footer owns label/count readability while a bottom gradient keeps text clear
- * regardless of the artwork behind it.
+ * The visual surface fills the complete pile panel. Labels/counts are painted
+ * over a compact bottom readability gradient instead of consuming a separate
+ * inset content card. This avoids the previous "panel inside panel" look.
  */
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone {
@@ -15,54 +15,55 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
   align-items: stretch !important;
   justify-items: stretch !important;
   gap: 0 !important;
-  padding: clamp(.08rem, .18cqw, .2rem) clamp(.1rem, .22cqw, .24rem) clamp(.08rem, .18cqw, .2rem) !important;
+  padding: 0 !important;
   overflow: hidden !important;
 }
 
-/* Soft footer shadow under the text row. */
+/* Soft footer shadow under the overlaid text row. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone::after {
   content: "" !important;
   position: absolute !important;
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  height: 34% !important;
+  height: 36% !important;
   z-index: 1 !important;
   pointer-events: none !important;
-  background: linear-gradient(180deg, rgb(0 0 0 / 0%) 0%, rgb(0 0 0 / 38%) 38%, rgb(0 0 0 / 76%) 100%) !important;
+  background: linear-gradient(180deg, rgb(0 0 0 / 0%) 0%, rgb(0 0 0 / 38%) 38%, rgb(0 0 0 / 78%) 100%) !important;
 }
 
-/* Visual stage ----------------------------------------------------------- */
+/* Visual surface ---------------------------------------------------------
+ * It deliberately spans BOTH grid rows. The footer is an overlay, not a
+ * separate region that shrinks the visual. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > .pile-card,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > .revealed-deck-stack {
   grid-column: 1 / -1 !important;
-  grid-row: 1 !important;
+  grid-row: 1 / -1 !important;
   position: relative !important;
   z-index: 0 !important;
   align-self: stretch !important;
   justify-self: stretch !important;
-  margin: 0 !important;
-}
-
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > .pile-card {
-  align-self: center !important;
-  justify-self: center !important;
-  width: auto !important;
-  height: 92% !important;
+  width: 100% !important;
+  height: 100% !important;
   min-width: 0 !important;
   min-height: 0 !important;
-  max-width: 91% !important;
-  max-height: 94% !important;
-  aspect-ratio: 5 / 7 !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  border-radius: inherit !important;
+  aspect-ratio: auto !important;
 }
 
+/* No pile type is allowed to restore the old inset visual panel. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone.extra-deck > .pile-card,
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone.obscuro > .pile-card {
-  width: min(82%, 100%) !important;
-  height: auto !important;
-  max-width: 82% !important;
-  max-height: 88% !important;
-  aspect-ratio: 1 / 1 !important;
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone.obscuro > .pile-card,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone.grave > .pile-card,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone.main-deck > .pile-card {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone .pile-card > .remote-card-art,
@@ -73,25 +74,22 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
   height: 100% !important;
   max-width: none !important;
   max-height: none !important;
-  object-fit: contain !important;
+  object-fit: cover !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > .revealed-deck-stack {
   display: grid !important;
-  place-items: center !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
+  place-items: stretch !important;
   overflow: visible !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > .revealed-deck-stack > .pile-card {
-  width: auto !important;
-  height: 92% !important;
-  max-width: 90% !important;
-  max-height: 94% !important;
-  aspect-ratio: 5 / 7 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  border-radius: inherit !important;
 }
 
 /* Footer --------------------------------------------------------------- */
@@ -103,7 +101,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
   align-self: end !important;
   min-width: 0 !important;
   margin: 0 !important;
-  padding: 0 clamp(.04rem, .08cqw, .08rem) clamp(.02rem, .07cqh, .06rem) !important;
+  padding: 0 clamp(.12rem, .16cqw, .18rem) clamp(.08rem, .12cqh, .1rem) !important;
   color: #f6d15f !important;
   font-family: Arial, Helvetica, sans-serif !important;
   font-size: clamp(.48rem, min(.66cqw, 1.08cqh), .76rem) !important;
@@ -141,15 +139,19 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
   display: none !important;
 }
 
-/* Keep visual scale useful on short landscape screens without crowding footer. */
+/* Short landscape keeps the same full-bleed visual contract. */
 @media (orientation: landscape) and (max-height: 38rem) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone {
     grid-template-rows: minmax(0, 1fr) clamp(.86rem, 2.1cqh, 1.18rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > .pile-card,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > .revealed-deck-stack,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > .revealed-deck-stack > .pile-card {
-    height: 94% !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > b,
