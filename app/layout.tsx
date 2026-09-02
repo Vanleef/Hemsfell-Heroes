@@ -48,8 +48,10 @@ import "./presentation/styles/hero-status-visibility-final.css";
 import "./presentation/styles/requested-match-polish-final.css";
 /* Absolute terminal authority for tooltip stacking and active phase-orb readability. */
 import "./presentation/styles/match-overlay-visibility-final.css";
-/* Body-level tooltip portal escapes every match-board stacking context. */
+/* Body-level evolution criteria portal escapes every match-board stacking context. */
 import "./presentation/styles/evolution-tooltip-portal-final.css";
+/* Every floating tooltip/portal gets the final visual layer over cards and overlays. */
+import "./presentation/styles/global-tooltip-layer-final.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
