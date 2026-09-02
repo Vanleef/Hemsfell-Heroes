@@ -13,6 +13,7 @@ on:
       - refactor/consolidate-css
       - codex/optimization-cleanup
       - ui/fixed-board-composition
+      - fix/mobile-responsive-layout-20260831
   pull_request:
     branches:
       - main
