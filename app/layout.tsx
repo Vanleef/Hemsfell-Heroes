@@ -52,6 +52,8 @@ import "./presentation/styles/match-overlay-visibility-final.css";
 import "./presentation/styles/evolution-tooltip-portal-final.css";
 /* Every floating tooltip/portal gets the final visual layer over cards and overlays. */
 import "./presentation/styles/global-tooltip-layer-final.css";
+/* Final gameplay feedback authority: evolution, defender lane, priority center and phase copy. */
+import "./presentation/styles/match-feedback-final.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
@@ -64,6 +66,7 @@ import GamePresentationRuntime from "./presentation/runtime/game-presentation-ru
 import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-runtime";
 import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
 import EvolutionTooltipPortalRuntime from "./presentation/runtime/evolution-tooltip-portal-runtime";
+import MatchFeedbackRuntime from "./presentation/runtime/match-feedback-runtime";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -98,6 +101,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <HeroPanelExpandRuntime />
       <TerrainFieldAnchorRuntime />
       <EvolutionTooltipPortalRuntime />
+      <MatchFeedbackRuntime />
       {children}
     </body>
   </html>;
