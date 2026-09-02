@@ -39,23 +39,24 @@ test("terminal tooltip authority keeps body portals above cards and overlays", (
   assert.ok(evolutionImport >= 0 && globalImport > evolutionImport);
 });
 
-test("phase-orb uses a saturated orange fantasy medallion while keeping outlined readable copy", () => {
+test("phase-orb uses a saturated orange fantasy medallion without an inset ring", () => {
   assert.match(portalCss, /-webkit-text-stroke:\s*\.55px #ffffff\s*!important/);
   assert.match(portalCss, /font-size:\s*clamp\(\.66rem, min\(\.96cqw, 1\.46cqh\), 1rem\)\s*!important/);
   assert.match(portalCss, /button:not\(:disabled\)[^}]*background:\s*#db7412\s*!important/);
   assert.match(portalCss, /#ffb347[^}]*#f28a1c[^}]*#d56e0d[^}]*#8f4308/);
   assert.match(portalCss, /phase-orb-ready-pulse 2\.15s/);
-  assert.match(portalCss, /button::after[^}]*inset:\s*7%/);
+  assert.match(portalCss, /button::after[^}]*content:\s*none\s*!important[^}]*display:\s*none\s*!important/);
   assert.match(portalCss, /button > span[^}]*font-size:\s*1\.32em\s*!important/);
 });
 
-test("disabled phase-orb stays orange without the previous silver rim", () => {
-  assert.match(portalCss, /button:disabled[^}]*border-color:\s*#c8741a\s*!important/);
-  assert.match(portalCss, /button:disabled[^}]*background:\s*#9a4f0e\s*!important/);
+test("disabled phase-orb keeps the same depth model but is gray, desaturated and non-interactive", () => {
+  assert.match(portalCss, /button:disabled[^}]*border-color:\s*#72777a\s*!important/);
+  assert.match(portalCss, /button:disabled[^}]*background:\s*#505457\s*!important/);
+  assert.match(portalCss, /button:disabled[^}]*filter:\s*grayscale\(1\) saturate\(0\) brightness\(\.82\)\s*!important/);
+  assert.match(portalCss, /button:disabled[^}]*cursor:\s*not-allowed\s*!important/);
   assert.match(portalCss, /button:disabled[^}]*opacity:\s*1\s*!important/);
-  assert.match(portalCss, /#f19a2a[^}]*#cf7416[^}]*#a9540d[^}]*#6b3307/);
-  assert.match(portalCss, /button:disabled::after[^}]*border-color:\s*rgb\(255 221 168 \/ 24%\)\s*!important/);
-  assert.doesNotMatch(portalCss, /#aebbc3|#89959c|#677178|#4b5358|#31373b/);
+  assert.match(portalCss, /#92979a[^}]*#717679[^}]*#53575a[^}]*#343739/);
+  assert.doesNotMatch(portalCss, /button:disabled::after/);
 });
 
 test("Cruel Terrain has one responsive positioning authority with a half-gap gutter", () => {
