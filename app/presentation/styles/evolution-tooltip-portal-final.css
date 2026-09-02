@@ -1,3 +1,13 @@
+/* The React-owned criteria tooltip stays as semantic/source markup only.
+ * Legacy :hover rules must never render this in-panel copy behind hand cards.
+ */
+html body .screen-game .hero-evolution > .evolution-tooltip:not(.evolution-tooltip-portal) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 /* Body-level evolution criteria portal.
  * This intentionally escapes every board/card stacking context while preserving
  * the visual language of the in-panel tooltip.
@@ -6,6 +16,7 @@ body > .evolution-tooltip-portal {
   position: fixed !important;
   inset: auto !important;
   z-index: 2147483647 !important;
+  isolation: isolate !important;
   display: grid !important;
   grid-template-columns: minmax(0, 1fr) !important;
   grid-auto-rows: max-content !important;
@@ -31,7 +42,7 @@ body > .evolution-tooltip-portal {
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: none !important;
-  transform: none !important;
+  transform: translateZ(0) !important;
 }
 
 body > .evolution-tooltip-portal > p {
@@ -69,20 +80,39 @@ body > .evolution-tooltip-portal > div > span {
   overflow-wrap: anywhere !important;
 }
 
-/* Phase-orb copy: force both direct button text and nested glyphs to the same
- * black fill, then draw the readable warm-gold outline around that fill. */
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button,
+/* Phase-orb copy: black fill with a crisp white outline. The direct label and
+ * nested arrow share the same treatment; the arrow remains slightly larger. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
+  color: #080603 !important;
+  -webkit-text-fill-color: #080603 !important;
+  -webkit-text-stroke: .55px #ffffff !important;
+  paint-order: stroke fill !important;
+  font-size: clamp(.62rem, min(.9cqw, 1.38cqh), .92rem) !important;
+  font-weight: 900 !important;
+  text-shadow:
+    -1px 0 #ffffff,
+    1px 0 #ffffff,
+    0 -1px #ffffff,
+    0 1px #ffffff,
+    0 .18cqh .3cqh rgb(0 0 0 / 72%) !important;
+}
+
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button :is(span, strong, b, small, em, i) {
   color: #080603 !important;
   -webkit-text-fill-color: #080603 !important;
-  -webkit-text-stroke: .5px #efc961 !important;
+  -webkit-text-stroke: .55px #ffffff !important;
   paint-order: stroke fill !important;
   text-shadow:
-    -1px 0 #efc961,
-    1px 0 #efc961,
-    0 -1px #efc961,
-    0 1px #efc961,
-    0 .16cqh .28cqh rgb(0 0 0 / 72%) !important;
+    -1px 0 #ffffff,
+    1px 0 #ffffff,
+    0 -1px #ffffff,
+    0 1px #ffffff,
+    0 .18cqh .3cqh rgb(0 0 0 / 72%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button > span {
+  font-size: 1.3em !important;
+  line-height: .92 !important;
 }
 
 @media (orientation: landscape) and (max-height: 44rem),
@@ -93,6 +123,10 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
     max-height: 40vh !important;
     font-size: clamp(.52rem, min(.74vw, 1.04vh), .74rem) !important;
   }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
+    font-size: clamp(.56rem, min(.82cqw, 1.22cqh), .82rem) !important;
+  }
 }
 
 @media (orientation: portrait) {
@@ -101,5 +135,9 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
     max-width: min(50vw, calc(100vw - .75rem)) !important;
     max-height: 34vh !important;
     font-size: clamp(.68rem, 2.45vw, .88rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
+    font-size: clamp(.66rem, 2.5vw, .94rem) !important;
   }
 }
