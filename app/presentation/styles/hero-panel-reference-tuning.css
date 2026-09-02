@@ -1,0 +1,59 @@
+/*
+ * Small follow-up calibration for the canonical hero panel.
+ * This keeps the same absolute-positioning model from hero-panel-reference.css;
+ * it only changes the requested vertical order and nameplate attachment.
+ */
+
+/* Nameplate: centered over the artwork and physically attached to its top edge. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-short-name {
+  left: 50% !important;
+  right: auto !important;
+  top: 0 !important;
+  bottom: auto !important;
+  width: 52% !important;
+  transform: translateX(-50%) !important;
+  border-radius: 0 0 .34cqw .34cqw !important;
+  border-top: 0 !important;
+  margin: 0 !important;
+}
+
+/* The local evolve action now owns a dedicated band immediately after the
+   full-width progression row and before the three ability rows. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero:not(.enemy) > .level-button {
+  left: 19% !important;
+  right: auto !important;
+  top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .34cqh) !important;
+  bottom: auto !important;
+  width: 62% !important;
+  height: 2.32cqh !important;
+  margin: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .hero-command-bar {
+  top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + 3.04cqh) !important;
+  bottom: .72cqh !important;
+}
+
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-short-name {
+    left: 50% !important;
+    right: auto !important;
+    top: 0 !important;
+    width: 50% !important;
+    transform: translateX(-50%) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero:not(.enemy) > .level-button {
+    left: 21% !important;
+    top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .28cqh) !important;
+    bottom: auto !important;
+    width: 58% !important;
+    height: 2.02cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .hero-command-bar {
+    top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + 2.66cqh) !important;
+    bottom: .56cqh !important;
+  }
+}
