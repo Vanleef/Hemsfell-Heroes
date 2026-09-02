@@ -22,8 +22,10 @@ import "./presentation/styles/hero-panel-compact-fix.css";
 import "./presentation/styles/hero-panel-level-final.css";
 /* External geometry only: hero panels are overlays and never size board tracks. */
 import "./presentation/styles/hero-panel-overlay-isolation.css";
-/* Final visual hierarchy: shared width, identity row, progress/evolve swap and terrain clearance. */
+/* Restored commit 22b1999b canonical refinement. */
 import "./presentation/styles/hero-panel-final-refinement.css";
+/* Requested polish only: dimensions/offsets, never a replacement layout model. */
+import "./presentation/styles/hero-panel-requested-polish.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
