@@ -31,17 +31,18 @@ test("Cruel Terrain has safe owner-field fallback rows before exact runtime anch
   assert.match(sheet, /terrain-slot\.is-field-anchored[^}]*position: absolute !important/);
 });
 
-test("Cruel Terrain final position follows first rendered slot with the approved spacing", () => {
-  assert.match(terrainRuntime, /const TERRAIN_GAP_MULTIPLIER = 1\.85/);
-  assert.match(terrainRuntime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.28/);
+test("Cruel Terrain final position uses exactly the rendered horizontal slot gap", () => {
   assert.match(terrainRuntime, /secondRect\.left - firstRect\.right/);
-  assert.match(terrainRuntime, /firstRect\.width \* TERRAIN_MIN_SLOT_CLEARANCE/);
-  assert.match(terrainRuntime, /Math\.max\(measuredGap \* TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 8\)/);
+  assert.match(terrainRuntime, /clearance: measuredGap/);
+  assert.doesNotMatch(terrainRuntime, /TERRAIN_GAP_MULTIPLIER/);
+  assert.doesNotMatch(terrainRuntime, /TERRAIN_MIN_SLOT_CLEARANCE/);
+  assert.doesNotMatch(terrainRuntime, /TERRAIN_GAP_PROXIMITY/);
   assert.match(terrainRuntime, /boardRect\.width \/ layoutWidth/);
   assert.match(terrainRuntime, /boardRect\.height \/ layoutHeight/);
   assert.match(terrainRuntime, /const slotWidth = geometry\.firstRect\.width \/ boardScale\.x/);
   assert.match(terrainRuntime, /const slotHeight = geometry\.firstRect\.height \/ boardScale\.y/);
   assert.match(terrainRuntime, /firstSlotLeft = \(geometry\.firstRect\.left - boardRect\.left\) \/ boardScale\.x/);
+  assert.match(terrainRuntime, /const clearance = geometry\.clearance \/ boardScale\.x/);
   assert.match(terrainRuntime, /const x = firstSlotLeft - slotWidth - clearance/);
   assert.match(terrainRuntime, /const y = fieldTop \+ \(fieldHeight - slotHeight\) \/ 2/);
   assert.doesNotMatch(terrainRuntime, /const terrainWidth = terrainRect\.width/);
