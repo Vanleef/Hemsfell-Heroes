@@ -33,7 +33,7 @@ export default function TerrainProximityRuntime() {
         const measuredGap = secondRect
           ? Math.max(2, secondRect.left - firstRect.right)
           : Math.max(2, firstRect.width * 0.08);
-        const renderedClearance = Math.max(measuredGap * 0.82, firstRect.width * 0.14, 4);
+        const renderedClearance = Math.max(measuredGap * 0.72, firstRect.width * 0.11, 3);
         const slotWidth = firstRect.width / scaleX;
         const firstSlotLeft = (firstRect.left - boardRect.left) / scaleX;
         const clearance = renderedClearance / scaleX;
