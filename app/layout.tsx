@@ -56,6 +56,8 @@ import "./presentation/styles/global-tooltip-layer-final.css";
 import "./presentation/styles/match-feedback-final.css";
 /* Terminal phase-orb typography and mandatory Indomitable warning readability. */
 import "./presentation/styles/phase-orb-copy-final.css";
+/* Blocking combat decisions receive spotlight feedback; level-up never swaps to a scaled clone. */
+import "./presentation/styles/critical-flow-feedback.css";
 /* Canonical ability-row contract: numbers, description and external kind label. */
 import "./presentation/styles/hero-ability-layout-contract.css";
 /* Paint one shared capsule around number + description only; kind remains outside. */
