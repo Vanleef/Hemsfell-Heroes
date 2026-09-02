@@ -32,6 +32,8 @@ import "./presentation/styles/hero-panel-screenshot-fixes.css";
 import "./presentation/styles/hero-panel-tooltip-final.css";
 /* Final geometry authority: safe margins, contained compact footer and owner terrain. */
 import "./presentation/styles/hero-panel-layout-final.css";
+/* Terminal balance: edge-to-edge hero artwork and readable compact ability rows. */
+import "./presentation/styles/hero-panel-visual-balance-final.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
