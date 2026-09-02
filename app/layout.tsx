@@ -71,6 +71,7 @@ import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
 import OnlineReconnectRuntime from "./application/online/online-reconnect-runtime";
 import GameGlossaryRuntime from "./presentation/glossary/game-glossary-runtime";
+import CardDoubleClickInspectRuntime from "./presentation/cards/card-double-click-inspect-runtime";
 import CardPreviewRuntime from "./presentation/cards/card-preview-runtime";
 import PresentationEventBridge from "./presentation/runtime/presentation-event-bridge";
 import PresentationInteractionRuntime from "./presentation/runtime/presentation-interaction-runtime";
@@ -106,6 +107,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <OnlineMatchRuntime />
       <OnlineReconnectRuntime />
       <GameGlossaryRuntime />
+      <CardDoubleClickInspectRuntime />
       <CardPreviewRuntime />
       <PresentationEventBridge />
       <PresentationInteractionRuntime />
