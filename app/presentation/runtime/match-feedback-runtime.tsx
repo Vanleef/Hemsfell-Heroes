@@ -63,14 +63,22 @@ const positionDefenseDecision = (board: HTMLElement) => {
   const creatureRects = visibleRects(board, ".creature-slot");
   if (!creatureRects.length) return;
 
-  const firstCreatureLeft = Math.min(...creatureRects.map((rect) => rect.left));
-  const gap = Math.max(12, Math.min(26, boardRect.width * 0.016));
-  const edgePadding = Math.max(8, boardRect.width * 0.01);
-  const railLeftViewport = boardRect.left + edgePadding;
-  const railRightViewport = firstCreatureLeft - gap;
-  const availableWidth = Math.max(0, railRightViewport - railLeftViewport);
-  const desiredWidth = Math.max(220, Math.min(350, boardRect.width * 0.205));
-  const width = Math.max(0, Math.min(desiredWidth, availableWidth));
+  /* getBoundingClientRect() is rendered geometry, while inline px on the board
+   * are pre-transform CSS pixels. Convert explicitly so a scaled responsive
+   * board cannot make the decision panel wider or farther right than intended. */
+  const scaleX = board.offsetWidth > 0 ? boardRect.width / board.offsetWidth : 1;
+  const firstCreatureLeftViewport = Math.min(...creatureRects.map((rect) => rect.left));
+  const renderedGap = Math.max(12, Math.min(26, boardRect.width * 0.016));
+  const viewportPadding = 8;
+  const railRightViewport = firstCreatureLeftViewport - renderedGap;
+  const railLeftViewport = Math.max(viewportPadding, boardRect.left + Math.max(5, boardRect.width * 0.004));
+  const availableRenderedWidth = Math.max(0, railRightViewport - railLeftViewport);
+  const desiredRenderedWidth = Math.max(150, Math.min(220, boardRect.width * 0.17));
+  const renderedWidth = Math.max(0, Math.min(desiredRenderedWidth, availableRenderedWidth));
+  const leftViewport = railRightViewport - renderedWidth;
+
+  const localLeft = (leftViewport - boardRect.left) / scaleX;
+  const localWidth = renderedWidth / scaleX;
 
   decision.style.setProperty("position", "absolute", "important");
   decision.style.setProperty("right", "auto", "important");
@@ -79,10 +87,14 @@ const positionDefenseDecision = (board: HTMLElement) => {
   decision.style.setProperty("margin", "0", "important");
   decision.style.setProperty("top", "50%", "important");
   decision.style.setProperty("transform", "translateY(-50%)", "important");
-  decision.style.setProperty("left", `${Math.round(edgePadding * 1000) / 1000}px`, "important");
-  decision.style.setProperty("width", `${Math.round(width * 1000) / 1000}px`, "important");
-  decision.style.setProperty("max-width", `${Math.round(width * 1000) / 1000}px`, "important");
-  decision.dataset.geometryAnchored = "left-rail-clear-of-fields";
+  decision.style.setProperty("left", `${Math.round(localLeft * 1000) / 1000}px`, "important");
+  decision.style.setProperty("width", `${Math.round(localWidth * 1000) / 1000}px`, "important");
+  decision.style.setProperty("min-width", "0", "important");
+  decision.style.setProperty("max-width", `${Math.round(localWidth * 1000) / 1000}px`, "important");
+  decision.style.setProperty("inline-size", `${Math.round(localWidth * 1000) / 1000}px`, "important");
+  decision.style.setProperty("min-inline-size", "0", "important");
+  decision.style.setProperty("max-inline-size", `${Math.round(localWidth * 1000) / 1000}px`, "important");
+  decision.dataset.geometryAnchored = "scaled-left-rail-clear-of-fields";
 };
 
 export default function MatchFeedbackRuntime() {
