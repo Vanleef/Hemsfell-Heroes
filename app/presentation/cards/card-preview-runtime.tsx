@@ -45,6 +45,8 @@ type GlossaryState = {
 const CARD_SELECTOR = ".original-card[data-card-preview='true']";
 const NATIVE_TITLE_SELECTOR = `${CARD_SELECTOR}[title], ${CARD_SELECTOR} [title], [data-tip][title], .remote-card-art[title]`;
 const INSPECTION_HOLD_MS = 1_000;
+const INSPECTION_PROGRESS_DELAY_MS = 500;
+const INSPECTION_PROGRESS_MS = INSPECTION_HOLD_MS - INSPECTION_PROGRESS_DELAY_MS;
 const HOLD_SLOP_PX = 12;
 const TOOLTIP_HOVER_DELAY_MS = 1_000;
 const TOOLTIP_CLOSE_DELAY_MS = 180;
@@ -218,6 +220,7 @@ export default function CardPreviewRuntime() {
   }, []);
 
   useEffect(() => {
+    let holdDelayTimer = 0;
     let holdTimer = 0;
     let holdCard: HTMLElement | null = null;
     let holdProgress: HTMLElement | null = null;
@@ -232,7 +235,9 @@ export default function CardPreviewRuntime() {
     };
 
     const clearInspectionHold = () => {
+      window.clearTimeout(holdDelayTimer);
       window.clearTimeout(holdTimer);
+      holdDelayTimer = 0;
       holdTimer = 0;
       holdCard = null;
       holdProgress?.remove();
@@ -264,28 +269,38 @@ export default function CardPreviewRuntime() {
       clearInspectionHold();
       holdCard = card;
       holdStart = { x: event.clientX, y: event.clientY };
-      const progress = document.createElement("span");
-      progress.className = "card-inspection-hold-progress";
-      progress.setAttribute("aria-hidden", "true");
-      progress.style.setProperty("--card-inspection-hold-duration", `${INSPECTION_HOLD_MS}ms`);
-      progress.append(document.createElement("i"));
-      card.append(progress);
-      holdProgress = progress;
-      holdTimer = window.setTimeout(() => {
-        const inspectedCard = holdCard;
-        if (!inspectedCard?.isConnected) {
+
+      holdDelayTimer = window.setTimeout(() => {
+        if (holdCard !== card || !card.isConnected) {
           clearInspectionHold();
           return;
         }
-        suppressedClicks.current.add(inspectedCard);
-        const page = Number(inspectedCard.dataset.cardPage);
-        clearInspectionHold();
-        closePreview();
-        if (Number.isInteger(page) && page > 0) {
-          window.dispatchEvent(new CustomEvent("hemsfell:inspect-card", { detail: { page } }));
-          navigator.vibrate?.(18);
-        }
-      }, INSPECTION_HOLD_MS);
+
+        const progress = document.createElement("span");
+        progress.className = "card-inspection-hold-progress";
+        progress.setAttribute("aria-hidden", "true");
+        progress.style.setProperty("--card-inspection-hold-duration", `${INSPECTION_PROGRESS_MS}ms`);
+        progress.append(document.createElement("i"));
+        card.append(progress);
+        holdProgress = progress;
+        holdDelayTimer = 0;
+
+        holdTimer = window.setTimeout(() => {
+          const inspectedCard = holdCard;
+          if (!inspectedCard?.isConnected) {
+            clearInspectionHold();
+            return;
+          }
+          suppressedClicks.current.add(inspectedCard);
+          const page = Number(inspectedCard.dataset.cardPage);
+          clearInspectionHold();
+          closePreview();
+          if (Number.isInteger(page) && page > 0) {
+            window.dispatchEvent(new CustomEvent("hemsfell:inspect-card", { detail: { page } }));
+            navigator.vibrate?.(18);
+          }
+        }, INSPECTION_PROGRESS_MS);
+      }, INSPECTION_PROGRESS_DELAY_MS);
     };
 
     const onPointerOver = (event: PointerEvent) => {
