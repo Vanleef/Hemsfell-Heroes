@@ -35,6 +35,43 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
 }
 
 /* -------------------------------------------------------------------------
+   Artwork owns the full portrait band. Previous passes left an inset around
+   the image even though the surrounding hero frame already supplies the edge.
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel {
+  --hero-card-art-top: 0cqh;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero > .hero-power-trigger {
+  left: 0 !important;
+  right: 0 !important;
+  top: var(--hero-card-art-top) !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: var(--hero-card-art-height) !important;
+  border-radius: inherit !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-portrait {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  overflow: hidden !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-portrait > img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: var(--hero-portrait-position, 50% 20%) !important;
+}
+
+/* -------------------------------------------------------------------------
    Compact hero frame. The frame height is derived from portrait + progress,
    so PRÓX. NÍVEL / EVOLUIR is a real footer INSIDE the compact card instead
    of looking like a detached control below it.
@@ -97,19 +134,104 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
 }
 
 /* -------------------------------------------------------------------------
-   Cruel Terrain. Canonical owner fields occupy row 4 (enemy) and row 6
-   (player). Keep terrain in that SAME row and place its right edge exactly one
-   field-gap to the left of the right-aligned field.
+   Expanded hero: keep portrait width but stop stretching each ability to fill
+   a very tall card. Three natural-height rows retain all copy while making the
+   expanded overlay short enough to coexist with the opposite compact hero.
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
+  --hero-card-section-gap: .3cqh;
+  height: 46.2cqh !important;
+  min-height: 0 !important;
+  max-height: 46.2cqh !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
+  left: .14cqw !important;
+  right: .14cqw !important;
+  top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + var(--hero-card-section-gap)) !important;
+  bottom: auto !important;
+  width: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: repeat(3, auto) !important;
+  align-content: start !important;
+  gap: .26cqh !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+  min-height: 0 !important;
+  height: auto !important;
+  grid-template-columns: 2.36cqh minmax(0, 1fr) !important;
+  column-gap: .46cqw !important;
+  align-items: center !important;
+  padding: .22cqh .34cqw !important;
+  border-radius: clamp(.18rem, .26cqw, .34rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
+  display: grid !important;
+  place-items: center !important;
+  place-content: center !important;
+  inline-size: 2.2cqh !important;
+  block-size: 2.2cqh !important;
+  width: 2.2cqh !important;
+  min-width: 2.2cqh !important;
+  max-width: 2.2cqh !important;
+  height: 2.2cqh !important;
+  min-height: 2.2cqh !important;
+  max-height: 2.2cqh !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-radius: 50% !important;
+  font-size: clamp(.54rem, min(.78cqw, 1.16cqh), .76rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  text-indent: 0 !important;
+  transform: none !important;
+  translate: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy {
+  display: grid !important;
+  align-content: center !important;
+  min-width: 0 !important;
+  gap: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
+  margin: 0 !important;
+  font-size: clamp(.44rem, min(.64cqw, .94cqh), .64rem) !important;
+  line-height: 1.08 !important;
+  letter-spacing: 0 !important;
+  text-wrap: pretty !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-compact > .hero-ability-copy > p {
+  font-size: clamp(.42rem, min(.6cqw, .88cqh), .6rem) !important;
+  line-height: 1.06 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-dense > .hero-ability-copy > p {
+  font-size: clamp(.4rem, min(.56cqw, .82cqh), .56rem) !important;
+  line-height: 1.04 !important;
+}
+
+/* -------------------------------------------------------------------------
+   Cruel Terrain fallback. The runtime below replaces these grid coordinates
+   with exact pixel anchors as soon as the owner field is mounted/measured.
    ------------------------------------------------------------------------- */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
-  grid-column: 3 !important;
+  grid-column: 2 !important;
   justify-self: end !important;
   align-self: center !important;
-  margin-top: 0 !important;
-  margin-bottom: 0 !important;
-  margin-left: 0 !important;
-  margin-right: calc(min(82%, 41cqw) + var(--hero-terrain-gap)) !important;
+  margin: 0 var(--hero-terrain-gap) 0 0 !important;
   translate: 0 0 !important;
   transform: none !important;
   z-index: 48 !important;
@@ -123,9 +245,25 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terra
   grid-row: 6 !important;
 }
 
+/* Exact owner-field anchoring. x/y are measured from the rendered field and
+   the horizontal gap is literally the measured slot-1 -> slot-2 gap. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.is-field-anchored {
+  position: absolute !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  left: var(--terrain-anchor-x) !important;
+  top: var(--terrain-anchor-y) !important;
+  right: auto !important;
+  bottom: auto !important;
+  justify-self: auto !important;
+  align-self: auto !important;
+  margin: 0 !important;
+  translate: 0 0 !important;
+  transform: none !important;
+}
+
 /* -------------------------------------------------------------------------
-   Short landscape / touch. The owner field is 91% of col3 here, so use that
-   exact responsive width for terrain clearance rather than a magic translate.
+   Short landscape / touch.
    ------------------------------------------------------------------------- */
 @media (orientation: landscape) and (max-width: 64rem),
        (orientation: landscape) and (max-height: 44rem) and (hover: none) and (pointer: coarse),
@@ -143,30 +281,50 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terra
     min-height: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .58cqh) !important;
   }
 
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
+    height: 44.5cqh !important;
+    max-height: 44.5cqh !important;
+  }
+
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) > .player-hero > .hero-level-row,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero.level-ready > .level-button {
     left: .28cqw !important;
     right: .28cqw !important;
   }
 
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain,
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
-    grid-column: 3 !important;
-    margin-right: calc(min(91%, 47cqw) + var(--hero-terrain-gap)) !important;
-    translate: 0 0 !important;
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
+    left: .1cqw !important;
+    right: .1cqw !important;
+    gap: .2cqh !important;
   }
 
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain {
-    grid-row: 4 !important;
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+    grid-template-columns: 2.12cqh minmax(0, 1fr) !important;
+    column-gap: .38cqw !important;
+    padding: .16cqh .28cqw !important;
   }
 
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
-    grid-row: 6 !important;
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
+    inline-size: 1.98cqh !important;
+    block-size: 1.98cqh !important;
+    width: 1.98cqh !important;
+    min-width: 1.98cqh !important;
+    max-width: 1.98cqh !important;
+    height: 1.98cqh !important;
+    min-height: 1.98cqh !important;
+    max-height: 1.98cqh !important;
+    font-size: clamp(.48rem, min(.7cqw, 1.02cqh), .68rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
+    font-size: clamp(.4rem, min(.6cqw, .84cqh), .58rem) !important;
+    line-height: 1.04 !important;
   }
 }
 
-/* Portrait owner fields use the full col3 width. Place terrain in adjacent
-   col2 instead of trying to push it by 100% of col3. */
+/* Portrait keeps generous safe margins; exact terrain runtime still follows the
+   measured owner field and therefore needs no special x/y approximation. */
 @media (orientation: portrait) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board {
     --hero-overlay-edge-x: max(clamp(.72rem, 2.2cqw, 1.05rem), env(safe-area-inset-left, 0px));
@@ -174,19 +332,8 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terra
     --hero-overlay-player-bottom: max(clamp(1rem, 1.9cqh, 1.45rem), env(safe-area-inset-bottom, 0px));
   }
 
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain,
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
-    grid-column: 2 !important;
-    justify-self: end !important;
-    margin: 0 var(--hero-terrain-gap) 0 0 !important;
-    translate: 0 0 !important;
-  }
-
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain {
-    grid-row: 4 !important;
-  }
-
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
-    grid-row: 6 !important;
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
+    height: min(46cqh, 28rem) !important;
+    max-height: min(46cqh, 28rem) !important;
   }
 }
