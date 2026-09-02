@@ -42,6 +42,8 @@ import "./presentation/styles/terrain-drag-stability.css";
 import "./presentation/styles/match-readability-final.css";
 /* Final interaction state: stable EVOLUIR swap, actionable aura and always-visible active effects. */
 import "./presentation/styles/hero-panel-interaction-status-final.css";
+/* Specificity guard: state-qualified legacy rules may never hide active hero effects again. */
+import "./presentation/styles/hero-status-visibility-final.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
