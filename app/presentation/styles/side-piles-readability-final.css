@@ -20,24 +20,24 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
 }
 
 /* Footer-only readability shadow.
- * Keep this tied to the text row instead of using a percentage of the whole
- * panel. A percentage made the dark band climb into the artwork on taller
- * pile panels. */
+ * The fade is intentionally shorter than the footer row itself. It exists only
+ * behind the baseline of the label/count and must never read as a dark band
+ * across the card artwork. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone::after {
   content: "" !important;
   position: absolute !important;
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  height: calc(clamp(1rem, 2.25cqh, 1.45rem) + clamp(.24rem, .5cqh, .42rem)) !important;
+  height: clamp(.72rem, 1.42cqh, 1rem) !important;
   z-index: 1 !important;
   pointer-events: none !important;
   background: linear-gradient(
     180deg,
     rgb(0 0 0 / 0%) 0%,
-    rgb(0 0 0 / 18%) 24%,
-    rgb(0 0 0 / 58%) 58%,
-    rgb(0 0 0 / 82%) 100%
+    rgb(0 0 0 / 16%) 34%,
+    rgb(0 0 0 / 58%) 70%,
+    rgb(0 0 0 / 86%) 100%
   ) !important;
 }
 
@@ -184,7 +184,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone::after {
-    height: calc(clamp(.86rem, 2.1cqh, 1.18rem) + clamp(.18rem, .42cqh, .34rem)) !important;
+    height: clamp(.62rem, 1.28cqh, .82rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > .pile-card,
