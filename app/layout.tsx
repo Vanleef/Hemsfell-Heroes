@@ -66,6 +66,8 @@ import "./presentation/styles/hero-ability-layout-contract.css";
 import "./presentation/styles/hero-ability-capsule-structure-final.css";
 /* Absolute final authority for transient priority layers, level-up motion and field hover stacking. */
 import "./presentation/styles/match-interaction-terminal.css";
+/* Final visual authority: phase CTA pseudo-elements and pile thumbnail crop. */
+import "./presentation/styles/match-visual-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
