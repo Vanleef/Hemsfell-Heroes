@@ -9,11 +9,12 @@ const terminalCss = fs.readFileSync("app/presentation/styles/hero-panel-polish-t
 const dragCss = fs.readFileSync("app/presentation/styles/terrain-drag-stability.css", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 
-test("Cruel Terrain uses the exact rendered field-slot gap with stable local dimensions", () => {
+test("Cruel Terrain uses half of the rendered field-slot gap with stable local dimensions", () => {
   assert.match(runtime, /\.field-slot\[data-slot="1"\]/);
   assert.match(runtime, /\.field-slot\[data-slot="2"\]/);
   assert.match(runtime, /secondRect\.left - firstRect\.right/);
-  assert.match(runtime, /clearance: measuredGap/);
+  assert.match(runtime, /measuredGap \* 0\.50/);
+  assert.match(runtime, /firstRect\.width \* 0\.08/);
   assert.doesNotMatch(runtime, /TERRAIN_GAP_MULTIPLIER/);
   assert.doesNotMatch(runtime, /TERRAIN_MIN_SLOT_CLEARANCE/);
   assert.doesNotMatch(runtime, /TERRAIN_GAP_PROXIMITY/);
@@ -37,6 +38,7 @@ test("Cruel Terrain uses the exact rendered field-slot gap with stable local dim
   assert.match(dragCss, /terrain-drag-sentinel\[data-active="true"\][^}]*display: grid !important/);
   assert.match(runtime, /document\.addEventListener\("dragstart", schedule, true\)/);
   assert.match(layout, /<TerrainFieldAnchorRuntime \/>/);
+  assert.doesNotMatch(layout, /TerrainProximityRuntime/);
 });
 
 test("hero artwork fills and slightly overscans its portrait band", () => {
