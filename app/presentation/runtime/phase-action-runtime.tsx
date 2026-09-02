@@ -73,6 +73,38 @@ function isLocalTurn() {
   return normalizeLabel(document.querySelector<HTMLElement>(".screen-game .turn-owner > b")?.textContent || "") === "seu turno";
 }
 
+function removeCurrentPhaseCopy(orb: HTMLElement) {
+  orb.querySelector<HTMLElement>(":scope > .phase-current-copy")?.remove();
+}
+
+/**
+ * Presentation-only hierarchy for the local player's phase action.
+ * React still owns the actual button and its gameplay handler; this wrapper
+ * only makes "FASE ATUAL" and the phase name independently styleable.
+ */
+function syncCurrentPhaseCopy(orb: HTMLElement, button: HTMLButtonElement, current: string) {
+  let copy = orb.querySelector<HTMLElement>(":scope > .phase-current-copy");
+
+  if (!copy) {
+    copy = document.createElement("div");
+    copy.className = "phase-current-copy";
+    copy.setAttribute("aria-hidden", "true");
+
+    const kicker = document.createElement("span");
+    kicker.className = "phase-current-kicker";
+    kicker.textContent = "FASE ATUAL";
+
+    const name = document.createElement("strong");
+    name.className = "phase-current-name";
+
+    copy.append(kicker, name);
+    orb.insertBefore(copy, button);
+  }
+
+  const name = copy.querySelector<HTMLElement>(":scope > .phase-current-name");
+  if (name && name.textContent !== current) name.textContent = current;
+}
+
 function syncPhaseAction() {
   const orb = document.querySelector<HTMLElement>(".screen-game .game-content.hs-board > .phase-orb");
   if (!orb) return;
@@ -83,6 +115,7 @@ function syncPhaseAction() {
 
   const button = orb.querySelector<HTMLButtonElement>(":scope > button");
   if (!button) {
+    removeCurrentPhaseCopy(orb);
     orb.dataset.phaseCurrent = trackedPhase;
     orb.dataset.phaseEmpty = localTurn
       ? trackedPhase === "MANUTENÇÃO"
@@ -94,7 +127,9 @@ function syncPhaseAction() {
 
   delete orb.dataset.phaseEmpty;
   const action = resolvePhaseAction(button);
-  orb.dataset.phaseCurrent = trackedPhase || action.current;
+  const current = trackedPhase || action.current;
+  orb.dataset.phaseCurrent = current;
+  syncCurrentPhaseCopy(orb, button, current);
   button.dataset.phaseNext = action.next;
   button.dataset.phaseIcon = action.icon;
   button.setAttribute("aria-label", action.aria);
