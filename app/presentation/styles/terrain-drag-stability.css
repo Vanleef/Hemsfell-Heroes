@@ -1,0 +1,71 @@
+/*
+ * Cruel Terrain drag-cycle stability.
+ *
+ * TerrainFieldAnchorRuntime owns the measured geometry. These selectors use
+ * only React-stable classes (enemy-terrain/player-terrain), so toggling
+ * `can-drop` can never make the target depend on an imperative helper class.
+ */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+  box-sizing: border-box !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain.can-drop,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain.can-drop {
+  display: grid !important;
+  place-items: center !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  animation: none !important;
+  transform: none !important;
+  translate: 0 0 !important;
+  filter: brightness(1.08) !important;
+  pointer-events: auto !important;
+  border-color: #ffe16f !important;
+  background: radial-gradient(circle, rgb(216 179 72 / 20%), rgb(12 34 39 / 94%) 72%) !important;
+  box-shadow:
+    0 0 0 max(1px, .055cqh) rgb(255 225 111 / 66%),
+    0 0 .72cqh rgb(255 201 62 / 30%),
+    inset 0 0 .62cqh rgb(255 215 96 / 12%) !important;
+}
+
+/* Empty target icon stays visible while a Terrain card is being dragged. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain.can-drop > svg,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain.can-drop > svg {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  z-index: 3 !important;
+  pointer-events: none !important;
+}
+
+/* Occupied Terrain also keeps the same measured parent footprint. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain > .card-frame,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain > .card-frame {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain > .card-frame > .original-card,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain > .card-frame > .original-card {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  transform: none !important;
+}
