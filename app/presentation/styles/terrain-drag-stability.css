@@ -43,6 +43,53 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terra
   pointer-events: none !important;
 }
 
+/*
+ * Independent visual sentinel for the local Cruel Terrain drop target.
+ * It is intentionally outside React ownership and has no pointer events, so a
+ * temporary class/style churn cannot make the target appear to disappear while
+ * the real TerrainSlot continues receiving dragover/drop events underneath.
+ */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-drag-sentinel {
+  position: absolute !important;
+  display: none !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  z-index: 49 !important;
+  border: max(1px, .055cqh) solid rgb(123 199 213 / 68%) !important;
+  border-radius: clamp(.18rem, .36cqw, .42rem) !important;
+  background: linear-gradient(180deg, rgb(17 45 50 / 92%), rgb(7 27 31 / 96%)) !important;
+  box-shadow:
+    0 0 0 max(1px, .04cqh) rgb(255 255 255 / 7%),
+    0 0 .56cqh rgb(111 195 210 / 20%),
+    inset 0 0 .56cqh rgb(93 178 194 / 10%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-drag-sentinel[data-active="true"] {
+  display: grid !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-drag-sentinel[data-active="true"][data-occupied="true"] {
+  background: transparent !important;
+  border-color: rgb(255 225 111 / 52%) !important;
+  box-shadow: 0 0 .5cqh rgb(255 201 62 / 18%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-drag-sentinel-icon {
+  color: rgb(116 194 208 / 74%) !important;
+  font: 900 clamp(.6rem, min(1.1cqw, 2.2cqh), 1.05rem)/1 system-ui, sans-serif !important;
+  transform: scaleX(1.15) translateY(.02em) !important;
+  text-shadow: 0 0 .36cqh rgb(96 196 214 / 40%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-drag-sentinel[data-occupied="true"] > .terrain-drag-sentinel-icon {
+  opacity: 0 !important;
+}
+
 /* Occupied Terrain also keeps the same measured parent footprint. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain > .card-frame,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain > .card-frame {
