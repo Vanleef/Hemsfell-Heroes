@@ -9,14 +9,14 @@ const terminalCss = fs.readFileSync("app/presentation/styles/hero-panel-polish-t
 const dragCss = fs.readFileSync("app/presentation/styles/terrain-drag-stability.css", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 
-test("Cruel Terrain is anchored to the first rendered owner slot with stable local dimensions", () => {
-  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 1\.85/);
-  assert.match(runtime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.28/);
+test("Cruel Terrain uses the exact rendered field-slot gap with stable local dimensions", () => {
   assert.match(runtime, /\.field-slot\[data-slot="1"\]/);
   assert.match(runtime, /\.field-slot\[data-slot="2"\]/);
   assert.match(runtime, /secondRect\.left - firstRect\.right/);
-  assert.match(runtime, /firstRect\.width \* TERRAIN_MIN_SLOT_CLEARANCE/);
-  assert.match(runtime, /Math\.max\(measuredGap \* TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 8\)/);
+  assert.match(runtime, /clearance: measuredGap/);
+  assert.doesNotMatch(runtime, /TERRAIN_GAP_MULTIPLIER/);
+  assert.doesNotMatch(runtime, /TERRAIN_MIN_SLOT_CLEARANCE/);
+  assert.doesNotMatch(runtime, /TERRAIN_GAP_PROXIMITY/);
   assert.match(runtime, /boardRect\.width \/ layoutWidth/);
   assert.match(runtime, /boardRect\.height \/ layoutHeight/);
   assert.match(runtime, /const slotWidth = geometry\.firstRect\.width \/ boardScale\.x/);
