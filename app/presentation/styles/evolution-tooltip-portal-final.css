@@ -69,10 +69,12 @@ body > .evolution-tooltip-portal > div > span {
   overflow-wrap: anywhere !important;
 }
 
-/* Phase-orb copy: black fill with a warm gold outline. */
+/* Phase-orb copy: force both direct button text and nested glyphs to the same
+ * black fill, then draw the readable warm-gold outline around that fill. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button :is(span, strong, b, small, em, i) {
   color: #080603 !important;
+  -webkit-text-fill-color: #080603 !important;
   -webkit-text-stroke: .5px #efc961 !important;
   paint-order: stroke fill !important;
   text-shadow:
