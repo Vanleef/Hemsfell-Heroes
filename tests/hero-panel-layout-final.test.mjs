@@ -31,7 +31,7 @@ test("Cruel Terrain has safe owner-field fallback rows before exact runtime anch
   assert.match(sheet, /terrain-slot\.is-field-anchored[^}]*position: absolute !important/);
 });
 
-test("Cruel Terrain final position follows first rendered slot with extra board-safe clearance", () => {
+test("Cruel Terrain final position follows first rendered slot with stable slot dimensions", () => {
   assert.match(terrainRuntime, /const TERRAIN_GAP_MULTIPLIER = 2\.05/);
   assert.match(terrainRuntime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.34/);
   assert.match(terrainRuntime, /secondRect\.left - firstRect\.right/);
@@ -39,12 +39,12 @@ test("Cruel Terrain final position follows first rendered slot with extra board-
   assert.match(terrainRuntime, /Math\.max\(measuredGap \* TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 10\)/);
   assert.match(terrainRuntime, /boardRect\.width \/ layoutWidth/);
   assert.match(terrainRuntime, /boardRect\.height \/ layoutHeight/);
-  assert.match(terrainRuntime, /const terrainRect = terrainEl\.getBoundingClientRect\(\)/);
-  assert.match(terrainRuntime, /terrainRect\.width \/ boardScale\.x/);
-  assert.match(terrainRuntime, /terrainRect\.height \/ boardScale\.y/);
+  assert.match(terrainRuntime, /const slotWidth = geometry\.firstRect\.width \/ boardScale\.x/);
+  assert.match(terrainRuntime, /const slotHeight = geometry\.firstRect\.height \/ boardScale\.y/);
   assert.match(terrainRuntime, /firstSlotLeft = \(geometry\.firstRect\.left - boardRect\.left\) \/ boardScale\.x/);
-  assert.match(terrainRuntime, /const x = firstSlotLeft - terrainWidth - clearance/);
-  assert.match(terrainRuntime, /const y = fieldTop \+ \(fieldHeight - terrainHeight\) \/ 2/);
+  assert.match(terrainRuntime, /const x = firstSlotLeft - slotWidth - clearance/);
+  assert.match(terrainRuntime, /const y = fieldTop \+ \(fieldHeight - slotHeight\) \/ 2/);
+  assert.doesNotMatch(terrainRuntime, /const terrainWidth = terrainRect\.width/);
   assert.match(css, /left: var\(--terrain-anchor-x\) !important/);
   assert.match(css, /top: var\(--terrain-anchor-y\) !important/);
 });
