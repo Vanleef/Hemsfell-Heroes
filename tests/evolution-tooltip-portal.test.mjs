@@ -39,21 +39,23 @@ test("terminal tooltip authority keeps body portals above cards and overlays", (
   assert.ok(evolutionImport >= 0 && globalImport > evolutionImport);
 });
 
-test("phase-orb uses a luminous fantasy medallion while keeping outlined readable copy", () => {
+test("phase-orb uses a saturated orange fantasy medallion while keeping outlined readable copy", () => {
   assert.match(portalCss, /-webkit-text-stroke:\s*\.55px #ffffff\s*!important/);
   assert.match(portalCss, /font-size:\s*clamp\(\.66rem, min\(\.96cqw, 1\.46cqh\), 1rem\)\s*!important/);
-  assert.match(portalCss, /button:not\(:disabled\)[^}]*background:\s*#d8b92d\s*!important/);
-  assert.match(portalCss, /#ffed75[^}]*#efd344[^}]*#caa51d[^}]*#8b6810/);
+  assert.match(portalCss, /button:not\(:disabled\)[^}]*background:\s*#db7412\s*!important/);
+  assert.match(portalCss, /#ffb347[^}]*#f28a1c[^}]*#d56e0d[^}]*#8f4308/);
   assert.match(portalCss, /phase-orb-ready-pulse 2\.15s/);
   assert.match(portalCss, /button::after[^}]*inset:\s*7%/);
   assert.match(portalCss, /button > span[^}]*font-size:\s*1\.32em\s*!important/);
 });
 
-test("disabled phase-orb keeps the medallion structure and readable copy instead of fading away", () => {
-  assert.match(portalCss, /button:disabled[^}]*background:\s*#515a60\s*!important/);
+test("disabled phase-orb stays orange without the previous silver rim", () => {
+  assert.match(portalCss, /button:disabled[^}]*border-color:\s*#c8741a\s*!important/);
+  assert.match(portalCss, /button:disabled[^}]*background:\s*#9a4f0e\s*!important/);
   assert.match(portalCss, /button:disabled[^}]*opacity:\s*1\s*!important/);
-  assert.match(portalCss, /#89959c[^}]*#677178[^}]*#4b5358[^}]*#31373b/);
-  assert.match(portalCss, /button:disabled::after[^}]*border-color:\s*rgb\(226 238 244 \/ 34%\)\s*!important/);
+  assert.match(portalCss, /#f19a2a[^}]*#cf7416[^}]*#a9540d[^}]*#6b3307/);
+  assert.match(portalCss, /button:disabled::after[^}]*border-color:\s*rgb\(255 221 168 \/ 24%\)\s*!important/);
+  assert.doesNotMatch(portalCss, /#aebbc3|#89959c|#677178|#4b5358|#31373b/);
 });
 
 test("Cruel Terrain has one responsive positioning authority with a half-gap gutter", () => {
