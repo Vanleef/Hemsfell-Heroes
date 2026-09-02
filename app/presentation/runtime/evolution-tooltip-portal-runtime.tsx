@@ -2,42 +2,40 @@
 
 import { useEffect } from "react";
 
-const TRIGGER_SELECTOR = ".screen-game .hero-evolution";
+const PROGRESS_SELECTOR = ".screen-game .hero-evolution > .evolution-track";
+const EVOLUTION_SELECTOR = ".screen-game .hero-evolution";
 const PORTAL_CLASS = "evolution-tooltip-portal";
 
 export default function EvolutionTooltipPortalRuntime() {
   useEffect(() => {
     let portal: HTMLElement | null = null;
     let source: HTMLElement | null = null;
-    let trigger: HTMLElement | null = null;
+    let progressTrigger: HTMLElement | null = null;
     let frame = 0;
     let touchPinned = false;
-
-    const restoreSource = () => {
-      if (!source) return;
-      source.style.removeProperty("opacity");
-      source.style.removeProperty("visibility");
-      source.style.removeProperty("pointer-events");
-    };
 
     const hide = () => {
       cancelAnimationFrame(frame);
       frame = 0;
       portal?.remove();
       portal = null;
-      restoreSource();
       source = null;
-      trigger = null;
+      progressTrigger = null;
     };
 
+    const evolutionRootFor = (progress: HTMLElement) =>
+      progress.closest<HTMLElement>(EVOLUTION_SELECTOR);
+
     const place = () => {
-      if (!portal || !trigger || !trigger.isConnected) {
+      if (!portal || !progressTrigger || !progressTrigger.isConnected) {
         if (portal) hide();
         return;
       }
-      const panel = trigger.closest<HTMLElement>(".hero-panel-stack.canonical-hero-panel");
-      const panelRect = (panel ?? trigger).getBoundingClientRect();
-      const triggerRect = trigger.getBoundingClientRect();
+
+      const evolutionRoot = evolutionRootFor(progressTrigger);
+      const panel = progressTrigger.closest<HTMLElement>(".hero-panel-stack.canonical-hero-panel");
+      const panelRect = (panel ?? evolutionRoot ?? progressTrigger).getBoundingClientRect();
+      const progressRect = progressTrigger.getBoundingClientRect();
       const margin = Math.max(8, Math.min(18, window.innerWidth * 0.008));
 
       portal.style.left = "0px";
@@ -51,8 +49,8 @@ export default function EvolutionTooltipPortalRuntime() {
 
       const localPlayer = panel?.classList.contains("player") ?? false;
       let top = localPlayer
-        ? triggerRect.bottom - tooltipRect.height
-        : triggerRect.top;
+        ? progressRect.bottom - tooltipRect.height
+        : progressRect.top;
       top = Math.max(margin, Math.min(top, window.innerHeight - tooltipRect.height - margin));
 
       portal.style.left = `${Math.round(left)}px`;
@@ -64,25 +62,22 @@ export default function EvolutionTooltipPortalRuntime() {
       frame = requestAnimationFrame(place);
     };
 
-    const show = (nextTrigger: HTMLElement) => {
-      const nextSource = nextTrigger.querySelector<HTMLElement>(":scope > .evolution-tooltip");
-      if (!nextSource) return;
+    const show = (nextProgress: HTMLElement) => {
+      const evolutionRoot = evolutionRootFor(nextProgress);
+      const nextSource = evolutionRoot?.querySelector<HTMLElement>(":scope > .evolution-tooltip");
+      if (!evolutionRoot || !nextSource) return;
 
-      if (trigger === nextTrigger && portal) {
+      if (progressTrigger === nextProgress && portal) {
         if (source !== nextSource) {
-          restoreSource();
           source = nextSource;
           portal.innerHTML = nextSource.innerHTML;
-          nextSource.style.setProperty("opacity", "0", "important");
-          nextSource.style.setProperty("visibility", "hidden", "important");
-          nextSource.style.setProperty("pointer-events", "none", "important");
         }
         schedule();
         return;
       }
 
       hide();
-      trigger = nextTrigger;
+      progressTrigger = nextProgress;
       source = nextSource;
 
       const nextPortal = document.createElement("div");
@@ -92,19 +87,12 @@ export default function EvolutionTooltipPortalRuntime() {
       nextPortal.innerHTML = nextSource.innerHTML;
       document.body.appendChild(nextPortal);
       portal = nextPortal;
-
-      // The React-owned source remains available to assistive technology/state,
-      // while the visible mirror lives directly under body and can never be
-      // occluded by hand/card stacking contexts.
-      nextSource.style.setProperty("opacity", "0", "important");
-      nextSource.style.setProperty("visibility", "hidden", "important");
-      nextSource.style.setProperty("pointer-events", "none", "important");
       schedule();
     };
 
-    const triggerAtPoint = (clientX: number, clientY: number) => {
-      const triggers = document.querySelectorAll<HTMLElement>(TRIGGER_SELECTOR);
-      for (const candidate of triggers) {
+    const progressAtPoint = (clientX: number, clientY: number) => {
+      const progressTracks = document.querySelectorAll<HTMLElement>(PROGRESS_SELECTOR);
+      for (const candidate of progressTracks) {
         const rect = candidate.getBoundingClientRect();
         if (rect.width <= 0 || rect.height <= 0) continue;
         if (
@@ -117,42 +105,44 @@ export default function EvolutionTooltipPortalRuntime() {
       return null;
     };
 
-    // Geometry-based hit testing is intentional. Some legacy hero rules use
-    // pointer-events:none on progression wrappers, which makes event.target
-    // based hover detection unreliable even though the progress bar is visible.
+    // The criteria tooltip is intentionally tied only to the visible progress
+    // bar geometry. This avoids legacy pointer-events rules on hero wrappers and
+    // prevents hovering unrelated parts of the hero panel from opening it.
     const onPointerMove = (event: PointerEvent) => {
       if (event.pointerType === "touch" || touchPinned) return;
-      const nextTrigger = triggerAtPoint(event.clientX, event.clientY);
-      if (nextTrigger) show(nextTrigger);
-      else if (trigger) hide();
+      const nextProgress = progressAtPoint(event.clientX, event.clientY);
+      if (nextProgress) show(nextProgress);
+      else if (progressTrigger) hide();
     };
 
     const onPointerDown = (event: PointerEvent) => {
-      const nextTrigger = triggerAtPoint(event.clientX, event.clientY);
-      if (nextTrigger) {
+      const nextProgress = progressAtPoint(event.clientX, event.clientY);
+      if (nextProgress) {
         touchPinned = event.pointerType === "touch";
-        show(nextTrigger);
+        show(nextProgress);
         return;
       }
       touchPinned = false;
-      if (trigger) hide();
+      if (progressTrigger) hide();
     };
 
-    const triggerFromEvent = (event: Event) =>
-      event.target instanceof Element
-        ? event.target.closest<HTMLElement>(TRIGGER_SELECTOR)
-        : null;
+    const progressFromFocusEvent = (event: Event) => {
+      if (!(event.target instanceof Element)) return null;
+      const evolutionRoot = event.target.closest<HTMLElement>(EVOLUTION_SELECTOR);
+      return evolutionRoot?.querySelector<HTMLElement>(":scope > .evolution-track") ?? null;
+    };
 
     const onFocusIn = (event: FocusEvent) => {
-      const nextTrigger = triggerFromEvent(event);
-      if (nextTrigger) show(nextTrigger);
+      const nextProgress = progressFromFocusEvent(event);
+      if (nextProgress) show(nextProgress);
     };
 
     const onFocusOut = (event: FocusEvent) => {
-      const currentTrigger = triggerFromEvent(event);
-      if (!currentTrigger || currentTrigger !== trigger || touchPinned) return;
+      const currentProgress = progressFromFocusEvent(event);
+      if (!currentProgress || currentProgress !== progressTrigger || touchPinned) return;
       const related = event.relatedTarget;
-      if (related instanceof Node && currentTrigger.contains(related)) return;
+      const evolutionRoot = evolutionRootFor(currentProgress);
+      if (related instanceof Node && evolutionRoot?.contains(related)) return;
       hide();
     };
 
