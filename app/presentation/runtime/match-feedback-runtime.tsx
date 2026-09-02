@@ -95,9 +95,10 @@ const positionDefenseDecision = (board: HTMLElement) => {
   const viewportPadding = Math.max(7, Math.min(14, boardRect.width * 0.0065));
   const firstFieldLeftViewport = Math.min(...fieldRects.map((rect) => rect.left));
 
-  /* Use the real terrain -> first field distance as the horizontal rhythm. The
-   * decision sits one equivalent gap to the LEFT of the terrain, which keeps it
-   * closer to gameplay than the hero rail without crowding the terrain card. */
+  /* Use the real terrain -> first field distance as the spacing reference, but
+   * keep the blocking decision noticeably closer to the terrain than that full
+   * gap. This leaves a deliberate breathing strip without pushing the prompt
+   * back into the hero rail. */
   const terrainBeforeField = terrainRects.filter((rect) => rect.right <= firstFieldLeftViewport + 2);
   const referenceTerrain = terrainBeforeField.length
     ? terrainBeforeField.reduce((best, rect) => rect.right > best.right ? rect : best)
@@ -105,9 +106,10 @@ const positionDefenseDecision = (board: HTMLElement) => {
   const terrainFieldGap = referenceTerrain
     ? Math.max(8, Math.min(28, firstFieldLeftViewport - referenceTerrain.right))
     : Math.max(10, Math.min(22, boardRect.width * 0.011));
+  const decisionTerrainGap = Math.max(6, Math.min(14, terrainFieldGap * 0.5));
   const decisionRightViewport = referenceTerrain
-    ? referenceTerrain.left - terrainFieldGap
-    : firstFieldLeftViewport - terrainFieldGap * 2;
+    ? referenceTerrain.left - decisionTerrainGap
+    : firstFieldLeftViewport - terrainFieldGap - decisionTerrainGap;
 
   const desiredRenderedWidth = Math.max(enemyRect.width, playerRect.width);
   const leftLimitViewport = boardRect.left + viewportPadding;
