@@ -1,0 +1,127 @@
+/*
+ * Final compact hero HUD correction.
+ *
+ * The canonical stylesheet keeps .hero-level position: static. In compact mode
+ * the level badge belongs inside the portrait, so it must explicitly leave the
+ * progression grid. This file also gives the portrait/progress/evolve bands a
+ * little more vertical breathing room on short landscape screens.
+ */
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) {
+  --hero-card-art-height: 19.1cqh;
+  --hero-card-level-gap: .36cqh;
+  --hero-card-level-height: 3.55cqh;
+  --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + var(--hero-card-level-gap));
+  --hero-card-abilities-top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + var(--hero-card-section-gap));
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) {
+  height: 28.35cqh !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) {
+  height: 24.35cqh !important;
+}
+
+/* Progress owns the whole row. The level badge is now a true portrait overlay. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) > .player-hero > .hero-level-row {
+  grid-template-columns: minmax(0, 1fr) !important;
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-level-row > .hero-level {
+  position: absolute !important;
+  inset: auto auto calc(100% + var(--hero-card-level-gap) + .56cqh) .5cqw !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  width: auto !important;
+  min-width: 5.8cqh !important;
+  height: 2.68cqh !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: .12cqh .46cqw !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: none !important;
+  font-size: clamp(.46rem, min(.74cqw, 1.2cqh), .76rem) !important;
+  line-height: 1 !important;
+  transform: none !important;
+  translate: none !important;
+  z-index: 48 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-level-row > .hero-evolution {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: .46cqh .62cqw .38cqh !important;
+  grid-template-rows: minmax(0, 1fr) .46cqh !important;
+  gap: .18cqh !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-evolution-copy > small::after,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-evolution-copy > strong {
+  font-size: clamp(.5rem, min(.8cqw, 1.3cqh), .82rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero:not(.enemy) > .level-button {
+  top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .38cqh) !important;
+  left: 19% !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 62% !important;
+  height: 2.8cqh !important;
+  min-height: 0 !important;
+  padding: .2cqh .46cqw !important;
+  font-size: clamp(.42rem, min(.67cqw, 1.08cqh), .68rem) !important;
+  line-height: 1 !important;
+}
+
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) {
+    --hero-card-art-height: 18.8cqh;
+    --hero-card-level-gap: .32cqh;
+    --hero-card-level-height: 3.4cqh;
+    --hero-card-level-top: calc(var(--hero-card-art-top) + var(--hero-card-art-height) + var(--hero-card-level-gap));
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) {
+    height: 27.8cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) {
+    height: 23.75cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-level-row > .hero-level {
+    inset: auto auto calc(100% + var(--hero-card-level-gap) + .5cqh) .46cqw !important;
+    min-width: 5.2cqh !important;
+    height: 2.42cqh !important;
+    padding: .1cqh .4cqw !important;
+    font-size: clamp(.4rem, min(.8cqw, 1.08cqh), .68rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-power-trigger > .hero-life {
+    bottom: .5cqh !important;
+    height: 2.42cqh !important;
+    min-width: 5.2cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .hero-level-row > .hero-evolution {
+    padding: .42cqh .56cqw .34cqh !important;
+    grid-template-rows: minmax(0, 1fr) .42cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero:not(.enemy) > .level-button {
+    top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .32cqh) !important;
+    left: 20% !important;
+    width: 60% !important;
+    height: 2.65cqh !important;
+    padding: .18cqh .42cqw !important;
+    font-size: clamp(.4rem, min(.7cqw, 1.02cqh), .64rem) !important;
+  }
+}
