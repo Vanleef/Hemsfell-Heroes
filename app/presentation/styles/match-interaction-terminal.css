@@ -131,6 +131,39 @@ html body:has(.screen-game .response-waiting) [data-hemsfell-ai-thinking] {
 }
 
 /* -------------------------------------------------------------------------
+   Target-selection popup readability
+   ------------------------------------------------------------------------- */
+/* Target choice is a blocking interaction. Its title and source description
+ * must remain comfortably readable at normal desktop scale while still
+ * shrinking gracefully on short landscape/mobile boards. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .target-banner:not(.cafe-time-placement-banner) > div > b {
+  font-size: clamp(.82rem, min(1.06cqw, 1.62cqh), 1.12rem) !important;
+  font-weight: 950 !important;
+  line-height: 1.08 !important;
+  letter-spacing: .09em !important;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 88%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .target-banner:not(.cafe-time-placement-banner) > div > span {
+  max-width: min(34rem, 58cqw) !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  text-wrap: pretty !important;
+  font-size: clamp(.74rem, min(.94cqw, 1.42cqh), 1rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.22 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .target-banner:not(.cafe-time-placement-banner) > button {
+  min-height: clamp(1.8rem, 3.7cqh, 2.45rem) !important;
+  padding: clamp(.3rem, .5cqh, .46rem) clamp(.56rem, .78cqw, .82rem) !important;
+  font-size: clamp(.66rem, min(.82cqw, 1.2cqh), .86rem) !important;
+  font-weight: 850 !important;
+  line-height: 1.05 !important;
+}
+
+/* -------------------------------------------------------------------------
    Hero level-up motion
    ------------------------------------------------------------------------- */
 /* The presentation runtime may animate opacity for level feedback, but it must
@@ -202,5 +235,19 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paire
   html body [data-hemsfell-ai-thinking] {
     min-width: clamp(8.5rem, 15vw, 13rem) !important;
     font-size: clamp(.6rem, min(.8cqw, 1.16cqh), .82rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .target-banner:not(.cafe-time-placement-banner) > div > b {
+    font-size: clamp(.7rem, min(.9cqw, 1.32cqh), .94rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .target-banner:not(.cafe-time-placement-banner) > div > span {
+    font-size: clamp(.64rem, min(.78cqw, 1.14cqh), .82rem) !important;
+    line-height: 1.18 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .target-banner:not(.cafe-time-placement-banner) > button {
+    min-height: clamp(1.6rem, 3.2cqh, 2.05rem) !important;
+    font-size: clamp(.58rem, min(.7cqw, 1.02cqh), .74rem) !important;
   }
 }
