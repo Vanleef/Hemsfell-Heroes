@@ -6,6 +6,9 @@ const BOARD_SELECTOR = ".screen-game .game-stage > .game-content.hs-board";
 // Preserve the approved pre-regression field spacing while drag stability is handled independently.
 const TERRAIN_GAP_MULTIPLIER = 1.85;
 const TERRAIN_MIN_SLOT_CLEARANCE = 0.28;
+// A small responsive proximity correction keeps the terrain associated with its owner field
+// without reintroducing the overlap that existed before the measured anchor runtime.
+const TERRAIN_GAP_PROXIMITY = 0.94;
 
 type TerrainPair = {
   field: ".enemy-field" | ".player-field";
@@ -29,7 +32,8 @@ export default function TerrainFieldAnchorRuntime() {
       if (!first) return null;
       const firstRect = first.getBoundingClientRect();
       const secondRect = second?.getBoundingClientRect();
-      const measuredGap = secondRect ? Math.max(2, secondRect.left - firstRect.right) : 6;
+      const rawMeasuredGap = secondRect ? Math.max(2, secondRect.left - firstRect.right) : 6;
+      const measuredGap = rawMeasuredGap * TERRAIN_GAP_PROXIMITY;
       const minimumSlotClearance = firstRect.width * TERRAIN_MIN_SLOT_CLEARANCE;
       return {
         firstRect,
