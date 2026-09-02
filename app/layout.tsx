@@ -56,8 +56,10 @@ import "./presentation/styles/global-tooltip-layer-final.css";
 import "./presentation/styles/match-feedback-final.css";
 /* Terminal phase-orb typography and mandatory Indomitable warning readability. */
 import "./presentation/styles/phase-orb-copy-final.css";
-/* Canonical ability-row contract: keep this as the final CSS import. */
+/* Canonical ability-row contract: numbers, description capsule and external kind label. */
 import "./presentation/styles/hero-ability-layout-contract.css";
+/* Absolute final authority for transient priority layers, level-up motion and field hover stacking. */
+import "./presentation/styles/match-interaction-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
