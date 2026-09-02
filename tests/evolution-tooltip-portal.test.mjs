@@ -50,12 +50,12 @@ test("phase-orb uses a saturated orange fantasy medallion without an inset ring"
 });
 
 test("disabled phase-orb keeps the same depth model but is gray, desaturated and non-interactive", () => {
-  assert.match(portalCss, /button:disabled[^}]*border-color:\s*#72777a\s*!important/);
-  assert.match(portalCss, /button:disabled[^}]*background:\s*#505457\s*!important/);
+  assert.match(portalCss, /button:disabled[^}]*border-color:\s*#7d8286\s*!important/);
+  assert.match(portalCss, /button:disabled[^}]*background:\s*#555b60\s*!important/);
   assert.match(portalCss, /button:disabled[^}]*filter:\s*grayscale\(1\) saturate\(0\) brightness\(\.82\)\s*!important/);
   assert.match(portalCss, /button:disabled[^}]*cursor:\s*not-allowed\s*!important/);
   assert.match(portalCss, /button:disabled[^}]*opacity:\s*1\s*!important/);
-  assert.match(portalCss, /#92979a[^}]*#717679[^}]*#53575a[^}]*#343739/);
+  assert.match(portalCss, /#8a9095[^}]*#6e7479[^}]*#555b60[^}]*#393e42/);
   assert.doesNotMatch(portalCss, /button:disabled::after/);
 });
 
