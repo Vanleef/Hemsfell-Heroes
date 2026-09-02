@@ -4,11 +4,12 @@ import fs from "node:fs";
 
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/match-visual-terminal.css", "utf8").replace(/\s+/g, " ");
+const pileTextShadowCss = fs.readFileSync("app/presentation/styles/side-pile-text-shadow-terminal.css", "utf8").replace(/\s+/g, " ");
 const phaseRuntime = fs.readFileSync("app/presentation/runtime/phase-action-runtime.tsx", "utf8").replace(/\s+/g, " ");
 
-test("visual terminal stylesheet is the final CSS authority", () => {
+test("side-pile text shadow contract is the final CSS authority", () => {
   const imports = [...layout.matchAll(/import\s+"([^"]+\.css)";/g)].map((match) => match[1]);
-  assert.equal(imports.at(-1), "./presentation/styles/match-visual-terminal.css");
+  assert.equal(imports.at(-1), "./presentation/styles/side-pile-text-shadow-terminal.css");
 });
 
 test("phase runtime separates current phase hierarchy without replacing gameplay button", () => {
@@ -52,10 +53,16 @@ test("phase CTA exposes active, disabled, focus and coarse-pointer states", () =
   assert.match(css, /@media \(pointer: coarse\)[^{]*\{[^]*phase-orb > button[^}]*min-height: 2\.75rem !important/);
 });
 
-test("real cards shown on side piles stay shadow-free while footer labels keep a short fade", () => {
+test("real side-pile cards stay shadow-free and legacy panel fades are disabled", () => {
   assert.match(css, /pile-zone > \.pile-card,[^{]*pile-zone > \.pile-card > :is\(\.remote-card-art, canvas, img\)[^}]*box-shadow: none !important[^}]*filter: none !important/);
-  assert.match(css, /pile-zone:has\(> \.pile-card > \.remote-card-art\)::after[^}]*content: "" !important[^}]*display: block !important[^}]*bottom: 0 !important[^}]*height: clamp\(\.58rem, 1\.06cqh, \.82rem\) !important[^}]*linear-gradient/);
-  assert.doesNotMatch(css, /pile-zone:has\(> \.pile-card > \.remote-card-art\)::after[^}]*content: none !important/);
+  assert.match(pileTextShadowCss, /pile-zone:has\(> \.pile-card > \.remote-card-art\)::after,[^]*content: none !important[^}]*display: none !important[^}]*background: none !important/);
+});
+
+test("side-pile readability shadow follows label and count bounds", () => {
+  assert.match(pileTextShadowCss, /pile-zone > :is\(b, strong\)[^}]*display: inline-flex !important[^}]*width: max-content !important[^}]*align-self: end !important/);
+  assert.match(pileTextShadowCss, /pile-zone > :is\(b, strong\)[^}]*background: linear-gradient[^}]*box-shadow:/);
+  assert.match(pileTextShadowCss, /pile-zone > b[^}]*justify-self: start !important/);
+  assert.match(pileTextShadowCss, /pile-zone > strong[^}]*justify-self: end !important/);
 });
 
 test("graveyard top card remains neutral full bleed without crop or zoom", () => {
