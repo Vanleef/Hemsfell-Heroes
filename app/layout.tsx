@@ -40,6 +40,8 @@ import "./presentation/styles/hero-panel-polish-terminal.css";
 import "./presentation/styles/terrain-drag-stability.css";
 /* Final responsive type/space distribution for expanded abilities and the match header. */
 import "./presentation/styles/match-readability-final.css";
+/* Final interaction state: stable EVOLUIR swap, actionable aura and always-visible active effects. */
+import "./presentation/styles/hero-panel-interaction-status-final.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
