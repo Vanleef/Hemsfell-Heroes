@@ -97,7 +97,7 @@ body > .evolution-tooltip-portal > div > span {
 }
 
 /* Phase Orb — saturated orange fantasy medallion. The inner decorative ring is
- * intentionally removed so the orb reads as one clean, solid magical button. */
+ * intentionally removed: depth comes from the main material, light and shadow. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
   position: relative !important;
   isolation: isolate !important;
@@ -123,17 +123,15 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   content: "" !important;
   position: absolute !important;
   inset: 0 !important;
-  z-index: -2 !important;
+  z-index: -1 !important;
   border-radius: inherit !important;
   pointer-events: none !important;
 }
 
-/* No inset ring: all depth comes from the main material and outer light. */
+/* No inner ring/secondary rim. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::after {
   content: none !important;
   display: none !important;
-  border: 0 !important;
-  box-shadow: none !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled) {
@@ -147,6 +145,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
     0 .32cqh .75cqh rgb(0 0 0 / 42%) !important;
   filter: saturate(1.14) brightness(1.06) !important;
   animation: phase-orb-ready-pulse 2.15s ease-in-out infinite !important;
+  cursor: pointer !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled)::before {
@@ -156,29 +155,27 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
     linear-gradient(180deg, #ffb347 0%, #f28a1c 30%, #d56e0d 68%, #8f4308 100%) !important;
 }
 
-/* Disabled keeps the active orb's depth model, but the material is neutral,
- * grayscale and static. This makes non-interactivity obvious without flattening
- * the control or making its label unreadable. */
+/* Disabled keeps the same volume and lighting hierarchy as the active orb, but
+ * uses a fully desaturated gray material, no pulse and an unavailable cursor. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled {
-  border-color: #72777a !important;
-  background: #505457 !important;
+  border-color: #7d8286 !important;
+  background: #555b60 !important;
   box-shadow:
-    inset 0 0 0 max(1px, .08cqh) rgb(232 235 237 / 30%),
-    inset 0 0 1.3cqh rgb(210 216 220 / 14%),
-    0 0 .55cqh rgb(184 191 196 / 22%),
-    0 0 1.2cqh rgb(96 103 108 / 18%),
+    inset 0 0 0 max(1px, .08cqh) rgb(235 238 240 / 34%),
+    inset 0 0 1.3cqh rgb(205 211 215 / 16%),
+    0 0 .34cqh rgb(165 172 177 / 18%),
     0 .32cqh .75cqh rgb(0 0 0 / 42%) !important;
   filter: grayscale(1) saturate(0) brightness(.82) !important;
   opacity: 1 !important;
-  cursor: not-allowed !important;
   animation: none !important;
+  cursor: not-allowed !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled::before {
   background:
-    radial-gradient(circle at 50% 24%, rgb(246 247 248 / 48%) 0 8%, rgb(218 221 223 / 22%) 18%, transparent 43%),
-    radial-gradient(circle at 50% 54%, rgb(181 186 190 / 18%) 0 34%, transparent 68%),
-    linear-gradient(180deg, #92979a 0%, #717679 30%, #53575a 68%, #343739 100%) !important;
+    radial-gradient(circle at 50% 24%, rgb(250 250 250 / 28%) 0 8%, rgb(220 220 220 / 14%) 18%, transparent 43%),
+    radial-gradient(circle at 50% 54%, rgb(190 190 190 / 12%) 0 34%, transparent 68%),
+    linear-gradient(180deg, #8a9095 0%, #6e7479 30%, #555b60 68%, #393e42 100%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button :is(span, strong, b, small, em, i) {
