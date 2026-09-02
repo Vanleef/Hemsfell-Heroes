@@ -4,6 +4,7 @@ import fs from "node:fs";
 
 const css = fs.readFileSync("app/presentation/styles/hero-panel-layout-final.css", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
+const terrainRuntime = fs.readFileSync("app/presentation/runtime/terrain-field-anchor-runtime.tsx", "utf8");
 
 const compact = (value) => value.replace(/\s+/g, " ");
 const sheet = compact(css);
@@ -23,18 +24,28 @@ test("compact hero frame height explicitly includes the progress footer", () => 
   assert.match(sheet, /canonical-hero-panel:not\(\.is-expanded\) > \.player-hero > \.hero-level-row[^}]*left: \.34cqw !important[^}]*right: \.34cqw !important/);
 });
 
-test("Cruel Terrain shares canonical owner field rows and clears the field by one gap", () => {
+test("Cruel Terrain has safe owner-field fallback rows before exact runtime anchoring", () => {
   assert.match(sheet, /terrain-slot\.enemy-terrain[^}]*grid-row: 4 !important/);
   assert.match(sheet, /terrain-slot\.player-terrain[^}]*grid-row: 6 !important/);
-  assert.match(css, /margin-right: calc\(min\(82%, 41cqw\) \+ var\(--hero-terrain-gap\)\) !important/);
-  assert.match(css, /margin-right: calc\(min\(91%, 47cqw\) \+ var\(--hero-terrain-gap\)\) !important/);
+  assert.match(sheet, /terrain-slot\.enemy-terrain, html body[^}]*terrain-slot\.player-terrain[^}]*grid-column: 2 !important/);
+  assert.match(sheet, /terrain-slot\.is-field-anchored[^}]*position: absolute !important/);
 });
 
-test("portrait keeps terrain in the adjacent column while preserving owner rows", () => {
+test("Cruel Terrain final position follows rendered field edge and actual card-slot gap", () => {
+  assert.match(terrainRuntime, /const gap = measureSlotGap\(fieldEl\)/);
+  assert.match(terrainRuntime, /fieldRect\.left - boardRect\.left - terrainRect\.width - gap/);
+  assert.match(terrainRuntime, /fieldRect\.top - boardRect\.top \+ \(fieldRect\.height - terrainRect\.height\) \/ 2/);
+  assert.match(css, /left: var\(--terrain-anchor-x\) !important/);
+  assert.match(css, /top: var\(--terrain-anchor-y\) !important/);
+});
+
+test("portrait uses the same measured terrain anchor instead of a separate magic offset", () => {
+  assert.match(terrainRuntime, /ResizeObserver/);
+  assert.match(terrainRuntime, /orientationchange/);
+  assert.match(layout, /<TerrainFieldAnchorRuntime \/>/);
   const portrait = css.slice(css.indexOf("@media (orientation: portrait)"));
-  assert.match(portrait, /grid-column: 2 !important/);
-  assert.match(portrait, /grid-row: 4 !important/);
-  assert.match(portrait, /grid-row: 6 !important/);
+  assert.doesNotMatch(portrait, /margin-right: calc\(min\(/);
+  assert.doesNotMatch(portrait, /translate: calc\(/);
 });
 
 test("final layout geometry loads after tooltip interaction authority", () => {
