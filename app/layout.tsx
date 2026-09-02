@@ -48,6 +48,8 @@ import "./presentation/styles/hero-status-visibility-final.css";
 import "./presentation/styles/requested-match-polish-final.css";
 /* Absolute terminal authority for tooltip stacking and active phase-orb readability. */
 import "./presentation/styles/match-overlay-visibility-final.css";
+/* Body-level tooltip portal escapes every match-board stacking context. */
+import "./presentation/styles/evolution-tooltip-portal-final.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
@@ -60,6 +62,7 @@ import GamePresentationRuntime from "./presentation/runtime/game-presentation-ru
 import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-runtime";
 import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
 import TerrainProximityRuntime from "./presentation/runtime/terrain-proximity-runtime";
+import EvolutionTooltipPortalRuntime from "./presentation/runtime/evolution-tooltip-portal-runtime";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -94,6 +97,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <HeroPanelExpandRuntime />
       <TerrainFieldAnchorRuntime />
       <TerrainProximityRuntime />
+      <EvolutionTooltipPortalRuntime />
       {children}
     </body>
   </html>;
