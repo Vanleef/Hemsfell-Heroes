@@ -412,3 +412,55 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
     transition: none !important;
   }
 }
+
+/* -------------------------------------------------------------------------
+   Energy symmetry + pile footer anchoring
+   ------------------------------------------------------------------------- */
+/* The phase CTA gained a stronger visual hierarchy and therefore reads lower
+ * than the old circular orb. Bring only the opponent resource panel toward the
+ * central action by a bounded responsive amount; the player's established
+ * spacing remains untouched. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .enemy-energy {
+  translate: 0 clamp(.55rem, 2.8cqh, 1.25rem) !important;
+}
+
+/* Footer shading belongs to the footer cells themselves. Keeping it out of an
+ * independent pseudo-element guarantees that it can never float above the
+ * Cemitério/top-card artwork. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone::after {
+  content: none !important;
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > :is(b, strong) {
+  align-self: stretch !important;
+  display: flex !important;
+  align-items: flex-end !important;
+  min-height: 0 !important;
+  z-index: 3 !important;
+  background: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0%) 0%,
+    rgb(0 0 0 / 10%) 36%,
+    rgb(0 0 0 / 52%) 72%,
+    rgb(0 0 0 / 84%) 100%
+  ) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > b {
+  justify-content: flex-start !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > strong {
+  justify-content: flex-end !important;
+}
+
+@media (orientation: landscape) and (max-height: 44rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .enemy-energy {
+    translate: 0 clamp(.42rem, 2.35cqh, .92rem) !important;
+  }
+}
