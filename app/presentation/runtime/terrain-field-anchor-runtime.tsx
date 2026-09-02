@@ -16,18 +16,6 @@ const PAIRS: TerrainPair[] = [
   { field: ".player-field", terrain: ".player-terrain" },
 ];
 
-/**
- * Keeps Cruel Terrain attached to the actual rendered owner field instead of
- * approximating its location from board grid tracks. Geometry is measured from
- * the first real slot and converted back from viewport coordinates into the
- * board's local CSS coordinate space, which keeps the anchor correct when the
- * whole match stage is responsively scaled. This is presentation-only: the
- * terrain remains the same DOM/game object and keeps all existing handlers.
- *
- * This runtime also mirrors reserve availability in the circular energy readout:
- * the displayed numerator becomes current energy + reserve while reserve exists,
- * without changing authoritative resource values or payment rules.
- */
 export default function TerrainFieldAnchorRuntime() {
   useEffect(() => {
     let frame = 0;
@@ -38,12 +26,10 @@ export default function TerrainFieldAnchorRuntime() {
       const first = field.querySelector<HTMLElement>('.field-slot[data-slot="1"]');
       const second = field.querySelector<HTMLElement>('.field-slot[data-slot="2"]');
       if (!first) return null;
-
       const firstRect = first.getBoundingClientRect();
       const secondRect = second?.getBoundingClientRect();
       const measuredGap = secondRect ? Math.max(2, secondRect.left - firstRect.right) : 6;
       const minimumSlotClearance = firstRect.width * TERRAIN_MIN_SLOT_CLEARANCE;
-
       return {
         firstRect,
         clearance: Math.max(measuredGap * TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 10),
@@ -70,11 +56,9 @@ export default function TerrainFieldAnchorRuntime() {
         const dial = panel.querySelector<HTMLElement>(".energy-dial");
         const current = dial?.querySelector<HTMLElement>("strong > em");
         if (!dial || !current) return;
-
-        current.textContent = String(reserve > 0 ? energy + reserve : energy);
+        const displayed = String(reserve > 0 ? energy + reserve : energy);
+        if (current.textContent !== displayed) current.textContent = displayed;
         dial.classList.toggle("uses-reserve-total", reserve > 0);
-        dial.dataset.mainEnergy = String(energy);
-        dial.dataset.reserveEnergy = String(reserve);
       });
     };
 
@@ -96,7 +80,6 @@ export default function TerrainFieldAnchorRuntime() {
       syncEnergyDisplay();
       if (!board) return;
       bindObservers(board);
-
       const boardRect = board.getBoundingClientRect();
       const boardScale = getBoardScale(board, boardRect);
 
@@ -104,13 +87,9 @@ export default function TerrainFieldAnchorRuntime() {
         const fieldEl = board.querySelector<HTMLElement>(`:scope > ${field}`);
         const terrainEl = board.querySelector<HTMLElement>(`:scope > ${terrain}`);
         if (!fieldEl || !terrainEl) return;
-
         const geometry = getFieldGeometry(fieldEl);
         if (!geometry) return;
 
-        /* The terrain slot keeps the exact rendered footprint of a normal field
-           slot. Its box therefore cannot collapse or grow when the placeholder
-           is replaced by an OriginalCard during a successful drop. */
         const slotWidth = geometry.firstRect.width / boardScale.x;
         const slotHeight = geometry.firstRect.height / boardScale.y;
         terrainEl.style.setProperty("--terrain-anchor-width", `${slotWidth}px`);
@@ -124,7 +103,6 @@ export default function TerrainFieldAnchorRuntime() {
         const clearance = geometry.clearance / boardScale.x;
         const fieldTop = (fieldRect.top - boardRect.top) / boardScale.y;
         const fieldHeight = fieldRect.height / boardScale.y;
-
         const x = firstSlotLeft - terrainWidth - clearance;
         const y = fieldTop + (fieldHeight - terrainHeight) / 2;
 
@@ -153,6 +131,5 @@ export default function TerrainFieldAnchorRuntime() {
       window.removeEventListener("orientationchange", schedule);
     };
   }, []);
-
   return null;
 }
