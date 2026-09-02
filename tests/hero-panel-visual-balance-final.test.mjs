@@ -9,12 +9,17 @@ const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const compact = (value) => value.replace(/\s+/g, " ");
 const sheet = compact(css);
 
-test("Cruel Terrain uses extra proportional clearance and scale-aware board coordinates", () => {
-  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 1\.6/);
+test("Cruel Terrain keeps extra proportional clearance using rendered terrain size", () => {
+  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 1\.85/);
+  assert.match(runtime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.28/);
   assert.match(runtime, /\.field-slot\[data-slot="1"\]/);
   assert.match(runtime, /\.field-slot\[data-slot="2"\]/);
   assert.match(runtime, /boardRect\.width \/ layoutWidth/);
   assert.match(runtime, /boardRect\.height \/ layoutHeight/);
+  assert.match(runtime, /const terrainRect = terrainEl\.getBoundingClientRect\(\)/);
+  assert.match(runtime, /const terrainWidth = terrainRect\.width \/ boardScale\.x/);
+  assert.match(runtime, /const terrainHeight = terrainRect\.height \/ boardScale\.y/);
+  assert.match(runtime, /firstRect\.width \* TERRAIN_MIN_SLOT_CLEARANCE/);
   assert.match(runtime, /const x = firstSlotLeft - terrainWidth - clearance/);
   assert.match(runtime, /const y = fieldTop \+ \(fieldHeight - terrainHeight\) \/ 2/);
 });
