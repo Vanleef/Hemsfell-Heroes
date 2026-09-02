@@ -28,6 +28,8 @@ import "./presentation/styles/hero-panel-final-refinement.css";
 import "./presentation/styles/hero-panel-requested-polish.css";
 /* Latest screenshot corrections: single progress label and terrain clearance. */
 import "./presentation/styles/hero-panel-screenshot-fixes.css";
+/* Interaction-only authority: evolution tooltip stays outside the hero panel. */
+import "./presentation/styles/hero-panel-tooltip-final.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
