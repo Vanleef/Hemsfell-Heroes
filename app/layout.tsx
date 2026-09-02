@@ -61,7 +61,6 @@ import PresentationInteractionRuntime from "./presentation/runtime/presentation-
 import GamePresentationRuntime from "./presentation/runtime/game-presentation-runtime";
 import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-runtime";
 import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
-import TerrainProximityRuntime from "./presentation/runtime/terrain-proximity-runtime";
 import EvolutionTooltipPortalRuntime from "./presentation/runtime/evolution-tooltip-portal-runtime";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -96,7 +95,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <GamePresentationRuntime />
       <HeroPanelExpandRuntime />
       <TerrainFieldAnchorRuntime />
-      <TerrainProximityRuntime />
       <EvolutionTooltipPortalRuntime />
       {children}
     </body>
