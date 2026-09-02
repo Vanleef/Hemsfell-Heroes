@@ -44,6 +44,8 @@ import "./presentation/styles/match-readability-final.css";
 import "./presentation/styles/hero-panel-interaction-status-final.css";
 /* Specificity guard: state-qualified legacy rules may never hide active hero effects again. */
 import "./presentation/styles/hero-status-visibility-final.css";
+/* Requested terminal polish: tooltip, larger HUD copy and phase-orb affordance. */
+import "./presentation/styles/requested-match-polish-final.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
@@ -55,6 +57,7 @@ import PresentationInteractionRuntime from "./presentation/runtime/presentation-
 import GamePresentationRuntime from "./presentation/runtime/game-presentation-runtime";
 import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-runtime";
 import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
+import TerrainProximityRuntime from "./presentation/runtime/terrain-proximity-runtime";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -88,6 +91,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <GamePresentationRuntime />
       <HeroPanelExpandRuntime />
       <TerrainFieldAnchorRuntime />
+      <TerrainProximityRuntime />
       {children}
     </body>
   </html>;
