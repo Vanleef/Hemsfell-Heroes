@@ -2,6 +2,8 @@
  * Terminal visual balance for the hero overlay.
  * Geometry/isolation remains owned by hero-panel-layout-final.css; this sheet
  * only removes portrait dead-space and restores readable compact ability rows.
+ * This terminal sheet is intentionally deployment-visible so preview validation
+ * always exercises the complete responsive hero/terrain tree.
  */
 
 /* Let the actual hero artwork visually meet the frame edge. The source images
