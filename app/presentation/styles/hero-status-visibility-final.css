@@ -1,0 +1,61 @@
+/*
+ * Specificity guard for active hero effect cues.
+ * Older compact/expanded sheets use state-qualified !important selectors. Match
+ * those state qualifiers here so the final active-effect rail always wins.
+ */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .player-hero > .hero-status-cues,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .player-hero > .hero-status-cues {
+  position: absolute !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  left: calc(100% + .34cqw) !important;
+  right: auto !important;
+  width: max-content !important;
+  max-width: min(8.6cqw, 15.5cqh) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: min(18cqh, 11rem) !important;
+  gap: .24cqh !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  translate: none !important;
+  z-index: 10040 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) .player-hero > .hero-status-cues,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy.is-expanded .player-hero > .hero-status-cues {
+  top: var(--hero-card-level-top) !important;
+  bottom: auto !important;
+  flex-direction: column !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) .player-hero > .hero-status-cues,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded .player-hero > .hero-status-cues {
+  top: auto !important;
+  bottom: .42cqh !important;
+  flex-direction: column-reverse !important;
+}
+
+@media (orientation: landscape) and (max-height: 44rem),
+       (orientation: landscape) and (max-width: 64rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .player-hero > .hero-status-cues,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .player-hero > .hero-status-cues {
+    left: calc(100% + .24cqw) !important;
+    max-width: min(8.1cqw, 13.8cqh) !important;
+    gap: .18cqh !important;
+  }
+}
+
+@media (orientation: portrait) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .player-hero > .hero-status-cues,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .player-hero > .hero-status-cues {
+    left: calc(100% + .3rem) !important;
+    max-width: min(31vw, 9.5rem) !important;
+  }
+}
