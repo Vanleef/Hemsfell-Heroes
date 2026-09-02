@@ -21,9 +21,10 @@ test("hero ability capsule refinement loads after the base ability contract and 
   assert.equal(cssImports.at(-1), "./presentation/styles/match-interaction-terminal.css");
 });
 
-test("expanded hero abilities remain three independent rows with number description and kind columns", () => {
-  assert.match(sheet, /hero-command-bar[^}]*grid-template-rows: repeat\(3, minmax\(0, 1fr\)\) !important/);
-  assert.match(capsuleSheet, /hero-ability-chip[^}]*grid-template-columns:[^}]*clamp\(1\.48rem, 2\.72cqh, 2\.12rem\)[^}]*minmax\(0, 1fr\)[^}]*clamp\(2\.7rem, 4\.15cqw, 4\.25rem\) !important/);
+test("expanded hero abilities use auto-height rows instead of clipping equal fractions", () => {
+  assert.match(capsuleSheet, /hero-command-bar[^}]*grid-template-rows: repeat\(3, auto\) !important/);
+  assert.match(capsuleSheet, /hero-command-bar[^}]*height: auto !important[^}]*max-height: none !important[^}]*overflow: visible !important/);
+  assert.match(capsuleSheet, /hero-ability-chip[^}]*grid-template-columns:[^}]*clamp\(1\.5rem, 2\.72cqh, 2\.14rem\)[^}]*minmax\(0, 1fr\)[^}]*max-content !important/);
 });
 
 test("ability indices 1 2 3 remain visible inside the shared capsule", () => {
@@ -37,10 +38,12 @@ test("ability indices 1 2 3 remain visible inside the shared capsule", () => {
   assert.match(capsuleSheet, /hero-ability-slot[^}]*grid-column: 1 !important[^}]*z-index: 1 !important/);
 });
 
-test("one capsule contains number plus description and ends before PASSIVA or ATIVA", () => {
+test("one capsule contains number plus full description and ends before PASSIVA or ATIVA", () => {
   assert.match(capsuleSheet, /hero-ability-chip::before[^}]*grid-column: 1 \/ 3 !important[^}]*border:[^}]*border-radius:[^}]*background: linear-gradient/);
-  assert.match(capsuleSheet, /hero-ability-copy > p[^}]*grid-column: 2 !important[^}]*border: 0 !important[^}]*background: transparent !important/);
+  assert.match(capsuleSheet, /hero-ability-copy > p[^}]*grid-column: 2 !important[^}]*max-height: none !important/);
+  assert.match(capsuleSheet, /hero-ability-copy > p[^}]*white-space: normal !important[^}]*overflow-wrap: anywhere !important[^}]*overflow: visible !important[^}]*text-overflow: clip !important/);
   assert.match(capsuleSheet, /hero-ability-copy > b[^}]*grid-column: 3 !important[^}]*justify-self: start !important/);
+  assert.match(capsuleSheet, /hero-ability-copy > b[^}]*margin: 0 0 0 clamp\(\.48rem, \.78cqw, \.82rem\) !important/);
   assert.match(capsuleSheet, /hero-ability-copy > b[^}]*border: 0 !important[^}]*background: transparent !important/);
 });
 
