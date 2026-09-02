@@ -4,7 +4,7 @@
  */
 
 /* -------------------------------------------------------------------------
-   Phase action — intrinsic to the action copy
+   Phase action — current phase hierarchy + next action CTA
    ------------------------------------------------------------------------- */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button) {
   box-sizing: border-box !important;
@@ -19,7 +19,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   flex-direction: column !important;
   align-items: center !important;
   justify-content: flex-end !important;
-  padding: clamp(1rem, 1.75cqh, 1.35rem) 0 0 !important;
+  padding: clamp(1.75rem, 3.15cqh, 2.3rem) 0 0 !important;
   gap: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -28,42 +28,72 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   overflow: visible !important;
 }
 
-/* This line is visual metadata only. It must never widen the action button. */
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button)[data-phase-current]::before {
-  content: "FASE ATUAL · " attr(data-phase-current) !important;
+/* Older orb styles used ::before for the combined "FASE ATUAL · PRINCIPAL"
+ * line. The runtime now provides real presentation nodes with separate visual
+ * hierarchy, so the legacy pseudo-copy must stay suppressed. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button)::before {
+  content: none !important;
+  display: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button) > .phase-current-copy {
   position: absolute !important;
   top: 0 !important;
   left: 50% !important;
-  inset-inline-end: auto !important;
-  bottom: auto !important;
-  display: block !important;
+  display: grid !important;
+  grid-template-rows: auto auto !important;
+  justify-items: center !important;
+  align-items: center !important;
+  gap: clamp(.08rem, .14cqh, .12rem) !important;
   width: max-content !important;
   max-width: none !important;
-  height: auto !important;
   margin: 0 !important;
   padding: 0 !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
-  filter: none !important;
   transform: translateX(-50%) !important;
-  opacity: 1 !important;
-  visibility: visible !important;
-  color: #f4d978 !important;
-  -webkit-text-fill-color: #f4d978 !important;
-  -webkit-text-stroke: max(.18px, .012rem) rgb(0 0 0 / 70%) !important;
+  pointer-events: none !important;
+  user-select: none !important;
+  z-index: 2 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button) > .phase-current-copy > .phase-current-kicker {
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: rgb(226 211 157 / 82%) !important;
+  -webkit-text-fill-color: rgb(226 211 157 / 82%) !important;
+  -webkit-text-stroke: max(.12px, .008rem) rgb(0 0 0 / 58%) !important;
   paint-order: stroke fill !important;
   font-family: Arial, Helvetica, sans-serif !important;
-  font-size: clamp(.66rem, min(.82cqw, 1.18cqh), .86rem) !important;
-  font-weight: 950 !important;
+  font-size: clamp(.4rem, min(.5cqw, .72cqh), .54rem) !important;
+  font-weight: 850 !important;
   line-height: 1 !important;
-  letter-spacing: .075em !important;
+  letter-spacing: .18em !important;
   text-align: center !important;
   text-transform: uppercase !important;
   white-space: nowrap !important;
-  text-shadow: 0 1px 1px rgb(0 0 0 / 94%), 0 0 .18rem rgb(0 0 0 / 48%) !important;
-  pointer-events: none !important;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 88%) !important;
+  opacity: .88 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button) > .phase-current-copy > .phase-current-name {
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #f6dc8f !important;
+  -webkit-text-fill-color: #f6dc8f !important;
+  -webkit-text-stroke: max(.2px, .014rem) rgb(23 15 3 / 70%) !important;
+  paint-order: stroke fill !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: clamp(.72rem, min(.9cqw, 1.28cqh), .96rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: .065em !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  text-shadow:
+    0 1px 1px rgb(0 0 0 / 96%),
+    0 0 .24rem rgb(110 72 13 / 34%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
@@ -76,20 +106,21 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   align-items: center !important;
   justify-content: center !important;
   justify-items: start !important;
-  column-gap: clamp(.3rem, .42cqw, .46rem) !important;
+  column-gap: clamp(.3rem, .42cqw, .48rem) !important;
   width: max-content !important;
   min-width: 0 !important;
   max-width: min(12rem, 20cqw) !important;
   height: auto !important;
-  min-height: clamp(2.15rem, 4.85cqh, 2.72rem) !important;
+  min-height: clamp(2.35rem, 5.25cqh, 2.95rem) !important;
   max-height: none !important;
   aspect-ratio: auto !important;
   margin: 0 !important;
-  padding: clamp(.3rem, .46cqh, .42rem) clamp(.56rem, .72cqw, .76rem) !important;
-  border: max(1px, .075cqh) solid rgb(255 203 74 / 96%) !important;
-  border-radius: clamp(.5rem, .68cqw, .7rem) !important;
+  padding: clamp(.34rem, .52cqh, .46rem) clamp(.68rem, .86cqw, .9rem) !important;
+  border: max(1px, .075cqh) solid rgb(255 210 91 / 96%) !important;
+  border-radius: clamp(.58rem, .76cqw, .78rem) !important;
   outline: 0 !important;
-  background: linear-gradient(180deg, rgb(255 174 23 / 100%) 0%, rgb(249 139 8 / 100%) 54%, rgb(209 101 4 / 100%) 100%) !important;
+  background:
+    linear-gradient(180deg, rgb(255 185 38 / 100%) 0%, rgb(247 139 11 / 100%) 55%, rgb(205 96 3 / 100%) 100%) !important;
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;
   font-size: 0 !important;
@@ -97,14 +128,18 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   overflow: hidden !important;
   cursor: pointer !important;
   box-shadow:
-    0 .2rem .56rem rgb(0 0 0 / 44%),
-    inset 0 1px 0 rgb(255 248 205 / 54%),
-    inset 0 -.11rem .24rem rgb(126 49 0 / 30%),
-    0 0 clamp(.34rem, .68cqh, .64rem) rgb(255 166 18 / 28%) !important;
-  transition: transform 120ms ease, filter 150ms ease, box-shadow 150ms ease !important;
+    0 .22rem .58rem rgb(0 0 0 / 46%),
+    inset 0 1px 0 rgb(255 250 218 / 62%),
+    inset 0 -.12rem .26rem rgb(120 43 0 / 32%),
+    0 0 clamp(.42rem, .82cqh, .78rem) rgb(255 172 27 / 38%) !important;
+  transition:
+    transform 120ms ease,
+    filter 150ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease !important;
 }
 
-/* No left-side phase icon. */
+/* No decorative icon at the left of the action. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::before {
   content: none !important;
   display: none !important;
@@ -117,7 +152,8 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   box-shadow: none !important;
 }
 
-/* The action copy is the element that determines the intrinsic CTA width. */
+/* The next action remains intrinsic: COMBATE stays compact while longer phase
+ * names expand only as much as their own copy requires. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::after {
   content: attr(data-phase-next) !important;
   position: static !important;
@@ -129,7 +165,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   justify-self: start !important;
   width: max-content !important;
   min-width: 0 !important;
-  max-width: min(9.6rem, 16cqw) !important;
+  max-width: min(9.8rem, 16cqw) !important;
   height: auto !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -143,31 +179,33 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   visibility: visible !important;
   overflow: hidden !important;
   text-overflow: clip !important;
-  color: #fff8dd !important;
-  -webkit-text-fill-color: #fff8dd !important;
-  -webkit-text-stroke: max(.2px, .014rem) rgb(72 26 0 / 60%) !important;
+  color: #fff9e5 !important;
+  -webkit-text-fill-color: #fff9e5 !important;
+  -webkit-text-stroke: max(.22px, .015rem) rgb(69 24 0 / 64%) !important;
   paint-order: stroke fill !important;
   font-family: Arial, Helvetica, sans-serif !important;
-  font-size: clamp(.6rem, min(.76cqw, 1.08cqh), .8rem) !important;
+  font-size: clamp(.68rem, min(.86cqw, 1.22cqh), .9rem) !important;
   font-weight: 950 !important;
   line-height: 1 !important;
-  letter-spacing: .03em !important;
+  letter-spacing: .04em !important;
   text-align: left !important;
   text-transform: uppercase !important;
   white-space: nowrap !important;
   text-wrap: nowrap !important;
-  text-shadow: 0 1px 1px rgb(78 25 0 / 92%), 0 0 .14rem rgb(0 0 0 / 28%) !important;
+  text-shadow:
+    0 1px 1px rgb(75 24 0 / 94%),
+    0 0 .14rem rgb(0 0 0 / 28%) !important;
   pointer-events: none !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button[data-phase-next="FINALIZAÇÃO"]::after {
-  font-size: clamp(.56rem, min(.71cqw, 1.02cqh), .74rem) !important;
-  letter-spacing: .022em !important;
+  font-size: clamp(.62rem, min(.79cqw, 1.12cqh), .82rem) !important;
+  letter-spacing: .028em !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button[data-phase-next="ENCERRAR TURNO"]::after {
-  font-size: clamp(.52rem, min(.66cqw, .96cqh), .69rem) !important;
-  letter-spacing: .016em !important;
+  font-size: clamp(.56rem, min(.72cqw, 1.02cqh), .75rem) !important;
+  letter-spacing: .018em !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not([data-phase-next])::after,
@@ -175,7 +213,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   content: "AVANÇAR" !important;
 }
 
-/* Arrow only — no circle, plate or background. */
+/* Arrow only — no circular plate. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button > span {
   position: static !important;
   inset: auto !important;
@@ -200,28 +238,30 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   -webkit-text-fill-color: #fff9e2 !important;
   -webkit-text-stroke: 0 transparent !important;
   font-family: Arial, Helvetica, sans-serif !important;
-  font-size: clamp(.76rem, min(.94cqw, 1.34cqh), .94rem) !important;
+  font-size: clamp(.82rem, min(1cqw, 1.42cqh), 1rem) !important;
   font-weight: 950 !important;
   line-height: 1 !important;
   transform: none !important;
-  opacity: 1 !important;
+  opacity: .92 !important;
   visibility: visible !important;
   text-shadow: 0 1px 1px rgb(78 25 0 / 88%) !important;
-  transition: translate 140ms ease !important;
+  transition: translate 140ms ease, opacity 140ms ease !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled):hover {
   transform: translateY(-1px) !important;
-  filter: brightness(1.06) saturate(1.04) !important;
+  border-color: rgb(255 228 136 / 100%) !important;
+  filter: brightness(1.07) saturate(1.04) !important;
   box-shadow:
-    0 .26rem .68rem rgb(0 0 0 / 48%),
-    inset 0 1px 0 rgb(255 250 219 / 62%),
-    inset 0 -.11rem .24rem rgb(126 49 0 / 27%),
-    0 0 clamp(.48rem, .9cqh, .86rem) rgb(255 174 25 / 40%) !important;
+    0 .3rem .72rem rgb(0 0 0 / 50%),
+    inset 0 1px 0 rgb(255 252 227 / 70%),
+    inset 0 -.12rem .26rem rgb(120 43 0 / 28%),
+    0 0 clamp(.58rem, 1.08cqh, 1rem) rgb(255 179 36 / 52%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled):hover > span {
-  translate: .07rem 0 !important;
+  translate: .08rem 0 !important;
+  opacity: 1 !important;
   background: transparent !important;
 }
 
@@ -230,9 +270,21 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   filter: brightness(.96) !important;
 }
 
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:focus-visible {
+  outline: max(2px, .09rem) solid rgb(255 244 195 / 98%) !important;
+  outline-offset: clamp(.08rem, .12cqh, .12rem) !important;
+}
+
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled {
   animation: none !important;
-  filter: saturate(.26) brightness(.67) !important;
+  cursor: not-allowed !important;
+  border-color: rgb(154 139 98 / 66%) !important;
+  background: linear-gradient(180deg, rgb(105 91 62 / 96%) 0%, rgb(77 65 43 / 96%) 100%) !important;
+  box-shadow:
+    0 .14rem .34rem rgb(0 0 0 / 36%),
+    inset 0 1px 0 rgb(230 218 183 / 12%) !important;
+  filter: saturate(.24) brightness(.7) !important;
+  opacity: .8 !important;
 }
 
 /* -------------------------------------------------------------------------
@@ -300,34 +352,38 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
 
 @media (orientation: landscape) and (max-height: 44rem) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button) {
-    max-width: min(10.5rem, 19cqw) !important;
-    padding-top: clamp(.82rem, 1.45cqh, 1.08rem) !important;
+    max-width: min(10.8rem, 19cqw) !important;
+    padding-top: clamp(1.48rem, 2.65cqh, 1.9rem) !important;
   }
 
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button)[data-phase-current]::before {
-    font-size: clamp(.56rem, min(.68cqw, .98cqh), .72rem) !important;
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button) > .phase-current-copy > .phase-current-kicker {
+    font-size: clamp(.34rem, min(.42cqw, .62cqh), .46rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button) > .phase-current-copy > .phase-current-name {
+    font-size: clamp(.62rem, min(.76cqw, 1.08cqh), .8rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
-    min-height: clamp(1.95rem, 4.35cqh, 2.38rem) !important;
-    padding: clamp(.25rem, .38cqh, .34rem) clamp(.46rem, .58cqw, .6rem) !important;
-    column-gap: clamp(.24rem, .32cqw, .34rem) !important;
+    min-height: clamp(2.08rem, 4.6cqh, 2.52rem) !important;
+    padding: clamp(.28rem, .42cqh, .38rem) clamp(.56rem, .7cqw, .72rem) !important;
+    column-gap: clamp(.24rem, .32cqw, .36rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::after {
-    font-size: clamp(.52rem, min(.65cqw, .92cqh), .69rem) !important;
+    font-size: clamp(.58rem, min(.7cqw, 1cqh), .74rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button[data-phase-next="FINALIZAÇÃO"]::after {
-    font-size: clamp(.49rem, min(.61cqw, .87cqh), .64rem) !important;
+    font-size: clamp(.53rem, min(.65cqw, .93cqh), .69rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button[data-phase-next="ENCERRAR TURNO"]::after {
-    font-size: clamp(.46rem, min(.57cqw, .82cqh), .61rem) !important;
+    font-size: clamp(.49rem, min(.6cqw, .86cqh), .64rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button > span {
-    font-size: clamp(.66rem, min(.8cqw, 1.12cqh), .82rem) !important;
+    font-size: clamp(.7rem, min(.84cqw, 1.18cqh), .86rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > .remote-card-art)::after,
@@ -337,9 +393,22 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
   }
 }
 
+/* Coarse pointers get a larger hit target without forcing desktop to waste
+ * horizontal space. The width still follows the action copy. */
+@media (pointer: coarse) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
+    min-height: 2.75rem !important;
+    padding-inline: clamp(.78rem, 1.08cqw, 1rem) !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
     animation: none !important;
+    transition: none !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button > span {
     transition: none !important;
   }
 }
