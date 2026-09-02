@@ -1,4 +1,4 @@
-/* The React-owned criteria tooltip stays as semantic/source markup only.
+/* The React-owned criteria tooltip stays semantic/source markup only.
  * Legacy :hover rules must never render this in-panel copy behind hand cards.
  */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution > .evolution-tooltip:not(.evolution-tooltip-portal) {
@@ -8,13 +8,26 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   pointer-events: none !important;
 }
 
-/* Body-level evolution criteria portal.
- * The runtime also promotes this element into the browser Top Layer through the
- * Popover API, making it impossible for hand/card stacking contexts to cover it.
- */
-body > .evolution-tooltip-portal {
+/* The visible progression surface is the only hover/focus target for the
+ * criteria tooltip. Keeping it pointer-aware also defeats old pointer-events
+ * overrides without changing panel geometry. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution {
+  pointer-events: auto !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution:not(:has(.level-button:not([hidden]))) {
+  cursor: help !important;
+}
+
+/* Body-level evolution criteria portal. The runtime promotes it to browser Top
+ * Layer with Popover and then anchors it beside the hero panel using inline
+ * fixed coordinates. Do not set inset:... !important here; that would override
+ * the runtime's left/top coordinates and pull the popover to the viewport edge. */
+body > .evolution-tooltip-portal,
+body > .evolution-tooltip-portal:popover-open {
   position: fixed !important;
-  inset: auto !important;
+  right: auto !important;
+  bottom: auto !important;
   margin: 0 !important;
   z-index: 2147483647 !important;
   isolation: isolate !important;
@@ -27,12 +40,14 @@ body > .evolution-tooltip-portal {
   gap: clamp(.34rem, .54vh, .56rem) !important;
   padding: clamp(.58rem, .78vh, .78rem) clamp(.66rem, .76vw, .86rem) !important;
   overflow: auto !important;
-  border: max(1px, .07vh) solid #a88d4c !important;
+  border: max(1px, .07vh) solid #b89a4f !important;
   border-radius: clamp(.42rem, .5vw, .62rem) !important;
-  background: linear-gradient(180deg, rgb(5 22 22 / 99%), rgb(2 12 14 / 99%)) !important;
+  background:
+    linear-gradient(180deg, rgb(6 28 27 / 99%), rgb(2 13 15 / 99%)) !important;
   box-shadow:
     0 .72vh 2vh rgb(0 0 0 / 88%),
-    0 0 0 1px rgb(255 225 125 / 18%),
+    0 0 0 1px rgb(255 225 125 / 20%),
+    0 0 1.2rem rgb(0 0 0 / 34%),
     inset 0 0 0 1px rgb(255 255 255 / 5%) !important;
   color: #eee9d8 !important;
   font-size: clamp(.58rem, min(.82vw, 1.2vh), .82rem) !important;
@@ -43,7 +58,7 @@ body > .evolution-tooltip-portal {
   opacity: 1 !important;
   visibility: visible !important;
   pointer-events: none !important;
-  transform: translateZ(0) !important;
+  transform: none !important;
 }
 
 body > .evolution-tooltip-portal > p {
@@ -51,7 +66,7 @@ body > .evolution-tooltip-portal > p {
   padding: 0 0 .46vh !important;
   border-bottom: 1px solid rgb(255 255 255 / 10%) !important;
   color: #f2ead3 !important;
-  font-weight: 800 !important;
+  font-weight: 850 !important;
   line-height: 1.3 !important;
 }
 
@@ -71,9 +86,9 @@ body > .evolution-tooltip-portal > div > span {
   min-width: 0 !important;
   margin: 0 !important;
   padding: .42vh .48vw !important;
-  border: 1px solid rgb(186 155 77 / 42%) !important;
+  border: 1px solid rgb(186 155 77 / 46%) !important;
   border-radius: clamp(.24rem, .28vw, .34rem) !important;
-  background: rgb(183 145 46 / 8%) !important;
+  background: rgb(183 145 46 / 9%) !important;
   color: #f0d984 !important;
   font-weight: 850 !important;
   line-height: 1.24 !important;
@@ -81,34 +96,88 @@ body > .evolution-tooltip-portal > div > span {
   overflow-wrap: anywhere !important;
 }
 
-/* Actionable phase-orb: lively luminous yellow rather than burnt orange. */
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled) {
-  background:
-    radial-gradient(circle at 50% 30%, rgb(255 255 204 / 48%) 0%, rgb(255 236 104 / 24%) 35%, rgb(255 211 42 / 8%) 60%, transparent 76%),
-    linear-gradient(180deg, #f8dd55 0%, #ddb61f 48%, #a57a08 100%) !important;
-  border-color: #fff09a !important;
-  box-shadow:
-    inset 0 0 1.35cqh rgb(255 250 185 / 42%),
-    0 0 .86cqh rgb(255 224 74 / 58%),
-    0 0 1.55cqh rgb(255 202 34 / 30%) !important;
-  filter: saturate(1.08) brightness(1.1) !important;
-}
-
-/* Phase-orb copy: black fill with a crisp white outline. The direct label and
- * nested arrow share the same treatment; the arrow remains slightly larger. */
+/* Phase Orb — luminous fantasy-medallion treatment inspired by the strong
+ * affordance language common to digital card games: bright actionable rim,
+ * deep center, inner metal ring and a restrained magical pulse. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: hidden !important;
+  border-radius: 50% !important;
   color: #080603 !important;
   -webkit-text-fill-color: #080603 !important;
   -webkit-text-stroke: .55px #ffffff !important;
   paint-order: stroke fill !important;
-  font-size: clamp(.62rem, min(.9cqw, 1.38cqh), .92rem) !important;
-  font-weight: 900 !important;
+  font-size: clamp(.66rem, min(.96cqw, 1.46cqh), 1rem) !important;
+  font-weight: 950 !important;
+  letter-spacing: .015em !important;
+  line-height: 1.02 !important;
   text-shadow:
     -1px 0 #ffffff,
     1px 0 #ffffff,
     0 -1px #ffffff,
     0 1px #ffffff,
-    0 .18cqh .3cqh rgb(0 0 0 / 72%) !important;
+    0 .18cqh .34cqh rgb(0 0 0 / 72%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: -2 !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::after {
+  content: "" !important;
+  position: absolute !important;
+  inset: 7% !important;
+  z-index: -1 !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+  border: max(1px, .08cqh) solid rgb(255 250 210 / 44%) !important;
+  box-shadow:
+    inset 0 .12cqh .34cqh rgb(255 255 255 / 18%),
+    inset 0 -.38cqh .72cqh rgb(59 43 4 / 28%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled) {
+  border-color: #fff0a3 !important;
+  background: #d8b92d !important;
+  box-shadow:
+    inset 0 0 0 max(1px, .08cqh) rgb(255 250 205 / 72%),
+    inset 0 0 1.3cqh rgb(255 238 118 / 34%),
+    0 0 .55cqh rgb(255 238 126 / 92%),
+    0 0 1.2cqh rgb(255 218 63 / 58%),
+    0 .32cqh .75cqh rgb(0 0 0 / 42%) !important;
+  filter: saturate(1.08) brightness(1.08) !important;
+  animation: phase-orb-ready-pulse 2.15s ease-in-out infinite !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled)::before {
+  background:
+    radial-gradient(circle at 50% 24%, rgb(255 255 225 / 86%) 0 8%, rgb(255 244 151 / 58%) 18%, transparent 43%),
+    radial-gradient(circle at 50% 54%, rgb(255 230 93 / 34%) 0 34%, transparent 68%),
+    linear-gradient(180deg, #ffed75 0%, #efd344 30%, #caa51d 68%, #8b6810 100%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled {
+  border-color: #7b8388 !important;
+  background: #3a3f43 !important;
+  box-shadow:
+    inset 0 0 0 max(1px, .08cqh) rgb(255 255 255 / 8%),
+    inset 0 0 .9cqh rgb(255 255 255 / 5%),
+    0 .2cqh .5cqh rgb(0 0 0 / 40%) !important;
+  filter: saturate(.32) brightness(.78) !important;
+  opacity: .86 !important;
+  animation: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled::before {
+  background:
+    radial-gradient(circle at 50% 30%, rgb(255 255 255 / 10%) 0 12%, transparent 48%),
+    linear-gradient(180deg, #5d6368 0%, #42474b 48%, #292d30 100%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button :is(span, strong, b, small, em, i) {
@@ -121,17 +190,43 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
     1px 0 #ffffff,
     0 -1px #ffffff,
     0 1px #ffffff,
-    0 .18cqh .3cqh rgb(0 0 0 / 72%) !important;
+    0 .18cqh .34cqh rgb(0 0 0 / 72%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button > span {
-  font-size: 1.3em !important;
-  line-height: .92 !important;
+  font-size: 1.32em !important;
+  line-height: .9 !important;
+}
+
+@keyframes phase-orb-ready-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 0 0 max(1px, .08cqh) rgb(255 250 205 / 72%),
+      inset 0 0 1.3cqh rgb(255 238 118 / 34%),
+      0 0 .55cqh rgb(255 238 126 / 88%),
+      0 0 1.15cqh rgb(255 218 63 / 48%),
+      0 .32cqh .75cqh rgb(0 0 0 / 42%);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 max(1px, .08cqh) rgb(255 252 219 / 82%),
+      inset 0 0 1.45cqh rgb(255 243 143 / 44%),
+      0 0 .72cqh rgb(255 245 159 / 96%),
+      0 0 1.48cqh rgb(255 221 76 / 66%),
+      0 .32cqh .75cqh rgb(0 0 0 / 42%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled) {
+    animation: none !important;
+  }
 }
 
 @media (orientation: landscape) and (max-height: 44rem),
        (orientation: landscape) and (max-width: 64rem) {
-  body > .evolution-tooltip-portal {
+  body > .evolution-tooltip-portal,
+  body > .evolution-tooltip-portal:popover-open {
     width: clamp(10.5rem, 22vw, 16.5rem) !important;
     max-width: min(16.5rem, calc(100vw - .8rem)) !important;
     max-height: 40vh !important;
@@ -139,12 +234,13 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
-    font-size: clamp(.56rem, min(.82cqw, 1.22cqh), .82rem) !important;
+    font-size: clamp(.58rem, min(.84cqw, 1.25cqh), .86rem) !important;
   }
 }
 
 @media (orientation: portrait) {
-  body > .evolution-tooltip-portal {
+  body > .evolution-tooltip-portal,
+  body > .evolution-tooltip-portal:popover-open {
     width: min(50vw, 16rem) !important;
     max-width: min(50vw, calc(100vw - .75rem)) !important;
     max-height: 34vh !important;
@@ -152,6 +248,6 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
-    font-size: clamp(.66rem, 2.5vw, .94rem) !important;
+    font-size: clamp(.68rem, 2.55vw, .98rem) !important;
   }
 }
