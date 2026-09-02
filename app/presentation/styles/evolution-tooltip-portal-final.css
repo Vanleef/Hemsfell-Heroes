@@ -96,9 +96,8 @@ body > .evolution-tooltip-portal > div > span {
   overflow-wrap: anywhere !important;
 }
 
-/* Phase Orb — saturated orange fantasy medallion. Both availability states keep
- * warm orange materials; the actionable state is brighter and animated while
- * the unavailable state stays darker, static and fully legible. */
+/* Phase Orb — saturated orange fantasy medallion. The inner decorative ring is
+ * intentionally removed so the orb reads as one clean, solid magical button. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
   position: relative !important;
   isolation: isolate !important;
@@ -129,17 +128,12 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   pointer-events: none !important;
 }
 
+/* No inset ring: all depth comes from the main material and outer light. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::after {
-  content: "" !important;
-  position: absolute !important;
-  inset: 7% !important;
-  z-index: -1 !important;
-  border-radius: inherit !important;
-  pointer-events: none !important;
-  border: max(1px, .08cqh) solid rgb(255 218 157 / 26%) !important;
-  box-shadow:
-    inset 0 .12cqh .34cqh rgb(255 255 255 / 12%),
-    inset 0 -.38cqh .72cqh rgb(82 35 3 / 28%) !important;
+  content: none !important;
+  display: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled) {
@@ -162,32 +156,29 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
     linear-gradient(180deg, #ffb347 0%, #f28a1c 30%, #d56e0d 68%, #8f4308 100%) !important;
 }
 
-/* Unavailable state no longer turns silver. It keeps the same orange identity,
- * but uses a deeper, static material so turn ownership remains obvious. */
+/* Disabled keeps the active orb's depth model, but the material is neutral,
+ * grayscale and static. This makes non-interactivity obvious without flattening
+ * the control or making its label unreadable. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled {
-  border-color: #c8741a !important;
-  background: #9a4f0e !important;
+  border-color: #72777a !important;
+  background: #505457 !important;
   box-shadow:
-    inset 0 0 0 max(1px, .08cqh) rgb(255 213 138 / 18%),
-    inset 0 0 .9cqh rgb(255 168 58 / 10%),
-    0 .2cqh .5cqh rgb(0 0 0 / 40%) !important;
-  filter: saturate(.82) brightness(.9) !important;
+    inset 0 0 0 max(1px, .08cqh) rgb(232 235 237 / 30%),
+    inset 0 0 1.3cqh rgb(210 216 220 / 14%),
+    0 0 .55cqh rgb(184 191 196 / 22%),
+    0 0 1.2cqh rgb(96 103 108 / 18%),
+    0 .32cqh .75cqh rgb(0 0 0 / 42%) !important;
+  filter: grayscale(1) saturate(0) brightness(.82) !important;
   opacity: 1 !important;
+  cursor: not-allowed !important;
   animation: none !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled::before {
   background:
-    radial-gradient(circle at 50% 28%, rgb(255 214 120 / 20%) 0 10%, transparent 42%),
-    radial-gradient(circle at 50% 56%, rgb(255 153 40 / 14%) 0 30%, transparent 68%),
-    linear-gradient(180deg, #f19a2a 0%, #cf7416 34%, #a9540d 68%, #6b3307 100%) !important;
-}
-
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled::after {
-  border-color: rgb(255 221 168 / 24%) !important;
-  box-shadow:
-    inset 0 .12cqh .34cqh rgb(255 255 255 / 10%),
-    inset 0 -.38cqh .72cqh rgb(59 28 4 / 24%) !important;
+    radial-gradient(circle at 50% 24%, rgb(246 247 248 / 48%) 0 8%, rgb(218 221 223 / 22%) 18%, transparent 43%),
+    radial-gradient(circle at 50% 54%, rgb(181 186 190 / 18%) 0 34%, transparent 68%),
+    linear-gradient(180deg, #92979a 0%, #717679 30%, #53575a 68%, #343739 100%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button :is(span, strong, b, small, em, i) {
