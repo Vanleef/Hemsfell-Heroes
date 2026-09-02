@@ -38,6 +38,8 @@ test("local Cruel Terrain keeps an independent visual sentinel for the full nati
   assert.match(runtime, /document\.addEventListener\("dragstart", schedule, true\)/);
   assert.match(runtime, /document\.addEventListener\("dragend", schedule, true\)/);
   assert.match(runtime, /document\.addEventListener\("drop", schedule, true\)/);
+  assert.match(runtime, /document\.querySelector\("\.terrain-drag-sentinel"\)\?\.remove\(\)/);
+  assert.doesNotMatch(runtime, /document\.querySelector\(":scope > \.terrain-drag-sentinel"\)/);
   assert.match(sheet, /terrain-drag-sentinel[^}]*pointer-events: none !important/);
   assert.match(sheet, /terrain-drag-sentinel\[data-active="true"\][^}]*display: grid !important[^}]*visibility: visible !important[^}]*opacity: 1 !important/);
 });
