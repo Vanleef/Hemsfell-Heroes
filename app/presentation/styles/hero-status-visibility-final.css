@@ -9,14 +9,14 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   display: flex !important;
   flex-direction: column !important;
   align-items: stretch !important;
-  left: calc(100% + .34cqw) !important;
+  left: calc(100% + .38cqw) !important;
   right: auto !important;
   width: max-content !important;
-  max-width: min(8.6cqw, 15.5cqh) !important;
+  max-width: min(10.6cqw, 19cqh) !important;
   height: auto !important;
   min-height: 0 !important;
-  max-height: min(18cqh, 11rem) !important;
-  gap: .24cqh !important;
+  max-height: min(23cqh, 13rem) !important;
+  gap: .3cqh !important;
   padding: 0 !important;
   margin: 0 !important;
   overflow: visible !important;
@@ -26,6 +26,22 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   transform: none !important;
   translate: none !important;
   z-index: 10040 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .player-hero > .hero-status-cues > span,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .player-hero > .hero-status-cues > span {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 2.55cqh !important;
+  margin: 0 !important;
+  padding: .42cqh .54cqw !important;
+  border-radius: .38cqw !important;
+  font-size: clamp(.54rem, min(.78cqw, 1.16cqh), .82rem) !important;
+  font-weight: 850 !important;
+  line-height: 1.16 !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) .player-hero > .hero-status-cues,
@@ -42,20 +58,154 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   flex-direction: column-reverse !important;
 }
 
+/* -------------------------------------------------------------------------
+   Expanded hero ability typography.
+   The three rows divide the whole reading region evenly. Normal descriptions
+   use the largest readable size; compact/dense classes progressively reduce
+   only when copy length warrants it. The level disc keeps a clear text gutter.
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
+  bottom: .42cqh !important;
+  display: grid !important;
+  grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
+  align-content: stretch !important;
+  align-items: stretch !important;
+  gap: .24cqh !important;
+  overflow: hidden !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: 2.62cqh minmax(0, 1fr) !important;
+  column-gap: .78cqw !important;
+  align-items: center !important;
+  align-content: center !important;
+  padding: .42cqh .5cqw .42cqh .38cqw !important;
+  overflow: hidden !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
+  inline-size: 2.42cqh !important;
+  block-size: 2.42cqh !important;
+  width: 2.42cqh !important;
+  min-width: 2.42cqh !important;
+  max-width: 2.42cqh !important;
+  height: 2.42cqh !important;
+  min-height: 2.42cqh !important;
+  max-height: 2.42cqh !important;
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 !important;
+  font-size: clamp(.62rem, min(.9cqw, 1.34cqh), .84rem) !important;
+  line-height: 1 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > :is(.hero-ability-copy, span) {
+  min-width: 0 !important;
+  height: 100% !important;
+  display: grid !important;
+  align-content: center !important;
+  align-items: center !important;
+  padding-left: .08cqw !important;
+  overflow: hidden !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > :is(.hero-ability-copy, span) > p {
+  width: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #eef2ef !important;
+  font-size: clamp(.6rem, min(.88cqw, 1.28cqh), .86rem) !important;
+  font-weight: 680 !important;
+  line-height: 1.18 !important;
+  letter-spacing: .002em !important;
+  white-space: normal !important;
+  text-wrap: pretty !important;
+  overflow-wrap: anywhere !important;
+  overflow: hidden !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-compact > :is(.hero-ability-copy, span) > p {
+  font-size: clamp(.55rem, min(.8cqw, 1.17cqh), .78rem) !important;
+  line-height: 1.16 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-dense > :is(.hero-ability-copy, span) > p {
+  font-size: clamp(.49rem, min(.71cqw, 1.05cqh), .7rem) !important;
+  line-height: 1.13 !important;
+}
+
 @media (orientation: landscape) and (max-height: 44rem),
        (orientation: landscape) and (max-width: 64rem) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .player-hero > .hero-status-cues,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .player-hero > .hero-status-cues {
-    left: calc(100% + .24cqw) !important;
-    max-width: min(8.1cqw, 13.8cqh) !important;
-    gap: .18cqh !important;
+    left: calc(100% + .28cqw) !important;
+    max-width: min(9.7cqw, 16.8cqh) !important;
+    gap: .22cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .player-hero > .hero-status-cues > span,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .player-hero > .hero-status-cues > span {
+    min-height: 2.2cqh !important;
+    padding: .34cqh .42cqw !important;
+    font-size: clamp(.46rem, min(.68cqw, 1cqh), .7rem) !important;
+    line-height: 1.12 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+    grid-template-columns: 2.4cqh minmax(0, 1fr) !important;
+    column-gap: .68cqw !important;
+    padding: .34cqh .42cqw .34cqh .34cqw !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
+    inline-size: 2.2cqh !important;
+    block-size: 2.2cqh !important;
+    width: 2.2cqh !important;
+    min-width: 2.2cqh !important;
+    max-width: 2.2cqh !important;
+    height: 2.2cqh !important;
+    min-height: 2.2cqh !important;
+    max-height: 2.2cqh !important;
+    font-size: clamp(.56rem, min(.8cqw, 1.18cqh), .76rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > :is(.hero-ability-copy, span) > p {
+    font-size: clamp(.53rem, min(.76cqw, 1.08cqh), .73rem) !important;
+    line-height: 1.15 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-compact > :is(.hero-ability-copy, span) > p {
+    font-size: clamp(.49rem, min(.69cqw, .99cqh), .67rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-dense > :is(.hero-ability-copy, span) > p {
+    font-size: clamp(.45rem, min(.62cqw, .91cqh), .61rem) !important;
+    line-height: 1.11 !important;
   }
 }
 
 @media (orientation: portrait) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .player-hero > .hero-status-cues,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .player-hero > .hero-status-cues {
-    left: calc(100% + .3rem) !important;
-    max-width: min(31vw, 9.5rem) !important;
+    left: calc(100% + .35rem) !important;
+    max-width: min(35vw, 11rem) !important;
+    gap: .22rem !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) .player-hero > .hero-status-cues > span,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded .player-hero > .hero-status-cues > span {
+    min-height: 2.2rem !important;
+    padding: .38rem .48rem !important;
+    font-size: clamp(.68rem, 2.45vw, .9rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+    column-gap: .62rem !important;
   }
 }
