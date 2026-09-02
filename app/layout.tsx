@@ -23,6 +23,7 @@ import CardPreviewRuntime from "./presentation/cards/card-preview-runtime";
 import PresentationEventBridge from "./presentation/runtime/presentation-event-bridge";
 import PresentationInteractionRuntime from "./presentation/runtime/presentation-interaction-runtime";
 import GamePresentationRuntime from "./presentation/runtime/game-presentation-runtime";
+import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-runtime";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -54,6 +55,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <PresentationEventBridge />
       <PresentationInteractionRuntime />
       <GamePresentationRuntime />
+      <HeroPanelExpandRuntime />
       {children}
     </body>
   </html>;
