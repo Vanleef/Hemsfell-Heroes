@@ -4,21 +4,41 @@ import fs from "node:fs";
 
 const runtime = fs.readFileSync("app/presentation/runtime/match-feedback-runtime.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/match-feedback-final.css", "utf8");
+const criticalCss = fs.readFileSync("app/presentation/styles/critical-flow-feedback.css", "utf8");
+const presentationCss = fs.readFileSync("app/presentation/styles/game-presentation.css", "utf8");
 const compact = (value) => value.replace(/\s+/g, " ");
 const sheet = compact(css);
+const criticalSheet = compact(criticalCss);
+const presentationSheet = compact(presentationCss);
 
-test("defense decision sits left of terrain using the real terrain-to-field gap", () => {
+test("defense decision sits close to terrain using a reduced terrain-to-field reference gap", () => {
   assert.match(runtime, /visibleRects\(board, ":scope > \.terrain-slot"\)/);
   assert.match(runtime, /visibleRects\(board, "\.paired-field \.field-slot"\)/);
   assert.match(runtime, /firstFieldLeftViewport = Math\.min/);
   assert.match(runtime, /firstFieldLeftViewport - referenceTerrain\.right/);
-  assert.match(runtime, /decisionRightViewport = referenceTerrain[\s\S]*referenceTerrain\.left - terrainFieldGap/);
+  assert.match(runtime, /decisionTerrainGap = Math\.max\(6, Math\.min\(14, terrainFieldGap \* 0\.5\)\)/);
+  assert.match(runtime, /decisionRightViewport = referenceTerrain[\s\S]*referenceTerrain\.left - decisionTerrainGap/);
   assert.match(runtime, /dataset\.geometryAnchored = "left-of-terrain-reference-gap"/);
   assert.match(runtime, /gapTopViewport = enemyRect\.bottom \+ verticalGapPadding/);
   assert.match(runtime, /gapBottomViewport = playerRect\.top - verticalGapPadding/);
   assert.match(runtime, /:scope > \.terrain-slot\.enemy-terrain/);
   assert.match(runtime, /:scope > \.terrain-slot\.player-terrain/);
   assert.match(sheet, /\.defense-decision[^}]*position: absolute !important/);
+  assert.match(criticalSheet, /\.defense-decision[^}]*left: clamp\(5\.75rem, 8\.9cqw, 8\.6rem\) !important/);
+});
+
+test("defense choice darkens the board while keeping blocker selection readable", () => {
+  assert.match(criticalSheet, /hs-board:has\(> \.defense-decision\) > :not\(\.defense-decision\):not\(\.player-field\)[^}]*brightness\(\.3\)[^}]*opacity: \.54 !important/);
+  assert.match(criticalSheet, /hs-board:has\(> \.defense-decision\) > \.player-field[^}]*brightness\(\.72\)[^}]*opacity: \.9 !important/);
+  assert.match(criticalSheet, /\.defense-decision[^}]*animation: hh-defense-decision-attention 1\.05s ease-in-out infinite !important/);
+  assert.match(criticalCss, /@keyframes hh-defense-decision-attention/);
+  assert.match(criticalSheet, /response-overlay \.response-dialog[^}]*outline:[^}]*box-shadow:/);
+});
+
+test("hero level-up never replaces the responsive hero with the out-of-container hold clone", () => {
+  assert.match(presentationSheet, /\.hh-presentation-hidden[^}]*opacity: 0 !important[^}]*visibility: hidden !important/);
+  assert.match(criticalSheet, /\.hh-state-hold\.is-level-up-hold[^}]*display: none !important[^}]*visibility: hidden !important/);
+  assert.match(criticalSheet, /body:has\(\.hh-state-hold\.is-level-up-hold\)[^}]*\.player-hero\.hh-presentation-hidden[^}]*opacity: 1 !important[^}]*visibility: visible !important[^}]*scale: 1 !important/);
 });
 
 test("priority strip is measured from the gap between enemy and player fields", () => {
