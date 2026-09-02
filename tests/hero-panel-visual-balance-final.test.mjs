@@ -15,11 +15,12 @@ const finalSheet = compact(terminal);
 const dragSheet = compact(dragCss);
 const statusSheet = compact(statusCss);
 
-test("Cruel Terrain matches the real field-slot gap and keeps a field-slot-sized footprint", () => {
+test("Cruel Terrain keeps a half-gap field gutter and a field-slot-sized footprint", () => {
   assert.match(runtime, /\.field-slot\[data-slot="1"\]/);
   assert.match(runtime, /\.field-slot\[data-slot="2"\]/);
   assert.match(runtime, /secondRect\.left - firstRect\.right/);
-  assert.match(runtime, /clearance: measuredGap/);
+  assert.match(runtime, /measuredGap \* 0\.50/);
+  assert.match(runtime, /firstRect\.width \* 0\.08/);
   assert.doesNotMatch(runtime, /TERRAIN_GAP_MULTIPLIER/);
   assert.doesNotMatch(runtime, /TERRAIN_MIN_SLOT_CLEARANCE/);
   assert.match(runtime, /boardRect\.width \/ layoutWidth/);
