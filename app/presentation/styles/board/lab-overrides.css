@@ -45,7 +45,7 @@
   line-height: .8 !important;
 }
 .screen-game .game-stage > .game-content.hs-board > .phase-orb:empty::before {
-  content: "Turno do Oponente";
+  content: "TURNO DO OPONENTE";
   color: #c8ced0 !important;
   border: 1px solid #6f7779 !important;
   background: radial-gradient(circle at 35% 30%, #8b8e80 0%, #5d5c4d 44%, #313b3d 72%, #11191c 100%) !important;
