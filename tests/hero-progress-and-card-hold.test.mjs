@@ -27,14 +27,14 @@ test("hero progress keeps one semantic label and a separated x/X counter", () =>
   assert.match(css, /hero-evolution-copy > strong\s*\{[\s\S]*justify-self:\s*end\s*!important/);
 });
 
-test("cruel terrain sits left of the centered owner field without overlapping slot one", () => {
+test("cruel terrain sits left of the right-aligned owner field without overlapping slot one", () => {
   assert.match(
     css,
-    /terrain-slot\.enemy-terrain,[\s\S]*terrain-slot\.player-terrain\s*\{[\s\S]*grid-column:\s*2\s*!important[\s\S]*translate:\s*calc\(4\.14cqw - var\(--hero-terrain-gap\)\) 0\s*!important/,
+    /terrain-slot\.enemy-terrain,[\s\S]*terrain-slot\.player-terrain\s*\{[\s\S]*grid-column:\s*2\s*!important[\s\S]*translate:\s*calc\(8\.28cqw - var\(--hero-terrain-gap\)\) 0\s*!important/,
   );
-  assert.match(css, /terrain-slot\.enemy-terrain\s*\{[\s\S]*grid-row:\s*4\s*!important/);
-  assert.match(css, /terrain-slot\.player-terrain\s*\{[\s\S]*grid-row:\s*6\s*!important/);
-  assert.match(css, /translate:\s*calc\(2\.25cqw - var\(--hero-terrain-gap\)\) 0\s*!important/);
+  assert.match(css, /terrain-slot\.enemy-terrain\s*\{[\s\S]*grid-row:\s*3\s*!important/);
+  assert.match(css, /terrain-slot\.player-terrain\s*\{[\s\S]*grid-row:\s*5\s*!important/);
+  assert.match(css, /translate:\s*calc\(4\.5cqw - var\(--hero-terrain-gap\)\) 0\s*!important/);
 });
 
 test("detailed-card hold ring starts only after 500ms while total hold remains one second", () => {
