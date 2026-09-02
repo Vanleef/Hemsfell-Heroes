@@ -61,18 +61,40 @@ function resolvePhaseAction(button: HTMLButtonElement): PhaseAction {
   };
 }
 
+function visibleCurrentPhase() {
+  return document
+    .querySelector<HTMLElement>(".screen-game .phase-track > .active span")
+    ?.textContent
+    ?.trim()
+    .toLocaleUpperCase("pt-BR") || "";
+}
+
+function isLocalTurn() {
+  return normalizeLabel(document.querySelector<HTMLElement>(".screen-game .turn-owner > b")?.textContent || "") === "seu turno";
+}
+
 function syncPhaseAction() {
   const orb = document.querySelector<HTMLElement>(".screen-game .game-content.hs-board > .phase-orb");
   if (!orb) return;
 
+  const trackedPhase = visibleCurrentPhase();
+  const localTurn = isLocalTurn();
+  orb.dataset.localTurn = localTurn ? "true" : "false";
+
   const button = orb.querySelector<HTMLButtonElement>(":scope > button");
   if (!button) {
-    delete orb.dataset.phaseCurrent;
+    orb.dataset.phaseCurrent = trackedPhase;
+    orb.dataset.phaseEmpty = localTurn
+      ? trackedPhase === "MANUTENÇÃO"
+        ? "MANUTENÇÃO"
+        : trackedPhase || "AGUARDE"
+      : "TURNO DO OPONENTE";
     return;
   }
 
+  delete orb.dataset.phaseEmpty;
   const action = resolvePhaseAction(button);
-  orb.dataset.phaseCurrent = action.current;
+  orb.dataset.phaseCurrent = trackedPhase || action.current;
   button.dataset.phaseNext = action.next;
   button.dataset.phaseIcon = action.icon;
   button.setAttribute("aria-label", action.aria);
