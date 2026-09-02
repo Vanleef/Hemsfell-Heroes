@@ -58,6 +58,8 @@ import "./presentation/styles/match-feedback-final.css";
 import "./presentation/styles/phase-orb-copy-final.css";
 /* Blocking combat decisions receive spotlight feedback; level-up never swaps to a scaled clone. */
 import "./presentation/styles/critical-flow-feedback.css";
+/* Large pile artwork plus high-contrast footer labels/counts. */
+import "./presentation/styles/side-piles-readability-final.css";
 /* Canonical ability-row contract: numbers, description and external kind label. */
 import "./presentation/styles/hero-ability-layout-contract.css";
 /* Paint one shared capsule around number + description only; kind remains outside. */
