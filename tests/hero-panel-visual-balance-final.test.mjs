@@ -9,32 +9,34 @@ const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const compact = (value) => value.replace(/\s+/g, " ");
 const sheet = compact(css);
 
-test("Cruel Terrain is anchored from the first rendered slot with extra proportional clearance", () => {
-  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 1\.45/);
+test("Cruel Terrain uses extra proportional clearance and scale-aware board coordinates", () => {
+  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 1\.6/);
   assert.match(runtime, /\.field-slot\[data-slot="1"\]/);
   assert.match(runtime, /\.field-slot\[data-slot="2"\]/);
-  assert.match(runtime, /geometry\.firstRect\.left - boardRect\.left - terrainRect\.width - geometry\.clearance/);
-  assert.match(runtime, /\(fieldRect\.height - terrainRect\.height\) \/ 2/);
+  assert.match(runtime, /boardRect\.width \/ layoutWidth/);
+  assert.match(runtime, /boardRect\.height \/ layoutHeight/);
+  assert.match(runtime, /const x = firstSlotLeft - terrainWidth - clearance/);
+  assert.match(runtime, /const y = fieldTop \+ \(fieldHeight - terrainHeight\) \/ 2/);
 });
 
-test("hero portrait gets a tiny responsive overscan instead of dead frame space", () => {
-  assert.match(sheet, /hero-power-trigger > \.hero-portrait[^}]*inset: -\.12cqh -\.08cqw !important/);
-  assert.match(sheet, /hero-power-trigger > \.hero-portrait > img[^}]*transform: scale\(1\.045\) !important/);
+test("hero portrait gets a responsive overscan instead of dead frame space", () => {
+  assert.match(sheet, /hero-power-trigger > \.hero-portrait[^}]*inset: -\.16cqh -\.12cqw !important/);
+  assert.match(sheet, /hero-power-trigger > \.hero-portrait > img[^}]*transform: scale\(1\.055\) !important/);
   assert.match(sheet, /object-fit: cover !important/);
 });
 
 test("expanded hero remains compact without crushing ability rows", () => {
-  assert.match(sheet, /canonical-hero-panel\.is-expanded[^}]*height: 47\.8cqh !important/);
-  assert.match(sheet, /hero-ability-chip[^}]*min-height: 3\.55cqh !important/);
-  assert.match(sheet, /hero-ability-chip[^}]*column-gap: \.56cqw !important/);
-  assert.match(sheet, /hero-ability-copy > p[^}]*line-height: 1\.15 !important/);
+  assert.match(sheet, /canonical-hero-panel\.is-expanded[^}]*height: 47\.6cqh !important/);
+  assert.match(sheet, /hero-ability-chip[^}]*min-height: 3\.72cqh !important/);
+  assert.match(sheet, /hero-ability-chip[^}]*column-gap: \.58cqw !important/);
+  assert.match(sheet, /hero-ability-copy > p[^}]*line-height: 1\.16 !important/);
 });
 
 test("short landscape has its own compact but readable balance", () => {
   const landscape = css.slice(css.indexOf("@media (orientation: landscape)"));
-  assert.match(landscape, /height: 46\.4cqh !important/);
-  assert.match(landscape, /min-height: 3\.35cqh !important/);
-  assert.match(landscape, /line-height: 1\.13 !important/);
+  assert.match(landscape, /height: 46\.2cqh !important/);
+  assert.match(landscape, /min-height: 3\.48cqh !important/);
+  assert.match(landscape, /line-height: 1\.14 !important/);
 });
 
 test("visual balance stylesheet is the terminal hero CSS authority", () => {
