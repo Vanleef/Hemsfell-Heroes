@@ -1,0 +1,237 @@
+/*
+ * Final interaction/state authority for the canonical hero overlay.
+ *
+ * Goals:
+ * - EVOLUIR never changes layout geometry when readiness changes;
+ * - a truly interactable evolution action has an unmistakable living aura;
+ * - active hero effects remain visible in compact and expanded states without
+ *   consuming board tracks or compressing ability rows.
+ */
+
+/* -------------------------------------------------------------------------
+   Stable progress <-> EVOLUIR swap
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(.enemy) > .level-button {
+  position: absolute !important;
+  display: grid !important;
+  place-items: center !important;
+  left: .34cqw !important;
+  right: .34cqw !important;
+  top: var(--hero-card-level-top) !important;
+  bottom: auto !important;
+  width: auto !important;
+  height: var(--hero-card-level-height) !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: .24cqh .48cqw !important;
+  box-sizing: border-box !important;
+  transform: none !important;
+  translate: none !important;
+  transition: none !important;
+  z-index: 64 !important;
+}
+
+/* Keep both surfaces mounted in the same rectangle. Readiness only changes
+   paint/pointer state, preventing the one-frame panel twitch after level-up. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(.enemy):not(.level-ready) > .level-button {
+  display: grid !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  animation: none !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .hero-level-row > .hero-evolution {
+  display: grid !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button {
+  display: grid !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transition: none !important;
+}
+
+/* Ready criterion but temporarily unusable (wrong turn / insufficient energy)
+   stays readable without advertising a clickable action. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button:disabled {
+  cursor: not-allowed !important;
+  opacity: .64 !important;
+  filter: saturate(.7) brightness(.82) !important;
+  animation: none !important;
+  box-shadow:
+    inset 0 0 0 max(1px, .055cqh) rgb(255 255 255 / 8%),
+    0 .12cqh .3cqh rgb(0 0 0 / 58%) !important;
+}
+
+@keyframes heroEvolveReadyAura {
+  0%, 100% {
+    filter: brightness(1.08) saturate(1.08);
+    box-shadow:
+      0 0 0 max(1px, .07cqh) rgb(255 228 120 / 86%),
+      0 0 .42cqh rgb(255 215 85 / 74%),
+      0 0 1.05cqh rgb(245 188 53 / 48%),
+      0 0 1.9cqh rgb(210 152 34 / 24%),
+      inset 0 0 .72cqh rgb(255 241 176 / 17%);
+  }
+  50% {
+    filter: brightness(1.22) saturate(1.2);
+    box-shadow:
+      0 0 0 max(1px, .085cqh) rgb(255 239 157 / 100%),
+      0 0 .65cqh rgb(255 226 102 / 94%),
+      0 0 1.4cqh rgb(252 199 56 / 66%),
+      0 0 2.35cqh rgb(222 158 31 / 34%),
+      inset 0 0 .9cqh rgb(255 246 198 / 24%);
+  }
+}
+
+/* Glow only when the button can actually be interacted with. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button:not(:disabled) {
+  cursor: pointer !important;
+  color: #fff4bd !important;
+  border-color: #f2ca58 !important;
+  background:
+    radial-gradient(circle at 50% 20%, rgb(255 232 135 / 22%), transparent 48%),
+    linear-gradient(180deg, rgb(82 62 18 / 98%), rgb(43 31 8 / 98%)) !important;
+  text-shadow: 0 1px 1px #000, 0 0 .34cqh rgb(255 226 118 / 72%) !important;
+  animation: heroEvolveReadyAura 1.55s ease-in-out infinite !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button:not(:disabled):hover,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button:not(:disabled):focus-visible {
+  filter: brightness(1.28) saturate(1.22) !important;
+  outline: max(1px, .07cqh) solid rgb(255 246 195 / 88%) !important;
+  outline-offset: .12cqh !important;
+}
+
+/* -------------------------------------------------------------------------
+   Active hero effects
+   -------------------------------------------------------------------------
+   Older compact rules hide this node completely. It now lives in a narrow
+   overlay rail just outside the hero card, so cues are always visible without
+   changing hero-card height or ability geometry.
+ */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .player-hero > .hero-status-cues {
+  position: absolute !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  left: calc(100% + .34cqw) !important;
+  right: auto !important;
+  width: max-content !important;
+  max-width: min(8.6cqw, 15.5cqh) !important;
+  height: auto !important;
+  max-height: min(18cqh, 11rem) !important;
+  gap: .24cqh !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  translate: none !important;
+  z-index: 10040 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy .player-hero > .hero-status-cues {
+  top: var(--hero-card-level-top) !important;
+  bottom: auto !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player .player-hero > .hero-status-cues {
+  top: auto !important;
+  bottom: .42cqh !important;
+  flex-direction: column-reverse !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .player-hero > .hero-status-cues > span {
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: .34cqh .42cqw !important;
+  border: max(1px, .055cqh) solid color-mix(in srgb, var(--deck) 54%, #d7b95e) !important;
+  border-radius: .32cqw !important;
+  background: linear-gradient(180deg, rgb(7 28 27 / 97%), rgb(3 16 18 / 98%)) !important;
+  box-shadow:
+    0 .16cqh .42cqh rgb(0 0 0 / 56%),
+    inset 0 0 .5cqh color-mix(in srgb, var(--deck) 12%, transparent) !important;
+  color: #f1ead4 !important;
+  font-size: clamp(.46rem, min(.64cqw, .96cqh), .66rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.13 !important;
+  text-align: left !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+}
+
+html body .screen-game.screen-game .hero-status-cues > .cue-element {
+  border-color: #79bddd !important;
+  color: #d9f4ff !important;
+}
+
+html body .screen-game.screen-game .hero-status-cues > .cue-cost {
+  border-color: #e3c35b !important;
+  color: #fff0ad !important;
+}
+
+html body .screen-game.screen-game .hero-status-cues > .cue-life {
+  border-color: #be6374 !important;
+  color: #ffd8df !important;
+}
+
+html body .screen-game.screen-game .hero-status-cues > .cue-warning {
+  border-color: #d88958 !important;
+  color: #ffe0c4 !important;
+}
+
+/* Responsive rail compression. The rail remains outside normal layout flow. */
+@media (orientation: landscape) and (max-height: 44rem),
+       (orientation: landscape) and (max-width: 64rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .player-hero > .hero-status-cues {
+    left: calc(100% + .24cqw) !important;
+    max-width: min(8.1cqw, 13.8cqh) !important;
+    gap: .18cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .player-hero > .hero-status-cues > span {
+    padding: .28cqh .34cqw !important;
+    font-size: clamp(.4rem, min(.58cqw, .84cqh), .58rem) !important;
+    line-height: 1.1 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(.enemy) > .level-button {
+    padding: .18cqh .4cqw !important;
+  }
+}
+
+@media (orientation: portrait) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .player-hero > .hero-status-cues {
+    left: calc(100% + .3rem) !important;
+    max-width: min(31vw, 9.5rem) !important;
+    gap: .18rem !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .player-hero > .hero-status-cues > span {
+    padding: .28rem .38rem !important;
+    font-size: clamp(.62rem, 2.25vw, .78rem) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button:not(:disabled) {
+    animation: none !important;
+    box-shadow:
+      0 0 0 max(1px, .08cqh) rgb(255 235 140 / 92%),
+      0 0 .9cqh rgb(255 218 87 / 68%),
+      0 0 1.7cqh rgb(241 185 47 / 34%) !important;
+  }
+}
