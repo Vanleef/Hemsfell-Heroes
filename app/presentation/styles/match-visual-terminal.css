@@ -1,28 +1,26 @@
 /*
- * Final visual authority for the phase action and side-pile thumbnails.
- *
- * This stylesheet intentionally loads last. It owns only the final player-turn
- * phase CTA geometry and the neutral graveyard thumbnail presentation so older
- * circular/cropping rules cannot win the cascade again.
+ * Final visual authority for phase action and side-pile top-card presentation.
+ * Keep this stylesheet last in the cascade.
  */
 
 /* -------------------------------------------------------------------------
-   Phase action — player turn
+   Phase action — intrinsic to the action copy
    ------------------------------------------------------------------------- */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button) {
   box-sizing: border-box !important;
-  width: clamp(8.6rem, 11cqw, 11.8rem) !important;
-  height: auto !important;
+  position: relative !important;
+  width: max-content !important;
   min-width: 0 !important;
+  max-width: min(12rem, 20cqw) !important;
+  height: auto !important;
   min-height: 0 !important;
-  max-width: min(12.4rem, 20cqw) !important;
   aspect-ratio: auto !important;
   display: flex !important;
   flex-direction: column !important;
-  align-items: stretch !important;
-  justify-content: center !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  padding: clamp(1rem, 1.75cqh, 1.35rem) 0 0 !important;
   gap: 0 !important;
-  padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
@@ -30,27 +28,26 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   overflow: visible !important;
 }
 
-/* The current-phase line stays visually stronger than ordinary HUD metadata. */
+/* This line is visual metadata only. It must never widen the action button. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button)[data-phase-current]::before {
   content: "FASE ATUAL · " attr(data-phase-current) !important;
-  position: static !important;
-  inset: auto !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 50% !important;
+  inset-inline-end: auto !important;
+  bottom: auto !important;
   display: block !important;
-  align-self: center !important;
   width: max-content !important;
+  max-width: none !important;
   height: auto !important;
-  min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: 100% !important;
-  aspect-ratio: auto !important;
-  margin: 0 0 clamp(.24rem, .42cqh, .38rem) !important;
-  padding: 0 clamp(.18rem, .28cqw, .3rem) !important;
+  margin: 0 !important;
+  padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
   filter: none !important;
-  transform: none !important;
+  transform: translateX(-50%) !important;
   opacity: 1 !important;
   visibility: visible !important;
   color: #f4d978 !important;
@@ -58,10 +55,10 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   -webkit-text-stroke: max(.18px, .012rem) rgb(0 0 0 / 70%) !important;
   paint-order: stroke fill !important;
   font-family: Arial, Helvetica, sans-serif !important;
-  font-size: clamp(.68rem, min(.84cqw, 1.24cqh), .9rem) !important;
+  font-size: clamp(.66rem, min(.82cqw, 1.18cqh), .86rem) !important;
   font-weight: 950 !important;
   line-height: 1 !important;
-  letter-spacing: .08em !important;
+  letter-spacing: .075em !important;
   text-align: center !important;
   text-transform: uppercase !important;
   white-space: nowrap !important;
@@ -74,22 +71,23 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   position: relative !important;
   isolation: isolate !important;
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-columns: max-content auto !important;
   grid-template-rows: 1fr !important;
   align-items: center !important;
-  justify-items: stretch !important;
-  column-gap: clamp(.22rem, .34cqw, .38rem) !important;
-  width: 100% !important;
-  height: auto !important;
+  justify-content: center !important;
+  justify-items: start !important;
+  column-gap: clamp(.3rem, .42cqw, .46rem) !important;
+  width: max-content !important;
   min-width: 0 !important;
-  min-height: clamp(2.6rem, 6cqh, 3.35rem) !important;
-  max-width: none !important;
+  max-width: min(12rem, 20cqw) !important;
+  height: auto !important;
+  min-height: clamp(2.15rem, 4.85cqh, 2.72rem) !important;
   max-height: none !important;
   aspect-ratio: auto !important;
   margin: 0 !important;
-  padding: clamp(.38rem, .58cqh, .52rem) clamp(.58rem, .78cqw, .82rem) !important;
-  border: max(1px, .08cqh) solid rgb(255 203 74 / 96%) !important;
-  border-radius: clamp(.56rem, .76cqw, .8rem) !important;
+  padding: clamp(.3rem, .46cqh, .42rem) clamp(.56rem, .72cqw, .76rem) !important;
+  border: max(1px, .075cqh) solid rgb(255 203 74 / 96%) !important;
+  border-radius: clamp(.5rem, .68cqw, .7rem) !important;
   outline: 0 !important;
   background: linear-gradient(180deg, rgb(255 174 23 / 100%) 0%, rgb(249 139 8 / 100%) 54%, rgb(209 101 4 / 100%) 100%) !important;
   color: transparent !important;
@@ -99,18 +97,17 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   overflow: hidden !important;
   cursor: pointer !important;
   box-shadow:
-    0 .24rem .66rem rgb(0 0 0 / 48%),
-    inset 0 1px 0 rgb(255 248 205 / 58%),
-    inset 0 -.14rem .3rem rgb(126 49 0 / 34%),
-    0 0 clamp(.42rem, .82cqh, .8rem) rgb(255 166 18 / 34%) !important;
+    0 .2rem .56rem rgb(0 0 0 / 44%),
+    inset 0 1px 0 rgb(255 248 205 / 54%),
+    inset 0 -.11rem .24rem rgb(126 49 0 / 30%),
+    0 0 clamp(.34rem, .68cqh, .64rem) rgb(255 166 18 / 28%) !important;
   transition: transform 120ms ease, filter 150ms ease, box-shadow 150ms ease !important;
 }
 
-/* No decorative icon at the left of the phase name. */
+/* No left-side phase icon. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::before {
   content: none !important;
   display: none !important;
-  position: static !important;
   width: 0 !important;
   height: 0 !important;
   margin: 0 !important;
@@ -120,8 +117,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   box-shadow: none !important;
 }
 
-/* The next-phase label owns the available width. It never wraps: longer labels
- * receive progressively smaller responsive ceilings below. */
+/* The action copy is the element that determines the intrinsic CTA width. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::after {
   content: attr(data-phase-next) !important;
   position: static !important;
@@ -130,13 +126,11 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   grid-row: 1 !important;
   display: block !important;
   align-self: center !important;
-  justify-self: stretch !important;
-  width: auto !important;
-  height: auto !important;
+  justify-self: start !important;
+  width: max-content !important;
   min-width: 0 !important;
-  min-height: 0 !important;
-  max-width: 100% !important;
-  max-height: none !important;
+  max-width: min(9.6rem, 16cqw) !important;
+  height: auto !important;
   margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
@@ -147,35 +141,33 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   transform: none !important;
   opacity: 1 !important;
   visibility: visible !important;
-  clip: auto !important;
-  clip-path: none !important;
   overflow: hidden !important;
   text-overflow: clip !important;
   color: #fff8dd !important;
   -webkit-text-fill-color: #fff8dd !important;
-  -webkit-text-stroke: max(.22px, .016rem) rgb(72 26 0 / 62%) !important;
+  -webkit-text-stroke: max(.2px, .014rem) rgb(72 26 0 / 60%) !important;
   paint-order: stroke fill !important;
   font-family: Arial, Helvetica, sans-serif !important;
-  font-size: clamp(.62rem, min(.8cqw, 1.16cqh), .84rem) !important;
+  font-size: clamp(.6rem, min(.76cqw, 1.08cqh), .8rem) !important;
   font-weight: 950 !important;
   line-height: 1 !important;
-  letter-spacing: .035em !important;
-  text-align: center !important;
+  letter-spacing: .03em !important;
+  text-align: left !important;
   text-transform: uppercase !important;
   white-space: nowrap !important;
   text-wrap: nowrap !important;
-  text-shadow: 0 1px 1px rgb(78 25 0 / 92%), 0 0 .16rem rgb(0 0 0 / 30%) !important;
+  text-shadow: 0 1px 1px rgb(78 25 0 / 92%), 0 0 .14rem rgb(0 0 0 / 28%) !important;
   pointer-events: none !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button[data-phase-next="FINALIZAÇÃO"]::after {
-  font-size: clamp(.58rem, min(.74cqw, 1.08cqh), .78rem) !important;
-  letter-spacing: .025em !important;
+  font-size: clamp(.56rem, min(.71cqw, 1.02cqh), .74rem) !important;
+  letter-spacing: .022em !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button[data-phase-next="ENCERRAR TURNO"]::after {
-  font-size: clamp(.54rem, min(.7cqw, 1.02cqh), .74rem) !important;
-  letter-spacing: .018em !important;
+  font-size: clamp(.52rem, min(.66cqw, .96cqh), .69rem) !important;
+  letter-spacing: .016em !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not([data-phase-next])::after,
@@ -183,7 +175,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   content: "AVANÇAR" !important;
 }
 
-/* Arrow only: no circle, no border and no background plate. */
+/* Arrow only — no circle, plate or background. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button > span {
   position: static !important;
   inset: auto !important;
@@ -208,7 +200,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   -webkit-text-fill-color: #fff9e2 !important;
   -webkit-text-stroke: 0 transparent !important;
   font-family: Arial, Helvetica, sans-serif !important;
-  font-size: clamp(.82rem, min(1cqw, 1.42cqh), 1rem) !important;
+  font-size: clamp(.76rem, min(.94cqw, 1.34cqh), .94rem) !important;
   font-weight: 950 !important;
   line-height: 1 !important;
   transform: none !important;
@@ -222,14 +214,14 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   transform: translateY(-1px) !important;
   filter: brightness(1.06) saturate(1.04) !important;
   box-shadow:
-    0 .31rem .78rem rgb(0 0 0 / 52%),
-    inset 0 1px 0 rgb(255 250 219 / 64%),
-    inset 0 -.14rem .3rem rgb(126 49 0 / 29%),
-    0 0 clamp(.62rem, 1.12cqh, 1.06rem) rgb(255 174 25 / 46%) !important;
+    0 .26rem .68rem rgb(0 0 0 / 48%),
+    inset 0 1px 0 rgb(255 250 219 / 62%),
+    inset 0 -.11rem .24rem rgb(126 49 0 / 27%),
+    0 0 clamp(.48rem, .9cqh, .86rem) rgb(255 174 25 / 40%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled):hover > span {
-  translate: .08rem 0 !important;
+  translate: .07rem 0 !important;
   background: transparent !important;
 }
 
@@ -244,14 +236,22 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
 }
 
 /* -------------------------------------------------------------------------
-   Graveyard side-pile thumbnail
+   Side-pile top cards
    ------------------------------------------------------------------------- */
-/* The graveyard uses the same full-bleed card presentation as the other pile
- * surfaces. No crop, zoom, translation or filter is allowed here. */
+/* Cards shown on top of a pile are clean artwork. No pile-level card shadow,
+ * drop shadow or filter may be applied to the card itself. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > .pile-card,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > .pile-card > :is(.remote-card-art, canvas, img) {
+  box-shadow: none !important;
+  filter: none !important;
+  text-shadow: none !important;
+}
+
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone.grave > .pile-card {
   overflow: hidden !important;
   transform: none !important;
-  filter: none !important;
+  scale: 1 !important;
+  translate: none !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone.grave > .pile-card > :is(.remote-card-art, canvas, img) {
@@ -265,58 +265,53 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
   transform-origin: center !important;
   scale: 1 !important;
   translate: none !important;
-  filter: none !important;
   object-fit: cover !important;
   object-position: center center !important;
   pointer-events: none !important;
 }
 
-/* Only the baseline behind DECK/CEMITÉRIO/etc. receives a short readability
- * fade; it must not climb into the pile artwork. */
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone::after {
-  height: clamp(.62rem, 1.18cqh, .88rem) !important;
-  background: linear-gradient(
-    180deg,
-    rgb(0 0 0 / 0%) 0%,
-    rgb(0 0 0 / 10%) 40%,
-    rgb(0 0 0 / 44%) 72%,
-    rgb(0 0 0 / 80%) 100%
-  ) !important;
+/* Do not paint the readability fade on top of a real card thumbnail. Labels
+ * already have outline/text-shadow in the pile readability contract. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > .remote-card-art)::after,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > canvas)::after,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > img)::after {
+  content: none !important;
+  display: none !important;
+  height: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
 }
 
 @media (orientation: landscape) and (max-height: 44rem) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button) {
-    width: clamp(7.8rem, 10.2cqw, 10.4rem) !important;
+    max-width: min(10.5rem, 19cqw) !important;
+    padding-top: clamp(.82rem, 1.45cqh, 1.08rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button)[data-phase-current]::before {
-    font-size: clamp(.58rem, min(.7cqw, 1.02cqh), .74rem) !important;
-    margin-bottom: clamp(.18rem, .3cqh, .28rem) !important;
+    font-size: clamp(.56rem, min(.68cqw, .98cqh), .72rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
-    min-height: clamp(2.3rem, 5.35cqh, 2.9rem) !important;
-    padding: clamp(.32rem, .48cqh, .44rem) clamp(.46rem, .62cqw, .62rem) !important;
+    min-height: clamp(1.95rem, 4.35cqh, 2.38rem) !important;
+    padding: clamp(.25rem, .38cqh, .34rem) clamp(.46rem, .58cqw, .6rem) !important;
+    column-gap: clamp(.24rem, .32cqw, .34rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::after {
-    font-size: clamp(.54rem, min(.68cqw, .98cqh), .72rem) !important;
+    font-size: clamp(.52rem, min(.65cqw, .92cqh), .69rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button[data-phase-next="FINALIZAÇÃO"]::after {
-    font-size: clamp(.5rem, min(.63cqw, .92cqh), .67rem) !important;
+    font-size: clamp(.49rem, min(.61cqw, .87cqh), .64rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button[data-phase-next="ENCERRAR TURNO"]::after {
-    font-size: clamp(.48rem, min(.6cqw, .88cqh), .64rem) !important;
+    font-size: clamp(.46rem, min(.57cqw, .82cqh), .61rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button > span {
-    font-size: clamp(.72rem, min(.88cqw, 1.24cqh), .9rem) !important;
-  }
-
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone::after {
-    height: clamp(.54rem, 1.02cqh, .72rem) !important;
+    font-size: clamp(.66rem, min(.8cqw, 1.12cqh), .82rem) !important;
   }
 }
 
