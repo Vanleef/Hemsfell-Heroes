@@ -8,12 +8,17 @@ const balanceCss = fs.readFileSync("app/presentation/styles/hero-panel-visual-ba
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 
 test("Cruel Terrain is anchored to the first rendered owner slot in local scaled-board coordinates", () => {
-  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 1\.6/);
+  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 1\.85/);
+  assert.match(runtime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.28/);
   assert.match(runtime, /\.field-slot\[data-slot="1"\]/);
   assert.match(runtime, /\.field-slot\[data-slot="2"\]/);
   assert.match(runtime, /secondRect\.left - firstRect\.right/);
+  assert.match(runtime, /firstRect\.width \* TERRAIN_MIN_SLOT_CLEARANCE/);
   assert.match(runtime, /boardRect\.width \/ layoutWidth/);
   assert.match(runtime, /boardRect\.height \/ layoutHeight/);
+  assert.match(runtime, /const terrainRect = terrainEl\.getBoundingClientRect\(\)/);
+  assert.match(runtime, /terrainRect\.width \/ boardScale\.x/);
+  assert.match(runtime, /terrainRect\.height \/ boardScale\.y/);
   assert.match(runtime, /firstSlotLeft = \(geometry\.firstRect\.left - boardRect\.left\) \/ boardScale\.x/);
   assert.match(runtime, /clearance = geometry\.clearance \/ boardScale\.x/);
   assert.match(runtime, /fieldTop = \(fieldRect\.top - boardRect\.top\) \/ boardScale\.y/);
