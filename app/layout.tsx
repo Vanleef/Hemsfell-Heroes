@@ -54,6 +54,8 @@ import "./presentation/styles/evolution-tooltip-portal-final.css";
 import "./presentation/styles/global-tooltip-layer-final.css";
 /* Final gameplay feedback authority: evolution, defender lane, priority center and phase copy. */
 import "./presentation/styles/match-feedback-final.css";
+/* Terminal phase-orb typography and mandatory Indomitable warning readability. */
+import "./presentation/styles/phase-orb-copy-final.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
