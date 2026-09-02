@@ -6,18 +6,22 @@ const runtime = fs.readFileSync("app/presentation/runtime/terrain-field-anchor-r
 const css = fs.readFileSync("app/presentation/styles/hero-panel-visual-balance-final.css", "utf8");
 const terminal = fs.readFileSync("app/presentation/styles/hero-panel-polish-terminal.css", "utf8");
 const dragCss = fs.readFileSync("app/presentation/styles/terrain-drag-stability.css", "utf8");
+const statusCss = fs.readFileSync("app/presentation/styles/hero-status-visibility-final.css", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 
 const compact = (value) => value.replace(/\s+/g, " ");
 const sheet = compact(css);
 const finalSheet = compact(terminal);
 const dragSheet = compact(dragCss);
+const statusSheet = compact(statusCss);
 
-test("Cruel Terrain keeps approved proportional clearance and a field-slot-sized footprint", () => {
-  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 1\.85/);
-  assert.match(runtime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.28/);
+test("Cruel Terrain matches the real field-slot gap and keeps a field-slot-sized footprint", () => {
   assert.match(runtime, /\.field-slot\[data-slot="1"\]/);
   assert.match(runtime, /\.field-slot\[data-slot="2"\]/);
+  assert.match(runtime, /secondRect\.left - firstRect\.right/);
+  assert.match(runtime, /clearance: measuredGap/);
+  assert.doesNotMatch(runtime, /TERRAIN_GAP_MULTIPLIER/);
+  assert.doesNotMatch(runtime, /TERRAIN_MIN_SLOT_CLEARANCE/);
   assert.match(runtime, /boardRect\.width \/ layoutWidth/);
   assert.match(runtime, /boardRect\.height \/ layoutHeight/);
   assert.match(runtime, /const slotWidth = geometry\.firstRect\.width \/ boardScale\.x/);
@@ -62,24 +66,30 @@ test("hero progress uses one solid fill and outlined copy above it", () => {
   assert.doesNotMatch(fillRule, /(?:^|;)\s*width\s*:/);
 });
 
-test("expanded hero matches compact progress geometry and keeps readable ability rows", () => {
-  assert.match(sheet, /canonical-hero-panel\.is-expanded[^}]*--hero-card-level-top: calc\(var\(--hero-card-art-top\) \+ var\(--hero-card-art-height\) \+ \.34cqh\)/);
-  assert.match(sheet, /canonical-hero-panel\.is-expanded > \.player-hero > \.hero-level-row[^}]*left: \.34cqw !important[^}]*right: \.34cqw !important[^}]*top: var\(--hero-card-level-top\) !important/);
-  assert.match(sheet, /hero-command-bar > \.hero-ability-chip[^}]*min-height: 4\.18cqh !important/);
-  assert.match(sheet, /hero-command-bar > \.hero-ability-chip[^}]*column-gap: \.62cqw !important/);
-  assert.match(sheet, /hero-ability-copy > p[^}]*line-height: 1\.17 !important/);
+test("final active effects and ability typography use available panel space adaptively", () => {
+  assert.match(statusSheet, /hero-status-cues > span[^}]*min-height: 2\.55cqh !important/);
+  assert.match(statusSheet, /hero-status-cues > span[^}]*font-size: clamp\(\.54rem, min\(\.78cqw, 1\.16cqh\), \.82rem\) !important/);
+  assert.match(statusSheet, /hero-ability-chip[^}]*column-gap: \.78cqw !important/);
+  assert.match(statusSheet, /hero-ability-chip[^}]*grid-template-columns: 2\.62cqh minmax\(0, 1fr\) !important/);
+  assert.match(statusSheet, /hero-ability-chip > :is\(\.hero-ability-copy, span\) > p[^}]*font-size: clamp\(\.6rem, min\(\.88cqw, 1\.28cqh\), \.86rem\) !important/);
+  assert.match(statusSheet, /hero-ability-chip\.copy-compact[^}]*font-size: clamp\(\.55rem, min\(\.8cqw, 1\.17cqh\), \.78rem\) !important/);
+  assert.match(statusSheet, /hero-ability-chip\.copy-dense[^}]*font-size: clamp\(\.49rem, min\(\.71cqw, 1\.05cqh\), \.7rem\) !important/);
 });
 
 test("short landscape keeps the same visual relationships responsively", () => {
   const landscape = terminal.slice(terminal.indexOf("@media (orientation: landscape)"));
   assert.match(landscape, /hero-portrait::after[^}]*bottom: \.32cqh !important/);
   assert.match(landscape, /hero-short-name[^}]*bottom: \.82cqh !important/);
+  const responsiveStatus = statusCss.slice(statusCss.indexOf("@media (orientation: landscape)"));
+  assert.match(responsiveStatus, /hero-status-cues > span[^}]*font-size: clamp\(\.46rem, min\(\.68cqw, 1cqh\), \.7rem\) !important/);
+  assert.match(responsiveStatus, /hero-ability-chip\.copy-dense[^}]*font-size: clamp\(\.45rem, min\(\.62cqw, \.91cqh\), \.61rem\) !important/);
 });
 
-test("terminal polish loads after every previous hero CSS authority", () => {
+test("terminal polish and status specificity load after previous hero CSS authorities", () => {
   const geometry = layout.indexOf('import "./presentation/styles/hero-panel-layout-final.css"');
   const balance = layout.indexOf('import "./presentation/styles/hero-panel-visual-balance-final.css"');
   const terminalIndex = layout.indexOf('import "./presentation/styles/hero-panel-polish-terminal.css"');
   const dragIndex = layout.indexOf('import "./presentation/styles/terrain-drag-stability.css"');
-  assert.ok(geometry >= 0 && balance > geometry && terminalIndex > balance && dragIndex > terminalIndex);
+  const statusIndex = layout.indexOf('import "./presentation/styles/hero-status-visibility-final.css"');
+  assert.ok(geometry >= 0 && balance > geometry && terminalIndex > balance && dragIndex > terminalIndex && statusIndex > dragIndex);
 });
