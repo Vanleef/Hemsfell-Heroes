@@ -1,0 +1,35 @@
+/* Terminal tooltip-layer authority.
+ * Visible floating tooltips should always outrank board cards, hand cards,
+ * overlays and transformed match surfaces. Components that need absolute
+ * top-most priority should render through a body portal / Popover Top Layer.
+ */
+:root {
+  --hemsfell-tooltip-layer: 2147483647;
+  --hemsfell-floating-layer: 2147483600;
+}
+
+/* Floating UI card/glossary portals already render as body children. Keep their
+ * entire portal above every ordinary match stacking context. */
+body > [data-floating-ui-portal] {
+  position: relative !important;
+  z-index: var(--hemsfell-floating-layer) !important;
+  isolation: isolate !important;
+}
+
+/* Native/manual tooltip portals use the highest conventional z-index as a
+ * fallback; Popover elements additionally enter the browser Top Layer. */
+body > .ui-tooltip-portal,
+body > .ui-tooltip-portal:popover-open,
+body > .evolution-tooltip-portal,
+body > .evolution-tooltip-portal:popover-open {
+  z-index: var(--hemsfell-tooltip-layer) !important;
+  isolation: isolate !important;
+}
+
+/* Local semantic tooltips still get the strongest layer available inside their
+ * own context. New interactive tooltips should prefer .ui-tooltip-portal. */
+html body .screen-game [role="tooltip"],
+html body .screen-game .card-tooltip,
+html body .screen-game [data-tip]::after {
+  z-index: var(--hemsfell-tooltip-layer) !important;
+}
