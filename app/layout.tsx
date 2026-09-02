@@ -34,6 +34,8 @@ import "./presentation/styles/hero-panel-tooltip-final.css";
 import "./presentation/styles/hero-panel-layout-final.css";
 /* Terminal balance: edge-to-edge hero artwork and readable compact ability rows. */
 import "./presentation/styles/hero-panel-visual-balance-final.css";
+/* True terminal polish: readable progress, stable terrain drop footprint and hero-art identity. */
+import "./presentation/styles/hero-panel-polish-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
