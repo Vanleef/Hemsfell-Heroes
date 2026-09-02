@@ -270,16 +270,32 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
   pointer-events: none !important;
 }
 
-/* Do not paint the readability fade on top of a real card thumbnail. Labels
- * already have outline/text-shadow in the pile readability contract. */
+/* A real card remains shadow-free itself, but the pile keeps a very short
+ * readability fade underneath the footer labels/count. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > .remote-card-art)::after,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > canvas)::after,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > img)::after {
-  content: none !important;
-  display: none !important;
-  height: 0 !important;
-  background: none !important;
+  content: "" !important;
+  display: block !important;
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: clamp(.58rem, 1.06cqh, .82rem) !important;
+  border: 0 !important;
+  border-radius: 0 0 inherit inherit !important;
+  background: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0%) 0%,
+    rgb(0 0 0 / 8%) 38%,
+    rgb(0 0 0 / 46%) 72%,
+    rgb(0 0 0 / 78%) 100%
+  ) !important;
   box-shadow: none !important;
+  filter: none !important;
+  pointer-events: none !important;
+  z-index: 2 !important;
 }
 
 @media (orientation: landscape) and (max-height: 44rem) {
@@ -312,6 +328,12 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button > span {
     font-size: clamp(.66rem, min(.8cqw, 1.12cqh), .82rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > .remote-card-art)::after,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > canvas)::after,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone:has(> .pile-card > img)::after {
+    height: clamp(.5rem, .92cqh, .68rem) !important;
   }
 }
 
