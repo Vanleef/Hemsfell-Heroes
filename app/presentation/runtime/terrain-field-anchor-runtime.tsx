@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 
 const BOARD_SELECTOR = ".screen-game .game-stage > .game-content.hs-board";
-const TERRAIN_GAP_MULTIPLIER = 1.85;
-const TERRAIN_MIN_SLOT_CLEARANCE = 0.28;
+const TERRAIN_GAP_MULTIPLIER = 2.05;
+const TERRAIN_MIN_SLOT_CLEARANCE = 0.34;
 
 type TerrainPair = {
   field: ".enemy-field" | ".player-field";
@@ -42,7 +42,7 @@ export default function TerrainFieldAnchorRuntime() {
 
       return {
         firstRect,
-        clearance: Math.max(measuredGap * TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 8),
+        clearance: Math.max(measuredGap * TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 10),
       };
     };
 
