@@ -31,12 +31,12 @@ test("Cruel Terrain has safe owner-field fallback rows before exact runtime anch
   assert.match(sheet, /terrain-slot\.is-field-anchored[^}]*position: absolute !important/);
 });
 
-test("Cruel Terrain final position follows first rendered slot with stable slot dimensions", () => {
-  assert.match(terrainRuntime, /const TERRAIN_GAP_MULTIPLIER = 2\.05/);
-  assert.match(terrainRuntime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.34/);
+test("Cruel Terrain final position follows first rendered slot with the approved spacing", () => {
+  assert.match(terrainRuntime, /const TERRAIN_GAP_MULTIPLIER = 1\.85/);
+  assert.match(terrainRuntime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.28/);
   assert.match(terrainRuntime, /secondRect\.left - firstRect\.right/);
   assert.match(terrainRuntime, /firstRect\.width \* TERRAIN_MIN_SLOT_CLEARANCE/);
-  assert.match(terrainRuntime, /Math\.max\(measuredGap \* TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 10\)/);
+  assert.match(terrainRuntime, /Math\.max\(measuredGap \* TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 8\)/);
   assert.match(terrainRuntime, /boardRect\.width \/ layoutWidth/);
   assert.match(terrainRuntime, /boardRect\.height \/ layoutHeight/);
   assert.match(terrainRuntime, /const slotWidth = geometry\.firstRect\.width \/ boardScale\.x/);
