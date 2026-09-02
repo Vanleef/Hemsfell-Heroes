@@ -1,0 +1,89 @@
+/*
+ * Hero panel overlay isolation.
+ *
+ * This file owns only the panel's relationship with the board. The hero card
+ * itself remains styled by the canonical hero-panel files. Keeping the stacks
+ * absolutely positioned removes them from grid track sizing, so compact <-
+ * expanded transitions cannot move fields, energy, hands or piles.
+ */
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board {
+  position: relative !important;
+  --hero-overlay-edge-x: clamp(.4rem, .85cqw, .9rem);
+  --hero-overlay-enemy-top: clamp(1.7rem, 5.25cqh, 3.15rem);
+  --hero-overlay-player-bottom: clamp(.42rem, 1.25cqh, .85rem);
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel {
+  position: absolute !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  grid-area: auto !important;
+  align-self: auto !important;
+  justify-self: auto !important;
+  place-self: auto !important;
+  margin: 0 !important;
+  translate: none !important;
+  transform: none !important;
+  contain: layout !important;
+  overflow: visible !important;
+  z-index: 9200 !important;
+}
+
+/* Opponent stays pinned to the upper-left and grows down into the board. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy.is-expanded {
+  left: var(--hero-overlay-edge-x) !important;
+  right: auto !important;
+  top: var(--hero-overlay-enemy-top) !important;
+  bottom: auto !important;
+}
+
+/* Local hero stays pinned to the lower-left and grows upward into the board. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded {
+  left: var(--hero-overlay-edge-x) !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: var(--hero-overlay-player-bottom) !important;
+}
+
+/* Expanded content gets a deliberate gap before the evolve action. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
+  bottom: 4.8cqh !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .player-hero:not(.enemy) > .level-button {
+  top: auto !important;
+  bottom: .82cqh !important;
+  left: 21% !important;
+  right: auto !important;
+  width: 58% !important;
+  height: 2.55cqh !important;
+  margin: 0 !important;
+}
+
+/* The card transition is visual only; it never changes the board containing
+ * block or any grid track. The local panel expands upward because bottom stays
+ * fixed; the enemy panel expands downward because top stays fixed. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
+  z-index: 12000 !important;
+}
+
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board {
+    --hero-overlay-edge-x: clamp(.28rem, .55cqw, .55rem);
+    --hero-overlay-enemy-top: clamp(1.45rem, 4.75cqh, 2.55rem);
+    --hero-overlay-player-bottom: clamp(.3rem, .72cqh, .55rem);
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
+    bottom: 4.45cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .player-hero:not(.enemy) > .level-button {
+    bottom: .62cqh !important;
+    height: 2.45cqh !important;
+  }
+}
