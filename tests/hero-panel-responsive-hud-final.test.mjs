@@ -37,8 +37,9 @@ test("evolution criterion tooltip can open above or below the isolated panel", (
 });
 
 test("ability type is communicated visually while textual PASSIVA ATIVA stays in tooltip semantics", () => {
-  assert.match(page, /isPassive \? "is-passive" : "is-active"/);
-  assert.match(page, /data-ability-tooltip=\{`\$\{type\} · \$\{status\} — \$\{ability\}`\}/);
+  assert.match(page, /stateClass=locked\?"is-locked":active\?\(clickable\?"is-active is-available":"is-active is-unavailable"\):"is-passive"/);
+  assert.match(page, /const abilityTooltip=`\$\{active\?"ATIVA":"PASSIVA"\} · NÍVEL \$\{unlockLevel\}/);
+  assert.match(page, /data-ability-tooltip=\{abilityTooltip\}/);
   assert.match(css, /hero-ability-copy > b \{\s*display: none !important/);
   assert.match(css, /hero-ability-chip\.is-passive \{/);
   assert.match(css, /hero-ability-chip\.is-active \{/);
