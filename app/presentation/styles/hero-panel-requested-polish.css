@@ -1,51 +1,66 @@
 /*
- * Requested hero-panel polish applied on top of commit 22b1999b.
+ * Requested hero-panel polish applied on top of restored commit 22b1999b.
  *
- * IMPORTANT: this file intentionally DOES NOT redefine the structural model of
- * .player-hero, .hero-level-row or .hero-command-bar. It only changes the
- * dimensions/offsets requested for the restored canonical layout.
+ * This file is intentionally a narrow visual authority. It does not replace
+ * the canonical .player-hero/.hero-level-row layout model and it keeps the
+ * hero stacks isolated from board track sizing.
  */
 
 /* -------------------------------------------------------------------------
-   Shared proportions. Compact and expanded keep the same width and artwork
-   proportion; expanded only gains vertical reading room for the abilities.
+   Board anchors and shared proportions.
    ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board {
+  --hero-overlay-edge-x: clamp(.55rem, 1.05cqw, 1rem);
+  --hero-overlay-enemy-top: clamp(1.9rem, 5.6cqh, 3.45rem);
+  --hero-overlay-player-bottom: clamp(.58rem, 1.55cqh, 1.05rem);
+  --hero-terrain-gap: max(calc(var(--hh-ref-field-gap) * 1.15), .12rem);
+}
+
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel {
   --hero-card-identity-gap: 0cqh;
   --hero-card-identity-height: 0cqh;
-  --hero-card-progress-gap: .26cqh;
-  --hero-card-level-height: 4.18cqh;
+  --hero-card-progress-gap: .28cqh;
+  --hero-card-level-height: 4.28cqh;
   --hero-card-section-gap: .28cqh;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded),
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
-  --hero-card-art-height: 26.15cqh;
+  --hero-card-art-height: 26.55cqh;
   width: var(--hero-refined-panel-width) !important;
   min-width: var(--hero-refined-panel-width) !important;
   max-width: var(--hero-refined-panel-width) !important;
 }
 
+/* The compact frame now visibly contains both portrait and progress. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) {
-  height: 31.7cqh !important;
+  height: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .56cqh) !important;
+  border: max(1px, .075cqh) solid color-mix(in srgb, var(--deck) 48%, #bca257) !important;
+  border-radius: clamp(.38rem, .58cqw, .68rem) !important;
+  background:
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--deck) 12%, transparent), transparent 46%),
+    linear-gradient(180deg, rgb(4 20 19 / 94%), rgb(2 12 13 / 96%)) !important;
+  box-shadow:
+    inset 0 0 0 max(1px, .04cqh) rgb(255 255 255 / 4%),
+    0 .42cqh 1.15cqh rgb(0 0 0 / 54%) !important;
+  overflow: visible !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
-  height: 60.2cqh !important;
-  max-height: min(88cqh, 60.2cqh) !important;
+  height: 59.2cqh !important;
+  max-height: min(88cqh, 59.2cqh) !important;
 }
 
 /* -------------------------------------------------------------------------
-   Identity lives INSIDE the artwork: name lower-left, life lower-right.
-   The name is text-only, with no plate/background.
+   Identity INSIDE artwork: larger name lower-left, larger life lower-right.
    ------------------------------------------------------------------------- */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-short-name {
-  left: .34cqw !important;
+  left: .4cqw !important;
   right: auto !important;
   top: auto !important;
-  bottom: .42cqh !important;
-  width: calc(100% - 7.05cqh) !important;
-  max-width: calc(100% - 7.05cqh) !important;
+  bottom: .48cqh !important;
+  width: calc(100% - 7.35cqh) !important;
+  max-width: calc(100% - 7.35cqh) !important;
   height: auto !important;
   min-height: 0 !important;
   display: block !important;
@@ -55,61 +70,106 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   background: transparent !important;
   box-shadow: none !important;
   filter: none !important;
-  color: #f6f0dc !important;
+  color: #faf3dc !important;
+  font-size: clamp(.54rem, min(.9cqw, 1.42cqh), .9rem) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: .012em !important;
   text-align: left !important;
-  text-shadow: 0 1px 2px #000, 0 0 .46cqw rgb(0 0 0 / 82%) !important;
+  text-shadow: 0 1px 2px #000, 0 0 .52cqw rgb(0 0 0 / 92%) !important;
   pointer-events: none !important;
-  z-index: 28 !important;
+  z-index: 31 !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-life {
   left: auto !important;
-  right: .24cqw !important;
+  right: .28cqw !important;
   top: auto !important;
-  bottom: .28cqh !important;
-  min-width: 5.75cqh !important;
-  height: 2.55cqh !important;
-  padding: .08cqh .4cqw !important;
-  z-index: 29 !important;
-}
-
-/* -------------------------------------------------------------------------
-   Current hero level: keep the restored row structure intact and only offset
-   the badge back over the portrait. This avoids the broken full-panel absolute
-   model from the discarded implementation.
-   ------------------------------------------------------------------------- */
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero > .hero-level-row > .hero-level {
-  left: .12cqw !important;
-  right: auto !important;
-  top: calc(.42cqh - var(--hero-card-art-height) - var(--hero-card-progress-gap)) !important;
-  bottom: auto !important;
-  width: auto !important;
-  min-width: 4.75cqh !important;
-  max-width: 42% !important;
-  height: 2.18cqh !important;
-  padding: .06cqh .28cqw !important;
-  border-radius: .28cqw !important;
-  overflow: hidden !important;
-  font-size: clamp(.38rem, min(.62cqw, 1cqh), .64rem) !important;
+  bottom: .32cqh !important;
+  min-width: 6.35cqh !important;
+  height: 2.88cqh !important;
+  padding: .1cqh .46cqw !important;
+  font-size: clamp(.58rem, min(.92cqw, 1.48cqh), .92rem) !important;
+  font-weight: 950 !important;
   line-height: 1 !important;
-  z-index: 64 !important;
+  z-index: 32 !important;
 }
 
 /* -------------------------------------------------------------------------
-   Progress / EVOLUIR owns more of the available width and height. The existing
-   level-ready state remains the single authority for when EVOLUIR can appear.
+   Level badge. The semantic .hero-level stays in the DOM; the presentation
+   runtime mirrors its current number into data-hero-level on the portrait.
+   This avoids fragile negative positioning from the progress row.
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger::before {
+  content: attr(data-hero-level) !important;
+  position: absolute !important;
+  left: .34cqw !important;
+  top: .42cqh !important;
+  right: auto !important;
+  bottom: auto !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  min-width: 4.7cqh !important;
+  height: 2.22cqh !important;
+  padding: .06cqh .32cqw !important;
+  border: max(1px, .07cqh) solid color-mix(in srgb, var(--deck) 60%, #d0ad52) !important;
+  border-radius: .3cqw !important;
+  background: rgb(4 18 17 / 92%) !important;
+  box-shadow: 0 .12cqh .38cqh #000b, inset 0 0 .3cqw rgb(255 255 255 / 5%) !important;
+  color: #f8e5a7 !important;
+  font-family: Arial, sans-serif !important;
+  font-size: clamp(.4rem, min(.66cqw, 1.05cqh), .68rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: .02em !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+  z-index: 34 !important;
+}
+
+/* Keep the source level available for accessibility/runtime synchronization,
+   but do not render a second badge from the progression row. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero > .hero-level-row > .hero-level {
+  position: absolute !important;
+  width: 1px !important;
+  min-width: 1px !important;
+  max-width: 1px !important;
+  height: 1px !important;
+  min-height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* -------------------------------------------------------------------------
+   Progress / EVOLUIR. Progress fills the full footer row; when ready the
+   existing level-ready state swaps EVOLUIR into this exact rectangle.
    ------------------------------------------------------------------------- */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero > .hero-level-row {
   left: .34cqw !important;
   right: .34cqw !important;
   height: var(--hero-card-level-height) !important;
+  z-index: 22 !important;
+  overflow: visible !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-level-row > .hero-evolution {
+  width: 100% !important;
   height: 100% !important;
-  padding: .5cqh .5cqw .4cqh !important;
-  grid-template-rows: minmax(0, 1fr) .5cqh !important;
+  padding: .54cqh .54cqw .42cqh !important;
+  grid-template-rows: minmax(0, 1fr) .52cqh !important;
   gap: .18cqh !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution-copy > :is(small, strong),
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution-copy > small::after {
+  font-size: clamp(.47rem, min(.76cqw, 1.18cqh), .76rem) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(.enemy):not(.level-ready) > .level-button {
@@ -133,46 +193,43 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   height: var(--hero-card-level-height) !important;
   min-height: 0 !important;
   margin: 0 !important;
+  font-size: clamp(.48rem, min(.78cqw, 1.2cqh), .78rem) !important;
 }
 
 /* -------------------------------------------------------------------------
-   Expanded abilities: almost edge-to-edge, with only the padding needed for a
-   readable border. The gap after progress is intentionally very small.
+   Expanded abilities: same outer width as compact, minimal side/dead gaps.
    ------------------------------------------------------------------------- */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
-  left: .2cqw !important;
-  right: .2cqw !important;
+  left: .18cqw !important;
+  right: .18cqw !important;
   top: var(--hero-card-abilities-top) !important;
+  bottom: .5cqh !important;
   width: auto !important;
-  gap: .4cqh !important;
+  gap: .38cqh !important;
   padding: 0 !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
   grid-template-columns: 2.42cqh minmax(0, 1fr) !important;
-  column-gap: .38cqw !important;
+  column-gap: .36cqw !important;
   padding: .3cqh .34cqw !important;
 }
 
-/* Ability level number: use physical square dimensions and center both the
-   grid item and its glyph. No padding or inherited transform can displace it. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
   display: grid !important;
   place-items: center !important;
   place-content: center !important;
-  align-items: center !important;
-  justify-items: center !important;
   align-self: center !important;
   justify-self: center !important;
-  inline-size: 2.18cqh !important;
-  block-size: 2.18cqh !important;
-  width: 2.18cqh !important;
-  min-width: 2.18cqh !important;
-  max-width: 2.18cqh !important;
-  height: 2.18cqh !important;
-  min-height: 2.18cqh !important;
-  max-height: 2.18cqh !important;
+  inline-size: 2.16cqh !important;
+  block-size: 2.16cqh !important;
+  width: 2.16cqh !important;
+  min-width: 2.16cqh !important;
+  max-width: 2.16cqh !important;
+  height: 2.16cqh !important;
+  min-height: 2.16cqh !important;
+  max-height: 2.16cqh !important;
   aspect-ratio: 1 / 1 !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -190,62 +247,83 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
 }
 
 /* -------------------------------------------------------------------------
-   Cruel terrain: its horizontal gap to the owner's field equals the exact same
-   --hh-ref-field-gap used between normal slots in that field.
+   Cruel terrain. It shares the owner's FIELD ROW and sits immediately to the
+   left of the right-aligned field. The visible gap is a little larger than a
+   normal inter-slot gap so it reads as a separate zone without floating away.
    ------------------------------------------------------------------------- */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
   grid-column: 3 !important;
+  align-self: center !important;
   justify-self: end !important;
   margin-left: 0 !important;
-  margin-right: calc(min(82%, 41cqw) + var(--hh-ref-field-gap)) !important;
+  margin-right: calc(min(82%, 41cqw) + var(--hero-terrain-gap)) !important;
+  translate: 0 0 !important;
 }
 
-/* Mobile/short landscape uses the wider 91% owner field from match-reference. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain {
+  grid-row: 4 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
+  grid-row: 6 !important;
+}
+
+/* -------------------------------------------------------------------------
+   Short landscape / mobile.
+   ------------------------------------------------------------------------- */
 @media (orientation: landscape) and (max-width: 64rem),
        (orientation: landscape) and (max-height: 44rem) and (hover: none) and (pointer: coarse) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board {
+    --hero-overlay-edge-x: clamp(.42rem, .72cqw, .7rem);
+    --hero-overlay-enemy-top: clamp(1.55rem, 5cqh, 2.8rem);
+    --hero-overlay-player-bottom: clamp(.42rem, 1.05cqh, .7rem);
+    --hero-terrain-gap: max(calc(var(--hh-ref-field-gap) * 1.15), .08rem);
+  }
+
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel {
     --hero-card-progress-gap: .22cqh;
-    --hero-card-level-height: 3.72cqh;
+    --hero-card-level-height: 3.82cqh;
     --hero-card-section-gap: .22cqh;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded),
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
-    --hero-card-art-height: 23.9cqh;
+    --hero-card-art-height: 24.35cqh;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) {
-    height: 29.4cqh !important;
+    height: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + .46cqh) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
-    height: 57.8cqh !important;
+    height: 56.8cqh !important;
     max-height: 88cqh !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-short-name {
-    left: .28cqw !important;
-    bottom: .32cqh !important;
-    width: calc(100% - 6.25cqh) !important;
-    max-width: calc(100% - 6.25cqh) !important;
-    font-size: clamp(.36rem, min(.72cqw, .98cqh), .62rem) !important;
+    left: .3cqw !important;
+    bottom: .34cqh !important;
+    width: calc(100% - 6.45cqh) !important;
+    max-width: calc(100% - 6.45cqh) !important;
+    font-size: clamp(.42rem, min(.8cqw, 1.08cqh), .68rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger > .hero-life {
-    right: .2cqw !important;
+    right: .22cqw !important;
     bottom: .22cqh !important;
-    min-width: 5.2cqh !important;
-    height: 2.3cqh !important;
+    min-width: 5.35cqh !important;
+    height: 2.48cqh !important;
+    font-size: clamp(.46rem, min(.84cqw, 1.12cqh), .7rem) !important;
   }
 
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero > .hero-level-row > .hero-level {
-    left: .1cqw !important;
-    top: calc(.34cqh - var(--hero-card-art-height) - var(--hero-card-progress-gap)) !important;
-    min-width: 4.25cqh !important;
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-power-trigger::before {
+    left: .24cqw !important;
+    top: .32cqh !important;
+    min-width: 4.15cqh !important;
     height: 1.96cqh !important;
     padding-inline: .24cqw !important;
-    font-size: clamp(.32rem, min(.65cqw, .86cqh), .55rem) !important;
+    font-size: clamp(.34rem, min(.68cqw, .88cqh), .56rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero > .hero-level-row,
@@ -258,13 +336,8 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terra
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
     left: .12cqw !important;
     right: .12cqw !important;
-    gap: .3cqh !important;
-  }
-
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
-    grid-template-columns: 2.12cqh minmax(0, 1fr) !important;
-    column-gap: .3cqw !important;
-    padding: .24cqh .28cqw !important;
+    bottom: .4cqh !important;
+    gap: .28cqh !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
@@ -281,19 +354,33 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terra
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
-    margin-right: calc(min(91%, 47cqw) + var(--hh-ref-field-gap)) !important;
+    margin-right: calc(min(91%, 47cqw) + var(--hero-terrain-gap)) !important;
   }
 }
 
-/* Portrait keeps terrain in the adjacent grid column because the owner field
-   occupies 100% of column 3 there. The inter-column edge distance is the same
-   field-slot gap token. */
+/* Portrait has no leading free area inside the 100%-wide field cell, so the
+   terrain remains in the adjacent column but follows the same owner rows/gap. */
 @media (orientation: portrait) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board {
+    --hero-overlay-edge-x: clamp(.38rem, 1.4cqw, .72rem);
+    --hero-overlay-enemy-top: clamp(1.65rem, 4.9cqh, 2.8rem);
+    --hero-overlay-player-bottom: clamp(.48rem, 1.15cqh, .78rem);
+  }
+
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
     grid-column: 2 !important;
     justify-self: end !important;
     margin-left: 0 !important;
-    margin-right: var(--hh-ref-field-gap) !important;
+    margin-right: var(--hero-terrain-gap) !important;
+    translate: 0 0 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain {
+    grid-row: 4 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
+    grid-row: 6 !important;
   }
 }
