@@ -1,0 +1,208 @@
+/* Terminal match feedback authority: evolution affordance, defender lane,
+ * central priority indicators and final phase-orb copy treatment. */
+
+/* --- Evolution available ------------------------------------------------ */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player {
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.evolution-available > .player-hero {
+  box-shadow:
+    0 0 .42cqh rgb(255 244 170 / 96%),
+    0 0 1.05cqh rgb(255 210 64 / 84%),
+    0 0 2.1cqh rgb(255 167 20 / 54%),
+    0 .45cqh 1.2cqh rgb(0 0 0 / 58%) !important;
+  animation: hero-evolution-aura 1.05s ease-in-out infinite !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .hero-evolution-available-banner {
+  position: absolute !important;
+  z-index: 180 !important;
+  left: 50% !important;
+  bottom: calc(100% + clamp(.34rem, .7cqh, .68rem)) !important;
+  width: max-content !important;
+  max-width: min(23rem, 92vw) !important;
+  transform: translateX(-50%) !important;
+  padding: clamp(.34rem, .55cqh, .52rem) clamp(.66rem, 1cqw, 1rem) !important;
+  border: max(1px, .08cqh) solid #ffe28a !important;
+  border-radius: clamp(.38rem, .5cqw, .6rem) !important;
+  background:
+    linear-gradient(180deg, rgb(93 58 4 / 98%), rgb(43 25 2 / 98%)) !important;
+  color: #fff4b5 !important;
+  font: 950 clamp(.76rem, min(1.12cqw, 1.78cqh), 1.14rem)/1 system-ui, sans-serif !important;
+  letter-spacing: .075em !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  text-shadow:
+    0 1px 0 #4d2d00,
+    0 0 .26rem rgb(255 235 145 / 96%),
+    0 0 .7rem rgb(255 188 45 / 78%) !important;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 12%),
+    0 0 .5rem rgb(255 222 111 / 68%),
+    0 0 1.25rem rgb(255 168 20 / 46%),
+    0 .35rem .8rem rgb(0 0 0 / 55%) !important;
+  pointer-events: none !important;
+  animation: hero-evolution-banner-blink .8s ease-in-out infinite !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player .player-hero > .level-button {
+  font-size: clamp(.7rem, min(.98cqw, 1.52cqh), .98rem) !important;
+  font-weight: 950 !important;
+  letter-spacing: .045em !important;
+}
+
+/* Active effects should remain instantly readable without expanding the hero. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-status-cues > span {
+  font-size: clamp(.62rem, min(.82cqw, 1.28cqh), .86rem) !important;
+  line-height: 1.1 !important;
+  padding: clamp(.26rem, .4cqh, .38rem) clamp(.42rem, .55cqw, .62rem) !important;
+  font-weight: 850 !important;
+}
+
+/* Briefly hide the updated hero card, then reveal the new level. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.hero-level-transition > .player-hero {
+  animation: hero-level-swap .3s ease-out both !important;
+}
+
+@keyframes hero-evolution-aura {
+  0%, 100% {
+    filter: drop-shadow(0 0 .16cqh rgb(255 237 151 / 56%)) !important;
+  }
+  50% {
+    filter: drop-shadow(0 0 .52cqh rgb(255 202 54 / 92%)) !important;
+  }
+}
+
+@keyframes hero-evolution-banner-blink {
+  0%, 100% { opacity: 1; filter: brightness(1.12); }
+  50% { opacity: .52; filter: brightness(.92); }
+}
+
+@keyframes hero-level-swap {
+  0% { opacity: 1; }
+  1%, 42% { opacity: 0; transform: scale(.985); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* --- Defender decision -------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision {
+  z-index: 145 !important;
+  width: clamp(15rem, 19cqw, 21rem) !important;
+  max-width: min(21rem, 28cqw) !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  grid-template-areas:
+    "message action"
+    "or action" !important;
+  justify-items: stretch !important;
+  align-items: center !important;
+  gap: clamp(.18rem, .42cqh, .38rem) clamp(.55rem, .85cqw, .9rem) !important;
+  padding: clamp(.58rem, .92cqh, .82rem) clamp(.7rem, .95cqw, .95rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision > span {
+  grid-area: message !important;
+  color: #f7ecd1 !important;
+  font: 950 clamp(.66rem, min(.88cqw, 1.4cqh), .92rem)/1.16 system-ui, sans-serif !important;
+  letter-spacing: .035em !important;
+  text-align: left !important;
+  text-wrap: balance !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision > b {
+  grid-area: or !important;
+  justify-self: start !important;
+  color: #aab2b8 !important;
+  font-size: clamp(.54rem, min(.68cqw, 1.02cqh), .72rem) !important;
+  letter-spacing: .08em !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision > button {
+  grid-area: action !important;
+  min-width: clamp(6.6rem, 8.5cqw, 8.7rem) !important;
+  min-height: clamp(2.15rem, 4.6cqh, 3rem) !important;
+  padding-inline: clamp(.55rem, .8cqw, .85rem) !important;
+  font-size: clamp(.66rem, min(.84cqw, 1.32cqh), .9rem) !important;
+  font-weight: 950 !important;
+  line-height: 1.05 !important;
+}
+
+/* --- Central stack / AI state ------------------------------------------ */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator {
+  position: absolute !important;
+  z-index: 120 !important;
+  left: 50% !important;
+  right: auto !important;
+  top: calc(50% - clamp(1.6rem, 3.1cqh, 2.5rem)) !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .response-waiting {
+  position: absolute !important;
+  z-index: 120 !important;
+  left: 50% !important;
+  right: auto !important;
+  top: calc(50% + clamp(1.5rem, 2.8cqh, 2.3rem)) !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  margin: 0 !important;
+}
+
+html body [data-hemsfell-ai-thinking] {
+  left: 50% !important;
+  right: auto !important;
+  top: 50% !important;
+  bottom: auto !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 125 !important;
+}
+
+/* --- Phase orb copy ----------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button :is(span, strong, b, small, em, i) {
+  color: #7428d7 !important;
+  -webkit-text-fill-color: #7428d7 !important;
+  -webkit-text-stroke: 0 transparent !important;
+  paint-order: normal !important;
+  text-shadow:
+    0 0 .08cqh rgb(255 255 255 / 34%),
+    0 0 .28cqh rgb(192 114 255 / 92%),
+    0 0 .68cqh rgb(117 37 218 / 66%) !important;
+}
+
+/* Opponent turn is the empty, non-actionable orb. Keep the same purple copy,
+ * only a touch smaller so it reads as status rather than an action. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:empty::before {
+  content: "Turno do Oponente" !important;
+  color: #7f3bd6 !important;
+  -webkit-text-fill-color: #7f3bd6 !important;
+  -webkit-text-stroke: 0 transparent !important;
+  font-size: clamp(.56rem, min(.8cqw, 1.16cqh), .82rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.04 !important;
+  letter-spacing: .01em !important;
+  text-align: center !important;
+  text-shadow:
+    0 0 .24cqh rgb(194 125 255 / 76%),
+    0 0 .58cqh rgb(112 46 190 / 48%) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.evolution-available > .player-hero,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .hero-evolution-available-banner {
+    animation: none !important;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 44rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision {
+    width: clamp(13rem, 20cqw, 18rem) !important;
+    max-width: 27cqw !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .hero-evolution-available-banner {
+    font-size: clamp(.62rem, min(.94cqw, 1.48cqh), .92rem) !important;
+  }
+}
