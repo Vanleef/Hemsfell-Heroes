@@ -6,16 +6,17 @@ const runtime = fs.readFileSync("app/presentation/runtime/terrain-field-anchor-r
 const geometryCss = fs.readFileSync("app/presentation/styles/hero-panel-layout-final.css", "utf8");
 const balanceCss = fs.readFileSync("app/presentation/styles/hero-panel-visual-balance-final.css", "utf8");
 const terminalCss = fs.readFileSync("app/presentation/styles/hero-panel-polish-terminal.css", "utf8");
+const dragCss = fs.readFileSync("app/presentation/styles/terrain-drag-stability.css", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 
 test("Cruel Terrain is anchored to the first rendered owner slot with stable local dimensions", () => {
-  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 2\.05/);
-  assert.match(runtime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.34/);
+  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 1\.85/);
+  assert.match(runtime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.28/);
   assert.match(runtime, /\.field-slot\[data-slot="1"\]/);
   assert.match(runtime, /\.field-slot\[data-slot="2"\]/);
   assert.match(runtime, /secondRect\.left - firstRect\.right/);
   assert.match(runtime, /firstRect\.width \* TERRAIN_MIN_SLOT_CLEARANCE/);
-  assert.match(runtime, /Math\.max\(measuredGap \* TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 10\)/);
+  assert.match(runtime, /Math\.max\(measuredGap \* TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 8\)/);
   assert.match(runtime, /boardRect\.width \/ layoutWidth/);
   assert.match(runtime, /boardRect\.height \/ layoutHeight/);
   assert.match(runtime, /const slotWidth = geometry\.firstRect\.width \/ boardScale\.x/);
@@ -33,6 +34,8 @@ test("Cruel Terrain is anchored to the first rendered owner slot with stable loc
   assert.match(geometryCss, /top: var\(--terrain-anchor-y\)/);
   assert.match(terminalCss, /terrain-slot\.is-field-anchored[^}]*visibility: visible !important[^}]*opacity: 1 !important/);
   assert.match(terminalCss, /terrain-slot\.is-field-anchored > \.card-frame[^}]*position: absolute !important[^}]*inset: 0 !important/);
+  assert.match(dragCss, /terrain-drag-sentinel\[data-active="true"\][^}]*display: grid !important/);
+  assert.match(runtime, /document\.addEventListener\("dragstart", schedule, true\)/);
   assert.match(layout, /<TerrainFieldAnchorRuntime \/>/);
 });
 
