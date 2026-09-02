@@ -1,0 +1,100 @@
+/*
+ * Final hero level visibility authority.
+ *
+ * The level label is real markup but legacy hero styles can leave it visually
+ * transparent/unstyled while it is moved outside the progression grid. This
+ * file gives the badge a complete visual definition and keeps it inside the
+ * portrait for both compact and expanded hero presentations.
+ */
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero {
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero > .hero-level-row {
+  grid-template-columns: minmax(0, 1fr) !important;
+  overflow: visible !important;
+  isolation: visible !important;
+  z-index: 40 !important;
+}
+
+/* The level always lives on the portrait, opposite the life badge. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero > .hero-level-row > .hero-level {
+  appearance: none !important;
+  position: absolute !important;
+  inset: auto auto calc(100% + var(--hero-card-level-gap) + .56cqh) .5cqw !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  width: auto !important;
+  min-width: 5.8cqh !important;
+  max-width: 42% !important;
+  height: 2.68cqh !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: .14cqh .48cqw !important;
+  overflow: visible !important;
+  white-space: nowrap !important;
+  color: #f5dfa0 !important;
+  background:
+    linear-gradient(180deg, rgb(8 31 28 / 96%), rgb(3 16 16 / 98%)) !important;
+  border: max(1px, .075cqh) solid color-mix(in srgb, var(--deck) 58%, #c8a74c) !important;
+  border-radius: .32cqw !important;
+  box-shadow:
+    inset 0 0 0 max(1px, .035cqh) rgb(255 255 255 / 7%),
+    0 .16cqh .42cqh rgb(0 0 0 / 72%),
+    0 0 .48cqw color-mix(in srgb, var(--deck) 22%, transparent) !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+  mix-blend-mode: normal !important;
+  clip-path: none !important;
+  mask: none !important;
+  transform: none !important;
+  translate: none !important;
+  pointer-events: none !important;
+  font-family: Arial, sans-serif !important;
+  font-size: clamp(.46rem, min(.74cqw, 1.2cqh), .76rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: .035em !important;
+  text-align: center !important;
+  text-shadow: 0 1px 1px #000 !important;
+  z-index: 120 !important;
+}
+
+/* Progress is the sole visible content in the row below the portrait. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero > .hero-level-row > .hero-evolution {
+  grid-column: 1 / -1 !important;
+  grid-row: 1 !important;
+  width: 100% !important;
+}
+
+/* Expanded cards use a slightly larger level badge, but keep the same portrait
+   hierarchy: NÍVEL at lower-left and life at lower-right. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .player-hero > .hero-level-row > .hero-level {
+  inset: auto auto calc(100% + var(--hero-card-level-gap) + .62cqh) .72cqw !important;
+  min-width: 6.2cqh !important;
+  height: 2.9cqh !important;
+  padding: .16cqh .54cqw !important;
+  font-size: clamp(.52rem, min(.82cqw, 1.34cqh), .84rem) !important;
+}
+
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero > .hero-level-row > .hero-level {
+    inset: auto auto calc(100% + var(--hero-card-level-gap) + .48cqh) .46cqw !important;
+    min-width: 5.2cqh !important;
+    height: 2.42cqh !important;
+    padding: .1cqh .4cqw !important;
+    border-radius: .3cqw !important;
+    font-size: clamp(.4rem, min(.8cqw, 1.08cqh), .68rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .player-hero > .hero-level-row > .hero-level {
+    inset: auto auto calc(100% + var(--hero-card-level-gap) + .52cqh) .62cqw !important;
+    min-width: 5.6cqh !important;
+    height: 2.58cqh !important;
+    font-size: clamp(.44rem, min(.82cqw, 1.15cqh), .72rem) !important;
+  }
+}
