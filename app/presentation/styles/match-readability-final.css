@@ -1,0 +1,177 @@
+/*
+ * Final responsive readability pass for the match HUD.
+ *
+ * This file intentionally owns only typography/space distribution. It does not
+ * change game rules, board tracks or hero overlay anchoring.
+ */
+
+/* -------------------------------------------------------------------------
+   Expanded hero abilities
+   -------------------------------------------------------------------------
+   Use all of the region below progress/evolve. The three cells share the
+   available height evenly, so short copy no longer leaves a dead strip at the
+   bottom and long copy does not collapse a neighboring row.
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
+  top: calc(var(--hero-card-level-top) + var(--hero-card-level-height) + var(--hero-card-section-gap)) !important;
+  right: .12cqw !important;
+  bottom: .48cqh !important;
+  left: .12cqw !important;
+  width: auto !important;
+  height: auto !important;
+  max-height: none !important;
+  display: grid !important;
+  grid-template-rows: repeat(3, minmax(4.25cqh, 1fr)) !important;
+  align-content: stretch !important;
+  align-items: stretch !important;
+  gap: .22cqh !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+  min-height: 0 !important;
+  height: 100% !important;
+  display: grid !important;
+  grid-template-columns: 2.62cqh minmax(0, 1fr) !important;
+  column-gap: .64cqw !important;
+  align-items: center !important;
+  align-content: center !important;
+  padding: clamp(.34cqh, .44cqh, .48cqh) .46cqw !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
+  inline-size: 2.42cqh !important;
+  block-size: 2.42cqh !important;
+  width: 2.42cqh !important;
+  min-width: 2.42cqh !important;
+  max-width: 2.42cqh !important;
+  height: 2.42cqh !important;
+  min-height: 2.42cqh !important;
+  max-height: 2.42cqh !important;
+  display: grid !important;
+  place-items: center !important;
+  font-size: clamp(.62rem, min(.9cqw, 1.34cqh), .84rem) !important;
+  line-height: 1 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy {
+  min-width: 0 !important;
+  height: 100% !important;
+  display: grid !important;
+  align-content: center !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
+  margin: 0 !important;
+  font-size: clamp(.54rem, min(.78cqw, 1.15cqh), .76rem) !important;
+  line-height: 1.18 !important;
+  letter-spacing: .002em !important;
+  text-wrap: pretty !important;
+  overflow-wrap: anywhere !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-compact > .hero-ability-copy > p {
+  font-size: clamp(.52rem, min(.74cqw, 1.1cqh), .72rem) !important;
+  line-height: 1.17 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-dense > .hero-ability-copy > p {
+  font-size: clamp(.5rem, min(.7cqw, 1.04cqh), .68rem) !important;
+  line-height: 1.15 !important;
+}
+
+/* -------------------------------------------------------------------------
+   Top bar readability
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .game-bar {
+  font-size: clamp(.46rem, .64cqw, .76rem) !important;
+  line-height: 1.08 !important;
+}
+
+html body .screen-game.screen-game .game-bar > button {
+  font-size: clamp(.44rem, .61cqw, .72rem) !important;
+  line-height: 1 !important;
+}
+
+html body .screen-game.screen-game .game-bar .turn-owner > span {
+  font-size: clamp(.43rem, .59cqw, .69rem) !important;
+  line-height: 1.05 !important;
+}
+
+html body .screen-game.screen-game .game-bar .turn-owner > b {
+  font-size: clamp(.5rem, .68cqw, .8rem) !important;
+  line-height: 1.05 !important;
+}
+
+html body .screen-game.screen-game .game-bar .resource-panel :is(span, strong, small) {
+  font-size: clamp(.42rem, .58cqw, .68rem) !important;
+  line-height: 1.05 !important;
+}
+
+html body .screen-game.screen-game .game-bar .phase-track > div > span {
+  font-size: clamp(.43rem, .59cqw, .7rem) !important;
+  line-height: 1 !important;
+}
+
+html body .screen-game.screen-game .game-bar .phase-track i {
+  font-size: clamp(.36rem, .5cqw, .58rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-control-toggle {
+  font-size: clamp(.43rem, .6cqw, .7rem) !important;
+  line-height: 1 !important;
+}
+
+/* Short mobile landscape keeps the same hierarchy without crowding the bar. */
+@media (orientation: landscape) and (max-height: 44rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
+    bottom: .38cqh !important;
+    grid-template-rows: repeat(3, minmax(3.8cqh, 1fr)) !important;
+    gap: .18cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+    grid-template-columns: 2.35cqh minmax(0, 1fr) !important;
+    column-gap: .55cqw !important;
+    padding: .3cqh .38cqw !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
+    inline-size: 2.18cqh !important;
+    block-size: 2.18cqh !important;
+    width: 2.18cqh !important;
+    min-width: 2.18cqh !important;
+    max-width: 2.18cqh !important;
+    height: 2.18cqh !important;
+    min-height: 2.18cqh !important;
+    max-height: 2.18cqh !important;
+    font-size: clamp(.56rem, min(.8cqw, 1.2cqh), .76rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
+    font-size: clamp(.5rem, min(.7cqw, 1.02cqh), .68rem) !important;
+    line-height: 1.15 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .game-bar {
+    font-size: clamp(.43rem, .59cqw, .68rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-bar .turn-owner > b,
+  html body .screen-game.screen-game .game-bar .phase-track > div > span,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-control-toggle {
+    font-size: clamp(.42rem, .57cqw, .66rem) !important;
+  }
+}
+
+@media (orientation: portrait) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
+    grid-template-rows: repeat(3, minmax(3.9cqh, 1fr)) !important;
+  }
+}
