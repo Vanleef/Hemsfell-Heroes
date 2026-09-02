@@ -1,14 +1,18 @@
 /*
  * Final hero-ability capsule geometry.
  *
- * Visual contract:
- *   [ (1)  ability description ]    PASSIVA/ATIVA
- *   ^--------- capsule --------^    ^-- outside --^
+ * Expanded visual contract:
+ *   [ (1)  ability description ]  | HERO PANEL EDGE |   PASSIVA/ATIVA
+ *   ^------- capsule ---------^                           ^-- outside panel --^
  *
- * The entire row is still one accessible button, but only the number and
- * description are painted as a capsule. The semantic kind label is a separate
- * naked grid cell with a deliberate breathing gap.
+ * The semantic kind label is intentionally removed from the row grid and
+ * absolutely positioned beyond the expanded hero panel boundary. Compact hero
+ * panels never show PASSIVA/ATIVA.
  */
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded {
+  overflow: visible !important;
+}
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
@@ -30,8 +34,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   display: grid !important;
   grid-template-columns:
     clamp(1.5rem, 2.72cqh, 2.14rem)
-    minmax(0, 1fr)
-    max-content !important;
+    minmax(0, 1fr) !important;
   grid-template-rows: auto !important;
   align-items: stretch !important;
   column-gap: 0 !important;
@@ -50,7 +53,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   transform: none !important;
 }
 
-/* One painted capsule spans ONLY number + description (columns 1 and 2). */
+/* One painted capsule spans ONLY number + description. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip::before {
   content: "" !important;
   grid-column: 1 / 3 !important;
@@ -68,7 +71,6 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   z-index: 0 !important;
 }
 
-/* Number belongs inside the shared capsule. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
   grid-column: 1 !important;
   grid-row: 1 !important;
@@ -79,13 +81,15 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   margin: 0 !important;
 }
 
-/* Flatten the copy wrapper so p and b are independent grid cells. */
+/* Flatten the copy wrapper so the description remains a grid cell while the
+ * kind label can escape the grid completely. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > span.hero-ability-copy {
   display: contents !important;
 }
 
-/* Description is inside the capsule and must always remain fully readable. */
+/* Description is entirely inside the capsule and may wrap to as many lines as
+ * needed; it must never be clipped just to preserve a fixed row height. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
   grid-column: 2 !important;
   grid-row: 1 !important;
@@ -118,18 +122,21 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   line-clamp: unset !important;
 }
 
-/* PASSIVA/ATIVA is a separate naked label OUTSIDE the capsule. */
+/* PASSIVA/ATIVA exists only in expanded mode and is physically OUTSIDE the
+ * hero panel. The command bar sits .5cqw inside the panel edge, therefore this
+ * offset deliberately clears that inset before placing the label. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > b {
-  grid-column: 3 !important;
-  grid-row: 1 !important;
-  position: relative !important;
-  z-index: 2 !important;
-  align-self: center !important;
-  justify-self: start !important;
+  position: absolute !important;
+  left: calc(100% + clamp(.72rem, 1.18cqw, 1.22rem)) !important;
+  right: auto !important;
+  top: 50% !important;
+  bottom: auto !important;
+  z-index: 4 !important;
+  display: block !important;
   width: max-content !important;
   min-width: max-content !important;
   max-width: none !important;
-  margin: 0 0 0 clamp(.48rem, .78cqw, .82rem) !important;
+  margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
   border-radius: 0 !important;
@@ -137,6 +144,13 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   box-shadow: none !important;
   text-align: left !important;
   white-space: nowrap !important;
+  pointer-events: none !important;
+  transform: translateY(-50%) !important;
+}
+
+/* Compact mode deliberately omits semantic kind labels. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > b {
+  display: none !important;
 }
 
 /* Active/hover paint belongs only to the number+description capsule. */
@@ -167,8 +181,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
     grid-template-columns:
       clamp(1.28rem, 2.2cqh, 1.66rem)
-      minmax(0, 1fr)
-      max-content !important;
+      minmax(0, 1fr) !important;
     min-height: clamp(1.72rem, 4.7cqh, 2.55rem) !important;
   }
 
@@ -178,16 +191,16 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > b {
-    margin-left: clamp(.34rem, .56cqw, .58rem) !important;
+    left: calc(100% + clamp(.56rem, .94cqw, .94rem)) !important;
   }
 }
 
 @media (orientation: portrait) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
-    grid-template-columns: 1.8rem minmax(0, 1fr) max-content !important;
+    grid-template-columns: 1.8rem minmax(0, 1fr) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > b {
-    margin-left: .45rem !important;
+    left: calc(100% + .8rem) !important;
   }
 }
