@@ -19,17 +19,26 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
   overflow: hidden !important;
 }
 
-/* Soft footer shadow under the overlaid text row. */
+/* Footer-only readability shadow.
+ * Keep this tied to the text row instead of using a percentage of the whole
+ * panel. A percentage made the dark band climb into the artwork on taller
+ * pile panels. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone::after {
   content: "" !important;
   position: absolute !important;
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
-  height: 38% !important;
+  height: calc(clamp(1rem, 2.25cqh, 1.45rem) + clamp(.24rem, .5cqh, .42rem)) !important;
   z-index: 1 !important;
   pointer-events: none !important;
-  background: linear-gradient(180deg, rgb(0 0 0 / 0%) 0%, rgb(0 0 0 / 40%) 38%, rgb(0 0 0 / 80%) 100%) !important;
+  background: linear-gradient(
+    180deg,
+    rgb(0 0 0 / 0%) 0%,
+    rgb(0 0 0 / 18%) 24%,
+    rgb(0 0 0 / 58%) 58%,
+    rgb(0 0 0 / 82%) 100%
+  ) !important;
 }
 
 /* Visual surface ---------------------------------------------------------
@@ -172,6 +181,10 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
 @media (orientation: landscape) and (max-height: 38rem) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone {
     grid-template-rows: minmax(0, 1fr) clamp(.86rem, 2.1cqh, 1.18rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone::after {
+    height: calc(clamp(.86rem, 2.1cqh, 1.18rem) + clamp(.18rem, .42cqh, .34rem)) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > .pile-card,
