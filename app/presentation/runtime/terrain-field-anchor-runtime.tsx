@@ -3,7 +3,8 @@
 import { useEffect } from "react";
 
 const BOARD_SELECTOR = ".screen-game .game-stage > .game-content.hs-board";
-const TERRAIN_GAP_MULTIPLIER = 1.6;
+const TERRAIN_GAP_MULTIPLIER = 1.85;
+const TERRAIN_MIN_SLOT_CLEARANCE = 0.28;
 
 type TerrainPair = {
   field: ".enemy-field" | ".player-field";
@@ -37,10 +38,11 @@ export default function TerrainFieldAnchorRuntime() {
       const firstRect = first.getBoundingClientRect();
       const secondRect = second?.getBoundingClientRect();
       const measuredGap = secondRect ? Math.max(2, secondRect.left - firstRect.right) : 6;
+      const minimumSlotClearance = firstRect.width * TERRAIN_MIN_SLOT_CLEARANCE;
 
       return {
         firstRect,
-        clearance: Math.max(measuredGap * TERRAIN_GAP_MULTIPLIER, 6),
+        clearance: Math.max(measuredGap * TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 8),
       };
     };
 
@@ -60,9 +62,11 @@ export default function TerrainFieldAnchorRuntime() {
       resizeObserver.disconnect();
       observedBoard = board;
       resizeObserver.observe(board);
-      PAIRS.forEach(({ field }) => {
-        const el = board.querySelector<HTMLElement>(`:scope > ${field}`);
-        if (el) resizeObserver.observe(el);
+      PAIRS.forEach(({ field, terrain }) => {
+        const fieldEl = board.querySelector<HTMLElement>(`:scope > ${field}`);
+        const terrainEl = board.querySelector<HTMLElement>(`:scope > ${terrain}`);
+        if (fieldEl) resizeObserver.observe(fieldEl);
+        if (terrainEl) resizeObserver.observe(terrainEl);
       });
     };
 
@@ -83,8 +87,9 @@ export default function TerrainFieldAnchorRuntime() {
         if (!geometry) return;
 
         const fieldRect = fieldEl.getBoundingClientRect();
-        const terrainWidth = terrainEl.offsetWidth || terrainEl.getBoundingClientRect().width / boardScale.x;
-        const terrainHeight = terrainEl.offsetHeight || terrainEl.getBoundingClientRect().height / boardScale.y;
+        const terrainRect = terrainEl.getBoundingClientRect();
+        const terrainWidth = terrainRect.width / boardScale.x;
+        const terrainHeight = terrainRect.height / boardScale.y;
         const firstSlotLeft = (geometry.firstRect.left - boardRect.left) / boardScale.x;
         const clearance = geometry.clearance / boardScale.x;
         const fieldTop = (fieldRect.top - boardRect.top) / boardScale.y;
