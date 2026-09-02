@@ -1,0 +1,144 @@
+/*
+ * Final hero-ability capsule geometry.
+ *
+ * Visual contract:
+ *   [ (1)  ability description ]   PASSIVA/ATIVA
+ *   ^--------- capsule --------^   ^-- outside --^
+ *
+ * The DOM remains interaction-compatible with the existing ability button,
+ * while this sheet makes the capsule itself span only the number + description
+ * columns. The semantic kind label is deliberately outside that painted area.
+ */
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: visible !important;
+  grid-template-columns:
+    clamp(1.48rem, 2.72cqh, 2.12rem)
+    minmax(0, 1fr)
+    clamp(2.7rem, 4.15cqw, 4.25rem) !important;
+  column-gap: clamp(.28rem, .48cqw, .56rem) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* The actual capsule is a dedicated grid item spanning ONLY columns 1 + 2.
+ * It ends before PASSIVA/ATIVA, so the kind label can never be painted inside
+ * the same capsule even though the whole row remains one accessible button. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip::before {
+  content: "" !important;
+  grid-column: 1 / 3 !important;
+  grid-row: 1 !important;
+  align-self: stretch !important;
+  justify-self: stretch !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  border: max(1px, .055cqh) solid rgb(183 172 124 / 34%) !important;
+  border-radius: clamp(.3rem, .42cqw, .48rem) !important;
+  background: linear-gradient(100deg, rgb(8 27 27 / 96%), rgb(5 18 20 / 94%)) !important;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 2%), 0 .12cqh .34cqh rgb(0 0 0 / 26%) !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+/* Number belongs inside the shared capsule. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  position: relative !important;
+  z-index: 1 !important;
+  margin-inline: clamp(.08rem, .14cqw, .16rem) 0 !important;
+}
+
+/* Flatten the copy wrapper so description and semantic kind remain explicit
+ * cells of the ability-row grid. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > span.hero-ability-copy {
+  display: contents !important;
+}
+
+/* Description is inside the capsule, but no longer paints a second nested
+ * capsule of its own. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  position: relative !important;
+  z-index: 1 !important;
+  align-self: stretch !important;
+  display: flex !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: clamp(.28rem, .42cqh, .42rem) clamp(.46rem, .58cqw, .62rem) clamp(.28rem, .42cqh, .42rem) clamp(.18rem, .26cqw, .3rem) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+/* PASSIVA/ATIVA is a separate naked label to the RIGHT of the capsule. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > b {
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  position: relative !important;
+  z-index: 1 !important;
+  align-self: center !important;
+  justify-self: start !important;
+  width: max-content !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  text-align: left !important;
+  white-space: nowrap !important;
+}
+
+/* Active/hover paint belongs to the shared capsule, never to the description
+ * paragraph and never to the PASSIVA/ATIVA label. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.is-active.is-available::before {
+  border-color: rgb(231 194 78 / 58%) !important;
+  background: linear-gradient(100deg, rgb(33 29 16 / 96%), rgb(10 20 20 / 95%)) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.is-active.is-available:hover::before {
+  border-color: rgb(244 211 105 / 84%) !important;
+  box-shadow: inset 0 0 0 1px rgb(255 237 164 / 4%), 0 0 .44cqh rgb(226 179 55 / 16%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.is-active.is-available > .hero-ability-copy > p,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.is-active.is-available:hover > .hero-ability-copy > p {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+@media (orientation: landscape) and (max-height: 44rem),
+       (orientation: landscape) and (max-width: 64rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+    grid-template-columns:
+      clamp(1.22rem, 2.18cqh, 1.62rem)
+      minmax(0, 1fr)
+      clamp(2.25rem, 4cqw, 3.55rem) !important;
+    column-gap: clamp(.22rem, .38cqw, .44rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
+    padding: clamp(.2rem, .32cqh, .32rem) clamp(.34rem, .42cqw, .46rem) clamp(.2rem, .32cqh, .32rem) clamp(.14rem, .2cqw, .24rem) !important;
+  }
+}
+
+@media (orientation: portrait) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
+    grid-template-columns: 1.8rem minmax(0, 1fr) 3.5rem !important;
+    column-gap: .34rem !important;
+  }
+}
