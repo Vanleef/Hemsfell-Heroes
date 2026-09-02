@@ -14,6 +14,8 @@ import "./presentation/styles/match-reference.css";
 import "./presentation/styles/hero-panel-reference.css";
 /* Small continuation of the same canonical positioning model. */
 import "./presentation/styles/hero-panel-reference-tuning.css";
+/* Final narrow geometry pass for compact/expanded hero breathing room. */
+import "./presentation/styles/hero-panel-breathing-room.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
