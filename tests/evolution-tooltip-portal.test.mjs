@@ -7,21 +7,25 @@ const portalCss = fs.readFileSync("app/presentation/styles/evolution-tooltip-por
 const terrainRuntime = fs.readFileSync("app/presentation/runtime/terrain-field-anchor-runtime.tsx", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 
-test("evolution criteria escapes the board and is triggered from measured progress geometry", () => {
+test("evolution criteria escapes the board and is triggered only from progress-track geometry", () => {
+  assert.match(runtime, /PROGRESS_SELECTOR = "\.screen-game \.hero-evolution > \.evolution-track"/);
   assert.match(runtime, /document\.body\.appendChild\(nextPortal\)/);
   assert.match(runtime, /className = `evolution-tooltip \$\{PORTAL_CLASS\}`/);
-  assert.match(runtime, /const triggerAtPoint = \(clientX: number, clientY: number\)/);
+  assert.match(runtime, /const progressAtPoint = \(clientX: number, clientY: number\)/);
   assert.match(runtime, /document\.addEventListener\("pointermove", onPointerMove, true\)/);
+  assert.match(portalCss, /evolution-tooltip:not\(\.evolution-tooltip-portal\)[^}]*display:\s*none\s*!important/);
   assert.match(portalCss, /position:\s*fixed\s*!important/);
   assert.match(portalCss, /z-index:\s*2147483647\s*!important/);
   assert.match(layout, /EvolutionTooltipPortalRuntime/);
   assert.match(layout, /evolution-tooltip-portal-final\.css/);
 });
 
-test("phase-orb direct label and arrow use black fill with a gold outline", () => {
+test("phase-orb direct label and arrow use larger black copy with a white outline", () => {
   assert.match(portalCss, /color:\s*#080603\s*!important/);
   assert.match(portalCss, /-webkit-text-fill-color:\s*#080603\s*!important/);
-  assert.match(portalCss, /-webkit-text-stroke:\s*\.5px #efc961\s*!important/);
+  assert.match(portalCss, /-webkit-text-stroke:\s*\.55px #ffffff\s*!important/);
+  assert.match(portalCss, /font-size:\s*clamp\(\.62rem, min\(\.9cqw, 1\.38cqh\), \.92rem\)\s*!important/);
+  assert.match(portalCss, /button > span[^}]*font-size:\s*1\.3em\s*!important/);
 });
 
 test("Cruel Terrain has one responsive positioning authority with a half-gap gutter", () => {
