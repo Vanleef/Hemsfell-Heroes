@@ -96,9 +96,9 @@ body > .evolution-tooltip-portal > div > span {
   overflow-wrap: anywhere !important;
 }
 
-/* Phase Orb — luminous fantasy-medallion treatment inspired by the strong
- * affordance language common to digital card games: bright actionable rim,
- * deep center, inner metal ring and a restrained magical pulse. */
+/* Phase Orb — saturated orange fantasy medallion. Both availability states keep
+ * warm orange materials; the actionable state is brighter and animated while
+ * the unavailable state stays darker, static and fully legible. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
   position: relative !important;
   isolation: isolate !important;
@@ -136,59 +136,58 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   z-index: -1 !important;
   border-radius: inherit !important;
   pointer-events: none !important;
-  border: max(1px, .08cqh) solid rgb(255 250 210 / 44%) !important;
+  border: max(1px, .08cqh) solid rgb(255 218 157 / 26%) !important;
   box-shadow:
-    inset 0 .12cqh .34cqh rgb(255 255 255 / 18%),
-    inset 0 -.38cqh .72cqh rgb(59 43 4 / 28%) !important;
+    inset 0 .12cqh .34cqh rgb(255 255 255 / 12%),
+    inset 0 -.38cqh .72cqh rgb(82 35 3 / 28%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled) {
-  border-color: #fff0a3 !important;
-  background: #d8b92d !important;
+  border-color: #ffb24b !important;
+  background: #db7412 !important;
   box-shadow:
-    inset 0 0 0 max(1px, .08cqh) rgb(255 250 205 / 72%),
-    inset 0 0 1.3cqh rgb(255 238 118 / 34%),
-    0 0 .55cqh rgb(255 238 126 / 92%),
-    0 0 1.2cqh rgb(255 218 63 / 58%),
+    inset 0 0 0 max(1px, .08cqh) rgb(255 231 184 / 58%),
+    inset 0 0 1.3cqh rgb(255 178 74 / 28%),
+    0 0 .55cqh rgb(255 170 58 / 88%),
+    0 0 1.2cqh rgb(255 126 22 / 56%),
     0 .32cqh .75cqh rgb(0 0 0 / 42%) !important;
-  filter: saturate(1.08) brightness(1.08) !important;
+  filter: saturate(1.14) brightness(1.06) !important;
   animation: phase-orb-ready-pulse 2.15s ease-in-out infinite !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled)::before {
   background:
-    radial-gradient(circle at 50% 24%, rgb(255 255 225 / 86%) 0 8%, rgb(255 244 151 / 58%) 18%, transparent 43%),
-    radial-gradient(circle at 50% 54%, rgb(255 230 93 / 34%) 0 34%, transparent 68%),
-    linear-gradient(180deg, #ffed75 0%, #efd344 30%, #caa51d 68%, #8b6810 100%) !important;
+    radial-gradient(circle at 50% 24%, rgb(255 249 229 / 78%) 0 8%, rgb(255 210 122 / 54%) 18%, transparent 43%),
+    radial-gradient(circle at 50% 54%, rgb(255 157 39 / 30%) 0 34%, transparent 68%),
+    linear-gradient(180deg, #ffb347 0%, #f28a1c 30%, #d56e0d 68%, #8f4308 100%) !important;
 }
 
-/* Unavailable state keeps the same medallion construction instead of fading
- * the whole button. Only the material changes from warm gold to cool silver. */
+/* Unavailable state no longer turns silver. It keeps the same orange identity,
+ * but uses a deeper, static material so turn ownership remains obvious. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled {
-  border-color: #aebbc3 !important;
-  background: #515a60 !important;
+  border-color: #c8741a !important;
+  background: #9a4f0e !important;
   box-shadow:
-    inset 0 0 0 max(1px, .08cqh) rgb(235 244 248 / 34%),
-    inset 0 0 1.05cqh rgb(214 228 236 / 14%),
-    0 0 .34cqh rgb(190 207 217 / 26%),
-    0 .26cqh .62cqh rgb(0 0 0 / 42%) !important;
-  filter: saturate(.72) brightness(.96) !important;
+    inset 0 0 0 max(1px, .08cqh) rgb(255 213 138 / 18%),
+    inset 0 0 .9cqh rgb(255 168 58 / 10%),
+    0 .2cqh .5cqh rgb(0 0 0 / 40%) !important;
+  filter: saturate(.82) brightness(.9) !important;
   opacity: 1 !important;
   animation: none !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled::before {
   background:
-    radial-gradient(circle at 50% 24%, rgb(244 250 252 / 34%) 0 8%, rgb(212 224 231 / 16%) 18%, transparent 44%),
-    radial-gradient(circle at 50% 54%, rgb(179 196 205 / 14%) 0 34%, transparent 68%),
-    linear-gradient(180deg, #89959c 0%, #677178 32%, #4b5358 68%, #31373b 100%) !important;
+    radial-gradient(circle at 50% 28%, rgb(255 214 120 / 20%) 0 10%, transparent 42%),
+    radial-gradient(circle at 50% 56%, rgb(255 153 40 / 14%) 0 30%, transparent 68%),
+    linear-gradient(180deg, #f19a2a 0%, #cf7416 34%, #a9540d 68%, #6b3307 100%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled::after {
-  border-color: rgb(226 238 244 / 34%) !important;
+  border-color: rgb(255 221 168 / 24%) !important;
   box-shadow:
-    inset 0 .12cqh .34cqh rgb(255 255 255 / 12%),
-    inset 0 -.38cqh .72cqh rgb(18 24 28 / 30%) !important;
+    inset 0 .12cqh .34cqh rgb(255 255 255 / 10%),
+    inset 0 -.38cqh .72cqh rgb(59 28 4 / 24%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button :is(span, strong, b, small, em, i) {
@@ -212,18 +211,18 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
 @keyframes phase-orb-ready-pulse {
   0%, 100% {
     box-shadow:
-      inset 0 0 0 max(1px, .08cqh) rgb(255 250 205 / 72%),
-      inset 0 0 1.3cqh rgb(255 238 118 / 34%),
-      0 0 .55cqh rgb(255 238 126 / 88%),
-      0 0 1.15cqh rgb(255 218 63 / 48%),
+      inset 0 0 0 max(1px, .08cqh) rgb(255 231 184 / 58%),
+      inset 0 0 1.3cqh rgb(255 178 74 / 28%),
+      0 0 .55cqh rgb(255 170 58 / 84%),
+      0 0 1.15cqh rgb(255 126 22 / 48%),
       0 .32cqh .75cqh rgb(0 0 0 / 42%);
   }
   50% {
     box-shadow:
-      inset 0 0 0 max(1px, .08cqh) rgb(255 252 219 / 82%),
-      inset 0 0 1.45cqh rgb(255 243 143 / 44%),
-      0 0 .72cqh rgb(255 245 159 / 96%),
-      0 0 1.48cqh rgb(255 221 76 / 66%),
+      inset 0 0 0 max(1px, .08cqh) rgb(255 238 202 / 68%),
+      inset 0 0 1.45cqh rgb(255 190 91 / 38%),
+      0 0 .72cqh rgb(255 187 92 / 94%),
+      0 0 1.48cqh rgb(255 137 30 / 64%),
       0 .32cqh .75cqh rgb(0 0 0 / 42%);
   }
 }
