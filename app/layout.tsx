@@ -20,6 +20,8 @@ import "./presentation/styles/hero-panel-breathing-room.css";
 import "./presentation/styles/hero-panel-compact-fix.css";
 /* Last authority for the visible NÍVEL badge in compact and expanded panels. */
 import "./presentation/styles/hero-panel-level-final.css";
+/* External geometry only: hero panels are overlays and never size board tracks. */
+import "./presentation/styles/hero-panel-overlay-isolation.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
