@@ -90,21 +90,21 @@ export default function TerrainFieldAnchorRuntime() {
         const geometry = getFieldGeometry(fieldEl);
         if (!geometry) return;
 
+        /* A Cruel Terrain zone always uses the actual first field-slot footprint.
+           It therefore cannot collapse or jump while React swaps the empty icon
+           for the played terrain card during a drop. */
         const slotWidth = geometry.firstRect.width / boardScale.x;
         const slotHeight = geometry.firstRect.height / boardScale.y;
         terrainEl.style.setProperty("--terrain-anchor-width", `${slotWidth}px`);
         terrainEl.style.setProperty("--terrain-anchor-height", `${slotHeight}px`);
 
         const fieldRect = fieldEl.getBoundingClientRect();
-        const terrainRect = terrainEl.getBoundingClientRect();
-        const terrainWidth = terrainRect.width / boardScale.x;
-        const terrainHeight = terrainRect.height / boardScale.y;
         const firstSlotLeft = (geometry.firstRect.left - boardRect.left) / boardScale.x;
         const clearance = geometry.clearance / boardScale.x;
         const fieldTop = (fieldRect.top - boardRect.top) / boardScale.y;
         const fieldHeight = fieldRect.height / boardScale.y;
-        const x = firstSlotLeft - terrainWidth - clearance;
-        const y = fieldTop + (fieldHeight - terrainHeight) / 2;
+        const x = firstSlotLeft - slotWidth - clearance;
+        const y = fieldTop + (fieldHeight - slotHeight) / 2;
 
         terrainEl.style.setProperty("--terrain-anchor-x", `${Math.max(0, x)}px`);
         terrainEl.style.setProperty("--terrain-anchor-y", `${Math.max(0, y)}px`);
