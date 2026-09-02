@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 const BOARD_SELECTOR = ".screen-game .game-stage > .game-content.hs-board";
+// Preserve the approved pre-regression field spacing while drag stability is handled independently.
 const TERRAIN_GAP_MULTIPLIER = 1.85;
 const TERRAIN_MIN_SLOT_CLEARANCE = 0.28;
 
