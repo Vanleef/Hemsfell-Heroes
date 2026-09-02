@@ -10,6 +10,13 @@ const isHeroTargeting = (panel: Element) => {
   return !!hero && (hero.classList.contains("target-ally") || hero.classList.contains("target-enemy"));
 };
 
+const syncLevelBadge = (panel: Element, trigger: HTMLElement) => {
+  const semanticLevel = panel.querySelector<HTMLElement>(".hero-level")?.textContent ?? "";
+  const level = semanticLevel.match(/\d+/)?.[0];
+  if (level) trigger.setAttribute("data-hero-level", `Nv. ${level}`);
+  else trigger.removeAttribute("data-hero-level");
+};
+
 const syncExpandedState = (panel: Element, expanded: boolean) => {
   panel.classList.toggle("is-expanded", expanded);
   const trigger = panel.querySelector<HTMLElement>(TRIGGER_SELECTOR);
@@ -27,6 +34,7 @@ export default function HeroPanelExpandRuntime() {
         if (!trigger) continue;
         trigger.setAttribute("aria-expanded", panel.classList.contains("is-expanded") ? "true" : "false");
         trigger.setAttribute("aria-label", panel.classList.contains("is-expanded") ? "Recolher detalhes do herói" : "Expandir detalhes do herói");
+        syncLevelBadge(panel, trigger);
       }
     };
 
@@ -81,7 +89,7 @@ export default function HeroPanelExpandRuntime() {
 
     initialize();
     const observer = new MutationObserver(initialize);
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
     document.addEventListener("click", onClick, true);
     document.addEventListener("keydown", onKeyDown, true);
 
