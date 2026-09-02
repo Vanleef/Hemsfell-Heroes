@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 
 const BOARD_SELECTOR = ".screen-game .game-stage > .game-content.hs-board";
+const TERRAIN_GAP_MULTIPLIER = 1.45;
 
 type TerrainPair = {
   field: ".enemy-field" | ".player-field";
@@ -16,8 +17,11 @@ const PAIRS: TerrainPair[] = [
 
 /**
  * Keeps Cruel Terrain attached to the actual rendered owner field instead of
- * approximating its location from board grid tracks. This is presentation-only:
- * the terrain remains the same DOM/game object and keeps all existing handlers.
+ * approximating its location from board grid tracks. The left edge is measured
+ * from the first real slot, while clearance reuses the live inter-slot gap so
+ * the relationship remains proportional on desktop, landscape and portrait.
+ * This is presentation-only: the terrain remains the same DOM/game object and
+ * keeps all existing handlers.
  */
 export default function TerrainFieldAnchorRuntime() {
   useEffect(() => {
@@ -25,13 +29,19 @@ export default function TerrainFieldAnchorRuntime() {
     let observedBoard: HTMLElement | null = null;
     const resizeObserver = new ResizeObserver(() => schedule());
 
-    const measureSlotGap = (field: HTMLElement) => {
+    const getFieldGeometry = (field: HTMLElement) => {
       const first = field.querySelector<HTMLElement>('.field-slot[data-slot="1"]');
       const second = field.querySelector<HTMLElement>('.field-slot[data-slot="2"]');
-      if (!first || !second) return 6;
-      const a = first.getBoundingClientRect();
-      const b = second.getBoundingClientRect();
-      return Math.max(2, b.left - a.right);
+      if (!first) return null;
+
+      const firstRect = first.getBoundingClientRect();
+      const secondRect = second?.getBoundingClientRect();
+      const measuredGap = secondRect ? Math.max(2, secondRect.left - firstRect.right) : 6;
+
+      return {
+        firstRect,
+        clearance: Math.max(measuredGap * TERRAIN_GAP_MULTIPLIER, 4),
+      };
     };
 
     const bindObservers = (board: HTMLElement) => {
@@ -56,10 +66,12 @@ export default function TerrainFieldAnchorRuntime() {
         const terrainEl = board.querySelector<HTMLElement>(`:scope > ${terrain}`);
         if (!fieldEl || !terrainEl) return;
 
+        const geometry = getFieldGeometry(fieldEl);
+        if (!geometry) return;
+
         const fieldRect = fieldEl.getBoundingClientRect();
         const terrainRect = terrainEl.getBoundingClientRect();
-        const gap = measureSlotGap(fieldEl);
-        const x = fieldRect.left - boardRect.left - terrainRect.width - gap;
+        const x = geometry.firstRect.left - boardRect.left - terrainRect.width - geometry.clearance;
         const y = fieldRect.top - boardRect.top + (fieldRect.height - terrainRect.height) / 2;
 
         terrainEl.style.setProperty("--terrain-anchor-x", `${Math.max(0, x)}px`);
