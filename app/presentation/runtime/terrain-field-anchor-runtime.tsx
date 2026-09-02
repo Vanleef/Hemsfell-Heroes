@@ -204,7 +204,7 @@ export default function TerrainFieldAnchorRuntime() {
       document.removeEventListener("drop", schedule, true);
       window.removeEventListener("resize", schedule);
       window.removeEventListener("orientationchange", schedule);
-      document.querySelector(":scope > .terrain-drag-sentinel")?.remove();
+      document.querySelector(".terrain-drag-sentinel")?.remove();
     };
   }, []);
   return null;
