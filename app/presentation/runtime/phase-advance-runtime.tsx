@@ -8,6 +8,8 @@ type PhasePresentation = {
   icon: string;
 };
 
+/* The existing React button copy describes the action. This runtime derives
+ * the current/next phase without changing rules or command handling. */
 const PHASE_PRESENTATION: Array<[RegExp, PhasePresentation]> = [
   [/^principal$/i, { current: "MANUTENÇÃO", next: "PRINCIPAL", icon: "◆" }],
   [/^combate$/i, { current: "PRINCIPAL", next: "COMBATE", icon: "⚔" }],
