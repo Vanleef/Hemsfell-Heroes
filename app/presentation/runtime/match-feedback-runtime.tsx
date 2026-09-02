@@ -4,6 +4,7 @@ import { useEffect } from "react";
 
 const BOARD_SELECTOR = ".screen-game .game-stage > .game-content.hs-board";
 const PANEL_SELECTOR = ":scope > .hero-panel-stack.canonical-hero-panel";
+const EVOLUTION_BANNER_SELECTOR = "[data-hemsfell-evolution-available]";
 
 const visibleRects = (board: HTMLElement, selector: string) => {
   const boardRect = board.getBoundingClientRect();
@@ -12,26 +13,46 @@ const visibleRects = (board: HTMLElement, selector: string) => {
     .filter((rect) => rect.width > 0 && rect.height > 0 && rect.right > boardRect.left && rect.left < boardRect.right);
 };
 
+const removeEvolutionBanner = () => {
+  document.querySelector<HTMLElement>(EVOLUTION_BANNER_SELECTOR)?.remove();
+};
+
 const syncEvolutionAvailability = (board: HTMLElement) => {
-  const panel = board.querySelector<HTMLElement>(`${PANEL_SELECTOR}.player`);
-  if (!panel) return;
+  const panel = board.querySelector<HTMLElement>(".hero-panel-stack.canonical-hero-panel.player");
+  const hero = panel?.querySelector<HTMLElement>(".player-hero:not(.enemy)") ?? null;
+  const evolveButton = hero?.querySelector<HTMLButtonElement>(".level-button") ?? null;
+  const available = !!panel && !!hero && hero.classList.contains("level-ready") && !!evolveButton && !evolveButton.disabled;
 
-  const available = !!panel.querySelector<HTMLElement>(
-    ":scope > .player-hero.level-ready > .level-button:not(:disabled)",
-  );
-  panel.classList.toggle("evolution-available", available);
+  panel?.classList.toggle("evolution-available", available);
+  hero?.classList.toggle("evolution-available", available);
 
-  let banner = panel.querySelector<HTMLElement>(":scope > .hero-evolution-available-banner");
-  if (available && !banner) {
+  let banner = document.querySelector<HTMLElement>(EVOLUTION_BANNER_SELECTOR);
+  if (!available || !panel) {
+    banner?.remove();
+    return;
+  }
+
+  if (!banner) {
     banner = document.createElement("div");
     banner.className = "hero-evolution-available-banner";
+    banner.dataset.hemsfellEvolutionAvailable = "true";
     banner.setAttribute("role", "status");
     banner.setAttribute("aria-live", "polite");
     banner.textContent = "EVOLUÇÃO DISPONÍVEL";
-    panel.appendChild(banner);
-  } else if (!available && banner) {
-    banner.remove();
+    document.body.appendChild(banner);
   }
+
+  const panelRect = panel.getBoundingClientRect();
+  const viewportPadding = 8;
+  const gap = Math.max(7, Math.min(14, window.innerHeight * 0.012));
+  const bannerRect = banner.getBoundingClientRect();
+  const left = Math.max(
+    viewportPadding,
+    Math.min(panelRect.left + panelRect.width / 2 - bannerRect.width / 2, window.innerWidth - bannerRect.width - viewportPadding),
+  );
+  const top = Math.max(viewportPadding, panelRect.top - bannerRect.height - gap);
+  banner.style.setProperty("left", `${Math.round(left)}px`, "important");
+  banner.style.setProperty("top", `${Math.round(top)}px`, "important");
 };
 
 const positionDefenseDecision = (board: HTMLElement) => {
@@ -43,8 +64,13 @@ const positionDefenseDecision = (board: HTMLElement) => {
   if (!creatureRects.length) return;
 
   const firstCreatureLeft = Math.min(...creatureRects.map((rect) => rect.left));
-  const gap = Math.max(10, Math.min(24, boardRect.width * 0.014));
-  const edgePadding = Math.max(7, boardRect.width * 0.008);
+  const gap = Math.max(12, Math.min(26, boardRect.width * 0.016));
+  const edgePadding = Math.max(8, boardRect.width * 0.01);
+  const railLeftViewport = boardRect.left + edgePadding;
+  const railRightViewport = firstCreatureLeft - gap;
+  const availableWidth = Math.max(0, railRightViewport - railLeftViewport);
+  const desiredWidth = Math.max(220, Math.min(350, boardRect.width * 0.205));
+  const width = Math.max(0, Math.min(desiredWidth, availableWidth));
 
   decision.style.setProperty("position", "absolute", "important");
   decision.style.setProperty("right", "auto", "important");
@@ -53,12 +79,10 @@ const positionDefenseDecision = (board: HTMLElement) => {
   decision.style.setProperty("margin", "0", "important");
   decision.style.setProperty("top", "50%", "important");
   decision.style.setProperty("transform", "translateY(-50%)", "important");
-
-  const width = decision.getBoundingClientRect().width;
-  const desiredLeftViewport = firstCreatureLeft - gap - width;
-  const leftViewport = Math.max(boardRect.left + edgePadding, desiredLeftViewport);
-  decision.style.setProperty("left", `${Math.round((leftViewport - boardRect.left) * 1000) / 1000}px`, "important");
-  decision.dataset.geometryAnchored = "left-of-fields";
+  decision.style.setProperty("left", `${Math.round(edgePadding * 1000) / 1000}px`, "important");
+  decision.style.setProperty("width", `${Math.round(width * 1000) / 1000}px`, "important");
+  decision.style.setProperty("max-width", `${Math.round(width * 1000) / 1000}px`, "important");
+  decision.dataset.geometryAnchored = "left-rail-clear-of-fields";
 };
 
 export default function MatchFeedbackRuntime() {
@@ -86,7 +110,7 @@ export default function MatchFeedbackRuntime() {
         const timer = window.setTimeout(() => {
           panel.classList.remove("hero-level-transition");
           flashTimers.delete(panel);
-        }, 320);
+        }, 190);
         flashTimers.set(panel, timer);
       });
     };
@@ -94,7 +118,10 @@ export default function MatchFeedbackRuntime() {
     const scan = () => {
       frame = 0;
       const board = document.querySelector<HTMLElement>(BOARD_SELECTOR);
-      if (!board) return;
+      if (!board) {
+        removeEvolutionBanner();
+        return;
+      }
       syncEvolutionAvailability(board);
       positionDefenseDecision(board);
       scanLevelChanges(board);
@@ -120,6 +147,7 @@ export default function MatchFeedbackRuntime() {
 
     window.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("orientationchange", schedule, { passive: true });
+    window.addEventListener("scroll", schedule, { passive: true });
     schedule();
 
     return () => {
@@ -128,8 +156,10 @@ export default function MatchFeedbackRuntime() {
       resizeObserver.disconnect();
       flashTimers.forEach((timer) => window.clearTimeout(timer));
       flashTimers.clear();
+      removeEvolutionBanner();
       window.removeEventListener("resize", schedule);
       window.removeEventListener("orientationchange", schedule);
+      window.removeEventListener("scroll", schedule);
     };
   }, []);
 
