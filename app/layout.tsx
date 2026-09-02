@@ -54,7 +54,7 @@ import "./presentation/styles/evolution-tooltip-portal-final.css";
 import "./presentation/styles/global-tooltip-layer-final.css";
 /* Final gameplay feedback authority: evolution, defender lane, priority center and phase copy. */
 import "./presentation/styles/match-feedback-final.css";
-/* Terminal phase-orb typography and mandatory Indomitable warning readability. */
+/* Contextual phase CTA: next-phase copy, state feedback and responsive hit area. */
 import "./presentation/styles/phase-orb-copy-final.css";
 /* Blocking combat decisions receive spotlight feedback; level-up never swaps to a scaled clone. */
 import "./presentation/styles/critical-flow-feedback.css";
@@ -80,6 +80,7 @@ import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-run
 import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
 import EvolutionTooltipPortalRuntime from "./presentation/runtime/evolution-tooltip-portal-runtime";
 import MatchFeedbackRuntime from "./presentation/runtime/match-feedback-runtime";
+import PhaseActionRuntime from "./presentation/runtime/phase-action-runtime";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -116,6 +117,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <TerrainFieldAnchorRuntime />
       <EvolutionTooltipPortalRuntime />
       <MatchFeedbackRuntime />
+      <PhaseActionRuntime />
       {children}
     </body>
   </html>;
