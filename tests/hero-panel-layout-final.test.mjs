@@ -31,9 +31,10 @@ test("Cruel Terrain has safe owner-field fallback rows before exact runtime anch
   assert.match(sheet, /terrain-slot\.is-field-anchored[^}]*position: absolute !important/);
 });
 
-test("Cruel Terrain final position uses exactly the rendered horizontal slot gap", () => {
+test("Cruel Terrain final position uses half of the rendered horizontal slot gap", () => {
   assert.match(terrainRuntime, /secondRect\.left - firstRect\.right/);
-  assert.match(terrainRuntime, /clearance: measuredGap/);
+  assert.match(terrainRuntime, /measuredGap \* 0\.50/);
+  assert.match(terrainRuntime, /firstRect\.width \* 0\.08/);
   assert.doesNotMatch(terrainRuntime, /TERRAIN_GAP_MULTIPLIER/);
   assert.doesNotMatch(terrainRuntime, /TERRAIN_MIN_SLOT_CLEARANCE/);
   assert.doesNotMatch(terrainRuntime, /TERRAIN_GAP_PROXIMITY/);
@@ -54,6 +55,7 @@ test("portrait uses the same measured terrain anchor instead of a separate magic
   assert.match(terrainRuntime, /ResizeObserver/);
   assert.match(terrainRuntime, /orientationchange/);
   assert.match(layout, /<TerrainFieldAnchorRuntime \/>/);
+  assert.doesNotMatch(layout, /TerrainProximityRuntime/);
   const portrait = css.slice(css.indexOf("@media (orientation: portrait)"));
   assert.doesNotMatch(portrait, /margin-right: calc\(min\(/);
   assert.doesNotMatch(portrait, /translate: calc\(/);
