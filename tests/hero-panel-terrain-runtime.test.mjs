@@ -8,12 +8,13 @@ const balanceCss = fs.readFileSync("app/presentation/styles/hero-panel-visual-ba
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 
 test("Cruel Terrain is anchored to the first rendered owner slot in local scaled-board coordinates", () => {
-  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 1\.85/);
-  assert.match(runtime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.28/);
+  assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 2\.05/);
+  assert.match(runtime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.34/);
   assert.match(runtime, /\.field-slot\[data-slot="1"\]/);
   assert.match(runtime, /\.field-slot\[data-slot="2"\]/);
   assert.match(runtime, /secondRect\.left - firstRect\.right/);
   assert.match(runtime, /firstRect\.width \* TERRAIN_MIN_SLOT_CLEARANCE/);
+  assert.match(runtime, /Math\.max\(measuredGap \* TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 10\)/);
   assert.match(runtime, /boardRect\.width \/ layoutWidth/);
   assert.match(runtime, /boardRect\.height \/ layoutHeight/);
   assert.match(runtime, /const terrainRect = terrainEl\.getBoundingClientRect\(\)/);
@@ -39,10 +40,12 @@ test("hero artwork fills and slightly overscans its portrait band", () => {
   assert.match(balanceCss, /hero-portrait > img[\s\S]*?transform: scale\(1\.055\) !important;[\s\S]*?object-fit: cover !important;/);
 });
 
-test("expanded hero balances compact height with readable ability rows", () => {
+test("expanded hero aligns identity progress and readable ability rows", () => {
   assert.match(balanceCss, /canonical-hero-panel\.is-expanded \{[\s\S]*?height: 47\.6cqh !important;/);
-  assert.match(balanceCss, /grid-template-rows: repeat\(3, auto\) !important;/);
-  assert.match(balanceCss, /hero-ability-chip[\s\S]*?min-height: 3\.72cqh !important;[\s\S]*?padding: \.32cqh \.4cqw !important;/);
-  assert.match(balanceCss, /hero-ability-copy > p[\s\S]*?line-height: 1\.16 !important;/);
+  assert.match(balanceCss, /hero-power-trigger > \.hero-life[\s\S]*?top: \.48cqh !important;[\s\S]*?bottom: auto !important;/);
+  assert.match(balanceCss, /hero-power-trigger > \.hero-short-name[\s\S]*?text-align: center !important;/);
+  assert.match(balanceCss, /canonical-hero-panel\.is-expanded > \.player-hero > \.hero-level-row[\s\S]*?top: var\(--hero-card-level-top\) !important;/);
+  assert.match(balanceCss, /hero-ability-chip[\s\S]*?min-height: 4\.18cqh !important;[\s\S]*?padding: \.38cqh \.42cqw !important;/);
+  assert.match(balanceCss, /hero-ability-copy > p[\s\S]*?line-height: 1\.17 !important;/);
   assert.match(balanceCss, /height: 46\.2cqh !important;/);
 });
