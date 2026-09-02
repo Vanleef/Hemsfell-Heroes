@@ -31,9 +31,11 @@ test("Cruel Terrain has safe owner-field fallback rows before exact runtime anch
   assert.match(sheet, /terrain-slot\.is-field-anchored[^}]*position: absolute !important/);
 });
 
-test("Cruel Terrain final position follows rendered field edge and actual card-slot gap", () => {
-  assert.match(terrainRuntime, /const gap = measureSlotGap\(fieldEl\)/);
-  assert.match(terrainRuntime, /fieldRect\.left - boardRect\.left - terrainRect\.width - gap/);
+test("Cruel Terrain final position follows first rendered slot with extra actual-gap clearance", () => {
+  assert.match(terrainRuntime, /const TERRAIN_GAP_MULTIPLIER = 1\.45/);
+  assert.match(terrainRuntime, /secondRect\.left - firstRect\.right/);
+  assert.match(terrainRuntime, /clearance: Math\.max\(measuredGap \* TERRAIN_GAP_MULTIPLIER, 4\)/);
+  assert.match(terrainRuntime, /geometry\.firstRect\.left - boardRect\.left - terrainRect\.width - geometry\.clearance/);
   assert.match(terrainRuntime, /fieldRect\.top - boardRect\.top \+ \(fieldRect\.height - terrainRect\.height\) \/ 2/);
   assert.match(css, /left: var\(--terrain-anchor-x\) !important/);
   assert.match(css, /top: var\(--terrain-anchor-y\) !important/);
