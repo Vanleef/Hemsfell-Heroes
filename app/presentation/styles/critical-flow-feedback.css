@@ -1,0 +1,114 @@
+/*
+ * Critical flow feedback.
+ *
+ * Blocking decisions must be impossible to miss, but the defender still needs
+ * access to legal blocker creatures. This layer therefore dims the board while
+ * leaving the local battlefield usable, and keeps the blocking prompt fully lit.
+ * It also prevents the presentation-level hero clone from replacing the real
+ * responsive hero panel during level-up.
+ */
+
+/* -------------------------------------------------------------------------
+   Defense decision spotlight
+   ------------------------------------------------------------------------- */
+
+/* First-paint fallback before MatchFeedbackRuntime measures the terrain. The
+ * measured inline position wins afterward, but this already places the prompt
+ * near the terrain instead of against the far-left hero rail. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision {
+  left: clamp(5.75rem, 8.9cqw, 8.6rem) !important;
+  z-index: 2147482200 !important;
+  isolation: isolate !important;
+  outline: max(1px, .07cqh) solid rgb(244 205 92 / 72%) !important;
+  outline-offset: max(1px, .08cqh) !important;
+  box-shadow:
+    0 0 0 max(1px, .06cqh) rgb(255 232 143 / 18%),
+    0 0 .72cqh rgb(255 216 91 / 58%),
+    0 0 1.7cqh rgb(232 168 35 / 30%),
+    0 .42cqh 1.05cqh rgb(0 0 0 / 62%) !important;
+  animation: hh-defense-decision-attention 1.05s ease-in-out infinite !important;
+}
+
+/* During blocker choice, de-emphasize every major region except the decision
+ * itself and the defender's battlefield. The player field must remain usable
+ * because selecting a legal creature is one of the two valid ways forward. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision) > :not(.defense-decision):not(.player-field) {
+  filter: brightness(.3) saturate(.54) !important;
+  opacity: .54 !important;
+  transition: filter .14s ease, opacity .14s ease !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision) > .player-field {
+  filter: brightness(.72) saturate(.82) !important;
+  opacity: .9 !important;
+  z-index: 120 !important;
+  transition: filter .14s ease, opacity .14s ease !important;
+}
+
+/* Legal blocker affordances remain brighter than the dimmed field so the user
+ * can immediately see the alternative to the NÃO BLOQUEAR button. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision)
+  > .player-field :is(.target-ally, .is-targetable, [data-targetable="true"]) {
+  filter: brightness(1.18) saturate(1.12) !important;
+  opacity: 1 !important;
+}
+
+/* The response window already owns a full-screen backdrop. Match its visual
+ * priority with a restrained halo so both types of flow blockers read alike. */
+html body .screen-game .response-overlay .response-dialog {
+  outline: max(1px, .07rem) solid rgb(225 190 91 / 52%) !important;
+  outline-offset: max(1px, .08rem) !important;
+  box-shadow:
+    0 0 .7rem rgb(224 190 91 / 26%),
+    0 1rem 2.8rem rgb(0 0 0 / 68%) !important;
+}
+
+@keyframes hh-defense-decision-attention {
+  0%, 100% {
+    box-shadow:
+      0 0 0 max(1px, .06cqh) rgb(255 232 143 / 16%),
+      0 0 .56cqh rgb(255 216 91 / 44%),
+      0 0 1.35cqh rgb(232 168 35 / 22%),
+      0 .42cqh 1.05cqh rgb(0 0 0 / 62%);
+  }
+  50% {
+    box-shadow:
+      0 0 0 max(2px, .11cqh) rgb(255 238 164 / 54%),
+      0 0 1cqh rgb(255 222 94 / 84%),
+      0 0 2.25cqh rgb(241 176 38 / 48%),
+      0 .42cqh 1.05cqh rgb(0 0 0 / 62%);
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Stable hero level-up presentation
+   ------------------------------------------------------------------------- */
+
+/* The old level-up transaction hides the real hero and inserts a clone in the
+ * global motion layer. That clone no longer has the board's container-query
+ * context, so cqw/cqh-based internals visibly shrink before the real hero is
+ * restored. Do not show that clone. */
+html body .hh-state-hold.is-level-up-hold {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  transform: none !important;
+  animation: none !important;
+}
+
+/* Reveal only a hero hidden by that exact level-up hold. Other presentation
+ * gates remain untouched. The central ASCENSÃO cue still runs normally. */
+html body:has(.hh-state-hold.is-level-up-hold)
+  .screen-game .game-stage .player-hero.hh-presentation-hidden {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+  scale: 1 !important;
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision {
+    animation: none !important;
+  }
+}
