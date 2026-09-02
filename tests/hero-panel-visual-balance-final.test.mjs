@@ -4,12 +4,14 @@ import fs from "node:fs";
 
 const runtime = fs.readFileSync("app/presentation/runtime/terrain-field-anchor-runtime.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/hero-panel-visual-balance-final.css", "utf8");
+const terminal = fs.readFileSync("app/presentation/styles/hero-panel-polish-terminal.css", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 
 const compact = (value) => value.replace(/\s+/g, " ");
 const sheet = compact(css);
+const finalSheet = compact(terminal);
 
-test("Cruel Terrain keeps extra proportional clearance and a stable field-slot footprint", () => {
+test("Cruel Terrain keeps proportional clearance and a field-slot-sized footprint", () => {
   assert.match(runtime, /const TERRAIN_GAP_MULTIPLIER = 2\.05/);
   assert.match(runtime, /const TERRAIN_MIN_SLOT_CLEARANCE = 0\.34/);
   assert.match(runtime, /\.field-slot\[data-slot="1"\]/);
@@ -20,14 +22,11 @@ test("Cruel Terrain keeps extra proportional clearance and a stable field-slot f
   assert.match(runtime, /const slotHeight = geometry\.firstRect\.height \/ boardScale\.y/);
   assert.match(runtime, /--terrain-anchor-width/);
   assert.match(runtime, /--terrain-anchor-height/);
-  assert.match(runtime, /const terrainRect = terrainEl\.getBoundingClientRect\(\)/);
-  assert.match(runtime, /const terrainWidth = terrainRect\.width \/ boardScale\.x/);
-  assert.match(runtime, /const terrainHeight = terrainRect\.height \/ boardScale\.y/);
-  assert.match(runtime, /firstRect\.width \* TERRAIN_MIN_SLOT_CLEARANCE/);
-  assert.match(runtime, /Math\.max\(measuredGap \* TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 10\)/);
-  assert.match(runtime, /const x = firstSlotLeft - terrainWidth - clearance/);
-  assert.match(runtime, /const y = fieldTop \+ \(fieldHeight - terrainHeight\) \/ 2/);
-  assert.match(sheet, /terrain-slot\.is-field-anchored[^}]*width: var\(--terrain-anchor-width\) !important[^}]*height: var\(--terrain-anchor-height\) !important/);
+  assert.match(runtime, /const x = firstSlotLeft - slotWidth - clearance/);
+  assert.match(runtime, /const y = fieldTop \+ \(fieldHeight - slotHeight\) \/ 2/);
+  assert.doesNotMatch(runtime, /const terrainWidth = terrainRect\.width/);
+  assert.match(finalSheet, /terrain-slot\.is-field-anchored[^}]*visibility: visible !important[^}]*opacity: 1 !important/);
+  assert.match(finalSheet, /terrain-slot\.is-field-anchored > \.card-frame[^}]*inset: 0 !important[^}]*width: 100% !important[^}]*height: 100% !important/);
 });
 
 test("reserve-aware circular energy display uses the summed numerator only while reserve exists", () => {
@@ -43,10 +42,21 @@ test("hero portrait gets a responsive overscan instead of dead frame space", () 
   assert.match(sheet, /object-fit: cover !important/);
 });
 
-test("hero identity uses symmetric top badges and centered bottom name", () => {
+test("hero identity keeps one centered bottom-name baseline and a portrait gap below the shadow", () => {
   assert.match(sheet, /hero-power-trigger > \.hero-life[^}]*top: \.48cqh !important[^}]*right: \.38cqw !important[^}]*bottom: auto !important/);
-  assert.match(sheet, /hero-power-trigger > \.hero-short-name[^}]*left: 1\.05cqw !important[^}]*right: 1\.05cqw !important[^}]*bottom: \.38cqh !important/);
-  assert.match(sheet, /hero-power-trigger > \.hero-short-name[^}]*text-align: center !important/);
+  assert.match(finalSheet, /hero-short-name[^}]*bottom: 1\.02cqh !important/);
+  assert.match(finalSheet, /hero-short-name[^}]*text-align: center !important/);
+  assert.match(finalSheet, /hero-portrait::after[^}]*bottom: \.42cqh !important[^}]*height: 18% !important/);
+});
+
+test("hero progress uses one solid fill and outlined copy above it", () => {
+  assert.match(finalSheet, /\.evolution-track > i[^}]*background: #86ad63 !important/);
+  assert.match(finalSheet, /\.hero-evolution-copy > small,[^{]*\.hero-evolution-copy > strong[^}]*-webkit-text-stroke: \.42px/);
+  assert.match(finalSheet, /\.hero-evolution-copy[^}]*z-index: 3 !important/);
+  assert.match(finalSheet, /\.evolution-track[^}]*position: absolute !important[^}]*inset: 0 !important[^}]*z-index: 1 !important/);
+  const fillRule = finalSheet.match(/\.evolution-track > i\s*\{([^}]*)\}/)?.[1] ?? "";
+  assert.doesNotMatch(fillRule, /linear-gradient/);
+  assert.doesNotMatch(fillRule, /(?:^|;)\s*width\s*:/);
 });
 
 test("expanded hero matches compact progress geometry and keeps readable ability rows", () => {
@@ -57,24 +67,15 @@ test("expanded hero matches compact progress geometry and keeps readable ability
   assert.match(sheet, /hero-ability-copy > p[^}]*line-height: 1\.17 !important/);
 });
 
-test("evolution progress track preserves the inline percentage as a visible fill", () => {
-  assert.match(sheet, /hero-level-row > \.hero-evolution[^}]*grid-template-rows: minmax\(0, 1fr\) \.48cqh !important/);
-  assert.match(sheet, /\.evolution-track[^}]*width: 100% !important[^}]*height: \.48cqh !important/);
-  assert.match(sheet, /\.evolution-track > i[^}]*left: 0 !important[^}]*height: 100% !important[^}]*max-width: 100% !important/);
-  const fillRule = sheet.match(/\.evolution-track > i\s*\{([^}]*)\}/)?.[1] ?? "";
-  assert.doesNotMatch(fillRule, /(?:^|;)\s*width\s*:/);
+test("short landscape keeps the same visual relationships responsively", () => {
+  const landscape = terminal.slice(terminal.indexOf("@media (orientation: landscape)"));
+  assert.match(landscape, /hero-portrait::after[^}]*bottom: \.32cqh !important/);
+  assert.match(landscape, /hero-short-name[^}]*bottom: \.82cqh !important/);
 });
 
-test("short landscape has its own compact but readable balance", () => {
-  const landscape = css.slice(css.indexOf("@media (orientation: landscape)"));
-  assert.match(landscape, /--hero-card-level-top: calc\(var\(--hero-card-art-top\) \+ var\(--hero-card-art-height\) \+ \.27cqh\)/);
-  assert.match(landscape, /height: 46\.2cqh !important/);
-  assert.match(landscape, /min-height: 3\.82cqh !important/);
-  assert.match(landscape, /line-height: 1\.15 !important/);
-});
-
-test("visual balance stylesheet is the terminal hero CSS authority", () => {
+test("terminal polish loads after every previous hero CSS authority", () => {
   const geometry = layout.indexOf('import "./presentation/styles/hero-panel-layout-final.css"');
   const balance = layout.indexOf('import "./presentation/styles/hero-panel-visual-balance-final.css"');
-  assert.ok(geometry >= 0 && balance > geometry);
+  const terminalIndex = layout.indexOf('import "./presentation/styles/hero-panel-polish-terminal.css"');
+  assert.ok(geometry >= 0 && balance > geometry && terminalIndex > balance);
 });
