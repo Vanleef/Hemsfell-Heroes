@@ -1,0 +1,206 @@
+/*
+ * Terminal interaction-layer contract.
+ *
+ * This is intentionally the final stylesheet in app/layout.tsx. It owns only
+ * transient interaction layering: the central priority strip, level-up motion
+ * suppression and battlefield hover stacking. Geometry for the central strip
+ * comes from MatchFeedbackRuntime as viewport-pixel CSS variables.
+ */
+
+:root {
+  --hh-priority-band-x: 50vw;
+  --hh-priority-band-y: 50vh;
+  --hh-priority-pair-gap: clamp(.42rem, .7vw, .78rem);
+}
+
+/* -------------------------------------------------------------------------
+   Central priority strip
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .response-waiting,
+html body [data-hemsfell-ai-thinking] {
+  position: fixed !important;
+  top: var(--hh-priority-band-y, 50vh) !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  z-index: 2147482500 !important;
+  transform: translate(-50%, -50%) !important;
+  pointer-events: none !important;
+  isolation: isolate !important;
+}
+
+/* PILHA is deliberately larger than card metadata. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator {
+  left: var(--hh-priority-band-x, 50vw) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(.34rem, .52cqw, .58rem) !important;
+  min-width: max-content !important;
+  min-height: clamp(2rem, 4.2cqh, 2.8rem) !important;
+  padding: clamp(.42rem, .64cqh, .62rem) clamp(.68rem, .92cqw, .96rem) !important;
+  border: max(1px, .07cqh) solid rgb(224 194 91 / 74%) !important;
+  border-radius: clamp(.34rem, .46cqw, .52rem) !important;
+  background: linear-gradient(180deg, rgb(19 27 28 / 98%), rgb(5 14 16 / 99%)) !important;
+  box-shadow: 0 .22rem .64rem rgb(0 0 0 / 58%), inset 0 0 .5rem rgb(224 194 91 / 7%) !important;
+  color: #f5e8b7 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator > span {
+  display: block !important;
+  margin: 0 !important;
+  color: #f2df98 !important;
+  font-size: clamp(.7rem, min(.98cqw, 1.46cqh), 1rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: .08em !important;
+  text-shadow: 0 1px 1px #000 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator > b {
+  display: grid !important;
+  place-items: center !important;
+  inline-size: clamp(1.5rem, 2.8cqh, 2rem) !important;
+  block-size: clamp(1.5rem, 2.8cqh, 2rem) !important;
+  min-width: clamp(1.5rem, 2.8cqh, 2rem) !important;
+  min-height: clamp(1.5rem, 2.8cqh, 2rem) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: max(1px, .06cqh) solid rgb(243 214 111 / 72%) !important;
+  border-radius: 50% !important;
+  background: rgb(83 66 20 / 66%) !important;
+  color: #fff4c7 !important;
+  font-size: clamp(.82rem, min(1.15cqw, 1.72cqh), 1.18rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  text-shadow: 0 1px 1px #000 !important;
+}
+
+/* Generic priority waiting text shares the exact same band. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .response-waiting {
+  left: var(--hh-priority-band-x, 50vw) !important;
+  min-width: clamp(10rem, 18vw, 17rem) !important;
+  max-width: min(24rem, calc(100vw - 1rem)) !important;
+  padding: clamp(.42rem, .62cqh, .62rem) clamp(.62rem, .88cqw, .92rem) !important;
+  border-radius: clamp(.32rem, .46cqw, .52rem) !important;
+  font-size: clamp(.66rem, min(.9cqw, 1.36cqh), .92rem) !important;
+  font-weight: 850 !important;
+  line-height: 1.15 !important;
+  text-align: center !important;
+}
+
+/* The AI runtime creates this node under body with inline coordinates. Those
+ * coordinates are intentionally superseded here by the measured field seam. */
+html body [data-hemsfell-ai-thinking] {
+  left: var(--hh-priority-band-x, 50vw) !important;
+  width: max-content !important;
+  min-width: clamp(10rem, 16vw, 15rem) !important;
+  max-width: min(24rem, calc(100vw - 1rem)) !important;
+  min-height: clamp(2rem, 4.2cqh, 2.8rem) !important;
+  padding: clamp(.42rem, .64cqh, .62rem) clamp(.68rem, .94cqw, 1rem) !important;
+  border-radius: clamp(.34rem, .46cqw, .52rem) !important;
+  font-size: clamp(.68rem, min(.92cqw, 1.4cqh), .96rem) !important;
+  font-weight: 900 !important;
+  line-height: 1.14 !important;
+  text-align: center !important;
+  box-shadow: 0 .24rem .7rem rgb(0 0 0 / 62%) !important;
+}
+
+/* If stack + AI are simultaneously visible, they split horizontally around
+ * the same central axis rather than covering each other. */
+html body:has([data-hemsfell-ai-thinking]) .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator {
+  left: calc(var(--hh-priority-band-x, 50vw) - var(--hh-priority-pair-gap)) !important;
+  transform: translate(-100%, -50%) !important;
+}
+
+html body:has(.screen-game .priority-stack-indicator) [data-hemsfell-ai-thinking] {
+  left: calc(var(--hh-priority-band-x, 50vw) + var(--hh-priority-pair-gap)) !important;
+  transform: translate(0, -50%) !important;
+}
+
+/* The same collision policy covers a generic response-waiting state. */
+html body:has([data-hemsfell-ai-thinking]) .screen-game.screen-game .game-stage > .game-content.hs-board > .response-waiting {
+  left: calc(var(--hh-priority-band-x, 50vw) - var(--hh-priority-pair-gap)) !important;
+  transform: translate(-100%, -50%) !important;
+}
+
+html body:has(.screen-game .response-waiting) [data-hemsfell-ai-thinking] {
+  left: calc(var(--hh-priority-band-x, 50vw) + var(--hh-priority-pair-gap)) !important;
+  transform: translate(0, -50%) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Hero level-up motion
+   ------------------------------------------------------------------------- */
+/* The presentation runtime may animate opacity for level feedback, but it must
+ * never rescale either the real hero panel or the temporary level-up overlay. */
+html body .hh-hero-level-up,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.hero-level-transition,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.hero-level-transition > .player-hero {
+  transform: none !important;
+  translate: none !important;
+  scale: 1 !important;
+  zoom: 1 !important;
+  transform-origin: center !important;
+  will-change: opacity !important;
+}
+
+/* -------------------------------------------------------------------------
+   Battlefield hover stacking
+   ------------------------------------------------------------------------- */
+/* A hovered card is allowed to rise only inside its own column. The paired row
+ * and the whole column may never become a new high layer over transient UI. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field:hover,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field:focus-within,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field:has(.card-frame:hover) {
+  position: relative !important;
+  z-index: 40 !important;
+  isolation: isolate !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column:hover,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column:focus-within,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column:has(.card-frame:hover) {
+  position: relative !important;
+  z-index: 1 !important;
+  isolation: isolate !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column > .field-slot {
+  position: relative !important;
+  z-index: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column > .field-slot:hover,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column > .field-slot:focus-within,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column > .field-slot:has(.card-frame:hover) {
+  z-index: 2 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column > .field-slot > :is(.card-frame, .original-card) {
+  position: relative !important;
+  z-index: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column > .field-slot > :is(.card-frame, .original-card):hover,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paired-field > .field-column > .field-slot > :is(.card-frame, .original-card):focus-visible {
+  z-index: 3 !important;
+}
+
+@media (orientation: landscape) and (max-height: 44rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator > span {
+    font-size: clamp(.62rem, min(.84cqw, 1.22cqh), .84rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator > b {
+    font-size: clamp(.72rem, min(.98cqw, 1.42cqh), .98rem) !important;
+  }
+
+  html body [data-hemsfell-ai-thinking] {
+    min-width: clamp(8.5rem, 15vw, 13rem) !important;
+    font-size: clamp(.6rem, min(.8cqw, 1.16cqh), .82rem) !important;
+  }
+}
