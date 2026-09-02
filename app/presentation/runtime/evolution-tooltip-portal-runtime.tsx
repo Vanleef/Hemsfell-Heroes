@@ -4,20 +4,45 @@ import { useEffect } from "react";
 
 const PROGRESS_SELECTOR = ".screen-game .hero-evolution > .evolution-track";
 const EVOLUTION_SELECTOR = ".screen-game .hero-evolution";
+const SOURCE_SELECTOR = `${EVOLUTION_SELECTOR} > .evolution-tooltip:not(.evolution-tooltip-portal)`;
 const PORTAL_CLASS = "evolution-tooltip-portal";
+
+type PopoverCapableElement = HTMLElement & {
+  showPopover?: () => void;
+  hidePopover?: () => void;
+};
 
 export default function EvolutionTooltipPortalRuntime() {
   useEffect(() => {
-    let portal: HTMLElement | null = null;
+    let portal: PopoverCapableElement | null = null;
     let source: HTMLElement | null = null;
     let progressTrigger: HTMLElement | null = null;
     let frame = 0;
     let touchPinned = false;
 
+    const suppressReactOwnedTooltips = () => {
+      document.querySelectorAll<HTMLElement>(SOURCE_SELECTOR).forEach((tooltip) => {
+        tooltip.style.setProperty("display", "none", "important");
+        tooltip.style.setProperty("opacity", "0", "important");
+        tooltip.style.setProperty("visibility", "hidden", "important");
+        tooltip.style.setProperty("pointer-events", "none", "important");
+      });
+    };
+
+    const closePortal = (target: PopoverCapableElement | null) => {
+      if (!target) return;
+      try {
+        target.hidePopover?.();
+      } catch {
+        // Fallback browsers simply remove the fixed element below.
+      }
+      target.remove();
+    };
+
     const hide = () => {
       cancelAnimationFrame(frame);
       frame = 0;
-      portal?.remove();
+      closePortal(portal);
       portal = null;
       source = null;
       progressTrigger = null;
@@ -67,6 +92,8 @@ export default function EvolutionTooltipPortalRuntime() {
       const nextSource = evolutionRoot?.querySelector<HTMLElement>(":scope > .evolution-tooltip");
       if (!evolutionRoot || !nextSource) return;
 
+      suppressReactOwnedTooltips();
+
       if (progressTrigger === nextProgress && portal) {
         if (source !== nextSource) {
           source = nextSource;
@@ -80,13 +107,22 @@ export default function EvolutionTooltipPortalRuntime() {
       progressTrigger = nextProgress;
       source = nextSource;
 
-      const nextPortal = document.createElement("div");
+      const nextPortal = document.createElement("div") as PopoverCapableElement;
       nextPortal.className = `evolution-tooltip ${PORTAL_CLASS}`;
       nextPortal.setAttribute("role", "tooltip");
       nextPortal.setAttribute("aria-hidden", "false");
+      nextPortal.setAttribute("popover", "manual");
       nextPortal.innerHTML = nextSource.innerHTML;
       document.body.appendChild(nextPortal);
       portal = nextPortal;
+
+      // Popover promotes the criteria into the browser Top Layer. No z-index,
+      // transform or stacking context owned by the board/hand can cover it.
+      try {
+        nextPortal.showPopover?.();
+      } catch {
+        // Fixed-position CSS remains a safe fallback on older browsers.
+      }
       schedule();
     };
 
@@ -106,8 +142,7 @@ export default function EvolutionTooltipPortalRuntime() {
     };
 
     // The criteria tooltip is intentionally tied only to the visible progress
-    // bar geometry. This avoids legacy pointer-events rules on hero wrappers and
-    // prevents hovering unrelated parts of the hero panel from opening it.
+    // bar geometry. Hovering portrait/name/abilities never opens the criteria.
     const onPointerMove = (event: PointerEvent) => {
       if (event.pointerType === "touch" || touchPinned) return;
       const nextProgress = progressAtPoint(event.clientX, event.clientY);
@@ -158,6 +193,10 @@ export default function EvolutionTooltipPortalRuntime() {
       hide();
     };
 
+    const sourceObserver = new MutationObserver(suppressReactOwnedTooltips);
+    sourceObserver.observe(document.body, { childList: true, subtree: true });
+    suppressReactOwnedTooltips();
+
     document.addEventListener("pointermove", onPointerMove, true);
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("focusin", onFocusIn, true);
@@ -171,6 +210,7 @@ export default function EvolutionTooltipPortalRuntime() {
     return () => {
       touchPinned = false;
       hide();
+      sourceObserver.disconnect();
       document.removeEventListener("pointermove", onPointerMove, true);
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("focusin", onFocusIn, true);
