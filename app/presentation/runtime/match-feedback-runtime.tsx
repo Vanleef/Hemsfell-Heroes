@@ -60,28 +60,37 @@ const positionDefenseDecision = (board: HTMLElement) => {
   if (!decision) return;
 
   const boardRect = board.getBoundingClientRect();
-  /* The safe boundary is the first PLAYABLE board zone, not merely the first
-   * creature. Cruel Terrain sits farther left than the creature row, so using
-   * creatures alone let the prompt overlap the terrain/field lane (as seen in
-   * the screenshot). Anchor against whichever visible zone begins first. */
+  const enemyPanel = board.querySelector<HTMLElement>(`${PANEL_SELECTOR}.enemy`);
+  const playerPanel = board.querySelector<HTMLElement>(`${PANEL_SELECTOR}.player`);
+  const enemyRect = enemyPanel?.getBoundingClientRect() ?? null;
+  const playerRect = playerPanel?.getBoundingClientRect() ?? null;
   const playfieldRects = visibleRects(board, ".terrain-slot, .creature-slot, .auxiliary-slot");
-  if (!playfieldRects.length) return;
 
-  /* getBoundingClientRect() is rendered geometry, while inline px on the board
-   * are pre-transform CSS pixels. Convert explicitly so a scaled responsive
-   * board cannot make the decision panel wider or farther right than intended. */
+  if (!enemyRect || !playerRect || !playfieldRects.length) return;
+
+  /* The defender prompt belongs to the same left-side HUD lane as the hero
+   * panels. The screenshot showed that anchoring it relative to the field still
+   * let the prompt trespass into terrain/creature slots. Instead, align it to
+   * the hero-column geometry and place it in the vertical gap between the two
+   * hero panels. The first playable zone is now only a hard right-side cap. */
   const scaleX = board.offsetWidth > 0 ? boardRect.width / board.offsetWidth : 1;
+  const scaleY = board.offsetHeight > 0 ? boardRect.height / board.offsetHeight : 1;
   const firstPlayfieldLeftViewport = Math.min(...playfieldRects.map((rect) => rect.left));
-  const renderedGap = Math.max(12, Math.min(24, boardRect.width * 0.012));
-  const viewportPadding = Math.max(10, Math.min(18, boardRect.width * 0.008));
-  const railRightViewport = firstPlayfieldLeftViewport - renderedGap;
-  const railLeftViewport = Math.max(viewportPadding, boardRect.left + viewportPadding);
-  const availableRenderedWidth = Math.max(0, railRightViewport - railLeftViewport);
-  const desiredRenderedWidth = Math.max(176, Math.min(224, boardRect.width * 0.175));
-  const renderedWidth = Math.max(0, Math.min(desiredRenderedWidth, availableRenderedWidth));
-  const leftViewport = Math.max(railLeftViewport, railRightViewport - renderedWidth);
+  const fieldGap = Math.max(12, Math.min(24, boardRect.width * 0.012));
+  const viewportPadding = Math.max(8, Math.min(16, boardRect.width * 0.007));
 
-  const localLeft = (leftViewport - boardRect.left) / scaleX;
+  const heroLaneLeftViewport = Math.max(
+    boardRect.left + viewportPadding,
+    Math.min(enemyRect.left, playerRect.left),
+  );
+  const heroLaneNaturalWidth = Math.max(enemyRect.width, playerRect.width);
+  const heroLaneRightCap = firstPlayfieldLeftViewport - fieldGap;
+  const safeRenderedWidth = Math.max(0, heroLaneRightCap - heroLaneLeftViewport);
+  const renderedWidth = Math.max(0, Math.min(heroLaneNaturalWidth, safeRenderedWidth));
+
+  if (renderedWidth <= 0) return;
+
+  const localLeft = (heroLaneLeftViewport - boardRect.left) / scaleX;
   const localWidth = renderedWidth / scaleX;
 
   decision.style.setProperty("position", "absolute", "important");
@@ -89,8 +98,7 @@ const positionDefenseDecision = (board: HTMLElement) => {
   decision.style.setProperty("bottom", "auto", "important");
   decision.style.setProperty("inset-inline", "auto", "important");
   decision.style.setProperty("margin", "0", "important");
-  decision.style.setProperty("top", "50%", "important");
-  decision.style.setProperty("transform", "translateY(-50%)", "important");
+  decision.style.setProperty("transform", "none", "important");
   decision.style.setProperty("left", `${Math.round(localLeft * 1000) / 1000}px`, "important");
   decision.style.setProperty("width", `${Math.round(localWidth * 1000) / 1000}px`, "important");
   decision.style.setProperty("min-width", "0", "important");
@@ -98,7 +106,24 @@ const positionDefenseDecision = (board: HTMLElement) => {
   decision.style.setProperty("inline-size", `${Math.round(localWidth * 1000) / 1000}px`, "important");
   decision.style.setProperty("min-inline-size", "0", "important");
   decision.style.setProperty("max-inline-size", `${Math.round(localWidth * 1000) / 1000}px`, "important");
-  decision.dataset.geometryAnchored = "left-of-first-playable-zone";
+
+  /* Width affects wrapping/height, so measure only after the final hero-lane
+   * width has been applied. Then center the whole prompt in the vertical gap
+   * between enemy and player hero panels. */
+  const renderedDecisionHeight = decision.getBoundingClientRect().height;
+  const verticalGapPadding = Math.max(7, Math.min(14, boardRect.height * 0.012));
+  const gapTopViewport = enemyRect.bottom + verticalGapPadding;
+  const gapBottomViewport = playerRect.top - verticalGapPadding;
+  const gapHeight = Math.max(0, gapBottomViewport - gapTopViewport);
+  const centeredTopViewport = gapTopViewport + Math.max(0, (gapHeight - renderedDecisionHeight) / 2);
+  const clampedTopViewport = Math.min(
+    Math.max(boardRect.top + viewportPadding, centeredTopViewport),
+    Math.max(boardRect.top + viewportPadding, boardRect.bottom - renderedDecisionHeight - viewportPadding),
+  );
+  const localTop = (clampedTopViewport - boardRect.top) / scaleY;
+
+  decision.style.setProperty("top", `${Math.round(localTop * 1000) / 1000}px`, "important");
+  decision.dataset.geometryAnchored = "between-hero-panels-left-hud-lane";
 };
 
 export default function MatchFeedbackRuntime() {
