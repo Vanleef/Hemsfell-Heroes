@@ -33,7 +33,10 @@ export default function TerrainProximityRuntime() {
         const measuredGap = secondRect
           ? Math.max(2, secondRect.left - firstRect.right)
           : Math.max(2, firstRect.width * 0.08);
-        const renderedClearance = Math.max(measuredGap * 0.72, firstRect.width * 0.11, 3);
+        // Keep a visible gutter, but place Cruel Terrain closer than before.
+        // Both terms are derived from the live rendered field so the result
+        // remains proportional across board scale and orientation changes.
+        const renderedClearance = Math.max(measuredGap * 0.60, firstRect.width * 0.09, 3);
         const slotWidth = firstRect.width / scaleX;
         const firstSlotLeft = (firstRect.left - boardRect.left) / scaleX;
         const clearance = renderedClearance / scaleX;
