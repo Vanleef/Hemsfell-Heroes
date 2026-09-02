@@ -1,0 +1,104 @@
+/* Final narrow fixes derived from the latest landscape screenshot.
+   Keep this file presentation-only: no hero structural model or game logic. */
+
+/* The semantic <small> already contains "PRÓX. NÍVEL". Older presentation
+   layers also generated a second label through pseudo-elements, producing
+   "PRÓX. NÍVELPRÓXIMO NÍVEL". Keep only the semantic copy. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution-copy > small::before,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution-copy > small::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution-copy {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  column-gap: .42cqw !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution-copy > small {
+  display: block !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: clamp(.46rem, min(.74cqw, 1.12cqh), .74rem) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution-copy > strong {
+  display: block !important;
+  justify-self: end !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  white-space: nowrap !important;
+  font-size: clamp(.48rem, min(.78cqw, 1.16cqh), .78rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-level-row > .hero-evolution {
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+/* The owner fields are centered in column 3. Put terrain in the adjacent
+   column and move it right by half of the unused field-cell width. Its right
+   edge then stops one terrain-gap before the first field slot instead of
+   overlapping that slot. Desktop column 3 = 46cqw and field = 82% = 37.72cqw,
+   so the centered leading inset is 4.14cqw. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
+  grid-column: 2 !important;
+  justify-self: end !important;
+  align-self: center !important;
+  margin: 0 !important;
+  translate: calc(4.14cqw - var(--hero-terrain-gap)) 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain {
+  grid-row: 4 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
+  grid-row: 6 !important;
+}
+
+/* Mobile landscape column 3 = 50cqw and field = 91% = 45.5cqw, leaving a
+   centered 2.25cqw leading inset. */
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 44rem) and (hover: none) and (pointer: coarse) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution-copy {
+    column-gap: .3cqw !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution-copy > small {
+    font-size: clamp(.38rem, min(.7cqw, .92cqh), .59rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel .hero-evolution-copy > strong {
+    font-size: clamp(.4rem, min(.72cqw, .96cqh), .61rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
+    translate: calc(2.25cqw - var(--hero-terrain-gap)) 0 !important;
+  }
+}
+
+@media (orientation: portrait) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.enemy-terrain,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .terrain-slot.player-terrain {
+    grid-column: 2 !important;
+    justify-self: end !important;
+    margin-right: var(--hero-terrain-gap) !important;
+    translate: 0 0 !important;
+  }
+}
