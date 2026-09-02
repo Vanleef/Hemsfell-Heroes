@@ -26,9 +26,10 @@ test("symbolic pile art is proportionally larger", () => {
   assert.match(css, /pile-zone\.main-deck > \.pile-card\.official-card-back > i[^}]*scale: 1\.3 !important/);
 });
 
-test("pile footer shadow is tied to the text row instead of climbing into artwork", () => {
-  assert.match(css, /pile-zone::after[^}]*height: calc\(clamp\(1rem, 2\.25cqh, 1\.45rem\) \+ clamp\(\.24rem, \.5cqh, \.42rem\)\) !important[^}]*background: linear-gradient/);
-  assert.doesNotMatch(css, /pile-zone::after[^}]*height: 38% !important/);
+test("pile footer shadow is a short bottom fade instead of an artwork band", () => {
+  assert.match(css, /pile-zone::after[^}]*bottom: 0 !important[^}]*height: clamp\(\.72rem, 1\.42cqh, 1rem\) !important[^}]*background: linear-gradient/);
+  assert.doesNotMatch(css, /pile-zone::after[^}]*height: (?:38%|calc\()/);
+  assert.match(css, /max-height: 38rem[\s\S]*pile-zone::after[^}]*height: clamp\(\.62rem, 1\.28cqh, \.82rem\) !important/);
 });
 
 test("pile footer keeps larger edge margins and crisp outlined label/count", () => {
