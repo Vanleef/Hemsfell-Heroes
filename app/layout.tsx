@@ -42,6 +42,7 @@ import PresentationEventBridge from "./presentation/runtime/presentation-event-b
 import PresentationInteractionRuntime from "./presentation/runtime/presentation-interaction-runtime";
 import GamePresentationRuntime from "./presentation/runtime/game-presentation-runtime";
 import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-runtime";
+import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -74,6 +75,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <PresentationInteractionRuntime />
       <GamePresentationRuntime />
       <HeroPanelExpandRuntime />
+      <TerrainFieldAnchorRuntime />
       {children}
     </body>
   </html>;
