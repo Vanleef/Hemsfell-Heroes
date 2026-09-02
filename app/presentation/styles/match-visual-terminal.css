@@ -1,0 +1,290 @@
+/*
+ * Final visual authority for the phase action and side-pile thumbnails.
+ *
+ * This stylesheet intentionally loads after match-interaction-terminal.css so
+ * legacy phase-orb pseudo-elements and full-card pile thumbnails cannot win the
+ * cascade again.
+ */
+
+/* -------------------------------------------------------------------------
+   Phase action — player turn
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button) {
+  box-sizing: border-box !important;
+  width: clamp(9.6rem, 12.4cqw, 13.8rem) !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: min(15rem, 22cqw) !important;
+  aspect-ratio: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  overflow: visible !important;
+}
+
+/* The context line must read as HUD information, not microscopic metadata. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button)[data-phase-current]::before {
+  content: "FASE ATUAL · " attr(data-phase-current) !important;
+  position: static !important;
+  inset: auto !important;
+  display: block !important;
+  align-self: center !important;
+  width: max-content !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  aspect-ratio: auto !important;
+  margin: 0 0 clamp(.28rem, .48cqh, .46rem) !important;
+  padding: 0 clamp(.18rem, .28cqw, .3rem) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: #f4d978 !important;
+  -webkit-text-fill-color: #f4d978 !important;
+  -webkit-text-stroke: max(.18px, .012rem) rgb(0 0 0 / 70%) !important;
+  paint-order: stroke fill !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: clamp(.72rem, min(.9cqw, 1.45cqh), 1rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: .085em !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  white-space: nowrap !important;
+  text-shadow: 0 1px 1px rgb(0 0 0 / 94%), 0 0 .18rem rgb(0 0 0 / 48%) !important;
+  pointer-events: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
+  box-sizing: border-box !important;
+  position: relative !important;
+  isolation: isolate !important;
+  display: grid !important;
+  grid-template-columns: clamp(1.8rem, 3.15cqh, 2.3rem) minmax(0, 1fr) clamp(1.55rem, 2.65cqh, 1.95rem) !important;
+  align-items: center !important;
+  justify-items: center !important;
+  column-gap: clamp(.38rem, .58cqw, .64rem) !important;
+  width: 100% !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: clamp(3.15rem, 7.25cqh, 4.25rem) !important;
+  max-width: none !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  margin: 0 !important;
+  padding: clamp(.48rem, .74cqh, .68rem) clamp(.62rem, .88cqw, .92rem) !important;
+  border: max(1px, .08cqh) solid rgb(255 203 74 / 96%) !important;
+  border-radius: clamp(.62rem, .86cqw, .9rem) !important;
+  outline: 0 !important;
+  background:
+    linear-gradient(180deg, rgb(255 174 23 / 100%) 0%, rgb(249 139 8 / 100%) 54%, rgb(209 101 4 / 100%) 100%) !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  overflow: hidden !important;
+  cursor: pointer !important;
+  box-shadow:
+    0 .28rem .72rem rgb(0 0 0 / 52%),
+    inset 0 1px 0 rgb(255 248 205 / 62%),
+    inset 0 -.16rem .34rem rgb(126 49 0 / 36%),
+    0 0 clamp(.48rem, .95cqh, .9rem) rgb(255 166 18 / 38%) !important;
+  transition: transform 120ms ease, filter 150ms ease, box-shadow 150ms ease !important;
+}
+
+/* Reset the legacy pseudo-element completely. Its inherited absolute geometry
+ * was the reason the center label could exist in DOM metadata but render blank. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::after {
+  content: attr(data-phase-next) !important;
+  position: static !important;
+  inset: auto !important;
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  display: block !important;
+  align-self: center !important;
+  justify-self: stretch !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  clip: auto !important;
+  clip-path: none !important;
+  overflow: visible !important;
+  color: #fff8dd !important;
+  -webkit-text-fill-color: #fff8dd !important;
+  -webkit-text-stroke: max(.28px, .018rem) rgb(72 26 0 / 68%) !important;
+  paint-order: stroke fill !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: clamp(.92rem, min(1.18cqw, 1.78cqh), 1.3rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: .045em !important;
+  text-align: center !important;
+  text-transform: uppercase !important;
+  white-space: normal !important;
+  text-wrap: balance !important;
+  text-shadow: 0 1px 1px rgb(78 25 0 / 92%), 0 0 .18rem rgb(0 0 0 / 32%) !important;
+  pointer-events: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not([data-phase-next])::after,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button[data-phase-next=""]::after {
+  content: "AVANÇAR" !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::before {
+  position: static !important;
+  inset: auto !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  display: grid !important;
+  place-items: center !important;
+  inline-size: clamp(1.72rem, 3cqh, 2.18rem) !important;
+  block-size: clamp(1.72rem, 3cqh, 2.18rem) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: max(1px, .06cqh) solid rgb(255 241 185 / 68%) !important;
+  border-radius: 50% !important;
+  background: rgb(116 52 0 / 18%) !important;
+  box-shadow: inset 0 0 .34rem rgb(255 236 162 / 12%) !important;
+  transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button > span {
+  position: static !important;
+  inset: auto !important;
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  display: grid !important;
+  place-items: center !important;
+  inline-size: clamp(1.48rem, 2.55cqh, 1.86rem) !important;
+  block-size: clamp(1.48rem, 2.55cqh, 1.86rem) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 1px solid rgb(255 240 183 / 24%) !important;
+  border-radius: 50% !important;
+  background: rgb(106 44 0 / 20%) !important;
+  color: #fff9e2 !important;
+  -webkit-text-fill-color: #fff9e2 !important;
+  font-size: clamp(.9rem, min(1.12cqw, 1.72cqh), 1.2rem) !important;
+  line-height: 1 !important;
+  transform: none !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled):hover {
+  transform: translateY(-1px) !important;
+  filter: brightness(1.07) saturate(1.05) !important;
+  box-shadow:
+    0 .34rem .84rem rgb(0 0 0 / 54%),
+    inset 0 1px 0 rgb(255 250 219 / 68%),
+    inset 0 -.16rem .34rem rgb(126 49 0 / 30%),
+    0 0 clamp(.72rem, 1.3cqh, 1.2rem) rgb(255 174 25 / 52%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:not(:disabled):active {
+  transform: translateY(1px) !important;
+  filter: brightness(.96) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button:disabled {
+  animation: none !important;
+  filter: saturate(.26) brightness(.67) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Graveyard side-pile thumbnail
+   ------------------------------------------------------------------------- */
+/* RemoteCardArt renders the complete catalogue card, including its printed
+ * rules/title panel. In a tiny side-pile thumbnail that internal black rules
+ * panel looked like a broken footer shadow. Crop to the artwork/header region
+ * and let the pile's own footer be the only metadata band. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone.grave > .pile-card {
+  overflow: hidden !important;
+  background: #071315 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone.grave > .pile-card > .remote-card-art {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  transform: scale(1.52) !important;
+  transform-origin: 50% 8% !important;
+  object-fit: cover !important;
+  pointer-events: none !important;
+}
+
+/* The readability fade belongs only to the baseline of the pile label/count. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone::after {
+  height: clamp(.66rem, 1.25cqh, .9rem) !important;
+  background: linear-gradient(180deg, rgb(0 0 0 / 0%) 0%, rgb(0 0 0 / 12%) 38%, rgb(0 0 0 / 64%) 78%, rgb(0 0 0 / 88%) 100%) !important;
+}
+
+@media (orientation: landscape) and (max-height: 44rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button) {
+    width: clamp(8.8rem, 11.4cqw, 12.2rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:has(> button)[data-phase-current]::before {
+    font-size: clamp(.64rem, min(.8cqw, 1.18cqh), .84rem) !important;
+    margin-bottom: clamp(.2rem, .34cqh, .3rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
+    min-height: clamp(2.7rem, 6.2cqh, 3.45rem) !important;
+    grid-template-columns: clamp(1.52rem, 2.5cqh, 1.82rem) minmax(0, 1fr) clamp(1.3rem, 2.15cqh, 1.58rem) !important;
+    padding: clamp(.38rem, .56cqh, .5rem) clamp(.48rem, .68cqw, .68rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::after {
+    font-size: clamp(.78rem, min(.98cqw, 1.42cqh), 1rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone.grave > .pile-card > .remote-card-art {
+    transform: scale(1.48) !important;
+    transform-origin: 50% 8% !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone::after {
+    height: clamp(.58rem, 1.12cqh, .78rem) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
+    animation: none !important;
+    transition: none !important;
+  }
+}
