@@ -23,6 +23,10 @@ const PAIRS: TerrainPair[] = [
  * board's local CSS coordinate space, which keeps the anchor correct when the
  * whole match stage is responsively scaled. This is presentation-only: the
  * terrain remains the same DOM/game object and keeps all existing handlers.
+ *
+ * This runtime also mirrors reserve availability in the circular energy readout:
+ * the displayed numerator becomes current energy + reserve while reserve exists,
+ * without changing authoritative resource values or payment rules.
  */
 export default function TerrainFieldAnchorRuntime() {
   useEffect(() => {
@@ -57,6 +61,23 @@ export default function TerrainFieldAnchorRuntime() {
       };
     };
 
+    const syncEnergyDisplay = () => {
+      document.querySelectorAll<HTMLElement>(".screen-game .field-energy").forEach((panel) => {
+        const match = panel.getAttribute("aria-label")?.match(/(\d+)\s+de\s+(\d+)\s+energias;\s*(\d+)\s+de\s+3\s+reservas/i);
+        if (!match) return;
+        const energy = Number(match[1] || 0);
+        const reserve = Number(match[3] || 0);
+        const dial = panel.querySelector<HTMLElement>(".energy-dial");
+        const current = dial?.querySelector<HTMLElement>("strong > em");
+        if (!dial || !current) return;
+
+        current.textContent = String(reserve > 0 ? energy + reserve : energy);
+        dial.classList.toggle("uses-reserve-total", reserve > 0);
+        dial.dataset.mainEnergy = String(energy);
+        dial.dataset.reserveEnergy = String(reserve);
+      });
+    };
+
     const bindObservers = (board: HTMLElement) => {
       if (observedBoard === board) return;
       resizeObserver.disconnect();
@@ -72,6 +93,7 @@ export default function TerrainFieldAnchorRuntime() {
 
     const position = () => {
       const board = document.querySelector<HTMLElement>(BOARD_SELECTOR);
+      syncEnergyDisplay();
       if (!board) return;
       bindObservers(board);
 
@@ -85,6 +107,14 @@ export default function TerrainFieldAnchorRuntime() {
 
         const geometry = getFieldGeometry(fieldEl);
         if (!geometry) return;
+
+        /* The terrain slot keeps the exact rendered footprint of a normal field
+           slot. Its box therefore cannot collapse or grow when the placeholder
+           is replaced by an OriginalCard during a successful drop. */
+        const slotWidth = geometry.firstRect.width / boardScale.x;
+        const slotHeight = geometry.firstRect.height / boardScale.y;
+        terrainEl.style.setProperty("--terrain-anchor-width", `${slotWidth}px`);
+        terrainEl.style.setProperty("--terrain-anchor-height", `${slotHeight}px`);
 
         const fieldRect = fieldEl.getBoundingClientRect();
         const terrainRect = terrainEl.getBoundingClientRect();
@@ -110,7 +140,7 @@ export default function TerrainFieldAnchorRuntime() {
     };
 
     const mutationObserver = new MutationObserver(schedule);
-    mutationObserver.observe(document.body, { childList: true, subtree: true });
+    mutationObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
     window.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("orientationchange", schedule, { passive: true });
     schedule();
