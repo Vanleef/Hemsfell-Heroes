@@ -1,11 +1,10 @@
 /*
  * Canonical expanded hero-ability contract.
  *
- * This sheet is intentionally narrow: it owns only the three expanded ability
- * rows. Historical hero sheets still provide the surrounding panel geometry,
- * but they must not decide the ability-row structure anymore. Keep this as the
- * final CSS import in app/layout.tsx so old !important rules cannot revive the
- * numbered-list presentation.
+ * One row = readable ability number | description capsule | semantic kind.
+ * PASSIVA/ATIVA deliberately lives OUTSIDE the description capsule. This file
+ * stays after historical hero CSS so old numbered-list and inline-label rules
+ * cannot reappear.
  */
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
@@ -15,7 +14,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   grid-template-rows: repeat(3, minmax(0, 1fr)) !important;
   align-content: stretch !important;
   align-items: stretch !important;
-  gap: clamp(.22rem, .46cqh, .5rem) !important;
+  gap: clamp(.18rem, .38cqh, .42rem) !important;
   overflow: visible !important;
 }
 
@@ -27,162 +26,160 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   min-width: 0 !important;
   min-height: 0 !important;
   display: grid !important;
-  grid-template-columns: clamp(1.45rem, 2.55cqh, 2.05rem) minmax(0, 1fr) !important;
+  grid-template-columns:
+    clamp(1.48rem, 2.72cqh, 2.12rem)
+    minmax(0, 1fr)
+    clamp(2.7rem, 4.15cqw, 4.25rem) !important;
   grid-template-rows: minmax(0, 1fr) !important;
   align-items: center !important;
   align-content: center !important;
-  column-gap: clamp(.34rem, .62cqw, .66rem) !important;
+  column-gap: clamp(.24rem, .42cqw, .48rem) !important;
   margin: 0 !important;
-  padding: clamp(.28rem, .48cqh, .5rem) clamp(.38rem, .58cqw, .66rem) !important;
-  border: max(1px, .06cqh) solid rgb(193 172 104 / 42%) !important;
-  border-radius: clamp(.34rem, .48cqw, .54rem) !important;
-  background: linear-gradient(100deg, rgb(9 27 27 / 97%), rgb(5 17 20 / 94%)) !important;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 3%), 0 .16cqh .42cqh rgb(0 0 0 / 30%) !important;
+  padding: clamp(.16rem, .3cqh, .32rem) clamp(.18rem, .3cqw, .34rem) !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   color: #eef2ef !important;
   text-align: left !important;
-  overflow: hidden !important;
+  overflow: visible !important;
   transform: none !important;
   translate: none !important;
 }
 
-/* The JSX still carries slot+1 as an aria-hidden implementation detail. Do not
- * expose 1/2/3 visually: the left rail is a semantic ability-kind icon instead. */
+/* 1 / 2 / 3 is useful scan information and must remain visibly legible. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
-  inline-size: clamp(1.3rem, 2.28cqh, 1.82rem) !important;
-  block-size: clamp(1.3rem, 2.28cqh, 1.82rem) !important;
-  width: clamp(1.3rem, 2.28cqh, 1.82rem) !important;
-  min-width: clamp(1.3rem, 2.28cqh, 1.82rem) !important;
-  max-width: clamp(1.3rem, 2.28cqh, 1.82rem) !important;
-  height: clamp(1.3rem, 2.28cqh, 1.82rem) !important;
-  min-height: clamp(1.3rem, 2.28cqh, 1.82rem) !important;
-  max-height: clamp(1.3rem, 2.28cqh, 1.82rem) !important;
+  grid-column: 1 !important;
+  grid-row: 1 !important;
+  align-self: center !important;
+  justify-self: center !important;
+  inline-size: clamp(1.42rem, 2.48cqh, 1.92rem) !important;
+  block-size: clamp(1.42rem, 2.48cqh, 1.92rem) !important;
+  width: clamp(1.42rem, 2.48cqh, 1.92rem) !important;
+  min-width: clamp(1.42rem, 2.48cqh, 1.92rem) !important;
+  max-width: clamp(1.42rem, 2.48cqh, 1.92rem) !important;
+  height: clamp(1.42rem, 2.48cqh, 1.92rem) !important;
+  min-height: clamp(1.42rem, 2.48cqh, 1.92rem) !important;
+  max-height: clamp(1.42rem, 2.48cqh, 1.92rem) !important;
   display: grid !important;
   place-items: center !important;
   margin: 0 !important;
   padding: 0 !important;
-  border: max(1px, .07cqh) solid rgb(210 191 124 / 72%) !important;
+  border: max(1px, .065cqh) solid rgb(210 191 124 / 76%) !important;
   border-radius: 50% !important;
-  background: radial-gradient(circle at 38% 32%, rgb(255 245 194 / 17%), rgb(11 28 29 / 98%) 68%) !important;
-  box-shadow: inset 0 0 .48cqh rgb(0 0 0 / 58%), 0 0 .34cqh rgb(213 184 87 / 16%) !important;
-  color: transparent !important;
-  -webkit-text-fill-color: transparent !important;
-  font-size: 0 !important;
-  line-height: 0 !important;
-  text-indent: -9999px !important;
+  background: radial-gradient(circle at 38% 32%, rgb(255 245 194 / 15%), rgb(11 28 29 / 98%) 70%) !important;
+  box-shadow: inset 0 0 .42cqh rgb(0 0 0 / 56%), 0 0 .3cqh rgb(213 184 87 / 15%) !important;
+  color: #f4ead0 !important;
+  -webkit-text-fill-color: #f4ead0 !important;
+  font-size: clamp(.72rem, min(1.04cqw, 1.52cqh), 1rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  text-indent: 0 !important;
+  text-shadow: 0 1px 1px #000 !important;
   overflow: hidden !important;
 }
 
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot::before {
-  content: "" !important;
-  display: block !important;
-  inline-size: 38% !important;
-  block-size: 38% !important;
-  border: max(1px, .055cqh) solid #c8d6cf !important;
-  border-radius: 50% !important;
-  background: rgb(177 204 193 / 18%) !important;
-  box-shadow: 0 0 .22cqh rgb(176 218 201 / 24%) !important;
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot::before,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot::after {
+  content: none !important;
+  display: none !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.is-active > .hero-ability-slot {
-  border-color: rgb(235 198 83 / 88%) !important;
-  box-shadow: inset 0 0 .5cqh rgb(0 0 0 / 56%), 0 0 .4cqh rgb(231 185 57 / 24%) !important;
+  border-color: rgb(239 202 83 / 94%) !important;
+  color: #ffe69a !important;
+  -webkit-text-fill-color: #ffe69a !important;
+  box-shadow: inset 0 0 .46cqh rgb(0 0 0 / 54%), 0 0 .42cqh rgb(231 185 57 / 28%) !important;
 }
 
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.is-active > .hero-ability-slot::before {
-  inline-size: 44% !important;
-  block-size: 44% !important;
-  border: 0 !important;
-  border-radius: 0 !important;
-  background: #efc756 !important;
-  box-shadow: 0 0 .3cqh rgb(239 199 86 / 48%) !important;
-  clip-path: polygon(50% 0, 62% 35%, 100% 50%, 62% 65%, 50% 100%, 38% 65%, 0 50%, 38% 35%) !important;
-}
-
+/* Flatten only the wrapper. Its children become direct cells of the row grid:
+ * p -> center description capsule, b -> right-side PASSIVA/ATIVA label. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > span.hero-ability-copy {
+  display: contents !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
+  grid-column: 2 !important;
+  grid-row: 1 !important;
+  align-self: stretch !important;
   min-width: 0 !important;
   min-height: 0 !important;
   width: 100% !important;
-  height: auto !important;
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) !important;
-  grid-template-rows: auto minmax(0, 1fr) !important;
-  align-content: center !important;
-  align-items: start !important;
-  gap: clamp(.08rem, .18cqh, .18rem) !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  display: flex !important;
+  align-items: center !important;
   margin: 0 !important;
-  padding: 0 !important;
-  overflow: visible !important;
+  padding: clamp(.28rem, .42cqh, .42rem) clamp(.38rem, .48cqw, .54rem) !important;
+  border: max(1px, .055cqh) solid rgb(183 172 124 / 34%) !important;
+  border-radius: clamp(.28rem, .4cqw, .46rem) !important;
+  background: linear-gradient(100deg, rgb(8 27 27 / 96%), rgb(5 18 20 / 94%)) !important;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 2%), 0 .12cqh .34cqh rgb(0 0 0 / 26%) !important;
+  color: #edf1ee !important;
+  font-size: clamp(.55rem, min(.8cqw, 1.14cqh), .78rem) !important;
+  font-weight: 650 !important;
+  line-height: 1.17 !important;
+  letter-spacing: .001em !important;
+  white-space: normal !important;
+  text-wrap: pretty !important;
+  overflow-wrap: anywhere !important;
+  overflow: hidden !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-compact > .hero-ability-copy > p {
+  font-size: clamp(.51rem, min(.74cqw, 1.06cqh), .72rem) !important;
+  line-height: 1.15 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-dense > .hero-ability-copy > p {
+  font-size: clamp(.47rem, min(.68cqw, .98cqh), .66rem) !important;
+  line-height: 1.12 !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > b {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  justify-self: start !important;
-  width: max-content !important;
+  grid-column: 3 !important;
+  grid-row: 1 !important;
+  align-self: center !important;
+  justify-self: end !important;
+  display: block !important;
+  width: auto !important;
+  min-width: 0 !important;
   max-width: 100% !important;
-  min-height: clamp(.78rem, 1.28cqh, 1.05rem) !important;
+  min-height: 0 !important;
   margin: 0 !important;
-  padding: .08cqh clamp(.24rem, .34cqw, .4rem) !important;
-  border: 1px solid rgb(179 199 191 / 30%) !important;
-  border-radius: 999px !important;
-  background: rgb(130 160 149 / 12%) !important;
-  color: #b9d2c8 !important;
-  font-size: clamp(.43rem, min(.62cqw, .9cqh), .64rem) !important;
-  font-weight: 900 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #aebdb7 !important;
+  font-size: clamp(.46rem, min(.66cqw, .96cqh), .68rem) !important;
+  font-weight: 950 !important;
   line-height: 1 !important;
-  letter-spacing: .075em !important;
-  text-align: center !important;
+  letter-spacing: .06em !important;
+  text-align: right !important;
   text-transform: uppercase !important;
   white-space: nowrap !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.is-active > .hero-ability-copy > b {
-  border-color: rgb(236 201 91 / 42%) !important;
-  background: rgb(151 111 22 / 18%) !important;
   color: #f0ce69 !important;
+  text-shadow: 0 0 .3cqh rgb(234 190 66 / 26%) !important;
 }
 
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
-  width: 100% !important;
-  max-width: 100% !important;
-  max-height: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  color: #edf1ee !important;
-  font-size: clamp(.55rem, min(.8cqw, 1.14cqh), .78rem) !important;
-  font-weight: 650 !important;
-  line-height: 1.18 !important;
-  letter-spacing: .001em !important;
-  white-space: normal !important;
-  text-wrap: pretty !important;
-  overflow-wrap: anywhere !important;
-  overflow: visible !important;
-}
-
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-compact > .hero-ability-copy > p {
-  font-size: clamp(.51rem, min(.74cqw, 1.06cqh), .72rem) !important;
-  line-height: 1.16 !important;
-}
-
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-dense > .hero-ability-copy > p {
-  font-size: clamp(.47rem, min(.68cqw, .98cqh), .66rem) !important;
-  line-height: 1.13 !important;
-}
-
-/* Keep interaction feedback semantic and neutral; do not resurrect the legacy
- * purple selected-row treatment. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.is-active.is-available {
   cursor: pointer !important;
-  border-color: rgb(231 194 78 / 66%) !important;
-  background: linear-gradient(100deg, rgb(33 29 16 / 97%), rgb(10 20 20 / 95%)) !important;
 }
 
-html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.is-active.is-available:hover {
-  border-color: rgb(244 211 105 / 88%) !important;
-  background: linear-gradient(100deg, rgb(43 36 17 / 98%), rgb(11 24 23 / 96%)) !important;
-  box-shadow: inset 0 0 0 1px rgb(255 237 164 / 5%), 0 0 .52cqh rgb(226 179 55 / 18%) !important;
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.is-active.is-available > .hero-ability-copy > p {
+  border-color: rgb(231 194 78 / 58%) !important;
+  background: linear-gradient(100deg, rgb(33 29 16 / 96%), rgb(10 20 20 / 95%)) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.is-active.is-available:hover > .hero-ability-copy > p {
+  border-color: rgb(244 211 105 / 84%) !important;
+  box-shadow: inset 0 0 0 1px rgb(255 237 164 / 4%), 0 0 .44cqh rgb(226 179 55 / 16%) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip:focus-visible {
@@ -194,49 +191,59 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
        (orientation: landscape) and (max-width: 64rem) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.is-expanded > .hero-command-bar {
-    gap: clamp(.14rem, .3cqh, .32rem) !important;
+    gap: clamp(.12rem, .26cqh, .28rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
-    grid-template-columns: clamp(1.18rem, 2.12cqh, 1.58rem) minmax(0, 1fr) !important;
-    column-gap: clamp(.28rem, .48cqw, .52rem) !important;
-    padding: clamp(.2rem, .34cqh, .34rem) clamp(.3rem, .46cqw, .5rem) !important;
+    grid-template-columns:
+      clamp(1.22rem, 2.18cqh, 1.62rem)
+      minmax(0, 1fr)
+      clamp(2.25rem, 4cqw, 3.55rem) !important;
+    column-gap: clamp(.18rem, .34cqw, .38rem) !important;
+    padding: clamp(.12rem, .22cqh, .24rem) clamp(.14rem, .24cqw, .28rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
-    inline-size: clamp(1.08rem, 1.95cqh, 1.44rem) !important;
-    block-size: clamp(1.08rem, 1.95cqh, 1.44rem) !important;
-    width: clamp(1.08rem, 1.95cqh, 1.44rem) !important;
-    min-width: clamp(1.08rem, 1.95cqh, 1.44rem) !important;
-    max-width: clamp(1.08rem, 1.95cqh, 1.44rem) !important;
-    height: clamp(1.08rem, 1.95cqh, 1.44rem) !important;
-    min-height: clamp(1.08rem, 1.95cqh, 1.44rem) !important;
-    max-height: clamp(1.08rem, 1.95cqh, 1.44rem) !important;
-  }
-
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > b {
-    min-height: clamp(.68rem, 1.06cqh, .88rem) !important;
-    font-size: clamp(.38rem, min(.55cqw, .8cqh), .56rem) !important;
+    inline-size: clamp(1.16rem, 2.02cqh, 1.5rem) !important;
+    block-size: clamp(1.16rem, 2.02cqh, 1.5rem) !important;
+    width: clamp(1.16rem, 2.02cqh, 1.5rem) !important;
+    min-width: clamp(1.16rem, 2.02cqh, 1.5rem) !important;
+    max-width: clamp(1.16rem, 2.02cqh, 1.5rem) !important;
+    height: clamp(1.16rem, 2.02cqh, 1.5rem) !important;
+    min-height: clamp(1.16rem, 2.02cqh, 1.5rem) !important;
+    max-height: clamp(1.16rem, 2.02cqh, 1.5rem) !important;
+    font-size: clamp(.62rem, min(.9cqw, 1.3cqh), .84rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
+    padding: clamp(.2rem, .32cqh, .32rem) clamp(.28rem, .38cqw, .42rem) !important;
     font-size: clamp(.49rem, min(.7cqw, 1cqh), .68rem) !important;
-    line-height: 1.14 !important;
+    line-height: 1.13 !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip.copy-dense > .hero-ability-copy > p {
     font-size: clamp(.43rem, min(.61cqw, .89cqh), .6rem) !important;
   }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > b {
+    font-size: clamp(.4rem, min(.58cqw, .84cqh), .58rem) !important;
+    letter-spacing: .045em !important;
+  }
 }
 
 @media (orientation: portrait) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip {
-    grid-template-columns: clamp(1.6rem, 5.4vw, 2rem) minmax(0, 1fr) !important;
-    column-gap: clamp(.4rem, 1.6vw, .62rem) !important;
-    padding: clamp(.36rem, 1.4vw, .52rem) !important;
+    grid-template-columns: 1.8rem minmax(0, 1fr) 3.5rem !important;
+    column-gap: .36rem !important;
   }
 
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > p {
-    font-size: clamp(.62rem, 2.35vw, .82rem) !important;
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-slot {
+    width: 1.65rem !important;
+    min-width: 1.65rem !important;
+    max-width: 1.65rem !important;
+    height: 1.65rem !important;
+    min-height: 1.65rem !important;
+    max-height: 1.65rem !important;
+    font-size: .86rem !important;
   }
 }
