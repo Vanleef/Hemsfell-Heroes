@@ -4,29 +4,52 @@ import fs from "node:fs";
 
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/match-visual-terminal.css", "utf8").replace(/\s+/g, " ");
+const phaseRuntime = fs.readFileSync("app/presentation/runtime/phase-action-runtime.tsx", "utf8").replace(/\s+/g, " ");
 
 test("visual terminal stylesheet is the final CSS authority", () => {
   const imports = [...layout.matchAll(/import\s+"([^"]+\.css)";/g)].map((match) => match[1]);
   assert.equal(imports.at(-1), "./presentation/styles/match-visual-terminal.css");
 });
 
-test("player phase CTA width follows the action copy rather than a fixed clamp", () => {
+test("phase runtime separates current phase hierarchy without replacing gameplay button", () => {
+  assert.match(phaseRuntime, /copy\.className = "phase-current-copy"/);
+  assert.match(phaseRuntime, /kicker\.className = "phase-current-kicker"[^]*kicker\.textContent = "FASE ATUAL"/);
+  assert.match(phaseRuntime, /name\.className = "phase-current-name"/);
+  assert.match(phaseRuntime, /orb\.insertBefore\(copy, button\)/);
+  assert.match(phaseRuntime, /button\.dataset\.phaseNext = action\.next/);
+  assert.match(phaseRuntime, /button\.setAttribute\("aria-label", action\.aria\)/);
+  assert.doesNotMatch(phaseRuntime, /button\.onclick\s*=/);
+});
+
+test("current phase uses a quiet kicker and stronger phase name", () => {
+  assert.match(css, /phase-orb:has\(> button\)::before[^}]*content: none !important[^}]*display: none !important/);
+  assert.match(css, /phase-current-kicker[^}]*font-size: clamp\(\.4rem[^}]*font-weight: 850 !important[^}]*letter-spacing: \.18em !important/);
+  assert.match(css, /phase-current-name[^}]*font-size: clamp\(\.72rem[^}]*font-weight: 950 !important[^}]*color: #f6dc8f !important/);
+});
+
+test("player phase CTA width follows the next action copy", () => {
   assert.match(css, /phase-orb:has\(> button\)[^{]*\{[^}]*width: max-content !important/);
-  assert.match(css, /phase-orb:has\(> button\)\[data-phase-current\]::before[^}]*position: absolute !important[^}]*width: max-content !important[^}]*transform: translateX\(-50%\) !important/);
   assert.match(css, /phase-orb > button \{[^}]*grid-template-columns: max-content auto !important[^}]*width: max-content !important/);
+  assert.match(css, /phase-orb > button::after[^}]*content: attr\(data-phase-next\) !important[^}]*width: max-content !important[^}]*white-space: nowrap !important/);
   assert.doesNotMatch(css, /phase-orb:has\(> button\)[^{]*\{[^}]*width: clamp\(/);
 });
 
-test("player phase CTA keeps its copy on one responsive line", () => {
-  assert.match(css, /phase-orb > button::after[^}]*content: attr\(data-phase-next\) !important[^}]*width: max-content !important[^}]*white-space: nowrap !important/);
-  assert.match(css, /button\[data-phase-next="FINALIZAÇÃO"\]::after[^}]*font-size: clamp\(\.56rem/);
-  assert.match(css, /button\[data-phase-next="ENCERRAR TURNO"\]::after[^}]*font-size: clamp\(\.52rem/);
+test("phase CTA preserves readable long labels without wrapping", () => {
+  assert.match(css, /button\[data-phase-next="FINALIZAÇÃO"\]::after[^}]*font-size: clamp\(\.62rem/);
+  assert.match(css, /button\[data-phase-next="ENCERRAR TURNO"\]::after[^}]*font-size: clamp\(\.56rem/);
   assert.match(css, /button:not\(\[data-phase-next\]\)::after,[^{]*button\[data-phase-next=""\]::after[^}]*content: "AVANÇAR" !important/);
 });
 
 test("phase CTA has no left icon and arrow has no circular plate", () => {
   assert.match(css, /phase-orb > button::before[^}]*content: none !important[^}]*display: none !important/);
   assert.match(css, /phase-orb > button > span[^}]*border: 0 !important[^}]*border-radius: 0 !important[^}]*background: transparent !important[^}]*box-shadow: none !important/);
+});
+
+test("phase CTA exposes active, disabled, focus and coarse-pointer states", () => {
+  assert.match(css, /button:not\(:disabled\):hover[^}]*border-color:[^}]*filter: brightness\(1\.07\)/);
+  assert.match(css, /button:disabled[^}]*cursor: not-allowed !important[^}]*background: linear-gradient[^}]*filter: saturate\(\.24\) brightness\(\.7\)/);
+  assert.match(css, /button:focus-visible[^}]*outline:/);
+  assert.match(css, /@media \(pointer: coarse\)[^{]*\{[^]*phase-orb > button[^}]*min-height: 2\.75rem !important/);
 });
 
 test("real cards shown on side piles stay shadow-free while footer labels keep a short fade", () => {
