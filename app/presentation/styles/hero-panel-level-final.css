@@ -14,7 +14,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .player-hero > .hero-level-row {
   grid-template-columns: minmax(0, 1fr) !important;
   overflow: visible !important;
-  isolation: visible !important;
+  isolation: isolate !important;
   z-index: 40 !important;
 }
 
