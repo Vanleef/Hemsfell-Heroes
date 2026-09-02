@@ -15,16 +15,20 @@ test("side pile readability contract loads before ability and terminal interacti
   assert.ok(ability < terminal);
 });
 
-test("each pile separates a large visual stage from a dedicated footer row", () => {
-  assert.match(css, /pile-zone[^}]*grid-template-columns: minmax\(0, 1fr\) auto !important/);
-  assert.match(css, /pile-zone[^}]*grid-template-rows: minmax\(0, 1fr\) clamp\(1rem, 2\.25cqh, 1\.45rem\) !important/);
-  assert.match(css, /pile-zone > \.pile-card[^}]*height: 92% !important[^}]*max-width: 91% !important/);
-  assert.match(css, /revealed-deck-stack[^}]*grid-column: 1 \/ -1 !important[^}]*grid-row: 1 !important/);
+test("pile visual surface remains full bleed behind the footer", () => {
+  assert.match(css, /pile-zone[^}]*padding: 0 !important/);
+  assert.match(css, /pile-zone > \.pile-card,[^{]*pile-zone > \.revealed-deck-stack[^}]*grid-row: 1 \/ -1 !important[^}]*width: 100% !important[^}]*height: 100% !important/);
+  assert.match(css, /revealed-deck-stack > \.pile-card[^}]*width: 100% !important[^}]*height: 100% !important/);
 });
 
-test("pile footer uses a bottom contrast gradient and crisp outlined label/count", () => {
-  assert.match(css, /pile-zone::after[^}]*height: 34% !important[^}]*background: linear-gradient/);
-  assert.match(css, /pile-zone > b,[^{]*pile-zone > strong[^}]*font-size: clamp\(\.48rem, min\(\.66cqw, 1\.08cqh\), \.76rem\) !important/);
+test("symbolic pile art is proportionally larger", () => {
+  assert.match(css, /pile-zone\.extra-deck > \.pile-card > i,[^{]*pile-zone\.obscuro > \.pile-card > i,[^{]*pile-zone\.grave > \.pile-card > i[^}]*font-size: clamp\(1\.38rem, min\(2\.38cqw, 4\.15cqh\), 2\.42rem\) !important[^}]*scale: 1\.12 !important/);
+  assert.match(css, /pile-zone\.main-deck > \.pile-card\.official-card-back > i[^}]*scale: 1\.3 !important/);
+});
+
+test("pile footer keeps larger edge margins and crisp outlined label/count", () => {
+  assert.match(css, /pile-zone::after[^}]*height: 38% !important[^}]*background: linear-gradient/);
+  assert.match(css, /pile-zone > b,[^{]*pile-zone > strong[^}]*clamp\(\.22rem, \.32cqw, \.34rem\)[^}]*clamp\(\.14rem, \.22cqh, \.2rem\) !important/);
   assert.match(css, /-webkit-text-stroke: max\(\.2px, \.018rem\) rgb\(0 0 0 \/ 74%\) !important/);
   assert.match(css, /pile-zone > strong[^}]*font-variant-numeric: tabular-nums !important/);
   assert.match(css, /pile-zone > small[^}]*display: none !important/);
