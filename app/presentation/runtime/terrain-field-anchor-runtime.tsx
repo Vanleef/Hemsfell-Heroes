@@ -3,8 +3,8 @@
 import { useEffect } from "react";
 
 const BOARD_SELECTOR = ".screen-game .game-stage > .game-content.hs-board";
-const TERRAIN_GAP_MULTIPLIER = 2.05;
-const TERRAIN_MIN_SLOT_CLEARANCE = 0.34;
+const TERRAIN_GAP_MULTIPLIER = 1.85;
+const TERRAIN_MIN_SLOT_CLEARANCE = 0.28;
 
 type TerrainPair = {
   field: ".enemy-field" | ".player-field";
@@ -32,7 +32,7 @@ export default function TerrainFieldAnchorRuntime() {
       const minimumSlotClearance = firstRect.width * TERRAIN_MIN_SLOT_CLEARANCE;
       return {
         firstRect,
-        clearance: Math.max(measuredGap * TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 10),
+        clearance: Math.max(measuredGap * TERRAIN_GAP_MULTIPLIER, minimumSlotClearance, 8),
       };
     };
 
@@ -62,6 +62,18 @@ export default function TerrainFieldAnchorRuntime() {
       });
     };
 
+    const ensureDragSentinel = (board: HTMLElement) => {
+      let sentinel = board.querySelector<HTMLElement>(":scope > .terrain-drag-sentinel");
+      if (!sentinel) {
+        sentinel = document.createElement("div");
+        sentinel.className = "terrain-drag-sentinel";
+        sentinel.setAttribute("aria-hidden", "true");
+        sentinel.innerHTML = '<span class="terrain-drag-sentinel-icon">▲</span>';
+        board.append(sentinel);
+      }
+      return sentinel;
+    };
+
     const bindObservers = (board: HTMLElement) => {
       if (observedBoard === board) return;
       resizeObserver.disconnect();
@@ -88,9 +100,6 @@ export default function TerrainFieldAnchorRuntime() {
       terrainEl.style.setProperty("--terrain-anchor-width", `${slotWidth}px`);
       terrainEl.style.setProperty("--terrain-anchor-height", `${slotHeight}px`);
 
-      /* React rewrites className when drag state toggles can-drop. Keep the
-         actual anchor geometry inline as well so losing a runtime-added class
-         for a render can never collapse or relocate the Cruel Terrain target. */
       terrainEl.style.setProperty("position", "absolute", "important");
       terrainEl.style.setProperty("left", px(x), "important");
       terrainEl.style.setProperty("top", px(y), "important");
@@ -113,6 +122,25 @@ export default function TerrainFieldAnchorRuntime() {
       terrainEl.style.setProperty("box-sizing", "border-box", "important");
       terrainEl.style.setProperty("z-index", "48", "important");
       terrainEl.classList.add("is-field-anchored");
+    };
+
+    const syncPlayerDragSentinel = (
+      board: HTMLElement,
+      terrainEl: HTMLElement,
+      x: number,
+      y: number,
+      slotWidth: number,
+      slotHeight: number,
+    ) => {
+      const sentinel = ensureDragSentinel(board);
+      const active = terrainEl.classList.contains("can-drop");
+      const occupied = !!terrainEl.querySelector(".card-frame");
+      sentinel.dataset.active = active ? "true" : "false";
+      sentinel.dataset.occupied = occupied ? "true" : "false";
+      sentinel.style.left = `${Math.max(0, x)}px`;
+      sentinel.style.top = `${Math.max(0, y)}px`;
+      sentinel.style.width = `${slotWidth}px`;
+      sentinel.style.height = `${slotHeight}px`;
     };
 
     const position = () => {
@@ -141,6 +169,9 @@ export default function TerrainFieldAnchorRuntime() {
         const y = fieldTop + (fieldHeight - slotHeight) / 2;
 
         pinTerrainGeometry(terrainEl, x, y, slotWidth, slotHeight);
+        if (terrain === ".player-terrain") {
+          syncPlayerDragSentinel(board, terrainEl, x, y, slotWidth, slotHeight);
+        }
       });
     };
 
@@ -150,7 +181,16 @@ export default function TerrainFieldAnchorRuntime() {
     };
 
     const mutationObserver = new MutationObserver(schedule);
-    mutationObserver.observe(document.body, { childList: true, subtree: true, characterData: true });
+    mutationObserver.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+    document.addEventListener("dragstart", schedule, true);
+    document.addEventListener("dragend", schedule, true);
+    document.addEventListener("drop", schedule, true);
     window.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("orientationchange", schedule, { passive: true });
     schedule();
@@ -159,8 +199,12 @@ export default function TerrainFieldAnchorRuntime() {
       cancelAnimationFrame(frame);
       resizeObserver.disconnect();
       mutationObserver.disconnect();
+      document.removeEventListener("dragstart", schedule, true);
+      document.removeEventListener("dragend", schedule, true);
+      document.removeEventListener("drop", schedule, true);
       window.removeEventListener("resize", schedule);
       window.removeEventListener("orientationchange", schedule);
+      document.querySelector(":scope > .terrain-drag-sentinel")?.remove();
     };
   }, []);
   return null;
