@@ -60,22 +60,26 @@ const positionDefenseDecision = (board: HTMLElement) => {
   if (!decision) return;
 
   const boardRect = board.getBoundingClientRect();
-  const creatureRects = visibleRects(board, ".creature-slot");
-  if (!creatureRects.length) return;
+  /* The safe boundary is the first PLAYABLE board zone, not merely the first
+   * creature. Cruel Terrain sits farther left than the creature row, so using
+   * creatures alone let the prompt overlap the terrain/field lane (as seen in
+   * the screenshot). Anchor against whichever visible zone begins first. */
+  const playfieldRects = visibleRects(board, ".terrain-slot, .creature-slot, .auxiliary-slot");
+  if (!playfieldRects.length) return;
 
   /* getBoundingClientRect() is rendered geometry, while inline px on the board
    * are pre-transform CSS pixels. Convert explicitly so a scaled responsive
    * board cannot make the decision panel wider or farther right than intended. */
   const scaleX = board.offsetWidth > 0 ? boardRect.width / board.offsetWidth : 1;
-  const firstCreatureLeftViewport = Math.min(...creatureRects.map((rect) => rect.left));
-  const renderedGap = Math.max(12, Math.min(26, boardRect.width * 0.016));
-  const viewportPadding = 8;
-  const railRightViewport = firstCreatureLeftViewport - renderedGap;
-  const railLeftViewport = Math.max(viewportPadding, boardRect.left + Math.max(5, boardRect.width * 0.004));
+  const firstPlayfieldLeftViewport = Math.min(...playfieldRects.map((rect) => rect.left));
+  const renderedGap = Math.max(12, Math.min(24, boardRect.width * 0.012));
+  const viewportPadding = Math.max(10, Math.min(18, boardRect.width * 0.008));
+  const railRightViewport = firstPlayfieldLeftViewport - renderedGap;
+  const railLeftViewport = Math.max(viewportPadding, boardRect.left + viewportPadding);
   const availableRenderedWidth = Math.max(0, railRightViewport - railLeftViewport);
-  const desiredRenderedWidth = Math.max(150, Math.min(220, boardRect.width * 0.17));
+  const desiredRenderedWidth = Math.max(176, Math.min(224, boardRect.width * 0.175));
   const renderedWidth = Math.max(0, Math.min(desiredRenderedWidth, availableRenderedWidth));
-  const leftViewport = railRightViewport - renderedWidth;
+  const leftViewport = Math.max(railLeftViewport, railRightViewport - renderedWidth);
 
   const localLeft = (leftViewport - boardRect.left) / scaleX;
   const localWidth = renderedWidth / scaleX;
@@ -94,7 +98,7 @@ const positionDefenseDecision = (board: HTMLElement) => {
   decision.style.setProperty("inline-size", `${Math.round(localWidth * 1000) / 1000}px`, "important");
   decision.style.setProperty("min-inline-size", "0", "important");
   decision.style.setProperty("max-inline-size", `${Math.round(localWidth * 1000) / 1000}px`, "important");
-  decision.dataset.geometryAnchored = "scaled-left-rail-clear-of-fields";
+  decision.dataset.geometryAnchored = "left-of-first-playable-zone";
 };
 
 export default function MatchFeedbackRuntime() {
