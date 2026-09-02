@@ -26,13 +26,16 @@ export default function TerrainFieldAnchorRuntime() {
       if (!first) return null;
       const firstRect = first.getBoundingClientRect();
       const secondRect = second?.getBoundingClientRect();
-      // The Cruel Terrain separation is intentionally identical to the real
-      // horizontal gap between neighboring field slots. Measuring the rendered
-      // cards keeps that relationship exact across board scale/orientation.
-      const measuredGap = secondRect ? Math.max(2, secondRect.left - firstRect.right) : Math.max(2, firstRect.width * 0.08);
+      const measuredGap = secondRect
+        ? Math.max(2, secondRect.left - firstRect.right)
+        : Math.max(2, firstRect.width * 0.08);
+      // One authority owns the terrain X position. Keep roughly half of the
+      // neighboring-slot gutter so Cruel Terrain is clearly associated with
+      // its field without touching the first playable slot.
+      const clearance = Math.max(measuredGap * 0.50, firstRect.width * 0.08, 2.5);
       return {
         firstRect,
-        clearance: measuredGap,
+        clearance,
       };
     };
 
