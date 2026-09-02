@@ -29,10 +29,11 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defen
   animation: hh-defense-decision-attention 1.05s ease-in-out infinite !important;
 }
 
-/* During blocker choice, de-emphasize every major region except the decision
- * itself and the defender's battlefield. The player field must remain usable
- * because selecting a legal creature is one of the two valid ways forward. */
-html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision) > :not(.defense-decision):not(.player-field) {
+/* During blocker choice, de-emphasize every major region except the decision,
+ * the defender's battlefield and the enemy field that contains the declared
+ * attacker. The enemy field stays neutral as a container so the selected
+ * attacker can remain at true full opacity; its other slots are dimmed below. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision) > :not(.defense-decision):not(.player-field):not(.enemy-field) {
   filter: brightness(.3) saturate(.54) !important;
   opacity: .54 !important;
   transition: filter .14s ease, opacity .14s ease !important;
@@ -43,6 +44,46 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .d
   opacity: .9 !important;
   z-index: 120 !important;
   transition: filter .14s ease, opacity .14s ease !important;
+}
+
+/* The enemy field cannot be dimmed as one opaque ancestor, otherwise the
+ * declared attacker can never return to full brightness. Keep the field
+ * container neutral and dim its individual slots instead. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision) > .enemy-field {
+  filter: none !important;
+  opacity: 1 !important;
+  z-index: 121 !important;
+  transition: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision)
+  > .enemy-field .field-slot:not(:has(.original-card.is-selected)) {
+  filter: brightness(.3) saturate(.54) !important;
+  opacity: .54 !important;
+  transition: filter .14s ease, opacity .14s ease !important;
+}
+
+/* OriginalCard already marks the creature that declared the attack with
+ * .is-selected. Keep exactly that slot fully lit and give it a restrained
+ * combat halo, so the defense prompt reads together with its source attack. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision)
+  > .enemy-field .field-slot:has(.original-card.is-selected) {
+  position: relative !important;
+  filter: none !important;
+  opacity: 1 !important;
+  z-index: 2147482100 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board:has(> .defense-decision)
+  > .enemy-field .original-card.is-selected {
+  filter: brightness(1.12) saturate(1.08) !important;
+  opacity: 1 !important;
+  outline: max(1px, .06cqh) solid rgb(255 105 82 / 86%) !important;
+  outline-offset: max(1px, .06cqh) !important;
+  box-shadow:
+    0 0 .5cqh rgb(255 112 86 / 72%),
+    0 0 1.25cqh rgb(255 76 57 / 44%),
+    0 .28cqh .7cqh rgb(0 0 0 / 52%) !important;
 }
 
 /* Legal blocker affordances remain brighter than the dimmed field so the user
