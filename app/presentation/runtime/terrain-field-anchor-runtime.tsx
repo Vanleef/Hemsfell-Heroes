@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 const BOARD_SELECTOR = ".screen-game .game-stage > .game-content.hs-board";
-const TERRAIN_GAP_MULTIPLIER = 1.45;
+const TERRAIN_GAP_MULTIPLIER = 1.6;
 
 type TerrainPair = {
   field: ".enemy-field" | ".player-field";
@@ -17,11 +17,11 @@ const PAIRS: TerrainPair[] = [
 
 /**
  * Keeps Cruel Terrain attached to the actual rendered owner field instead of
- * approximating its location from board grid tracks. The left edge is measured
- * from the first real slot, while clearance reuses the live inter-slot gap so
- * the relationship remains proportional on desktop, landscape and portrait.
- * This is presentation-only: the terrain remains the same DOM/game object and
- * keeps all existing handlers.
+ * approximating its location from board grid tracks. Geometry is measured from
+ * the first real slot and converted back from viewport coordinates into the
+ * board's local CSS coordinate space, which keeps the anchor correct when the
+ * whole match stage is responsively scaled. This is presentation-only: the
+ * terrain remains the same DOM/game object and keeps all existing handlers.
  */
 export default function TerrainFieldAnchorRuntime() {
   useEffect(() => {
@@ -40,7 +40,18 @@ export default function TerrainFieldAnchorRuntime() {
 
       return {
         firstRect,
-        clearance: Math.max(measuredGap * TERRAIN_GAP_MULTIPLIER, 4),
+        clearance: Math.max(measuredGap * TERRAIN_GAP_MULTIPLIER, 6),
+      };
+    };
+
+    const getBoardScale = (board: HTMLElement, boardRect: DOMRect) => {
+      const layoutWidth = board.offsetWidth || board.clientWidth || boardRect.width || 1;
+      const layoutHeight = board.offsetHeight || board.clientHeight || boardRect.height || 1;
+      const rawScaleX = boardRect.width / layoutWidth;
+      const rawScaleY = boardRect.height / layoutHeight;
+      return {
+        x: Number.isFinite(rawScaleX) && rawScaleX > 0 ? rawScaleX : 1,
+        y: Number.isFinite(rawScaleY) && rawScaleY > 0 ? rawScaleY : 1,
       };
     };
 
@@ -61,6 +72,8 @@ export default function TerrainFieldAnchorRuntime() {
       bindObservers(board);
 
       const boardRect = board.getBoundingClientRect();
+      const boardScale = getBoardScale(board, boardRect);
+
       PAIRS.forEach(({ field, terrain }) => {
         const fieldEl = board.querySelector<HTMLElement>(`:scope > ${field}`);
         const terrainEl = board.querySelector<HTMLElement>(`:scope > ${terrain}`);
@@ -70,9 +83,15 @@ export default function TerrainFieldAnchorRuntime() {
         if (!geometry) return;
 
         const fieldRect = fieldEl.getBoundingClientRect();
-        const terrainRect = terrainEl.getBoundingClientRect();
-        const x = geometry.firstRect.left - boardRect.left - terrainRect.width - geometry.clearance;
-        const y = fieldRect.top - boardRect.top + (fieldRect.height - terrainRect.height) / 2;
+        const terrainWidth = terrainEl.offsetWidth || terrainEl.getBoundingClientRect().width / boardScale.x;
+        const terrainHeight = terrainEl.offsetHeight || terrainEl.getBoundingClientRect().height / boardScale.y;
+        const firstSlotLeft = (geometry.firstRect.left - boardRect.left) / boardScale.x;
+        const clearance = geometry.clearance / boardScale.x;
+        const fieldTop = (fieldRect.top - boardRect.top) / boardScale.y;
+        const fieldHeight = fieldRect.height / boardScale.y;
+
+        const x = firstSlotLeft - terrainWidth - clearance;
+        const y = fieldTop + (fieldHeight - terrainHeight) / 2;
 
         terrainEl.style.setProperty("--terrain-anchor-x", `${Math.max(0, x)}px`);
         terrainEl.style.setProperty("--terrain-anchor-y", `${Math.max(0, y)}px`);
