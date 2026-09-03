@@ -1,0 +1,46 @@
+/* Terminal alignment pass for the match header and phase action. */
+
+/* Keep every phase number optically centered inside its circular marker. */
+html body .screen-game.screen-game .game-bar .phase-track > div > i {
+  box-sizing: border-box !important;
+  display: grid !important;
+  place-items: center !important;
+  align-items: center !important;
+  justify-items: center !important;
+  margin-inline: auto !important;
+  padding: 0 !important;
+  font-style: normal !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  text-indent: 0 !important;
+}
+
+/* The action label and arrow behave as one centered group inside the CTA. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  justify-items: center !important;
+  gap: clamp(.3rem, .42cqw, .48rem) !important;
+  text-align: center !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::after {
+  position: static !important;
+  flex: 0 0 auto !important;
+  align-self: center !important;
+  justify-self: center !important;
+  margin: 0 !important;
+  text-align: center !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button > span {
+  position: static !important;
+  flex: 0 0 auto !important;
+  align-self: center !important;
+  justify-self: center !important;
+  margin: 0 !important;
+  text-align: center !important;
+  line-height: 1 !important;
+}
