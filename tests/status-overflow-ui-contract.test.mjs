@@ -32,7 +32,7 @@ test("hero ability tooltip uses a body portal above every board stacking context
   assert.match(abilityRuntime, /hero-ability-tooltip-portal/);
   assert.match(abilityRuntime, /document\.body/);
   assert.doesNotMatch(abilityRuntime, /hero-ability-orb-tooltip/);
-  const globalTooltip = ruleBody("html body .hh-global-tooltip-portal");
+  const globalTooltip = ruleBody("html body .hh-global-tooltip-portal {");
   assert.match(globalTooltip, /position: fixed !important/);
   assert.match(globalTooltip, /z-index: 2147483647 !important/);
   assert.match(globalTooltip, /isolation: isolate !important/);
@@ -42,14 +42,14 @@ test("hero ability number lives before the orb and the orb inherits lineage colo
   assert.match(abilityRuntime, /hero-ability-orb-entry[^]*hero-ability-orb-level[^]*hero-ability-orb/);
   assert.match(abilityRuntime, /getPropertyValue\("--deck"\)/);
   assert.match(abilityRuntime, /"--hh-ability-lineage": lineage/);
-  const entry = ruleBody("html body .screen-game .hero-ability-orb-entry");
+  const entry = ruleBody("html body .screen-game .hero-ability-orb-entry {");
   assert.match(entry, /grid-template-columns:/);
-  const level = ruleBody("html body .screen-game .hero-ability-orb-entry > .hero-ability-orb-level");
+  const level = ruleBody("html body .screen-game .hero-ability-orb-entry > .hero-ability-orb-level {");
   assert.match(level, /position: static !important/);
   assert.match(level, /text-align: right !important/);
-  const orb = ruleBody("html body .screen-game .hero-ability-orb-entry > .hero-ability-orb");
+  const orb = ruleBody("html body .screen-game .hero-ability-orb-entry > .hero-ability-orb {");
   assert.match(orb, /var\(--hh-ability-lineage\)/);
-  const glyph = ruleBody("html body .screen-game .hero-ability-orb-entry .hero-ability-orb-glyph");
+  const glyph = ruleBody("html body .screen-game .hero-ability-orb-entry .hero-ability-orb-glyph {");
   assert.match(glyph, /font-size: clamp\(1\.02rem/);
 });
 
@@ -57,10 +57,10 @@ test("hero progression is the first compact strip at the top of the player panel
   assert.match(abilityRuntime, /--hh-hero-level-progress/);
   assert.match(abilityRuntime, /dataset\.hhLevelShort = `Nv\. \$\{levelNumber\}`/);
   assert.match(abilityRuntime, /dataset\.hhProgressCopy = `\$\{current\}\/\$\{target\}`/);
-  const row = ruleBody(".hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row");
+  const row = ruleBody(".hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row {");
   assert.match(row, /top: var\(--hh-hero-progress-top\) !important/);
   assert.match(row, /grid-template-columns: max-content minmax\(0, 1fr\) !important/);
-  const progress = ruleBody(".hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row > .hero-evolution");
+  const progress = ruleBody(".hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row > .hero-evolution {");
   assert.match(progress, /var\(--hh-hero-level-progress, 0%\)/);
   assert.match(css, /content: "PRÓX\. NÍVEL " attr\(data-hh-progress-copy\) !important/);
 });
@@ -91,8 +91,8 @@ test("overflow tooltip is interactive and each hidden effect exposes a nested se
   assert.match(statusRuntime, /onPointerEnter=\{\(event\) => openDetail\(item, event\.currentTarget\)\}/);
   assert.match(statusRuntime, /hh-status-detail-tooltip/);
   assert.match(statusRuntime, /glossaryDescription\(label\)/);
-  const list = ruleBody("html body .hh-status-list-tooltip");
+  const list = ruleBody("html body .hh-status-list-tooltip {");
   assert.match(list, /pointer-events: auto !important/);
-  const detail = ruleBody("html body .hh-status-detail-tooltip");
+  const detail = ruleBody("html body .hh-status-detail-tooltip {");
   assert.match(detail, /pointer-events: none !important/);
 });
