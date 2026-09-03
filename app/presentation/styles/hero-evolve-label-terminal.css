@@ -4,10 +4,11 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
 html body .screen-game.screen-game .game-stage > .game-content.hs-board
   > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-  font-size: clamp(1.12rem, min(1.6cqw, 2.6cqh), 1.45rem) !important;
+  font-size: clamp(1.72rem, min(2.28cqw, 3.72cqh), 2.18rem) !important;
   font-weight: 950 !important;
   line-height: 1 !important;
-  letter-spacing: .035em !important;
+  letter-spacing: .02em !important;
+  white-space: nowrap !important;
   text-rendering: geometricPrecision !important;
 }
 
@@ -16,7 +17,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
     > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(.enemy) > .level-button,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board
     > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button {
-    font-size: clamp(.98rem, min(1.48cqw, 2.42cqh), 1.26rem) !important;
+    font-size: clamp(1.48rem, min(2.05cqw, 3.34cqh), 1.86rem) !important;
   }
 }
 
@@ -25,6 +26,6 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
     > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(.enemy) > .level-button,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board
     > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button {
-    font-size: clamp(1.12rem, 3.7vw, 1.46rem) !important;
+    font-size: clamp(1.7rem, 5.15vw, 2.14rem) !important;
   }
 }
