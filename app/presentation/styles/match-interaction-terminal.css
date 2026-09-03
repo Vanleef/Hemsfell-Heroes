@@ -251,3 +251,54 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .paire
     font-size: clamp(.58rem, min(.7cqw, 1.02cqh), .74rem) !important;
   }
 }
+
+/* -------------------------------------------------------------------------
+   Turned presentation clone stat stability
+   ------------------------------------------------------------------------- */
+/* Target confirmation, state holds and destruction temporarily render a card
+ * outside the board container. Turned creatures carry captured card dimensions,
+ * but their ATK/HP badges otherwise fall back to the larger base-card metrics.
+ * Rebuild those badge metrics from the viewport/card size so the copy stays at
+ * the same apparent scale as the battlefield card for the whole presentation. */
+html body .hh-flight-face > .original-card[data-hh-presentation-orientation="turned"] > :is(.live-atk, .live-hp) {
+  --hh-turned-presentation-stat-size: clamp(
+    .9rem,
+    min(1.45vw, 2.45vh, calc(var(--hh-presentation-card-width) * .36)),
+    1.45rem
+  );
+  box-sizing: border-box !important;
+  bottom: clamp(.08rem, .2vh, .2rem) !important;
+  display: grid !important;
+  place-items: center !important;
+  width: var(--hh-turned-presentation-stat-size) !important;
+  min-width: var(--hh-turned-presentation-stat-size) !important;
+  max-width: var(--hh-turned-presentation-stat-size) !important;
+  height: var(--hh-turned-presentation-stat-size) !important;
+  min-height: var(--hh-turned-presentation-stat-size) !important;
+  max-height: var(--hh-turned-presentation-stat-size) !important;
+  padding: 0 !important;
+  border: max(1px, .1vh) solid #f2d28b !important;
+  border-radius: 999px !important;
+  font-size: clamp(
+    .5rem,
+    min(.78vw, 1.32vh, calc(var(--hh-presentation-card-width) * .18)),
+    .78rem
+  ) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  transform: none !important;
+  translate: none !important;
+  scale: 1 !important;
+  animation: none !important;
+  transition: none !important;
+}
+
+html body .hh-flight-face > .original-card[data-hh-presentation-orientation="turned"] > .live-atk {
+  left: clamp(.08rem, .18vw, .22rem) !important;
+  right: auto !important;
+}
+
+html body .hh-flight-face > .original-card[data-hh-presentation-orientation="turned"] > .live-hp {
+  left: auto !important;
+  right: clamp(.08rem, .18vw, .22rem) !important;
+}
