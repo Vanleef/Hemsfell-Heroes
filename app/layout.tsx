@@ -70,6 +70,8 @@ import "./presentation/styles/hero-ability-capsule-structure-final.css";
 import "./presentation/styles/match-interaction-terminal.css";
 /* Final visual authority: phase CTA pseudo-elements and pile thumbnail crop. */
 import "./presentation/styles/match-visual-terminal.css";
+/* Terminal centering authority for phase tracker markers and phase action copy. */
+import "./presentation/styles/match-centering-final.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
