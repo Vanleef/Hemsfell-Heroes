@@ -4,6 +4,7 @@ import fs from "node:fs";
 
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/targeting-hero-ui-terminal.css", "utf8").replace(/\s+/g, " ");
+const decisionLane = fs.readFileSync("app/presentation/styles/decision-lane-position.css", "utf8").replace(/\s+/g, " ");
 const runtime = fs.readFileSync("app/presentation/runtime/hero-ability-rail-runtime.tsx", "utf8").replace(/\s+/g, " ");
 const previewRuntime = fs.readFileSync("app/presentation/cards/card-preview-runtime.tsx", "utf8").replace(/\s+/g, " ");
 const page = fs.readFileSync("app/page.tsx", "utf8").replace(/\s+/g, " ");
@@ -50,7 +51,7 @@ test("all target surfaces share one board spotlight and defense keeps its dedica
   assert.match(css, /field-slot\.placement-target,[^}]*field-slot:has\(:is\(\.target-ally, \.target-enemy, \.placement-target\)\)[^}]*filter: none !important[^}]*opacity: 1 !important/);
 });
 
-test("authoritative activation target decisions expose their legal ids to the same target classes", () => {
+test("authoritative activation target decisions expose their legal ids and keep their parent layer above targets", () => {
   assert.match(page, /\["targets","activation-targets"\]\.includes\(engineDecision\.kind\)/);
   assert.match(page, /const engineTargetIds=engineTargetOptions\.map\(option=>option\.id\)/);
   assert.match(page, /ruleTargetIds=\{forcedAttackDecision\?forcedAttackOptions\.map\(card=>card\.uid\):engineTargetIds\}/);
@@ -58,6 +59,7 @@ test("authoritative activation target decisions expose their legal ids to the sa
   assert.match(page, /engineTargetIds\.includes\("ally-hero"\)\?"target-ally"/);
   assert.match(css, /engine-target-decision-backdrop[^}]*background: transparent !important[^}]*pointer-events: none !important/);
   assert.match(css, /engine-target-decision-panel[^}]*pointer-events: auto !important[^}]*opacity: 1 !important/);
+  assert.match(decisionLane, /engine-decision-backdrop\.engine-target-decision-backdrop[^}]*z-index: 2147482070 !important[^}]*isolation: isolate !important/);
 });
 
 test("evolution progress and action are docked above the measured hero art without a banner", () => {
