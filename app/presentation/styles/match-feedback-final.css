@@ -22,42 +22,16 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   animation: hero-evolution-aura 1.05s ease-in-out infinite !important;
 }
 
-/* EVOLUÇÃO DISPONÍVEL now belongs to the hero card instead of a body-level
- * imperative node. It therefore appears together with the card highlight and
- * cannot be lost during React reconciliation. */
+/* Evolution readiness is communicated by the progress/action dock and aura.
+ * Never synthesize a redundant text banner from the hero panel. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.evolution-available::before,
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:has(> .player-hero.level-ready > .level-button:not(:disabled))::before {
-  content: "EVOLUÇÃO DISPONÍVEL" !important;
-  position: absolute !important;
-  z-index: 10095 !important;
-  left: 50% !important;
-  right: auto !important;
-  top: auto !important;
-  bottom: calc(100% + clamp(.28rem, .52cqh, .52rem)) !important;
-  width: max-content !important;
-  max-width: min(23rem, calc(100vw - 1rem)) !important;
-  margin: 0 !important;
-  transform: translateX(-50%) !important;
-  padding: clamp(.36rem, .55cqh, .52rem) clamp(.62rem, .92cqw, .96rem) !important;
-  border: max(1px, .08cqh) solid #ffe28a !important;
-  border-radius: clamp(.36rem, .48cqw, .58rem) !important;
-  background: linear-gradient(180deg, rgb(101 65 5 / 99%), rgb(43 25 2 / 99%)) !important;
-  color: #fff6c7 !important;
-  font: 950 clamp(.72rem, min(1.02cqw, 1.6cqh), 1.04rem)/1 system-ui, sans-serif !important;
-  letter-spacing: .065em !important;
-  text-align: center !important;
-  white-space: nowrap !important;
-  text-shadow:
-    0 1px 0 #4d2d00,
-    0 0 .28rem rgb(255 235 145 / 100%),
-    0 0 .72rem rgb(255 188 45 / 80%) !important;
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 12%),
-    0 0 .5rem rgb(255 222 111 / 72%),
-    0 0 1.2rem rgb(255 168 20 / 48%),
-    0 .32rem .74rem rgb(0 0 0 / 55%) !important;
+  content: none !important;
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  animation: none !important;
   pointer-events: none !important;
-  animation: hero-evolution-banner-blink .8s ease-in-out infinite !important;
 }
 
 /* Availability is mirrored by the runtime from the real enabled EVOLUIR button.
@@ -74,42 +48,20 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   animation: hero-evolution-aura 1.05s ease-in-out infinite !important;
 }
 
-/* Compatibility-only styling for an old HMR banner. The new runtime removes
- * stale instances and no longer creates this node. */
+/* Old HMR sessions may still contain the historical body-level banner node.
+ * Keep the compatibility selector only as a kill switch so stale DOM can never
+ * resurrect the removed copy. */
 html body > .hero-evolution-available-banner[data-hemsfell-evolution-available="true"] {
-  position: fixed !important;
-  z-index: 2147483000 !important;
-  right: auto !important;
-  bottom: auto !important;
-  width: max-content !important;
-  max-width: min(23rem, calc(100vw - 1rem)) !important;
-  margin: 0 !important;
-  transform: none !important;
-  padding: clamp(.4rem, .62cqh, .58rem) clamp(.72rem, 1.08cqw, 1.08rem) !important;
-  border: max(1px, .08cqh) solid #ffe28a !important;
-  border-radius: clamp(.38rem, .5cqw, .6rem) !important;
-  background: linear-gradient(180deg, rgb(101 65 5 / 99%), rgb(43 25 2 / 99%)) !important;
-  color: #fff6c7 !important;
-  font: 950 clamp(.82rem, min(1.18cqw, 1.86cqh), 1.2rem)/1 system-ui, sans-serif !important;
-  letter-spacing: .075em !important;
-  text-align: center !important;
-  white-space: nowrap !important;
-  text-shadow:
-    0 1px 0 #4d2d00,
-    0 0 .3rem rgb(255 235 145 / 100%),
-    0 0 .8rem rgb(255 188 45 / 84%) !important;
-  box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 12%),
-    0 0 .55rem rgb(255 222 111 / 74%),
-    0 0 1.35rem rgb(255 168 20 / 52%),
-    0 .35rem .8rem rgb(0 0 0 / 55%) !important;
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
   pointer-events: none !important;
-  animation: hero-evolution-banner-blink .8s ease-in-out infinite !important;
+  animation: none !important;
 }
 
 /* When the semantic criterion is ready, the button must win over every compact
  * legacy visibility rule. Disabled readiness stays visible but does not receive
- * the available-state banner/aura. */
+ * the available-state aura. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button {
   display: grid !important;
   opacity: 1 !important;
@@ -157,11 +109,6 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-
   50% {
     filter: drop-shadow(0 0 .6cqh rgb(255 202 54 / 100%)) !important;
   }
-}
-
-@keyframes hero-evolution-banner-blink {
-  0%, 100% { opacity: 1; filter: brightness(1.12); }
-  50% { opacity: .48; filter: brightness(.94); }
 }
 
 @keyframes hero-level-swap {
@@ -311,21 +258,12 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.evolution-available,
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:has(> .player-hero.level-ready > .level-button:not(:disabled)),
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.evolution-available > .player-hero,
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero.evolution-available,
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.evolution-available::before,
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:has(> .player-hero.level-ready > .level-button:not(:disabled))::before,
-  html body > .hero-evolution-available-banner[data-hemsfell-evolution-available="true"] {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .player-hero.evolution-available {
     animation: none !important;
   }
 }
 
 @media (orientation: landscape) and (max-height: 44rem) {
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player.evolution-available::before,
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:has(> .player-hero.level-ready > .level-button:not(:disabled))::before,
-  html body > .hero-evolution-available-banner[data-hemsfell-evolution-available="true"] {
-    font-size: clamp(.64rem, min(.92cqw, 1.42cqh), .9rem) !important;
-  }
-
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .defense-decision > span {
     font-size: clamp(.62rem, min(.82cqw, 1.24cqh), .84rem) !important;
   }
