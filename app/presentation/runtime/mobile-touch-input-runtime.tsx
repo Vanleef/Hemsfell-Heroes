@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 
 const DRAG_SOURCE_SELECTOR = ".screen-game [draggable='true']";
-const DROP_TARGET_SELECTOR = ".screen-game .field-slot.can-drop, .screen-game .terrain-slot.can-drop";
+const DROP_ZONE_SELECTOR = ".screen-game .field-slot, .screen-game .terrain-slot";
 const TAP_CONTROL_SELECTOR = [
   ".screen-game button:not(.original-card):not(:disabled)",
   ".screen-game .original-card:is(.target-ally,.target-enemy,.combat-attack-ready):not(:disabled)",
@@ -42,6 +42,8 @@ class TouchDataTransfer {
   }
 }
 
+type Point = { x: number; y: number };
+
 type DragSession = {
   pointerId: number;
   source: HTMLElement;
@@ -51,20 +53,32 @@ type DragSession = {
   dragging: boolean;
   dataTransfer: TouchDataTransfer;
   dropTarget: HTMLElement | null;
+  latestPoint: Point;
+  syncFrame: number;
+  captured: boolean;
+  sourcePointerEvents: string;
+  sourcePointerEventsPriority: string;
+  sourceAriaGrabbed: string | null;
 };
-
-type Point = { x: number; y: number };
 
 function coarsePointer(event: PointerEvent) {
   return event.pointerType === "touch" || event.pointerType === "pen" || window.matchMedia("(pointer: coarse)").matches;
 }
 
 function dragEvent(type: string, dataTransfer: TouchDataTransfer, point: Point) {
-  const event = new Event(type, { bubbles: true, cancelable: true, composed: true });
+  const event = typeof DragEvent === "function"
+    ? new DragEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        composed: true,
+        clientX: point.x,
+        clientY: point.y,
+      })
+    : new Event(type, { bubbles: true, cancelable: true, composed: true });
   Object.defineProperties(event, {
-    dataTransfer: { value: dataTransfer },
-    clientX: { value: point.x },
-    clientY: { value: point.y },
+    dataTransfer: { value: dataTransfer, configurable: true },
+    clientX: { value: point.x, configurable: true },
+    clientY: { value: point.y, configurable: true },
   });
   return event;
 }
@@ -77,10 +91,28 @@ function controlFrom(target: EventTarget | null) {
   return target instanceof Element ? target.closest<HTMLElement>(TAP_CONTROL_SELECTOR) : null;
 }
 
-function legalDropTarget(point: Point, source: HTMLElement) {
-  source.classList.add("hh-touch-drag-source");
-  const target = document.elementFromPoint(point.x, point.y)?.closest<HTMLElement>(DROP_TARGET_SELECTOR) ?? null;
-  return target;
+function candidateDropZones(point: Point) {
+  const seen = new Set<HTMLElement>();
+  const zones: HTMLElement[] = [];
+  for (const element of document.elementsFromPoint(point.x, point.y)) {
+    const zone = element.closest<HTMLElement>(DROP_ZONE_SELECTOR);
+    if (!zone || seen.has(zone)) continue;
+    seen.add(zone);
+    zones.push(zone);
+  }
+  return zones;
+}
+
+function acceptedDropZone(point: Point, dataTransfer: TouchDataTransfer) {
+  for (const zone of candidateDropZones(point)) {
+    // React paints .can-drop after the synthetic dragstart updates the hand
+    // drag state. When that render has not committed yet, ask the real
+    // onDragOver handler whether it accepts the current DataTransfer instead.
+    if (zone.classList.contains("can-drop")) return zone;
+    const notCancelled = dispatchDrag(zone, "dragover", dataTransfer, point);
+    if (!notCancelled) return zone;
+  }
+  return null;
 }
 
 export default function MobileTouchInputRuntime() {
@@ -93,34 +125,81 @@ export default function MobileTouchInputRuntime() {
 
     const clearDropTarget = (point: Point) => {
       if (!session?.dropTarget) return;
-      session.dropTarget.classList.remove("hh-touch-drop-target");
-      dispatchDrag(session.dropTarget, "dragleave", session.dataTransfer, point);
+      const previous = session.dropTarget;
       session.dropTarget = null;
+      previous.classList.remove("hh-touch-drop-target");
+      dispatchDrag(previous, "dragleave", session.dataTransfer, point);
+    };
+
+    const restoreSource = (current: DragSession) => {
+      current.source.classList.remove("hh-touch-drag-source");
+      if (current.sourcePointerEvents) {
+        current.source.style.setProperty("pointer-events", current.sourcePointerEvents, current.sourcePointerEventsPriority);
+      } else {
+        current.source.style.removeProperty("pointer-events");
+      }
+      if (current.sourceAriaGrabbed == null) current.source.removeAttribute("aria-grabbed");
+      else current.source.setAttribute("aria-grabbed", current.sourceAriaGrabbed);
+      if (current.captured && current.source.hasPointerCapture?.(current.pointerId)) {
+        try { current.source.releasePointerCapture(current.pointerId); } catch { /* pointer already released */ }
+      }
     };
 
     const cleanup = (point: Point, emitDragEnd = true) => {
       if (!session) return;
-      clearDropTarget(point);
-      session.source.classList.remove("hh-touch-drag-source");
+      const current = session;
+      session = null;
+      if (current.syncFrame) cancelAnimationFrame(current.syncFrame);
+      if (current.dropTarget) {
+        current.dropTarget.classList.remove("hh-touch-drop-target");
+        dispatchDrag(current.dropTarget, "dragleave", current.dataTransfer, point);
+      }
+      restoreSource(current);
       document.documentElement.classList.remove("hh-touch-drag-active");
       document.body.removeAttribute("data-hh-touch-dragging");
-      if (emitDragEnd && session.dragging) dispatchDrag(session.source, "dragend", session.dataTransfer, point);
-      session = null;
+      if (emitDragEnd && current.dragging) dispatchDrag(current.source, "dragend", current.dataTransfer, point);
     };
 
     const updateDropTarget = (point: Point) => {
       if (!session?.dragging) return null;
-      const next = legalDropTarget(point, session.source);
+      session.latestPoint = point;
+      const next = acceptedDropZone(point, session.dataTransfer);
       if (next !== session.dropTarget) {
         clearDropTarget(point);
-        if (next) {
+        if (next && session) {
           session.dropTarget = next;
           next.classList.add("hh-touch-drop-target");
           dispatchDrag(next, "dragenter", session.dataTransfer, point);
         }
       }
-      if (session.dropTarget) dispatchDrag(session.dropTarget, "dragover", session.dataTransfer, point);
-      return session.dropTarget;
+      if (session?.dropTarget) dispatchDrag(session.dropTarget, "dragover", session.dataTransfer, point);
+      return session?.dropTarget ?? null;
+    };
+
+    const scheduleDropTargetSync = () => {
+      if (!session?.dragging) return;
+      if (session.syncFrame) cancelAnimationFrame(session.syncFrame);
+      const current = session;
+      current.syncFrame = requestAnimationFrame(() => {
+        if (session !== current) return;
+        current.syncFrame = 0;
+        updateDropTarget(current.latestPoint);
+      });
+    };
+
+    const beginDrag = (current: DragSession, point: Point) => {
+      current.dragging = true;
+      current.latestPoint = point;
+      document.documentElement.classList.add("hh-touch-drag-active");
+      document.body.dataset.hhTouchDragging = "true";
+      current.source.classList.add("hh-touch-drag-source");
+      current.source.setAttribute("aria-grabbed", "true");
+      // Keep the captured pointer stream on the source, but remove the source
+      // from hit-testing so cards/overlays cannot mask the board slot below it.
+      current.source.style.setProperty("pointer-events", "none", "important");
+      dispatchDrag(current.source, "dragstart", current.dataTransfer, point);
+      scheduleDropTargetSync();
+      navigator.vibrate?.(8);
     };
 
     const onPointerDown = (event: PointerEvent) => {
@@ -128,32 +207,41 @@ export default function MobileTouchInputRuntime() {
       const target = event.target instanceof Element ? event.target : null;
       if (!target?.closest(".screen-game")) return;
       const source = target.closest<HTMLElement>(DRAG_SOURCE_SELECTOR);
-      if (!source) return;
+      if (!source || source.getAttribute("aria-disabled") === "true" || source.matches(":disabled")) return;
+
+      if (session) cleanup(session.latestPoint, true);
+      const point = { x: event.clientX, y: event.clientY };
       session = {
         pointerId: event.pointerId,
         source,
-        startX: event.clientX,
-        startY: event.clientY,
+        startX: point.x,
+        startY: point.y,
         startedAt: performance.now(),
         dragging: false,
         dataTransfer: new TouchDataTransfer(),
         dropTarget: null,
+        latestPoint: point,
+        syncFrame: 0,
+        captured: false,
+        sourcePointerEvents: source.style.getPropertyValue("pointer-events"),
+        sourcePointerEventsPriority: source.style.getPropertyPriority("pointer-events"),
+        sourceAriaGrabbed: source.getAttribute("aria-grabbed"),
       };
+      try {
+        source.setPointerCapture(event.pointerId);
+        session.captured = source.hasPointerCapture(event.pointerId);
+      } catch {
+        session.captured = false;
+      }
     };
 
     const onPointerMove = (event: PointerEvent) => {
       if (!session || event.pointerId !== session.pointerId) return;
       const point = { x: event.clientX, y: event.clientY };
+      session.latestPoint = point;
       const distance = Math.hypot(point.x - session.startX, point.y - session.startY);
-      if (!session.dragging && distance >= DRAG_THRESHOLD_PX) {
-        session.dragging = true;
-        document.documentElement.classList.add("hh-touch-drag-active");
-        document.body.dataset.hhTouchDragging = "true";
-        session.source.classList.add("hh-touch-drag-source");
-        dispatchDrag(session.source, "dragstart", session.dataTransfer, point);
-        navigator.vibrate?.(8);
-      }
-      if (!session.dragging) return;
+      if (!session.dragging && distance >= DRAG_THRESHOLD_PX) beginDrag(session, point);
+      if (!session?.dragging) return;
       event.preventDefault();
       updateDropTarget(point);
     };
@@ -164,15 +252,19 @@ export default function MobileTouchInputRuntime() {
       const current = session && event.pointerId === session.pointerId ? session : null;
       if (current?.dragging) {
         event.preventDefault();
+        current.latestPoint = point;
         suppressClicksUntil = upAt + 420;
-        const source = current.source;
-        const dataTransfer = current.dataTransfer;
-        requestAnimationFrame(() => {
-          if (!session || session.source !== source) return;
+        if (current.syncFrame) {
+          cancelAnimationFrame(current.syncFrame);
+          current.syncFrame = 0;
+        }
+        current.syncFrame = requestAnimationFrame(() => {
+          if (session !== current) return;
+          current.syncFrame = 0;
           const target = updateDropTarget(point);
           if (target) {
-            dispatchDrag(target, "dragover", dataTransfer, point);
-            dispatchDrag(target, "drop", dataTransfer, point);
+            dispatchDrag(target, "dragover", current.dataTransfer, point);
+            dispatchDrag(target, "drop", current.dataTransfer, point);
             navigator.vibrate?.(12);
           }
           cleanup(point, true);
@@ -201,6 +293,18 @@ export default function MobileTouchInputRuntime() {
       cleanup({ x: event.clientX, y: event.clientY }, true);
     };
 
+    // Chrome/Android may still attempt its own HTML5 drag for draggable=true.
+    // While a coarse-pointer session is armed, our pointer bridge is the sole
+    // drag authority; suppressing the trusted native drag avoids duplicate
+    // dragstart/dragend sequences and pointercancel races.
+    const onNativeDragStartCapture = (event: DragEvent) => {
+      if (!session || !event.isTrusted) return;
+      const target = event.target instanceof Node ? event.target : null;
+      if (!target || target !== session.source && !session.source.contains(target)) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    };
+
     const onClickCapture = (event: MouseEvent) => {
       const control = controlFrom(event.target);
       if (control) {
@@ -216,22 +320,24 @@ export default function MobileTouchInputRuntime() {
 
     const onVisibilityChange = () => {
       if (!document.hidden || !session) return;
-      cleanup({ x: session.startX, y: session.startY }, true);
+      cleanup(session.latestPoint, true);
     };
 
     document.addEventListener("pointerdown", onPointerDown, true);
     document.addEventListener("pointermove", onPointerMove, { capture: true, passive: false });
     document.addEventListener("pointerup", onPointerUp, { capture: true, passive: false });
     document.addEventListener("pointercancel", onPointerCancel, true);
+    document.addEventListener("dragstart", onNativeDragStartCapture, true);
     document.addEventListener("click", onClickCapture, true);
     document.addEventListener("visibilitychange", onVisibilityChange);
 
     return () => {
-      if (session) cleanup({ x: session.startX, y: session.startY }, true);
+      if (session) cleanup(session.latestPoint, true);
       document.removeEventListener("pointerdown", onPointerDown, true);
       document.removeEventListener("pointermove", onPointerMove, true);
       document.removeEventListener("pointerup", onPointerUp, true);
       document.removeEventListener("pointercancel", onPointerCancel, true);
+      document.removeEventListener("dragstart", onNativeDragStartCapture, true);
       document.removeEventListener("click", onClickCapture, true);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };

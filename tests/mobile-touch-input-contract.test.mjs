@@ -27,15 +27,34 @@ test("mobile touch runtime and CSS are mounted late without displacing the pile 
   assert.match(layout, /<PhaseActionRuntime \/> <MobileTouchInputRuntime \/>/);
 });
 
-test("coarse pointer drag reuses native React drag and drop handlers", () => {
+test("coarse pointer drag reuses the real React drag/drop contract with stable pointer capture", () => {
   assert.match(runtime, /DRAG_SOURCE_SELECTOR = "\.screen-game \[draggable='true'\]"/);
-  assert.match(runtime, /DROP_TARGET_SELECTOR = "\.screen-game \.field-slot\.can-drop, \.screen-game \.terrain-slot\.can-drop"/);
+  assert.match(runtime, /DROP_ZONE_SELECTOR = "\.screen-game \.field-slot, \.screen-game \.terrain-slot"/);
   assert.match(runtime, /class TouchDataTransfer/);
-  assert.match(runtime, /dispatchDrag\(session\.source, "dragstart"/);
+  assert.match(runtime, /setPointerCapture\(event\.pointerId\)/);
+  assert.match(runtime, /hasPointerCapture\(event\.pointerId\)/);
+  assert.match(runtime, /dispatchDrag\(current\.source, "dragstart"/);
   assert.match(runtime, /dispatchDrag\(target, "drop"/);
-  assert.match(runtime, /dispatchDrag\(session\.source, "dragend"/);
+  assert.match(runtime, /dispatchDrag\(current\.source, "dragend"/);
   assert.match(runtime, /Math\.hypot[\s\S]*DRAG_THRESHOLD_PX/);
   assert.match(runtime, /requestAnimationFrame/);
+});
+
+test("touch drop hit-testing sees through card overlays and asks the real dragover handler for legality", () => {
+  assert.match(runtime, /document\.elementsFromPoint\(point\.x, point\.y\)/);
+  assert.match(runtime, /element\.closest<HTMLElement>\(DROP_ZONE_SELECTOR\)/);
+  assert.match(runtime, /zone\.classList\.contains\("can-drop"\)/);
+  assert.match(runtime, /dispatchDrag\(zone, "dragover", dataTransfer, point\)/);
+  assert.match(runtime, /source\.style\.setProperty\("pointer-events", "none", "important"\)/);
+  assert.match(runtime, /restoreSource/);
+});
+
+test("trusted browser drag is suppressed while the coarse-pointer bridge owns the session", () => {
+  assert.match(runtime, /onNativeDragStartCapture/);
+  assert.match(runtime, /!session \|\| !event\.isTrusted/);
+  assert.match(runtime, /event\.preventDefault\(\)/);
+  assert.match(runtime, /event\.stopImmediatePropagation\(\)/);
+  assert.match(runtime, /addEventListener\("dragstart", onNativeDragStartCapture, true\)/);
 });
 
 test("touch taps have a guarded click fallback without turning inspection holds into clicks", () => {
