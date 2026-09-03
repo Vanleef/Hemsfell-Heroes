@@ -6,6 +6,15 @@ const layout = fs.readFileSync("app/layout.tsx", "utf8").replace(/\s+/g, " ");
 const runtime = fs.readFileSync("app/presentation/runtime/mobile-touch-input-runtime.tsx", "utf8").replace(/\s+/g, " ");
 const css = fs.readFileSync("app/presentation/styles/mobile-touch-layout-terminal.css", "utf8").replace(/\s+/g, " ");
 
+function ruleBody(marker) {
+  const start = css.indexOf(marker);
+  assert.notEqual(start, -1, `missing CSS rule: ${marker}`);
+  const open = css.indexOf("{", start);
+  const close = css.indexOf("}", open);
+  assert.ok(open >= 0 && close > open, `malformed CSS rule: ${marker}`);
+  return css.slice(open + 1, close);
+}
+
 test("mobile touch runtime and CSS are mounted late without displacing the pile terminal", () => {
   const targeting = layout.indexOf('./presentation/styles/targeting-hero-ui-terminal.css');
   const mobileTerminal = layout.indexOf('./presentation/styles/mobile-touch-layout-terminal.css');
@@ -50,5 +59,6 @@ test("immersive landscape reduces HUD density without scaling the whole board", 
   assert.match(css, /> \.canonical-hero-panel[^}]*scale: var\(--hh-mobile-density\) !important/);
   assert.match(css, /> :is\(\.enemy-field,\.player-field\)[^}]*scale: var\(--hh-mobile-density\) !important/);
   assert.match(css, /> \.player-hand[^}]*scale: var\(--hh-mobile-density\) !important/);
-  assert.doesNotMatch(css, /\.game-content\.hs-board[^}]*scale:\s*var\(--hh-mobile-density\)/);
+  const boardVars = ruleBody("html body .screen-game .game-stage > .game-content.hs-board {");
+  assert.doesNotMatch(boardVars, /\bscale\s*:/);
 });
