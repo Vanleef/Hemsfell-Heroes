@@ -29,6 +29,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button::after {
   position: static !important;
   flex: 0 0 auto !important;
+  order: 1 !important;
   align-self: center !important;
   justify-self: center !important;
   margin: 0 !important;
@@ -38,6 +39,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb > button > span {
   position: static !important;
   flex: 0 0 auto !important;
+  order: 2 !important;
   align-self: center !important;
   justify-self: center !important;
   margin: 0 !important;
