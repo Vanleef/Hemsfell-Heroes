@@ -1,0 +1,212 @@
+/*
+ * Regression guard for the compact hero HUD.
+ *
+ * This is intentionally loaded after every historical hero sheet. It restores
+ * the interaction contract that the compact icon rail and the local-player
+ * progression bar must keep regardless of compact/expanded styling passes.
+ */
+
+/* -------------------------------------------------------------------------
+   Ability help tooltip
+   - available for passive, active, locked and unavailable abilities
+   - grows away from the local/opponent edge so it is not clipped by the board
+   - remains informational; it never captures pointer input
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .hero-command-bar,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .hero-command-bar > .hero-ability-chip {
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .hero-command-bar > .hero-ability-chip::after {
+  content: attr(data-ability-tooltip) !important;
+  position: absolute !important;
+  left: calc(100% + clamp(.45rem, .72cqw, .75rem)) !important;
+  right: auto !important;
+  display: block !important;
+  width: clamp(12rem, 19cqw, 18rem) !important;
+  min-width: 0 !important;
+  max-width: min(18rem, 34vw) !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: clamp(.55rem, .72cqh, .72rem) clamp(.62rem, .76cqw, .82rem) !important;
+  border: max(1px, .075cqh) solid color-mix(in srgb, var(--deck) 52%, #c7aa58) !important;
+  border-radius: clamp(.4rem, .5cqw, .58rem) !important;
+  background:
+    radial-gradient(circle at 12% 10%, color-mix(in srgb, var(--deck) 14%, transparent), transparent 38%),
+    linear-gradient(180deg, rgb(5 23 22 / 99%), rgb(2 12 14 / 99%)) !important;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 4%),
+    0 .55cqh 1.65cqh rgb(0 0 0 / 74%) !important;
+  color: #f1eddb !important;
+  font-family: Arial, sans-serif !important;
+  font-size: clamp(.56rem, min(.76cqw, 1.08cqh), .74rem) !important;
+  font-weight: 700 !important;
+  line-height: 1.32 !important;
+  letter-spacing: .005em !important;
+  text-align: left !important;
+  white-space: pre-line !important;
+  overflow-wrap: anywhere !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  filter: none !important;
+  backdrop-filter: blur(8px) !important;
+  transition: opacity 110ms ease, transform 110ms ease, visibility 110ms ease !important;
+  z-index: 2147483000 !important;
+}
+
+/* Opponent tooltips grow downward; local-player tooltips grow upward. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy > .hero-command-bar > .hero-ability-chip::after {
+  top: 0 !important;
+  bottom: auto !important;
+  transform: translateX(-.18rem) !important;
+  transform-origin: left top !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player > .hero-command-bar > .hero-ability-chip::after {
+  top: auto !important;
+  bottom: 0 !important;
+  transform: translateX(-.18rem) !important;
+  transform-origin: left bottom !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .hero-command-bar > .hero-ability-chip:is(:hover, :focus-visible)::after {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateX(0) !important;
+}
+
+/* Passive powers expose help on hover, but never advertise an activation. The
+   React handler already gates execution behind `active && !unavailable`; this
+   terminal visual contract removes the remaining button-like affordance. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .hero-command-bar > .hero-ability-chip.is-passive,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .hero-command-bar > .hero-ability-chip.is-passive > .hero-ability-slot {
+  cursor: help !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .hero-command-bar > .hero-ability-chip.is-passive:is(:hover, :active) {
+  filter: none !important;
+  translate: none !important;
+  transform: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .hero-command-bar > .hero-ability-chip.is-passive:is(:hover, :active)::before {
+  filter: none !important;
+  transform: none !important;
+}
+
+/* -------------------------------------------------------------------------
+   Local-player level progress
+   The compact HUD keeps the portrait card clean and places its progression
+   immediately ABOVE the panel. The semantic level node remains visually hidden
+   because the current level already lives in the portrait's Nv. badge.
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero > .hero-level-row {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: auto !important;
+  bottom: calc(100% + clamp(.28rem, .48cqh, .48rem)) !important;
+  width: 100% !important;
+  height: clamp(2rem, 3.55cqh, 2.8rem) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: block !important;
+  overflow: visible !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  translate: none !important;
+  z-index: 10080 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero > .hero-level-row > .hero-level {
+  position: absolute !important;
+  width: 1px !important;
+  min-width: 1px !important;
+  height: 1px !important;
+  min-height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  clip-path: inset(50%) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero:not(.level-ready) > .hero-level-row > .hero-evolution {
+  position: relative !important;
+  inset: auto !important;
+  display: grid !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  translate: none !important;
+}
+
+/* When evolution becomes available, EVOLUIR occupies the exact same external
+   progression rectangle instead of disappearing into the old in-card footer. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero.level-ready > .level-button {
+  position: absolute !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: auto !important;
+  bottom: calc(100% + clamp(.28rem, .48cqh, .48rem)) !important;
+  width: 100% !important;
+  height: clamp(2rem, 3.55cqh, 2.8rem) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+  transform: none !important;
+  translate: none !important;
+  z-index: 10082 !important;
+}
+
+@media (orientation: landscape) and (max-width: 64rem),
+       (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .hero-command-bar > .hero-ability-chip::after {
+    width: clamp(10rem, 24cqw, 15rem) !important;
+    max-width: min(15rem, 38vw) !important;
+    padding: .48cqh .48cqw !important;
+    font-size: clamp(.46rem, min(.68cqw, .94cqh), .64rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero > .hero-level-row,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero.level-ready > .level-button {
+    bottom: calc(100% + clamp(.18rem, .34cqh, .34rem)) !important;
+    height: clamp(1.55rem, 3.2cqh, 2.25rem) !important;
+  }
+}
+
+@media (orientation: portrait) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel > .hero-command-bar > .hero-ability-chip::after {
+    width: min(52vw, 15rem) !important;
+    max-width: 52vw !important;
+    left: calc(100% + .45rem) !important;
+    padding: .52rem .58rem !important;
+    font-size: clamp(.62rem, 2.35vw, .78rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero > .hero-level-row,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero.level-ready > .level-button {
+    bottom: calc(100% + .35rem) !important;
+    height: clamp(1.9rem, 7vw, 2.6rem) !important;
+  }
+}
