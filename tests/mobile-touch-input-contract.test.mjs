@@ -82,3 +82,10 @@ test("opponent turn is compact status rather than a primary action plate on touc
   assert.match(css, /\.phase-orb:empty\s*\{[^}]*width: clamp\(6\.4rem, 8\.65cqw, 8\.8rem\) !important/);
   assert.match(css, /\.phase-orb:empty::before\s*\{[^}]*min-height: clamp\(2rem, 4\.55cqh, 2\.65rem\) !important/);
 });
+
+test("touch landscape keeps hand readable and bottom-right controls inside the safe edge", () => {
+  assert.match(css, /> \.player-hand\s*\{[^}]*scale: \.9 !important[^}]*translate: 0 -1\.05cqh !important/);
+  assert.match(css, /> \.player-hand :is\(\.card-frame,\.original-card\)[^{]*\{[^}]*width: clamp\(3\.35rem, 6\.15cqw, 6\.35rem\) !important/);
+  assert.match(css, /> \.phase-orb:not\(:empty\)\s*\{[^}]*width: clamp\(7\.35rem, 9\.45cqw, 10\.1rem\) !important[^}]*scale: \.8 !important/);
+  assert.match(css, /> \.surrender-button\s*\{[^}]*scale: \.76 !important[^}]*translate: -1cqw -\.55cqh !important[^}]*safe-area-inset-right/);
+});
