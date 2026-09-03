@@ -19,13 +19,13 @@ const syncLevelBadge = (panel: Element, trigger: HTMLElement) => {
 
 const syncAbilityInteractivity = (panel: Element) => {
   for (const ability of panel.querySelectorAll<HTMLButtonElement>("button.hero-ability-chip")) {
-    /* The render contract already exposes whether an ability is actionable via
-       aria-disabled. Mirror that state to the native button so passive, locked
-       and unavailable powers cannot dispatch click/keyboard activation while
-       their CSS hover tooltip remains available. */
-    const disabled = ability.getAttribute("aria-disabled") === "true" || ability.classList.contains("is-passive");
-    ability.disabled = disabled;
-    ability.tabIndex = disabled ? -1 : 0;
+    /* Passive powers are informational only. Do not mirror every temporary
+       aria-disabled state to the native disabled property: doing so can leave
+       an active ability permanently disabled after the turn/priority state
+       changes because React does not own that native attribute. */
+    const passive = ability.classList.contains("is-passive");
+    ability.disabled = passive;
+    ability.tabIndex = passive ? -1 : 0;
   }
 };
 
@@ -103,7 +103,13 @@ export default function HeroPanelExpandRuntime() {
 
     initialize();
     const observer = new MutationObserver(initialize);
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["class", "aria-disabled"],
+    });
     document.addEventListener("click", onClick, true);
     document.addEventListener("keydown", onKeyDown, true);
 
