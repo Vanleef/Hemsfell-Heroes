@@ -17,6 +17,18 @@ const syncLevelBadge = (panel: Element, trigger: HTMLElement) => {
   else trigger.removeAttribute("data-hero-level");
 };
 
+const syncAbilityInteractivity = (panel: Element) => {
+  for (const ability of panel.querySelectorAll<HTMLButtonElement>("button.hero-ability-chip")) {
+    /* The render contract already exposes whether an ability is actionable via
+       aria-disabled. Mirror that state to the native button so passive, locked
+       and unavailable powers cannot dispatch click/keyboard activation while
+       their CSS hover tooltip remains available. */
+    const disabled = ability.getAttribute("aria-disabled") === "true" || ability.classList.contains("is-passive");
+    ability.disabled = disabled;
+    ability.tabIndex = disabled ? -1 : 0;
+  }
+};
+
 const syncExpandedState = (panel: Element, expanded: boolean) => {
   panel.classList.toggle("is-expanded", expanded);
   const trigger = panel.querySelector<HTMLElement>(TRIGGER_SELECTOR);
@@ -31,10 +43,12 @@ export default function HeroPanelExpandRuntime() {
     const initialize = () => {
       for (const panel of panels()) {
         const trigger = panel.querySelector<HTMLElement>(TRIGGER_SELECTOR);
-        if (!trigger) continue;
-        trigger.setAttribute("aria-expanded", panel.classList.contains("is-expanded") ? "true" : "false");
-        trigger.setAttribute("aria-label", panel.classList.contains("is-expanded") ? "Recolher detalhes do herói" : "Expandir detalhes do herói");
-        syncLevelBadge(panel, trigger);
+        if (trigger) {
+          trigger.setAttribute("aria-expanded", panel.classList.contains("is-expanded") ? "true" : "false");
+          trigger.setAttribute("aria-label", panel.classList.contains("is-expanded") ? "Recolher detalhes do herói" : "Expandir detalhes do herói");
+          syncLevelBadge(panel, trigger);
+        }
+        syncAbilityInteractivity(panel);
       }
     };
 
