@@ -76,13 +76,14 @@ test("evolution progress and action are docked above the measured hero art witho
   assert.match(evolve, /bottom: auto !important/);
 });
 
-test("three ability shortcuts stay portrait anchored and mirror the real ability buttons", () => {
+test("three ability shortcuts stay portrait anchored and mirror only usable owned ability buttons", () => {
   assert.match(runtime, /querySelectorAll<HTMLButtonElement>\(CHIP_SELECTOR\)\)\.slice\(0, 3\)/);
   assert.match(runtime, /const portrait = liveHero\?\.querySelector<HTMLElement>\("\.hero-portrait"\)/);
   assert.match(runtime, /Math\.max\(artRight, heroRect\.width\)/);
   assert.match(runtime, /--hh-hero-art-top/);
   assert.match(runtime, /--hh-hero-art-right/);
-  assert.match(runtime, /if \(!ability\.available\) return; ability\.source\.click\(\)/);
+  assert.match(runtime, /const available = owned && active && !locked && source\.classList\.contains\("is-available"\)/);
+  assert.match(runtime, /\{ability\.available \? \([^]*?<button[^]*?ability\.source\.click\(\)/);
   assert.match(runtime, /createPortal\([^]*hero-ability-rail[^]*hero,/);
 });
 
