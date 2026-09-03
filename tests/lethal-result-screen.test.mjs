@@ -18,11 +18,14 @@ test('authoritative engine declares defeat immediately when own action leaves he
  assert.equal(result.combatAction,null);
 });
 
-test('result screen renders winner hero art and menu actions through consolidated UI runtime',()=>{
+test('result screen renders clean winner hero art and menu actions through consolidated UI runtime',()=>{
  const result=fs.readFileSync(new URL('../app/presentation/match/match-result-overlay.tsx',import.meta.url),'utf8');
  const page=fs.readFileSync(new URL('../app/page.tsx',import.meta.url),'utf8');
  assert.match(result,/className="match-result-portrait"/);
- assert.match(result,/<RemoteCardArt page=\{heroPage\}/);
+ assert.match(result,/import Image from "next\/image"/);
+ assert.match(result,/className="match-result-hero-art"/);
+ assert.match(result,/\/heroes\/saymon\.webp/);
+ assert.doesNotMatch(result,/RemoteCardArt/);
  assert.match(result,/<h2 id="match-result-winner-name">\{heroName\}<\/h2>/);
  assert.match(result,/>Vencedor<\/strong>/);
  assert.match(result,/Voltar ao menu/);
@@ -32,11 +35,14 @@ test('result screen renders winner hero art and menu actions through consolidate
 
 test('match result has responsive dedicated styling in the canonical match stylesheet',()=>{
  const css=fs.readFileSync(new URL('../app/presentation/styles/match-ui.css',import.meta.url),'utf8');
+ const terminal=fs.readFileSync(new URL('../app/presentation/styles/hero-ability-progress-tooltip-terminal.css',import.meta.url),'utf8');
  assert.match(css,/\/\* === MATCH RESULT === \*\//);
  assert.match(css,/\.match-result-card\{/);
  assert.match(css,/\.match-result-portrait\{/);
  assert.match(css,/\.match-result-actions\{/);
  assert.match(css,/@media \(max-width:34rem\),\(max-height:42rem\)/);
+ assert.match(terminal,/\.match-result-portrait > \.match-result-hero-art/);
+ assert.match(terminal,/object-fit: cover !important/);
 });
 
 test('match result overlay remains centered and self-contained above board layout rules',()=>{
