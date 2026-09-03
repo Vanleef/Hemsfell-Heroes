@@ -17,6 +17,66 @@ html body .hh-global-tooltip-portal.hero-ability-tooltip-portal {
   z-index: 2147483647 !important;
 }
 
+/* Status list/detail portals use the same body-level escape hatch. The shared
+   portal authority sets inset:auto!important, so coordinates must also travel
+   through custom properties instead of ordinary inline left/top declarations. */
+html body .hh-global-tooltip-portal:is(.hh-status-list-tooltip, .hh-status-detail-tooltip) {
+  top: var(--hh-status-tooltip-top, 0px) !important;
+  left: var(--hh-status-tooltip-left, 0px) !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: var(--hh-status-tooltip-width, min(20rem, calc(100vw - 1rem))) !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 2147483647 !important;
+}
+
+html body .hh-status-list-tooltip {
+  pointer-events: auto !important;
+}
+
+/* The overflow number is a child of the circle rather than bare button text.
+   This prevents inherited line-height/baseline rules from painting the count
+   outside the icon on compact cards and hero status rows. */
+html body .screen-game .hh-status-overflow-trigger {
+  position: relative !important;
+  display: inline-grid !important;
+  place-items: center !important;
+  flex: 0 0 auto !important;
+  box-sizing: border-box !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  border-radius: 50% !important;
+  text-indent: 0 !important;
+  font-size: 0 !important;
+  line-height: 0 !important;
+  vertical-align: middle !important;
+  isolation: isolate !important;
+}
+
+html body .screen-game .hh-status-overflow-trigger > .hh-status-overflow-count {
+  position: static !important;
+  inset: auto !important;
+  display: grid !important;
+  place-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  color: #fff6dc !important;
+  font: 950 clamp(.5rem, .66vw, .7rem)/1 system-ui, sans-serif !important;
+  letter-spacing: 0 !important;
+  text-align: center !important;
+  text-indent: 0 !important;
+  transform: none !important;
+  translate: none !important;
+  pointer-events: none !important;
+}
+
 /* Locked/passive/enemy shortcuts are information targets, not buttons. Keep
    hover/focus available for the tooltip without advertising activation. */
 html body .screen-game .hero-ability-orb[data-available="false"] {
@@ -32,6 +92,74 @@ html body .screen-game .hero-ability-orb[data-available="false"]:is(:hover, :act
   translate: none !important;
   outline: max(1px, .06rem) solid rgb(226 207 151 / 42%) !important;
   outline-offset: max(1px, .04rem) !important;
+}
+
+/* A local learned active power that is legal right now gets one unmistakable
+   gold readiness aura. Enemy, locked and condition-failing icons never match. */
+html body .screen-game button.hero-ability-orb[data-owned="true"][data-active="true"][data-available="true"] {
+  border-color: rgb(255 216 104 / 96%) !important;
+  outline: max(1px, .07rem) solid rgb(255 225 132 / 82%) !important;
+  outline-offset: max(1px, .08rem) !important;
+  box-shadow:
+    inset 0 0 .34rem rgb(255 239 174 / 28%),
+    0 0 .32rem rgb(255 225 116 / 96%),
+    0 0 .78rem rgb(255 190 55 / 72%),
+    0 0 1.3rem rgb(255 170 32 / 34%) !important;
+  filter: brightness(1.12) saturate(1.08) !important;
+}
+
+/* Activation affordances must stay above status/keyword rails. This is
+   especially important for marker-driven abilities such as O Cobra Dor. */
+html body .screen-game .card-frame > .card-frame-activation {
+  z-index: 96 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+html body .screen-game .card-frame > .card-frame-activation:not(:disabled) {
+  box-shadow: 0 0 .34rem rgb(246 204 91 / 86%), 0 0 .7rem rgb(244 169 55 / 46%) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Priority / response focus
+   ------------------------------------------------------------------------- */
+/* Manual priority and response use the same response overlay. Keep the board
+   readable behind a gentle veil while the dialog itself remains fully lit. */
+html body .screen-game .response-overlay {
+  background: rgb(2 5 10 / 30%) !important;
+  backdrop-filter: brightness(.82) saturate(.92) !important;
+  -webkit-backdrop-filter: brightness(.82) saturate(.92) !important;
+}
+
+html body .screen-game .response-overlay > .response-dialog {
+  opacity: 1 !important;
+  filter: none !important;
+  visibility: visible !important;
+  isolation: isolate !important;
+  z-index: 2147482100 !important;
+}
+
+/* -------------------------------------------------------------------------
+   Clean winner portrait
+   ------------------------------------------------------------------------- */
+html body .match-result-portrait {
+  position: relative !important;
+  width: min(72vw, 18rem) !important;
+  height: min(46dvh, 24rem) !important;
+  min-height: clamp(10rem, 32dvh, 16rem) !important;
+  aspect-ratio: 4 / 5 !important;
+  overflow: hidden !important;
+  border: 1px solid rgb(226 183 88 / 34%) !important;
+  border-radius: clamp(.7rem, 1.3vw, 1rem) !important;
+  background: radial-gradient(circle at 50% 24%, rgb(30 61 65 / 86%), rgb(5 11 17 / 96%)) !important;
+  box-shadow: 0 1.2rem 1.7rem rgb(0 0 0 / 55%), 0 0 1.2rem rgb(213 171 78 / 18%) !important;
+}
+
+html body .match-result-portrait > .match-result-hero-art {
+  object-fit: cover !important;
+  object-position: inherit;
+  filter: none !important;
+  transform: none !important;
 }
 
 /* -------------------------------------------------------------------------
@@ -114,6 +242,12 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
   html body .screen-game.screen-game .game-stage > .game-content.hs-board
     > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
     --hh-player-progress-height: clamp(.92rem, 1.82cqh, 1.12rem);
+  }
+
+  html body .match-result-portrait {
+    width: min(48vw, 14rem) !important;
+    height: min(39dvh, 17rem) !important;
+    min-height: 8rem !important;
   }
 }
 
