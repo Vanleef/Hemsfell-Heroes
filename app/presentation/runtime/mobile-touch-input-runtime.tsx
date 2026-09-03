@@ -9,6 +9,7 @@ const TAP_CONTROL_SELECTOR = [
   ".screen-game .original-card:is(.target-ally,.target-enemy,.combat-attack-ready):not(:disabled)",
   ".screen-game [role='button']:not([aria-disabled='true'])",
 ].join(",");
+const ASCENSION_TEXT_RE = /\bAscens(?:ão|ao)\s+\d+\s*:/i;
 const DRAG_THRESHOLD_PX = 10;
 const TAP_SLOP_PX = 10;
 const TAP_FALLBACK_DELAY_MS = 220;
@@ -115,7 +116,45 @@ function acceptedDropZone(point: Point, dataTransfer: TouchDataTransfer) {
   return null;
 }
 
+function syncAscensionActivationUi() {
+  document.querySelectorAll<HTMLElement>(".screen-game .card-frame").forEach((frame) => {
+    const card = frame.querySelector<HTMLElement>(":scope > .original-card");
+    const rulesText = card?.querySelector<HTMLElement>(":scope > .card-tooltip")?.textContent || "";
+    const ascension = ASCENSION_TEXT_RE.test(rulesText);
+    if (ascension) frame.setAttribute("data-hh-ascension", "true");
+    else frame.removeAttribute("data-hh-ascension");
+    const control = frame.querySelector<HTMLButtonElement>(":scope > .card-frame-activation");
+    if (ascension && control) {
+      control.hidden = true;
+      control.disabled = true;
+      control.setAttribute("aria-hidden", "true");
+      control.tabIndex = -1;
+    }
+  });
+}
+
 export default function MobileTouchInputRuntime() {
+  /* This runtime is mounted globally even though it owns mobile gestures. Use
+     that stable mount to migrate legacy Ascensão UI in desktop and mobile: an
+     automatic play keyword must never retain a stale activation button. */
+  useEffect(() => {
+    let frame = 0;
+    const sync = () => {
+      if (frame) cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        syncAscensionActivationUi();
+      });
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.body, { subtree: true, childList: true });
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     let session: DragSession | null = null;
     let suppressClicksUntil = 0;

@@ -1,3 +1,5 @@
+import { ascensionSpec } from "./ascension.mjs";
+
 const normalize = (value = "") => String(value)
   .normalize("NFD")
   .replace(/[\u0300-\u036f]/g, "")
@@ -22,9 +24,8 @@ const collectStaticKeywords = (effects = [], target = new Set()) => {
  *
  * Do not infer active keywords from arbitrary rules text: cards such as Liaz
  * mention Furtivo and Barreira Mágica only as conditional investigation rewards.
- * Trigger labels (Primeiro Ato / Último Suspiro) are semantic UI markers, so
- * they are derived from both their printed label and the matching authoritative
- * trigger when the generated catalog omitted the visual tag.
+ * Trigger labels (Primeiro Ato / Último Suspiro / Ascensão X) are semantic UI
+ * markers, so they are derived from printed labels plus authoritative meaning.
  */
 export function intrinsicKeywordNames(card) {
   if (!card || card.suffocated) return [];
@@ -44,6 +45,8 @@ export function intrinsicKeywordNames(card) {
   const normalizedText = normalize(text);
   if (/\bultimo suspiro\b/.test(normalizedText) && abilities.some((ability) => ability?.trigger === "onDestroyed")) names.add("Último Suspiro");
   if (/\bprimeiro ato\b/.test(normalizedText) && abilities.some((ability) => ability?.trigger === "onEnter")) names.add("Primeiro Ato");
+  const ascension = ascensionSpec(card);
+  if (ascension) names.add(ascension.label);
 
   return [...names].filter(Boolean);
 }

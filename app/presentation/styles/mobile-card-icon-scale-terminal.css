@@ -8,6 +8,28 @@
  * card instead of inheriting desktop-sized minimum touch dimensions.
  */
 
+/* Activated abilities are actions, not positive/negative status rails. Keep the
+   action affordance centered above its source card in every presentation size. */
+html body .screen-game .card-frame > .card-frame-activation {
+  position: absolute !important;
+  top: 0 !important;
+  bottom: auto !important;
+  left: 50% !important;
+  right: auto !important;
+  margin: 0 !important;
+  transform: translate(-50%, calc(-100% - clamp(.08rem, .12cqw, .14rem))) !important;
+  z-index: 112 !important;
+}
+
+/* Ascensão is an automatic play-time keyword. Even old serialized cards whose
+   explicit record still contains the historical activated ability never expose
+   a clickable activation control. */
+html body .screen-game .card-frame[data-hh-ascension="true"] > .card-frame-activation {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 @media (orientation: landscape) and (hover: none) and (pointer: coarse) {
   /* Keyword and negative-status rails scale with their card container. */
   html body .screen-game :is(.card-frame,.pile-card) {
