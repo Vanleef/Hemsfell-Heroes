@@ -1,0 +1,75 @@
+/*
+ * Mobile card-local icon authority.
+ *
+ * Match cards are intentionally much smaller on phone landscape than on
+ * desktop. Keep status/keyword/activation visuals proportional to the rendered
+ * card instead of inheriting desktop-sized minimum touch dimensions.
+ */
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  /* Keyword and negative-status rails scale with their card container. */
+  html body .screen-game :is(.card-frame,.pile-card) {
+    --keyword-icon-size: clamp(.34rem, 8.5cqi, .58rem) !important;
+    --keyword-gap: clamp(.025rem, 1.65cqi, .1rem) !important;
+  }
+
+  html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
+  html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+    width: clamp(.4rem, 9.5cqi, .64rem) !important;
+    height: clamp(.4rem, 9.5cqi, .64rem) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    font-size: clamp(.22rem, 5.2cqi, .38rem) !important;
+    line-height: 1 !important;
+  }
+
+  /* Activation controls were previously forced to a 1.75rem minimum on touch,
+     making the visual disc nearly as large as a field card. Size the visible
+     control from the card again. */
+  html body .screen-game .card-frame-activation {
+    width: clamp(.68rem, 15cqi, .98rem) !important;
+    height: clamp(.68rem, 15cqi, .98rem) !important;
+    min-inline-size: 0 !important;
+    min-block-size: 0 !important;
+    padding: 0 !important;
+    font-size: clamp(.32rem, 7.2cqi, .5rem) !important;
+    line-height: 1 !important;
+  }
+
+  /* Preserve forgiving touch hit slop without enlarging the painted icon. */
+  html body .screen-game .card-frame-activation::after {
+    content: "";
+    position: absolute;
+    inset: -.38rem !important;
+    border: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    pointer-events: auto;
+  }
+
+  /* The hold-to-inspect progress ring is feedback, not a card-sized control. */
+  html body .screen-game .card-inspection-hold-progress {
+    width: clamp(.86rem, 21%, 1.22rem) !important;
+    min-width: 0 !important;
+    max-width: 34% !important;
+  }
+
+  html body .screen-game .card-inspection-hold-progress > i {
+    width: 16% !important;
+  }
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-aspect-ratio: 12 / 5) {
+  html body .screen-game :is(.card-frame,.pile-card) {
+    --keyword-icon-size: clamp(.32rem, 8cqi, .54rem) !important;
+  }
+
+  html body .screen-game .card-frame-activation {
+    width: clamp(.64rem, 14cqi, .9rem) !important;
+    height: clamp(.64rem, 14cqi, .9rem) !important;
+  }
+
+  html body .screen-game .card-inspection-hold-progress {
+    width: clamp(.82rem, 20%, 1.12rem) !important;
+  }
+}
