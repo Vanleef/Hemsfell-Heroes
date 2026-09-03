@@ -4,6 +4,9 @@ import { useEffect } from "react";
 
 const PANEL_SELECTOR = ".screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel";
 const TRIGGER_SELECTOR = ".hero-power-trigger";
+const COARSE_POINTER_QUERY = "(hover: none) and (pointer: coarse)";
+
+const isCoarsePointer = () => typeof window !== "undefined" && window.matchMedia(COARSE_POINTER_QUERY).matches;
 
 const isHeroTargeting = (panel: Element) => {
   const hero = panel.querySelector(".player-hero");
@@ -45,11 +48,14 @@ export default function HeroPanelExpandRuntime() {
     const panels = () => Array.from(document.querySelectorAll(PANEL_SELECTOR));
 
     const initialize = () => {
+      const compactTouch = isCoarsePointer();
       for (const panel of panels()) {
+        if (compactTouch && panel.classList.contains("is-expanded")) syncExpandedState(panel, false);
         const trigger = panel.querySelector<HTMLElement>(TRIGGER_SELECTOR);
         if (trigger) {
-          trigger.setAttribute("aria-expanded", panel.classList.contains("is-expanded") ? "true" : "false");
-          trigger.setAttribute("aria-label", panel.classList.contains("is-expanded") ? "Recolher detalhes do herói" : "Expandir detalhes do herói");
+          const expanded = !compactTouch && panel.classList.contains("is-expanded");
+          trigger.setAttribute("aria-expanded", expanded ? "true" : "false");
+          trigger.setAttribute("aria-label", compactTouch ? "Ver detalhes do herói" : expanded ? "Recolher detalhes do herói" : "Expandir detalhes do herói");
           syncLevelBadge(panel, trigger);
         }
         syncAbilityInteractivity(panel);
@@ -81,8 +87,16 @@ export default function HeroPanelExpandRuntime() {
       const trigger = target.closest(TRIGGER_SELECTOR);
       if (!trigger || isHeroTargeting(panel) || event.button !== 0) return;
 
+      /* Inline expansion needs horizontal room for the three full ability rows.
+         On touch landscape keep the HUD compact and let React's normal portrait
+         click open the dedicated hero/card inspector instead. */
+      if (isCoarsePointer()) {
+        closeAll();
+        return;
+      }
+
       /* The portrait used to open the generic card inspector. It now owns the
-         requested compact/expanded hero interaction instead. */
+         requested compact/expanded hero interaction on fine pointers. */
       event.preventDefault();
       event.stopPropagation();
       togglePanel(panel);
@@ -114,11 +128,14 @@ export default function HeroPanelExpandRuntime() {
       attributes: true,
       attributeFilter: ["class", "aria-disabled"],
     });
+    const coarseMedia = window.matchMedia(COARSE_POINTER_QUERY);
+    coarseMedia.addEventListener?.("change", initialize);
     document.addEventListener("click", onClick, true);
     document.addEventListener("keydown", onKeyDown, true);
 
     return () => {
       observer.disconnect();
+      coarseMedia.removeEventListener?.("change", initialize);
       document.removeEventListener("click", onClick, true);
       document.removeEventListener("keydown", onKeyDown, true);
     };
