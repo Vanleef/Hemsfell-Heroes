@@ -27,10 +27,47 @@ const PANEL_SELECTOR = ".screen-game .hero-panel-stack.canonical-hero-panel";
 const CHIP_SELECTOR = ".hero-command-bar .hero-ability-chip";
 const TOOLTIP_DELAY_MS = 350;
 
-function glyphForAbility(copy: string, slot: number) {
+const HERO_ABILITY_GLYPHS: Record<string, readonly [string, string, string]> = {
+  gimble: ["♥", "↻", "◇"],
+  goblin: ["♟", "✦", "¤"],
+  uruk: ["◆", "−", "⧉"],
+  tifon: ["☠", "✹", "Ⅱ"],
+  saymon: ["✹", "♥", "⛨"],
+  tessalia: ["⚔", "⇈", "⛨"],
+  quarion: ["✦", "↩", "Ⅱ"],
+  rasmus: ["☕", "♥", "⇄"],
+  ngoro: ["⌕", "⌁", "◌"],
+  zayan: ["⚔", "⛨", "➤"],
+  natureza: ["●", "✚", "↻"],
+};
+
+function normalizedPanelText(panel: HTMLElement) {
+  return (panel.textContent || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("pt-BR");
+}
+
+function heroKeyForPanel(panel: HTMLElement) {
+  const text = normalizedPanelText(panel);
+  if (/\bgimble\b/.test(text)) return "gimble";
+  if (/sr\.?\s*goblin|mercador/.test(text)) return "goblin";
+  if (/\buruk\b/.test(text)) return "uruk";
+  if (/\btifon\b/.test(text)) return "tifon";
+  if (/\bsaymon\b/.test(text)) return "saymon";
+  if (/tessalia|mao de ferro/.test(text)) return "tessalia";
+  if (/\bquarion\b/.test(text)) return "quarion";
+  if (/\brasmus\b|barista do tempo/.test(text)) return "rasmus";
+  if (/\bngoro\b|investigador/.test(text)) return "ngoro";
+  if (/\bzayan\b|revolucionaria/.test(text)) return "zayan";
+  if (/campeao de natureza/.test(text)) return "natureza";
+  return "";
+}
+
+function semanticFallbackGlyph(copy: string, slot: number) {
   const text = copy.toLocaleLowerCase("pt-BR");
-  if (/roubo de vida|\bcure\b|\bvida\b/.test(text)) return "♥";
   if (/desvire|\bvire\b/.test(text)) return "↻";
+  if (/roubo de vida|\bcure\b/.test(text)) return "♥";
   if (/dano|cause|destru|morrer|morte|último suspiro/.test(text)) return "✹";
   if (/investig|pista/.test(text)) return "⌕";
   if (/furtivo/.test(text)) return "◌";
@@ -45,15 +82,45 @@ function glyphForAbility(copy: string, slot: number) {
   return ["✦", "◆", "✧"][slot] ?? "✦";
 }
 
+function glyphForAbility(heroKey: string, copy: string, slot: number) {
+  return HERO_ABILITY_GLYPHS[heroKey]?.[slot] ?? semanticFallbackGlyph(copy, slot);
+}
+
+function cleanAbilityTooltip(copy: string, heroKey: string, slot: number) {
+  let text = copy
+    .replace(/(?:Pagar\s+\d+\s+de\s+vida|Gastar\s+\d+\s+Pistas|Ativar)\.\s*Depois de ativada, esta habilidade segue as condições e os alvos descritos acima\.?/gi, "")
+    .replace(/Efeito passivo:\s*resolve automaticamente sempre que a condição descrita for atendida\.?/gi, "")
+    .replace(/\(uma vez\s*\/\s*turno\)/gi, "(uma vez por turno)")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
+  if (heroKey === "saymon" && slot === 0) {
+    text = text.replace(
+      /^Pague 2 de vida:\s*cause 1 a um alvo\s*\(uma vez por turno\)\.?/i,
+      "Pague 2 de vida para causar 1 de dano a um alvo. Uma vez por turno.",
+    );
+  } else if (heroKey === "saymon" && slot === 1) {
+    text = text.replace(
+      /^Pague 2 de vida:\s*dê Roubo de Vida a uma criatura\.?/i,
+      "Pague 2 de vida para dar Roubo de Vida a uma criatura.",
+    );
+  }
+
+  return text;
+}
+
 function readAbilities(panel: HTMLElement): AbilityIcon[] {
   const owned = panel.classList.contains("player") && !panel.classList.contains("enemy");
+  const heroKey = heroKeyForPanel(panel);
   return Array.from(panel.querySelectorAll<HTMLButtonElement>(CHIP_SELECTOR)).slice(0, 3).map((source, slot) => {
     const rawCopy = (source.dataset.abilityTooltip || source.getAttribute("aria-label") || source.textContent || `Habilidade ${slot + 1}`).trim();
     const tooltipHeader = rawCopy.match(/^(ATIVA|PASSIVA)\s*[·•\-–—]\s*NÍVEL\s*(\d+)(?:\s*\r?\n|\s*$)/i);
     const declaredType = tooltipHeader?.[1]?.toLocaleUpperCase("pt-BR");
     const active = declaredType ? declaredType === "ATIVA" : source.classList.contains("is-active") || source.classList.contains("active");
     const level = tooltipHeader ? Number(tooltipHeader[2]) || slot + 1 : slot + 1;
-    const tooltip = tooltipHeader ? rawCopy.slice(tooltipHeader[0].length).trim() : rawCopy;
+    const tooltipBody = tooltipHeader ? rawCopy.slice(tooltipHeader[0].length).trim() : rawCopy;
+    const tooltip = cleanAbilityTooltip(tooltipBody, heroKey, slot) || tooltipBody || rawCopy;
     const locked = source.classList.contains("is-locked") || source.classList.contains("locked");
     const available = owned
       && active
@@ -64,8 +131,8 @@ function readAbilities(panel: HTMLElement): AbilityIcon[] {
       source,
       slot,
       level,
-      glyph: glyphForAbility(tooltip || rawCopy, slot),
-      tooltip: tooltip || rawCopy,
+      glyph: glyphForAbility(heroKey, tooltip, slot),
+      tooltip,
       active,
       available,
       locked,
