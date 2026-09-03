@@ -1,0 +1,125 @@
+/*
+ * Terminal correction for the compact local-hero HUD.
+ * Loaded after the merged hero/status authorities and before pile-only rules.
+ */
+
+/* The global portal resets inset with !important. Re-apply the runtime geometry
+   through custom properties so ability help is actually placed on-screen. */
+html body .hh-global-tooltip-portal.hero-ability-tooltip-portal {
+  top: var(--hh-tooltip-top, 0px) !important;
+  left: var(--hh-tooltip-left, 0px) !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: var(--hh-tooltip-width, min(20rem, calc(100vw - 1rem))) !important;
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  z-index: 2147483647 !important;
+}
+
+/* Locked/passive/enemy shortcuts are information targets, not buttons. Keep
+   hover/focus available for the tooltip without advertising activation. */
+html body .screen-game .hero-ability-orb[data-available="false"] {
+  cursor: help !important;
+}
+
+html body .screen-game button.hero-ability-orb[data-available="true"] {
+  cursor: pointer !important;
+}
+
+html body .screen-game .hero-ability-orb[data-available="false"]:is(:hover, :active, :focus-visible) {
+  transform: none !important;
+  translate: none !important;
+  outline: max(1px, .06rem) solid rgb(226 207 151 / 42%) !important;
+  outline-offset: max(1px, .04rem) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Compact local-hero level progression
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
+  --hh-player-progress-height: clamp(1.02rem, 1.92cqh, 1.28rem);
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0 !important;
+  height: var(--hh-player-progress-height) !important;
+  min-height: 0 !important;
+  max-height: var(--hh-player-progress-height) !important;
+}
+
+/* The portrait already owns the Nv. badge. Remove the duplicated legacy level
+   cell from the external progress lane so the meter uses the complete width. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row > .hero-level {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero
+  > .hero-level-row > .hero-evolution {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: 100% !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+/* The final meter uses hero-evolution's own gradient as its fill. These old
+   children were inflating the strip and creating the stray dark line visible
+   above PRÓX. NÍVEL. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero
+  > .hero-level-row > .hero-evolution > :is(.hero-evolution-copy, .evolution-track) {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero
+  > .hero-level-row > .hero-evolution::after {
+  position: absolute !important;
+  inset: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 !important;
+  padding: 0 clamp(.2rem, .32cqw, .34rem) !important;
+  line-height: 1 !important;
+  pointer-events: none !important;
+}
+
+@media (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
+    --hh-player-progress-height: clamp(.92rem, 1.82cqh, 1.12rem);
+  }
+}
+
+@media (orientation: portrait) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
+    --hh-player-progress-height: clamp(1.05rem, 4.1vw, 1.42rem);
+  }
+}
