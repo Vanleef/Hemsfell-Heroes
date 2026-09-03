@@ -70,6 +70,8 @@ import "./presentation/styles/match-interaction-terminal.css";
 import "./presentation/styles/match-visual-terminal.css";
 /* Target spotlight, Mulligan tooltip authority and portrait-anchored hero controls. */
 import "./presentation/styles/targeting-hero-ui-terminal.css";
+/* Global hero/card status overflow and top-of-panel progression authority. */
+import "./presentation/styles/hero-status-overlay.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
@@ -84,6 +86,7 @@ import PresentationInteractionRuntime from "./presentation/runtime/presentation-
 import GamePresentationRuntime from "./presentation/runtime/game-presentation-runtime";
 import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-runtime";
 import HeroAbilityRailRuntime from "./presentation/runtime/hero-ability-rail-runtime";
+import StatusOverflowRuntime from "./presentation/runtime/status-overflow-runtime";
 import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
 import EvolutionTooltipPortalRuntime from "./presentation/runtime/evolution-tooltip-portal-runtime";
 import MatchFeedbackRuntime from "./presentation/runtime/match-feedback-runtime";
@@ -122,6 +125,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <GamePresentationRuntime />
       <HeroPanelExpandRuntime />
       <HeroAbilityRailRuntime />
+      <StatusOverflowRuntime />
       <TerrainFieldAnchorRuntime />
       <EvolutionTooltipPortalRuntime />
       <MatchFeedbackRuntime />

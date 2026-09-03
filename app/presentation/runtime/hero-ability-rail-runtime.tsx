@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 
 type AbilityIcon = {
@@ -14,8 +14,16 @@ type AbilityIcon = {
   passive: boolean;
 };
 
+type AbilityTooltip = {
+  ability: AbilityIcon;
+  left: number;
+  top: number;
+  width: number;
+} | null;
+
 const PANEL_SELECTOR = ".screen-game .hero-panel-stack.canonical-hero-panel";
 const CHIP_SELECTOR = ".hero-command-bar .hero-ability-chip";
+const TOOLTIP_DELAY_MS = 1_000;
 
 function glyphForAbility(copy: string, slot: number) {
   const text = copy.toLocaleLowerCase("pt-BR");
@@ -54,16 +62,74 @@ function readAbilities(panel: HTMLElement): AbilityIcon[] {
   });
 }
 
+function lineageColor(panel: HTMLElement, hero: HTMLElement) {
+  for (const node of [panel, hero, panel.querySelector<HTMLElement>(".hero-command-bar")]) {
+    if (!node) continue;
+    const value = getComputedStyle(node).getPropertyValue("--deck").trim();
+    if (value) return value;
+  }
+  return "#8b929a";
+}
+
+function tooltipGeometry(anchor: HTMLElement) {
+  const rect = anchor.getBoundingClientRect();
+  const width = Math.max(190, Math.min(320, window.innerWidth - 20));
+  const gap = 10;
+  const right = rect.right + gap;
+  const left = right + width <= window.innerWidth - 8
+    ? right
+    : Math.max(8, rect.left - width - gap);
+  const top = Math.max(8, Math.min(window.innerHeight - 96, rect.top + rect.height / 2 - 40));
+  return { left, top, width };
+}
+
 function HeroAbilityRail({ panel }: { panel: HTMLElement }) {
   const [abilities, setAbilities] = useState<AbilityIcon[]>(() => readAbilities(panel));
   const [position, setPosition] = useState({ left: 0, top: 0 });
+  const [lineage, setLineage] = useState("#8b929a");
+  const [tooltip, setTooltip] = useState<AbilityTooltip>(null);
+  const tooltipTimer = useRef<number | null>(null);
   const hero = panel.querySelector<HTMLElement>(":scope > .player-hero");
+
+  const clearTooltipTimer = useCallback(() => {
+    if (tooltipTimer.current != null) window.clearTimeout(tooltipTimer.current);
+    tooltipTimer.current = null;
+  }, []);
+
+  const closeTooltip = useCallback(() => {
+    clearTooltipTimer();
+    setTooltip(null);
+  }, [clearTooltipTimer]);
+
+  const openTooltip = useCallback((ability: AbilityIcon, anchor: HTMLElement, delayed: boolean) => {
+    clearTooltipTimer();
+    const show = () => setTooltip({ ability, ...tooltipGeometry(anchor) });
+    if (delayed) tooltipTimer.current = window.setTimeout(show, TOOLTIP_DELAY_MS);
+    else show();
+  }, [clearTooltipTimer]);
 
   const sync = useCallback(() => {
     const liveHero = panel.querySelector<HTMLElement>(":scope > .player-hero");
     const portrait = liveHero?.querySelector<HTMLElement>(".hero-portrait");
     setAbilities(readAbilities(panel));
     if (!liveHero || !portrait) return;
+
+    setLineage(lineageColor(panel, liveHero));
+
+    const levelNode = liveHero.querySelector<HTMLElement>(".hero-level");
+    const levelNumber = levelNode?.textContent?.match(/\d+/)?.[0];
+    if (levelNode && levelNumber) levelNode.dataset.hhLevelShort = `Nv. ${levelNumber}`;
+
+    const evolutionNode = liveHero.querySelector<HTMLElement>(".hero-evolution");
+    const evolutionCopy = evolutionNode?.textContent || "";
+    const progressMatch = evolutionCopy.match(/(\d+)\s*\/\s*(\d+)/);
+    if (progressMatch) {
+      const current = Number(progressMatch[1]);
+      const target = Number(progressMatch[2]);
+      const progress = target > 0 ? Math.max(0, Math.min(100, current / target * 100)) : 0;
+      liveHero.style.setProperty("--hh-hero-level-progress", `${progress}%`);
+      if (evolutionNode) evolutionNode.dataset.hhProgressCopy = `${current}/${target}`;
+    }
 
     const heroRect = liveHero.getBoundingClientRect();
     const artRect = portrait.getBoundingClientRect();
@@ -99,6 +165,7 @@ function HeroAbilityRail({ panel }: { panel: HTMLElement }) {
       attributes: true,
       attributeFilter: ["class", "aria-disabled", "data-ability-tooltip", "data-ability-state"],
     });
+    if (heroNode) mutationObserver.observe(heroNode, { subtree: true, childList: true, characterData: true });
 
     const resizeObserver = new ResizeObserver(sync);
     if (portrait) resizeObserver.observe(portrait);
@@ -106,48 +173,67 @@ function HeroAbilityRail({ panel }: { panel: HTMLElement }) {
     window.addEventListener("resize", sync, { passive: true });
 
     return () => {
+      clearTooltipTimer();
       mutationObserver.disconnect();
       resizeObserver.disconnect();
       window.removeEventListener("resize", sync);
     };
-  }, [panel, sync]);
+  }, [panel, sync, clearTooltipTimer]);
 
   if (!hero || abilities.length === 0) return null;
 
-  return createPortal(
+  const rail = createPortal(
     <div
       className="hero-ability-rail"
       data-hero-ability-rail="true"
       aria-label="Atalhos das habilidades do herói"
-      style={{ left: position.left, top: position.top } as CSSProperties}
+      style={{ left: position.left, top: position.top, "--hh-ability-lineage": lineage } as CSSProperties}
     >
       {abilities.map((ability) => (
-        <button
-          type="button"
-          className="hero-ability-orb"
-          key={ability.slot}
-          data-ability-slot={ability.slot + 1}
-          data-active={ability.active ? "true" : "false"}
-          data-available={ability.available ? "true" : "false"}
-          data-locked={ability.locked ? "true" : "false"}
-          data-passive={ability.passive ? "true" : "false"}
-          aria-disabled={!ability.available}
-          aria-label={ability.tooltip.replace(/\s+/g, " ")}
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            if (!ability.available) return;
-            ability.source.click();
-          }}
-        >
-          <span className="hero-ability-orb-glyph" aria-hidden="true">{ability.glyph}</span>
+        <span className="hero-ability-orb-entry" key={ability.slot}>
           <span className="hero-ability-orb-level" aria-hidden="true">{ability.slot + 1}</span>
-          <span className="hero-ability-orb-tooltip" role="tooltip">{ability.tooltip}</span>
-        </button>
+          <button
+            type="button"
+            className="hero-ability-orb"
+            data-ability-slot={ability.slot + 1}
+            data-active={ability.active ? "true" : "false"}
+            data-available={ability.available ? "true" : "false"}
+            data-locked={ability.locked ? "true" : "false"}
+            data-passive={ability.passive ? "true" : "false"}
+            aria-disabled={!ability.available}
+            aria-label={ability.tooltip.replace(/\s+/g, " ")}
+            onPointerEnter={(event) => openTooltip(ability, event.currentTarget, true)}
+            onPointerLeave={closeTooltip}
+            onFocus={(event) => openTooltip(ability, event.currentTarget, false)}
+            onBlur={closeTooltip}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              if (!ability.available) return;
+              ability.source.click();
+            }}
+          >
+            <span className="hero-ability-orb-glyph" aria-hidden="true">{ability.glyph}</span>
+          </button>
+        </span>
       ))}
     </div>,
     hero,
   );
+
+  const tooltipPortal = tooltip && typeof document !== "undefined" ? createPortal(
+    <div
+      className="hh-global-tooltip-portal hero-ability-tooltip-portal"
+      role="tooltip"
+      style={{ left: tooltip.left, top: tooltip.top, width: tooltip.width } as CSSProperties}
+    >
+      <small>{tooltip.ability.active ? "ATIVA" : "PASSIVA"} · NÍVEL {tooltip.ability.slot + 1}</small>
+      <p>{tooltip.ability.tooltip}</p>
+    </div>,
+    document.body,
+  ) : null;
+
+  return <>{rail}{tooltipPortal}</>;
 }
 
 export default function HeroAbilityRailRuntime() {
@@ -164,9 +250,9 @@ export default function HeroAbilityRailRuntime() {
     return () => observer.disconnect();
   }, []);
 
-  return <>{panels.map((panel) => (
+  return <>{panels.map((panel, index) => (
     <HeroAbilityRail
-      key={panel.classList.contains("enemy") ? "enemy-hero-ability-rail" : "player-hero-ability-rail"}
+      key={`${panel.classList.contains("enemy") ? "enemy" : "player"}-hero-ability-rail-${index}`}
       panel={panel}
     />
   ))}</>;
