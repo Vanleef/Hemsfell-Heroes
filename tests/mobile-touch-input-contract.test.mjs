@@ -4,6 +4,7 @@ import fs from "node:fs";
 
 const layout = fs.readFileSync("app/layout.tsx", "utf8").replace(/\s+/g, " ");
 const runtime = fs.readFileSync("app/presentation/runtime/mobile-touch-input-runtime.tsx", "utf8").replace(/\s+/g, " ");
+const heroRuntime = fs.readFileSync("app/presentation/runtime/hero-panel-expand-runtime.tsx", "utf8").replace(/\s+/g, " ");
 const css = fs.readFileSync("app/presentation/styles/mobile-touch-layout-terminal.css", "utf8").replace(/\s+/g, " ");
 
 function ruleBody(marker) {
@@ -61,4 +62,23 @@ test("immersive landscape reduces HUD density without scaling the whole board", 
   assert.match(css, /> \.player-hand[^}]*scale: var\(--hh-mobile-density\) !important/);
   const boardVars = ruleBody("html body .screen-game .game-stage > .game-content.hs-board {");
   assert.doesNotMatch(boardVars, /\bscale\s*:/);
+});
+
+test("landscape maintenance overrides portrait legacy stacking and remains inside viewport", () => {
+  assert.match(css, /\.maintenance\.maintenance-dialog[^}]*width: min\(42rem, 80dvw\) !important[^}]*max-height: calc\(100dvh/);
+  assert.match(css, /\.maintenance-status[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
+  assert.match(css, /\.maintenance-options[^}]*grid-template-columns: repeat\(2, minmax\(0, 1fr\)\) !important/);
+  assert.match(css, /\.maintenance-choice[^}]*min-height: 0 !important[^}]*height: auto !important/);
+});
+
+test("coarse pointers never expand ability prose inline over the battlefield", () => {
+  assert.match(heroRuntime, /COARSE_POINTER_QUERY = "\(hover: none\) and \(pointer: coarse\)"/);
+  assert.match(heroRuntime, /if \(compactTouch && panel\.classList\.contains\("is-expanded"\)\) syncExpandedState\(panel, false\)/);
+  assert.match(heroRuntime, /if \(isCoarsePointer\(\)\) \{ closeAll\(\); return; \}/);
+  assert.match(css, /canonical-hero-panel\.is-expanded[^}]*hero-ability-copy > :is\(b,p\)[^{]*\{[^}]*display: none !important/);
+});
+
+test("opponent turn is compact status rather than a primary action plate on touch", () => {
+  assert.match(css, /\.phase-orb:empty\s*\{[^}]*width: clamp\(6\.4rem, 8\.65cqw, 8\.8rem\) !important/);
+  assert.match(css, /\.phase-orb:empty::before\s*\{[^}]*min-height: clamp\(2rem, 4\.55cqh, 2\.65rem\) !important/);
 });
