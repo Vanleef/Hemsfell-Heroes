@@ -16,6 +16,15 @@
   background: transparent !important;
 }
 
+/* Target decisions are special: legal cards/slots receive very high z-indexes
+ * for the board spotlight, so the backdrop itself must establish a higher
+ * stacking context. Keeping this on the parent prevents a highlighted target
+ * from ever painting over the authoritative instruction panel. */
+.screen-game .engine-decision-backdrop.engine-target-decision-backdrop {
+  z-index: 2147482070 !important;
+  isolation: isolate !important;
+}
+
 /* Generic decisions: size strictly from their content. */
 .screen-game .engine-decision-backdrop > .engine-decision-panel {
   --decision-side-gap: clamp(11.45rem, .7cqw, .8rem);

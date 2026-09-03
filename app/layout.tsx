@@ -72,6 +72,12 @@ import "./presentation/styles/match-interaction-terminal.css";
 import "./presentation/styles/match-visual-terminal.css";
 /* Terminal centering authority for phase tracker markers and phase action copy. */
 import "./presentation/styles/match-centering-final.css";
+/* Target spotlight, Mulligan tooltip authority and portrait-anchored hero controls. */
+import "./presentation/styles/targeting-hero-ui-terminal.css";
+/* Global hero/card status overflow and top-of-panel progression authority. */
+import "./presentation/styles/hero-status-overlay.css";
+/* Merge regression guard: ability tooltip visibility and player progress sit outside the card. */
+import "./presentation/styles/hero-hud-merge-regression-final.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
@@ -85,6 +91,8 @@ import PresentationEventBridge from "./presentation/runtime/presentation-event-b
 import PresentationInteractionRuntime from "./presentation/runtime/presentation-interaction-runtime";
 import GamePresentationRuntime from "./presentation/runtime/game-presentation-runtime";
 import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-runtime";
+import HeroAbilityRailRuntime from "./presentation/runtime/hero-ability-rail-runtime";
+import StatusOverflowRuntime from "./presentation/runtime/status-overflow-runtime";
 import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
 import EvolutionTooltipPortalRuntime from "./presentation/runtime/evolution-tooltip-portal-runtime";
 import MatchFeedbackRuntime from "./presentation/runtime/match-feedback-runtime";
@@ -122,6 +130,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <PresentationInteractionRuntime />
       <GamePresentationRuntime />
       <HeroPanelExpandRuntime />
+      <HeroAbilityRailRuntime />
+      <StatusOverflowRuntime />
       <TerrainFieldAnchorRuntime />
       <EvolutionTooltipPortalRuntime />
       <MatchFeedbackRuntime />

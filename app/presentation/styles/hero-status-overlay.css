@@ -1,0 +1,406 @@
+/*
+ * Hero/status overlay authority.
+ * Keeps interactive tooltips outside board stacking contexts, gives the hero
+ * progression strip a compact card-game treatment and collapses dense status
+ * rails without changing any rules-engine state.
+ */
+
+/* -------------------------------------------------------------------------
+   Global tooltip portals — always above board, cards, hand and decision lanes
+   ------------------------------------------------------------------------- */
+html body .hh-global-tooltip-portal {
+  position: fixed !important;
+  inset: auto !important;
+  z-index: 2147483647 !important;
+  isolation: isolate !important;
+  box-sizing: border-box !important;
+  max-width: calc(100vw - 1rem) !important;
+  margin: 0 !important;
+  border: max(1px, .055rem) solid rgb(194 170 105 / 78%) !important;
+  border-radius: clamp(.42rem, .56vw, .68rem) !important;
+  background:
+    linear-gradient(180deg, rgb(18 35 37 / 99%), rgb(5 17 19 / 99%)) !important;
+  color: #f5ecd0 !important;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 6%),
+    0 .5rem 1.4rem rgb(0 0 0 / 72%),
+    0 0 .7rem rgb(118 194 194 / 12%) !important;
+  filter: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  visibility: visible !important;
+}
+
+html body .hero-ability-tooltip-portal {
+  padding: clamp(.52rem, .72vw, .72rem) clamp(.62rem, .86vw, .86rem) !important;
+  pointer-events: none !important;
+}
+
+html body .hero-ability-tooltip-portal > small,
+html body .hh-status-list-tooltip > small {
+  display: block !important;
+  margin: 0 0 .34rem !important;
+  color: #d6bd78 !important;
+  font: 900 clamp(.58rem, .68vw, .72rem)/1 system-ui, sans-serif !important;
+  letter-spacing: .085em !important;
+  text-transform: uppercase !important;
+  text-shadow: 0 1px 1px #000 !important;
+}
+
+html body .hero-ability-tooltip-portal > p,
+html body .hh-status-detail-tooltip > p {
+  margin: 0 !important;
+  color: #f7f2e5 !important;
+  font: 750 clamp(.68rem, .8vw, .86rem)/1.28 system-ui, sans-serif !important;
+  letter-spacing: .008em !important;
+  overflow-wrap: anywhere !important;
+  text-shadow: 0 1px 1px #000 !important;
+}
+
+/* -------------------------------------------------------------------------
+   Hero progression — first visual row in the player's panel
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
+  --hh-hero-progress-top: clamp(.22rem, .46cqh, .42rem);
+  --hh-hero-progress-height: clamp(1.12rem, 2.18cqh, 1.54rem);
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row {
+  position: absolute !important;
+  z-index: 10120 !important;
+  left: clamp(.25rem, .42cqw, .46rem) !important;
+  right: clamp(3.65rem, 6.1cqw, 5.35rem) !important;
+  top: var(--hh-hero-progress-top) !important;
+  bottom: auto !important;
+  display: grid !important;
+  grid-template-columns: max-content minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: clamp(.22rem, .34cqw, .38rem) !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: var(--hh-hero-progress-height) !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: none !important;
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row > .hero-level {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  inline-size: max-content !important;
+  min-inline-size: clamp(2.45rem, 3.45cqw, 3.35rem) !important;
+  block-size: 100% !important;
+  margin: 0 !important;
+  padding: 0 clamp(.28rem, .4cqw, .42rem) !important;
+  border: max(1px, .06cqh) solid color-mix(in srgb, var(--deck, #c4a04b) 70%, #f2d778) !important;
+  border-radius: clamp(.24rem, .34cqw, .38rem) !important;
+  background: linear-gradient(180deg, rgb(23 26 25 / 98%), rgb(5 11 11 / 99%)) !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  font-size: 0 !important;
+  box-shadow: inset 0 0 .34rem rgb(255 255 255 / 5%), 0 .12rem .3rem rgb(0 0 0 / 64%) !important;
+  overflow: hidden !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row > .hero-level::after {
+  content: attr(data-hh-level-short) !important;
+  display: block !important;
+  color: #fff2bc !important;
+  -webkit-text-fill-color: #fff2bc !important;
+  font: 950 clamp(.58rem, min(.72cqw, 1.1cqh), .76rem)/1 system-ui, sans-serif !important;
+  letter-spacing: .02em !important;
+  white-space: nowrap !important;
+  text-shadow: 0 1px 1px #000 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row > .hero-evolution {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 clamp(.26rem, .4cqw, .42rem) !important;
+  border: max(1px, .06cqh) solid color-mix(in srgb, var(--deck, #c4a04b) 62%, #d4b351) !important;
+  border-radius: clamp(.22rem, .3cqw, .34rem) !important;
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--deck, #c4a04b) 64%, #d7b43a) 0 var(--hh-hero-level-progress, 0%),
+      rgb(7 18 18 / 97%) var(--hh-hero-level-progress, 0%) 100%) !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  font-size: 0 !important;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 4%),
+    inset 0 0 .5rem rgb(0 0 0 / 42%),
+    0 .12rem .3rem rgb(0 0 0 / 52%) !important;
+  overflow: hidden !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row > .hero-evolution::after {
+  content: "PRÓX. NÍVEL " attr(data-hh-progress-copy) !important;
+  position: relative !important;
+  z-index: 1 !important;
+  display: block !important;
+  color: #fff0b1 !important;
+  -webkit-text-fill-color: #fff0b1 !important;
+  font: 950 clamp(.52rem, min(.65cqw, 1cqh), .7rem)/1 system-ui, sans-serif !important;
+  letter-spacing: .035em !important;
+  white-space: nowrap !important;
+  text-shadow: 0 1px 1px #000, 0 0 .18rem #000 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .level-button {
+  position: absolute !important;
+  z-index: 10122 !important;
+  top: var(--hh-hero-progress-top) !important;
+  right: clamp(.25rem, .42cqw, .46rem) !important;
+  left: auto !important;
+  bottom: auto !important;
+  width: clamp(3.1rem, 5.35cqw, 4.75rem) !important;
+  min-width: 0 !important;
+  height: var(--hh-hero-progress-height) !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 clamp(.22rem, .34cqw, .36rem) !important;
+  transform: none !important;
+  font-size: clamp(.54rem, min(.68cqw, 1.04cqh), .72rem) !important;
+  line-height: 1 !important;
+}
+
+/* -------------------------------------------------------------------------
+   Hero ability rail — lineage color, larger glyph and number outside the orb
+   ------------------------------------------------------------------------- */
+html body .screen-game .canonical-hero-panel > .player-hero > .hero-ability-rail {
+  --hh-ability-lineage: var(--deck, #8b929a);
+  gap: clamp(.25rem, .44cqh, .44rem) !important;
+}
+
+html body .screen-game .hero-ability-orb-entry {
+  display: grid !important;
+  grid-template-columns: clamp(.76rem, 1.12cqw, 1rem) max-content !important;
+  align-items: center !important;
+  justify-items: end !important;
+  column-gap: clamp(.2rem, .32cqw, .34rem) !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+html body .screen-game .hero-ability-orb-entry > .hero-ability-orb-level {
+  position: static !important;
+  inset: auto !important;
+  display: block !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: color-mix(in srgb, var(--hh-ability-lineage) 58%, #f5e6b5) !important;
+  font: 950 clamp(.61rem, min(.78cqw, 1.22cqh), .82rem)/1 system-ui, sans-serif !important;
+  text-align: right !important;
+  text-shadow: 0 1px 1px #000, 0 0 .24rem rgb(0 0 0 / 54%) !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+html body .screen-game .hero-ability-orb-entry > .hero-ability-orb {
+  inline-size: clamp(1.72rem, min(2.65cqw, 4.7cqh), 2.42rem) !important;
+  block-size: clamp(1.72rem, min(2.65cqw, 4.7cqh), 2.42rem) !important;
+  border-color: color-mix(in srgb, var(--hh-ability-lineage) 78%, #e9dfbf) !important;
+  background:
+    radial-gradient(circle at 35% 29%,
+      color-mix(in srgb, var(--hh-ability-lineage) 66%, #ffffff 34%) 0 13%,
+      color-mix(in srgb, var(--hh-ability-lineage) 64%, #172428 36%) 46%,
+      color-mix(in srgb, var(--hh-ability-lineage) 34%, #071215 66%) 100%) !important;
+  color: color-mix(in srgb, var(--hh-ability-lineage) 42%, #ffffff) !important;
+  box-shadow:
+    inset 0 0 .42rem color-mix(in srgb, var(--hh-ability-lineage) 32%, transparent),
+    0 0 .34rem color-mix(in srgb, var(--hh-ability-lineage) 46%, transparent),
+    0 .14rem .35rem rgb(0 0 0 / 60%) !important;
+}
+
+html body .screen-game .hero-ability-orb-entry > .hero-ability-orb[data-active="true"][data-available="true"] {
+  border-color: color-mix(in srgb, var(--hh-ability-lineage) 78%, #fff4ba) !important;
+  box-shadow:
+    inset 0 0 .48rem color-mix(in srgb, var(--hh-ability-lineage) 42%, transparent),
+    0 0 .56rem color-mix(in srgb, var(--hh-ability-lineage) 68%, transparent),
+    0 .16rem .4rem rgb(0 0 0 / 64%) !important;
+}
+
+html body .screen-game .hero-ability-orb-entry .hero-ability-orb-glyph {
+  font-size: clamp(1.02rem, min(1.52cqw, 2.66cqh), 1.42rem) !important;
+  line-height: 1 !important;
+  transform: scale(1.08) !important;
+  color: #fff8df !important;
+  text-shadow:
+    0 1px 1px #000,
+    0 0 .22rem color-mix(in srgb, var(--hh-ability-lineage) 72%, transparent) !important;
+}
+
+html body .screen-game .hero-ability-orb-entry > .hero-ability-orb[data-locked="true"] {
+  filter: grayscale(1) saturate(0) brightness(.62) !important;
+  opacity: .48 !important;
+}
+
+/* -------------------------------------------------------------------------
+   Dense hero/card status rails
+   ------------------------------------------------------------------------- */
+html body .screen-game [data-hh-overflow-hidden="true"] {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+html body .screen-game .hh-status-overflow-trigger {
+  display: grid !important;
+  place-items: center !important;
+  flex: 0 0 auto !important;
+  inline-size: clamp(1.18rem, min(1.55cqw, 2.7cqh), 1.52rem) !important;
+  block-size: clamp(1.18rem, min(1.55cqw, 2.7cqh), 1.52rem) !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: max(1px, .05cqh) solid rgb(224 202 141 / 76%) !important;
+  border-radius: 50% !important;
+  color: #fff6dc !important;
+  font: 950 clamp(.56rem, min(.72cqw, 1.1cqh), .74rem)/1 system-ui, sans-serif !important;
+  text-shadow: 0 1px 1px #000 !important;
+  cursor: help !important;
+  box-shadow: inset 0 0 .28rem rgb(255 255 255 / 8%), 0 .12rem .3rem rgb(0 0 0 / 58%) !important;
+  position: relative !important;
+  z-index: 30 !important;
+}
+
+html body .screen-game .hh-status-overflow-trigger[data-overflow-kind="negative"] {
+  border-color: rgb(255 117 112 / 84%) !important;
+  background: radial-gradient(circle at 35% 28%, #b73f45, #4b1118 68%, #21070b) !important;
+}
+
+html body .screen-game .hh-status-overflow-trigger[data-overflow-kind="positive"] {
+  border-color: rgb(105 222 178 / 84%) !important;
+  background: radial-gradient(circle at 35% 28%, #318f70, #123f35 68%, #071d19) !important;
+}
+
+html body .screen-game .hero-status-cues .hh-status-overflow-trigger[data-overflow-kind="hero"] {
+  border-color: color-mix(in srgb, var(--deck, #d3ad56) 72%, #f4e4ad) !important;
+  background:
+    radial-gradient(circle at 35% 28%,
+      color-mix(in srgb, var(--deck, #8b929a) 58%, #fff 22%),
+      color-mix(in srgb, var(--deck, #8b929a) 44%, #142526 56%) 68%,
+      #071316) !important;
+}
+
+html body .screen-game .hh-status-overflow-trigger:hover,
+html body .screen-game .hh-status-overflow-trigger:focus-visible {
+  transform: translateY(-1px) scale(1.06) !important;
+  filter: brightness(1.15) saturate(1.08) !important;
+  outline: max(1px, .06rem) solid rgb(255 244 197 / 82%) !important;
+  outline-offset: 1px !important;
+}
+
+html body .hh-status-list-tooltip {
+  padding: clamp(.5rem, .72vw, .72rem) !important;
+  pointer-events: auto !important;
+  max-height: min(54vh, 25rem) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+}
+
+html body .hh-status-list-tooltip-items {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: clamp(.25rem, .36vw, .38rem) !important;
+  width: 100% !important;
+}
+
+html body .hh-status-list-item {
+  display: grid !important;
+  grid-template-columns: clamp(1.35rem, 1.8vw, 1.7rem) minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: clamp(.36rem, .48vw, .52rem) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: clamp(.3rem, .42vw, .44rem) !important;
+  border: 1px solid rgb(196 175 118 / 32%) !important;
+  border-radius: .38rem !important;
+  background: rgb(255 255 255 / 4%) !important;
+  color: #f3ead1 !important;
+  text-align: left !important;
+  cursor: help !important;
+}
+
+html body .hh-status-list-item:hover,
+html body .hh-status-list-item:focus-visible {
+  border-color: rgb(231 207 139 / 70%) !important;
+  background: rgb(229 204 133 / 10%) !important;
+  outline: none !important;
+}
+
+html body .hh-status-list-item > i {
+  display: grid !important;
+  place-items: center !important;
+  inline-size: clamp(1.35rem, 1.8vw, 1.7rem) !important;
+  block-size: clamp(1.35rem, 1.8vw, 1.7rem) !important;
+  border: 1px solid rgb(219 195 129 / 54%) !important;
+  border-radius: 50% !important;
+  background: rgb(10 27 28 / 88%) !important;
+  color: #fff2c1 !important;
+  font-style: normal !important;
+  font-weight: 950 !important;
+}
+
+html body .hh-status-list-item > span {
+  min-width: 0 !important;
+  font: 850 clamp(.65rem, .76vw, .82rem)/1.15 system-ui, sans-serif !important;
+  overflow-wrap: anywhere !important;
+}
+
+html body .hh-status-detail-tooltip {
+  padding: clamp(.48rem, .68vw, .68rem) clamp(.58rem, .78vw, .8rem) !important;
+  pointer-events: none !important;
+}
+
+html body .hh-status-detail-tooltip > b {
+  display: block !important;
+  margin: 0 0 .28rem !important;
+  color: #e0c67f !important;
+  font: 950 clamp(.62rem, .72vw, .78rem)/1.05 system-ui, sans-serif !important;
+  letter-spacing: .035em !important;
+  text-shadow: 0 1px 1px #000 !important;
+}
+
+@media (orientation: landscape) and (max-height: 44rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
+    --hh-hero-progress-top: clamp(.16rem, .34cqh, .3rem);
+    --hh-hero-progress-height: clamp(1rem, 1.92cqh, 1.34rem);
+  }
+
+  html body .screen-game .hero-ability-orb-entry > .hero-ability-orb {
+    inline-size: clamp(1.55rem, min(2.3cqw, 4.1cqh), 2.06rem) !important;
+    block-size: clamp(1.55rem, min(2.3cqw, 4.1cqh), 2.06rem) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .screen-game .hero-ability-orb-entry > .hero-ability-orb,
+  html body .screen-game .hh-status-overflow-trigger {
+    transition: none !important;
+  }
+}

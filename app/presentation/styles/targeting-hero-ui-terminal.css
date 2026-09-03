@@ -1,0 +1,372 @@
+/*
+ * Targeting + hero HUD terminal authority.
+ *
+ * Scope is intentionally narrow:
+ * - keep Mulligan on the canonical delayed Floating UI tooltip only;
+ * - give every field target the same restrained spotlight language;
+ * - anchor progression and ability shortcuts to the hero portrait without
+ *   changing any rules-engine behavior.
+ */
+
+/* -------------------------------------------------------------------------
+   Mulligan — one tooltip authority only
+   ------------------------------------------------------------------------- */
+html body .screen-game .mulligan-card-static .card-tooltip,
+html body .screen-game .mulligan-card-static .original-card:hover > .card-tooltip,
+html body .screen-game .mulligan-card-static .original-card:focus-visible > .card-tooltip {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* -------------------------------------------------------------------------
+   Generic target focus
+   ------------------------------------------------------------------------- */
+@supports selector(:has(*)) {
+  /* Regular board regions become secondary while a real target is exposed.
+   * Defense choice owns its own attacker/blocker spotlight and is excluded. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
+    :is(.target-ally, .target-enemy, .placement-target) {
+    position: relative !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
+    :is(.original-card.target-ally, .player-hero.target-ally, .placement-target) {
+    filter: brightness(1.12) saturate(1.06) !important;
+    opacity: 1 !important;
+    outline: max(2px, .09cqh) solid rgb(86 225 139 / 92%) !important;
+    outline-offset: max(1px, .07cqh) !important;
+    box-shadow:
+      0 0 .46cqh rgb(75 229 134 / 70%),
+      0 0 1.12cqh rgb(45 197 109 / 36%),
+      0 .22cqh .6cqh rgb(0 0 0 / 46%) !important;
+    z-index: 2147482050 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
+    :is(.original-card.target-enemy, .player-hero.target-enemy) {
+    filter: brightness(1.12) saturate(1.08) !important;
+    opacity: 1 !important;
+    outline: max(2px, .09cqh) solid rgb(255 103 92 / 94%) !important;
+    outline-offset: max(1px, .07cqh) !important;
+    box-shadow:
+      0 0 .46cqh rgb(255 103 92 / 70%),
+      0 0 1.12cqh rgb(235 72 62 / 38%),
+      0 .22cqh .6cqh rgb(0 0 0 / 46%) !important;
+    z-index: 2147482050 !important;
+  }
+
+  /* Do not dim a field as one filtered ancestor when it contains a legal
+   * target: a filtered ancestor would darken that target too. Dim slots inside
+   * target-bearing fields, and dim an entire field only if it has no target. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > :is(.player-field, .enemy-field):has(:is(.target-ally, .target-enemy, .placement-target)) {
+    filter: none !important;
+    opacity: 1 !important;
+    z-index: 205 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > :is(.player-field, .enemy-field):not(:has(:is(.target-ally, .target-enemy, .placement-target))) {
+    filter: brightness(.6) saturate(.72) !important;
+    opacity: .8 !important;
+    transition: filter .14s ease, opacity .14s ease !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
+    > :is(.player-field, .enemy-field):has(:is(.target-ally, .target-enemy, .placement-target))
+    .field-slot:not(.placement-target):not(:has(:is(.target-ally, .target-enemy, .placement-target))) {
+    filter: brightness(.6) saturate(.72) !important;
+    opacity: .8 !important;
+    transition: filter .14s ease, opacity .14s ease !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
+    > :is(.player-field, .enemy-field):has(:is(.target-ally, .target-enemy, .placement-target))
+    .field-slot.placement-target,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
+    > :is(.player-field, .enemy-field):has(:is(.target-ally, .target-enemy, .placement-target))
+    .field-slot:has(:is(.target-ally, .target-enemy, .placement-target)) {
+    filter: none !important;
+    opacity: 1 !important;
+    z-index: 2147482040 !important;
+  }
+
+  /* If any board target exists, every unrelated major HUD region steps back.
+   * Target-containing hero/terrain regions and the target instruction stay lit. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > :not(.player-field):not(.enemy-field):not(.hero-panel-stack):not(.terrain-slot):not(.target-banner) {
+    filter: brightness(.6) saturate(.72) !important;
+    opacity: .8 !important;
+    transition: filter .14s ease, opacity .14s ease !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > .hero-panel-stack:not(:has(:is(.target-ally, .target-enemy, .placement-target))),
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > .terrain-slot:not(:has(:is(.target-ally, .target-enemy, .placement-target))) {
+    filter: brightness(.6) saturate(.72) !important;
+    opacity: .8 !important;
+    transition: filter .14s ease, opacity .14s ease !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > .hero-panel-stack:has(:is(.target-ally, .target-enemy, .placement-target)),
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > .terrain-slot:has(:is(.target-ally, .target-enemy, .placement-target)),
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > .target-banner {
+    filter: none !important;
+    opacity: 1 !important;
+    z-index: 2147482060 !important;
+  }
+
+  /* Authoritative activation-target decisions live outside .hs-board. Keep the
+   * instruction panel bright while the field beneath it uses the same focus. */
+  html body .screen-game .engine-target-decision-backdrop {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    pointer-events: none !important;
+  }
+
+  html body .screen-game .engine-target-decision-panel {
+    pointer-events: auto !important;
+    filter: none !important;
+    opacity: 1 !important;
+    z-index: 2147482080 !important;
+    box-shadow:
+      0 0 .62rem rgb(218 185 91 / 24%),
+      0 .7rem 1.8rem rgb(0 0 0 / 58%) !important;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Hero evolution dock — above the portrait, no redundant banner copy
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player.evolution-available::before,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player:has(> .player-hero.level-ready > .level-button:not(:disabled))::before {
+  content: none !important;
+  display: none !important;
+  animation: none !important;
+}
+
+/* The portrait measurement is supplied by HeroAbilityRailRuntime. The fallback
+ * keeps first paint stable until ResizeObserver resolves the exact art bounds. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row {
+  position: absolute !important;
+  left: clamp(.12rem, .24cqw, .28rem) !important;
+  right: 36% !important;
+  top: calc(var(--hh-hero-art-top, 0px) - clamp(1.22rem, 2.35cqh, 1.72rem)) !important;
+  bottom: auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+  z-index: 10092 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .level-button {
+  position: absolute !important;
+  left: 66% !important;
+  right: clamp(.12rem, .24cqw, .28rem) !important;
+  top: calc(var(--hh-hero-art-top, 0px) - clamp(1.22rem, 2.35cqh, 1.72rem)) !important;
+  bottom: auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: clamp(1.08rem, 2.18cqh, 1.55rem) !important;
+  margin: 0 !important;
+  padding: clamp(.13rem, .2cqh, .2rem) clamp(.24rem, .38cqw, .42rem) !important;
+  transform: none !important;
+  z-index: 10094 !important;
+  white-space: nowrap !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(:has(> .level-button)) > .hero-level-row {
+  right: clamp(.12rem, .24cqw, .28rem) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Hero ability rail — three portrait-anchored shortcuts in every panel state
+   ------------------------------------------------------------------------- */
+html body .screen-game .canonical-hero-panel > .player-hero > .hero-ability-rail {
+  position: absolute !important;
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  grid-auto-rows: max-content !important;
+  gap: clamp(.24rem, .42cqh, .42rem) !important;
+  width: max-content !important;
+  height: max-content !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: translateY(-50%) !important;
+  z-index: 2147481900 !important;
+  overflow: visible !important;
+  pointer-events: auto !important;
+}
+
+html body .screen-game .hero-ability-orb {
+  position: relative !important;
+  display: grid !important;
+  place-items: center !important;
+  inline-size: clamp(1.55rem, min(2.35cqw, 4.2cqh), 2.18rem) !important;
+  block-size: clamp(1.55rem, min(2.35cqw, 4.2cqh), 2.18rem) !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: max(1px, .055cqh) solid rgb(205 181 112 / 74%) !important;
+  border-radius: 50% !important;
+  background:
+    radial-gradient(circle at 36% 30%, rgb(82 107 104 / 94%) 0 16%, rgb(23 43 45 / 98%) 58%, rgb(8 20 23 / 100%) 100%) !important;
+  color: #f3e4ad !important;
+  box-shadow:
+    inset 0 0 0 max(1px, .035cqh) rgb(255 244 195 / 9%),
+    0 .14rem .34rem rgb(0 0 0 / 58%) !important;
+  cursor: default !important;
+  overflow: visible !important;
+  isolation: isolate !important;
+  transition: transform .14s ease, filter .14s ease, border-color .14s ease, box-shadow .14s ease !important;
+}
+
+html body .screen-game .hero-ability-orb[data-active="true"][data-available="true"] {
+  cursor: pointer !important;
+  border-color: rgb(245 207 93 / 92%) !important;
+  color: #fff0a8 !important;
+  box-shadow:
+    inset 0 0 .36rem rgb(255 218 102 / 15%),
+    0 0 .32rem rgb(244 194 67 / 50%),
+    0 .14rem .38rem rgb(0 0 0 / 62%) !important;
+}
+
+html body .screen-game .hero-ability-orb[data-active="true"][data-available="true"]:hover,
+html body .screen-game .hero-ability-orb[data-active="true"][data-available="true"]:focus-visible {
+  transform: translateY(-1px) scale(1.055) !important;
+  filter: brightness(1.1) saturate(1.08) !important;
+  border-color: #ffe59a !important;
+  box-shadow:
+    inset 0 0 .44rem rgb(255 225 125 / 22%),
+    0 0 .5rem rgb(255 209 78 / 68%),
+    0 .18rem .42rem rgb(0 0 0 / 64%) !important;
+}
+
+html body .screen-game .hero-ability-orb[data-locked="true"] {
+  filter: grayscale(1) saturate(0) brightness(.64) !important;
+  opacity: .5 !important;
+  border-color: rgb(125 132 132 / 52%) !important;
+  color: rgb(193 199 195 / 68%) !important;
+}
+
+html body .screen-game .hero-ability-orb[data-active="true"][data-available="false"]:not([data-locked="true"]) {
+  filter: saturate(.48) brightness(.76) !important;
+  opacity: .78 !important;
+}
+
+html body .screen-game .hero-ability-orb-glyph {
+  display: grid !important;
+  place-items: center !important;
+  font: 900 clamp(.78rem, min(1.15cqw, 2cqh), 1.08rem)/1 Georgia, serif !important;
+  text-shadow: 0 1px 1px #000, 0 0 .2rem rgb(240 201 91 / 30%) !important;
+  pointer-events: none !important;
+}
+
+html body .screen-game .hero-ability-orb-level {
+  position: absolute !important;
+  right: -.12rem !important;
+  bottom: -.12rem !important;
+  display: grid !important;
+  place-items: center !important;
+  inline-size: clamp(.72rem, min(.9cqw, 1.5cqh), .92rem) !important;
+  block-size: clamp(.72rem, min(.9cqw, 1.5cqh), .92rem) !important;
+  border: 1px solid rgb(213 188 113 / 76%) !important;
+  border-radius: 50% !important;
+  background: #091417 !important;
+  color: #f7e6ad !important;
+  font: 950 clamp(.42rem, min(.55cqw, .9cqh), .58rem)/1 system-ui, sans-serif !important;
+  box-shadow: 0 1px .18rem rgb(0 0 0 / 76%) !important;
+  pointer-events: none !important;
+}
+
+html body .screen-game .hero-ability-orb-tooltip {
+  position: absolute !important;
+  z-index: 2147483000 !important;
+  left: calc(100% + clamp(.38rem, .56cqw, .62rem)) !important;
+  top: 50% !important;
+  display: block !important;
+  width: min(28rem, 36cqw, calc(100vw - 4rem)) !important;
+  max-width: min(28rem, calc(100vw - 4rem)) !important;
+  margin: 0 !important;
+  padding: clamp(.46rem, .7cqh, .68rem) clamp(.54rem, .78cqw, .82rem) !important;
+  transform: translateY(-50%) translateX(-.18rem) !important;
+  border: max(1px, .05cqh) solid rgb(197 169 92 / 72%) !important;
+  border-radius: clamp(.34rem, .44cqw, .5rem) !important;
+  background: linear-gradient(155deg, rgb(14 31 34 / 99%), rgb(5 14 17 / 99%)) !important;
+  color: #eef3e8 !important;
+  font: 750 clamp(.64rem, min(.82cqw, 1.28cqh), .88rem)/1.3 system-ui, sans-serif !important;
+  letter-spacing: .01em !important;
+  text-align: left !important;
+  white-space: pre-line !important;
+  overflow-wrap: anywhere !important;
+  text-shadow: 0 1px 1px #000 !important;
+  box-shadow: 0 .5rem 1.45rem rgb(0 0 0 / 72%) !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transition:
+    opacity .12s ease 0s,
+    transform .12s ease 0s,
+    visibility 0s linear .12s !important;
+}
+
+html body .screen-game .hero-ability-orb:hover > .hero-ability-orb-tooltip,
+html body .screen-game .hero-ability-orb:focus-visible > .hero-ability-orb-tooltip {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(-50%) translateX(0) !important;
+  transition-delay: 1s, 1s, 1s !important;
+}
+
+@media (orientation: landscape) and (max-height: 44rem) {
+  html body .screen-game .canonical-hero-panel > .player-hero > .hero-ability-rail {
+    gap: clamp(.16rem, .3cqh, .28rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .level-button {
+    top: calc(var(--hh-hero-art-top, 0px) - clamp(.98rem, 1.95cqh, 1.34rem)) !important;
+  }
+
+  html body .screen-game .hero-ability-orb-tooltip {
+    width: min(24rem, 34cqw, calc(100vw - 3rem)) !important;
+    font-size: clamp(.58rem, min(.72cqw, 1.05cqh), .76rem) !important;
+  }
+}
+
+@media (pointer: coarse) {
+  html body .screen-game .hero-ability-orb {
+    inline-size: max(2rem, 4.4cqh) !important;
+    block-size: max(2rem, 4.4cqh) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .screen-game .hero-ability-orb,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board :is(.target-ally, .target-enemy, .placement-target) {
+    transition: none !important;
+    animation: none !important;
+  }
+}

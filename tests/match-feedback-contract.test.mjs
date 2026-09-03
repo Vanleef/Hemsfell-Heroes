@@ -55,13 +55,24 @@ test("priority strip is measured from the gap between enemy and player fields", 
   assert.match(runtime, /style\.setProperty\(PRIORITY_BAND_Y/);
 });
 
-test("evolution availability is visible on the hero panel without a body portal dependency", () => {
+test("evolution availability stays visible without rendering redundant evolution available copy", () => {
   assert.match(runtime, /classList\.toggle\("evolution-ready", ready\)/);
   assert.match(runtime, /classList\.toggle\("evolution-available", available\)/);
   assert.match(runtime, /panel\.dataset\.evolutionAvailable = "true"/);
   assert.doesNotMatch(runtime, /document\.body\.appendChild/);
   assert.match(css, /:has\(> \.player-hero\.level-ready > \.level-button:not\(:disabled\)\)/);
-  assert.match(css, /content: "EVOLUÇÃO DISPONÍVEL" !important/);
+  assert.doesNotMatch(css, /content:\s*"EVOLUÇÃO DISPONÍVEL"/);
+  const suppressionStart = sheet.indexOf(".evolution-available::before");
+  assert.notEqual(suppressionStart, -1);
+  const suppressionEnd = sheet.indexOf("}", suppressionStart);
+  assert.ok(suppressionEnd > suppressionStart);
+  const suppressionRule = sheet.slice(suppressionStart, suppressionEnd + 1);
+  assert.match(suppressionRule, /level-ready > \.level-button:not\(:disabled\)\)\)::before/);
+  assert.match(suppressionRule, /content: none !important/);
+  assert.match(suppressionRule, /display: none !important/);
+  assert.match(suppressionRule, /visibility: hidden !important/);
+  assert.match(suppressionRule, /opacity: 0 !important/);
+  assert.match(sheet, /hero-evolution-available-banner\[data-hemsfell-evolution-available="true"\][^}]*display: none !important[^}]*visibility: hidden !important[^}]*opacity: 0 !important/);
   assert.match(sheet, /player-hero\.level-ready > \.level-button[^}]*display: grid !important[^}]*opacity: 1 !important[^}]*visibility: visible !important/);
   assert.match(sheet, /player-hero\.level-ready > \.level-button:not\(:disabled\)[^}]*border-color: #f2ca58 !important/);
 });

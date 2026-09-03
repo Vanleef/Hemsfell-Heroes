@@ -1,0 +1,138 @@
+/*
+ * Post-merge regression guard for the compact hero HUD.
+ *
+ * Loaded after the targeting/status overlay sheets so the three user-facing
+ * contracts below cannot be undone by an older hero-panel authority:
+ * 1) ability descriptions use the body-level portal and remain visible;
+ * 2) passive ability shortcuts are informational, never activation controls;
+ * 3) the local hero progression strip lives ABOVE the hero panel.
+ */
+
+/* -------------------------------------------------------------------------
+   Ability tooltip portal
+   ------------------------------------------------------------------------- */
+html body .hh-global-tooltip-portal.hero-ability-tooltip-portal {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: none !important;
+  z-index: 2147483647 !important;
+  isolation: isolate !important;
+}
+
+/* Once the portrait-anchored rail exists, suppress the historical pseudo
+   tooltip on the hidden/source command-bar chip. The rail's body portal is the
+   single description authority and cannot be clipped by board stacking. */
+@supports selector(:has(*)) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel:has(> .player-hero > .hero-ability-rail)
+    > .hero-command-bar > .hero-ability-chip::after {
+    content: none !important;
+    display: none !important;
+  }
+}
+
+/* Passive shortcuts remain hover/focus help targets, but never look or react
+   like activation buttons. HeroAbilityRailRuntime already blocks activation
+   whenever data-available=false; this terminal style removes button feedback. */
+html body .screen-game .hero-ability-orb[data-passive="true"] {
+  cursor: help !important;
+}
+
+html body .screen-game .hero-ability-orb[data-passive="true"]:is(:hover, :active, :focus-visible) {
+  transform: none !important;
+  translate: none !important;
+  filter: brightness(1.03) !important;
+  outline: none !important;
+}
+
+/* -------------------------------------------------------------------------
+   Local hero progression — external strip above the panel
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
+  overflow: visible !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
+  --hh-player-progress-gap: clamp(.3rem, .5cqh, .5rem);
+  --hh-player-progress-height: clamp(1.25rem, 2.45cqh, 1.72rem);
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .hero-level-row {
+  position: absolute !important;
+  left: clamp(.12rem, .24cqw, .28rem) !important;
+  right: clamp(3.65rem, 6.1cqw, 5.35rem) !important;
+  top: auto !important;
+  bottom: calc(100% + var(--hh-player-progress-gap)) !important;
+  display: grid !important;
+  grid-template-columns: max-content minmax(0, 1fr) !important;
+  align-items: center !important;
+  gap: clamp(.22rem, .34cqw, .38rem) !important;
+  width: auto !important;
+  min-width: 0 !important;
+  height: var(--hh-player-progress-height) !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  overflow: visible !important;
+  transform: none !important;
+  translate: none !important;
+  z-index: 2147481800 !important;
+}
+
+/* While evolution is not ready there is no visible action button, so let the
+   progress track consume the complete external strip. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(.level-ready) > .hero-level-row {
+  right: clamp(.12rem, .24cqw, .28rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(.level-ready)
+  > .hero-level-row > .hero-evolution {
+  display: grid !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  pointer-events: auto !important;
+}
+
+/* EVOLUIR occupies the right side of the same external row when available. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .level-button {
+  position: absolute !important;
+  left: auto !important;
+  right: clamp(.12rem, .24cqw, .28rem) !important;
+  top: auto !important;
+  bottom: calc(100% + var(--hh-player-progress-gap)) !important;
+  width: clamp(3.1rem, 5.35cqw, 4.75rem) !important;
+  height: var(--hh-player-progress-height) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+  translate: none !important;
+  z-index: 2147481810 !important;
+}
+
+@media (orientation: landscape) and (max-height: 32rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
+    --hh-player-progress-gap: clamp(.18rem, .32cqh, .32rem);
+    --hh-player-progress-height: clamp(1.05rem, 2.2cqh, 1.45rem);
+  }
+}
+
+@media (orientation: portrait) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
+    --hh-player-progress-gap: .3rem;
+    --hh-player-progress-height: clamp(1.4rem, 5.5vw, 1.9rem);
+  }
+}
