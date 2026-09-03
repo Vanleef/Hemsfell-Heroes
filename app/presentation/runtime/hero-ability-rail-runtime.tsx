@@ -12,6 +12,7 @@ type AbilityIcon = {
   available: boolean;
   locked: boolean;
   passive: boolean;
+  owned: boolean;
 };
 
 type AbilityTooltip = {
@@ -23,7 +24,7 @@ type AbilityTooltip = {
 
 const PANEL_SELECTOR = ".screen-game .hero-panel-stack.canonical-hero-panel";
 const CHIP_SELECTOR = ".hero-command-bar .hero-ability-chip";
-const TOOLTIP_DELAY_MS = 1_000;
+const TOOLTIP_DELAY_MS = 350;
 
 function glyphForAbility(copy: string, slot: number) {
   const text = copy.toLocaleLowerCase("pt-BR");
@@ -44,11 +45,16 @@ function glyphForAbility(copy: string, slot: number) {
 }
 
 function readAbilities(panel: HTMLElement): AbilityIcon[] {
+  const owned = panel.classList.contains("player") && !panel.classList.contains("enemy");
   return Array.from(panel.querySelectorAll<HTMLButtonElement>(CHIP_SELECTOR)).slice(0, 3).map((source, slot) => {
     const copy = source.dataset.abilityTooltip || source.getAttribute("aria-label") || source.textContent || `Habilidade ${slot + 1}`;
-    const active = source.classList.contains("is-active");
-    const locked = source.classList.contains("is-locked");
-    const available = active && source.classList.contains("is-available") && source.getAttribute("aria-disabled") !== "true";
+    const active = source.classList.contains("is-active") || source.classList.contains("active");
+    const locked = source.classList.contains("is-locked") || source.classList.contains("locked");
+    const available = owned
+      && active
+      && !locked
+      && source.classList.contains("is-available")
+      && source.getAttribute("aria-disabled") !== "true";
     return {
       source,
       slot,
@@ -58,6 +64,7 @@ function readAbilities(panel: HTMLElement): AbilityIcon[] {
       available,
       locked,
       passive: !active,
+      owned,
     };
   });
 }
@@ -189,34 +196,58 @@ function HeroAbilityRail({ panel }: { panel: HTMLElement }) {
       aria-label="Atalhos das habilidades do herói"
       style={{ left: position.left, top: position.top, "--hh-ability-lineage": lineage } as CSSProperties}
     >
-      {abilities.map((ability) => (
-        <span className="hero-ability-orb-entry" key={ability.slot}>
-          <span className="hero-ability-orb-level" aria-hidden="true">{ability.slot + 1}</span>
-          <button
-            type="button"
-            className="hero-ability-orb"
-            data-ability-slot={ability.slot + 1}
-            data-active={ability.active ? "true" : "false"}
-            data-available={ability.available ? "true" : "false"}
-            data-locked={ability.locked ? "true" : "false"}
-            data-passive={ability.passive ? "true" : "false"}
-            aria-disabled={!ability.available}
-            aria-label={ability.tooltip.replace(/\s+/g, " ")}
-            onPointerEnter={(event) => openTooltip(ability, event.currentTarget, true)}
-            onPointerLeave={closeTooltip}
-            onFocus={(event) => openTooltip(ability, event.currentTarget, false)}
-            onBlur={closeTooltip}
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              if (!ability.available) return;
-              ability.source.click();
-            }}
-          >
-            <span className="hero-ability-orb-glyph" aria-hidden="true">{ability.glyph}</span>
-          </button>
-        </span>
-      ))}
+      {abilities.map((ability) => {
+        const label = ability.tooltip.replace(/\s+/g, " ");
+        const glyph = <span className="hero-ability-orb-glyph" aria-hidden="true">{ability.glyph}</span>;
+        return (
+          <span className="hero-ability-orb-entry" key={ability.slot}>
+            <span className="hero-ability-orb-level" aria-hidden="true">{ability.slot + 1}</span>
+            {ability.available ? (
+              <button
+                type="button"
+                className="hero-ability-orb"
+                data-ability-slot={ability.slot + 1}
+                data-active={ability.active ? "true" : "false"}
+                data-available="true"
+                data-locked={ability.locked ? "true" : "false"}
+                data-passive={ability.passive ? "true" : "false"}
+                data-owned={ability.owned ? "true" : "false"}
+                aria-label={label}
+                onPointerEnter={(event) => openTooltip(ability, event.currentTarget, true)}
+                onPointerLeave={closeTooltip}
+                onFocus={(event) => openTooltip(ability, event.currentTarget, false)}
+                onBlur={closeTooltip}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  ability.source.click();
+                }}
+              >
+                {glyph}
+              </button>
+            ) : (
+              <span
+                className="hero-ability-orb"
+                data-ability-slot={ability.slot + 1}
+                data-active={ability.active ? "true" : "false"}
+                data-available="false"
+                data-locked={ability.locked ? "true" : "false"}
+                data-passive={ability.passive ? "true" : "false"}
+                data-owned={ability.owned ? "true" : "false"}
+                role="img"
+                tabIndex={0}
+                aria-label={label}
+                onPointerEnter={(event) => openTooltip(ability, event.currentTarget, true)}
+                onPointerLeave={closeTooltip}
+                onFocus={(event) => openTooltip(ability, event.currentTarget, false)}
+                onBlur={closeTooltip}
+              >
+                {glyph}
+              </span>
+            )}
+          </span>
+        );
+      })}
     </div>,
     hero,
   );
@@ -225,7 +256,11 @@ function HeroAbilityRail({ panel }: { panel: HTMLElement }) {
     <div
       className="hh-global-tooltip-portal hero-ability-tooltip-portal"
       role="tooltip"
-      style={{ left: tooltip.left, top: tooltip.top, width: tooltip.width } as CSSProperties}
+      style={{
+        "--hh-tooltip-left": `${tooltip.left}px`,
+        "--hh-tooltip-top": `${tooltip.top}px`,
+        "--hh-tooltip-width": `${tooltip.width}px`,
+      } as CSSProperties}
     >
       <small>{tooltip.ability.active ? "ATIVA" : "PASSIVA"} · NÍVEL {tooltip.ability.slot + 1}</small>
       <p>{tooltip.ability.tooltip}</p>
