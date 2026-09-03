@@ -10,15 +10,17 @@ const compact = (value) => value.replace(/\s+/g, " ");
 const sheet = compact(css);
 const capsuleSheet = compact(capsuleCss);
 
-test("hero ability capsule refinement loads after the base ability contract and before terminal interactions", () => {
+test("hero ability capsule refinement loads after the base ability contract and before terminal authorities", () => {
   const cssImports = [...layout.matchAll(/import\s+"([^"]+\.css)";/g)].map((match) => match[1]);
   const abilityIndex = cssImports.indexOf("./presentation/styles/hero-ability-layout-contract.css");
   const capsuleIndex = cssImports.indexOf("./presentation/styles/hero-ability-capsule-structure-final.css");
   const terminalIndex = cssImports.indexOf("./presentation/styles/match-interaction-terminal.css");
+  const sidePileTerminalIndex = cssImports.indexOf("./presentation/styles/side-pile-text-shadow-terminal.css");
   assert.ok(abilityIndex >= 0);
   assert.equal(capsuleIndex, abilityIndex + 1);
   assert.equal(terminalIndex, capsuleIndex + 1);
-  assert.equal(cssImports.at(-1), "./presentation/styles/match-interaction-terminal.css");
+  assert.ok(sidePileTerminalIndex > terminalIndex);
+  assert.equal(cssImports.at(-1), "./presentation/styles/side-pile-text-shadow-terminal.css");
 });
 
 test("expanded hero abilities use auto-height rows instead of clipping equal fractions", () => {

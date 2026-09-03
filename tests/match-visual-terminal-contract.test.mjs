@@ -9,6 +9,15 @@ const phaseLegacyCss = fs.readFileSync("app/presentation/styles/phase-orb-copy-f
 const pileTextShadowCss = fs.readFileSync("app/presentation/styles/side-pile-text-shadow-terminal.css", "utf8").replace(/\s+/g, " ");
 const phaseRuntime = fs.readFileSync("app/presentation/runtime/phase-action-runtime.tsx", "utf8").replace(/\s+/g, " ");
 
+const ruleBody = (sheet, marker) => {
+  const start = sheet.indexOf(marker);
+  assert.notEqual(start, -1, `missing CSS rule: ${marker}`);
+  const open = sheet.indexOf("{", start);
+  const close = sheet.indexOf("}", open);
+  assert.ok(open >= 0 && close > open, `malformed CSS rule: ${marker}`);
+  return sheet.slice(open + 1, close);
+};
+
 test("side-pile text shadow contract is the final CSS authority", () => {
   const imports = [...layout.matchAll(/import\s+"([^"]+\.css)";/g)].map((match) => match[1]);
   assert.equal(imports.at(-1), "./presentation/styles/side-pile-text-shadow-terminal.css");
@@ -26,8 +35,16 @@ test("phase runtime separates current phase hierarchy without replacing gameplay
 
 test("current phase uses a quiet kicker and stronger phase name", () => {
   assert.match(css, /phase-orb:has\(> button\)::before[^}]*content: none !important[^}]*display: none !important/);
-  assert.match(css, /phase-current-kicker[^}]*font-size: clamp\(\.4rem[^}]*font-weight: 850 !important[^}]*letter-spacing: \.18em !important/);
-  assert.match(css, /phase-current-name[^}]*font-size: clamp\(\.72rem[^}]*font-weight: 950 !important[^}]*color: #f6dc8f !important/);
+
+  const kicker = ruleBody(css, ".phase-current-kicker");
+  assert.match(kicker, /font-size: clamp\(\.4rem/);
+  assert.match(kicker, /font-weight: 850 !important/);
+  assert.match(kicker, /letter-spacing: \.18em !important/);
+
+  const name = ruleBody(css, ".phase-current-name");
+  assert.match(name, /font-size: clamp\(\.72rem/);
+  assert.match(name, /font-weight: 950 !important/);
+  assert.match(name, /color: #f6dc8f !important/);
 });
 
 test("legacy combined current-phase pseudo-copy is suppressed at matching specificity", () => {
@@ -72,8 +89,12 @@ test("real side-pile cards stay shadow-free and legacy panel fades are disabled"
 });
 
 test("side-pile readability shadow follows label and count bounds", () => {
-  assert.match(pileTextShadowCss, /pile-zone > :is\(b, strong\)[^}]*display: inline-flex !important[^}]*width: max-content !important[^}]*align-self: end !important/);
-  assert.match(pileTextShadowCss, /pile-zone > :is\(b, strong\)[^}]*background: linear-gradient[^}]*box-shadow:/);
+  const footer = ruleBody(pileTextShadowCss, ".pile-zone > :is(b, strong)");
+  assert.match(footer, /display: inline-flex !important/);
+  assert.match(footer, /width: max-content !important/);
+  assert.match(footer, /align-self: end !important/);
+  assert.match(footer, /background: linear-gradient/);
+  assert.match(footer, /box-shadow:/);
   assert.match(pileTextShadowCss, /pile-zone > b[^}]*justify-self: start !important/);
   assert.match(pileTextShadowCss, /pile-zone > strong[^}]*justify-self: end !important/);
 });
