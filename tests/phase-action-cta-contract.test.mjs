@@ -5,6 +5,7 @@ import fs from "node:fs";
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const runtime = fs.readFileSync("app/presentation/runtime/phase-action-runtime.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/phase-orb-copy-final.css", "utf8").replace(/\s+/g, " ");
+const centeringCss = fs.readFileSync("app/presentation/styles/match-centering-final.css", "utf8").replace(/\s+/g, " ");
 
 test("phase action runtime is mounted", () => {
   assert.match(layout, /import PhaseActionRuntime from "\.\/presentation\/runtime\/phase-action-runtime"/);
@@ -26,6 +27,11 @@ test("phase control is a wide responsive CTA instead of a circular orb", () => {
   assert.match(css, /button::after \{[^}]*content: attr\(data-phase-next\) !important/);
   assert.match(css, /button:not\(:disabled\):hover[^}]*transform: translateY\(-1px\) !important/);
   assert.match(css, /button:disabled[^}]*filter: saturate\(\.24\) brightness\(\.66\) !important/);
+});
+
+test("phase action keeps the phase label before the arrow after centering overrides", () => {
+  assert.match(centeringCss, /phase-orb > button::after \{[^}]*order: 1 !important/);
+  assert.match(centeringCss, /phase-orb > button > span \{[^}]*order: 2 !important/);
 });
 
 test("opponent state uses the same plate language and motion respects accessibility", () => {
