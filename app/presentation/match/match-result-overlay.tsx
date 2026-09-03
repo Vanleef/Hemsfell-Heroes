@@ -1,6 +1,6 @@
 "use client";
 
-import { RemoteCardArt } from "../cards/remote-card-art";
+import Image from "next/image";
 
 type MatchResultOverlayProps = {
   heroPage: number;
@@ -12,6 +12,20 @@ type MatchResultOverlayProps = {
   rematchRequestedByOpponent?: boolean;
   onMenu: () => void;
   onRematch: () => void;
+};
+
+const HERO_RESULT_ART: Record<number, { src: string; position: string }> = {
+  2: { src: "/heroes/gimble.webp", position: "58% 18%" },
+  26: { src: "/heroes/goblin.webp", position: "50% 19%" },
+  54: { src: "/heroes/uruk.webp", position: "50% 20%" },
+  110: { src: "/heroes/tifon.webp", position: "50% 22%" },
+  129: { src: "/heroes/saymon.webp", position: "50% 18%" },
+  152: { src: "/heroes/tessalia.webp", position: "57% 18%" },
+  180: { src: "/heroes/quarion.webp", position: "50% 18%" },
+  211: { src: "/heroes/rasmus.webp", position: "57% 17%" },
+  255: { src: "/heroes/ngoro.webp", position: "50% 17%" },
+  273: { src: "/heroes/zayan.webp", position: "50% 19%" },
+  291: { src: "/heroes/natureza.webp", position: "58% 20%" },
 };
 
 export function MatchResultOverlay({
@@ -32,6 +46,8 @@ export function MatchResultOverlay({
     : rematchRequestedByOpponent
       ? "O outro jogador quer jogar novamente."
       : "";
+  const heroArt = HERO_RESULT_ART[heroPage] ?? HERO_RESULT_ART[2];
+  const cleanHeroName = heroName.replace(/^\(IA\)\s*/, "");
 
   return <div className="overlay match-result-overlay" role="dialog" aria-modal="true" aria-labelledby="match-result-winner-name">
     <section className="match-result-card">
@@ -40,7 +56,15 @@ export function MatchResultOverlay({
         <h2 id="match-result-winner-name">{heroName}</h2>
       </header>
       <div className="match-result-portrait">
-        <RemoteCardArt page={heroPage} name={heroName.replace(/^\(IA\)\s*/, "")} priority />
+        <Image
+          className="match-result-hero-art"
+          src={heroArt.src}
+          alt={cleanHeroName}
+          fill
+          priority
+          sizes="(max-width: 34rem) 72vw, 18rem"
+          style={{ objectPosition: heroArt.position }}
+        />
       </div>
       <strong className="match-result-winner">Vencedor</strong>
       <p className="match-result-summary">Partida encerrada após {rounds} {rounds === 1 ? "turno" : "turnos"}.</p>
