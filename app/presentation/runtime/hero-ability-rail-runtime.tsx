@@ -25,7 +25,7 @@ type AbilityTooltip = {
 
 const PANEL_SELECTOR = ".screen-game .hero-panel-stack.canonical-hero-panel";
 const CHIP_SELECTOR = ".hero-command-bar .hero-ability-chip";
-const TOOLTIP_DELAY_MS = 350;
+const TOOLTIP_DELAY_MS = 1_000;
 
 const HERO_ABILITY_GLYPHS: Record<string, readonly [string, string, string]> = {
   gimble: ["♥", "↻", "◇"],

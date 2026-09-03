@@ -67,7 +67,7 @@ test("evolution availability stays visible without rendering redundant evolution
   const suppressionEnd = sheet.indexOf("}", suppressionStart);
   assert.ok(suppressionEnd > suppressionStart);
   const suppressionRule = sheet.slice(suppressionStart, suppressionEnd + 1);
-  assert.match(suppressionRule, /level-ready > \.level-button:not\(:disabled\)\)\)::before/);
+  assert.match(suppressionRule, /level-ready > \.level-button:not\(:disabled\)\)::before/);
   assert.match(suppressionRule, /content: none !important/);
   assert.match(suppressionRule, /display: none !important/);
   assert.match(suppressionRule, /visibility: hidden !important/);
