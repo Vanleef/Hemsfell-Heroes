@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 type AbilityIcon = {
   source: HTMLButtonElement;
   slot: number;
+  level: number;
   glyph: string;
   tooltip: string;
   active: boolean;
@@ -47,8 +48,12 @@ function glyphForAbility(copy: string, slot: number) {
 function readAbilities(panel: HTMLElement): AbilityIcon[] {
   const owned = panel.classList.contains("player") && !panel.classList.contains("enemy");
   return Array.from(panel.querySelectorAll<HTMLButtonElement>(CHIP_SELECTOR)).slice(0, 3).map((source, slot) => {
-    const copy = source.dataset.abilityTooltip || source.getAttribute("aria-label") || source.textContent || `Habilidade ${slot + 1}`;
-    const active = source.classList.contains("is-active") || source.classList.contains("active");
+    const rawCopy = (source.dataset.abilityTooltip || source.getAttribute("aria-label") || source.textContent || `Habilidade ${slot + 1}`).trim();
+    const tooltipHeader = rawCopy.match(/^(ATIVA|PASSIVA)\s*[·•\-–—]\s*NÍVEL\s*(\d+)(?:\s*\r?\n|\s*$)/i);
+    const declaredType = tooltipHeader?.[1]?.toLocaleUpperCase("pt-BR");
+    const active = declaredType ? declaredType === "ATIVA" : source.classList.contains("is-active") || source.classList.contains("active");
+    const level = tooltipHeader ? Number(tooltipHeader[2]) || slot + 1 : slot + 1;
+    const tooltip = tooltipHeader ? rawCopy.slice(tooltipHeader[0].length).trim() : rawCopy;
     const locked = source.classList.contains("is-locked") || source.classList.contains("locked");
     const available = owned
       && active
@@ -58,8 +63,9 @@ function readAbilities(panel: HTMLElement): AbilityIcon[] {
     return {
       source,
       slot,
-      glyph: glyphForAbility(copy, slot),
-      tooltip: copy.trim(),
+      level,
+      glyph: glyphForAbility(tooltip || rawCopy, slot),
+      tooltip: tooltip || rawCopy,
       active,
       available,
       locked,
@@ -197,11 +203,11 @@ function HeroAbilityRail({ panel }: { panel: HTMLElement }) {
       style={{ left: position.left, top: position.top, "--hh-ability-lineage": lineage } as CSSProperties}
     >
       {abilities.map((ability) => {
-        const label = ability.tooltip.replace(/\s+/g, " ");
+        const label = `${ability.active ? "Ativa" : "Passiva"}, nível ${ability.level}: ${ability.tooltip.replace(/\s+/g, " ")}`;
         const glyph = <span className="hero-ability-orb-glyph" aria-hidden="true">{ability.glyph}</span>;
         return (
           <span className="hero-ability-orb-entry" key={ability.slot}>
-            <span className="hero-ability-orb-level" aria-hidden="true">{ability.slot + 1}</span>
+            <span className="hero-ability-orb-level" aria-hidden="true">{ability.level}</span>
             {ability.available ? (
               <button
                 type="button"
@@ -262,7 +268,7 @@ function HeroAbilityRail({ panel }: { panel: HTMLElement }) {
         "--hh-tooltip-width": `${tooltip.width}px`,
       } as CSSProperties}
     >
-      <small>{tooltip.ability.active ? "ATIVA" : "PASSIVA"} · NÍVEL {tooltip.ability.slot + 1}</small>
+      <small>{tooltip.ability.active ? "ATIVA" : "PASSIVA"} · NÍVEL {tooltip.ability.level}</small>
       <p>{tooltip.ability.tooltip}</p>
     </div>,
     document.body,
