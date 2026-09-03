@@ -156,3 +156,152 @@
     width: min(3.1cqw, 5.4cqh) !important;
   }
 }
+
+/* -------------------------------------------------------------------------
+   Screenshot-driven compact landscape corrections
+   ------------------------------------------------------------------------- */
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  /* A legacy max-width breakpoint treated phones in landscape as portrait and
+     stacked the maintenance choices vertically. Keep the whole decision inside
+     the visible browser viewport and restore the intended two-column choice. */
+  html body .screen-game .game-stage > .game-content.hs-board > .maintenance-overlay,
+  html body .screen-game .game-stage > .game-content.hs-board > .overlay.maintenance-overlay,
+  html body .screen-game .game-stage > .game-content.hs-board > .overlay:has(.maintenance-dialog) {
+    position: fixed !important;
+    inset: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    padding: clamp(.35rem, 1.6dvh, .7rem) !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  html body .screen-game .maintenance.maintenance-dialog {
+    width: min(42rem, 80dvw) !important;
+    max-width: 80dvw !important;
+    height: auto !important;
+    max-height: calc(100dvh - clamp(.8rem, 4dvh, 1.4rem)) !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-auto-rows: max-content !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    scrollbar-width: thin !important;
+  }
+
+  html body .screen-game .maintenance-dialog > header {
+    min-height: 0 !important;
+    height: auto !important;
+    padding: clamp(.34rem, 1.35dvh, .55rem) clamp(.7rem, 1.35dvw, 1rem) !important;
+  }
+
+  html body .screen-game .maintenance-dialog > header :is(span,b) {
+    font-size: clamp(.48rem, 1.55dvh, .68rem) !important;
+    line-height: 1 !important;
+    letter-spacing: .12em !important;
+  }
+
+  html body .screen-game .maintenance-dialog > h2 {
+    margin: 0 !important;
+    padding: clamp(.45rem, 1.8dvh, .7rem) clamp(.8rem, 1.6dvw, 1.15rem) clamp(.12rem, .55dvh, .3rem) !important;
+    font-size: clamp(1rem, 3.6dvh, 1.45rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  html body .screen-game .maintenance-dialog > p {
+    margin: 0 !important;
+    padding: 0 clamp(.8rem, 1.6dvw, 1.15rem) clamp(.38rem, 1.3dvh, .58rem) !important;
+    max-width: none !important;
+    font-size: clamp(.52rem, 1.72dvh, .74rem) !important;
+    line-height: 1.32 !important;
+    letter-spacing: .055em !important;
+  }
+
+  html body .screen-game .maintenance-status {
+    margin: 0 clamp(.8rem, 1.6dvw, 1.15rem) !important;
+    padding: clamp(.35rem, 1.25dvh, .55rem) clamp(.5rem, 1dvw, .75rem) !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: center !important;
+    gap: clamp(.35rem, 1.2dvw, .8rem) !important;
+    min-height: 0 !important;
+  }
+
+  html body .screen-game .maintenance-status > span {
+    min-width: 0 !important;
+    font-size: clamp(.5rem, 1.62dvh, .7rem) !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+  }
+
+  html body .screen-game .maintenance-status > span > b {
+    font-size: clamp(.72rem, 2.35dvh, 1rem) !important;
+  }
+
+  html body .screen-game .maintenance-options {
+    margin: 0 !important;
+    padding: clamp(.42rem, 1.45dvh, .65rem) clamp(.8rem, 1.6dvw, 1.15rem) !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: clamp(.4rem, 1dvw, .72rem) !important;
+  }
+
+  html body .screen-game .maintenance-choice {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: clamp(.42rem, 1.45dvh, .64rem) clamp(.5rem, .95dvw, .72rem) !important;
+    gap: clamp(.12rem, .52dvh, .28rem) !important;
+  }
+
+  html body .screen-game .maintenance-choice > i {
+    font-size: clamp(.82rem, 2.6dvh, 1.12rem) !important;
+    line-height: 1 !important;
+  }
+
+  html body .screen-game .maintenance-choice > strong {
+    font-size: clamp(.58rem, 1.85dvh, .78rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  html body .screen-game .maintenance-choice > b {
+    font-size: clamp(.5rem, 1.62dvh, .68rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  html body .screen-game .maintenance-choice > :is(small,em) {
+    font-size: clamp(.43rem, 1.35dvh, .58rem) !important;
+    line-height: 1.2 !important;
+  }
+
+  html body .screen-game .maintenance-dialog > footer {
+    padding: clamp(.26rem, .95dvh, .42rem) clamp(.8rem, 1.6dvw, 1.15rem) !important;
+    min-height: 0 !important;
+    font-size: clamp(.4rem, 1.18dvh, .52rem) !important;
+    line-height: 1.15 !important;
+  }
+
+  /* The opponent-turn plate should read as status, not as the primary CTA. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:empty {
+    width: clamp(6.4rem, 8.65cqw, 8.8rem) !important;
+    min-height: 0 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:empty::before {
+    min-height: clamp(2rem, 4.55cqh, 2.65rem) !important;
+    padding: clamp(.3rem, .48cqh, .46rem) clamp(.44rem, .62cqw, .64rem) !important;
+    font-size: clamp(.48rem, min(.62cqw, .92cqh), .68rem) !important;
+    border-radius: clamp(.36rem, .5cqw, .54rem) !important;
+  }
+
+  /* Defensive CSS seal: if a stale class survives reconciliation, never let
+     expanded ability prose paint over the compact touch HUD. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > :is(b,p) {
+    display: none !important;
+  }
+}
