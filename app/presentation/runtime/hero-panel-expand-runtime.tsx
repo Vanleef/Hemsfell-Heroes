@@ -18,14 +18,18 @@ const syncLevelBadge = (panel: Element, trigger: HTMLElement) => {
 };
 
 const syncAbilityInteractivity = (panel: Element) => {
+  const owned = panel.classList.contains("player") && !panel.classList.contains("enemy");
   for (const ability of panel.querySelectorAll<HTMLButtonElement>("button.hero-ability-chip")) {
-    /* Passive powers are informational only. Do not mirror every temporary
-       aria-disabled state to the native disabled property: doing so can leave
-       an active ability permanently disabled after the turn/priority state
-       changes because React does not own that native attribute. */
-    const passive = ability.classList.contains("is-passive");
-    ability.disabled = passive;
-    ability.tabIndex = passive ? -1 : 0;
+    /* Only learned active powers from the local hero may keep native button
+       semantics. Temporary gameplay availability remains React-owned, so we do
+       not mirror transient aria-disabled states into disabled and risk leaving
+       a learned power stuck after priority/turn state changes. */
+    const passive = ability.classList.contains("is-passive") || ability.classList.contains("passive");
+    const locked = ability.classList.contains("is-locked") || ability.classList.contains("locked");
+    const informational = !owned || passive || locked;
+    ability.disabled = informational;
+    ability.tabIndex = informational ? -1 : 0;
+    ability.dataset.hhAbilityClickable = informational ? "false" : "true";
   }
 };
 
