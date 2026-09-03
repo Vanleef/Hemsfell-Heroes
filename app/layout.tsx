@@ -50,6 +50,8 @@ import "./presentation/styles/requested-match-polish-final.css";
 import "./presentation/styles/match-overlay-visibility-final.css";
 /* Body-level evolution criteria portal escapes every match-board stacking context. */
 import "./presentation/styles/evolution-tooltip-portal-final.css";
+/* Regression guard: ability help stays visible and local hero progress stays above the compact card. */
+import "./presentation/styles/hero-ability-progress-regression-final.css";
 /* Every floating tooltip/portal gets the final visual layer over cards and overlays. */
 import "./presentation/styles/global-tooltip-layer-final.css";
 /* Final gameplay feedback authority: evolution, defender lane, priority center and phase copy. */
@@ -70,8 +72,6 @@ import "./presentation/styles/match-interaction-terminal.css";
 import "./presentation/styles/match-visual-terminal.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
-/* Regression guard: ability help stays visible and local hero progress stays above the compact card. */
-import "./presentation/styles/hero-ability-progress-regression-final.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
