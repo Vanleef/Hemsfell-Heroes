@@ -238,10 +238,25 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
   pointer-events: none !important;
 }
 
+/* EVOLUIR is the primary action of the local hero panel. Keep the existing
+   compact hit area, but make the label materially easier to read. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .level-button {
+  font-size: clamp(.72rem, min(1.05cqw, 1.72cqh), 1.02rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: .04em !important;
+}
+
 @media (orientation: landscape) and (max-height: 32rem) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board
     > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
     --hh-player-progress-height: clamp(.92rem, 1.82cqh, 1.12rem);
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .level-button {
+    font-size: clamp(.66rem, min(.98cqw, 1.58cqh), .92rem) !important;
   }
 
   html body .match-result-portrait {
@@ -255,5 +270,10 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
   html body .screen-game.screen-game .game-stage > .game-content.hs-board
     > .hero-panel-stack.canonical-hero-panel.player > .player-hero {
     --hh-player-progress-height: clamp(1.05rem, 4.1vw, 1.42rem);
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player > .player-hero > .level-button {
+    font-size: clamp(.78rem, 2.8vw, 1.08rem) !important;
   }
 }
