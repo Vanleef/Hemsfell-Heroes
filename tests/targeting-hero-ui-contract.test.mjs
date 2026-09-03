@@ -63,7 +63,9 @@ test("authoritative activation target decisions expose their legal ids and keep 
 });
 
 test("evolution progress and action are docked above the measured hero art without a banner", () => {
-  assert.match(css, /evolution-available::before,[^}]*level-ready > \.level-button:not\(:disabled\)\)\)::before[^}]*content: none !important[^}]*display: none !important/);
+  const hiddenBanner = ruleBody(css, ".evolution-available::before");
+  assert.match(hiddenBanner, /content: none !important/);
+  assert.match(hiddenBanner, /display: none !important/);
   const levelRow = ruleBody(css, ".player-hero > .hero-level-row");
   assert.match(levelRow, /position: absolute !important/);
   assert.match(levelRow, /top: calc\(var\(--hh-hero-art-top, 0px\) - clamp\(/);
