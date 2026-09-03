@@ -82,8 +82,10 @@ import "./presentation/styles/hero-hud-merge-regression-final.css";
 import "./presentation/styles/hero-ability-progress-tooltip-terminal.css";
 /* Absolute final authority for a materially readable local EVOLUIR label. */
 import "./presentation/styles/hero-evolve-label-terminal.css";
-/* Mobile touch density/input authority; pile footer remains the literal cascade terminal. */
+/* Mobile touch density/input authority. */
 import "./presentation/styles/mobile-touch-layout-terminal.css";
+/* Mobile-only card-local icon sizing; keep painted controls proportional to cards. */
+import "./presentation/styles/mobile-card-icon-scale-terminal.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
