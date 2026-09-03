@@ -84,6 +84,8 @@ import "./presentation/styles/hero-ability-progress-tooltip-terminal.css";
 import "./presentation/styles/hero-evolve-label-terminal.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
+/* Mobile terminal authority: pointer-event drag bridge and fullscreen density correction. */
+import "./presentation/styles/mobile-touch-layout-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
@@ -101,6 +103,7 @@ import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anch
 import EvolutionTooltipPortalRuntime from "./presentation/runtime/evolution-tooltip-portal-runtime";
 import MatchFeedbackRuntime from "./presentation/runtime/match-feedback-runtime";
 import PhaseActionRuntime from "./presentation/runtime/phase-action-runtime";
+import MobileTouchInputRuntime from "./presentation/runtime/mobile-touch-input-runtime";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -140,6 +143,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <EvolutionTooltipPortalRuntime />
       <MatchFeedbackRuntime />
       <PhaseActionRuntime />
+      <MobileTouchInputRuntime />
       {children}
     </body>
   </html>;
