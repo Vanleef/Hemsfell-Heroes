@@ -86,6 +86,8 @@ import "./presentation/styles/hero-evolve-label-terminal.css";
 import "./presentation/styles/mobile-touch-layout-terminal.css";
 /* Mobile-only card-local icon sizing; keep painted controls proportional to cards. */
 import "./presentation/styles/mobile-card-icon-scale-terminal.css";
+/* Final hero status geometry: portrait-only compact cards and mirrored active-effect docks. */
+import "./presentation/styles/hero-active-effects-anchor-terminal.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
