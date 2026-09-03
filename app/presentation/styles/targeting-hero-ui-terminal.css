@@ -32,7 +32,7 @@ html body .screen-game .mulligan-card-static .original-card:focus-visible > .car
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
-    :is(.original-card.target-ally, .player-hero.target-ally, .terrain-slot.target-ally, .placement-target) {
+    :is(.original-card.target-ally, .player-hero.target-ally, .placement-target) {
     filter: brightness(1.12) saturate(1.06) !important;
     opacity: 1 !important;
     outline: max(2px, .09cqh) solid rgb(86 225 139 / 92%) !important;
@@ -45,7 +45,7 @@ html body .screen-game .mulligan-card-static .original-card:focus-visible > .car
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
-    :is(.original-card.target-enemy, .player-hero.target-enemy, .terrain-slot.target-enemy) {
+    :is(.original-card.target-enemy, .player-hero.target-enemy) {
     filter: brightness(1.12) saturate(1.08) !important;
     opacity: 1 !important;
     outline: max(2px, .09cqh) solid rgb(255 103 92 / 94%) !important;
@@ -57,60 +57,65 @@ html body .screen-game .mulligan-card-static .original-card:focus-visible > .car
     z-index: 2147482050 !important;
   }
 
-  /* Do not dim a field as a single ancestor; a filtered ancestor would also
-   * darken its legal targets. Individual slots carry the dimming instead. */
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
-    > :is(.player-field, .enemy-field):has(.target-ally, .target-enemy, .placement-target) {
+  /* Do not dim a field as one filtered ancestor when it contains a legal
+   * target: a filtered ancestor would darken that target too. Dim slots inside
+   * target-bearing fields, and dim an entire field only if it has no target. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > :is(.player-field, .enemy-field):has(:is(.target-ally, .target-enemy, .placement-target)) {
     filter: none !important;
     opacity: 1 !important;
     z-index: 205 !important;
   }
 
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
-    > :is(.player-field, .enemy-field):has(.target-ally, .target-enemy, .placement-target)
-    .field-slot:not(:has(.target-ally, .target-enemy, .placement-target)) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > :is(.player-field, .enemy-field):not(:has(:is(.target-ally, .target-enemy, .placement-target))) {
     filter: brightness(.6) saturate(.72) !important;
     opacity: .8 !important;
     transition: filter .14s ease, opacity .14s ease !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
-    > :is(.player-field, .enemy-field):has(.target-ally, .target-enemy, .placement-target)
-    .field-slot:has(.target-ally, .target-enemy, .placement-target) {
+    > :is(.player-field, .enemy-field):has(:is(.target-ally, .target-enemy, .placement-target))
+    .field-slot:not(.placement-target):not(:has(:is(.target-ally, .target-enemy, .placement-target))) {
+    filter: brightness(.6) saturate(.72) !important;
+    opacity: .8 !important;
+    transition: filter .14s ease, opacity .14s ease !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
+    > :is(.player-field, .enemy-field):has(:is(.target-ally, .target-enemy, .placement-target))
+    .field-slot.placement-target,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
+    > :is(.player-field, .enemy-field):has(:is(.target-ally, .target-enemy, .placement-target))
+    .field-slot:has(:is(.target-ally, .target-enemy, .placement-target)) {
     filter: none !important;
     opacity: 1 !important;
     z-index: 2147482040 !important;
   }
 
-  /* If either field exposes targets, every unrelated major HUD region steps
-   * back. Target-containing hero/terrain regions are exempted individually. */
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
-    :has(:is(.target-ally, .target-enemy, .placement-target))
+  /* If any board target exists, every unrelated major HUD region steps back.
+   * Target-containing hero/terrain regions and the target instruction stay lit. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
     > :not(.player-field):not(.enemy-field):not(.hero-panel-stack):not(.terrain-slot):not(.target-banner) {
     filter: brightness(.6) saturate(.72) !important;
     opacity: .8 !important;
     transition: filter .14s ease, opacity .14s ease !important;
   }
 
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
-    :has(:is(.target-ally, .target-enemy, .placement-target))
-    > .hero-panel-stack:not(:has(.target-ally, .target-enemy, .placement-target)),
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
-    :has(:is(.target-ally, .target-enemy, .placement-target))
-    > .terrain-slot:not(:has(.target-ally, .target-enemy, .placement-target)) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > .hero-panel-stack:not(:has(:is(.target-ally, .target-enemy, .placement-target))),
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > .terrain-slot:not(:has(:is(.target-ally, .target-enemy, .placement-target))) {
     filter: brightness(.6) saturate(.72) !important;
     opacity: .8 !important;
     transition: filter .14s ease, opacity .14s ease !important;
   }
 
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
-    :has(:is(.target-ally, .target-enemy, .placement-target))
-    > .hero-panel-stack:has(.target-ally, .target-enemy, .placement-target),
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
-    :has(:is(.target-ally, .target-enemy, .placement-target))
-    > .terrain-slot:has(.target-ally, .target-enemy, .placement-target),
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision))
-    :has(:is(.target-ally, .target-enemy, .placement-target))
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > .hero-panel-stack:has(:is(.target-ally, .target-enemy, .placement-target)),
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
+    > .terrain-slot:has(:is(.target-ally, .target-enemy, .placement-target)),
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board:not(:has(> .defense-decision)):has(:is(.target-ally, .target-enemy, .placement-target))
     > .target-banner {
     filter: none !important;
     opacity: 1 !important;
