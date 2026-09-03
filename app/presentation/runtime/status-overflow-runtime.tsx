@@ -37,6 +37,7 @@ type FloatingDetail = {
 
 const HOVER_DELAY_MS = 1_000;
 const CLOSE_GRACE_MS = 220;
+const LIVE_STATUS_SELECTOR = ".screen-game :is(.field-negative-statuses,.field-keywords) > :is([data-status],[data-keyword])";
 const hostIds = new WeakMap<HTMLElement, number>();
 let nextHostId = 1;
 
@@ -121,6 +122,12 @@ function floatingGeometry(anchor: HTMLElement, widthHint: number, heightHint: nu
   return { left, top, width };
 }
 
+const floatingStyle = (left: number, top: number, width: number) => ({
+  "--hh-status-tooltip-left": `${left}px`,
+  "--hh-status-tooltip-top": `${top}px`,
+  "--hh-status-tooltip-width": `${width}px`,
+} as CSSProperties);
+
 export default function StatusOverflowRuntime() {
   const [groups, setGroups] = useState<StatusGroup[]>([]);
   const [list, setList] = useState<FloatingList>(null);
@@ -164,10 +171,13 @@ export default function StatusOverflowRuntime() {
     else show();
   }, [clearOpenTimer, clearCloseTimer]);
 
-  const openDetail = useCallback((item: StatusItem, anchor: HTMLElement) => {
+  const openDetail = useCallback((item: StatusItem, anchor: HTMLElement, delayed = false) => {
+    clearOpenTimer();
     clearCloseTimer();
-    setDetail({ item, ...floatingGeometry(anchor, 290, 150) });
-  }, [clearCloseTimer]);
+    const show = () => setDetail({ item, ...floatingGeometry(anchor, 290, 150) });
+    if (delayed) openTimer.current = window.setTimeout(show, HOVER_DELAY_MS);
+    else show();
+  }, [clearOpenTimer, clearCloseTimer]);
 
   useEffect(() => {
     let frame = 0;
@@ -201,6 +211,53 @@ export default function StatusOverflowRuntime() {
     };
   }, [clearOpenTimer, clearCloseTimer, closeAll]);
 
+  /* Visible status icons need the same body-level tooltip authority as the
+     overflow list. GameGlossaryRuntime intentionally removes native titles, so
+     without this delegated surface statuses such as Sufocado had no tooltip. */
+  useEffect(() => {
+    const statusElement = (target: EventTarget | null) => target instanceof Element
+      ? target.closest<HTMLElement>(LIVE_STATUS_SELECTOR)
+      : null;
+
+    const onPointerOver = (event: PointerEvent) => {
+      if (event.pointerType && event.pointerType !== "mouse" && event.pointerType !== "pen") return;
+      const element = statusElement(event.target);
+      if (!element || element.dataset.hhOverflowHidden === "true") return;
+      if (event.relatedTarget instanceof Node && element.contains(event.relatedTarget)) return;
+      const kind: StatusKind = element.dataset.status ? "negative" : "positive";
+      openDetail(readStatusItem(element, kind, 0), element, true);
+    };
+    const onPointerOut = (event: PointerEvent) => {
+      const element = statusElement(event.target);
+      if (!element || event.relatedTarget instanceof Node && element.contains(event.relatedTarget)) return;
+      clearOpenTimer();
+      setDetail(null);
+    };
+    const onFocusIn = (event: FocusEvent) => {
+      const element = statusElement(event.target);
+      if (!element || element.dataset.hhOverflowHidden === "true") return;
+      const kind: StatusKind = element.dataset.status ? "negative" : "positive";
+      openDetail(readStatusItem(element, kind, 0), element, false);
+    };
+    const onFocusOut = (event: FocusEvent) => {
+      const element = statusElement(event.target);
+      if (!element) return;
+      clearOpenTimer();
+      setDetail(null);
+    };
+
+    document.addEventListener("pointerover", onPointerOver, true);
+    document.addEventListener("pointerout", onPointerOut, true);
+    document.addEventListener("focusin", onFocusIn, true);
+    document.addEventListener("focusout", onFocusOut, true);
+    return () => {
+      document.removeEventListener("pointerover", onPointerOver, true);
+      document.removeEventListener("pointerout", onPointerOut, true);
+      document.removeEventListener("focusin", onFocusIn, true);
+      document.removeEventListener("focusout", onFocusOut, true);
+    };
+  }, [clearOpenTimer, openDetail]);
+
   return <>
     {groups.map((group) => createPortal(
       <button
@@ -216,7 +273,7 @@ export default function StatusOverflowRuntime() {
         onFocus={(event) => openList(group, event.currentTarget, false)}
         onBlur={scheduleClose}
       >
-        {group.count}
+        <span className="hh-status-overflow-count" aria-hidden="true">{group.count}</span>
       </button>,
       group.host,
       `hh-status-overflow-${group.id}`,
@@ -226,7 +283,7 @@ export default function StatusOverflowRuntime() {
       <div
         className="hh-global-tooltip-portal hh-status-list-tooltip"
         role="tooltip"
-        style={{ left: list.left, top: list.top, width: list.width } as CSSProperties}
+        style={floatingStyle(list.left, list.top, list.width)}
         onPointerEnter={clearCloseTimer}
         onPointerLeave={scheduleClose}
       >
@@ -255,7 +312,7 @@ export default function StatusOverflowRuntime() {
       <div
         className="hh-global-tooltip-portal hh-status-detail-tooltip"
         role="tooltip"
-        style={{ left: detail.left, top: detail.top, width: detail.width } as CSSProperties}
+        style={floatingStyle(detail.left, detail.top, detail.width)}
       >
         <b>{detail.item.label}</b>
         <p>{detail.item.description}</p>
