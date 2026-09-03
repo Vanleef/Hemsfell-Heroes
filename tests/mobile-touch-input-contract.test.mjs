@@ -6,11 +6,13 @@ const layout = fs.readFileSync("app/layout.tsx", "utf8").replace(/\s+/g, " ");
 const runtime = fs.readFileSync("app/presentation/runtime/mobile-touch-input-runtime.tsx", "utf8").replace(/\s+/g, " ");
 const css = fs.readFileSync("app/presentation/styles/mobile-touch-layout-terminal.css", "utf8").replace(/\s+/g, " ");
 
-test("mobile touch runtime and CSS are mounted as terminal match authorities", () => {
-  const previousTerminal = layout.indexOf('./presentation/styles/side-pile-text-shadow-terminal.css');
+test("mobile touch runtime and CSS are mounted late without displacing the pile terminal", () => {
+  const targeting = layout.indexOf('./presentation/styles/targeting-hero-ui-terminal.css');
   const mobileTerminal = layout.indexOf('./presentation/styles/mobile-touch-layout-terminal.css');
-  assert.ok(previousTerminal >= 0);
-  assert.ok(mobileTerminal > previousTerminal);
+  const pileTerminal = layout.indexOf('./presentation/styles/side-pile-text-shadow-terminal.css');
+  assert.ok(targeting >= 0);
+  assert.ok(mobileTerminal > targeting);
+  assert.ok(pileTerminal > mobileTerminal);
   assert.match(layout, /import MobileTouchInputRuntime from "\.\/presentation\/runtime\/mobile-touch-input-runtime"/);
   assert.match(layout, /<PhaseActionRuntime \/> <MobileTouchInputRuntime \/>/);
 });
