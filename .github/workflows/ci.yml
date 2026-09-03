@@ -14,6 +14,7 @@ on:
       - codex/optimization-cleanup
       - ui/fixed-board-composition
       - fix/mobile-responsive-layout-20260831
+      - feat/targeting-hero-ui-20260903
   pull_request:
     branches:
       - main
