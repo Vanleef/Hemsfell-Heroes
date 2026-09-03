@@ -34,7 +34,7 @@ test("merged hero HUD corrections load after targeting/status authorities and be
 });
 
 test("ability shortcut descriptions use body portal coordinates that survive the global inset reset", () => {
-  assert.match(railRuntime, /const TOOLTIP_DELAY_MS = 350/);
+  assert.match(railRuntime, /const TOOLTIP_DELAY_MS = 1_000/);
   assert.match(railRuntime, /hero-ability-tooltip-portal/);
   assert.match(railRuntime, /document\.body/);
   assert.match(railRuntime, /"--hh-tooltip-left": `\$\{tooltip\.left\}px`/);
