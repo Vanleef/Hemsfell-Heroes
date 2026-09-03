@@ -304,4 +304,50 @@
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > :is(b,p) {
     display: none !important;
   }
+
+  /* Screenshot 16:26: keep the player's cards comfortably above the bottom
+     edge. The hand is allowed to be slightly denser than desktop, but it should
+     not look miniature compared with the field cards. */
+  html body .screen-game .game-stage > .game-content.hs-board > .player-hand {
+    scale: .9 !important;
+    translate: 0 -1.05cqh !important;
+    transform-origin: center bottom !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .player-hand :is(.card-frame,.original-card) {
+    width: clamp(3.35rem, 6.15cqw, 6.35rem) !important;
+  }
+
+  /* The primary phase action remains clear, but no longer visually competes
+     with the battlefield/energy information on a phone. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:not(:empty) {
+    width: clamp(7.35rem, 9.45cqw, 10.1rem) !important;
+    scale: .8 !important;
+  }
+
+  /* Keep the bottom-right match control inside the usable browser area and
+     away from Android's landscape navigation edge. */
+  html body .screen-game .game-stage > .game-content.hs-board > .surrender-button {
+    scale: .76 !important;
+    translate: -1cqw -.55cqh !important;
+    transform-origin: right bottom !important;
+    margin-inline-end: max(.3rem, env(safe-area-inset-right)) !important;
+    margin-block-end: max(.2rem, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-aspect-ratio: 12 / 5) {
+  html body .screen-game .game-stage > .game-content.hs-board > .player-hand {
+    scale: .9 !important;
+    translate: 0 -1.25cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:not(:empty) {
+    scale: .76 !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .surrender-button {
+    scale: .72 !important;
+    translate: -1.15cqw -.65cqh !important;
+  }
 }
