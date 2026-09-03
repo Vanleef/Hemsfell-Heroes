@@ -68,6 +68,8 @@ import "./presentation/styles/hero-ability-capsule-structure-final.css";
 import "./presentation/styles/match-interaction-terminal.css";
 /* Final visual authority: phase CTA pseudo-elements and pile thumbnail crop. */
 import "./presentation/styles/match-visual-terminal.css";
+/* Target spotlight, Mulligan tooltip authority and portrait-anchored hero controls. */
+import "./presentation/styles/targeting-hero-ui-terminal.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
@@ -81,6 +83,7 @@ import PresentationEventBridge from "./presentation/runtime/presentation-event-b
 import PresentationInteractionRuntime from "./presentation/runtime/presentation-interaction-runtime";
 import GamePresentationRuntime from "./presentation/runtime/game-presentation-runtime";
 import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-runtime";
+import HeroAbilityRailRuntime from "./presentation/runtime/hero-ability-rail-runtime";
 import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
 import EvolutionTooltipPortalRuntime from "./presentation/runtime/evolution-tooltip-portal-runtime";
 import MatchFeedbackRuntime from "./presentation/runtime/match-feedback-runtime";
@@ -118,6 +121,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <PresentationInteractionRuntime />
       <GamePresentationRuntime />
       <HeroPanelExpandRuntime />
+      <HeroAbilityRailRuntime />
       <TerrainFieldAnchorRuntime />
       <EvolutionTooltipPortalRuntime />
       <MatchFeedbackRuntime />
