@@ -80,6 +80,8 @@ import "./presentation/styles/hero-status-overlay.css";
 import "./presentation/styles/hero-hud-merge-regression-final.css";
 /* Terminal correction: clickable ability ownership, tooltip placement and compact level meter. */
 import "./presentation/styles/hero-ability-progress-tooltip-terminal.css";
+/* Absolute final authority for a materially readable local EVOLUIR label. */
+import "./presentation/styles/hero-evolve-label-terminal.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
