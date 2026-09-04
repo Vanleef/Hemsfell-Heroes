@@ -7,8 +7,10 @@ const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const runtime = fs.readFileSync("app/presentation/runtime/hand-ai-ui-runtime.tsx", "utf8");
 const touchRuntime = fs.readFileSync("app/presentation/runtime/mobile-touch-input-runtime.tsx", "utf8");
 const art = fs.readFileSync("app/presentation/cards/remote-card-art.tsx", "utf8");
+const warmup = fs.readFileSync("app/presentation/cards/card-art-warmup-runtime.tsx", "utf8");
 const catalogRoute = fs.readFileSync("app/api/hemsfell-card-catalog.pdf/route.ts", "utf8");
 const css = fs.readFileSync("app/presentation/styles/card-interaction-stability-terminal.css", "utf8");
+const loadingCss = fs.readFileSync("app/presentation/styles/card-art-loading-terminal.css", "utf8");
 
 test("exhausted target cards stay geometrically stable in field and decision popups", () => {
   assert.match(page, /unit\?\.exhausted\?"is-exhausted"/);
@@ -68,35 +70,68 @@ test("touch drag hit testing is coalesced to one animation-frame pass", () => {
   assert.doesNotMatch(pointerMove, /updateDropTarget\(point\)/);
 });
 
-test("visible card art prewarms a smaller bounded raster and larger PDF range chunks", () => {
+test("card art uses shared priority observers, stable raster tiers and bounded concurrency", () => {
   assert.match(art, /MAX_CACHED_RASTER_PROMISES = 48/);
   assert.match(art, /MIN_COMPONENT_RASTER_CSS_WIDTH = 64/);
+  assert.match(art, /COMPACT_RASTER_CSS_WIDTH = 144/);
+  assert.match(art, /STANDARD_RASTER_CSS_WIDTH = 240/);
+  assert.match(art, /DETAIL_RASTER_CSS_WIDTH = 360/);
   assert.match(art, /RANGE_CHUNK_SIZE = 512 \* 1024/);
-  assert.match(art, /export async function preloadRemoteCardCatalog/);
-  assert.match(art, /export async function prewarmRemoteCardArtPages/);
-  assert.match(runtime, /preloadRemoteCardCatalog/);
-  assert.match(runtime, /prewarmRemoteCardArtPages\(pages, 64\)/);
-  assert.match(runtime, /data-page/);
-  assert.match(art, /rasterPromises = new Map/);
+  assert.match(art, /const rasterQueue: RasterJob\[\]/);
+  assert.match(art, /maxConcurrentRasterJobs/);
+  assert.match(art, /priority < rasterQueue\[bestIndex\]\.priority/);
+  assert.match(art, /let nearObserver: IntersectionObserver \| null = null/);
+  assert.match(art, /let visibleObserver: IntersectionObserver \| null = null/);
+  assert.match(art, /rootMargin: coarse \? "96px 0px" : "180px 0px"/);
+  assert.doesNotMatch(art, /"260px"|"440px"/);
+});
+
+test("compact card rasters persist between screens while detail upgrades stay progressive", () => {
+  assert.match(art, /PERSISTENT_RASTER_CACHE = "hemsfell-card-raster-v4"/);
+  assert.match(art, /caches\.open\(PERSISTENT_RASTER_CACHE\)/);
+  assert.match(art, /createImageBitmap\(blob\)/);
+  assert.match(art, /toBlob\(resolve, "image\/webp", 0\.84\)/);
+  assert.match(art, /targetBucket === COMPACT_RASTER_CSS_WIDTH \? "final" : "preview"/);
+  assert.match(art, /upgradePriority: RasterPriority = priority === 0 \? 1 : priority/);
   assert.match(art, /context\.drawImage\(raster, 0, 0\)/);
-  assert.match(art, /if \(!entry\.isIntersecting\) return;[\s\S]*?observer\.disconnect\(\)/);
   assert.doesNotMatch(art, /canvas\.width\s*=\s*1/);
   assert.doesNotMatch(art, /canvas\.height\s*=\s*1/);
 });
 
-test("catalogue proxy caches range chunks instead of re-fetching Google Drive every match", () => {
+test("PDF catalogue warmup is global and match-specific prewarm remains available", () => {
+  assert.match(art, /export async function preloadRemoteCardCatalog/);
+  assert.match(art, /export async function prewarmRemoteCardArtPages/);
+  assert.match(warmup, /preloadRemoteCardCatalog/);
+  assert.match(layout, /<CardArtWarmupRuntime \/>/);
+  assert.match(runtime, /preloadRemoteCardCatalog/);
+  assert.match(runtime, /prewarmRemoteCardArtPages\(pages, 64\)/);
+  assert.match(runtime, /data-page/);
+});
+
+test("loading placeholder is static and disappears as soon as usable pixels exist", () => {
+  assert.match(loadingCss, /\.remote-card-art:not\(\[data-loaded="true"\]\)/);
+  assert.match(loadingCss, /linear-gradient/);
+  assert.match(loadingCss, /data-art-quality="preview"/);
+  assert.doesNotMatch(loadingCss, /@keyframes|animation:/);
+});
+
+test("catalogue proxy caches range chunks at browser and CDN layers", () => {
   assert.match(catalogRoute, /cache:\s*"force-cache"/);
   assert.match(catalogRoute, /revalidate:\s*86400/);
   assert.match(catalogRoute, /vary:\s*"Range"/);
+  assert.match(catalogRoute, /"cdn-cache-control"/);
+  assert.match(catalogRoute, /"vercel-cdn-cache-control"/);
   assert.doesNotMatch(catalogRoute, /cache:\s*"no-store"/);
 });
 
-test("interaction stability authority is terminal for gameplay but tutorial remains final", () => {
+test("interaction and loading authorities remain before the final tutorial authority", () => {
   const imports = [...layout.matchAll(/import\s+"([^"]+\.css)";/g)].map((match) => match[1]);
   const hand = imports.indexOf("./presentation/styles/hand-ai-ui-terminal.css");
   const stability = imports.indexOf("./presentation/styles/card-interaction-stability-terminal.css");
+  const loading = imports.indexOf("./presentation/styles/card-art-loading-terminal.css");
   const tutorial = imports.indexOf("./presentation/styles/tutorial-current-ui-terminal.css");
   assert.ok(stability > hand);
-  assert.ok(tutorial > stability);
+  assert.ok(loading > stability);
+  assert.ok(tutorial > loading);
   assert.equal(imports.at(-1), "./presentation/styles/tutorial-current-ui-terminal.css");
 });

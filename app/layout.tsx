@@ -104,6 +104,8 @@ import "./presentation/styles/hand-ai-ui-terminal.css";
 import "./presentation/styles/ai-thinking-panel-terminal.css";
 /* Stable target orientation, animation icon gating, revealed badge and hand-neighbour peek. */
 import "./presentation/styles/card-interaction-stability-terminal.css";
+/* Static placeholder authority for PDF-backed art while shared rasters are prepared. */
+import "./presentation/styles/card-art-loading-terminal.css";
 /* Keep tutorial diagrams/copy aligned with the current responsive match UI. */
 import "./presentation/styles/tutorial-current-ui-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
@@ -112,6 +114,7 @@ import OnlineReconnectRuntime from "./application/online/online-reconnect-runtim
 import GameGlossaryRuntime from "./presentation/glossary/game-glossary-runtime";
 import CardDoubleClickInspectRuntime from "./presentation/cards/card-double-click-inspect-runtime";
 import CardPreviewRuntime from "./presentation/cards/card-preview-runtime";
+import CardArtWarmupRuntime from "./presentation/cards/card-art-warmup-runtime";
 import MatchRuntimeGate from "./presentation/runtime/match-runtime-gate";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -135,6 +138,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="pt-BR" suppressHydrationWarning>
     <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <CardArtWarmupRuntime />
       <MatchUiGuard />
       <MatchRuntimeGate />
       <OnlineMatchRuntime />

@@ -1,7 +1,7 @@
 /**
  * Streams the official Hemsfell PDF catalogue to the browser renderer.
- * Range chunks are cached by the Next data cache so repeated card pages do not
- * pay a Google Drive round-trip on every match/browser session.
+ * Range chunks are cached upstream and at the CDN so repeated card pages do not
+ * pay a Google Drive round-trip on every screen or browser session.
  */
 const CATALOG_FILE_ID = "1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC";
 const CATALOG_URLS = [
@@ -66,8 +66,11 @@ export async function GET(request: Request) {
 
   const responseHeaders = new Headers({
     "content-type": "application/pdf",
-    "cache-control":
-      "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
+    // Browsers keep useful range responses for a day; the edge keeps them much
+    // longer so a cold client normally talks to Vercel instead of Google Drive.
+    "cache-control": "public, max-age=86400, stale-while-revalidate=604800",
+    "cdn-cache-control": "public, s-maxage=604800, stale-while-revalidate=2592000",
+    "vercel-cdn-cache-control": "public, s-maxage=604800, stale-while-revalidate=2592000",
     "x-content-type-options": "nosniff",
     vary: "Range",
   });
