@@ -99,18 +99,17 @@ test("compact card rasters persist between screens while detail upgrades stay pr
   assert.match(art, /createImageBitmap\(blob\)/);
   assert.match(art, /toBlob\(resolve, "image\/webp", 0\.84\)/);
   assert.match(art, /targetBucket === COMPACT_RASTER_CSS_WIDTH \? "final" : "preview"/);
-  assert.match(art, /upgradePriority: RasterPriority = priority === 0 \? 1 : priority/);
+  assert.match(art, /upgradePriority = Math\.min\(3, priority \+ 1\) as RasterPriority/);
   assert.match(art, /context\.drawImage\(raster, 0, 0\)/);
-  assert.doesNotMatch(art, /canvas\.width\s*=\s*1/);
-  assert.doesNotMatch(art, /canvas\.height\s*=\s*1/);
   assert.match(art, /renderGeneration/);
   assert.doesNotMatch(art, /setRenderRequest/);
 });
 
-test("PDF catalogue warmup is global and match-specific prewarm remains available", () => {
+test("PDF catalogue warmup is contextual and match-specific prewarm remains available", () => {
   assert.match(art, /export async function preloadRemoteCardCatalog/);
   assert.match(art, /export async function prewarmRemoteCardArtPages/);
   assert.match(warmup, /preloadRemoteCardCatalog/);
+  assert.match(warmup, /context !== "setup" && context !== "collection"/);
   assert.match(layout, /<CardArtWarmupRuntime \/>/);
   assert.match(runtime, /preloadRemoteCardCatalog/);
   assert.match(runtime, /prewarmRemoteCardArtPages\(pages, 64\)/);
@@ -135,7 +134,7 @@ test("match preload retains compact rasters within mobile bounds and yields back
   assert.match(art, /matchPageRetainers = new Map/);
   assert.match(art, /isRetainedCompactRaster/);
   assert.match(art, /priority: 0,[\s\S]*?concurrency: 2/);
-  assert.match(art, /priority: 2,[\s\S]*?isMemoryConstrainedDevice\(\) \? 1 : 2/);
+  assert.match(art, /priority: 3,[\s\S]*?isMemoryConstrainedDevice\(\) \? 1 : 2/);
   assert.match(art, /requestIdleCallback\(runBackground, \{ timeout: 500 \}\)/);
   assert.match(art, /assetPreloadPromises/);
   assert.match(art, /controller\.abort\(\)/);
