@@ -1,0 +1,79 @@
+/*
+ * Terminal typography authority for hero level progression.
+ *
+ * The progression meter itself becomes the sizing container, so its copy grows
+ * with the actual panel width instead of following only viewport dimensions.
+ * This keeps compact/mobile panels safe while letting desktop/wider hero panels
+ * use substantially more of the available progress strip.
+ */
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel .hero-level-row > .hero-evolution {
+  container-type: inline-size !important;
+  container-name: hh-hero-progress !important;
+}
+
+/* Local hero uses the canonical single-line pseudo copy (PRÓX. NÍVEL X/Y). */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero
+  > .hero-level-row > .hero-evolution::after {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding-inline: clamp(.14rem, 1.8cqi, .34rem) !important;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: clamp(.68rem, 7.8cqi, 1.12rem) !important;
+  font-weight: 950 !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: .96 !important;
+  letter-spacing: .012em !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  text-wrap: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: clip !important;
+}
+
+/* Panels that still render the original small/strong pair also scale from the
+   meter width, but keep a slightly lower ceiling because they can occupy two
+   visual rows on older/alternate hero layouts. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel .hero-level-row > .hero-evolution
+  > .hero-evolution-copy > small {
+  font-size: clamp(.6rem, 6.1cqi, .9rem) !important;
+  font-weight: 950 !important;
+  line-height: .96 !important;
+  letter-spacing: .012em !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel .hero-level-row > .hero-evolution
+  > .hero-evolution-copy > strong {
+  font-size: clamp(.68rem, 8cqi, 1.04rem) !important;
+  font-weight: 950 !important;
+  font-variant-numeric: tabular-nums !important;
+  line-height: .94 !important;
+  letter-spacing: 0 !important;
+}
+
+/* Very narrow progress strips prioritize keeping the entire label visible. */
+@container hh-hero-progress (max-width: 9rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player > .player-hero
+    > .hero-level-row > .hero-evolution::after {
+    font-size: clamp(.62rem, 7.2cqi, .88rem) !important;
+    letter-spacing: 0 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel .hero-level-row > .hero-evolution
+    > .hero-evolution-copy > small {
+    font-size: clamp(.56rem, 5.8cqi, .78rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel .hero-level-row > .hero-evolution
+    > .hero-evolution-copy > strong {
+    font-size: clamp(.62rem, 7.4cqi, .9rem) !important;
+  }
+}
