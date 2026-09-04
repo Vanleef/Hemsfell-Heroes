@@ -44,11 +44,15 @@ test("geometry observers ignore their own inline style writes", () => {
   assert.doesNotMatch(terrainRuntime, /characterData:\s*true/);
 });
 
-test("PDF cards use bounded range loading and release offscreen canvas buffers", () => {
+test("PDF cards use bounded range loading and reuse bounded raster buffers", () => {
   assert.match(cardArt, /disableRange:\s*false/);
   assert.match(cardArt, /disableAutoFetch:\s*true/);
   assert.match(cardArt, /MAX_CACHED_PAGE_PROMISES\s*=\s*48/);
-  assert.match(cardArt, /canvas\.width = 1/);
+  assert.match(cardArt, /MAX_CACHED_RASTER_PROMISES\s*=\s*40/);
+  assert.match(cardArt, /rasterPromises = new Map/);
+  assert.match(cardArt, /observer\.disconnect\(\)/);
+  assert.doesNotMatch(cardArt, /canvas\.width\s*=\s*1/);
+  assert.doesNotMatch(cardArt, /canvas\.height\s*=\s*1/);
   assert.match(listCss, /content-visibility:\s*auto/);
 });
 

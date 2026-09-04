@@ -102,6 +102,8 @@ import "./presentation/styles/side-pile-text-shadow-terminal.css";
 import "./presentation/styles/hand-ai-ui-terminal.css";
 /* Higher-specificity pair guard so PILHA never forces the AI copy into ellipsis. */
 import "./presentation/styles/ai-thinking-panel-terminal.css";
+/* Stable target orientation, animation icon gating, revealed badge and hand-neighbour peek. */
+import "./presentation/styles/card-interaction-stability-terminal.css";
 /* Keep tutorial diagrams/copy aligned with the current responsive match UI. */
 import "./presentation/styles/tutorial-current-ui-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";

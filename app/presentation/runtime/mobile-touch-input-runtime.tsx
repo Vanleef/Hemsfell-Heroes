@@ -215,9 +215,10 @@ export default function MobileTouchInputRuntime() {
       return session?.dropTarget ?? null;
     };
 
+    /* Coalesce high-frequency touch/pen pointermove events into one expensive
+       elementsFromPoint + synthetic dragover pass per painted frame. */
     const scheduleDropTargetSync = () => {
-      if (!session?.dragging) return;
-      if (session.syncFrame) cancelAnimationFrame(session.syncFrame);
+      if (!session?.dragging || session.syncFrame) return;
       const current = session;
       current.syncFrame = requestAnimationFrame(() => {
         if (session !== current) return;
@@ -282,7 +283,7 @@ export default function MobileTouchInputRuntime() {
       if (!session.dragging && distance >= DRAG_THRESHOLD_PX) beginDrag(session, point);
       if (!session?.dragging) return;
       event.preventDefault();
-      updateDropTarget(point);
+      scheduleDropTargetSync();
     };
 
     const onPointerUp = (event: PointerEvent) => {
