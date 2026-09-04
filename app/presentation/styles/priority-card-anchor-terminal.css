@@ -1,0 +1,147 @@
+/*
+ * Terminal collision + battlefield-anchor authority.
+ *
+ * 1) PILHA and AI-thinking share one measured horizontal lane without overlap.
+ * 2) Battlefield selection/target feedback never moves the card face away from
+ *    the status/action rails owned by the card-frame portrait-space shell.
+ */
+
+/* -------------------------------------------------------------------------
+   PILHA + IA: one measured horizontal pair
+   ------------------------------------------------------------------------- */
+html body:has(.screen-game .priority-stack-indicator):has([data-hemsfell-ai-thinking])
+  .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator {
+  position: fixed !important;
+  top: var(--hh-priority-band-y, 50vh) !important;
+  left: calc(var(--hh-priority-band-x, 50vw) - var(--hh-priority-pair-gap, .7rem)) !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  transform: translate(-100%, -50%) !important;
+  translate: none !important;
+  scale: 1 !important;
+  max-width: min(22rem, calc(50dvw - 1.5rem)) !important;
+  z-index: 2147482500 !important;
+}
+
+html body:has(.screen-game .priority-stack-indicator):has([data-hemsfell-ai-thinking])
+  [data-hemsfell-ai-thinking],
+html body:has(.screen-game .priority-stack-indicator)
+  [data-hemsfell-ai-thinking][data-hh-priority-paired="true"] {
+  position: fixed !important;
+  top: var(--hh-priority-band-y, 50vh) !important;
+  left: calc(var(--hh-priority-band-x, 50vw) + var(--hh-priority-pair-gap, .7rem)) !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  transform: translate(0, -50%) !important;
+  translate: none !important;
+  scale: 1 !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: min(22rem, calc(50dvw - 1.5rem)) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  z-index: 2147482500 !important;
+}
+
+/* The runtime may still publish pixel fallback variables for old browsers.
+   Once the measured central lane exists, those legacy coordinates are not a
+   competing authority anymore. */
+html body:has(.screen-game .priority-stack-indicator)
+  [data-hemsfell-ai-thinking][data-hh-priority-paired="true"] {
+  --hh-ai-paired-left: initial !important;
+  --hh-ai-paired-top: initial !important;
+}
+
+/* -------------------------------------------------------------------------
+   Battlefield icon anchors
+   ------------------------------------------------------------------------- */
+/* `.original-card.is-selected` historically lifted the face by 18px while the
+   status rails correctly remained on `.card-frame`, producing the detached-icon
+   bug. Targeting/selection in a battlefield slot is now paint-only. */
+html body .screen-game .paired-field .field-slot > .card-frame > .original-card.is-selected,
+html body .screen-game .paired-field .field-slot > .card-frame > .original-card:is(.target-ally,.target-enemy),
+html body .screen-game .terrain-slot > .card-frame > .original-card.is-selected,
+html body .screen-game .terrain-slot > .card-frame > .original-card:is(.target-ally,.target-enemy) {
+  translate: none !important;
+  scale: 1 !important;
+  transform: none !important;
+  transform-origin: 50% 50% !important;
+}
+
+/* Hover/focus on a selected or turned permanent may brighten/outline it, but it
+   may not reintroduce the old lift/scale and separate the face from its rails. */
+html body .screen-game .paired-field .field-slot > .card-frame > .original-card:is(.is-selected,.is-exhausted,.target-ally,.target-enemy):is(:hover,:focus-visible),
+html body .screen-game .terrain-slot > .card-frame > .original-card:is(.is-selected,.is-exhausted,.target-ally,.target-enemy):is(:hover,:focus-visible) {
+  translate: none !important;
+  scale: 1 !important;
+  transform: none !important;
+}
+
+/* The frame is the immutable portrait-space anchor. Negative effects stay left,
+   positive effects stay right and activatable ability stays above regardless of
+   selection, target state or the live card's visual state. */
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot) > .card-frame[data-unit-id] {
+  position: relative !important;
+  translate: none !important;
+  scale: 1 !important;
+  transform: none !important;
+  transform-origin: 50% 50% !important;
+  overflow: visible !important;
+}
+
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
+  > .card-frame[data-unit-id] > .field-negative-statuses {
+  top: 50% !important;
+  left: calc(0px - var(--keyword-icon-size, .72rem) - clamp(.12rem, .18cqw, .2rem)) !important;
+  right: auto !important;
+  bottom: auto !important;
+  translate: none !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  transform: translateY(-50%) !important;
+}
+
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
+  > .card-frame[data-unit-id] > .field-keywords {
+  top: 50% !important;
+  right: calc(0px - var(--keyword-icon-size, .72rem) - clamp(.12rem, .18cqw, .2rem)) !important;
+  left: auto !important;
+  bottom: auto !important;
+  translate: none !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  transform: translateY(-50%) !important;
+}
+
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
+  > .card-frame[data-unit-id] > .card-frame-activation {
+  top: 0 !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  translate: none !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  transform: translate(-50%, calc(-100% - clamp(.08rem, .12cqw, .14rem))) !important;
+}
+
+/* State animations belong to the card face only. Never let a broad animation
+   selector capture the sibling status/action rails. */
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
+  > .card-frame[data-unit-id]
+  > :is(.field-negative-statuses,.field-keywords,.card-frame-activation) {
+  animation: none !important;
+  transform-origin: 50% 50% !important;
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  html body:has(.screen-game .priority-stack-indicator):has([data-hemsfell-ai-thinking])
+    .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator,
+  html body:has(.screen-game .priority-stack-indicator):has([data-hemsfell-ai-thinking])
+    [data-hemsfell-ai-thinking] {
+    max-width: min(19rem, calc(50dvw - .9rem)) !important;
+  }
+}
