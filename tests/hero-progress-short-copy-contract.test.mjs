@@ -29,9 +29,21 @@ test("short progress keeps the authoritative counter and collapses to one visibl
   assert.match(runtime, /strong\.textContent/);
   assert.match(runtime, /`\$\{counter\} \$\{label\}`/);
   assert.match(runtime, /strong\.hidden = true/);
-  assert.match(runtime, /EVOLUÇÃO CONCLUÍDA/);
   assert.match(runtime, /hhShortProgress/);
   assert.match(css, /data-hh-short-progress="true"/);
   assert.match(css, /white-space:\s*nowrap\s*!important/);
   assert.match(css, /text-overflow:\s*clip\s*!important/);
+});
+
+test("max-level heroes expose neither progress nor evolve controls", () => {
+  assert.match(runtime, /const MAX_HERO_LEVEL = 3/);
+  assert.match(runtime, /\.hero-level/);
+  assert.match(runtime, /heroLevel >= MAX_HERO_LEVEL/);
+  assert.match(runtime, /\.hero-evolution/);
+  assert.match(runtime, /\.level-button/);
+  assert.match(runtime, /control\.hidden = true/);
+  assert.match(runtime, /control\.setAttribute\("aria-hidden", "true"\)/);
+  assert.match(runtime, /control\.style\.setProperty\("display", "none", "important"\)/);
+  assert.match(runtime, /panel\.dataset\.hhMaxLevel = "true"/);
+  assert.doesNotMatch(runtime, /EVOLUÇÃO CONCLUÍDA/);
 });
