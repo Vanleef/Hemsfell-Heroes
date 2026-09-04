@@ -27,12 +27,15 @@ test("selected heroes are promoted before generic PDF catalogue warming", () => 
   assert.ok(immediateSync >= 0 && catalogueWarm > immediateSync, "critical sync must happen before generic catalogue warmup");
 });
 
-test("selected deck cards get a front-of-deck tier before abortable background warming", () => {
+test("collection warming is tiered and abortable without speculatively warming setup decks", () => {
+  assert.match(runtime, /function collectionSelectedHeroIds\(\)/);
+  assert.match(runtime, /\.collection \.deck-rail button\.active/);
   assert.match(runtime, /const FRONT_DECK_PREWARM_COUNT = 5/);
   assert.match(runtime, /const front = pages\.slice\(0, FRONT_DECK_PREWARM_COUNT\)/);
   assert.match(runtime, /const background = pages\.slice\(FRONT_DECK_PREWARM_COUNT\)/);
   assert.match(runtime, /prewarmRemoteCardArtPages\(front,[\s\S]*?priority:\s*1,[\s\S]*?concurrency:\s*1,[\s\S]*?signal:\s*controller\.signal/);
   assert.match(runtime, /prewarmRemoteCardArtPages\(background,[\s\S]*?priority:\s*2,[\s\S]*?concurrency:\s*1,[\s\S]*?signal:\s*controller\.signal/);
+  assert.match(runtime, /collectionSelected\.forEach[\s\S]*?startCollectionWarm\(hero\)/);
   assert.match(runtime, /deckControllers\.get\(id\)\?\.abort\(\)/);
 });
 
