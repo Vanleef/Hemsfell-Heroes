@@ -4,10 +4,12 @@ import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 const CATALOG_URL = "/api/hemsfell-card-catalog.pdf";
 const MAX_CACHED_PAGE_PROMISES = 48;
-const MAX_CACHED_RASTER_PROMISES = 40;
+const MAX_CACHED_RASTER_PROMISES = 48;
 const MAX_CACHED_RASTER_CSS_WIDTH = 240;
-const MIN_COMPONENT_RASTER_CSS_WIDTH = 96;
-const RASTER_WIDTH_STEP = 24;
+const MIN_COMPONENT_RASTER_CSS_WIDTH = 64;
+const RASTER_WIDTH_STEP = 16;
+const RANGE_CHUNK_SIZE = 512 * 1024;
+const PREWARM_CONCURRENCY = 4;
 let catalogPromise: Promise<import("pdfjs-dist").PDFDocumentProxy> | null = null;
 const pagePromises = new Map<number, Promise<import("pdfjs-dist").PDFPageProxy>>();
 const rasterPromises = new Map<string, Promise<HTMLCanvasElement>>();
@@ -24,7 +26,7 @@ async function loadCatalog() {
         disableRange: false,
         disableStream: true,
         disableAutoFetch: true,
-        rangeChunkSize: 256 * 1024,
+        rangeChunkSize: RANGE_CHUNK_SIZE,
       }).promise;
     }).catch((error) => {
       catalogPromise = null;
@@ -34,6 +36,11 @@ async function loadCatalog() {
     });
   }
   return catalogPromise;
+}
+
+/** Start the PDF worker/metadata request before the first match card needs art. */
+export async function preloadRemoteCardCatalog() {
+  await loadCatalog();
 }
 
 /** Reuse PDF page proxies when a card appears in hand, board and inspector. */
@@ -114,9 +121,29 @@ function loadCardRaster(page: number, cssWidth: number) {
   return pending;
 }
 
+/** Warm only cards the user can currently see. The bounded worker pool avoids a
+ * burst of dozens of simultaneous PDF renders while still getting the whole
+ * hand ready much sooner than one independent cold path per component. */
+export async function prewarmRemoteCardArtPages(pages: readonly number[], cssWidth = MIN_COMPONENT_RASTER_CSS_WIDTH) {
+  const queue = [...new Set(pages.filter((page) => Number.isFinite(page) && page > 0))];
+  if (!queue.length) return;
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < queue.length) {
+      const page = queue[cursor++];
+      try {
+        await loadCardRaster(page, cssWidth);
+      } catch {
+        // The mounted RemoteCardArt keeps its own error/fallback path.
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(PREWARM_CONCURRENCY, queue.length) }, worker));
+}
+
 async function paintCardArt(canvas: HTMLCanvasElement, page: number, cssWidth: number) {
   // Kick the shared PDF-page promise before measuring/copying the raster. This
-  // preserves the old eager-page contract while the raster cache owns rendering.
+  // preserves the eager-page contract while the raster cache owns rendering.
   void loadCatalogPage(page);
   const width = Math.max(cssWidth, canvas.clientWidth, MIN_COMPONENT_RASTER_CSS_WIDTH);
   if (width <= MAX_CACHED_RASTER_CSS_WIDTH) {
@@ -167,7 +194,7 @@ export function RemoteCardArt({ page, name, className = "", style, priority = fa
         setVisible(true);
         observer.disconnect();
       },
-      { rootMargin: mobile ? "220px" : "400px" },
+      { rootMargin: mobile ? "260px" : "440px" },
     );
     observer.observe(canvas);
     return () => observer.disconnect();

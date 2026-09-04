@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
+import { preloadRemoteCardCatalog, prewarmRemoteCardArtPages } from "../cards/remote-card-art";
 
 const HAND_SELECTOR = ".screen-game .player-hand, .screen-game .opponent-hand";
 const HAND_FRAME_SELECTOR = ".screen-game .player-hand > .card-frame, .screen-game .opponent-hand > .card-frame";
+const PLAYER_HAND_FRAME_SELECTOR = ".screen-game .player-hand > .card-frame";
 const HAND_ITEM_SELECTOR = ".card-frame,.opponent-card-back,.official-card-back";
 
 function densityFor(count: number) {
@@ -53,6 +55,18 @@ function syncHandCard(frame: HTMLElement, index: number) {
   }
 }
 
+function warmHandArt(hand: HTMLElement, items: HTMLElement[]) {
+  const pages = items.flatMap((item) =>
+    Array.from(item.querySelectorAll<HTMLCanvasElement>("canvas.remote-card-art[data-page]"))
+      .map((canvas) => Number(canvas.dataset.page))
+      .filter((page) => Number.isFinite(page) && page > 0),
+  );
+  const key = [...new Set(pages)].join(",");
+  if (!key || hand.dataset.hhWarmArtPages === key) return;
+  hand.dataset.hhWarmArtPages = key;
+  void prewarmRemoteCardArtPages(pages, 64);
+}
+
 function syncHand(hand: HTMLElement) {
   if (!hand.isConnected) return;
   const items = Array.from(hand.children).filter((child): child is HTMLElement =>
@@ -70,6 +84,7 @@ function syncHand(hand: HTMLElement) {
     item.style.setProperty("--hh-hand-order", String(index + 1));
     if (item.classList.contains("card-frame")) syncHandCard(item, index);
   });
+  warmHandArt(hand, items);
 }
 
 function syncAiUi() {
@@ -96,6 +111,11 @@ function activeFrameFrom(target: EventTarget | null) {
   return target.closest<HTMLElement>(HAND_FRAME_SELECTOR);
 }
 
+function playerFrameFrom(target: EventTarget | null) {
+  const frame = activeFrameFrom(target);
+  return frame?.matches(PLAYER_HAND_FRAME_SELECTOR) ? frame : null;
+}
+
 function setActiveFrame(frame: HTMLElement | null) {
   document.querySelectorAll<HTMLElement>(`${HAND_FRAME_SELECTOR}[data-hh-hand-active=\"true\"]`).forEach((current) => {
     if (current !== frame) delete current.dataset.hhHandActive;
@@ -103,11 +123,31 @@ function setActiveFrame(frame: HTMLElement | null) {
   if (frame) frame.dataset.hhHandActive = "true";
 }
 
-function setPeekFrame(frame: HTMLElement | null) {
-  document.querySelectorAll<HTMLElement>(`${HAND_FRAME_SELECTOR}[data-hh-hand-peek=\"true\"]`).forEach((current) => {
-    if (current !== frame) delete current.dataset.hhHandPeek;
+function clearPeekState() {
+  document.querySelectorAll<HTMLElement>(`${PLAYER_HAND_FRAME_SELECTOR}[data-hh-hand-peek=\"true\"]`).forEach((current) => {
+    delete current.dataset.hhHandPeek;
   });
-  if (frame) frame.dataset.hhHandPeek = "true";
+  document.querySelectorAll<HTMLElement>(`${PLAYER_HAND_FRAME_SELECTOR}[data-hh-hand-neighbor]`).forEach((current) => {
+    delete current.dataset.hhHandNeighbor;
+  });
+}
+
+function setPeekFrame(frame: HTMLElement | null) {
+  clearPeekState();
+  if (!frame || !frame.matches(PLAYER_HAND_FRAME_SELECTOR)) return;
+
+  frame.dataset.hhHandPeek = "true";
+  const hand = frame.parentElement;
+  if (!hand) return;
+  const frames = Array.from(hand.children).filter((child): child is HTMLElement =>
+    child instanceof HTMLElement && child.classList.contains("card-frame"),
+  );
+  const index = frames.indexOf(frame);
+  if (index < 0) return;
+  const previous = frames[index - 1];
+  const next = frames[index + 1];
+  if (previous) previous.dataset.hhHandNeighbor = "left";
+  if (next) next.dataset.hhHandNeighbor = "right";
 }
 
 function handFromNode(node: Node | null) {
@@ -120,11 +160,20 @@ function nodeTouchesAiUi(node: Node | null) {
   return !!element?.closest("[data-hemsfell-ai-thinking],.screen-game .response-waiting");
 }
 
+function fineHoverPointer() {
+  return window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+}
+
 export default function HandAiUiRuntime() {
   useEffect(() => {
     let frame = 0;
     let aiDirty = false;
     const dirtyHands = new Set<HTMLElement>();
+
+    // Start PDF.js/document metadata as soon as the match runtime mounts. This
+    // overlaps the network setup with the first React paint instead of waiting
+    // for the user to interact with an individual card.
+    void preloadRemoteCardCatalog().catch(() => undefined);
 
     const flush = () => {
       frame = 0;
@@ -147,42 +196,61 @@ export default function HandAiUiRuntime() {
 
     const onPointerDown = (event: PointerEvent) => {
       const handFrame = activeFrameFrom(event.target);
-      if (handFrame) {
-        setActiveFrame(handFrame);
-        setPeekFrame(handFrame);
-      } else if (event.target instanceof Element && !event.target.closest(".screen-game .player-hand")) {
+      if (handFrame) setActiveFrame(handFrame);
+      const playerFrame = playerFrameFrom(event.target);
+      if (playerFrame) setPeekFrame(playerFrame);
+      else if (event.target instanceof Element && !event.target.closest(".screen-game .player-hand")) {
         setActiveFrame(null);
         setPeekFrame(null);
       }
     };
-    const clearPressedPeek = () => setPeekFrame(null);
+    const onPointerUp = (event: PointerEvent) => {
+      if (fineHoverPointer()) {
+        setPeekFrame(playerFrameFrom(event.target));
+        return;
+      }
+      setPeekFrame(null);
+    };
+    const onPointerCancel = () => setPeekFrame(null);
+    const onPointerOver = (event: PointerEvent) => {
+      if (!fineHoverPointer()) return;
+      const handFrame = playerFrameFrom(event.target);
+      if (handFrame) setPeekFrame(handFrame);
+    };
+    const onPointerOut = (event: PointerEvent) => {
+      if (!fineHoverPointer()) return;
+      const current = playerFrameFrom(event.target);
+      if (!current) return;
+      const next = playerFrameFrom(event.relatedTarget);
+      if (next === current) return;
+      setPeekFrame(next);
+    };
     const onFocusIn = (event: FocusEvent) => {
       const handFrame = activeFrameFrom(event.target);
-      if (handFrame) {
-        setActiveFrame(handFrame);
-        setPeekFrame(handFrame);
-      }
+      if (handFrame) setActiveFrame(handFrame);
+      const playerFrame = playerFrameFrom(event.target);
+      if (playerFrame) setPeekFrame(playerFrame);
     };
     const onFocusOut = (event: FocusEvent) => {
-      const current = activeFrameFrom(event.target);
-      const next = activeFrameFrom(event.relatedTarget);
-      if (current && current !== next) setPeekFrame(null);
+      const current = playerFrameFrom(event.target);
+      const next = playerFrameFrom(event.relatedTarget);
+      if (current && current !== next) setPeekFrame(next);
     };
     const onDragStart = (event: DragEvent) => {
       const handFrame = activeFrameFrom(event.target);
-      if (handFrame) {
-        setActiveFrame(handFrame);
-        setPeekFrame(handFrame);
-      }
+      if (handFrame) setActiveFrame(handFrame);
+      const playerFrame = playerFrameFrom(event.target);
+      if (playerFrame) setPeekFrame(playerFrame);
     };
-    const onDragEnd = () => setPeekFrame(null);
+    const onDragEnd = (event: DragEvent) => {
+      if (fineHoverPointer()) setPeekFrame(playerFrameFrom(event.target));
+      else setPeekFrame(null);
+    };
     const onAiThinking = () => {
       aiDirty = true;
       schedule();
     };
 
-    /* Drop legacy mirror attributes once. Presentation state is now derived in
-       CSS from canonical classes instead of computed transforms. */
     document.querySelectorAll<HTMLElement>("[data-hh-local-rotation],[data-hh-card-presenting]").forEach((node) => {
       delete node.dataset.hhLocalRotation;
       delete node.dataset.hhCardPresenting;
@@ -192,11 +260,6 @@ export default function HandAiUiRuntime() {
     aiDirty = true;
     schedule();
 
-    /* Hand density used to observe every class mutation on the entire board and
-       read computed transforms from every field card. During drag/targeting that
-       caused forced style work on practically every pointer frame. Only DOM/text
-       changes inside a hand can change hand metrics, so keep the observer narrow
-       and never read battlefield geometry here. */
     const observer = new MutationObserver((records) => {
       for (const record of records) {
         const hand = handFromNode(record.target);
@@ -219,8 +282,10 @@ export default function HandAiUiRuntime() {
       characterData: true,
     });
     document.addEventListener("pointerdown", onPointerDown, true);
-    document.addEventListener("pointerup", clearPressedPeek, true);
-    document.addEventListener("pointercancel", clearPressedPeek, true);
+    document.addEventListener("pointerup", onPointerUp, true);
+    document.addEventListener("pointercancel", onPointerCancel, true);
+    document.addEventListener("pointerover", onPointerOver, true);
+    document.addEventListener("pointerout", onPointerOut, true);
     document.addEventListener("focusin", onFocusIn, true);
     document.addEventListener("focusout", onFocusOut, true);
     document.addEventListener("dragstart", onDragStart, true);
@@ -231,14 +296,16 @@ export default function HandAiUiRuntime() {
       if (frame) cancelAnimationFrame(frame);
       observer.disconnect();
       document.removeEventListener("pointerdown", onPointerDown, true);
-      document.removeEventListener("pointerup", clearPressedPeek, true);
-      document.removeEventListener("pointercancel", clearPressedPeek, true);
+      document.removeEventListener("pointerup", onPointerUp, true);
+      document.removeEventListener("pointercancel", onPointerCancel, true);
+      document.removeEventListener("pointerover", onPointerOver, true);
+      document.removeEventListener("pointerout", onPointerOut, true);
       document.removeEventListener("focusin", onFocusIn, true);
       document.removeEventListener("focusout", onFocusOut, true);
       document.removeEventListener("dragstart", onDragStart, true);
       document.removeEventListener("dragend", onDragEnd, true);
       window.removeEventListener("hemsfell:ai-thinking", onAiThinking, true);
-      setPeekFrame(null);
+      clearPeekState();
       document.querySelectorAll<HTMLElement>(".hh-hand-metric").forEach((node) => node.remove());
     };
   }, []);

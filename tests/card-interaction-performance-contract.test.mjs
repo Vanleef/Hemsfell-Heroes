@@ -7,6 +7,7 @@ const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const runtime = fs.readFileSync("app/presentation/runtime/hand-ai-ui-runtime.tsx", "utf8");
 const touchRuntime = fs.readFileSync("app/presentation/runtime/mobile-touch-input-runtime.tsx", "utf8");
 const art = fs.readFileSync("app/presentation/cards/remote-card-art.tsx", "utf8");
+const catalogRoute = fs.readFileSync("app/api/hemsfell-card-catalog.pdf/route.ts", "utf8");
 const css = fs.readFileSync("app/presentation/styles/card-interaction-stability-terminal.css", "utf8");
 
 test("exhausted target cards stay geometrically stable in field and decision popups", () => {
@@ -37,16 +38,19 @@ test("revealed public information remains visible on stable hand cards", () => {
   assert.match(css, /opacity: 1 !important/);
 });
 
-test("hand peek opens only immediate neighbours without changing flex geometry", () => {
+test("hand peek marks and moves the actual immediate neighbours", () => {
   assert.match(runtime, /dataset\.hhHandPeek/);
+  assert.match(runtime, /previous\.dataset\.hhHandNeighbor = "left"/);
+  assert.match(runtime, /next\.dataset\.hhHandNeighbor = "right"/);
+  assert.match(runtime, /pointerover/);
+  assert.match(runtime, /pointerout/);
   assert.match(runtime, /pointerup/);
   assert.match(runtime, /pointercancel/);
   assert.match(runtime, /dragend/);
   assert.match(css, /--hh-hand-peek-gap/);
-  assert.match(css, /card-frame:has\(\+ \.card-frame\[data-hh-hand-peek="true"\]\)/);
-  assert.match(css, /card-frame\[data-hh-hand-peek="true"\] \+ \.card-frame/);
-  assert.match(css, /translateX\(calc\(-1 \* var\(--hh-hand-peek-gap\)\)\)/);
-  assert.match(css, /translateX\(var\(--hh-hand-peek-gap\)\)/);
+  assert.match(css, /data-hh-hand-neighbor="left"[\s\S]*?translate:\s*calc\(-1 \* var\(--hh-hand-peek-gap\)\) 0/);
+  assert.match(css, /data-hh-hand-neighbor="right"[\s\S]*?translate:\s*var\(--hh-hand-peek-gap\) 0/);
+  assert.match(css, /var\(--hh-hand-overlap, 0cqi\) \+ \.55cqi/);
 });
 
 test("hand observer ignores board class churn and never reads field layout", () => {
@@ -63,14 +67,27 @@ test("touch drag hit testing is coalesced to one animation-frame pass", () => {
   assert.doesNotMatch(pointerMove, /updateDropTarget\(point\)/);
 });
 
-test("card art keeps a bounded raster cache and no longer blanks canvases on cleanup", () => {
-  assert.match(art, /MAX_CACHED_RASTER_PROMISES = 40/);
+test("visible card art prewarms a smaller bounded raster and larger PDF range chunks", () => {
+  assert.match(art, /MAX_CACHED_RASTER_PROMISES = 48/);
+  assert.match(art, /MIN_COMPONENT_RASTER_CSS_WIDTH = 64/);
+  assert.match(art, /RANGE_CHUNK_SIZE = 512 \* 1024/);
+  assert.match(art, /export async function preloadRemoteCardCatalog/);
+  assert.match(art, /export async function prewarmRemoteCardArtPages/);
+  assert.match(runtime, /preloadRemoteCardCatalog/);
+  assert.match(runtime, /prewarmRemoteCardArtPages\(pages, 64\)/);
+  assert.match(runtime, /data-page/);
   assert.match(art, /rasterPromises = new Map/);
-  assert.match(art, /loadCardRaster/);
   assert.match(art, /context\.drawImage\(raster, 0, 0\)/);
   assert.match(art, /if \(!entry\.isIntersecting\) return;[\s\S]*?observer\.disconnect\(\)/);
   assert.doesNotMatch(art, /canvas\.width\s*=\s*1/);
   assert.doesNotMatch(art, /canvas\.height\s*=\s*1/);
+});
+
+test("catalogue proxy caches range chunks instead of re-fetching Google Drive every match", () => {
+  assert.match(catalogRoute, /cache:\s*"force-cache"/);
+  assert.match(catalogRoute, /revalidate:\s*86400/);
+  assert.match(catalogRoute, /vary:\s*"Range"/);
+  assert.doesNotMatch(catalogRoute, /cache:\s*"no-store"/);
 });
 
 test("interaction stability authority is terminal for gameplay but tutorial remains final", () => {

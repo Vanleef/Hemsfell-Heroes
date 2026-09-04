@@ -1,7 +1,7 @@
 /**
  * Streams the official Hemsfell PDF catalogue to the browser renderer.
- * The upstream file is large, so it must never be cloned or stored in the
- * Next.js data cache inside a serverless function.
+ * Range chunks are cached by the Next data cache so repeated card pages do not
+ * pay a Google Drive round-trip on every match/browser session.
  */
 const CATALOG_FILE_ID = "1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC";
 const CATALOG_URLS = [
@@ -24,7 +24,8 @@ export async function GET(request: Request) {
     try {
       const candidate = await fetch(url, {
         headers,
-        cache: "no-store",
+        cache: "force-cache",
+        next: { revalidate: 86400 },
         redirect: "follow",
       });
       const contentType = (candidate.headers.get("content-type") || "").toLowerCase();
@@ -66,8 +67,9 @@ export async function GET(request: Request) {
   const responseHeaders = new Headers({
     "content-type": "application/pdf",
     "cache-control":
-      "public, max-age=3600, s-maxage=86400, stale-while-revalidate=604800",
+      "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
     "x-content-type-options": "nosniff",
+    vary: "Range",
   });
 
   for (const name of [
