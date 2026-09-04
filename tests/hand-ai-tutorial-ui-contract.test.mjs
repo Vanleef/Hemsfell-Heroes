@@ -46,19 +46,25 @@ test("hand cost and creature stats are derived from the existing authoritative c
   assert.match(css, /font:\s*950 clamp\([^;]*cqi/);
 });
 
-test("hand cards interlace progressively and one interaction card becomes fully readable", () => {
+test("hand cards interlace progressively and interaction exposes the active card", () => {
   assert.match(css, /margin-inline-start:\s*calc\(0px - var\(--hh-hand-overlap/);
   assert.match(css, /data-hh-hand-active="true"[\s\S]*?translateY\(-28%\) scale\(1\.09\)/);
   assert.match(css, /@media \(hover: hover\) and \(pointer: fine\)[\s\S]*?\.player-hand > \.card-frame:hover/);
   assert.match(css, /@media \(hover: none\), \(pointer: coarse\)/);
   assert.match(css, /hh-touch-drag-source/);
-  assert.match(runtime, /data-hh-hand-peek|hhHandPeek/);
+  assert.match(runtime, /dataset\.hhHandPeek/);
+  assert.match(runtime, /dataset\.hhHandNeighbor = "left"/);
+  assert.match(runtime, /dataset\.hhHandNeighbor = "right"/);
+  assert.match(runtime, /pointerover/);
+  assert.match(runtime, /pointerout/);
   assert.match(runtime, /pointerdown/);
   assert.match(runtime, /pointerup/);
   assert.match(runtime, /dragstart/);
   assert.match(runtime, /dragend/);
-  assert.match(stabilityCss, /card-frame:has\(\+ \.card-frame\[data-hh-hand-peek="true"\]\)/);
-  assert.match(stabilityCss, /card-frame\[data-hh-hand-peek="true"\] \+ \.card-frame/);
+  assert.match(stabilityCss, /card-frame\[data-hh-hand-neighbor="left"\]/);
+  assert.match(stabilityCss, /card-frame\[data-hh-hand-neighbor="right"\]/);
+  assert.match(stabilityCss, /translate:\s*calc\(-1 \* var\(--hh-hand-peek-gap\)\) 0/);
+  assert.match(stabilityCss, /translate:\s*var\(--hh-hand-peek-gap\) 0/);
 });
 
 test("card icons disappear during presentation without polling field transforms", () => {

@@ -64,41 +64,34 @@ html body .screen-game :is(.player-hand,.opponent-hand)
   z-index: 80 !important;
 }
 
-/* Hand peek: move only the immediate neighbours, avoiding flex reflow/layout
-   churn while exposing the full active card. The active card keeps the existing
-   lift/scale authority from hand-ai-ui-terminal.css. */
+/* The runtime marks the actual previous/next frame. Do not depend on :has() for
+   the interaction itself: legacy hand transforms and browser selector support
+   can otherwise make the gap disappear. The gap is always at least a little
+   larger than the current overlap, so the active card is visibly uncovered. */
 html body .screen-game .player-hand {
-  --hh-hand-peek-gap: clamp(.26rem, 1.35cqi, .72rem);
+  --hh-hand-peek-gap: max(
+    calc(var(--hh-hand-overlap, 0cqi) + .55cqi),
+    clamp(.48rem, 1.9cqi, 1rem)
+  );
 }
 
 html body .screen-game .player-hand > .card-frame {
-  transition: transform 125ms ease, filter 150ms ease !important;
+  transition: transform 125ms ease, translate 125ms ease, filter 150ms ease !important;
 }
 
-html body .screen-game .player-hand > .card-frame:has(+ .card-frame[data-hh-hand-peek="true"]),
-html body .screen-game .player-hand > .card-frame:has(+ .card-frame:focus-within),
-html body .screen-game .player-hand > .card-frame:has(+ .card-frame:has(> .original-card.hh-touch-drag-source)) {
-  transform: translateX(calc(-1 * var(--hh-hand-peek-gap))) !important;
+html body .screen-game .player-hand > .card-frame[data-hh-hand-neighbor="left"] {
+  translate: calc(-1 * var(--hh-hand-peek-gap)) 0 !important;
 }
 
-html body .screen-game .player-hand > .card-frame[data-hh-hand-peek="true"] + .card-frame,
-html body .screen-game .player-hand > .card-frame:focus-within + .card-frame,
-html body .screen-game .player-hand > .card-frame:has(> .original-card.hh-touch-drag-source) + .card-frame {
-  transform: translateX(var(--hh-hand-peek-gap)) !important;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  html body .screen-game .player-hand > .card-frame:has(+ .card-frame:hover) {
-    transform: translateX(calc(-1 * var(--hh-hand-peek-gap))) !important;
-  }
-
-  html body .screen-game .player-hand > .card-frame:hover + .card-frame {
-    transform: translateX(var(--hh-hand-peek-gap)) !important;
-  }
+html body .screen-game .player-hand > .card-frame[data-hh-hand-neighbor="right"] {
+  translate: var(--hh-hand-peek-gap) 0 !important;
 }
 
 @media (hover: none), (pointer: coarse) {
   html body .screen-game .player-hand {
-    --hh-hand-peek-gap: clamp(.3rem, 1.7cqi, .78rem);
+    --hh-hand-peek-gap: max(
+      calc(var(--hh-hand-overlap, 0cqi) + .72cqi),
+      clamp(.52rem, 2.35cqi, 1.08rem)
+    );
   }
 }
