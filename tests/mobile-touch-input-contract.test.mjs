@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const layout = fs.readFileSync("app/layout.tsx", "utf8").replace(/\s+/g, " ");
+const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8").replace(/\s+/g, " ");
 const runtime = fs.readFileSync("app/presentation/runtime/mobile-touch-input-runtime.tsx", "utf8").replace(/\s+/g, " ");
 const heroRuntime = fs.readFileSync("app/presentation/runtime/hero-panel-expand-runtime.tsx", "utf8").replace(/\s+/g, " ");
 const css = fs.readFileSync("app/presentation/styles/mobile-touch-layout-terminal.css", "utf8").replace(/\s+/g, " ");
@@ -23,8 +24,8 @@ test("mobile touch runtime and CSS are mounted late without displacing the pile 
   assert.ok(targeting >= 0);
   assert.ok(mobileTerminal > targeting);
   assert.ok(pileTerminal > mobileTerminal);
-  assert.match(layout, /import MobileTouchInputRuntime from "\.\/presentation\/runtime\/mobile-touch-input-runtime"/);
-  assert.match(layout, /<PhaseActionRuntime \/> <MobileTouchInputRuntime \/>/);
+  assert.match(gate, /import\("\.\/mobile-touch-input-runtime"\)/);
+  assert.match(gate, /<PhaseActionRuntime \/> <MobileTouchInputRuntime \/>/);
 });
 
 test("coarse pointer drag reuses the real React drag/drop contract with stable pointer capture", () => {
