@@ -141,15 +141,15 @@ html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
    Concise hero evolution progress copy
    ------------------------------------------------------------------------- */
 /* Evolution is strategically important information, so both sides use the
-   same slightly taller external meter instead of a tiny footer-like strip. */
+   same taller external meter and materially larger copy. */
 html body .screen-game.screen-game .game-stage > .game-content.hs-board
   > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero {
-  --hh-player-progress-height: clamp(1.5rem, 2.72cqh, 1.9rem) !important;
+  --hh-player-progress-height: clamp(1.72rem, 3.08cqh, 2.12rem) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board
   > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) > .player-hero {
-  --hh-enemy-progress-height: clamp(1.5rem, 2.72cqh, 1.9rem) !important;
+  --hh-enemy-progress-height: clamp(1.72rem, 3.08cqh, 2.12rem) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board
@@ -158,7 +158,24 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
   height: 100% !important;
   min-height: 100% !important;
   max-height: 100% !important;
-  border-radius: clamp(.34rem, .48cqw, .52rem) !important;
+  border-radius: clamp(.38rem, .5cqw, .56rem) !important;
+}
+
+/* There is only one progress visual: the hero-evolution panel background itself.
+   The historical inner track created the tiny second bar visible on the enemy. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel:not(.is-expanded)
+  > .player-hero > .hero-level-row > .hero-evolution > .evolution-track {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
 }
 
 /* The local compact HUD historically hid the semantic copy and painted
@@ -184,7 +201,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
   height: 100% !important;
   min-height: 100% !important;
   margin: 0 !important;
-  padding-inline: clamp(.18rem, .3cqw, .34rem) !important;
+  padding-inline: clamp(.2rem, .32cqw, .38rem) !important;
   z-index: 2 !important;
 }
 
@@ -198,7 +215,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
   min-height: 100% !important;
   width: 100% !important;
   height: 100% !important;
-  padding-inline: clamp(.18rem, .3cqw, .34rem) !important;
+  padding-inline: clamp(.2rem, .32cqw, .38rem) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board
@@ -217,11 +234,11 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
   text-align: center !important;
   color: #fff0b1 !important;
   -webkit-text-fill-color: #fff0b1 !important;
-  font-size: clamp(.64rem, min(.78cqw, 1.16cqh), .82rem) !important;
-  font-weight: 900 !important;
+  font-size: clamp(.78rem, min(.98cqw, 1.48cqh), 1rem) !important;
+  font-weight: 950 !important;
   line-height: 1 !important;
-  letter-spacing: .012em !important;
-  text-shadow: 0 1px 1px #000, 0 0 .18rem #000 !important;
+  letter-spacing: .006em !important;
+  text-shadow: 0 1px 1px #000, 0 0 .22rem #000 !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board
@@ -240,17 +257,17 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board
     > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero {
-    --hh-player-progress-height: clamp(1.12rem, 2.45dvh, 1.48rem) !important;
+    --hh-player-progress-height: clamp(1.28rem, 2.7dvh, 1.62rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board
     > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) > .player-hero {
-    --hh-enemy-progress-height: clamp(1.12rem, 2.45dvh, 1.48rem) !important;
+    --hh-enemy-progress-height: clamp(1.28rem, 2.7dvh, 1.62rem) !important;
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board
     > .hero-panel-stack.canonical-hero-panel
     .hero-evolution-copy[data-hh-short-progress="true"] > small {
-    font-size: clamp(.56rem, 1.62dvh, .69rem) !important;
+    font-size: clamp(.66rem, 1.85dvh, .78rem) !important;
   }
 }
