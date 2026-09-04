@@ -12,8 +12,8 @@ test("every canonical hero exposes three detailed tooltip descriptions", () => {
     assert.match(runtime, new RegExp(`\\b${hero}: \\[`, "i"));
   }
   assert.match(runtime, /type AbilityTriplet = readonly \[AbilityDetail, AbilityDetail, AbilityDetail\]/);
-  assert.match(runtime, /data\.abilityTooltip !== next/);
-  assert.match(runtime, /abilityDetailSource = "canonical-rules"/);
+  assert.match(runtime, /chip\.dataset\.abilityTooltip = next/);
+  assert.match(runtime, /chip\.dataset\.abilityDetailSource = "canonical-rules"/);
 });
 
 test("Uruk I enumerates the complete effect of all four elements", () => {
