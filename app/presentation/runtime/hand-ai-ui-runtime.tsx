@@ -117,25 +117,26 @@ function playerFrameFrom(target: EventTarget | null) {
 }
 
 function setActiveFrame(frame: HTMLElement | null) {
-  document.querySelectorAll<HTMLElement>(`${HAND_FRAME_SELECTOR}[data-hh-hand-active=\"true\"]`).forEach((current) => {
-    if (current !== frame) delete current.dataset.hhHandActive;
-  });
+  const current = document.querySelector<HTMLElement>(`${HAND_FRAME_SELECTOR}[data-hh-hand-active=\"true\"]`);
+  if (current && current !== frame) delete current.dataset.hhHandActive;
   if (frame) frame.dataset.hhHandActive = "true";
 }
 
+let peekFrame: HTMLElement | null = null;
+let peekNeighbours: HTMLElement[] = [];
+
 function clearPeekState() {
-  document.querySelectorAll<HTMLElement>(`${PLAYER_HAND_FRAME_SELECTOR}[data-hh-hand-peek=\"true\"]`).forEach((current) => {
-    delete current.dataset.hhHandPeek;
-  });
-  document.querySelectorAll<HTMLElement>(`${PLAYER_HAND_FRAME_SELECTOR}[data-hh-hand-neighbor]`).forEach((current) => {
-    delete current.dataset.hhHandNeighbor;
-  });
+  if (peekFrame) delete peekFrame.dataset.hhHandPeek;
+  peekNeighbours.forEach((current) => delete current.dataset.hhHandNeighbor);
+  peekFrame = null;
+  peekNeighbours = [];
 }
 
 function setPeekFrame(frame: HTMLElement | null) {
   clearPeekState();
   if (!frame || !frame.matches(PLAYER_HAND_FRAME_SELECTOR)) return;
 
+  peekFrame = frame;
   frame.dataset.hhHandPeek = "true";
   const hand = frame.parentElement;
   if (!hand) return;
@@ -146,8 +147,14 @@ function setPeekFrame(frame: HTMLElement | null) {
   if (index < 0) return;
   const previous = frames[index - 1];
   const next = frames[index + 1];
-  if (previous) previous.dataset.hhHandNeighbor = "left";
-  if (next) next.dataset.hhHandNeighbor = "right";
+  if (previous) {
+    previous.dataset.hhHandNeighbor = "left";
+    peekNeighbours.push(previous);
+  }
+  if (next) {
+    next.dataset.hhHandNeighbor = "right";
+    peekNeighbours.push(next);
+  }
 }
 
 function handFromNode(node: Node | null) {
@@ -276,7 +283,8 @@ export default function HandAiUiRuntime() {
       }
       if (dirtyHands.size || aiDirty) schedule();
     });
-    observer.observe(document.body, {
+    const observerRoot = document.querySelector(".game-stage") ?? document.body;
+    observer.observe(observerRoot, {
       subtree: true,
       childList: true,
       characterData: true,

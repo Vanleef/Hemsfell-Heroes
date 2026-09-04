@@ -53,14 +53,18 @@ test("hand peek marks and moves the actual immediate neighbours with a soft tran
   assert.match(css, /data-hh-hand-neighbor="left"[\s\S]*?translate:\s*calc\(-1 \* var\(--hh-hand-peek-gap\)\) 0/);
   assert.match(css, /data-hh-hand-neighbor="right"[\s\S]*?translate:\s*var\(--hh-hand-peek-gap\) 0/);
   assert.match(css, /var\(--hh-hand-overlap, 0cqi\) \+ \.24cqi/);
-  assert.match(css, /translate 220ms cubic-bezier\(\.22, \.61, \.36, 1\)/);
+  assert.match(css, /translate 360ms cubic-bezier\(\.16, 1, \.3, 1\)/);
+  assert.match(css, /\[data-hh-hand-neighbor\][\s\S]*?will-change: transform, translate/);
 });
 
 test("hand observer ignores board class churn and never reads field layout", () => {
-  assert.match(runtime, /observer\.observe\(document\.body,[\s\S]*?childList: true,[\s\S]*?characterData: true/);
+  assert.match(runtime, /observer\.observe\(observerRoot,[\s\S]*?childList: true,[\s\S]*?characterData: true/);
   assert.doesNotMatch(runtime, /attributeFilter|attributes:\s*true/);
   assert.doesNotMatch(runtime, /getBoundingClientRect|getComputedStyle|DOMMatrixReadOnly/);
   assert.match(runtime, /dirtyHands/);
+  assert.match(runtime, /observerRoot = document\.querySelector\("\.game-stage"\) \?\? document\.body/);
+  assert.match(runtime, /peekNeighbours\.forEach/);
+  assert.doesNotMatch(runtime, /querySelectorAll<HTMLElement>\(`\$\{PLAYER_HAND_FRAME_SELECTOR\}\[data-hh-hand-neighbor\]/);
 });
 
 test("touch drag hit testing is coalesced to one animation-frame pass", () => {
@@ -83,12 +87,15 @@ test("card art uses shared priority observers, stable raster tiers and bounded c
   assert.match(art, /let nearObserver: IntersectionObserver \| null = null/);
   assert.match(art, /let visibleObserver: IntersectionObserver \| null = null/);
   assert.match(art, /rootMargin: coarse \? "96px 0px" : "180px 0px"/);
+  assert.match(art, /rasterCacheLimit\(\)/);
+  assert.match(art, /isMemoryConstrainedDevice\(\) \? 1\.25 : 1\.5/);
   assert.doesNotMatch(art, /"260px"|"440px"/);
 });
 
 test("compact card rasters persist between screens while detail upgrades stay progressive", () => {
   assert.match(art, /PERSISTENT_RASTER_CACHE = "hemsfell-card-raster-v4"/);
   assert.match(art, /caches\.open\(PERSISTENT_RASTER_CACHE\)/);
+  assert.match(art, /persistentCachePromise \?\?=/);
   assert.match(art, /createImageBitmap\(blob\)/);
   assert.match(art, /toBlob\(resolve, "image\/webp", 0\.84\)/);
   assert.match(art, /targetBucket === COMPACT_RASTER_CSS_WIDTH \? "final" : "preview"/);
@@ -96,6 +103,8 @@ test("compact card rasters persist between screens while detail upgrades stay pr
   assert.match(art, /context\.drawImage\(raster, 0, 0\)/);
   assert.doesNotMatch(art, /canvas\.width\s*=\s*1/);
   assert.doesNotMatch(art, /canvas\.height\s*=\s*1/);
+  assert.match(art, /renderGeneration/);
+  assert.doesNotMatch(art, /setRenderRequest/);
 });
 
 test("PDF catalogue warmup is global and match-specific prewarm remains available", () => {
@@ -106,6 +115,36 @@ test("PDF catalogue warmup is global and match-specific prewarm remains availabl
   assert.match(runtime, /preloadRemoteCardCatalog/);
   assert.match(runtime, /prewarmRemoteCardArtPages\(pages, 64\)/);
   assert.match(runtime, /data-page/);
+});
+
+test("match start preloads only the two real decks in critical and background layers", () => {
+  assert.match(page, /preloadMatchCardArt/);
+  assert.match(page, /matchArtPreloadPlan=\(state:Game\)/);
+  assert.match(page, /\.\.\.player\.hand,[\s\S]*?\.\.\.player\.deck,[\s\S]*?\.\.\.player\.extraDeck/);
+  assert.match(page, /player\.deck\.slice\(0,2\)/);
+  assert.match(page, /criticalPages:\[\.\.\.heroPages,\.\.\.visibleCards\.map/);
+  assert.match(page, /backgroundPages:allMatchCards\.map/);
+  assert.match(page, /heroAssetUrls=game\.players\.map/);
+  assert.match(page, /assetUrls:\[MATCH_CARD_BACK_URL,\.\.\.heroAssetUrls\]/);
+  assert.doesNotMatch(page, /preloadMatchCardArt\([\s\S]{0,200}cards\.map/);
+});
+
+test("match preload retains compact rasters within mobile bounds and yields background work", () => {
+  assert.match(art, /MAX_PINNED_MATCH_PAGES_MOBILE = 48/);
+  assert.match(art, /MAX_PINNED_MATCH_PAGES_DESKTOP = 64/);
+  assert.match(art, /matchPageRetainers = new Map/);
+  assert.match(art, /isRetainedCompactRaster/);
+  assert.match(art, /priority: 0,[\s\S]*?concurrency: 2/);
+  assert.match(art, /priority: 2,[\s\S]*?isMemoryConstrainedDevice\(\) \? 1 : 2/);
+  assert.match(art, /requestIdleCallback\(runBackground, \{ timeout: 500 \}\)/);
+  assert.match(art, /assetPreloadPromises/);
+  assert.match(art, /controller\.abort\(\)/);
+});
+
+test("hero images and the CSS card back receive immediate browser preload hints", () => {
+  assert.match(page, /MATCH_CARD_BACK_URL="\/cards\/card-back-hemsfell\.webp"/);
+  assert.match(page, /heroPortraitSources\[player\.heroId as DeckId\]\.src/);
+  assert.match(page, /<Image src=\{source\.src\}[\s\S]{0,180}preload fetchPriority="high"/);
 });
 
 test("loading placeholder is static and disappears as soon as usable pixels exist", () => {
