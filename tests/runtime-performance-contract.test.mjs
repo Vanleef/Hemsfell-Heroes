@@ -36,6 +36,8 @@ test("heavy presentation runtimes are dynamically loaded only during a match", (
   assert.match(runtimeGate, /dynamic\(\(\) => import/);
   assert.match(runtimeGate, /data-match-active/);
   assert.match(runtimeGate, /if \(!active\) return null/);
+  assert.match(runtimeGate, /presentation-liveness-runtime/);
+  assert.match(runtimeGate, /presentation-memory-runtime/);
 });
 
 test("geometry observers ignore their own inline style writes", () => {
@@ -44,10 +46,14 @@ test("geometry observers ignore their own inline style writes", () => {
   assert.doesNotMatch(terrainRuntime, /characterData:\s*true/);
 });
 
-test("PDF cards use bounded range loading and reuse prioritized raster buffers", () => {
+test("PDF cards use bounded range loading and release decoded page resources", () => {
   assert.match(cardArt, /disableRange:\s*false/);
   assert.match(cardArt, /disableAutoFetch:\s*true/);
-  assert.match(cardArt, /MAX_CACHED_PAGE_PROMISES\s*=\s*48/);
+  assert.match(cardArt, /MAX_CACHED_PAGE_PROMISES\s*=\s*12/);
+  assert.match(cardArt, /isMemoryConstrainedDevice\(\) \? 8 : MAX_CACHED_PAGE_PROMISES/);
+  assert.match(cardArt, /activePageRenders = new Map/);
+  assert.match(cardArt, /pdfPage\.cleanup\(\)/);
+  assert.match(cardArt, /cleanupPdfDocumentResources/);
   assert.match(cardArt, /MAX_CACHED_RASTER_PROMISES\s*=\s*48/);
   assert.match(cardArt, /MIN_COMPONENT_RASTER_CSS_WIDTH\s*=\s*64/);
   assert.match(cardArt, /RANGE_CHUNK_SIZE\s*=\s*512 \* 1024/);
