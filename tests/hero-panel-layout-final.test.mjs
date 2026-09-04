@@ -5,6 +5,7 @@ import fs from "node:fs";
 const css = fs.readFileSync("app/presentation/styles/hero-panel-layout-final.css", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const terrainRuntime = fs.readFileSync("app/presentation/runtime/terrain-field-anchor-runtime.tsx", "utf8");
+const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8");
 
 const compact = (value) => value.replace(/\s+/g, " ");
 const sheet = compact(css);
@@ -54,7 +55,7 @@ test("Cruel Terrain final position uses half of the rendered horizontal slot gap
 test("portrait uses the same measured terrain anchor instead of a separate magic offset", () => {
   assert.match(terrainRuntime, /ResizeObserver/);
   assert.match(terrainRuntime, /orientationchange/);
-  assert.match(layout, /<TerrainFieldAnchorRuntime \/>/);
+  assert.match(gate, /<TerrainFieldAnchorRuntime \/>/);
   assert.doesNotMatch(layout, /TerrainProximityRuntime/);
   const portrait = css.slice(css.indexOf("@media (orientation: portrait)"));
   assert.doesNotMatch(portrait, /margin-right: calc\(min\(/);

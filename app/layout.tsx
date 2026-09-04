@@ -82,25 +82,37 @@ import "./presentation/styles/hero-hud-merge-regression-final.css";
 import "./presentation/styles/hero-ability-progress-tooltip-terminal.css";
 /* Absolute final authority for a materially readable local EVOLUIR label. */
 import "./presentation/styles/hero-evolve-label-terminal.css";
+/* Mobile touch density/input authority. */
+import "./presentation/styles/mobile-touch-layout-terminal.css";
+/* Mobile-only card-local icon sizing; keep painted controls proportional to cards. */
+import "./presentation/styles/mobile-card-icon-scale-terminal.css";
+/* Final hero status geometry: portrait-only compact cards and mirrored active-effect docks. */
+import "./presentation/styles/hero-active-effects-anchor-terminal.css";
+/* Screenshot/request authority: stable icon anchors, compact transient HUD and mobile dialogs. */
+import "./presentation/styles/match-requested-corrections-terminal.css";
+/* Final collision/anchor authority: priority pair and battlefield card-local overlays. */
+import "./presentation/styles/priority-card-anchor-terminal.css";
+/* Final short-mobile hero spacing: keep ability shortcuts clear of progression strips. */
+import "./presentation/styles/mobile-hero-ability-spacing-terminal.css";
+/* Final panel-relative authority: level-progress copy grows with the actual meter width. */
+import "./presentation/styles/hero-progress-text-fit-terminal.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
+/* Responsive interlaced hand, stable card-local icon behavior and one AI-thinking panel. */
+import "./presentation/styles/hand-ai-ui-terminal.css";
+/* Higher-specificity pair guard so PILHA never forces the AI copy into ellipsis. */
+import "./presentation/styles/ai-thinking-panel-terminal.css";
+/* Stable target orientation, animation icon gating, revealed badge and hand-neighbour peek. */
+import "./presentation/styles/card-interaction-stability-terminal.css";
+/* Keep tutorial diagrams/copy aligned with the current responsive match UI. */
+import "./presentation/styles/tutorial-current-ui-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
-import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
 import OnlineReconnectRuntime from "./application/online/online-reconnect-runtime";
 import GameGlossaryRuntime from "./presentation/glossary/game-glossary-runtime";
 import CardDoubleClickInspectRuntime from "./presentation/cards/card-double-click-inspect-runtime";
 import CardPreviewRuntime from "./presentation/cards/card-preview-runtime";
-import PresentationEventBridge from "./presentation/runtime/presentation-event-bridge";
-import PresentationInteractionRuntime from "./presentation/runtime/presentation-interaction-runtime";
-import GamePresentationRuntime from "./presentation/runtime/game-presentation-runtime";
-import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-runtime";
-import HeroAbilityRailRuntime from "./presentation/runtime/hero-ability-rail-runtime";
-import StatusOverflowRuntime from "./presentation/runtime/status-overflow-runtime";
-import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
-import EvolutionTooltipPortalRuntime from "./presentation/runtime/evolution-tooltip-portal-runtime";
-import MatchFeedbackRuntime from "./presentation/runtime/match-feedback-runtime";
-import PhaseActionRuntime from "./presentation/runtime/phase-action-runtime";
+import MatchRuntimeGate from "./presentation/runtime/match-runtime-gate";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -124,22 +136,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return <html lang="pt-BR" suppressHydrationWarning>
     <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       <MatchUiGuard />
-      <MatchUiRuntime />
+      <MatchRuntimeGate />
       <OnlineMatchRuntime />
       <OnlineReconnectRuntime />
       <GameGlossaryRuntime />
       <CardDoubleClickInspectRuntime />
       <CardPreviewRuntime />
-      <PresentationEventBridge />
-      <PresentationInteractionRuntime />
-      <GamePresentationRuntime />
-      <HeroPanelExpandRuntime />
-      <HeroAbilityRailRuntime />
-      <StatusOverflowRuntime />
-      <TerrainFieldAnchorRuntime />
-      <EvolutionTooltipPortalRuntime />
-      <MatchFeedbackRuntime />
-      <PhaseActionRuntime />
       {children}
     </body>
   </html>;

@@ -6,13 +6,16 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf
 
 test("presentation runtimes are mounted after card preview and before the game page", () => {
   const layout = read("app/layout.tsx");
+  const gate = read("app/presentation/runtime/match-runtime-gate.tsx");
   const glossary = layout.indexOf("<GameGlossaryRuntime />");
   const preview = layout.indexOf("<CardPreviewRuntime />");
-  const bridge = layout.indexOf("<PresentationEventBridge />");
-  const interaction = layout.indexOf("<PresentationInteractionRuntime />");
-  const runtime = layout.indexOf("<GamePresentationRuntime />");
+  const matchGate = layout.indexOf("<MatchRuntimeGate />");
   const children = layout.indexOf("{children}");
-  assert.ok(glossary >= 0 && preview > glossary && bridge > preview && interaction > bridge && runtime > interaction && children > runtime);
+  const bridge = gate.indexOf("<PresentationEventBridge />");
+  const interaction = gate.indexOf("<PresentationInteractionRuntime />");
+  const runtime = gate.indexOf("<GamePresentationRuntime />");
+  assert.ok(glossary >= 0 && preview > glossary && matchGate >= 0 && children > matchGate);
+  assert.ok(bridge >= 0 && interaction > bridge && runtime > interaction);
   assert.doesNotMatch(layout, /GameActionCuesRuntime/);
   assert.ok(layout.indexOf('import "./presentation/styles/game-presentation.css"') < layout.indexOf('import "./presentation/styles/command-bar-fixes.css"'));
 });

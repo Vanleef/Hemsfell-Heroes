@@ -1,0 +1,387 @@
+/*
+ * Requested match corrections — terminal UI authority.
+ *
+ * Keeps layout semantics intact while normalizing the screenshot-driven details:
+ * compact opponent phase status, equal hero progress typography, stable card icon
+ * anchors, compact evolve action, collision-free transient messages and denser
+ * phone-landscape HUD/dialog geometry.
+ */
+
+/* -------------------------------------------------------------------------
+   Top bar + phase status
+   ------------------------------------------------------------------------- */
+html body .screen-game .game-bar .phase-track > *,
+html body .screen-game .game-bar .phase-track > * > :is(span,b,strong,small) {
+  text-decoration: none !important;
+  text-decoration-line: none !important;
+  border-bottom: 0 !important;
+  box-shadow: none !important;
+}
+
+html body .screen-game .game-bar .phase-track > *::after,
+html body .screen-game .game-bar .phase-track > * > :is(span,b,strong,small)::after {
+  content: none !important;
+  display: none !important;
+  border: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:empty {
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: min(15rem, 28cqw) !important;
+  min-height: 0 !important;
+  height: auto !important;
+  align-items: center !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:empty::before {
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: clamp(.34rem, .48cqh, .46rem) clamp(.72rem, .88cqw, .92rem) !important;
+  border-radius: clamp(.42rem, .54cqw, .58rem) !important;
+  font-size: clamp(.56rem, min(.72cqw, 1.02cqh), .76rem) !important;
+  line-height: 1.05 !important;
+  white-space: nowrap !important;
+  text-wrap: nowrap !important;
+}
+
+/* -------------------------------------------------------------------------
+   Hero progression / evolve / active-effect spacing
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel .hero-level-row > .hero-evolution::after,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel .hero-level-row > .hero-evolution
+  > .hero-evolution-copy > :is(small,strong) {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+  font-size: clamp(.52rem, min(.65cqw, 1cqh), .7rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: .035em !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(.enemy) > .level-button,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button {
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: min(7.25rem, 12cqw) !important;
+  height: var(--hh-player-progress-height, var(--hh-hero-progress-height, 1.42rem)) !important;
+  min-height: 0 !important;
+  padding: 0 clamp(.42rem, .62cqw, .66rem) !important;
+  border-radius: clamp(.28rem, .38cqw, .42rem) !important;
+  font-size: clamp(.58rem, min(.72cqw, 1.08cqh), .78rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: .025em !important;
+  white-space: nowrap !important;
+}
+
+/* Keep the active-effect strip visually attached to progression rather than
+   floating away from the hero. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) > .player-hero,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero {
+  --hh-active-effects-gap: clamp(.035rem, .075cqh, .075rem) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Card-local anchors — stable regardless of target, exhaustion or animation
+   ------------------------------------------------------------------------- */
+html body .screen-game .card-frame {
+  position: relative !important;
+  overflow: visible !important;
+}
+
+html body .screen-game .card-frame > :is(.field-negative-statuses,.field-keywords) {
+  position: absolute !important;
+  top: 50% !important;
+  bottom: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: var(--keyword-gap, clamp(.04rem, .1cqw, .12rem)) !important;
+  width: var(--keyword-icon-size, clamp(.48rem, .74cqw, .78rem)) !important;
+  min-width: 0 !important;
+  height: max-content !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  translate: none !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  transform: translateY(-50%) !important;
+  transform-origin: 50% 50% !important;
+  animation: none !important;
+  z-index: 214 !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+}
+
+html body .screen-game .card-frame > .field-negative-statuses {
+  left: calc(0px - var(--keyword-icon-size, .72rem) - clamp(.12rem, .18cqw, .2rem)) !important;
+  right: auto !important;
+}
+
+html body .screen-game .card-frame > .field-keywords {
+  right: calc(0px - var(--keyword-icon-size, .72rem) - clamp(.12rem, .18cqw, .2rem)) !important;
+  left: auto !important;
+}
+
+html body .screen-game .card-frame > :is(.field-negative-statuses,.field-keywords) > * {
+  position: relative !important;
+  inset: auto !important;
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  translate: none !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  transform: none !important;
+  animation: none !important;
+  pointer-events: auto !important;
+}
+
+html body .screen-game .card-frame > .card-frame-activation {
+  position: absolute !important;
+  top: 0 !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: 50% !important;
+  margin: 0 !important;
+  translate: none !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  transform: translate(-50%, calc(-100% - clamp(.08rem, .12cqw, .14rem))) !important;
+  transform-origin: 50% 50% !important;
+  animation: none !important;
+  z-index: 216 !important;
+}
+
+/* Enjoo already lives in the negative rail; do not paint the old nested badge
+   on top of the card as a second status affordance. */
+html body .screen-game .card-frame[data-unit-id] > .original-card > .summoning-sickness-badge {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+/* The body-level status portal is the single tooltip authority. Disable the
+   legacy pseudo-tooltip so hovering Voar/Sufocado never opens two descriptions. */
+html body .screen-game .card-frame > :is(.field-negative-statuses,.field-keywords)
+  > :is([data-status],[data-keyword])::before,
+html body .screen-game .card-frame > :is(.field-negative-statuses,.field-keywords)
+  > :is([data-status],[data-keyword])::after {
+  content: none !important;
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Presentation flights receive a non-interactive shell cloned from the source
+   card's current rails. The card itself may rotate, scale or leave the DOM;
+   these anchors stay in the same portrait-space coordinates. */
+html body .hh-flight-face {
+  overflow: visible !important;
+}
+
+html body .hh-flight-face > .hh-flight-status-shell {
+  --keyword-icon-size: clamp(.42rem, 14cqi, .8rem);
+  --keyword-gap: clamp(.03rem, 2.2cqi, .11rem);
+  container-type: inline-size;
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
+  pointer-events: none !important;
+  z-index: 18 !important;
+  transform: none !important;
+}
+
+html body .hh-flight-status-shell > :is(.field-negative-statuses,.field-keywords) {
+  position: absolute !important;
+  top: 50% !important;
+  bottom: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: var(--keyword-gap) !important;
+  width: var(--keyword-icon-size) !important;
+  height: max-content !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: translateY(-50%) !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  pointer-events: none !important;
+}
+
+html body .hh-flight-status-shell > .field-negative-statuses {
+  left: calc(0px - var(--keyword-icon-size) - .14rem) !important;
+  right: auto !important;
+}
+
+html body .hh-flight-status-shell > .field-keywords {
+  right: calc(0px - var(--keyword-icon-size) - .14rem) !important;
+  left: auto !important;
+}
+
+html body .hh-flight-status-shell > :is(.field-negative-statuses,.field-keywords) > * {
+  position: relative !important;
+  inset: auto !important;
+  width: var(--keyword-icon-size) !important;
+  height: var(--keyword-icon-size) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  transform: none !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  pointer-events: none !important;
+}
+
+html body .hh-flight-status-shell > .card-frame-activation {
+  position: absolute !important;
+  top: 0 !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: clamp(.68rem, 18cqi, 1.02rem) !important;
+  height: clamp(.68rem, 18cqi, 1.02rem) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: translate(-50%, calc(-100% - .1rem)) !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  font-size: clamp(.34rem, 8.5cqi, .54rem) !important;
+  pointer-events: none !important;
+}
+
+/* -------------------------------------------------------------------------
+   Priority transient messages
+   ------------------------------------------------------------------------- */
+html body [data-hemsfell-ai-thinking][data-hh-priority-paired="true"] {
+  top: var(--hh-ai-paired-top) !important;
+  left: var(--hh-ai-paired-left) !important;
+  transform: none !important;
+  margin: 0 !important;
+  max-width: min(24rem, calc(100dvw - 1rem)) !important;
+  white-space: nowrap !important;
+}
+
+/* -------------------------------------------------------------------------
+   Phone landscape — denser HUD + universally safer dialog footprint
+   ------------------------------------------------------------------------- */
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  html body .screen-game .game-stage > .game-content.hs-board > .canonical-hero-panel {
+    scale: .8 !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > :is(.enemy-piles,.player-piles) {
+    scale: .78 !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > :is(.enemy-energy,.player-energy) {
+    scale: .78 !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .surrender-button {
+    scale: .78 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:empty::before {
+    padding: clamp(.25rem, .75dvh, .36rem) clamp(.52rem, .78dvw, .7rem) !important;
+    font-size: clamp(.44rem, 1.45dvh, .61rem) !important;
+    border-radius: clamp(.3rem, .48dvh, .42rem) !important;
+  }
+
+  html body .screen-game :is(
+    .maintenance-dialog,
+    .engine-decision-panel,
+    .response-dialog,
+    .defense-decision,
+    .hand-limit-dialog,
+    .mulligan-dialog,
+    .popup,
+    .modal,
+    .choice-modal,
+    .card-preview-floating
+  ) {
+    box-sizing: border-box !important;
+    max-width: min(76dvw, 46rem) !important;
+    max-height: min(74dvh, 30rem) !important;
+  }
+
+  html body .screen-game :is(.maintenance-dialog,.hand-limit-dialog,.engine-decision-panel:has(.visual-card-choice-grid)) {
+    width: min(74dvw, 46rem) !important;
+  }
+
+  html body .screen-game :is(.response-dialog,.defense-decision,.target-banner) {
+    max-width: min(29dvw, 19rem) !important;
+    max-height: min(66dvh, 23rem) !important;
+  }
+
+  html body .screen-game :is(
+    .maintenance-dialog,
+    .engine-decision-panel,
+    .response-dialog,
+    .defense-decision,
+    .target-banner,
+    .hand-limit-dialog,
+    .mulligan-dialog,
+    .popup,
+    .modal,
+    .choice-modal
+  ) :is(h1,h2,h3,h4,p,span,b,strong,small,label,button) {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    text-overflow: clip !important;
+  }
+
+  html body .screen-game :is(
+    .maintenance-dialog,
+    .engine-decision-panel,
+    .response-dialog,
+    .defense-decision,
+    .target-banner,
+    .hand-limit-dialog,
+    .mulligan-dialog,
+    .popup,
+    .modal,
+    .choice-modal
+  ) :is(h1,h2,h3,h4) {
+    font-size: clamp(.82rem, 2.65dvh, 1.22rem) !important;
+    line-height: 1.08 !important;
+  }
+
+  html body .screen-game :is(
+    .maintenance-dialog,
+    .engine-decision-panel,
+    .response-dialog,
+    .defense-decision,
+    .target-banner,
+    .hand-limit-dialog,
+    .mulligan-dialog,
+    .popup,
+    .modal,
+    .choice-modal
+  ) :is(p,span,b,strong,small,label,button) {
+    font-size: clamp(.46rem, 1.45dvh, .68rem) !important;
+    line-height: 1.22 !important;
+  }
+
+  html body .screen-game .hero-status-cues
+    > .hh-status-overflow-trigger[data-overflow-kind="hero"] {
+    border-radius: clamp(.24rem, .4dvh, .34rem) !important;
+  }
+}

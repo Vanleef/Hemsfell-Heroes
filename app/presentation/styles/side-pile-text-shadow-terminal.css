@@ -18,6 +18,27 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-
   filter: none !important;
 }
 
+/* Device performance budget: preserve every actionable highlight as a static
+ * treatment on coarse/slow displays without continuously repainting filters. */
+@media (pointer: coarse), (update: slow) {
+  html body[data-match-active="true"] .combat-attack-ready,
+  html body[data-match-active="true"] .terrain-slot.can-drop,
+  html body[data-match-active="true"] .hero-status-cues,
+  html body[data-match-active="true"] .hero-status-cues span,
+  html body[data-match-active="true"] .hero-panel-stack.evolution-available,
+  html body[data-match-active="true"] .player-hero.evolution-available,
+  html body[data-match-active="true"] .phase-orb > button:not(:disabled),
+  html body[data-match-active="true"] .defense-decision {
+    animation: none !important;
+  }
+
+  html body[data-match-active="true"] :is(.response-dialog, .engine-decision-panel, .arte-da-guerra-decision) {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background-color: rgb(4 14 20 / 96%) !important;
+  }
+}
+
 html body .screen-game.screen-game .game-stage > .game-content.hs-board > .side-piles > .pile-zone > :is(b, strong) {
   position: relative !important;
   align-self: end !important;

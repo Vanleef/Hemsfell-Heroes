@@ -41,9 +41,11 @@ test("response window remains a compact responsive drawer",()=>{
  assert.match(uiOverrides,/\.response-cards\{[\s\S]*?flex-wrap:nowrap[\s\S]*?overflow-x:auto[\s\S]*?overflow-y:hidden/);
 });
 
-test("multiplayer response polling and resource display stay fast and authoritative",()=>{
+test("multiplayer response polling is adaptive and resource display stays authoritative",()=>{
  assert.match(page,/pollGenerationRef/);
- assert.match(page,/window\.setTimeout\(fn,600\)/);
+ assert.match(page,/nextDelay=\(\)=>document\.hidden\?5000:currentGameRef\.current\?\.pendingResponse\?450:currentGameRef\.current\?800:1800/);
+ assert.match(page,/window\.setTimeout\(fn,nextDelay\(\)\)/);
+ assert.match(page,/visibilitychange/);
  assert.doesNotMatch(page,/setInterval\(fn,(?:300|600)\)/);
  assert.match(page,/const responseBudget=\(state:Game,owner:0\|1\)=>state\.active===owner\?state\.players\[owner\]\.energy\+state\.players\[owner\]\.reserve/);
  assert.match(page,/const legalAcceleratedResponseCommands=[\s\S]*?legalPriorityResponses\(state,owner\)/);
@@ -107,7 +109,7 @@ test("multiplayer uses durable shared state and authenticated room participants"
  assert.match(roomApi,/invalid participant/);
  assert.match(page,/mirrorOnlineGame/);
  assert.match(page,/headers:\{authorization:`Bearer \$\{token\}`\}/);
- assert.match(page,/setTimeout\(fn,600\)/);
+ assert.match(page,/setTimeout\(fn,nextDelay\(\)\)/);
 });
 
 test("multiplayer lobby runs invitation, coin choice and one mulligan before play",()=>{

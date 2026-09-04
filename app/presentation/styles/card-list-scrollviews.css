@@ -13,6 +13,14 @@
   box-sizing: border-box;
 }
 
+/* Defer PDF canvas layout/paint for cards outside scrollable collection windows. */
+.screen-game .extra-card-grid > *,
+.screen-game .search-card-grid > *,
+.screen-decks .card-library > * {
+  content-visibility: auto;
+  contain-intrinsic-size: 5rem 7rem;
+}
+
 /* Engine decision card lists (search, investigate and similar choices). */
 .screen-game .engine-decision-panel .visual-card-choice-grid,
 .screen-game .overlay .visual-card-choice-grid,

@@ -3,9 +3,11 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const layout = fs.readFileSync("app/layout.tsx", "utf8").replace(/\s+/g, " ");
+const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8").replace(/\s+/g, " ");
 const abilityRuntime = fs.readFileSync("app/presentation/runtime/hero-ability-rail-runtime.tsx", "utf8").replace(/\s+/g, " ");
 const statusRuntime = fs.readFileSync("app/presentation/runtime/status-overflow-runtime.tsx", "utf8").replace(/\s+/g, " ");
 const css = fs.readFileSync("app/presentation/styles/hero-status-overlay.css", "utf8").replace(/\s+/g, " ");
+const terminal = fs.readFileSync("app/presentation/styles/match-responsive-rails-overlays-terminal.css", "utf8").replace(/\s+/g, " ");
 
 function ruleBody(marker) {
   const start = css.indexOf(marker);
@@ -23,8 +25,8 @@ test("status overlay loads after targeting while pile footer remains terminal", 
   assert.ok(targeting >= 0);
   assert.ok(status > targeting);
   assert.ok(pile > status);
-  assert.match(layout, /import StatusOverflowRuntime from "\.\/presentation\/runtime\/status-overflow-runtime"/);
-  assert.match(layout, /<HeroAbilityRailRuntime \/> <StatusOverflowRuntime \/>/);
+  assert.match(gate, /import\("\.\/status-overflow-runtime"\)/);
+  assert.match(gate, /<HeroAbilityRailRuntime \/>\s*<StatusOverflowRuntime \/>/);
 });
 
 test("hero ability tooltip uses a body portal above every board stacking context", () => {
@@ -65,12 +67,18 @@ test("hero progression is the first compact strip at the top of the player panel
   assert.match(css, /content: "PRÓX\. NÍVEL " attr\(data-hh-progress-copy\) !important/);
 });
 
-test("hero active effects collapse to one total badge only above two effects", () => {
-  assert.match(statusRuntime, /kind === "hero" \? originals\.length > 2 : originals\.length > 3/);
+test("hero active effects always collapse to one lineage-colored summary strip", () => {
+  assert.match(statusRuntime, /kind === "hero" \? originals\.length > 0 : originals\.length > 3/);
   assert.match(statusRuntime, /const hiddenStart = kind === "hero" \? 0 : 2/);
   assert.match(statusRuntime, /const hidden = kind === "hero" \? originals : originals\.slice\(hiddenStart\)/);
-  assert.match(statusRuntime, /\.hero-status-cues/);
-  assert.match(statusRuntime, /data-overflow-kind=\{group\.kind\}/);
+  assert.match(statusRuntime, /hh-status-overflow-label[^]*Efeitos Ativos:/);
+  assert.match(statusRuntime, /aria-expanded=\{expanded\}/);
+  assert.match(statusRuntime, /onClick=\{\(event\) => \{/);
+  assert.match(statusRuntime, /hh-hero-effect-list/);
+  assert.match(statusRuntime, /\{index \+ 1\}\. \{item\.label\}/);
+  assert.match(terminal, /canonical-hero-panel\.player[^}]*hero-status-cues\[data-hero-status-cues="local"\][^{]*\{[^}]*bottom: calc\(100%/);
+  assert.match(terminal, /canonical-hero-panel\.enemy[^}]*hero-status-cues\[data-hero-status-cues="enemy"\][^{]*\{[^}]*top: calc\(100%/);
+  assert.match(terminal, /data-overflow-kind="hero"[^}]*background:[^}]*var\(--deck/);
 });
 
 test("card positive and negative rails keep two icons then count hidden overflow independently", () => {
@@ -81,6 +89,12 @@ test("card positive and negative rails keep two icons then count hidden overflow
   assert.match(css, /data-overflow-kind="negative"/);
   assert.match(css, /data-overflow-kind="positive"/);
   assert.match(css, /\[data-hh-overflow-hidden="true"\][^{]*\{[^}]*display: none !important/);
+});
+
+test("card status rails are anchored by polarity in every viewport", () => {
+  assert.match(terminal, /\.field-negative-statuses[^}]*\{[^}]*left: calc\(0px - var\(--keyword-icon-size/);
+  assert.match(terminal, /\.field-keywords[^}]*\{[^}]*right: calc\(0px - var\(--keyword-icon-size/);
+  assert.match(terminal, /flex-direction: column !important/);
 });
 
 test("overflow tooltip is interactive and each hidden effect exposes a nested semantic tooltip", () => {
@@ -95,4 +109,19 @@ test("overflow tooltip is interactive and each hidden effect exposes a nested se
   assert.match(list, /pointer-events: auto !important/);
   const detail = ruleBody("html body .hh-status-detail-tooltip {");
   assert.match(detail, /pointer-events: none !important/);
+});
+
+test("mobile card-list decisions preserve complete cards in a horizontal scroll lane", () => {
+  assert.match(terminal, /orientation: landscape[^}]*pointer: coarse/);
+  assert.match(terminal, /engine-decision-panel \.visual-card-choice-grid,[^}]*hand-limit-choice-area[^}]*\{[^}]*display: flex !important[^}]*flex-flow: row nowrap !important/);
+  assert.match(terminal, /overflow-x: auto !important[^}]*overflow-y: hidden !important/);
+  assert.match(terminal, /--choice-card-width: clamp\(4\.15rem, 14\.5dvh, 5\.6rem\) !important/);
+  assert.match(terminal, /grid-template-rows: minmax\(0, 1fr\) auto !important/);
+});
+
+test("mobile targeting response and defense keep desktop lanes with compact geometry", () => {
+  assert.match(terminal, /engine-target-decision-panel:not\(:has\(\.visual-card-choice-grid\)\)[^{]*\{[^}]*right: clamp\(7\.4rem, 13\.5dvw, 11\.5rem\) !important/);
+  assert.match(terminal, /response-dialog\s*\{[^}]*right: calc\(var\(--response-opponent-piles-right[^}]*var\(--response-opponent-piles-width/);
+  assert.match(terminal, /response-dialog\s*\{[^}]*top: var\(--response-opponent-piles-top/);
+  assert.match(terminal, /\.defense-decision\s*\{[^}]*max-height: min\(52dvh, 15rem\) !important[^}]*overflow: auto !important/);
 });

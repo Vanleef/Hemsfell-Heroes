@@ -1,31 +1,206 @@
-/* Absolute terminal authority for the local hero EVOLUIR label. */
+/*
+ * Absolute visual authority for the local hero EVOLUIR action.
+ *
+ * Readiness keeps the existing game logic; this sheet only owns the CTA paint
+ * and geometry. The selector is deliberately state-qualified so later generic
+ * hero-panel sheets cannot shrink or push the ready action back to one side.
+ */
+
 html body .screen-game.screen-game .game-stage > .game-content.hs-board
-  > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(.enemy) > .level-button,
-html body .screen-game.screen-game .game-stage > .game-content.hs-board
-  > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button {
+  > .hero-panel-stack.canonical-hero-panel.player
+  > .player-hero.level-ready.level-ready:not(.enemy)
+  > button.level-button.level-button {
+  position: absolute !important;
+  display: grid !important;
+  place-items: center !important;
+  left: 50% !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: calc(100% + var(--hh-player-progress-gap)) !important;
+  width: max-content !important;
+  min-width: clamp(6.6rem, 9.6cqw, 8.4rem) !important;
+  max-width: calc(100% - clamp(.42rem, .7cqw, .72rem)) !important;
+  height: clamp(1.72rem, 3.05cqh, 2.16rem) !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 clamp(.82rem, 1.08cqw, 1.18rem) !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+
+  border: max(1px, .075cqh) solid #e8be54 !important;
+  border-radius: clamp(.46rem, .62cqw, .68rem) !important;
+  background:
+    radial-gradient(circle at 50% -18%, rgb(255 239 157 / 38%), transparent 56%),
+    linear-gradient(180deg, rgb(103 78 23 / 98%) 0%, rgb(63 44 11 / 99%) 48%, rgb(33 23 7 / 100%) 100%) !important;
+  color: #fff1b5 !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 247 205 / 46%),
+    inset 0 -1px 0 rgb(80 49 4 / 92%),
+    inset 0 0 .7rem rgb(238 186 58 / 13%),
+    0 .16rem .42rem rgb(0 0 0 / 62%),
+    0 0 .42rem color-mix(in srgb, var(--deck, #d3ad56) 35%, transparent) !important;
+
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-  font-size: clamp(1.72rem, min(2.28cqw, 3.72cqh), 2.18rem) !important;
+  font-size: clamp(.68rem, min(.88cqw, 1.46cqh), .9rem) !important;
   font-weight: 950 !important;
+  font-variant-numeric: tabular-nums !important;
   line-height: 1 !important;
-  letter-spacing: .02em !important;
+  letter-spacing: .045em !important;
   white-space: nowrap !important;
   text-rendering: geometricPrecision !important;
+  text-shadow:
+    0 1px 1px rgb(0 0 0 / 95%),
+    0 0 .28rem rgb(255 224 119 / 48%) !important;
+
+  transform: translateX(-50%) !important;
+  translate: none !important;
+  transform-origin: 50% 50% !important;
+  cursor: pointer !important;
+  isolation: isolate !important;
+  z-index: 2147481810 !important;
+  transition:
+    transform 120ms ease,
+    filter 120ms ease,
+    border-color 120ms ease,
+    box-shadow 120ms ease !important;
+}
+
+/* Fine inner frame: medieval/fantasy button treatment without adding visual bulk. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player
+  > .player-hero.level-ready.level-ready:not(.enemy)
+  > button.level-button.level-button::before {
+  content: "" !important;
+  position: absolute !important;
+  inset: max(2px, .12cqh) !important;
+  border: 1px solid rgb(255 230 143 / 28%) !important;
+  border-radius: calc(clamp(.46rem, .62cqw, .68rem) - max(2px, .12cqh)) !important;
+  background: transparent !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* A tiny highlight gives the top edge a polished metal/rune feel. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player
+  > .player-hero.level-ready.level-ready:not(.enemy)
+  > button.level-button.level-button::after {
+  content: "" !important;
+  position: absolute !important;
+  left: 14% !important;
+  right: 14% !important;
+  top: 1px !important;
+  height: 1px !important;
+  border: 0 !important;
+  background: linear-gradient(90deg, transparent, rgb(255 244 196 / 72%), transparent) !important;
+  pointer-events: none !important;
+}
+
+@keyframes hhHeroEvolveCtaPulse {
+  0%, 100% {
+    filter: brightness(1.04) saturate(1.04);
+    box-shadow:
+      inset 0 1px 0 rgb(255 247 205 / 46%),
+      inset 0 -1px 0 rgb(80 49 4 / 92%),
+      inset 0 0 .7rem rgb(238 186 58 / 13%),
+      0 .16rem .42rem rgb(0 0 0 / 62%),
+      0 0 .42rem color-mix(in srgb, var(--deck, #d3ad56) 35%, transparent),
+      0 0 .72rem rgb(233 186 67 / 18%);
+  }
+  50% {
+    filter: brightness(1.13) saturate(1.1);
+    box-shadow:
+      inset 0 1px 0 rgb(255 250 218 / 58%),
+      inset 0 -1px 0 rgb(80 49 4 / 92%),
+      inset 0 0 .82rem rgb(245 197 68 / 19%),
+      0 .18rem .46rem rgb(0 0 0 / 64%),
+      0 0 .52rem color-mix(in srgb, var(--deck, #d3ad56) 42%, transparent),
+      0 0 1rem rgb(241 197 78 / 28%);
+  }
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player
+  > .player-hero.level-ready.level-ready:not(.enemy)
+  > button.level-button.level-button:not(:disabled) {
+  animation: hhHeroEvolveCtaPulse 1.8s ease-in-out infinite !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player
+  > .player-hero.level-ready.level-ready:not(.enemy)
+  > button.level-button.level-button:not(:disabled):is(:hover, :focus-visible) {
+  border-color: #ffe39a !important;
+  filter: brightness(1.18) saturate(1.12) !important;
+  transform: translateX(-50%) translateY(-1px) scale(1.025) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 233 / 66%),
+    inset 0 -1px 0 rgb(80 49 4 / 92%),
+    inset 0 0 .9rem rgb(250 207 81 / 22%),
+    0 .2rem .52rem rgb(0 0 0 / 66%),
+    0 0 .7rem rgb(255 218 103 / 48%),
+    0 0 1.25rem color-mix(in srgb, var(--deck, #d3ad56) 38%, transparent) !important;
+  outline: none !important;
+  animation-play-state: paused !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player
+  > .player-hero.level-ready.level-ready:not(.enemy)
+  > button.level-button.level-button:active:not(:disabled) {
+  transform: translateX(-50%) translateY(1px) scale(.985) !important;
+  filter: brightness(1.03) saturate(1.02) !important;
+}
+
+/* Criterion met but temporarily unusable: preserve hierarchy without advertising
+   an active click. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player
+  > .player-hero.level-ready.level-ready:not(.enemy)
+  > button.level-button.level-button:disabled {
+  cursor: not-allowed !important;
+  opacity: .68 !important;
+  color: #cfc5a2 !important;
+  border-color: #8d7848 !important;
+  background: linear-gradient(180deg, rgb(55 49 34 / 96%), rgb(28 25 19 / 98%)) !important;
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 9%),
+    0 .12rem .3rem rgb(0 0 0 / 54%) !important;
+  text-shadow: 0 1px 1px #000 !important;
+  animation: none !important;
+  filter: saturate(.68) brightness(.88) !important;
 }
 
 @media (orientation: landscape) and (max-height: 32rem) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board
-    > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(.enemy) > .level-button,
-  html body .screen-game.screen-game .game-stage > .game-content.hs-board
-    > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button {
-    font-size: clamp(1.48rem, min(2.05cqw, 3.34cqh), 1.86rem) !important;
+    > .hero-panel-stack.canonical-hero-panel.player
+    > .player-hero.level-ready.level-ready:not(.enemy)
+    > button.level-button.level-button {
+    min-width: clamp(6rem, 9cqw, 7.55rem) !important;
+    height: clamp(1.46rem, 2.72cqh, 1.82rem) !important;
+    padding-inline: clamp(.66rem, .92cqw, .94rem) !important;
+    font-size: clamp(.6rem, min(.8cqw, 1.3cqh), .78rem) !important;
+    border-radius: clamp(.4rem, .54cqw, .58rem) !important;
   }
 }
 
 @media (orientation: portrait) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board
-    > .hero-panel-stack.canonical-hero-panel.player > .player-hero:not(.enemy) > .level-button,
+    > .hero-panel-stack.canonical-hero-panel.player
+    > .player-hero.level-ready.level-ready:not(.enemy)
+    > button.level-button.level-button {
+    min-width: clamp(7rem, 31vw, 9.25rem) !important;
+    height: clamp(2rem, 7.5vw, 2.5rem) !important;
+    padding-inline: clamp(.9rem, 3.7vw, 1.25rem) !important;
+    font-size: clamp(.75rem, 2.85vw, .9rem) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
   html body .screen-game.screen-game .game-stage > .game-content.hs-board
-    > .hero-panel-stack.canonical-hero-panel.player > .player-hero.level-ready > .level-button {
-    font-size: clamp(1.7rem, 5.15vw, 2.14rem) !important;
+    > .hero-panel-stack.canonical-hero-panel.player
+    > .player-hero.level-ready.level-ready:not(.enemy)
+    > button.level-button.level-button:not(:disabled) {
+    animation: none !important;
   }
 }

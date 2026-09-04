@@ -1,8 +1,17 @@
 import { compileCard, compileCardText, splitTriggeredSections } from "../compiler.mjs";
+import { isLegacyAscensionAbility } from "./ascension.mjs";
 
 const isExplicitBoardCost = (cost) => ["tap", "removeMarkers", "sacrifice"].includes(cost.type);
 export const activationInsideTriggeredEffect = (text = "") => splitTriggeredSections(text).some((section) => section.label && /\b(vire|virar|virada|remova|remover|sacrifique|sacrificar)\b/i.test(section.text));
-export const activatedAbilities = (cardOrText = "") => { const explicit = typeof cardOrText === "object"; const compiled = explicit ? compileCard(cardOrText) : compileCardText(cardOrText); return compiled.abilities.filter((ability) => ability.trigger === "activated" && (explicit || ability.uiActivation || ability.costs.some(isExplicitBoardCost))); };
+export const activatedAbilities = (cardOrText = "") => {
+  const explicit = typeof cardOrText === "object";
+  const compiled = explicit ? compileCard(cardOrText) : compileCardText(cardOrText);
+  return compiled.abilities.filter((ability) =>
+    ability.trigger === "activated"
+    && !isLegacyAscensionAbility(compiled, ability)
+    && (explicit || ability.uiActivation || ability.costs.some(isExplicitBoardCost))
+  );
+};
 export const hasActivatableEffectText = (text = "") => activatedAbilities(text).length > 0;
 export const hasActivatableEffect = (card) => activatedAbilities(card).length > 0;
 export const activationEnergyCost = (text = "") => activatedAbilities(text).flatMap((ability) => ability.costs).filter((cost) => cost.type === "energy").reduce((highest, cost) => Math.max(highest, Number(cost.amount) || 0), 0);

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
+const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/targeting-hero-ui-terminal.css", "utf8").replace(/\s+/g, " ");
 const decisionLane = fs.readFileSync("app/presentation/styles/decision-lane-position.css", "utf8").replace(/\s+/g, " ");
 const runtime = fs.readFileSync("app/presentation/runtime/hero-ability-rail-runtime.tsx", "utf8").replace(/\s+/g, " ");
@@ -18,17 +19,24 @@ const ruleBody = (sheet, marker) => {
   return sheet.slice(open + 1, close);
 };
 
-test("targeting hero UI layer loads after match visuals while pile footer remains final", () => {
+test("targeting hero UI layer loads after match visuals while scoped terminal authorities keep their order", () => {
   const imports = [...layout.matchAll(/import\s+"([^"]+\.css)";/g)].map((match) => match[1]);
   const visual = imports.indexOf("./presentation/styles/match-visual-terminal.css");
   const targeting = imports.indexOf("./presentation/styles/targeting-hero-ui-terminal.css");
   const pile = imports.indexOf("./presentation/styles/side-pile-text-shadow-terminal.css");
+  const hand = imports.indexOf("./presentation/styles/hand-ai-ui-terminal.css");
+  const ai = imports.indexOf("./presentation/styles/ai-thinking-panel-terminal.css");
+  const tutorialCurrent = imports.indexOf("./presentation/styles/tutorial-current-ui-terminal.css");
   assert.ok(visual >= 0);
   assert.ok(targeting > visual);
   assert.ok(pile > targeting);
-  assert.equal(imports.at(-1), "./presentation/styles/side-pile-text-shadow-terminal.css");
-  assert.match(layout, /import HeroAbilityRailRuntime from "\.\/presentation\/runtime\/hero-ability-rail-runtime"/);
-  assert.match(layout, /<HeroPanelExpandRuntime \/>\s*<HeroAbilityRailRuntime \/>/);
+  assert.ok(hand > pile);
+  assert.ok(ai > hand);
+  assert.ok(tutorialCurrent > ai);
+  assert.equal(imports.at(-1), "./presentation/styles/tutorial-current-ui-terminal.css");
+  assert.match(gate, /import\("\.\/hero-ability-detail-runtime"\)/);
+  assert.match(gate, /import\("\.\/hero-ability-rail-runtime"\)/);
+  assert.match(gate, /<HeroPanelExpandRuntime \/>\s*<HeroAbilityDetailRuntime \/>\s*<HeroAbilityRailRuntime \/>/);
 });
 
 test("mulligan uses only the delayed canonical Floating UI card tooltip", () => {
@@ -76,13 +84,14 @@ test("evolution progress and action are docked above the measured hero art witho
   assert.match(evolve, /bottom: auto !important/);
 });
 
-test("three ability shortcuts stay portrait anchored and mirror the real ability buttons", () => {
+test("three ability shortcuts stay portrait anchored and mirror only usable owned ability buttons", () => {
   assert.match(runtime, /querySelectorAll<HTMLButtonElement>\(CHIP_SELECTOR\)\)\.slice\(0, 3\)/);
   assert.match(runtime, /const portrait = liveHero\?\.querySelector<HTMLElement>\("\.hero-portrait"\)/);
   assert.match(runtime, /Math\.max\(artRight, heroRect\.width\)/);
   assert.match(runtime, /--hh-hero-art-top/);
   assert.match(runtime, /--hh-hero-art-right/);
-  assert.match(runtime, /if \(!ability\.available\) return; ability\.source\.click\(\)/);
+  assert.match(runtime, /const available = owned && active && !locked && source\.classList\.contains\("is-available"\)/);
+  assert.match(runtime, /\{ability\.available \? \([^]*?<button[^]*?ability\.source\.click\(\)/);
   assert.match(runtime, /createPortal\([^]*hero-ability-rail[^]*hero,/);
 });
 

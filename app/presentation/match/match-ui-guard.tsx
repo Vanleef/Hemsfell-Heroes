@@ -202,24 +202,6 @@ function clearOrphanedMatchUi() {
   document.querySelectorAll(".engine-decision-backdrop,.defense-decision,.target-banner,.response-waiting,.match-reconnect-overlay,.priority-stack-indicator,.visual-effect,.deck-shuffle-effect,.combat-cinematic").forEach((node) => node.remove());
 }
 
-function passExpiredResponseWindow() {
-  const dialog = document.querySelector<HTMLElement>(".response-dialog");
-  if (!dialog) return;
-  const timerNodes = Array.from(dialog.querySelectorAll<HTMLElement>("header *, .response-timer, .response-countdown"));
-  const expired = timerNodes.some((node) => /^0s$/i.test((node.textContent || "").trim()));
-  if (!expired) {
-    delete dialog.dataset.timeoutPassDispatched;
-    return;
-  }
-  if (dialog.dataset.timeoutPassDispatched === "true") return;
-  const passButton = Array.from(dialog.querySelectorAll<HTMLButtonElement>("button")).find((button) =>
-    button.classList.contains("pass-response") || /passar prioridade/i.test(button.textContent || "")
-  );
-  if (!passButton || passButton.disabled) return;
-  dialog.dataset.timeoutPassDispatched = "true";
-  passButton.click();
-}
-
 function layoutTargetBannerInSafeLane() {
   const board = document.querySelector<HTMLElement>(".screen-game .game-content.hs-board");
   const banner = board?.querySelector<HTMLElement>(":scope > .target-banner");
@@ -333,10 +315,10 @@ export default function MatchUiGuard() {
   useEffect(() => {
     let wasInMatch = !!document.querySelector(".game-stage");
     let inspectorSeenInMatch = wasInMatch && !!document.querySelector(".inspector");
-    let syncQueued = false;
+    let syncFrame = 0;
 
     const sync = () => {
-      syncQueued = false;
+      syncFrame = 0;
       const inMatch = !!document.querySelector(".game-stage");
       document.body.dataset.matchActive = inMatch ? "true" : "false";
       if (inMatch && document.querySelector(".inspector")) inspectorSeenInMatch = true;
@@ -348,16 +330,17 @@ export default function MatchUiGuard() {
       wasInMatch = inMatch;
       ensureLandingGuide();
       enhanceDeckPickers();
-      enhanceDecisionChoiceSummaries();
-      layoutTargetBannerInSafeLane();
-      layoutHandLimitChoices();
-      initializePortraitBoardPan();
+      if (inMatch) {
+        enhanceDecisionChoiceSummaries();
+        layoutTargetBannerInSafeLane();
+        layoutHandLimitChoices();
+        initializePortraitBoardPan();
+      }
     };
 
     const scheduleSync = () => {
-      if (syncQueued) return;
-      syncQueued = true;
-      queueMicrotask(sync);
+      if (syncFrame) return;
+      syncFrame = requestAnimationFrame(sync);
     };
 
     const onChange = (event: Event) => {
@@ -367,12 +350,19 @@ export default function MatchUiGuard() {
     document.addEventListener("pointerdown", rememberChoiceSource, true);
     document.addEventListener("dragstart", rememberChoiceSource, true);
     window.addEventListener("resize", scheduleSync);
-    const observer = new MutationObserver(scheduleSync);
+    const mutationTouchesManagedUi = (record: MutationRecord) => {
+      const selector = ".game-stage,.landing-copy,.deck-picker,.engine-decision-panel,.maintenance-dialog,.inspector";
+      const target = record.target instanceof Element ? record.target : record.target.parentElement;
+      if (target?.closest(selector)) return true;
+      return [...record.addedNodes, ...record.removedNodes].some((node) => node instanceof Element && (node.matches(selector) || !!node.querySelector(selector)));
+    };
+    const observer = new MutationObserver((records) => {
+      if (records.some(mutationTouchesManagedUi)) scheduleSync();
+    });
     observer.observe(document.body, { childList: true, subtree: true });
-    const responseTimeoutTimer = window.setInterval(passExpiredResponseWindow, 200);
     sync();
     return () => {
-      window.clearInterval(responseTimeoutTimer);
+      if (syncFrame) cancelAnimationFrame(syncFrame);
       document.removeEventListener("change", onChange, true);
       document.removeEventListener("pointerdown", rememberChoiceSource, true);
       document.removeEventListener("dragstart", rememberChoiceSource, true);
