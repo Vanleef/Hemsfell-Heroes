@@ -110,7 +110,7 @@ export default function PresentationMemoryRuntime() {
 
     const sweepTemporary = (settled = false) => {
       const now = performance.now();
-      if (!settled && idleWindow.__hemsfellPresentationBusy) return;
+      if (idleWindow.__hemsfellPresentationBusy) return;
       for (const [node, createdAt] of temporary) {
         if (!node.isConnected) {
           temporary.delete(node);
@@ -121,13 +121,8 @@ export default function PresentationMemoryRuntime() {
       }
     };
 
-    const scheduleSafetySweep = () => {
-      if (safetyTimer) return;
-      safetyTimer = window.setInterval(() => sweepTemporary(false), TEMPORARY_SWEEP_MS);
-    };
-
+    safetyTimer = window.setInterval(() => sweepTemporary(false), TEMPORARY_SWEEP_MS);
     document.querySelectorAll(TEMPORARY_PRESENTATION_SELECTOR).forEach((node) => temporary.set(node, performance.now()));
-    scheduleSafetySweep();
 
     const observer = new MutationObserver((records) => {
       for (const record of records) {
