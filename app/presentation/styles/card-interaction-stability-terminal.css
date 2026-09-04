@@ -34,8 +34,9 @@ html body .screen-game .card-frame:has(> .original-card:is(.hh-presentation-hidd
   pointer-events: none !important;
 }
 
-/* Presentation clones are faces only. No status/keyword/action/reveal/hand metric
-   is allowed to travel with them; the stable live card restores its own chrome. */
+/* Presentation clones are faces only. No status/keyword/action/reveal/stat/hand
+   metric is allowed to travel with them; the stable live card restores its own
+   chrome once the movement has completed. */
 html body .hh-flight-face :is(
   .field-negative-statuses,
   .field-keywords,
@@ -45,6 +46,8 @@ html body .hh-flight-face :is(
   .summoning-sickness-icon,
   .revealed-badge,
   .hh-hand-metric,
+  .live-atk,
+  .live-hp,
   .effective-cost
 ) {
   display: none !important;
@@ -82,6 +85,152 @@ html body .screen-game .response-waiting[data-hh-ai-bot-wait="true"] {
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
+}
+
+/* Keep the opponent hand visually attached to the top HUD instead of floating
+   deep inside the battlefield. The shift scales from the board height and gets
+   gentler on short touch-landscape screens. */
+html body .screen-game .game-stage > .game-content.hs-board > .opponent-hand {
+  --hh-opponent-hand-top-shift: clamp(-.52rem, -.72cqh, -.14rem);
+  margin-top: 0 !important;
+  translate: 0 var(--hh-opponent-hand-top-shift) !important;
+}
+
+/* Field ATK/HP uses the same visual language as the proportional metrics in
+   hand: circular rune-like discs, warm offense and crimson vitality. cqi is
+   relative to the card container so the art stays balanced at every board size. */
+html body .screen-game .card-frame[data-unit-id] > .original-card > :is(.live-atk,.live-hp) {
+  box-sizing: border-box !important;
+  bottom: 3.8% !important;
+  inline-size: clamp(.76rem, 28cqi, 1.72rem) !important;
+  block-size: clamp(.76rem, 28cqi, 1.72rem) !important;
+  width: clamp(.76rem, 28cqi, 1.72rem) !important;
+  height: clamp(.76rem, 28cqi, 1.72rem) !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border: max(1px, 1.25cqi) solid rgb(255 244 205 / 76%) !important;
+  border-radius: 50% !important;
+  color: #fff8e8 !important;
+  font: 950 clamp(.47rem, 17.5cqi, 1rem)/1 system-ui, sans-serif !important;
+  font-variant-numeric: tabular-nums !important;
+  text-align: center !important;
+  text-shadow: 0 1px 1px #000, 0 0 .18rem #000 !important;
+  box-shadow: inset 0 0 .28rem rgb(255 255 255 / 16%), 0 .08rem .22rem rgb(0 0 0 / 74%) !important;
+  transform: none !important;
+  z-index: 40 !important;
+}
+
+html body .screen-game .card-frame[data-unit-id] > .original-card > .live-atk {
+  left: 4.2% !important;
+  right: auto !important;
+  background: radial-gradient(circle at 35% 28%, #fff0b6 0 10%, #b7762f 32%, #5f301a 70%, #21100a 100%) !important;
+  border-color: rgb(240 197 111 / 90%) !important;
+}
+
+html body .screen-game .card-frame[data-unit-id] > .original-card > .live-hp {
+  right: 4.2% !important;
+  left: auto !important;
+  background: radial-gradient(circle at 35% 28%, #ffc8bd 0 10%, #a9443d 32%, #5f1e24 70%, #220b10 100%) !important;
+  border-color: rgb(239 151 139 / 90%) !important;
+}
+
+/* Effect/status and activated-ability chrome is intentionally more readable,
+   but still scales from each card instead of using viewport-fixed pixels. */
+html body .screen-game :is(.card-frame,.pile-card) {
+  --keyword-icon-size: clamp(.58rem, 15.2cqi, 1.04rem) !important;
+  --keyword-gap: clamp(.045rem, 2.25cqi, .16rem) !important;
+}
+
+html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
+html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+  width: clamp(.64rem, 16cqi, 1.08rem) !important;
+  height: clamp(.64rem, 16cqi, 1.08rem) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  font-size: clamp(.36rem, 7.8cqi, .6rem) !important;
+  line-height: 1 !important;
+}
+
+html body .screen-game .card-frame > .card-frame-activation {
+  width: clamp(.86rem, 19.5cqi, 1.28rem) !important;
+  height: clamp(.86rem, 19.5cqi, 1.28rem) !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  padding: 0 !important;
+  font-size: clamp(.42rem, 8.8cqi, .68rem) !important;
+  line-height: 1 !important;
+}
+
+/* Fine-pointer desktop has room for a clearer at-a-glance read without turning
+   card-local chrome into HUD-sized elements. */
+@media (hover: hover) and (pointer: fine) and (min-width: 56rem) {
+  html body .screen-game :is(.card-frame,.pile-card) {
+    --keyword-icon-size: clamp(.72rem, 16.8cqi, 1.16rem) !important;
+  }
+
+  html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
+  html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+    width: clamp(.76rem, 17.5cqi, 1.22rem) !important;
+    height: clamp(.76rem, 17.5cqi, 1.22rem) !important;
+    font-size: clamp(.42rem, 8.3cqi, .66rem) !important;
+  }
+
+  html body .screen-game .card-frame > .card-frame-activation {
+    width: clamp(.98rem, 21cqi, 1.38rem) !important;
+    height: clamp(.98rem, 21cqi, 1.38rem) !important;
+    font-size: clamp(.48rem, 9.4cqi, .74rem) !important;
+  }
+}
+
+/* Touch landscape keeps the increase modest and preserves the separate hit-slop
+   pseudo-element defined by mobile-card-icon-scale-terminal.css. */
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  html body .screen-game .game-stage > .game-content.hs-board > .opponent-hand {
+    --hh-opponent-hand-top-shift: clamp(-.3rem, -.52cqh, -.08rem);
+  }
+
+  html body .screen-game :is(.card-frame,.pile-card) {
+    --keyword-icon-size: clamp(.4rem, 9.7cqi, .66rem) !important;
+    --keyword-gap: clamp(.025rem, 1.7cqi, .1rem) !important;
+  }
+
+  html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
+  html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+    width: clamp(.46rem, 11cqi, .74rem) !important;
+    height: clamp(.46rem, 11cqi, .74rem) !important;
+    font-size: clamp(.25rem, 5.8cqi, .42rem) !important;
+  }
+
+  html body .screen-game .card-frame > .card-frame-activation {
+    width: clamp(.72rem, 16cqi, 1.04rem) !important;
+    height: clamp(.72rem, 16cqi, 1.04rem) !important;
+    font-size: clamp(.34rem, 7.5cqi, .52rem) !important;
+  }
+
+  html body .screen-game .card-frame[data-unit-id] > .original-card > :is(.live-atk,.live-hp) {
+    inline-size: clamp(.68rem, 27cqi, 1.28rem) !important;
+    block-size: clamp(.68rem, 27cqi, 1.28rem) !important;
+    width: clamp(.68rem, 27cqi, 1.28rem) !important;
+    height: clamp(.68rem, 27cqi, 1.28rem) !important;
+    font-size: clamp(.4rem, 16.5cqi, .72rem) !important;
+  }
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-aspect-ratio: 12 / 5) {
+  html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
+  html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+    width: clamp(.42rem, 10.4cqi, .68rem) !important;
+    height: clamp(.42rem, 10.4cqi, .68rem) !important;
+  }
+
+  html body .screen-game .card-frame > .card-frame-activation {
+    width: clamp(.68rem, 15cqi, .96rem) !important;
+    height: clamp(.68rem, 15cqi, .96rem) !important;
+  }
 }
 
 /* The runtime marks the actual previous/next frame. Keep the gap only slightly
