@@ -271,3 +271,118 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
     font-size: clamp(.66rem, 1.85dvh, .78rem) !important;
   }
 }
+
+/* -------------------------------------------------------------------------
+   Short phone landscape — browser-chrome fit and information hierarchy
+   ------------------------------------------------------------------------- */
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 34rem) {
+  /* Use the wide axis instead of globally shrinking the whole match. */
+  html body .screen-game .game-stage > .game-content.hs-board {
+    --hh-reference-shift-y: clamp(.18rem, 1.5dvh, .48rem) !important;
+  }
+
+  /* Hero identity stays readable; the progression lane gets enough width for
+     hero-specific copy such as `0/2 Dragões em campo`. */
+  html body .screen-game .game-stage > .game-content.hs-board > .canonical-hero-panel {
+    scale: .82 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero {
+    --hh-player-progress-height: clamp(1.38rem, 3.15dvh, 1.7rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) > .player-hero {
+    --hh-enemy-progress-height: clamp(1.38rem, 3.15dvh, 1.7rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) > .player-hero > .hero-level-row,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero:not(.level-ready) > .hero-level-row {
+    left: 0 !important;
+    right: auto !important;
+    width: calc(100% + clamp(1.25rem, 3.8dvw, 1.65rem)) !important;
+    max-width: none !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel
+    .hero-evolution-copy[data-hh-short-progress="true"] > small {
+    font-size: clamp(.82rem, 2.35dvh, .96rem) !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* Move the shortcut rail into the unused horizontal gutter so a wider
+     progression strip never collides with the first ability orb. */
+  html body .screen-game .canonical-hero-panel > .player-hero > .hero-ability-rail {
+    left: calc(var(--hh-hero-art-right, 100%) + clamp(1.35rem, 3.7dvw, 1.75rem)) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) > .player-hero > .hero-status-cues {
+    left: 0 !important;
+    right: auto !important;
+    width: calc(100% + clamp(1.1rem, 3.2dvw, 1.45rem)) !important;
+    max-width: none !important;
+  }
+
+  /* The local hand must be fully visible above Android/browser chrome instead
+     of being cropped by the bottom edge. */
+  html body .screen-game .game-stage > .game-content.hs-board > .player-hand {
+    scale: .94 !important;
+    translate: 0 -4dvh !important;
+    transform-origin: center bottom !important;
+  }
+
+  /* Secondary right-side HUD is slightly denser, freeing attention for cards. */
+  html body .screen-game .game-stage > .game-content.hs-board > :is(.enemy-energy,.player-energy) {
+    scale: .74 !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > :is(.enemy-piles,.player-piles) {
+    scale: .76 !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .surrender-button {
+    scale: .7 !important;
+    translate: -1.1cqw -.85cqh !important;
+  }
+
+  /* The next-phase CTA remains obvious without becoming the largest object on
+     the entire phone screen. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:not(:empty) {
+    width: clamp(6.35rem, 8.35dvw, 8.45rem) !important;
+    scale: .7 !important;
+  }
+
+  /* Keep the response-mode switch inside the header's visual hierarchy. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-control-toggle {
+    min-width: clamp(6.45rem, 8.2dvw, 7.4rem) !important;
+    max-width: clamp(6.45rem, 8.2dvw, 7.4rem) !important;
+    min-height: clamp(1.42rem, 3.6dvh, 1.7rem) !important;
+    padding: clamp(.12rem, .5dvh, .22rem) clamp(.34rem, .65dvw, .52rem) !important;
+    border-radius: clamp(.32rem, .55dvh, .46rem) !important;
+    font-size: clamp(.56rem, 1.72dvh, .68rem) !important;
+    line-height: 1 !important;
+  }
+
+  /* Header copy was becoming microscopic while the mode button remained large.
+     Raise the informational type without increasing the bar's footprint. */
+  html body .screen-game.screen-game .game-bar .turn-owner > span {
+    font-size: clamp(.56rem, 1.7dvh, .68rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-bar .turn-owner > b {
+    font-size: clamp(.62rem, 1.9dvh, .74rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-bar .phase-track > div > span {
+    font-size: clamp(.52rem, 1.6dvh, .64rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-bar .phase-track i {
+    font-size: clamp(.44rem, 1.4dvh, .56rem) !important;
+  }
+}
