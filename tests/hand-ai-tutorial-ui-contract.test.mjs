@@ -7,6 +7,7 @@ const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", 
 const runtime = fs.readFileSync("app/presentation/runtime/hand-ai-ui-runtime.tsx", "utf8");
 const requestedRuntime = fs.readFileSync("app/presentation/runtime/match-requested-ui-runtime.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/hand-ai-ui-terminal.css", "utf8");
+const stabilityCss = fs.readFileSync("app/presentation/styles/card-interaction-stability-terminal.css", "utf8");
 const tutorialCss = fs.readFileSync("app/presentation/styles/tutorial-current-ui-terminal.css", "utf8");
 const tutorial = fs.readFileSync("app/presentation/tutorial/tutorial-screen.tsx", "utf8");
 const tutorialContent = fs.readFileSync("app/data/content/tutorial-content.ts", "utf8");
@@ -14,9 +15,11 @@ const tutorialContent = fs.readFileSync("app/data/content/tutorial-content.ts", 
 test("hand and current tutorial authorities load after the previous match terminals", () => {
   const piles = layout.indexOf('import "./presentation/styles/side-pile-text-shadow-terminal.css"');
   const hand = layout.indexOf('import "./presentation/styles/hand-ai-ui-terminal.css"');
+  const stability = layout.indexOf('import "./presentation/styles/card-interaction-stability-terminal.css"');
   const tutorialCurrent = layout.indexOf('import "./presentation/styles/tutorial-current-ui-terminal.css"');
   assert.ok(hand > piles);
-  assert.ok(tutorialCurrent > hand);
+  assert.ok(stability > hand);
+  assert.ok(tutorialCurrent > stability);
 });
 
 test("responsive hand runtime mounts only with match runtimes", () => {
@@ -49,20 +52,20 @@ test("hand cards interlace progressively and one interaction card becomes fully 
   assert.match(css, /@media \(hover: hover\) and \(pointer: fine\)[\s\S]*?\.player-hand > \.card-frame:hover/);
   assert.match(css, /@media \(hover: none\), \(pointer: coarse\)/);
   assert.match(css, /hh-touch-drag-source/);
+  assert.match(runtime, /data-hh-hand-peek|hhHandPeek/);
   assert.match(runtime, /pointerdown/);
+  assert.match(runtime, /pointerup/);
   assert.match(runtime, /dragstart/);
+  assert.match(runtime, /dragend/);
+  assert.match(stabilityCss, /card-frame:has\(\+ \.card-frame\[data-hh-hand-peek="true"\]\)/);
+  assert.match(stabilityCss, /card-frame\[data-hh-hand-peek="true"\] \+ \.card-frame/);
 });
 
-test("card icons disappear during presentation and quarter-turn anchors remain card-local", () => {
+test("card icons disappear during presentation without polling field transforms", () => {
   assert.doesNotMatch(requestedRuntime, /ICON_FRAGMENT_SELECTOR|decorateFlight|hh-flight-status-shell/);
-  assert.match(runtime, /dataset\.hhCardPresenting/);
-  assert.match(runtime, /DOMMatrixReadOnly/);
-  assert.match(runtime, /dataset\.hhLocalRotation/);
-  assert.match(css, /data-hh-card-presenting="true"[\s\S]*?field-keywords/);
-  assert.match(css, /\.hh-flight-face > \.hh-flight-status-shell[\s\S]*?display:\s*none\s*!important/);
-  assert.match(css, /data-hh-local-rotation="quarter"[\s\S]*?field-negative-statuses[\s\S]*?rotate\(90deg\)/);
-  assert.match(css, /data-hh-local-rotation="quarter"[\s\S]*?field-keywords[\s\S]*?rotate\(90deg\)/);
-  assert.match(css, /data-hh-local-rotation="quarter"[\s\S]*?card-frame-activation[\s\S]*?rotate\(90deg\)/);
+  assert.doesNotMatch(runtime, /DOMMatrixReadOnly|getComputedStyle|FIELD_FRAME_SELECTOR|hhLocalRotation|hhCardPresenting/);
+  assert.match(stabilityCss, /card-frame:has\(> \.original-card:is\(\.hh-presentation-hidden,\.is-impacting\)\)/);
+  assert.match(stabilityCss, /\.hh-flight-face :is\([\s\S]*?field-negative-statuses[\s\S]*?field-keywords[\s\S]*?card-frame-activation[\s\S]*?display: none !important/);
 });
 
 test("AI wait presentation exposes one compact IA pensando state", () => {
