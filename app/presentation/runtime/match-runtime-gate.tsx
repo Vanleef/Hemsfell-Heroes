@@ -12,6 +12,7 @@ const HeroAbilityDetailRuntime = dynamic(() => import("./hero-ability-detail-run
 const HeroAbilityRailRuntime = dynamic(() => import("./hero-ability-rail-runtime"), { ssr: false });
 const StatusOverflowRuntime = dynamic(() => import("./status-overflow-runtime"), { ssr: false });
 const MatchRequestedUiRuntime = dynamic(() => import("./match-requested-ui-runtime"), { ssr: false });
+const HandAiUiRuntime = dynamic(() => import("./hand-ai-ui-runtime"), { ssr: false });
 const TerrainFieldAnchorRuntime = dynamic(() => import("./terrain-field-anchor-runtime"), { ssr: false });
 const EvolutionTooltipPortalRuntime = dynamic(() => import("./evolution-tooltip-portal-runtime"), { ssr: false });
 const MatchFeedbackRuntime = dynamic(() => import("./match-feedback-runtime"), { ssr: false });
@@ -44,6 +45,7 @@ export default function MatchRuntimeGate() {
     <HeroAbilityRailRuntime />
     <StatusOverflowRuntime />
     <MatchRequestedUiRuntime />
+    <HandAiUiRuntime />
     <TerrainFieldAnchorRuntime />
     <EvolutionTooltipPortalRuntime />
     <MatchFeedbackRuntime />

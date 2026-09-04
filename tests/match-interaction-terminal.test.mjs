@@ -7,13 +7,17 @@ const css = fs.readFileSync("app/presentation/styles/match-interaction-terminal.
 const compact = (value) => value.replace(/\s+/g, " ");
 const sheet = compact(css);
 
-test("terminal interaction layer loads before the final side-pile text authority", () => {
+test("terminal interaction layer loads before side-pile and scoped terminal authorities", () => {
   const cssImports = [...layout.matchAll(/import\s+"([^"]+\.css)";/g)].map((match) => match[1]);
   const interactionIndex = cssImports.indexOf("./presentation/styles/match-interaction-terminal.css");
   const sidePileTerminalIndex = cssImports.indexOf("./presentation/styles/side-pile-text-shadow-terminal.css");
+  const handTerminalIndex = cssImports.indexOf("./presentation/styles/hand-ai-ui-terminal.css");
+  const tutorialTerminalIndex = cssImports.indexOf("./presentation/styles/tutorial-current-ui-terminal.css");
   assert.ok(interactionIndex >= 0);
   assert.ok(sidePileTerminalIndex > interactionIndex);
-  assert.equal(cssImports.at(-1), "./presentation/styles/side-pile-text-shadow-terminal.css");
+  assert.ok(handTerminalIndex > sidePileTerminalIndex);
+  assert.ok(tutorialTerminalIndex > handTerminalIndex);
+  assert.equal(cssImports.at(-1), "./presentation/styles/tutorial-current-ui-terminal.css");
 });
 
 test("stack and AI share the measured central band above every board layer", () => {

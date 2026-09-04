@@ -102,6 +102,30 @@ function CombatVisual() {
   </div>;
 }
 
+function TutorialHandVisual() {
+  return <section className="tutorial-hand-current" aria-label="Exemplo da mão atual do jogo">
+    <div className="tutorial-hand-demo" aria-hidden="true">
+      <div className="tutorial-hand-demo-card"><TutorialCard page={4} name="Dr.Elizabeth"/></div>
+      <div className="tutorial-hand-demo-card is-active">
+        <TutorialCard page={3} name="Valorian, o pseudodragão"/>
+        <i className="is-cost">1</i><i className="is-atk">1</i><i className="is-hp">1</i>
+      </div>
+      <div className="tutorial-hand-demo-card"><TutorialCard page={5} name="Wyvern"/></div>
+      <div className="tutorial-hand-demo-card"><TutorialCard page={6} name="Smallgui"/></div>
+    </div>
+    <div className="tutorial-hand-copy">
+      <span>MÃO ATUAL</span>
+      <h3>Entrelaça quando cresce e abre a carta em interação.</h3>
+      <p>Quanto mais cartas você possui, menores e mais sobrepostas elas ficam. Hover, clique, toque ou arraste trazem somente a carta em uso para a frente.</p>
+      <ul>
+        <li><b>Custo</b><span>canto superior esquerdo em toda carta da mão</span></li>
+        <li><b>Ofensividade</b><span>canto inferior esquerdo das Criaturas</span></li>
+        <li><b>Vitalidade</b><span>canto inferior direito das Criaturas</span></li>
+      </ul>
+    </div>
+  </section>;
+}
+
 function FirstDuelLesson() {
   return <>
     <LessonHeading step="ETAPA 1 DE 5" title="Objetivo e recursos da partida" description="Conheça a condição principal de vitória e os valores usados no início da partida."/>
@@ -136,6 +160,7 @@ function CardsLesson() {
         {CARD_ANATOMY.map(item => <li key={item.title}><b>{item.badge}</b><div><h3>{item.title}</h3><p>{item.description}</p></div></li>)}
       </ol>
     </section>
+    <TutorialHandVisual/>
     <section className="tutorial-type-grid" aria-label="Tipos de carta">
       {CARD_TYPES.map(type => <article key={type.title}><h3>{type.title}</h3><p>{type.description}</p></article>)}
     </section>
@@ -156,7 +181,7 @@ function BoardLesson() {
 
 function TurnLesson() {
   return <>
-    <LessonHeading step="ETAPA 4 DE 5" title="Etapas do turno" description="O turno segue Manutenção, Principal, Combate e Finalização. Use Passar quando terminar uma ação ou não quiser responder."/>
+    <LessonHeading step="ETAPA 4 DE 5" title="Etapas do turno" description="O turno segue Manutenção, Principal, Combate e Finalização. A ação central indica quando você pode avançar; Passar é usado nas janelas de prioridade."/>
     <TurnFlowVisual/>
     <ol className="tutorial-step-list">
       {TURN_STEPS.map(step => <li key={step.title}><b>{step.title}</b><span>{step.description}</span></li>)}
@@ -164,6 +189,9 @@ function TurnLesson() {
     <section className="tutorial-command-grid" aria-label="Controles básicos">
       {BASIC_COMMANDS.map(command => <article key={command.title}><b>{command.title}</b><p>{command.description}</p></article>)}
     </section>
+    <aside className="tutorial-ai-thinking-note">
+      <i aria-hidden="true"/><div><b>IA pensando</b><span>Contra a IA, este é o único painel de espera para cálculos de ações e respostas. A pilha e a prioridade continuam funcionando normalmente.</span></div>
+    </aside>
   </>;
 }
 

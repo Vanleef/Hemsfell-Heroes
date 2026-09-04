@@ -2,16 +2,6 @@
 
 import { useEffect } from "react";
 
-type IconSnapshot = {
-  cardId: string;
-  page: string;
-  name: string;
-  fragments: HTMLElement[];
-};
-
-const LIVE_FRAME_SELECTOR = ".screen-game .game-stage .card-frame[data-unit-id]";
-const FLIGHT_FACE_SELECTOR = ".hh-flight-face";
-const ICON_FRAGMENT_SELECTOR = ".field-negative-statuses,.field-keywords,.card-frame-activation";
 const MAX_HERO_LEVEL = 3;
 const HERO_PROGRESS_LABELS: Record<string, string> = {
   "Gimble": "Dragões em campo",
@@ -27,97 +17,15 @@ const HERO_PROGRESS_LABELS: Record<string, string> = {
   "Campeão de Natureza": "Marcadores",
 };
 
-function cleanFlightFragment(fragment: HTMLElement) {
-  fragment.removeAttribute("title");
-  fragment.setAttribute("aria-hidden", "true");
-  fragment.querySelectorAll<HTMLElement>("[title]").forEach((node) => node.removeAttribute("title"));
-  fragment.querySelectorAll<HTMLElement>("[aria-label]").forEach((node) => node.removeAttribute("aria-label"));
-  if (fragment instanceof HTMLButtonElement) {
-    fragment.disabled = true;
-    fragment.tabIndex = -1;
-  }
-  fragment.querySelectorAll<HTMLButtonElement>("button").forEach((button) => {
-    button.disabled = true;
-    button.tabIndex = -1;
-  });
-}
-
-function snapshotForFrame(frame: HTMLElement): IconSnapshot | null {
-  const card = frame.querySelector<HTMLElement>(":scope > .original-card");
-  if (!card) return null;
-  const fragments = Array.from(frame.children)
-    .filter((child): child is HTMLElement => child instanceof HTMLElement && child.matches(ICON_FRAGMENT_SELECTOR))
-    .map((child) => child.cloneNode(true) as HTMLElement);
-  if (!fragments.length) return null;
-  fragments.forEach(cleanFlightFragment);
-  return {
-    cardId: card.dataset.cardId || "",
-    page: card.dataset.cardPage || "",
-    name: card.dataset.cardName || card.getAttribute("aria-label") || "",
-    fragments,
-  };
-}
-
-function semanticKey(page: string, name: string) {
-  return `${page}::${name.trim().toLocaleLowerCase("pt-BR")}`;
-}
-
 /**
- * Keeps card-local status/action affordances attached to portrait-space rather
- * than the rotating/targeting card face. Live cards already render the rails as
- * siblings of `.original-card`; this runtime only mirrors those siblings into
- * presentation flights, where the legacy animation clone contains the face by
- * itself.
+ * Owns requested HUD copy/position corrections only. Card-local status and
+ * action icons deliberately stay out of presentation flights: an animated card
+ * is represented by its face alone and its stable live frame restores icons
+ * after the ordered presentation transaction finishes.
  */
 export default function MatchRequestedUiRuntime() {
   useEffect(() => {
-    const byCardId = new Map<string, IconSnapshot>();
-    const bySemantic = new Map<string, IconSnapshot>();
-    const pendingFlights = new WeakSet<HTMLElement>();
     let frame = 0;
-
-    const captureAll = () => {
-      document.querySelectorAll<HTMLElement>(LIVE_FRAME_SELECTOR).forEach((cardFrame) => {
-        if (cardFrame.closest(".hh-presentation-layer")) return;
-        const snapshot = snapshotForFrame(cardFrame);
-        if (!snapshot) return;
-        if (snapshot.cardId) byCardId.set(snapshot.cardId, snapshot);
-        if (snapshot.page || snapshot.name) bySemantic.set(semanticKey(snapshot.page, snapshot.name), snapshot);
-      });
-    };
-
-    const snapshotForFlight = (face: HTMLElement) => {
-      const card = face.querySelector<HTMLElement>(":scope > .original-card, .original-card");
-      if (!card) return null;
-      const cardId = card.dataset.cardId || "";
-      if (cardId && byCardId.has(cardId)) return byCardId.get(cardId) || null;
-      return bySemantic.get(semanticKey(card.dataset.cardPage || "", card.dataset.cardName || card.getAttribute("aria-label") || "")) || null;
-    };
-
-    const decorateFlight = (face: HTMLElement, allowRetry = true) => {
-      if (!face.isConnected || face.querySelector(":scope > .hh-flight-status-shell")) return;
-      const snapshot = snapshotForFlight(face);
-      if (!snapshot) {
-        if (!allowRetry || pendingFlights.has(face)) return;
-        pendingFlights.add(face);
-        requestAnimationFrame(() => {
-          pendingFlights.delete(face);
-          captureAll();
-          decorateFlight(face, false);
-        });
-        return;
-      }
-
-      const shell = document.createElement("span");
-      shell.className = "hh-flight-status-shell";
-      shell.setAttribute("aria-hidden", "true");
-      snapshot.fragments.forEach((fragment) => {
-        const copy = fragment.cloneNode(true) as HTMLElement;
-        cleanFlightFragment(copy);
-        shell.append(copy);
-      });
-      if (shell.childElementCount) face.append(shell);
-    };
 
     const syncEvolutionCopy = () => {
       document.querySelectorAll<HTMLElement>(".hh-hero-level-up b").forEach((label) => {
@@ -201,22 +109,19 @@ export default function MatchRequestedUiRuntime() {
       if (frame) cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
         frame = 0;
-        captureAll();
-        document.querySelectorAll<HTMLElement>(FLIGHT_FACE_SELECTOR).forEach((face) => decorateFlight(face));
         syncEvolutionCopy();
         syncHeroProgressCopy();
         syncPriorityPair();
       });
     };
 
-    captureAll();
     syncEvolutionCopy();
     syncHeroProgressCopy();
     syncPriorityPair();
 
     const observer = new MutationObserver(sync);
     observer.observe(document.body, { subtree: true, childList: true, characterData: true });
-    const onPresentationAction = () => captureAll();
+    const onPresentationAction = () => sync();
     const onResize = () => syncPriorityPair();
     window.addEventListener("hemsfell:presentation-action", onPresentationAction, true);
     window.addEventListener("resize", onResize, { passive: true });
