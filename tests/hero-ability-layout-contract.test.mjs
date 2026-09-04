@@ -16,11 +16,15 @@ test("hero ability capsule refinement loads after the base ability contract and 
   const capsuleIndex = cssImports.indexOf("./presentation/styles/hero-ability-capsule-structure-final.css");
   const terminalIndex = cssImports.indexOf("./presentation/styles/match-interaction-terminal.css");
   const sidePileTerminalIndex = cssImports.indexOf("./presentation/styles/side-pile-text-shadow-terminal.css");
+  const handTerminalIndex = cssImports.indexOf("./presentation/styles/hand-ai-ui-terminal.css");
+  const tutorialTerminalIndex = cssImports.indexOf("./presentation/styles/tutorial-current-ui-terminal.css");
   assert.ok(abilityIndex >= 0);
   assert.equal(capsuleIndex, abilityIndex + 1);
   assert.equal(terminalIndex, capsuleIndex + 1);
   assert.ok(sidePileTerminalIndex > terminalIndex);
-  assert.equal(cssImports.at(-1), "./presentation/styles/side-pile-text-shadow-terminal.css");
+  assert.ok(handTerminalIndex > sidePileTerminalIndex);
+  assert.ok(tutorialTerminalIndex > handTerminalIndex);
+  assert.equal(cssImports.at(-1), "./presentation/styles/tutorial-current-ui-terminal.css");
 });
 
 test("expanded hero abilities use auto-height rows instead of clipping equal fractions", () => {

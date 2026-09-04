@@ -1,0 +1,388 @@
+/*
+ * Terminal collision + battlefield-anchor authority.
+ *
+ * 1) PILHA and AI-thinking share one measured horizontal lane without overlap.
+ * 2) Battlefield selection/target feedback never moves the card face away from
+ *    the status/action rails owned by the card-frame portrait-space shell.
+ */
+
+/* -------------------------------------------------------------------------
+   PILHA + IA: one measured horizontal pair
+   ------------------------------------------------------------------------- */
+html body:has(.screen-game .priority-stack-indicator):has([data-hemsfell-ai-thinking])
+  .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator {
+  position: fixed !important;
+  top: var(--hh-priority-band-y, 50vh) !important;
+  left: calc(var(--hh-priority-band-x, 50vw) - var(--hh-priority-pair-gap, .7rem)) !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  transform: translate(-100%, -50%) !important;
+  translate: none !important;
+  scale: 1 !important;
+  max-width: min(22rem, calc(50dvw - 1.5rem)) !important;
+  z-index: 2147482500 !important;
+}
+
+html body:has(.screen-game .priority-stack-indicator):has([data-hemsfell-ai-thinking])
+  [data-hemsfell-ai-thinking],
+html body:has(.screen-game .priority-stack-indicator)
+  [data-hemsfell-ai-thinking][data-hh-priority-paired="true"] {
+  position: fixed !important;
+  top: var(--hh-priority-band-y, 50vh) !important;
+  left: calc(var(--hh-priority-band-x, 50vw) + var(--hh-priority-pair-gap, .7rem)) !important;
+  right: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  transform: translate(0, -50%) !important;
+  translate: none !important;
+  scale: 1 !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: min(22rem, calc(50dvw - 1.5rem)) !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  z-index: 2147482500 !important;
+}
+
+/* The runtime may still publish pixel fallback variables for old browsers.
+   Once the measured central lane exists, those legacy coordinates are not a
+   competing authority anymore. */
+html body:has(.screen-game .priority-stack-indicator)
+  [data-hemsfell-ai-thinking][data-hh-priority-paired="true"] {
+  --hh-ai-paired-left: initial !important;
+  --hh-ai-paired-top: initial !important;
+}
+
+/* -------------------------------------------------------------------------
+   Battlefield icon anchors
+   ------------------------------------------------------------------------- */
+/* `.original-card.is-selected` historically lifted the face by 18px while the
+   status rails correctly remained on `.card-frame`, producing the detached-icon
+   bug. Targeting/selection in a battlefield slot is now paint-only. */
+html body .screen-game .paired-field .field-slot > .card-frame > .original-card.is-selected,
+html body .screen-game .paired-field .field-slot > .card-frame > .original-card:is(.target-ally,.target-enemy),
+html body .screen-game .terrain-slot > .card-frame > .original-card.is-selected,
+html body .screen-game .terrain-slot > .card-frame > .original-card:is(.target-ally,.target-enemy) {
+  translate: none !important;
+  scale: 1 !important;
+  transform: none !important;
+  transform-origin: 50% 50% !important;
+}
+
+/* Hover/focus on a selected or turned permanent may brighten/outline it, but it
+   may not reintroduce the old lift/scale and separate the face from its rails. */
+html body .screen-game .paired-field .field-slot > .card-frame > .original-card:is(.is-selected,.is-exhausted,.target-ally,.target-enemy):is(:hover,:focus-visible),
+html body .screen-game .terrain-slot > .card-frame > .original-card:is(.is-selected,.is-exhausted,.target-ally,.target-enemy):is(:hover,:focus-visible) {
+  translate: none !important;
+  scale: 1 !important;
+  transform: none !important;
+}
+
+/* The frame is the immutable portrait-space anchor. Negative effects stay left,
+   positive effects stay right and activatable ability stays above regardless of
+   selection, target state or the live card's visual state. */
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot) > .card-frame[data-unit-id] {
+  position: relative !important;
+  translate: none !important;
+  scale: 1 !important;
+  transform: none !important;
+  transform-origin: 50% 50% !important;
+  overflow: visible !important;
+}
+
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
+  > .card-frame[data-unit-id] > .field-negative-statuses {
+  top: 50% !important;
+  left: calc(0px - var(--keyword-icon-size, .72rem) - clamp(.12rem, .18cqw, .2rem)) !important;
+  right: auto !important;
+  bottom: auto !important;
+  translate: none !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  transform: translateY(-50%) !important;
+}
+
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
+  > .card-frame[data-unit-id] > .field-keywords {
+  top: 50% !important;
+  right: calc(0px - var(--keyword-icon-size, .72rem) - clamp(.12rem, .18cqw, .2rem)) !important;
+  left: auto !important;
+  bottom: auto !important;
+  translate: none !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  transform: translateY(-50%) !important;
+}
+
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
+  > .card-frame[data-unit-id] > .card-frame-activation {
+  top: 0 !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  translate: none !important;
+  rotate: 0deg !important;
+  scale: 1 !important;
+  transform: translate(-50%, calc(-100% - clamp(.08rem, .12cqw, .14rem))) !important;
+}
+
+/* State animations belong to the card face only. Never let a broad animation
+   selector capture the sibling status/action rails. */
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
+  > .card-frame[data-unit-id]
+  > :is(.field-negative-statuses,.field-keywords,.card-frame-activation) {
+  animation: none !important;
+  transform-origin: 50% 50% !important;
+}
+
+/* -------------------------------------------------------------------------
+   Concise hero evolution progress copy
+   ------------------------------------------------------------------------- */
+/* Evolution is strategically important information, so both sides use the
+   same taller external meter and materially larger copy. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero {
+  --hh-player-progress-height: clamp(1.72rem, 3.08cqh, 2.12rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) > .player-hero {
+  --hh-enemy-progress-height: clamp(1.72rem, 3.08cqh, 2.12rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel:not(.is-expanded)
+  > .player-hero > .hero-level-row > .hero-evolution {
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  border-radius: clamp(.38rem, .5cqw, .56rem) !important;
+}
+
+/* There is only one progress visual: the hero-evolution panel background itself.
+   The historical inner track created the tiny second bar visible on the enemy. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel:not(.is-expanded)
+  > .player-hero > .hero-level-row > .hero-evolution > .evolution-track {
+  display: none !important;
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+/* The local compact HUD historically hid the semantic copy and painted
+   `PRÓX. NÍVEL X/Y` through hero-evolution::after. The runtime now supplies the
+   hero-specific concise text, so that legacy pseudo-copy must never win. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded)
+  > .player-hero > .hero-level-row > .hero-evolution::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded)
+  > .player-hero > .hero-level-row > .hero-evolution
+  > .hero-evolution-copy[data-hh-short-progress="true"] {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  visibility: visible !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  margin: 0 !important;
+  padding-inline: clamp(.2rem, .32cqw, .38rem) !important;
+  z-index: 2 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel
+  .hero-evolution-copy[data-hh-short-progress="true"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  min-height: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding-inline: clamp(.2rem, .32cqw, .38rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel
+  .hero-evolution-copy[data-hh-short-progress="true"] > small {
+  display: block !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  color: #fff0b1 !important;
+  -webkit-text-fill-color: #fff0b1 !important;
+  font-size: clamp(.78rem, min(.98cqw, 1.48cqh), 1rem) !important;
+  font-weight: 950 !important;
+  line-height: 1 !important;
+  letter-spacing: .006em !important;
+  text-shadow: 0 1px 1px #000, 0 0 .22rem #000 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel
+  .hero-evolution-copy[data-hh-short-progress="true"] > strong[hidden] {
+  display: none !important;
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  html body:has(.screen-game .priority-stack-indicator):has([data-hemsfell-ai-thinking])
+    .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator,
+  html body:has(.screen-game .priority-stack-indicator):has([data-hemsfell-ai-thinking])
+    [data-hemsfell-ai-thinking] {
+    max-width: min(19rem, calc(50dvw - .9rem)) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero {
+    --hh-player-progress-height: clamp(1.28rem, 2.7dvh, 1.62rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) > .player-hero {
+    --hh-enemy-progress-height: clamp(1.28rem, 2.7dvh, 1.62rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel
+    .hero-evolution-copy[data-hh-short-progress="true"] > small {
+    font-size: clamp(.66rem, 1.85dvh, .78rem) !important;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Short phone landscape — browser-chrome fit and information hierarchy
+   ------------------------------------------------------------------------- */
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 34rem) {
+  /* Use the wide axis instead of globally shrinking the whole match. */
+  html body .screen-game .game-stage > .game-content.hs-board {
+    --hh-reference-shift-y: clamp(.18rem, 1.5dvh, .48rem) !important;
+  }
+
+  /* Hero identity stays readable; the progression lane gets enough width for
+     hero-specific copy such as `0/2 Dragões em campo`. */
+  html body .screen-game .game-stage > .game-content.hs-board > .canonical-hero-panel {
+    scale: .82 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero {
+    --hh-player-progress-height: clamp(1.38rem, 3.15dvh, 1.7rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) > .player-hero {
+    --hh-enemy-progress-height: clamp(1.38rem, 3.15dvh, 1.7rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) > .player-hero > .hero-level-row,
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero:not(.level-ready) > .hero-level-row {
+    left: 0 !important;
+    right: auto !important;
+    width: calc(100% + clamp(1.25rem, 3.8dvw, 1.65rem)) !important;
+    max-width: none !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel
+    .hero-evolution-copy[data-hh-short-progress="true"] > small {
+    font-size: clamp(.82rem, 2.35dvh, .96rem) !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* Move the shortcut rail into the unused horizontal gutter so a wider
+     progression strip never collides with the first ability orb. */
+  html body .screen-game .canonical-hero-panel > .player-hero > .hero-ability-rail {
+    left: calc(var(--hh-hero-art-right, 100%) + clamp(1.35rem, 3.7dvw, 1.75rem)) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel:not(.is-expanded) > .player-hero > .hero-status-cues {
+    left: 0 !important;
+    right: auto !important;
+    width: calc(100% + clamp(1.1rem, 3.2dvw, 1.45rem)) !important;
+    max-width: none !important;
+  }
+
+  /* The local hand must be fully visible above Android/browser chrome instead
+     of being cropped by the bottom edge. */
+  html body .screen-game .game-stage > .game-content.hs-board > .player-hand {
+    scale: .94 !important;
+    translate: 0 -4dvh !important;
+    transform-origin: center bottom !important;
+  }
+
+  /* Secondary right-side HUD is slightly denser, freeing attention for cards. */
+  html body .screen-game .game-stage > .game-content.hs-board > :is(.enemy-energy,.player-energy) {
+    scale: .74 !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > :is(.enemy-piles,.player-piles) {
+    scale: .76 !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .surrender-button {
+    scale: .7 !important;
+    translate: -1.1cqw -.85cqh !important;
+  }
+
+  /* The next-phase CTA remains obvious without becoming the largest object on
+     the entire phone screen. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:not(:empty) {
+    width: clamp(6.35rem, 8.35dvw, 8.45rem) !important;
+    scale: .7 !important;
+  }
+
+  /* Keep the response-mode switch inside the header's visual hierarchy. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-control-toggle {
+    min-width: clamp(6.45rem, 8.2dvw, 7.4rem) !important;
+    max-width: clamp(6.45rem, 8.2dvw, 7.4rem) !important;
+    min-height: clamp(1.42rem, 3.6dvh, 1.7rem) !important;
+    padding: clamp(.12rem, .5dvh, .22rem) clamp(.34rem, .65dvw, .52rem) !important;
+    border-radius: clamp(.32rem, .55dvh, .46rem) !important;
+    font-size: clamp(.56rem, 1.72dvh, .68rem) !important;
+    line-height: 1 !important;
+  }
+
+  /* Header copy was becoming microscopic while the mode button remained large.
+     Raise the informational type without increasing the bar's footprint. */
+  html body .screen-game.screen-game .game-bar .turn-owner > span {
+    font-size: clamp(.56rem, 1.7dvh, .68rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-bar .turn-owner > b {
+    font-size: clamp(.62rem, 1.9dvh, .74rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-bar .phase-track > div > span {
+    font-size: clamp(.52rem, 1.6dvh, .64rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-bar .phase-track i {
+    font-size: clamp(.44rem, 1.4dvh, .56rem) !important;
+  }
+}

@@ -78,7 +78,9 @@ function collectGroup(host: HTMLElement, kind: StatusKind): StatusGroup | null {
 
   if (kind === "positive") host.setAttribute("aria-hidden", "false");
 
-  const collapse = kind === "hero" ? originals.length > 2 : originals.length > 3;
+  /* Hero effects always use one summary strip. Card rails keep two visible
+     entries and only collapse denser positive/negative lists. */
+  const collapse = kind === "hero" ? originals.length > 0 : originals.length > 3;
   const hiddenStart = kind === "hero" ? 0 : 2;
   originals.forEach((element, index) => setHidden(element, collapse && index >= hiddenStart));
   if (!collapse) return null;
@@ -164,7 +166,7 @@ export default function StatusOverflowRuntime() {
     clearOpenTimer();
     clearCloseTimer();
     const show = () => {
-      setList({ group, ...floatingGeometry(anchor, 320, 260) });
+      setList({ group, ...floatingGeometry(anchor, group.kind === "hero" ? 390 : 320, group.kind === "hero" ? 320 : 260) });
       setDetail(null);
     };
     if (delayed) openTimer.current = window.setTimeout(show, HOVER_DELAY_MS);
@@ -259,51 +261,79 @@ export default function StatusOverflowRuntime() {
   }, [clearOpenTimer, openDetail]);
 
   return <>
-    {groups.map((group) => createPortal(
-      <button
-        type="button"
-        className="hh-status-overflow-trigger"
-        data-hh-status-overflow-trigger="true"
-        data-overflow-kind={group.kind}
-        aria-label={group.kind === "hero"
-          ? `${group.count} efeitos ativos no herói`
-          : `${group.count} efeitos ${group.kind === "negative" ? "negativos" : "positivos"} adicionais`}
-        onPointerEnter={(event) => openList(group, event.currentTarget, true)}
-        onPointerLeave={scheduleClose}
-        onFocus={(event) => openList(group, event.currentTarget, false)}
-        onBlur={scheduleClose}
-      >
-        <span className="hh-status-overflow-count" aria-hidden="true">{group.count}</span>
-      </button>,
-      group.host,
-      `hh-status-overflow-${group.id}`,
-    ))}
+    {groups.map((group) => {
+      const expanded = list?.group.id === group.id;
+      return createPortal(
+        <button
+          type="button"
+          className="hh-status-overflow-trigger"
+          data-hh-status-overflow-trigger="true"
+          data-overflow-kind={group.kind}
+          aria-expanded={expanded}
+          aria-label={group.kind === "hero"
+            ? `Efeitos Ativos: ${group.count}`
+            : `${group.count} efeitos ${group.kind === "negative" ? "negativos" : "positivos"} adicionais`}
+          onPointerEnter={(event) => {
+            if (event.pointerType === "mouse" || event.pointerType === "pen") openList(group, event.currentTarget, true);
+          }}
+          onPointerLeave={(event) => {
+            if (event.pointerType === "mouse" || event.pointerType === "pen") scheduleClose();
+          }}
+          onFocus={(event) => openList(group, event.currentTarget, false)}
+          onBlur={scheduleClose}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (expanded) closeAll();
+            else openList(group, event.currentTarget, false);
+          }}
+        >
+          {group.kind === "hero" ? <>
+            <span className="hh-status-overflow-label">Efeitos Ativos:</span>
+            <span className="hh-status-overflow-count" aria-hidden="true">{group.count}</span>
+          </> : <span className="hh-status-overflow-count" aria-hidden="true">{group.count}</span>}
+        </button>,
+        group.host,
+        `hh-status-overflow-${group.id}`,
+      );
+    })}
 
     {list && typeof document !== "undefined" ? createPortal(
       <div
         className="hh-global-tooltip-portal hh-status-list-tooltip"
+        data-status-list-kind={list.group.kind}
         role="tooltip"
         style={floatingStyle(list.left, list.top, list.width)}
         onPointerEnter={clearCloseTimer}
         onPointerLeave={scheduleClose}
       >
         <small>{list.group.kind === "hero" ? "EFEITOS ATIVOS" : list.group.kind === "negative" ? "EFEITOS NEGATIVOS" : "EFEITOS POSITIVOS"}</small>
-        <div className="hh-status-list-tooltip-items">
-          {list.group.items.map((item) => (
-            <button
-              type="button"
-              className="hh-status-list-item"
-              key={item.key}
-              onPointerEnter={(event) => openDetail(item, event.currentTarget)}
-              onPointerLeave={() => setDetail(null)}
-              onFocus={(event) => openDetail(item, event.currentTarget)}
-              onBlur={() => setDetail(null)}
-            >
-              <i aria-hidden="true">{item.token}</i>
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
+        {list.group.kind === "hero" ? (
+          <ol className="hh-hero-effect-list">
+            {list.group.items.map((item, index) => (
+              <li key={item.key}>
+                <b>{index + 1}. {item.label}</b>
+                <p>{item.description}</p>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <div className="hh-status-list-tooltip-items">
+            {list.group.items.map((item) => (
+              <button
+                type="button"
+                className="hh-status-list-item"
+                key={item.key}
+                onPointerEnter={(event) => openDetail(item, event.currentTarget)}
+                onPointerLeave={() => setDetail(null)}
+                onFocus={(event) => openDetail(item, event.currentTarget)}
+                onBlur={() => setDetail(null)}
+              >
+                <i aria-hidden="true">{item.token}</i>
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>,
       document.body,
     ) : null}

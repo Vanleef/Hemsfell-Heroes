@@ -3,6 +3,7 @@
  * legality probes, combat queries and AI simulations also execute cloned states in
  * the browser and must never be mistaken for completed match transitions. */
 import { executeCommand as executeCore } from "./engine-core.mjs";
+import { normalizeAscensionState } from "./cards/ascension.mjs";
 export * from "./engine-core.mjs";
 
 const RULES_RESOLVED_EVENT = "hemsfell:rules-command-resolved";
@@ -94,8 +95,9 @@ export function executeCommand(inputState, command, options = {}) {
     && typeof window !== "undefined"
     && typeof CustomEvent !== "undefined";
   const before = shouldPresent ? browserClone(inputState) : null;
-  const rulesBefore = browserClone(inputState);
-  const result = executeCore(inputState, command, options);
+  const rulesInput = normalizeAscensionState(inputState, command);
+  const rulesBefore = browserClone(rulesInput);
+  const result = executeCore(rulesInput, command, options);
   if (result?.state) enforceSilencioTargetLifecycle(rulesBefore, result.state);
   if (shouldPresent && before && result?.state && command?.type) {
     publishBrowserResolution({

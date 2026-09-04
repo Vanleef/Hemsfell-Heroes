@@ -1,0 +1,42 @@
+/*
+ * Terminal loading authority for official PDF-backed card art.
+ * Keep the placeholder static: dozens of animated skeletons cost more than they help,
+ * especially on mobile collection grids.
+ */
+
+html body .remote-card-art {
+  background:
+    linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,0) 38%),
+    radial-gradient(circle at 50% 38%, rgba(92,126,139,.18), transparent 46%),
+    linear-gradient(180deg, #14242a 0%, #0b151a 58%, #091116 100%);
+  background-color: #0b151a;
+}
+
+html body .remote-card-art:not([data-loaded="true"]) {
+  box-shadow:
+    inset 0 0 0 1px rgba(180,211,220,.12),
+    inset 0 0 1.2rem rgba(0,0,0,.26);
+}
+
+html body .remote-card-art[data-loaded="true"] {
+  box-shadow: none;
+}
+
+/* A compact cached thumbnail may be shown for a few frames before the detail
+   raster replaces it. Never blur/filter that thumbnail: readable card text is
+   preferable to decorative loading effects. */
+html body .remote-card-art[data-art-quality="preview"] {
+  image-rendering: auto;
+}
+
+html body .remote-card-art.remote-card-art-failed {
+  background:
+    linear-gradient(145deg, rgba(176,70,70,.14), rgba(255,255,255,0) 42%),
+    linear-gradient(180deg, #21191a, #101315);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .remote-card-art {
+    transition: none !important;
+  }
+}

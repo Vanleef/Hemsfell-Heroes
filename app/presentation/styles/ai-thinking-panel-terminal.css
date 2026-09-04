@@ -1,0 +1,29 @@
+/* Highest-specificity guard for the paired PILHA + IA state. */
+html body:has(.screen-game .priority-stack-indicator):has([data-hemsfell-ai-thinking])
+  [data-hemsfell-ai-thinking],
+html body:has(.screen-game .priority-stack-indicator)
+  [data-hemsfell-ai-thinking][data-hh-priority-paired="true"] {
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: min(20rem, calc(47dvw - 1rem)) !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: clamp(.34rem, .7dvh, .56rem) clamp(.55rem, .8dvw, .88rem) !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.12 !important;
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 34rem) {
+  html body:has(.screen-game .priority-stack-indicator):has([data-hemsfell-ai-thinking])
+    [data-hemsfell-ai-thinking],
+  html body:has(.screen-game .priority-stack-indicator)
+    [data-hemsfell-ai-thinking][data-hh-priority-paired="true"] {
+    max-width: min(18rem, calc(46dvw - .65rem)) !important;
+    padding: clamp(.28rem, .85dvh, .44rem) clamp(.46rem, 1dvw, .68rem) !important;
+  }
+}

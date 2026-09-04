@@ -1,0 +1,353 @@
+/*
+ * Terminal mobile/touch authority.
+ *
+ * Desktop keeps the canonical reference composition untouched. Coarse-pointer
+ * landscape gets two focused adaptations:
+ *  1. dependable touch hit/drag behavior;
+ *  2. lower visual density when browser chrome disappears and the viewport
+ *     becomes much taller, so fullscreen does not make every HUD block swell.
+ */
+
+@media (hover: none) and (pointer: coarse) {
+  html body .screen-game,
+  html body .screen-game .game-stage,
+  html body .screen-game .game-stage > .game-content.hs-board {
+    overscroll-behavior: none !important;
+  }
+
+  html body .screen-game button,
+  html body .screen-game [role="button"] {
+    touch-action: manipulation !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  html body .screen-game .player-hand .original-card[draggable="true"],
+  html body .screen-game .arte-reposition-active .original-card[draggable="true"] {
+    touch-action: none !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-touch-callout: none !important;
+  }
+
+  html.hh-touch-drag-active,
+  html.hh-touch-drag-active body,
+  html.hh-touch-drag-active .screen-game,
+  html.hh-touch-drag-active .screen-game .game-stage {
+    overscroll-behavior: none !important;
+  }
+
+  html.hh-touch-drag-active body {
+    touch-action: none !important;
+  }
+
+  html body .screen-game .original-card.hh-touch-drag-source {
+    opacity: .48 !important;
+    filter: brightness(1.18) saturate(1.08) !important;
+    outline: max(1px, .16cqh) solid rgba(255, 221, 111, .9) !important;
+    outline-offset: max(1px, .12cqh) !important;
+  }
+
+  html body .screen-game .field-slot.hh-touch-drop-target,
+  html body .screen-game .terrain-slot.hh-touch-drop-target {
+    filter: brightness(1.35) saturate(1.2) !important;
+    outline: max(2px, .24cqh) solid rgba(255, 224, 119, .96) !important;
+    outline-offset: max(1px, .12cqh) !important;
+    z-index: 2147480800 !important;
+  }
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  html body .screen-game .game-stage > .game-content.hs-board {
+    --hh-mobile-density: .92;
+    --hh-mobile-energy-density: .88;
+    --hh-mobile-cta-density: .9;
+  }
+
+  /* Preserve board coordinates; shrink the individual regions inside them. */
+  html body .screen-game .game-stage > .game-content.hs-board > .canonical-hero-panel {
+    scale: var(--hh-mobile-density) !important;
+    transform-origin: left center !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > :is(.enemy-field,.player-field) {
+    scale: var(--hh-mobile-density) !important;
+    transform-origin: center center !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > :is(.enemy-terrain,.player-terrain) {
+    scale: var(--hh-mobile-density) !important;
+    transform-origin: center center !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .opponent-hand {
+    scale: var(--hh-mobile-density) !important;
+    transform-origin: center top !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .player-hand {
+    scale: var(--hh-mobile-density) !important;
+    transform-origin: center bottom !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > :is(.enemy-piles,.player-piles) {
+    scale: var(--hh-mobile-density) !important;
+    transform-origin: right center !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > :is(.enemy-energy,.player-energy) {
+    scale: var(--hh-mobile-energy-density) !important;
+    transform-origin: center center !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .phase-orb {
+    scale: var(--hh-mobile-cta-density) !important;
+    transform-origin: center center !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .surrender-button {
+    scale: .88 !important;
+    transform-origin: right bottom !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .game-bar > :is(button,.turn-owner,.phase-track,.match-clock) {
+    scale: .9 !important;
+  }
+
+  /* Touch targets remain forgiving even though the visuals are denser. */
+  html body .screen-game .game-stage > .game-content.hs-board > .phase-orb > button {
+    min-inline-size: 2.75rem !important;
+    min-block-size: 2.75rem !important;
+  }
+
+  html body .screen-game .hero-ability-orb,
+  html body .screen-game .card-frame-activation,
+  html body .screen-game .level-button {
+    min-inline-size: max(1.75rem, 4.2cqh) !important;
+    min-block-size: max(1.75rem, 4.2cqh) !important;
+  }
+}
+
+/*
+ * Fullscreen/immersive landscape is the problematic case from the reference:
+ * the same phone gains vertical viewport space and cqh-driven UI grows. When
+ * the viewport is no wider than 12:5, reduce region density instead of
+ * stretching the desktop composition vertically.
+ */
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-aspect-ratio: 12 / 5) {
+  html body .screen-game .game-stage > .game-content.hs-board {
+    --hh-mobile-density: .84;
+    --hh-mobile-energy-density: .8;
+    --hh-mobile-cta-density: .84;
+    --hh-reference-shift-y: clamp(.42rem, 3.55cqh, 1.72rem);
+    --hh-reference-orb-size: clamp(2.45rem, min(5cqw, 8.5cqh), 4.65rem);
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .game-bar > :is(button,.turn-owner,.phase-track,.match-clock) {
+    scale: .82 !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+    flex-basis: min(5.45cqw, 9.5cqh) !important;
+    width: min(5.45cqw, 9.5cqh) !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(.official-card-back,.opponent-card-back,.card-frame) {
+    flex-basis: min(3.1cqw, 5.4cqh) !important;
+    width: min(3.1cqw, 5.4cqh) !important;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Screenshot-driven compact landscape corrections
+   ------------------------------------------------------------------------- */
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  /* A legacy max-width breakpoint treated phones in landscape as portrait and
+     stacked the maintenance choices vertically. Keep the whole decision inside
+     the visible browser viewport and restore the intended two-column choice. */
+  html body .screen-game .game-stage > .game-content.hs-board > .maintenance-overlay,
+  html body .screen-game .game-stage > .game-content.hs-board > .overlay.maintenance-overlay,
+  html body .screen-game .game-stage > .game-content.hs-board > .overlay:has(.maintenance-dialog) {
+    position: fixed !important;
+    inset: 0 !important;
+    display: grid !important;
+    place-items: center !important;
+    padding: clamp(.35rem, 1.6dvh, .7rem) !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  html body .screen-game .maintenance.maintenance-dialog {
+    width: min(42rem, 80dvw) !important;
+    max-width: 80dvw !important;
+    height: auto !important;
+    max-height: calc(100dvh - clamp(.8rem, 4dvh, 1.4rem)) !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-auto-rows: max-content !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    overscroll-behavior: contain !important;
+    scrollbar-width: thin !important;
+  }
+
+  html body .screen-game .maintenance-dialog > header {
+    min-height: 0 !important;
+    height: auto !important;
+    padding: clamp(.34rem, 1.35dvh, .55rem) clamp(.7rem, 1.35dvw, 1rem) !important;
+  }
+
+  html body .screen-game .maintenance-dialog > header :is(span,b) {
+    font-size: clamp(.48rem, 1.55dvh, .68rem) !important;
+    line-height: 1 !important;
+    letter-spacing: .12em !important;
+  }
+
+  html body .screen-game .maintenance-dialog > h2 {
+    margin: 0 !important;
+    padding: clamp(.45rem, 1.8dvh, .7rem) clamp(.8rem, 1.6dvw, 1.15rem) clamp(.12rem, .55dvh, .3rem) !important;
+    font-size: clamp(1rem, 3.6dvh, 1.45rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  html body .screen-game .maintenance-dialog > p {
+    margin: 0 !important;
+    padding: 0 clamp(.8rem, 1.6dvw, 1.15rem) clamp(.38rem, 1.3dvh, .58rem) !important;
+    max-width: none !important;
+    font-size: clamp(.52rem, 1.72dvh, .74rem) !important;
+    line-height: 1.32 !important;
+    letter-spacing: .055em !important;
+  }
+
+  html body .screen-game .maintenance-status {
+    margin: 0 clamp(.8rem, 1.6dvw, 1.15rem) !important;
+    padding: clamp(.35rem, 1.25dvh, .55rem) clamp(.5rem, 1dvw, .75rem) !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: center !important;
+    gap: clamp(.35rem, 1.2dvw, .8rem) !important;
+    min-height: 0 !important;
+  }
+
+  html body .screen-game .maintenance-status > span {
+    min-width: 0 !important;
+    font-size: clamp(.5rem, 1.62dvh, .7rem) !important;
+    line-height: 1.15 !important;
+    white-space: nowrap !important;
+  }
+
+  html body .screen-game .maintenance-status > span > b {
+    font-size: clamp(.72rem, 2.35dvh, 1rem) !important;
+  }
+
+  html body .screen-game .maintenance-options {
+    margin: 0 !important;
+    padding: clamp(.42rem, 1.45dvh, .65rem) clamp(.8rem, 1.6dvw, 1.15rem) !important;
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    align-items: stretch !important;
+    gap: clamp(.4rem, 1dvw, .72rem) !important;
+  }
+
+  html body .screen-game .maintenance-choice {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: clamp(.42rem, 1.45dvh, .64rem) clamp(.5rem, .95dvw, .72rem) !important;
+    gap: clamp(.12rem, .52dvh, .28rem) !important;
+  }
+
+  html body .screen-game .maintenance-choice > i {
+    font-size: clamp(.82rem, 2.6dvh, 1.12rem) !important;
+    line-height: 1 !important;
+  }
+
+  html body .screen-game .maintenance-choice > strong {
+    font-size: clamp(.58rem, 1.85dvh, .78rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  html body .screen-game .maintenance-choice > b {
+    font-size: clamp(.5rem, 1.62dvh, .68rem) !important;
+    line-height: 1.05 !important;
+  }
+
+  html body .screen-game .maintenance-choice > :is(small,em) {
+    font-size: clamp(.43rem, 1.35dvh, .58rem) !important;
+    line-height: 1.2 !important;
+  }
+
+  html body .screen-game .maintenance-dialog > footer {
+    padding: clamp(.26rem, .95dvh, .42rem) clamp(.8rem, 1.6dvw, 1.15rem) !important;
+    min-height: 0 !important;
+    font-size: clamp(.4rem, 1.18dvh, .52rem) !important;
+    line-height: 1.15 !important;
+  }
+
+  /* The opponent-turn plate should read as status, not as the primary CTA. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:empty {
+    width: clamp(6.4rem, 8.65cqw, 8.8rem) !important;
+    min-height: 0 !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:empty::before {
+    min-height: clamp(2rem, 4.55cqh, 2.65rem) !important;
+    padding: clamp(.3rem, .48cqh, .46rem) clamp(.44rem, .62cqw, .64rem) !important;
+    font-size: clamp(.48rem, min(.62cqw, .92cqh), .68rem) !important;
+    border-radius: clamp(.36rem, .5cqw, .54rem) !important;
+  }
+
+  /* Defensive CSS seal: if a stale class survives reconciliation, never let
+     expanded ability prose paint over the compact touch HUD. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.is-expanded > .hero-command-bar > .hero-ability-chip > .hero-ability-copy > :is(b,p) {
+    display: none !important;
+  }
+
+  /* Screenshot 16:26: keep the player's cards comfortably above the bottom
+     edge. The hand is allowed to be slightly denser than desktop, but it should
+     not look miniature compared with the field cards. */
+  html body .screen-game .game-stage > .game-content.hs-board > .player-hand {
+    scale: .9 !important;
+    translate: 0 -1.05cqh !important;
+    transform-origin: center bottom !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .player-hand :is(.card-frame,.original-card) {
+    width: clamp(3.35rem, 6.15cqw, 6.35rem) !important;
+  }
+
+  /* The primary phase action remains clear, but no longer visually competes
+     with the battlefield/energy information on a phone. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:not(:empty) {
+    width: clamp(7.35rem, 9.45cqw, 10.1rem) !important;
+    scale: .8 !important;
+  }
+
+  /* Keep the bottom-right match control inside the usable browser area and
+     away from Android's landscape navigation edge. */
+  html body .screen-game .game-stage > .game-content.hs-board > .surrender-button {
+    scale: .76 !important;
+    translate: -1cqw -.55cqh !important;
+    transform-origin: right bottom !important;
+    margin-inline-end: max(.3rem, env(safe-area-inset-right)) !important;
+    margin-block-end: max(.2rem, env(safe-area-inset-bottom)) !important;
+  }
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-aspect-ratio: 12 / 5) {
+  html body .screen-game .game-stage > .game-content.hs-board > .player-hand {
+    scale: .9 !important;
+    translate: 0 -1.25cqh !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .phase-orb:not(:empty) {
+    scale: .76 !important;
+  }
+
+  html body .screen-game .game-stage > .game-content.hs-board > .surrender-button {
+    scale: .72 !important;
+    translate: -1.15cqw -.65cqh !important;
+  }
+}

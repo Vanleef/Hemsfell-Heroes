@@ -1,0 +1,330 @@
+/*
+ * Responsive hand + unified AI-thinking terminal authority.
+ *
+ * The hand uses the real hand box as its sizing container; runtime-published
+ * density variables only describe card count, never rules state. Card metrics
+ * live inside each hand card so they scale with the current rendered card.
+ */
+
+/* -------------------------------------------------------------------------
+   Interlaced, count-aware hands
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > :is(.player-hand,.opponent-hand) {
+  container-type: inline-size !important;
+  position: relative !important;
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: visible !important;
+  overscroll-behavior: contain !important;
+  isolation: isolate !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+  position: relative !important;
+  flex: 0 0 auto !important;
+  inline-size: auto !important;
+  block-size: clamp(3.15rem, var(--hh-hand-card-height, 92%), 9.25rem) !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  max-inline-size: none !important;
+  max-block-size: 100% !important;
+  aspect-ratio: 5 / 7 !important;
+  margin: 0 !important;
+  margin-inline-start: calc(0px - var(--hh-hand-overlap, 0cqi)) !important;
+  padding: 0 !important;
+  z-index: var(--hh-hand-order, 1) !important;
+  transform: none !important;
+  transform-origin: 50% 100% !important;
+  transition: transform 150ms ease, filter 150ms ease !important;
+  overflow: visible !important;
+  isolation: isolate !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame:first-child {
+  margin-inline-start: 0 !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame > .original-card,
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame > .original-card.is-small {
+  position: relative !important;
+  display: block !important;
+  inline-size: 100% !important;
+  block-size: 100% !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  max-inline-size: none !important;
+  max-block-size: none !important;
+  aspect-ratio: 5 / 7 !important;
+  margin: 0 !important;
+  container-type: inline-size !important;
+  transform-origin: 50% 100% !important;
+  touch-action: none !important;
+}
+
+/* The effective cost is still authoritative; the runtime reads the same copy
+   and paints one proportional hand metric instead of a second floating badge. */
+html body .screen-game .player-hand .original-card[data-hh-hand-card="true"] > .effective-cost,
+html body .screen-game .opponent-hand .original-card[data-hh-hand-card="true"] > .effective-cost {
+  display: none !important;
+}
+
+/* Right-side cards overlap left-side cards. Hover/focus/touch/drag elevates one
+   frame above the full fan without moving its siblings. */
+html body .screen-game .player-hand > .card-frame:is(
+  [data-hh-hand-active="true"],
+  :focus-within,
+  :has(> .original-card.hh-touch-drag-source)
+) {
+  z-index: 2147480600 !important;
+  transform: translateY(-28%) scale(1.09) !important;
+  filter: drop-shadow(0 .55rem .7rem rgb(0 0 0 / 66%)) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html body .screen-game .player-hand > .card-frame:hover {
+    z-index: 2147480600 !important;
+    transform: translateY(-28%) scale(1.09) !important;
+    filter: drop-shadow(0 .55rem .7rem rgb(0 0 0 / 66%)) !important;
+  }
+}
+
+/* Opponent cards use the same density contract but remain intentionally
+   smaller because their hand is informational rather than interactive. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(.card-frame,.opponent-card-back,.official-card-back) {
+  position: relative !important;
+  flex: 0 0 auto !important;
+  inline-size: auto !important;
+  block-size: clamp(1.55rem, var(--hh-opponent-card-height, 74%), 5.2rem) !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  max-inline-size: none !important;
+  max-block-size: 100% !important;
+  aspect-ratio: 5 / 7 !important;
+  margin: 0 !important;
+  margin-inline-start: calc(0px - min(var(--hh-hand-overlap, 0cqi), 1.85cqi)) !important;
+  z-index: var(--hh-hand-order, 1) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board > .opponent-hand > :is(.card-frame,.opponent-card-back,.official-card-back):first-child {
+  margin-inline-start: 0 !important;
+}
+
+html body .screen-game .opponent-hand > .card-frame > .original-card,
+html body .screen-game .opponent-hand > .card-frame > .original-card.is-small {
+  inline-size: 100% !important;
+  block-size: 100% !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  aspect-ratio: 5 / 7 !important;
+  container-type: inline-size !important;
+}
+
+/* -------------------------------------------------------------------------
+   Cost / Ofensividade / Vitalidade in hand
+   ------------------------------------------------------------------------- */
+html body .screen-game :is(.player-hand,.opponent-hand) .original-card[data-hh-hand-card="true"] > .hh-hand-metric {
+  position: absolute !important;
+  display: grid !important;
+  place-items: center !important;
+  inline-size: clamp(.78rem, 28cqi, 1.82rem) !important;
+  block-size: clamp(.78rem, 28cqi, 1.82rem) !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  border: max(1px, 1.25cqi) solid rgb(255 244 205 / 76%) !important;
+  border-radius: 50% !important;
+  color: #fff8e8 !important;
+  font: 950 clamp(.5rem, 17.5cqi, 1.04rem)/1 system-ui, sans-serif !important;
+  font-variant-numeric: tabular-nums !important;
+  text-align: center !important;
+  text-shadow: 0 1px 1px #000, 0 0 .18rem #000 !important;
+  box-shadow: inset 0 0 .28rem rgb(255 255 255 / 16%), 0 .08rem .22rem rgb(0 0 0 / 74%) !important;
+  pointer-events: none !important;
+  z-index: 40 !important;
+}
+
+html body .screen-game :is(.player-hand,.opponent-hand) .original-card[data-hh-hand-card="true"] > .hh-hand-cost {
+  inset-block-start: 3.8% !important;
+  inset-inline-start: 4.2% !important;
+  background: radial-gradient(circle at 35% 28%, #dffaff 0 10%, #347e98 30%, #102b3b 68%, #07131b 100%) !important;
+  border-color: rgb(181 230 241 / 88%) !important;
+}
+
+html body .screen-game :is(.player-hand,.opponent-hand) .original-card[data-hh-hand-card="true"] > .hh-hand-atk {
+  inset-inline-start: 4.2% !important;
+  inset-block-end: 3.8% !important;
+  background: radial-gradient(circle at 35% 28%, #fff0b6 0 10%, #b7762f 32%, #5f301a 70%, #21100a 100%) !important;
+  border-color: rgb(240 197 111 / 90%) !important;
+}
+
+html body .screen-game :is(.player-hand,.opponent-hand) .original-card[data-hh-hand-card="true"] > .hh-hand-hp {
+  inset-inline-end: 4.2% !important;
+  inset-block-end: 3.8% !important;
+  background: radial-gradient(circle at 35% 28%, #ffc8bd 0 10%, #a9443d 32%, #5f1e24 70%, #220b10 100%) !important;
+  border-color: rgb(239 151 139 / 90%) !important;
+}
+
+/* -------------------------------------------------------------------------
+   Presentation: no card-local icons while a card is moving/changing
+   ------------------------------------------------------------------------- */
+html body .screen-game .card-frame[data-hh-card-presenting="true"] > :is(
+  .field-negative-statuses,
+  .field-keywords,
+  .card-frame-marker,
+  .card-frame-activation,
+  .summoning-sickness-badge
+),
+html body .hh-flight-face > .hh-flight-status-shell {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  display: none !important;
+  pointer-events: none !important;
+}
+
+/* -------------------------------------------------------------------------
+   Local card-space anchors for a stable quarter-turn card
+   ------------------------------------------------------------------------- */
+/* The runtime only publishes this state when the card's computed transform is
+   actually a quarter turn. Local left -> screen top; local right -> bottom;
+   local top -> screen right. This keeps the same relationship to the card. */
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
+  > .card-frame[data-unit-id][data-hh-local-rotation="quarter"] > .field-negative-statuses {
+  top: 0 !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, calc(-100% - clamp(.08rem, .14cqw, .16rem))) rotate(90deg) !important;
+  transform-origin: 50% 50% !important;
+}
+
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
+  > .card-frame[data-unit-id][data-hh-local-rotation="quarter"] > .field-keywords {
+  top: 100% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(-50%, clamp(.08rem, .14cqw, .16rem)) rotate(90deg) !important;
+  transform-origin: 50% 50% !important;
+}
+
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
+  > .card-frame[data-unit-id][data-hh-local-rotation="quarter"] > .card-frame-activation {
+  top: 50% !important;
+  left: 100% !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: translate(clamp(.08rem, .14cqw, .16rem), -50%) rotate(90deg) !important;
+  transform-origin: 50% 50% !important;
+}
+
+html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
+  > .card-frame[data-unit-id][data-hh-local-rotation="quarter"] > .card-frame-marker {
+  top: 100% !important;
+  right: 0 !important;
+  left: auto !important;
+  bottom: auto !important;
+  transform: translate(48%, 48%) rotate(90deg) !important;
+  transform-origin: 50% 50% !important;
+}
+
+/* -------------------------------------------------------------------------
+   One AI state: IA pensando
+   ------------------------------------------------------------------------- */
+html body [data-hemsfell-ai-thinking] {
+  box-sizing: border-box !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: max-content !important;
+  min-width: 0 !important;
+  max-width: min(24rem, calc(100dvw - 1rem)) !important;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 0 !important;
+  padding: clamp(.34rem, .7dvh, .56rem) clamp(.55rem, .8dvw, .88rem) !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  text-align: center !important;
+  font-size: clamp(.64rem, min(.78dvw, 1.55dvh), .86rem) !important;
+  line-height: 1.12 !important;
+  letter-spacing: .025em !important;
+}
+
+html body:has(.screen-game .priority-stack-indicator) [data-hemsfell-ai-thinking] {
+  max-width: min(20rem, calc(47dvw - 1rem)) !important;
+}
+
+/* The React fallback remains as a safety net only when the thinking indicator
+   has not mounted yet. It never exposes the obsolete priority-evaluation copy. */
+html body .screen-game .response-waiting[data-hh-ai-bot-wait="true"] {
+  font-size: 0 !important;
+  letter-spacing: 0 !important;
+}
+html body .screen-game .response-waiting[data-hh-ai-bot-wait="true"]::after {
+  content: "IA pensando…" !important;
+  font: 800 clamp(.6rem, min(.72dvw, 1.45dvh), .8rem)/1.1 system-ui, sans-serif !important;
+  letter-spacing: .025em !important;
+}
+html body:has([data-hemsfell-ai-thinking]) .screen-game .response-waiting[data-hh-ai-bot-wait="true"] {
+  display: none !important;
+}
+
+/* -------------------------------------------------------------------------
+   Touch / small-screen adaptations
+   ------------------------------------------------------------------------- */
+@media (hover: none), (pointer: coarse) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+    block-size: clamp(3.45rem, var(--hh-hand-card-height, 92%), 7rem) !important;
+  }
+
+  html body .screen-game .player-hand > .card-frame:is([data-hh-hand-active="true"],:focus-within,:has(> .original-card.hh-touch-drag-source)) {
+    transform: translateY(-34%) scale(1.12) !important;
+  }
+
+  html body .screen-game .player-hand > .card-frame > .original-card {
+    touch-action: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+  }
+
+  html body [data-hemsfell-ai-thinking] {
+    max-width: min(88dvw, 21rem) !important;
+    padding: clamp(.32rem, 1.05dvh, .5rem) clamp(.5rem, 1.3dvw, .76rem) !important;
+    font-size: clamp(.58rem, 1.65dvh, .76rem) !important;
+  }
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 34rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+    block-size: clamp(3.15rem, var(--hh-hand-card-height, 88%), 5.45rem) !important;
+  }
+
+  html body .screen-game :is(.player-hand,.opponent-hand) .original-card[data-hh-hand-card="true"] > .hh-hand-metric {
+    inline-size: clamp(.72rem, 27cqi, 1.35rem) !important;
+    block-size: clamp(.72rem, 27cqi, 1.35rem) !important;
+    font-size: clamp(.46rem, 17cqi, .78rem) !important;
+  }
+
+  html body:has(.screen-game .priority-stack-indicator) [data-hemsfell-ai-thinking] {
+    max-width: min(18rem, calc(46dvw - .65rem)) !important;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 60rem) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .player-hand > .card-frame {
+    block-size: clamp(3.25rem, var(--hh-hand-card-height, 90%), 6.25rem) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .screen-game .player-hand > .card-frame {
+    transition: none !important;
+  }
+}

@@ -19,17 +19,24 @@ const ruleBody = (sheet, marker) => {
   return sheet.slice(open + 1, close);
 };
 
-test("targeting hero UI layer loads after match visuals while pile footer remains final", () => {
+test("targeting hero UI layer loads after match visuals while scoped terminal authorities keep their order", () => {
   const imports = [...layout.matchAll(/import\s+"([^"]+\.css)";/g)].map((match) => match[1]);
   const visual = imports.indexOf("./presentation/styles/match-visual-terminal.css");
   const targeting = imports.indexOf("./presentation/styles/targeting-hero-ui-terminal.css");
   const pile = imports.indexOf("./presentation/styles/side-pile-text-shadow-terminal.css");
+  const hand = imports.indexOf("./presentation/styles/hand-ai-ui-terminal.css");
+  const ai = imports.indexOf("./presentation/styles/ai-thinking-panel-terminal.css");
+  const tutorialCurrent = imports.indexOf("./presentation/styles/tutorial-current-ui-terminal.css");
   assert.ok(visual >= 0);
   assert.ok(targeting > visual);
   assert.ok(pile > targeting);
-  assert.equal(imports.at(-1), "./presentation/styles/side-pile-text-shadow-terminal.css");
+  assert.ok(hand > pile);
+  assert.ok(ai > hand);
+  assert.ok(tutorialCurrent > ai);
+  assert.equal(imports.at(-1), "./presentation/styles/tutorial-current-ui-terminal.css");
+  assert.match(gate, /import\("\.\/hero-ability-detail-runtime"\)/);
   assert.match(gate, /import\("\.\/hero-ability-rail-runtime"\)/);
-  assert.match(gate, /<HeroPanelExpandRuntime \/>\s*<HeroAbilityRailRuntime \/>/);
+  assert.match(gate, /<HeroPanelExpandRuntime \/>\s*<HeroAbilityDetailRuntime \/>\s*<HeroAbilityRailRuntime \/>/);
 });
 
 test("mulligan uses only the delayed canonical Floating UI card tooltip", () => {
