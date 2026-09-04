@@ -94,6 +94,8 @@ import "./presentation/styles/match-requested-corrections-terminal.css";
 import "./presentation/styles/priority-card-anchor-terminal.css";
 /* Final short-mobile hero spacing: keep ability shortcuts clear of progression strips. */
 import "./presentation/styles/mobile-hero-ability-spacing-terminal.css";
+/* Final panel-relative authority: level-progress copy grows with the actual meter width. */
+import "./presentation/styles/hero-progress-text-fit-terminal.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
