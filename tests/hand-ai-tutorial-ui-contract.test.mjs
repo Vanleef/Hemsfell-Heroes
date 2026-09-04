@@ -76,14 +76,13 @@ test("card icons disappear during presentation without polling field transforms"
   assert.match(stabilityCss, /\.hh-flight-face :is\([\s\S]*?field-negative-statuses[\s\S]*?field-keywords[\s\S]*?card-frame-activation[\s\S]*?display: none !important/);
 });
 
-test("AI wait presentation exposes one compact IA pensando state", () => {
+test("AI wait presentation keeps only the canonical compact IA pensando state", () => {
   assert.match(runtime, /replace\(\/IA avaliando prioridade\/gi, "IA pensando"\)/);
   assert.match(runtime, /dataset\.hhAiUnified/);
   assert.match(runtime, /dataset\.hhAiBotWait/);
   assert.match(css, /\[data-hemsfell-ai-thinking\][\s\S]*?width:\s*max-content\s*!important/);
   assert.match(css, /\[data-hemsfell-ai-thinking\][\s\S]*?white-space:\s*normal\s*!important/);
-  assert.match(css, /response-waiting\[data-hh-ai-bot-wait="true"\]::after[\s\S]*?IA pensando/);
-  assert.match(css, /body:has\(\[data-hemsfell-ai-thinking\]\)[\s\S]*?response-waiting[\s\S]*?display:\s*none/);
+  assert.match(stabilityCss, /response-waiting\[data-hh-ai-bot-wait="true"\][\s\S]*?display:\s*none\s*!important/);
 });
 
 test("tutorial documents the actual responsive hand touch phase and AI behaviors", () => {

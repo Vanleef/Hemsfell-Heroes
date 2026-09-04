@@ -38,7 +38,7 @@ test("revealed public information remains visible on stable hand cards", () => {
   assert.match(css, /opacity: 1 !important/);
 });
 
-test("hand peek marks and moves the actual immediate neighbours", () => {
+test("hand peek marks and moves the actual immediate neighbours with a soft transition", () => {
   assert.match(runtime, /dataset\.hhHandPeek/);
   assert.match(runtime, /previous\.dataset\.hhHandNeighbor = "left"/);
   assert.match(runtime, /next\.dataset\.hhHandNeighbor = "right"/);
@@ -50,7 +50,8 @@ test("hand peek marks and moves the actual immediate neighbours", () => {
   assert.match(css, /--hh-hand-peek-gap/);
   assert.match(css, /data-hh-hand-neighbor="left"[\s\S]*?translate:\s*calc\(-1 \* var\(--hh-hand-peek-gap\)\) 0/);
   assert.match(css, /data-hh-hand-neighbor="right"[\s\S]*?translate:\s*var\(--hh-hand-peek-gap\) 0/);
-  assert.match(css, /var\(--hh-hand-overlap, 0cqi\) \+ \.55cqi/);
+  assert.match(css, /var\(--hh-hand-overlap, 0cqi\) \+ \.24cqi/);
+  assert.match(css, /translate 220ms cubic-bezier\(\.22, \.61, \.36, 1\)/);
 });
 
 test("hand observer ignores board class churn and never reads field layout", () => {
