@@ -30,6 +30,25 @@ html body .screen-game .card-frame[data-hh-ascension="true"] > .card-frame-activ
   pointer-events: none !important;
 }
 
+/* The body-level StatusOverflowRuntime owns keyword/status help. Legacy field
+   rails still create a short label from the parent `data-keywords` attribute;
+   suppress those parent pseudo-elements as well as any child pseudo-tooltip so
+   hovering an icon can never paint two tooltip surfaces at once. */
+html body .screen-game :is(.card-frame,.original-card)
+  > :is(.field-keywords,.field-negative-statuses)::before,
+html body .screen-game :is(.card-frame,.original-card)
+  > :is(.field-keywords,.field-negative-statuses)::after,
+html body .screen-game :is(.field-keywords,.field-negative-statuses)
+  > :is([data-keyword],[data-status])::before,
+html body .screen-game :is(.field-keywords,.field-negative-statuses)
+  > :is([data-keyword],[data-status])::after {
+  content: none !important;
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 @media (orientation: landscape) and (hover: none) and (pointer: coarse) {
   /* Keyword and negative-status rails scale with their card container. */
   html body .screen-game :is(.card-frame,.pile-card) {
