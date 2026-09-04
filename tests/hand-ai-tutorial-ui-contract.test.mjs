@@ -63,7 +63,9 @@ test("hand cards interlace progressively and one interaction card becomes fully 
 
 test("card icons disappear during presentation without polling field transforms", () => {
   assert.doesNotMatch(requestedRuntime, /ICON_FRAGMENT_SELECTOR|decorateFlight|hh-flight-status-shell/);
-  assert.doesNotMatch(runtime, /DOMMatrixReadOnly|getComputedStyle|FIELD_FRAME_SELECTOR|hhLocalRotation|hhCardPresenting/);
+  assert.doesNotMatch(runtime, /DOMMatrixReadOnly|getComputedStyle|FIELD_FRAME_SELECTOR/);
+  assert.match(runtime, /delete node\.dataset\.hhLocalRotation/);
+  assert.match(runtime, /delete node\.dataset\.hhCardPresenting/);
   assert.match(stabilityCss, /card-frame:has\(> \.original-card:is\(\.hh-presentation-hidden,\.is-impacting\)\)/);
   assert.match(stabilityCss, /\.hh-flight-face :is\([\s\S]*?field-negative-statuses[\s\S]*?field-keywords[\s\S]*?card-frame-activation[\s\S]*?display: none !important/);
 });
