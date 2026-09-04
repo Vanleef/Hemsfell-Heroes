@@ -24,6 +24,8 @@ export default function MatchLoadingRuntime() {
   const visibleRef = useRef(true);
 
   useEffect(() => {
+    // React Strict Mode replays setup/cleanup with the same ref in development.
+    visibleRef.current = true;
     const startedAt = performance.now();
     let disposed = false;
     let mutationFrame = 0;

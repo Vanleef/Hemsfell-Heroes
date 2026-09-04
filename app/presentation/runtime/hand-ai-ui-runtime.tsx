@@ -133,6 +133,7 @@ function clearPeekState() {
 }
 
 function setPeekFrame(frame: HTMLElement | null) {
+  if (frame === peekFrame) return;
   clearPeekState();
   if (!frame || !frame.matches(PLAYER_HAND_FRAME_SELECTOR)) return;
 
@@ -184,7 +185,16 @@ export default function HandAiUiRuntime() {
 
     const flush = () => {
       frame = 0;
-      for (const hand of dirtyHands) syncHand(hand);
+      if (peekFrame && !peekFrame.isConnected) clearPeekState();
+      for (const hand of dirtyHands) {
+        syncHand(hand);
+        // A draw/removal can change neighbours without a pointer transition.
+        if (peekFrame?.parentElement === hand) {
+          const current = peekFrame;
+          clearPeekState();
+          setPeekFrame(current);
+        }
+      }
       dirtyHands.clear();
       if (aiDirty) {
         aiDirty = false;

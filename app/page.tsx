@@ -936,7 +936,9 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
  const priorityControl=usePriorityControl({interactionActive:priorityInteractionActive,pendingResponse:visibleResponseWindow,hasUsableResponse:localPriorityOptions.length>0||localHeroPriorityOptions.length>0,getCurrentPending:()=>presentationBlocked?null:currentGameRef.current?.pendingResponse??null,onAutoPass:()=>passPriorityWindow(0,true)});
  useEffect(()=>{const pending=game?.pendingResponse;if(presentationBusy||mode!=="bot"||pending?.responder!==0||!pending.deadline)return;const key=`${pending.actor}:${pending.responder}:${pending.passes??0}:${pending.action}:${pending.deadline}`;const expire=()=>{const current=currentGameRef.current?.pendingResponse,currentKey=current?`${current.actor}:${current.responder}:${current.passes??0}:${current.action}:${current.deadline??0}`:"";if(currentKey===key)void passPriorityWindow(0,true)};const delay=pending.deadline-Date.now();if(delay<=0){expire();return}const timer=window.setTimeout(expire,delay+25);return()=>window.clearTimeout(timer)},[presentationBusy,mode,game?.pendingResponse?.actor,game?.pendingResponse?.responder,game?.pendingResponse?.passes,game?.pendingResponse?.action,game?.pendingResponse?.deadline]);
 
- const selectedDeck=deckById(mine),activeUserDeck=userDecks[mine]??defaultUserDeck(mine,cards,selectedDeck.name),deckValidation=validateUserDeck(activeUserDeck,cards);
+ const selectedDeck=deckById(mine);
+ const activeUserDeck=useMemo(()=>userDecks[mine]??defaultUserDeck(mine,cards,selectedDeck.name),[userDecks,mine,selectedDeck.name]);
+ const deckValidation=useMemo(()=>validateUserDeck(activeUserDeck,cards),[activeUserDeck]);
  const selectedPool=useMemo<CardDef[]>(()=>activeUserDeck.main.flatMap(entry=>{const card=cards.find(candidate=>candidate.id===entry.cardId);return card?[{...card,collectionQuantity:entry.quantity}]:[]}),[activeUserDeck]);
  const selectedExtra=useMemo(()=>activeUserDeck.extra.map(cardId=>cards.find(card=>card.id===cardId)).filter((card):card is CardDef=>!!card),[activeUserDeck]);
  const mainDeckCopies=deckValidation.mainCount,deckListValid=deckValidation.ok;

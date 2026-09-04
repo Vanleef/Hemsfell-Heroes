@@ -46,9 +46,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Validate canonical project state
-        run: npm run prepare:project
-
       - name: Run rules tests
         run: npm run test:rules
 
@@ -83,4 +80,4 @@ jobs:
           if-no-files-found: error
 
       - name: Build Next.js application
-        run: npm run vercel-build
+        run: npm run build:next

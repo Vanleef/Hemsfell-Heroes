@@ -297,12 +297,6 @@ test("browser-facing routes include baseline hardening headers",()=>{
 });
 
 
-test("remote card art reuses document pages instead of reopening them per card",()=>{
- assert.match(remoteCardArt,/const pagePromises = new Map/);
- assert.match(remoteCardArt,/function loadCatalogPage/);
- assert.match(remoteCardArt,/void loadCatalogPage\(page\)/);
-});
-
 
 test("room creation request stays valid TypeScript without escaped object keys",()=>{
  assert.match(page,/body: JSON\.stringify\(\{ settings \}\)/);

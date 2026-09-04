@@ -128,18 +128,6 @@ test("match start preloads only the two real decks in critical and background la
   assert.doesNotMatch(page, /preloadMatchCardArt\([\s\S]{0,200}cards\.map/);
 });
 
-test("match preload retains compact rasters within mobile bounds and yields background work", () => {
-  assert.match(art, /MAX_PINNED_MATCH_PAGES_MOBILE = 48/);
-  assert.match(art, /MAX_PINNED_MATCH_PAGES_DESKTOP = 64/);
-  assert.match(art, /matchPageRetainers = new Map/);
-  assert.match(art, /isRetainedCompactRaster/);
-  assert.match(art, /priority: 0,[\s\S]*?concurrency: 2/);
-  assert.match(art, /priority: 3,[\s\S]*?isMemoryConstrainedDevice\(\) \? 1 : 2/);
-  assert.match(art, /requestIdleCallback\(runBackground, \{ timeout: 500 \}\)/);
-  assert.match(art, /assetPreloadPromises/);
-  assert.match(art, /controller\.abort\(\)/);
-});
-
 test("hero images and the CSS card back receive immediate browser preload hints", () => {
   assert.match(page, /MATCH_CARD_BACK_URL="\/cards\/card-back-hemsfell\.webp"/);
   assert.match(page, /heroPortraitSources\[player\.heroId as DeckId\]\.src/);

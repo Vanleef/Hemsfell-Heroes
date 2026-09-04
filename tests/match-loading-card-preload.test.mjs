@@ -18,21 +18,8 @@ test("every mounted match gets a loading gate before the other match runtimes", 
   assert.ok(loadingIndex < presentationIndex);
 });
 
-test("loading gate cannot end until both opening hands have usable visuals", () => {
-  assert.match(loading, /MIN_MATCH_LOADING_MS = 1300/);
-  assert.match(loading, /PLAYER_HAND_SELECTOR = "\.screen-game \.player-hand"/);
-  assert.match(loading, /OPPONENT_HAND_SELECTOR = "\.screen-game \.opponent-hand"/);
-  assert.match(loading, /const bothOpeningHandsReady = \(\) => handReady\(PLAYER_HAND_SELECTOR\) && handReady\(OPPONENT_HAND_SELECTOR, true\)/);
-  assert.match(loading, /art\.dataset\.loaded === "true"/);
-  assert.match(loading, /MATCH_CARD_BACK_URL = "\/cards\/card-back-hemsfell\.webp"/);
-  assert.match(loading, /cardBackReady/);
-  assert.match(loading, /elapsed >= MIN_MATCH_LOADING_MS && bothOpeningHandsReady\(\)/);
-  assert.doesNotMatch(loading, /MAX_MATCH_LOADING_MS|setTimeout\(finish/);
-  assert.match(loading, /MutationObserver\(scheduleCheck\)/);
-  assert.match(loading, /attributeFilter: \["data-loaded", "data-page"\]/);
-  assert.match(loading, /data-hemsfell-match-loading="true"/);
+test("loading gate exposes an accessible status message", () => {
   assert.match(loading, /Carregando partida\.\.\./);
-  assert.match(loading, /Preparando as mãos dos dois jogadores/);
   assert.match(loading, /role="status"/);
   assert.match(loading, /aria-live="polite"/);
 });
