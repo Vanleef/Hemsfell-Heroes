@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const runtime = fs.readFileSync("app/presentation/runtime/hero-ability-detail-runtime.tsx", "utf8");
-const layout = fs.readFileSync("app/layout.tsx", "utf8");
+const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8");
 
 const heroKeys = ["gimble", "goblin", "uruk", "tifon", "saymon", "tessalia", "quarion", "rasmus", "ngoro", "zayan", "natureza"];
 
@@ -32,10 +32,10 @@ test("card-facing limits and costs stay concise and faithful to the printed hero
 });
 
 test("detail runtime mounts before the ability rail reads tooltip semantics", () => {
-  const detailImport = layout.indexOf('import HeroAbilityDetailRuntime from "./presentation/runtime/hero-ability-detail-runtime"');
-  const railImport = layout.indexOf('import HeroAbilityRailRuntime from "./presentation/runtime/hero-ability-rail-runtime"');
-  const detailMount = layout.indexOf("<HeroAbilityDetailRuntime />");
-  const railMount = layout.indexOf("<HeroAbilityRailRuntime />");
+  const detailImport = gate.indexOf('import("./hero-ability-detail-runtime")');
+  const railImport = gate.indexOf('import("./hero-ability-rail-runtime")');
+  const detailMount = gate.indexOf("<HeroAbilityDetailRuntime />");
+  const railMount = gate.indexOf("<HeroAbilityRailRuntime />");
   assert.ok(detailImport >= 0 && railImport > detailImport);
   assert.ok(detailMount >= 0 && railMount > detailMount);
 });
