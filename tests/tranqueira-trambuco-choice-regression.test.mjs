@@ -109,6 +109,8 @@ test("Sr. Goblin AI resolves the mandatory Trambique image attachment without lo
   assert.ok(resolved.players[1].support.some((card) => card.page === 38 && card.attachedTo));
 
   const runtime = await readFile(new URL("../app/rules-engine/ai-system/runtime.ts", import.meta.url), "utf8");
-  assert.match(runtime, /const decision = chooseAIDecision\(/);
-  assert.match(runtime, /return decision \?\? chooseAdvancedAIAction/);
+  const decisionFunction = runtime.match(/export async function chooseAdvancedAIDecision[\s\S]*?\n}\n\nexport function planAdvancedAIAttacks/)?.[0] || "";
+  assert.match(decisionFunction, /const decision = chooseAIDecision\(/);
+  assert.match(decisionFunction, /if \(decision\) return decision/);
+  assert.doesNotMatch(decisionFunction, /chooseAdvancedAIAction\(/);
 });
