@@ -48,11 +48,14 @@ test("response dialogs remain deferred until presentation becomes idle", () => {
   assert.match(stabilityCss, /data-hh-deferred-by-presentation="true"/);
 });
 
-test("detached presentation canvases release native backing stores", () => {
+test("detached canvases and stale presentation clones release native backing stores", () => {
   assert.match(memoryRuntime, /if \(canvas\.isConnected\) return/);
   assert.match(memoryRuntime, /canvas\.width = 0/);
   assert.match(memoryRuntime, /canvas\.height = 0/);
-  assert.match(memoryRuntime, /record\.removedNodes\.forEach\(collect\)/);
+  assert.match(memoryRuntime, /record\.removedNodes\.forEach\(collectRemoved\)/);
+  assert.match(memoryRuntime, /record\.addedNodes\.forEach\(collectAdded\)/);
+  assert.match(memoryRuntime, /TEMPORARY_PRESENTATION_SAFETY_MS = 12_000/);
+  assert.match(memoryRuntime, /sweepTemporary\(true\)/);
   assert.match(runtimeGate, /PresentationMemoryRuntime/);
 });
 
