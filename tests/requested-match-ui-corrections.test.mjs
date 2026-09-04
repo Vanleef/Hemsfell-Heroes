@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
+const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/match-requested-corrections-terminal.css", "utf8");
 const runtime = fs.readFileSync("app/presentation/runtime/match-requested-ui-runtime.tsx", "utf8");
 
@@ -12,7 +13,8 @@ test("requested terminal corrections load after mobile/hero authorities and befo
   const pileTerminal = layout.indexOf('import "./presentation/styles/side-pile-text-shadow-terminal.css"');
   assert.ok(correction > heroEffects);
   assert.ok(pileTerminal > correction);
-  assert.match(layout, /<MatchRequestedUiRuntime \/>/);
+  assert.match(gate, /import\("\.\/match-requested-ui-runtime"\)/);
+  assert.match(gate, /<MatchRequestedUiRuntime \/>/);
 });
 
 test("opponent turn plate is content-sized and phase tracker has no underline", () => {
