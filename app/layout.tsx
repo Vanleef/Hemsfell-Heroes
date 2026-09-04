@@ -88,6 +88,8 @@ import "./presentation/styles/mobile-touch-layout-terminal.css";
 import "./presentation/styles/mobile-card-icon-scale-terminal.css";
 /* Final hero status geometry: portrait-only compact cards and mirrored active-effect docks. */
 import "./presentation/styles/hero-active-effects-anchor-terminal.css";
+/* Screenshot/request authority: stable icon anchors, compact transient HUD and mobile dialogs. */
+import "./presentation/styles/match-requested-corrections-terminal.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
@@ -104,6 +106,7 @@ import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-run
 import HeroAbilityDetailRuntime from "./presentation/runtime/hero-ability-detail-runtime";
 import HeroAbilityRailRuntime from "./presentation/runtime/hero-ability-rail-runtime";
 import StatusOverflowRuntime from "./presentation/runtime/status-overflow-runtime";
+import MatchRequestedUiRuntime from "./presentation/runtime/match-requested-ui-runtime";
 import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
 import EvolutionTooltipPortalRuntime from "./presentation/runtime/evolution-tooltip-portal-runtime";
 import MatchFeedbackRuntime from "./presentation/runtime/match-feedback-runtime";
@@ -145,6 +148,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <HeroAbilityDetailRuntime />
       <HeroAbilityRailRuntime />
       <StatusOverflowRuntime />
+      <MatchRequestedUiRuntime />
       <TerrainFieldAnchorRuntime />
       <EvolutionTooltipPortalRuntime />
       <MatchFeedbackRuntime />
