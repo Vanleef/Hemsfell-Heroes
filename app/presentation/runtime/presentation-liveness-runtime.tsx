@@ -7,14 +7,16 @@ type PresentationWindow = Window & { __hemsfellPresentationBusy?: boolean };
 const BUSY_EVENT = "hemsfell:presentation-busy";
 const IDLE_EVENT = "hemsfell:presentation-idle";
 const CATCH_UP_EVENT = "hemsfell:presentation-catch-up";
-const MAX_PRESENTATION_LOCK_MS = 5600;
+const MAX_PRESENTATION_LOCK_MS = 9000;
 
 /**
  * The page intentionally refuses to advance bot decisions while presentation is
  * busy. That means a stale presentation flag cannot rely on the AI itself to
  * recover: the AI callback is never entered. This match-only watchdog asks the
  * canonical presentation runtime to snap to authoritative state if a visual
- * transaction exceeds its liveness budget.
+ * transaction exceeds its liveness budget. Nine seconds stays above the longest
+ * legitimate serialized card/effect chains while still turning an infinite lock
+ * into a bounded recovery.
  */
 export default function PresentationLivenessRuntime() {
   useEffect(() => {
