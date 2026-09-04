@@ -35,6 +35,12 @@ test("short progress keeps the authoritative counter and collapses to one visibl
   assert.match(css, /text-overflow:\s*clip\s*!important/);
 });
 
+test("local hero renders the same semantic concise progress copy as the opponent", () => {
+  assert.match(css, /canonical-hero-panel\.player:not\(\.is-expanded\)[\s\S]*hero-evolution::after\s*\{[\s\S]*content:\s*none\s*!important[\s\S]*display:\s*none\s*!important/);
+  assert.match(css, /canonical-hero-panel\.player:not\(\.is-expanded\)[\s\S]*hero-evolution-copy\[data-hh-short-progress="true"\][\s\S]*display:\s*flex\s*!important[\s\S]*visibility:\s*visible\s*!important/);
+  assert.match(css, /hero-evolution-copy\[data-hh-short-progress="true"\] > small[\s\S]*color:\s*#fff0b1\s*!important/);
+});
+
 test("max-level heroes expose neither progress nor evolve controls", () => {
   assert.match(runtime, /const MAX_HERO_LEVEL = 3/);
   assert.match(runtime, /\.hero-level/);
