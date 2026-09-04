@@ -96,6 +96,11 @@ export default function CollectionSelectedDeckPriorityRuntime() {
       const canvases = [...document.querySelectorAll<HTMLCanvasElement>(SELECTED_DECK_CARD_SELECTOR)];
       const deckPages = uniquePages(canvases);
       const signature = `${heroPage}:${deckPages.join(",")}`;
+      const signatureChanged = signature !== currentSignature;
+      if (signatureChanged) {
+        currentSignature = signature;
+        resetDeckWork();
+      }
 
       const visiblePages = uniquePages(canvases.filter(isViewportVisible));
       visiblePages.forEach((page) => promoteRemoteCardArtPage(page, 0, true));
@@ -107,10 +112,7 @@ export default function CollectionSelectedDeckPriorityRuntime() {
         }).catch(() => undefined);
       }
 
-      if (signature === currentSignature) return;
-      currentSignature = signature;
-      resetDeckWork();
-      if (!deckPages.length) return;
+      if (!signatureChanged || !deckPages.length) return;
 
       const visibleSet = new Set(visiblePages);
       const eagerCount = constrained() ? 8 : 14;
