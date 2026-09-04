@@ -101,6 +101,7 @@ import PresentationEventBridge from "./presentation/runtime/presentation-event-b
 import PresentationInteractionRuntime from "./presentation/runtime/presentation-interaction-runtime";
 import GamePresentationRuntime from "./presentation/runtime/game-presentation-runtime";
 import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-runtime";
+import HeroAbilityDetailRuntime from "./presentation/runtime/hero-ability-detail-runtime";
 import HeroAbilityRailRuntime from "./presentation/runtime/hero-ability-rail-runtime";
 import StatusOverflowRuntime from "./presentation/runtime/status-overflow-runtime";
 import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
@@ -141,6 +142,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <PresentationInteractionRuntime />
       <GamePresentationRuntime />
       <HeroPanelExpandRuntime />
+      <HeroAbilityDetailRuntime />
       <HeroAbilityRailRuntime />
       <StatusOverflowRuntime />
       <TerrainFieldAnchorRuntime />
