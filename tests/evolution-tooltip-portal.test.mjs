@@ -7,6 +7,7 @@ const portalCss = fs.readFileSync("app/presentation/styles/evolution-tooltip-por
 const globalTooltipCss = fs.readFileSync("app/presentation/styles/global-tooltip-layer-final.css", "utf8");
 const terrainRuntime = fs.readFileSync("app/presentation/runtime/terrain-field-anchor-runtime.tsx", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
+const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8");
 
 test("evolution criteria uses browser Top Layer and is anchored to progress hover beside the hero", () => {
   assert.match(runtime, /PROGRESS_SURFACE_SELECTOR = "\.screen-game \.hero-evolution"/);
@@ -26,7 +27,7 @@ test("evolution criteria uses browser Top Layer and is anchored to progress hove
   assert.match(portalCss, /evolution-tooltip:not\(\.evolution-tooltip-portal\)[^}]*display:\s*none\s*!important/);
   assert.match(portalCss, /body > \.evolution-tooltip-portal:popover-open/);
   assert.doesNotMatch(portalCss, /inset:\s*auto\s*!important/);
-  assert.match(layout, /EvolutionTooltipPortalRuntime/);
+  assert.match(gate, /EvolutionTooltipPortalRuntime/);
   assert.match(layout, /evolution-tooltip-portal-final\.css/);
 });
 

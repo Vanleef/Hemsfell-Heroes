@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 
 const CATALOG_URL = "/api/hemsfell-card-catalog.pdf";
+const MAX_CACHED_PAGE_PROMISES = 48;
 let catalogPromise: Promise<import("pdfjs-dist").PDFDocumentProxy> | null = null;
 const pagePromises = new Map<number, Promise<import("pdfjs-dist").PDFPageProxy>>();
 
@@ -15,8 +16,10 @@ async function loadCatalog() {
       ).toString();
       return pdfjs.getDocument({
         url: CATALOG_URL,
-        disableRange: true,
+        disableRange: false,
         disableStream: true,
+        disableAutoFetch: true,
+        rangeChunkSize: 256 * 1024,
       }).promise;
     }).catch((error) => {
       catalogPromise = null;
@@ -30,7 +33,11 @@ async function loadCatalog() {
 /** Reuse PDF page proxies when a card appears in hand, board and inspector. */
 function loadCatalogPage(page: number) {
   let pending = pagePromises.get(page);
-  if (!pending) {
+  if (pending) {
+    // Refresh insertion order so frequently visible battlefield pages survive eviction.
+    pagePromises.delete(page);
+    pagePromises.set(page, pending);
+  } else {
     pending = loadCatalog().then((catalog) => {
       if (page < 1 || page > catalog.numPages) throw new Error("Card page is outside the catalogue");
       return catalog.getPage(page);
@@ -39,6 +46,11 @@ function loadCatalogPage(page: number) {
       throw error;
     });
     pagePromises.set(page, pending);
+    while (pagePromises.size > MAX_CACHED_PAGE_PROMISES) {
+      const oldest = pagePromises.keys().next().value as number | undefined;
+      if (oldest === undefined) break;
+      pagePromises.delete(oldest);
+    }
   }
   return pending;
 }
@@ -69,34 +81,37 @@ type RemoteCardArtProps = {
 
 export function RemoteCardArt({ page, name, className = "", style, priority = false }: RemoteCardArtProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [visible, setVisible] = useState(priority);
+  const [visible, setVisible] = useState(false);
   const [failed, setFailed] = useState(false);
+  const shouldRender = priority || visible;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    if (priority || !("IntersectionObserver" in globalThis)) {
-      setVisible(true);
-      return;
+    if (priority) return;
+    if (!("IntersectionObserver" in globalThis)) {
+      const frame = requestAnimationFrame(() => setVisible(true));
+      return () => cancelAnimationFrame(frame);
     }
+    const mobile = matchMedia("(max-width: 48rem), (pointer: coarse)").matches;
     const observer = new IntersectionObserver(
-      ([entry]) => entry.isIntersecting && setVisible(true),
-      { rootMargin: "360px" },
+      ([entry]) => setVisible(entry.isIntersecting),
+      { rootMargin: mobile ? "160px" : "320px" },
     );
     observer.observe(canvas);
     return () => observer.disconnect();
   }, [priority]);
 
   useEffect(() => {
-    if (!visible) return;
+    if (!shouldRender) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
     let cancelled = false;
     let renderTask: import("pdfjs-dist").RenderTask | undefined;
 
-    setFailed(false);
     void loadCatalogPage(page)
       .then(async (pdfPage) => {
-        if (cancelled || !canvasRef.current) return;
-        const canvas = canvasRef.current;
+        if (cancelled) return;
         const baseViewport = pdfPage.getViewport({ scale: 1 });
         const cssWidth = Math.max(canvas.clientWidth, 120);
         const pixelRatio = Math.min(globalThis.devicePixelRatio || 1, 1.5);
@@ -108,7 +123,10 @@ export function RemoteCardArt({ page, name, className = "", style, priority = fa
         if (!context) throw new Error("Canvas indisponível");
         renderTask = pdfPage.render({ canvas, canvasContext: context, viewport });
         await renderTask.promise;
-        if (!cancelled) canvas.dataset.loaded = "true";
+        if (!cancelled) {
+          canvas.dataset.loaded = "true";
+          setFailed(false);
+        }
       })
       .catch((error: unknown) => {
         if (!cancelled && (error as { name?: string }).name !== "RenderingCancelledException") setFailed(true);
@@ -117,8 +135,13 @@ export function RemoteCardArt({ page, name, className = "", style, priority = fa
     return () => {
       cancelled = true;
       renderTask?.cancel();
+      if (!priority && canvas) {
+        canvas.width = 1;
+        canvas.height = 1;
+        delete canvas.dataset.loaded;
+      }
     };
-  }, [page, visible]);
+  }, [page, priority, shouldRender]);
 
   return (
     <canvas
@@ -131,4 +154,3 @@ export function RemoteCardArt({ page, name, className = "", style, priority = fa
     />
   );
 }
-

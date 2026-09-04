@@ -19,6 +19,14 @@ type PresentationWindow = Window & {
   __hemsfellPresentationBusy?: boolean;
 };
 
+type WorkerBridge = {
+  chooseAction: (state: AIGameState, owner: number, difficulty: string) => Promise<{ action: AIAction | null }>;
+  observe: (owner: number, difficulty: string, observation: AIObservation) => void;
+  reset: (owner?: number) => void;
+};
+
+const workerBridge = () => (globalThis as typeof globalThis & { __hemsfellAIWorkerBridge?: WorkerBridge }).__hemsfellAIWorkerBridge;
+
 const presentationBusy = () => {
   if (typeof window === "undefined") return false;
   const presentationWindow = window as PresentationWindow;
@@ -254,6 +262,13 @@ function installDebugTelemetry(): void {
 
 export async function chooseAdvancedAIAction(state: AIGameState, owner: number, difficulty: string): Promise<AIAction | null> {
   await waitForPresentationIdle();
+  const bridge = workerBridge();
+  if (bridge) {
+    installThinkingIndicator();
+    installDebugTelemetry();
+    try { return (await bridge.chooseAction(state, owner, difficulty)).action; }
+    catch { /* Fall through to the in-thread controller on unsupported workers. */ }
+  }
   const controller = controllerFor(owner, difficulty);
   observePublicDelta(controller, state, owner);
   const result = await controller.chooseAction(state, owner);
@@ -319,9 +334,11 @@ export function shouldKeepAdvancedMulligan(state: AIGameState, owner: number, di
 /** Optional explicit observation hook for server/online integrations. */
 export function observeAdvancedAI(owner: number, difficulty: string, observation: AIObservation): void {
   controllerFor(owner, difficulty).observe(observation);
+  workerBridge()?.observe(owner, difficulty, observation);
 }
 
 export function resetAdvancedAI(owner?: number): void {
+  workerBridge()?.reset(owner);
   if (owner == null) {
     controllers.clear();
     lastObservedState.clear();

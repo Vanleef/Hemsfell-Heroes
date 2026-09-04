@@ -18,6 +18,12 @@ export function canExecuteCard(card, handlers = defaultEffectHandlers) {
 }
 
 const clone = (value) => structuredClone(value);
+const MAX_LIVE_LOG_ENTRIES = 200;
+const prependLog = (state, entry) => {
+  state.log ||= [];
+  state.log.unshift(entry);
+  if (state.log.length > MAX_LIVE_LOG_ENTRIES) state.log.length = MAX_LIVE_LOG_ENTRIES;
+};
 const fingerprint = (state, stack) => JSON.stringify({ active: state.active, phase: state.phase, round: state.round, pendingAction: state.pendingAction?.type || null, players: state.players.map((p) => ({ life: p.life, energy: p.energy, reserve: p.reserve, hand: p.hand.length, deck: p.deck.length, board: p.board.map((u) => [u.uid, u.damage, u.exhausted, u.markers]) })), stack: stack.map((item) => [item.kind, item.effect?.type, item.event?.type]) });
 
 export function validateCosts(state, ability, context) {
@@ -543,7 +549,7 @@ export function executeCommand(inputState, command, options = {}) {
     state.winner = command.owner === 0 ? 1 : 0;
     state.pendingResponse = null; delete state.pendingAction; state.priorityStack = undefined; state.stack = []; state.combatAction = null; state.onlineCombat = undefined; state.onlineFinalization = undefined; state.pendingDecision = null; state.pendingReposition = null; state.turnDeadline = null;
     state.priority = { ...(state.priority || {}), mode: "none", owner: null, window: null, consecutivePasses: 0, deadline: null, stackDepth: 0 };
-    state.events = (state.events || 0) + 1; state.log ||= []; state.log.unshift({ id: `rules-${state.round}-${state.events}`, text: `${state.players[command.owner]?.heroId || "Um jogador"} se rendeu.`, tone: "danger" });
+    state.events = (state.events || 0) + 1; prependLog(state, { id: `rules-${state.round}-${state.events}`, text: `${state.players[command.owner]?.heroId || "Um jogador"} se rendeu.`, tone: "danger" });
     return { state, trace: [{ step: 1, kind: "command", type: "surrender" }], steps: 1 };
   }
   if (command.type === "advancePhase" && state.phase === "manutencao" && state.players[state.active]?.skipNextTurn) { state.players[state.active].skipNextTurn = false; state.phase = "fim"; }
@@ -1062,7 +1068,7 @@ export function executeCommand(inputState, command, options = {}) {
   if (command.type === "advancePhase" && originalPhase === "fim" && state.phase === "manutencao") {
     const entry = state.players[state.active]; state.players.forEach((playerEntry) => { playerEntry.turnDeaths = 0; }); entry.lifeLostThisTurn = 0; entry.lifeLossEvents = 0; entry.cardsDrawnThisTurn = 0; entry.cardsMilledThisTurn = 0; entry.namedCardsPlayedThisTurn = {}; if (entry.heroId === "saymon") entry.heroXP = 0;
   }
-  state.events = (state.events || 0) + 1; state.log ||= []; state.log.unshift({ id: `rules-${state.round}-${state.events}`, text: command.type === "playCard" ? `${actionLabel} foi jogada pelo motor de regras.` : command.type === "activate" ? `${actionLabel} ativou sua habilidade.` : `${actionLabel}: ${command.type}.`, tone: "effect" });
+  state.events = (state.events || 0) + 1; prependLog(state, { id: `rules-${state.round}-${state.events}`, text: command.type === "playCard" ? `${actionLabel} foi jogada pelo motor de regras.` : command.type === "activate" ? `${actionLabel} ativou sua habilidade.` : `${actionLabel}: ${command.type}.`, tone: "effect" });
   if (["playCard"].includes(command.type)) if (!command.skipPriority && state.pendingAction && command.hasPriority) state.pendingResponse = { responder: state.pendingAction.actor, actor: command.owner, action: actionLabel, passes: 0 }; else if (!command.skipPriority && !state.pendingAction) state.pendingResponse = command.hasPriority ? null : { responder: 1 - command.owner, actor: command.owner, action: actionLabel, passes: 0 };
   return { state, trace, steps };
 }

@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
+const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/targeting-hero-ui-terminal.css", "utf8").replace(/\s+/g, " ");
 const decisionLane = fs.readFileSync("app/presentation/styles/decision-lane-position.css", "utf8").replace(/\s+/g, " ");
 const runtime = fs.readFileSync("app/presentation/runtime/hero-ability-rail-runtime.tsx", "utf8").replace(/\s+/g, " ");
@@ -27,8 +28,8 @@ test("targeting hero UI layer loads after match visuals while pile footer remain
   assert.ok(targeting > visual);
   assert.ok(pile > targeting);
   assert.equal(imports.at(-1), "./presentation/styles/side-pile-text-shadow-terminal.css");
-  assert.match(layout, /import HeroAbilityRailRuntime from "\.\/presentation\/runtime\/hero-ability-rail-runtime"/);
-  assert.match(layout, /<HeroPanelExpandRuntime \/>\s*<HeroAbilityRailRuntime \/>/);
+  assert.match(gate, /import\("\.\/hero-ability-rail-runtime"\)/);
+  assert.match(gate, /<HeroPanelExpandRuntime \/>\s*<HeroAbilityRailRuntime \/>/);
 });
 
 test("mulligan uses only the delayed canonical Floating UI card tooltip", () => {

@@ -7,6 +7,7 @@ export * from "./engine-core.mjs";
 
 const RULES_RESOLVED_EVENT = "hemsfell:rules-command-resolved";
 const SILENCIO_ENSURDECEDOR_PAGE = 147;
+const MAX_LIVE_LOG_ENTRIES = 200;
 
 const browserClone = (value) => {
   try { return structuredClone(value); }
@@ -75,6 +76,7 @@ function enforceSilencioTargetLifecycle(before, state) {
       text: "Silêncio Ensurdecedor deixou o campo porque a carta que ele sufocava saiu de campo.",
       tone: "effect",
     });
+    if (state.log?.length > MAX_LIVE_LOG_ENTRIES) state.log.length = MAX_LIVE_LOG_ENTRIES;
     if (Number.isFinite(Number(state.events))) state.events += 1;
   }
   return state;

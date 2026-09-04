@@ -171,8 +171,9 @@ export default function MatchFeedbackRuntime() {
         const existingTimer = flashTimers.get(panel);
         if (existingTimer) window.clearTimeout(existingTimer);
         panel.classList.remove("hero-level-transition");
-        void panel.offsetWidth;
-        panel.classList.add("hero-level-transition");
+        requestAnimationFrame(() => {
+          if (panel.isConnected) panel.classList.add("hero-level-transition");
+        });
         const timer = window.setTimeout(() => {
           panel.classList.remove("hero-level-transition");
           flashTimers.delete(panel);
@@ -219,7 +220,16 @@ export default function MatchFeedbackRuntime() {
       frame = requestAnimationFrame(scan);
     };
 
-    const observer = new MutationObserver(schedule);
+    const mutationTouchesFeedback = (record: MutationRecord) => {
+      const selector = ".hero-panel-stack,.player-hero,.level-button,.hero-level,.defense-decision,.paired-field,.terrain-slot";
+      const target = record.target instanceof Element ? record.target : record.target.parentElement;
+      if (target?.closest(selector)) return true;
+      if (record.type !== "childList") return false;
+      return [...record.addedNodes, ...record.removedNodes].some((node) => node instanceof Element && (node.matches(selector) || !!node.querySelector(selector)));
+    };
+    const observer = new MutationObserver((records) => {
+      if (records.some(mutationTouchesFeedback)) schedule();
+    });
     observer.observe(document.body, {
       subtree: true,
       childList: true,

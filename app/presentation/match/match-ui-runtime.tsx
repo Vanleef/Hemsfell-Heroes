@@ -252,22 +252,29 @@ function useTargetBannerPositionGuard() {
 
     schedule();
 
-    const observer = new MutationObserver(schedule);
-    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
+    const mutationTouchesTargeting = (record: MutationRecord) => {
+      const target = record.target instanceof Element ? record.target : record.target.parentElement;
+      const selector = ".game-content.hs-board,.target-banner,.field-slot,.side-piles";
+      if (target?.closest(selector)) return true;
+      if (record.type !== "childList") return false;
+      return [...record.addedNodes, ...record.removedNodes].some((node) => node instanceof Element && (node.matches(selector) || !!node.querySelector(selector)));
+    };
+    const observer = new MutationObserver((records) => {
+      if (records.some(mutationTouchesTargeting)) schedule();
+    });
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
 
     const resize = new ResizeObserver(schedule);
     const board = document.querySelector<HTMLElement>(".screen-game .game-content.hs-board");
     if (board) resize.observe(board);
 
     window.addEventListener("resize", schedule, { passive: true });
-    window.addEventListener("scroll", schedule, { passive: true });
 
     return () => {
       cancelAnimationFrame(frame);
       observer.disconnect();
       resize.disconnect();
       window.removeEventListener("resize", schedule);
-      window.removeEventListener("scroll", schedule);
     };
   }, []);
 }
