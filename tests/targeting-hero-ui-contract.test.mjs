@@ -27,8 +27,9 @@ test("targeting hero UI layer loads after match visuals while pile footer remain
   assert.ok(targeting > visual);
   assert.ok(pile > targeting);
   assert.equal(imports.at(-1), "./presentation/styles/side-pile-text-shadow-terminal.css");
+  assert.match(layout, /import HeroAbilityDetailRuntime from "\.\/presentation\/runtime\/hero-ability-detail-runtime"/);
   assert.match(layout, /import HeroAbilityRailRuntime from "\.\/presentation\/runtime\/hero-ability-rail-runtime"/);
-  assert.match(layout, /<HeroPanelExpandRuntime \/>\s*<HeroAbilityRailRuntime \/>/);
+  assert.match(layout, /<HeroPanelExpandRuntime \/>\s*<HeroAbilityDetailRuntime \/>\s*<HeroAbilityRailRuntime \/>/);
 });
 
 test("mulligan uses only the delayed canonical Floating UI card tooltip", () => {
