@@ -75,7 +75,11 @@ test("live match logs are capped before repeated structured clones", () => {
 });
 
 test("strategic AI search runs in a dedicated worker with a safe fallback", () => {
-  assert.match(page, /browser-ai-worker/);
+  assert.match(page, /import\("\.\/application\/ai\/browser-ai-worker"\)/);
+  assert.match(page, /import\("\.\/rules-engine\/ai-system\/runtime"\)/);
+  assert.doesNotMatch(page, /^import .*ai-system\/runtime/m);
+  assert.doesNotMatch(page, /^import "\.\/application\/ai\/browser-ai-worker";/m);
+  assert.match(page, /onPointerEnter=\{\(\)=>void loadAdvancedAIRuntime\(\)\}/);
   assert.match(aiWorkerClient, /new Worker\(new URL\("\.\/search\.worker\.ts", import\.meta\.url\)/);
   assert.match(aiRuntime, /const bridge = workerBridge\(\)/);
   assert.match(aiRuntime, /Fall through to the in-thread controller/);
