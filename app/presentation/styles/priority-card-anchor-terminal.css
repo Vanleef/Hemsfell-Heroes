@@ -140,6 +140,27 @@ html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
 /* -------------------------------------------------------------------------
    Concise hero evolution progress copy
    ------------------------------------------------------------------------- */
+/* Evolution is strategically important information, so both sides use the
+   same slightly taller external meter instead of a tiny footer-like strip. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero {
+  --hh-player-progress-height: clamp(1.5rem, 2.72cqh, 1.9rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) > .player-hero {
+  --hh-enemy-progress-height: clamp(1.5rem, 2.72cqh, 1.9rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel:not(.is-expanded)
+  > .player-hero > .hero-level-row > .hero-evolution {
+  height: 100% !important;
+  min-height: 100% !important;
+  max-height: 100% !important;
+  border-radius: clamp(.34rem, .48cqw, .52rem) !important;
+}
+
 html body .screen-game.screen-game .game-stage > .game-content.hs-board
   > .hero-panel-stack.canonical-hero-panel
   .hero-evolution-copy[data-hh-short-progress="true"] {
@@ -147,8 +168,10 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
   align-items: center !important;
   justify-content: center !important;
   min-width: 0 !important;
+  min-height: 100% !important;
   width: 100% !important;
-  padding-inline: clamp(.12rem, .22cqw, .24rem) !important;
+  height: 100% !important;
+  padding-inline: clamp(.18rem, .3cqw, .34rem) !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board
@@ -165,9 +188,10 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
   text-overflow: clip !important;
   white-space: nowrap !important;
   text-align: center !important;
-  font-size: clamp(.5rem, min(.63cqw, .96cqh), .68rem) !important;
+  font-size: clamp(.64rem, min(.78cqw, 1.16cqh), .82rem) !important;
+  font-weight: 900 !important;
   line-height: 1 !important;
-  letter-spacing: .015em !important;
+  letter-spacing: .012em !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board
@@ -185,8 +209,18 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
   }
 
   html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded) > .player-hero {
+    --hh-player-progress-height: clamp(1.12rem, 2.45dvh, 1.48rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel.enemy:not(.is-expanded) > .player-hero {
+    --hh-enemy-progress-height: clamp(1.12rem, 2.45dvh, 1.48rem) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
     > .hero-panel-stack.canonical-hero-panel
     .hero-evolution-copy[data-hh-short-progress="true"] > small {
-    font-size: clamp(.46rem, 1.45dvh, .61rem) !important;
+    font-size: clamp(.56rem, 1.62dvh, .69rem) !important;
   }
 }
