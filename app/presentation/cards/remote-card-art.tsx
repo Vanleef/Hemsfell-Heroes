@@ -153,10 +153,11 @@ function trimRasterCache() {
   }
 }
 
-function cancelObsoleteQueuedRasterJobs() {
+function cancelObsoleteQueuedRasterJobs(backgroundOnly = false) {
   for (let index = rasterQueue.length - 1; index >= 0; index -= 1) {
     const job = rasterQueue[index];
     if (job.started || isProtectedPage(job.page)) continue;
+    if (backgroundOnly && job.priority < 3) continue;
     if (activeArtContext === "match" && matchPageUniverseRetainers.has(job.page)) continue;
     rasterQueue.splice(index, 1);
     rasterJobs.delete(job.key);
@@ -202,7 +203,8 @@ function cleanupPdfDocumentResources() {
  * cancelled, and the LRU is immediately trimmed to the new context budget.
  */
 export function setRemoteCardArtContext(context: RemoteCardArtContext, hotPages: readonly number[] = []) {
-  const changed = activeArtContext !== context;
+  const previousContext = activeArtContext;
+  const changed = previousContext !== context;
   activeArtContext = context;
   contextHotPages.clear();
   for (const page of hotPages) {
@@ -211,11 +213,20 @@ export function setRemoteCardArtContext(context: RemoteCardArtContext, hotPages:
     touchSessionRecent(page);
     if (contextHotPages.size >= MAX_CONTEXT_HOT_PAGES) break;
   }
-  cancelObsoleteQueuedRasterJobs();
+  // Same-screen reprioritization must never cancel work that just became visible;
+  // only obsolete idle/background requests are disposable without a context swap.
+  cancelObsoleteQueuedRasterJobs(!changed);
   trimPersistentWriteQueue(changed);
   trimRasterCache();
   trimPageCache();
-  if (changed) cleanupPdfDocumentResources();
+  if (changed) {
+    cleanupPdfDocumentResources();
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("hemsfell:asset-context-change", {
+        detail: { from: previousContext, to: context },
+      }));
+    }
+  }
 }
 
 /** Promote a concrete user request above viewport, near-viewport and idle work. */
