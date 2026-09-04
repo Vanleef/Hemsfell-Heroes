@@ -5,6 +5,7 @@ import fs from "node:fs";
 const page = fs.readFileSync("app/page.tsx", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const runtime = fs.readFileSync("app/presentation/runtime/hand-ai-ui-runtime.tsx", "utf8");
+const touchRuntime = fs.readFileSync("app/presentation/runtime/mobile-touch-input-runtime.tsx", "utf8");
 const art = fs.readFileSync("app/presentation/cards/remote-card-art.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/card-interaction-stability-terminal.css", "utf8");
 
@@ -53,6 +54,13 @@ test("hand observer ignores board class churn and never reads field layout", () 
   assert.doesNotMatch(runtime, /attributeFilter|attributes:\s*true/);
   assert.doesNotMatch(runtime, /getBoundingClientRect|getComputedStyle|DOMMatrixReadOnly/);
   assert.match(runtime, /dirtyHands/);
+});
+
+test("touch drag hit testing is coalesced to one animation-frame pass", () => {
+  assert.match(touchRuntime, /const scheduleDropTargetSync = \(\) => \{[\s\S]*?!session\?\.dragging \|\| session\.syncFrame[\s\S]*?requestAnimationFrame/);
+  const pointerMove = touchRuntime.match(/const onPointerMove = \(event: PointerEvent\) => \{([\s\S]*?)\n    \};/)?.[1] || "";
+  assert.match(pointerMove, /scheduleDropTargetSync\(\)/);
+  assert.doesNotMatch(pointerMove, /updateDropTarget\(point\)/);
 });
 
 test("card art keeps a bounded raster cache and no longer blanks canvases on cleanup", () => {
