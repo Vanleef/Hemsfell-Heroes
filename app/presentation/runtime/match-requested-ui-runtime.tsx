@@ -12,6 +12,7 @@ type IconSnapshot = {
 const LIVE_FRAME_SELECTOR = ".screen-game .game-stage .card-frame[data-unit-id]";
 const FLIGHT_FACE_SELECTOR = ".hh-flight-face";
 const ICON_FRAGMENT_SELECTOR = ".field-negative-statuses,.field-keywords,.card-frame-activation";
+const MAX_HERO_LEVEL = 3;
 const HERO_PROGRESS_LABELS: Record<string, string> = {
   "Gimble": "Dragões em campo",
   "Sr. Goblin": "Cartas neste turno",
@@ -128,16 +129,40 @@ export default function MatchRequestedUiRuntime() {
 
     const syncHeroProgressCopy = () => {
       document.querySelectorAll<HTMLElement>(".screen-game .hero-panel-stack.canonical-hero-panel").forEach((panel) => {
+        const levelText = panel.querySelector<HTMLElement>(".hero-level")?.textContent || "";
+        const heroLevel = Number.parseInt(levelText.match(/\d+/)?.[0] || "0", 10);
+        const evolution = panel.querySelector<HTMLElement>(".hero-evolution");
+        const evolveButton = panel.querySelector<HTMLButtonElement>(".level-button");
+        const atMaxLevel = heroLevel >= MAX_HERO_LEVEL;
+
+        if (atMaxLevel) {
+          panel.dataset.hhMaxLevel = "true";
+          [evolution, evolveButton].forEach((control) => {
+            if (!control) return;
+            control.hidden = true;
+            control.setAttribute("aria-hidden", "true");
+            control.style.setProperty("display", "none", "important");
+          });
+          return;
+        }
+
+        delete panel.dataset.hhMaxLevel;
+        [evolution, evolveButton].forEach((control) => {
+          if (!control) return;
+          control.hidden = false;
+          control.removeAttribute("aria-hidden");
+          control.style.removeProperty("display");
+        });
+
         const heroName = panel.querySelector<HTMLElement>(".hero-short-name")?.textContent?.trim() || "";
         const label = HERO_PROGRESS_LABELS[heroName];
-        const copy = panel.querySelector<HTMLElement>(".hero-evolution-copy");
+        const copy = evolution?.querySelector<HTMLElement>(".hero-evolution-copy") || null;
         const small = copy?.querySelector<HTMLElement>(":scope > small") || null;
         const strong = copy?.querySelector<HTMLElement>(":scope > strong") || null;
         if (!label || !copy || !small || !strong) return;
 
         const counter = (strong.textContent || "").trim();
-        const completed = counter === "3/3" || small.textContent?.trim() === "EVOLUÇÃO CONCLUÍDA";
-        const next = completed ? "EVOLUÇÃO CONCLUÍDA" : `${counter} ${label}`.trim();
+        const next = `${counter} ${label}`.trim();
         if (small.textContent !== next) small.textContent = next;
         if (!strong.hidden) strong.hidden = true;
         if (copy.dataset.hhShortProgress !== "true") copy.dataset.hhShortProgress = "true";
