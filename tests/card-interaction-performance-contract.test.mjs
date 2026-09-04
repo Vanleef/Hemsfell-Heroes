@@ -117,6 +117,36 @@ test("PDF catalogue warmup is global and match-specific prewarm remains availabl
   assert.match(runtime, /data-page/);
 });
 
+test("match start preloads only the two real decks in critical and background layers", () => {
+  assert.match(page, /preloadMatchCardArt/);
+  assert.match(page, /matchArtPreloadPlan=\(state:Game\)/);
+  assert.match(page, /\.\.\.player\.hand,[\s\S]*?\.\.\.player\.deck,[\s\S]*?\.\.\.player\.extraDeck/);
+  assert.match(page, /player\.deck\.slice\(0,2\)/);
+  assert.match(page, /criticalPages:\[\.\.\.heroPages,\.\.\.visibleCards\.map/);
+  assert.match(page, /backgroundPages:allMatchCards\.map/);
+  assert.match(page, /heroAssetUrls=game\.players\.map/);
+  assert.match(page, /assetUrls:\[MATCH_CARD_BACK_URL,\.\.\.heroAssetUrls\]/);
+  assert.doesNotMatch(page, /preloadMatchCardArt\([\s\S]{0,200}cards\.map/);
+});
+
+test("match preload retains compact rasters within mobile bounds and yields background work", () => {
+  assert.match(art, /MAX_PINNED_MATCH_PAGES_MOBILE = 48/);
+  assert.match(art, /MAX_PINNED_MATCH_PAGES_DESKTOP = 64/);
+  assert.match(art, /matchPageRetainers = new Map/);
+  assert.match(art, /isRetainedCompactRaster/);
+  assert.match(art, /priority: 0,[\s\S]*?concurrency: 2/);
+  assert.match(art, /priority: 2,[\s\S]*?isMemoryConstrainedDevice\(\) \? 1 : 2/);
+  assert.match(art, /requestIdleCallback\(runBackground, \{ timeout: 500 \}\)/);
+  assert.match(art, /assetPreloadPromises/);
+  assert.match(art, /controller\.abort\(\)/);
+});
+
+test("hero images and the CSS card back receive immediate browser preload hints", () => {
+  assert.match(page, /MATCH_CARD_BACK_URL="\/cards\/card-back-hemsfell\.webp"/);
+  assert.match(page, /heroPortraitSources\[player\.heroId as DeckId\]\.src/);
+  assert.match(page, /<Image src=\{source\.src\}[\s\S]{0,180}preload fetchPriority="high"/);
+});
+
 test("loading placeholder is static and disappears as soon as usable pixels exist", () => {
   assert.match(loadingCss, /\.remote-card-art:not\(\[data-loaded="true"\]\)/);
   assert.match(loadingCss, /linear-gradient/);

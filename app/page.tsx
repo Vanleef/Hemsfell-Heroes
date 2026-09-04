@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import Image from "next/image";
 import rawCards from "./data/catalog/generated-card-catalog";
 import type { CardDef, CardType, CombatAction, ElementName, GameState as Game, MatchSettings, OnlineSession, PendingDecision, PendingResponse, Phase, PlayerState as Player, Unit } from "./model/game-state";
-import { RemoteCardArt } from "./presentation/cards/remote-card-art";
+import { preloadMatchCardArt, RemoteCardArt } from "./presentation/cards/remote-card-art";
 import { canActivateCard, hasActivatableEffect } from "./rules-engine/cards/card-activation.mjs";
 import { compileCard } from "./rules-engine/compiler.mjs";
 import { hasIntrinsicKeyword, intrinsicKeywordNames } from "./rules-engine/cards/card-keywords.mjs";
@@ -108,6 +108,31 @@ const MAX_LIVE_LOG_ENTRIES=200;
 const log=(g:Game,text:string,tone="")=>{g.log.unshift({id:uid(),text,tone});if(g.log.length>MAX_LIVE_LOG_ENTRIES)g.log.length=MAX_LIVE_LOG_ENTRIES;g.events++};
 const makePlayer=(heroId:string,startingLife=30,userDeck?:UserDeck|null):Player=>{const validation=userDeck?validateUserDeck(userDeck,cards):null,configuredDeck=validation?.ok&&validation.deck?.heroId===heroId?validation.deck:null,deck=shuffle(buildDeck(heroId,configuredDeck));return{heroId,level:1,heroXP:0,levelUpsThisTurn:0,life:startingLife,lifeLostThisTurn:0,lifeLossEvents:0,maxEnergy:0,energy:0,reserve:0,deck:deck.slice(7),extraDeck:configuredDeck?resolveUserDeckExtra(configuredDeck,cards) as CardDef[]:extraFor(heroId),hand:deck.slice(0,7),board:[],support:[],terrain:null,grave:[],obscuro:[],cardsPlayed:0,turnCardsPlayed:0,goblinTurnCardsPlayed:0,turnSpellsPlayed:0,spellsPlayed:0,coffeeSpells:0,damageDealt:0,turnDeaths:0,abilityUses:{},pendingTranqueira:false,nextCardDiscount:0,nextNonCreatureDiscount:0,nextSpellDiscount:0,nextSummonPaysLife:false,nextCreaturePaysLife:false,catsEnteredThisTurn:0}};
 const start=(a:string,b:string,active:0|1=0,startingLife=30,aDeck?:UserDeck|null,bDeck?:UserDeck|null):Game=>({players:[makePlayer(a,startingLife,aDeck),makePlayer(b,startingLife,bDeck)],active,phase:"manutencao",round:1,log:[{id:"start",text:"A batalha por Hemsfell começou.",tone:"system"}],winner:null,selectedAttackers:[],events:1,combatAction:null,pendingResponse:null,turnDeadline:null});
+const MATCH_CARD_BACK_URL="/cards/card-back-hemsfell.webp";
+const matchArtPreloadPlan=(state:Game)=>{
+ const heroPages=state.players.map(player=>deckById(player.heroId).heroPage);
+ const visibleCards=state.players.flatMap(player=>[
+  ...player.hand,
+  ...player.board,
+  ...player.support,
+  ...(player.terrain?[player.terrain]:[]),
+ ]);
+ const topCards=state.players.flatMap(player=>player.deck.slice(0,2));
+ const allMatchCards=state.players.flatMap(player=>[
+  ...player.hand,
+  ...player.deck,
+  ...player.extraDeck,
+  ...player.board,
+  ...player.support,
+  ...(player.terrain?[player.terrain]:[]),
+  ...player.grave,
+  ...player.obscuro,
+ ]);
+ return{
+  criticalPages:[...heroPages,...visibleCards.map(card=>card.page),...topCards.map(card=>card.page)],
+  backgroundPages:allMatchCards.map(card=>card.page),
+ };
+};
 const firstFreeSlot=(units:Unit[])=>Array.from({length:5},(_,slot)=>slot).find(slot=>!units.some(unit=>unit.slot===slot));
 const asUnit=(c:CardDef,slot=0):Unit=>({...c,revealed:undefined,uid:uid(),slot,damage:0,bonusAtk:0,bonusHp:0,attackedThisTurn:false,exhausted:false,summoning:!c.tags.some(tag=>cleanName(tag)==="investida"),frozen:false,stunned:false,suffocated:false,immobilized:false,markers:0,defenseUses:0});
 const supportNumbers=(p:Player|undefined,u:Unit)=>{if(!p||u.suffocated)return{atk:0,hp:0};let atk=0,hp=0;for(const source of [...p.board,...p.support]){if(source.uid===u.uid||source.suffocated||Math.abs(source.slot-u.slot)!==1||!/\bSuporte\b/i.test(source.text)&&!source.tags.some(tag=>cleanName(tag)==="suporte"))continue;if((u.modifiers||[]).some(modifier=>modifier.duration==="support"&&modifier.sourceId===source.uid))continue;const match=source.text.match(/Suporte\s*:?\s*([+-]?\d+)\s*\/\s*([+-]?\d+)/i);if(match){atk+=Number(match[1]);hp+=Number(match[2])}}return{atk,hp}};
@@ -589,6 +614,17 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
  useEffect(()=>{if(!game){damageUiSnapshotRef.current=null;return}const units=[...game.players[0].board,...game.players[0].support,...(game.players[0].terrain?[game.players[0].terrain]:[]),...game.players[1].board,...game.players[1].support,...(game.players[1].terrain?[game.players[1].terrain]:[])],next={life:[game.players[0].life,game.players[1].life] as [number,number],damage:Object.fromEntries(units.map(unit=>[unit.uid,Number(unit.damage||0)]))},previous=damageUiSnapshotRef.current,presentationOwnsTransition=!!(window as Window&{__hemsfellPresentationBusy?:boolean}).__hemsfellPresentationBusy;const pulseDamageUi=(selector:string)=>{const node=document.querySelector<HTMLElement>(selector);if(!node)return;node.classList.remove("damage-hit");void node.offsetWidth;node.classList.add("damage-hit");window.setTimeout(()=>node.classList.remove("damage-hit"),540)};if(previous&&!presentationOwnsTransition){if(next.life[0]<previous.life[0])pulseDamageUi('[data-hero-role="ally"]');if(next.life[1]<previous.life[1])pulseDamageUi('[data-hero-role="enemy"]');for(const [uid,amount] of Object.entries(next.damage))if(amount>Number(previous.damage[uid]||0))pulseDamageUi(`[data-unit-id="${CSS.escape(uid)}"]`)}damageUiSnapshotRef.current=next},[game]);
  useEffect(()=>{if(game?.active!==0||game.phase!=="manutencao"||game.winner!==null)return;setResponseWindow(null);setCombatAction(null);setAiAttackQueue([]);setMaintenanceOpen(true)},[game?.active,game?.phase,game?.winner]);
  const me=game?.players[0],foe=game?.players[1];
+ const matchArtPreloadRef=useRef<{signature:string;dispose:()=>void}|null>(null);
+ useEffect(()=>{
+  if(screen!=="game"||!game||game.winner!==null){matchArtPreloadRef.current?.dispose();matchArtPreloadRef.current=null;return}
+  const signature=`${game.players[0].heroId}:${game.players[1].heroId}`;
+  if(matchArtPreloadRef.current?.signature===signature)return;
+  matchArtPreloadRef.current?.dispose();
+  const plan=matchArtPreloadPlan(game);
+  const heroAssetUrls=game.players.map(player=>heroPortraitSources[player.heroId as DeckId].src);
+  matchArtPreloadRef.current={signature,dispose:preloadMatchCardArt({...plan,assetUrls:[MATCH_CARD_BACK_URL,...heroAssetUrls]})};
+ },[screen,game]);
+ useEffect(()=>()=>{matchArtPreloadRef.current?.dispose();matchArtPreloadRef.current=null},[]);
  const [visualFxQueue,setVisualFxQueue]=useState<VisualFx[]>([]);const [elementChoice,setElementChoice]=useState<{cardIndex:number;name:string}|null>(null);
  const begin=()=>{const mineValidation=validateUserDeck(userDecks[mine],cards),enemyValidation=validateUserDeck(userDecks[enemy],cards);if(!mineValidation.ok||!mineValidation.deck){setScreen("decks");return}void loadAdvancedAIRuntime().then(runtime=>runtime.resetAdvancedAI(1));setTargeting(null);setImageChoice(null);setCafeChoice(null);setResponseWindow(null);setCombatAction(null);setAiAttackQueue([]);setVisualFx(null);setVisualFxQueue([]);setConfirmSurrender(false);setExtraView(null);setSearchChoice(null);setShufflingDeck(null);setDragging(null);setElementChoice(null);setMaintenanceOpen(true);setGame(start(mine,enemy,0,30,mineValidation.deck,enemyValidation.ok?enemyValidation.deck:null));setScreen("game")};
  /* Card moments are deliberately serialized: a new spell or summon waits for the previous
@@ -1126,7 +1162,7 @@ function DeckPicker({label,value,onChange}:{label:string;value:DeckId;onChange:(
 function HeroPortrait({heroId,page,name}:{heroId:DeckId;page:number;name:string}){
  const source=heroPortraitSources[heroId],[loaded,setLoaded]=useState(false);
  return <span className={`hero-portrait ${loaded?"is-loaded":""}`} style={{"--hero-portrait-position":source.position} as CSSProperties}>
-  <Image src={source.src} alt="" aria-hidden="true" fill sizes="(orientation: landscape) 16vw, 30vw" onLoad={()=>setLoaded(true)} onError={()=>setLoaded(false)}/>
+  <Image src={source.src} alt="" aria-hidden="true" fill preload fetchPriority="high" sizes="(orientation: landscape) 16vw, 30vw" onLoad={()=>setLoaded(true)} onError={()=>setLoaded(false)}/>
   {!loaded&&<RemoteCardArt page={page} name={name} priority/>}
  </span>
 }
