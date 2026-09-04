@@ -115,6 +115,9 @@ function loadCardRaster(page: number, cssWidth: number) {
 }
 
 async function paintCardArt(canvas: HTMLCanvasElement, page: number, cssWidth: number) {
+  // Kick the shared PDF-page promise before measuring/copying the raster. This
+  // preserves the old eager-page contract while the raster cache owns rendering.
+  void loadCatalogPage(page);
   const width = Math.max(cssWidth, canvas.clientWidth, MIN_COMPONENT_RASTER_CSS_WIDTH);
   if (width <= MAX_CACHED_RASTER_CSS_WIDTH) {
     const raster = await loadCardRaster(page, width);
