@@ -5,6 +5,14 @@ import { memo, useEffect, useRef, useState, type CSSProperties } from "react";
 const CATALOG_URL = "/api/hemsfell-card-catalog.pdf";
 const MAX_CACHED_PAGE_PROMISES = 12;
 const MAX_CACHED_RASTER_PROMISES = 48;
+const OUT_OF_MATCH_RASTER_LIMIT_MOBILE = 12;
+const OUT_OF_MATCH_RASTER_LIMIT_DESKTOP = 24;
+const OUT_OF_MATCH_PAGE_LIMIT_MOBILE = 4;
+const OUT_OF_MATCH_PAGE_LIMIT_DESKTOP = 6;
+const SESSION_RECENT_LIMIT_MOBILE = 6;
+const SESSION_RECENT_LIMIT_DESKTOP = 12;
+const PERSISTENT_WRITE_LIMIT_MOBILE = 3;
+const PERSISTENT_WRITE_LIMIT_DESKTOP = 6;
 const MIN_COMPONENT_RASTER_CSS_WIDTH = 64;
 const COMPACT_RASTER_CSS_WIDTH = 144;
 const STANDARD_RASTER_CSS_WIDTH = 240;
@@ -15,10 +23,15 @@ const PERSISTENT_RASTER_CACHE = "hemsfell-card-raster-v4";
 const PERSISTENT_RASTER_PREFIX = "/__hemsfell-card-raster/v4/";
 const MAX_PINNED_MATCH_PAGES_MOBILE = 48;
 const MAX_PINNED_MATCH_PAGES_DESKTOP = 64;
+const MAX_CONTEXT_HOT_PAGES = 6;
+const CLEAN_HERO_PAGES = new Set([2, 26, 54, 110, 129, 152, 180, 211, 255, 273, 291]);
 
-type RasterPriority = 0 | 1 | 2;
+export type RemoteCardArtContext = "menu" | "setup" | "collection" | "tutorial" | "match" | "other";
+export type RemoteCardArtPriority = 0 | 1 | 2 | 3;
+type RasterPriority = RemoteCardArtPriority;
 type RasterJob = {
   key: string;
+  page: number;
   priority: RasterPriority;
   started: boolean;
   promise: Promise<HTMLCanvasElement>;
@@ -26,6 +39,8 @@ type RasterJob = {
   resolve: (canvas: HTMLCanvasElement) => void;
   reject: (error: unknown) => void;
 };
+
+type PersistentWrite = { key: string; page: number; canvas: HTMLCanvasElement };
 
 let catalogPromise: Promise<import("pdfjs-dist").PDFDocumentProxy> | null = null;
 const pagePromises = new Map<number, Promise<import("pdfjs-dist").PDFPageProxy>>();
@@ -35,16 +50,20 @@ const rasterPriority = new Map<string, RasterPriority>();
 const rasterJobs = new Map<string, RasterJob>();
 const rasterQueue: RasterJob[] = [];
 let activeRasterJobs = 0;
+let activeArtContext: RemoteCardArtContext = "menu";
 
 const visibilityCallbacks = new Map<Element, (priority: RasterPriority) => void>();
 let nearObserver: IntersectionObserver | null = null;
 let visibleObserver: IntersectionObserver | null = null;
 
-const persistentWriteQueue: Array<{ key: string; canvas: HTMLCanvasElement }> = [];
+const persistentWriteQueue: PersistentWrite[] = [];
 const persistentWriteKeys = new Set<string>();
 let persistentWriteScheduled = false;
 let persistentCachePromise: Promise<Cache> | null = null;
 const matchPageRetainers = new Map<number, number>();
+const matchPageUniverseRetainers = new Map<number, number>();
+const contextHotPages = new Set<number>();
+const sessionRecentPages = new Map<number, number>();
 const assetPreloadPromises = new Map<string, Promise<void>>();
 
 function isMemoryConstrainedDevice() {
@@ -54,15 +73,187 @@ function isMemoryConstrainedDevice() {
     (typeof matchMedia === "function" && matchMedia("(pointer: coarse), (max-width: 48rem)").matches);
 }
 
+function isMatchContext() {
+  return activeArtContext === "match" || matchPageUniverseRetainers.size > 0;
+}
+
+function sessionRecentLimit() {
+  return isMemoryConstrainedDevice() ? SESSION_RECENT_LIMIT_MOBILE : SESSION_RECENT_LIMIT_DESKTOP;
+}
+
+function persistentWriteLimit() {
+  return isMemoryConstrainedDevice() ? PERSISTENT_WRITE_LIMIT_MOBILE : PERSISTENT_WRITE_LIMIT_DESKTOP;
+}
+
+function touchSessionRecent(page: number) {
+  if (!Number.isFinite(page) || page <= 0) return;
+  sessionRecentPages.delete(page);
+  sessionRecentPages.set(page, Date.now());
+  while (sessionRecentPages.size > sessionRecentLimit()) {
+    const oldest = sessionRecentPages.keys().next().value as number | undefined;
+    if (oldest === undefined) break;
+    sessionRecentPages.delete(oldest);
+  }
+}
+
+function pageFromRasterKey(key: string) {
+  const page = Number(key.split(":", 1)[0]);
+  return Number.isFinite(page) ? page : 0;
+}
+
+function isProtectedPage(page: number) {
+  return contextHotPages.has(page) || matchPageRetainers.has(page) || activePageRenders.has(page);
+}
+
 function rasterCacheLimit() {
+  if (!isMatchContext()) {
+    return isMemoryConstrainedDevice() ? OUT_OF_MATCH_RASTER_LIMIT_MOBILE : OUT_OF_MATCH_RASTER_LIMIT_DESKTOP;
+  }
   const base = isMemoryConstrainedDevice() ? 24 : MAX_CACHED_RASTER_PROMISES;
-  if (!matchPageRetainers.size) return base;
   const workingSetHeadroom = isMemoryConstrainedDevice() ? 8 : 12;
   return Math.max(base, matchPageRetainers.size + workingSetHeadroom);
 }
 
 function pageCacheLimit() {
+  if (!isMatchContext()) {
+    return isMemoryConstrainedDevice() ? OUT_OF_MATCH_PAGE_LIMIT_MOBILE : OUT_OF_MATCH_PAGE_LIMIT_DESKTOP;
+  }
   return isMemoryConstrainedDevice() ? 8 : MAX_CACHED_PAGE_PROMISES;
+}
+
+function abortError(reason = "Obsolete card-art request") {
+  if (typeof DOMException !== "undefined") return new DOMException(reason, "AbortError");
+  const error = new Error(reason);
+  error.name = "AbortError";
+  return error;
+}
+
+function trimPageCache() {
+  const limit = pageCacheLimit();
+  while (pagePromises.size > limit) {
+    const candidates = [...pagePromises.keys()].filter((page) => !activePageRenders.has(page) && !matchPageRetainers.has(page));
+    const oldest = candidates.find((page) => !contextHotPages.has(page) && !sessionRecentPages.has(page))
+      ?? candidates.find((page) => !contextHotPages.has(page));
+    if (oldest === undefined) break;
+    pagePromises.delete(oldest);
+  }
+}
+
+function trimRasterCache() {
+  const limit = rasterCacheLimit();
+  while (rasterPromises.size > limit) {
+    const candidates = [...rasterPromises.keys()].filter((key) => {
+      const page = pageFromRasterKey(key);
+      return !isProtectedPage(page) && !rasterJobs.has(key);
+    });
+    const oldest = candidates.find((key) => !sessionRecentPages.has(pageFromRasterKey(key))) ?? candidates[0];
+    if (!oldest) break;
+    rasterPromises.delete(oldest);
+    rasterPriority.delete(oldest);
+  }
+}
+
+function cancelObsoleteQueuedRasterJobs() {
+  for (let index = rasterQueue.length - 1; index >= 0; index -= 1) {
+    const job = rasterQueue[index];
+    if (job.started || isProtectedPage(job.page)) continue;
+    if (activeArtContext === "match" && matchPageUniverseRetainers.has(job.page)) continue;
+    rasterQueue.splice(index, 1);
+    rasterJobs.delete(job.key);
+    rasterPromises.delete(job.key);
+    rasterPriority.delete(job.key);
+    job.reject(abortError());
+  }
+}
+
+function trimPersistentWriteQueue(dropObsolete = false) {
+  for (let index = persistentWriteQueue.length - 1; index >= 0; index -= 1) {
+    const entry = persistentWriteQueue[index];
+    const obsolete = dropObsolete
+      && !isProtectedPage(entry.page)
+      && !(activeArtContext === "match" && matchPageUniverseRetainers.has(entry.page));
+    if (!obsolete) continue;
+    persistentWriteQueue.splice(index, 1);
+    persistentWriteKeys.delete(entry.key);
+  }
+  while (persistentWriteQueue.length > persistentWriteLimit()) {
+    const index = persistentWriteQueue.findIndex((entry) => !isProtectedPage(entry.page));
+    const [entry] = persistentWriteQueue.splice(index >= 0 ? index : 0, 1);
+    if (entry) persistentWriteKeys.delete(entry.key);
+  }
+}
+
+function cleanupVisibilityObserversIfIdle() {
+  if (visibilityCallbacks.size) return;
+  nearObserver?.disconnect();
+  visibleObserver?.disconnect();
+  nearObserver = null;
+  visibleObserver = null;
+}
+
+function cleanupPdfDocumentResources() {
+  if (!catalogPromise) return;
+  void catalogPromise.then((catalog) => catalog.cleanup()).catch(() => undefined);
+}
+
+/**
+ * Switch the in-memory policy without throwing away the browser/CacheStorage
+ * session cache. Selected/focused pages are protected, old queued work is
+ * cancelled, and the LRU is immediately trimmed to the new context budget.
+ */
+export function setRemoteCardArtContext(context: RemoteCardArtContext, hotPages: readonly number[] = []) {
+  const changed = activeArtContext !== context;
+  activeArtContext = context;
+  contextHotPages.clear();
+  for (const page of hotPages) {
+    if (!Number.isFinite(page) || page <= 0) continue;
+    contextHotPages.add(page);
+    touchSessionRecent(page);
+    if (contextHotPages.size >= MAX_CONTEXT_HOT_PAGES) break;
+  }
+  cancelObsoleteQueuedRasterJobs();
+  trimPersistentWriteQueue(changed);
+  trimRasterCache();
+  trimPageCache();
+  if (changed) cleanupPdfDocumentResources();
+}
+
+/** Promote a concrete user request above viewport, near-viewport and idle work. */
+export function promoteRemoteCardArtPage(page: number, priority: RasterPriority = 0, remember = priority === 0) {
+  if (!Number.isFinite(page) || page <= 0) return;
+  touchSessionRecent(page);
+  if (remember) {
+    contextHotPages.delete(page);
+    contextHotPages.add(page);
+    while (contextHotPages.size > MAX_CONTEXT_HOT_PAGES) {
+      const oldest = contextHotPages.keys().next().value as number | undefined;
+      if (oldest === undefined) break;
+      contextHotPages.delete(oldest);
+    }
+  }
+  for (const [key, job] of rasterJobs) {
+    if (job.page !== page) continue;
+    const previous = rasterPriority.get(key);
+    if (previous === undefined || priority < previous) rasterPriority.set(key, priority);
+    if (!job.started && priority < job.priority) job.priority = priority;
+  }
+  queueMicrotask(drainRasterQueue);
+}
+
+/** Explicit context cleanup used when leaving collection/setup/match. */
+export function cleanupRemoteCardArtMemory(keepPages: readonly number[] = []) {
+  contextHotPages.clear();
+  for (const page of keepPages) {
+    if (!Number.isFinite(page) || page <= 0) continue;
+    contextHotPages.add(page);
+    touchSessionRecent(page);
+  }
+  cancelObsoleteQueuedRasterJobs();
+  trimPersistentWriteQueue(true);
+  trimRasterCache();
+  trimPageCache();
+  cleanupPdfDocumentResources();
+  cleanupVisibilityObserversIfIdle();
 }
 
 function openPersistentRasterCache() {
@@ -122,11 +313,7 @@ function loadCatalogPage(page: number) {
       throw error;
     });
     pagePromises.set(page, pending);
-    while (pagePromises.size > pageCacheLimit()) {
-      const oldest = pagePromises.keys().next().value as number | undefined;
-      if (oldest === undefined) break;
-      pagePromises.delete(oldest);
-    }
+    trimPageCache();
   }
   return pending;
 }
@@ -154,19 +341,29 @@ function isRetainedCompactRaster(key: string) {
 }
 
 function retainMatchPages(pages: readonly number[]) {
+  const universe = [...new Set(pages.filter((page) => Number.isFinite(page) && page > 0))];
+  universe.forEach((page) => matchPageUniverseRetainers.set(page, (matchPageUniverseRetainers.get(page) || 0) + 1));
   const limit = isMemoryConstrainedDevice() ? MAX_PINNED_MATCH_PAGES_MOBILE : MAX_PINNED_MATCH_PAGES_DESKTOP;
-  const retained = [...new Set(pages)].slice(0, limit);
+  const retained = universe.slice(0, limit);
   retained.forEach((page) => matchPageRetainers.set(page, (matchPageRetainers.get(page) || 0) + 1));
-  return () => retained.forEach((page) => {
-    const count = matchPageRetainers.get(page) || 0;
-    if (count <= 1) matchPageRetainers.delete(page);
-    else matchPageRetainers.set(page, count - 1);
-  });
+  return () => {
+    retained.forEach((page) => {
+      const count = matchPageRetainers.get(page) || 0;
+      if (count <= 1) matchPageRetainers.delete(page);
+      else matchPageRetainers.set(page, count - 1);
+    });
+    universe.forEach((page) => {
+      const count = matchPageUniverseRetainers.get(page) || 0;
+      if (count <= 1) matchPageUniverseRetainers.delete(page);
+      else matchPageUniverseRetainers.set(page, count - 1);
+    });
+  };
 }
 
 function maxConcurrentRasterJobs() {
-  if (typeof matchMedia !== "function") return 2;
-  return matchMedia("(pointer: coarse), (max-width: 48rem)").matches ? 2 : 3;
+  const constrained = isMemoryConstrainedDevice();
+  if (isMatchContext()) return constrained ? 2 : 3;
+  return constrained ? 1 : 2;
 }
 
 function drainRasterQueue() {
@@ -187,7 +384,12 @@ function drainRasterQueue() {
   }
 }
 
-function scheduleRasterRender(key: string, priority: RasterPriority, run: () => Promise<HTMLCanvasElement>) {
+function scheduleRasterRender(
+  key: string,
+  page: number,
+  priority: RasterPriority,
+  run: () => Promise<HTMLCanvasElement>,
+) {
   const existing = rasterJobs.get(key);
   if (existing) {
     if (!existing.started && priority < existing.priority) existing.priority = priority;
@@ -201,7 +403,7 @@ function scheduleRasterRender(key: string, priority: RasterPriority, run: () => 
     resolve = ok;
     reject = fail;
   });
-  const job: RasterJob = { key, priority, started: false, promise, run, resolve, reject };
+  const job: RasterJob = { key, page, priority, started: false, promise, run, resolve, reject };
   rasterJobs.set(key, job);
   rasterQueue.push(job);
   queueMicrotask(drainRasterQueue);
@@ -235,11 +437,9 @@ async function renderPdfPageToCanvas(canvas: HTMLCanvasElement, page: number, cs
     if (remaining) activePageRenders.set(page, remaining);
     else {
       activePageRenders.delete(page);
-      /* PDF.js keeps decoded image/operator resources on PDFPageProxy instances.
-         Raster canvases are self-contained, so release those native resources as
-         soon as the last concurrent render for the page finishes. */
       try { pdfPage.cleanup(); } catch { /* A later render can rebuild the page resources. */ }
     }
+    trimPageCache();
   }
 }
 
@@ -312,10 +512,11 @@ function requestPersistentWriteDrain() {
   else window.setTimeout(run, 700);
 }
 
-function schedulePersistentWrite(key: string, canvas: HTMLCanvasElement) {
+function schedulePersistentWrite(key: string, page: number, canvas: HTMLCanvasElement) {
   if (typeof caches === "undefined" || persistentWriteKeys.has(key)) return;
   persistentWriteKeys.add(key);
-  persistentWriteQueue.push({ key, canvas });
+  persistentWriteQueue.push({ key, page, canvas });
+  trimPersistentWriteQueue(false);
   requestPersistentWriteDrain();
 }
 
@@ -325,17 +526,16 @@ async function createRaster(page: number, bucket: number, pixelRatio: number, ke
     if (persisted) return persisted;
   }
 
-  // Start the shared page/range promise immediately, while the bounded raster
-  // scheduler decides when this canvas render may use CPU.
   void loadCatalogPage(page);
   const desiredPriority = rasterPriority.get(key) ?? priority;
   const raster = await scheduleRasterRender(
     key,
+    page,
     desiredPriority,
     () => renderPdfPageToCanvas(document.createElement("canvas"), page, bucket, pixelRatio),
   );
   if (bucket === COMPACT_RASTER_CSS_WIDTH) {
-    schedulePersistentWrite(persistentRasterUrl(page, pixelRatio), raster);
+    schedulePersistentWrite(persistentRasterUrl(page, pixelRatio), page, raster);
   }
   return raster;
 }
@@ -343,6 +543,7 @@ async function createRaster(page: number, bucket: number, pixelRatio: number, ke
 /** Cache the expensive PDF raster. Repeated copies and repeated screens share
  * one of three stable tiers, and compact thumbnails survive page reloads. */
 function loadCardRaster(page: number, cssWidth: number, priority: RasterPriority = 1) {
+  touchSessionRecent(page);
   const pixelRatio = cardPixelRatio();
   const bucket = rasterWidthBucket(cssWidth);
   const key = rasterKey(page, bucket, pixelRatio);
@@ -361,16 +562,11 @@ function loadCardRaster(page: number, cssWidth: number, priority: RasterPriority
     throw error;
   });
   rasterPromises.set(key, pending);
-  while (rasterPromises.size > rasterCacheLimit()) {
-    const oldest = [...rasterPromises.keys()].find((candidate) => candidate !== key && !isRetainedCompactRaster(candidate));
-    if (!oldest) break;
-    rasterPromises.delete(oldest);
-    rasterPriority.delete(oldest);
-  }
+  trimRasterCache();
   return pending;
 }
 
-/** Background warming is always lower priority than cards actually on screen. */
+/** Four tiers: selected/focus 0, visible 1, nearby 2, idle/background 3. */
 export async function prewarmRemoteCardArtPages(
   pages: readonly number[],
   cssWidth = MIN_COMPONENT_RASTER_CSS_WIDTH,
@@ -384,9 +580,11 @@ export async function prewarmRemoteCardArtPages(
       if (options.signal?.aborted) return;
       const page = queue[cursor++];
       try {
-        await loadCardRaster(page, cssWidth, options.priority ?? 2);
-      } catch {
-        // Mounted RemoteCardArt instances retain their own error/fallback path.
+        await loadCardRaster(page, cssWidth, options.priority ?? 3);
+      } catch (error) {
+        if ((error as { name?: string }).name !== "AbortError") {
+          // Mounted RemoteCardArt instances retain their own error/fallback path.
+        }
       }
     }
   };
@@ -407,11 +605,6 @@ function preloadStaticImageAsset(url: string) {
   });
   assetPreloadPromises.set(url, pending);
   return pending;
-}
-
-function cleanupPdfDocumentResources() {
-  if (!catalogPromise) return;
-  void catalogPromise.then((catalog) => catalog.cleanup()).catch(() => undefined);
 }
 
 export function preloadMatchCardArt({
@@ -439,7 +632,7 @@ export function preloadMatchCardArt({
   const runBackground = () => {
     if (controller.signal.aborted) return;
     void prewarmRemoteCardArtPages(background, COMPACT_RASTER_CSS_WIDTH, {
-      priority: 2,
+      priority: 3,
       concurrency: isMemoryConstrainedDevice() ? 1 : 2,
       signal: controller.signal,
     });
@@ -457,6 +650,10 @@ export function preloadMatchCardArt({
     if (idleWindow.requestIdleCallback) idleWindow.cancelIdleCallback?.(idleHandle);
     else window.clearTimeout(idleHandle);
     releasePages();
+    cancelObsoleteQueuedRasterJobs();
+    trimPersistentWriteQueue(true);
+    trimRasterCache();
+    trimPageCache();
     cleanupPdfDocumentResources();
   };
 }
@@ -486,16 +683,12 @@ async function paintCardArt(
 
   if (canvas.dataset.renderedPage === String(page) && canvas.dataset.artQuality === "final") return;
 
-  // Paint a small reusable thumbnail first. On later visits it normally comes
-  // from Cache Storage before PDF.js has to parse/render anything.
   const compact = await loadCardRaster(page, COMPACT_RASTER_CSS_WIDTH, priority);
   if (!shouldCommit()) return;
   copyRaster(canvas, compact, page, targetBucket === COMPACT_RASTER_CSS_WIDTH ? "final" : "preview");
 
   if (targetBucket !== COMPACT_RASTER_CSS_WIDTH) {
-    // Quality upgrades yield to other visible compact thumbnails so the whole
-    // screen fills in before one large card consumes the render queue.
-    const upgradePriority: RasterPriority = priority === 0 ? 1 : priority;
+    const upgradePriority = Math.min(3, priority + 1) as RasterPriority;
     const finalRaster = await loadCardRaster(page, targetBucket, upgradePriority);
     if (!shouldCommit()) return;
     copyRaster(canvas, finalRaster, page, "final");
@@ -503,6 +696,7 @@ async function paintCardArt(
 }
 
 export async function renderRemoteCardArtToCanvas(canvas: HTMLCanvasElement, page: number, cssWidth = 120) {
+  promoteRemoteCardArtPage(page, 0, false);
   await paintCardArt(canvas, page, cssWidth, 0);
 }
 
@@ -513,7 +707,7 @@ function ensureVisibilityObservers() {
     nearObserver = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
-        visibilityCallbacks.get(entry.target)?.(1);
+        visibilityCallbacks.get(entry.target)?.(2);
         nearObserver?.unobserve(entry.target);
       }
     }, { rootMargin: coarse ? "96px 0px" : "180px 0px" });
@@ -522,7 +716,7 @@ function ensureVisibilityObservers() {
     visibleObserver = new IntersectionObserver((entries) => {
       for (const entry of entries) {
         if (!entry.isIntersecting) continue;
-        visibilityCallbacks.get(entry.target)?.(0);
+        visibilityCallbacks.get(entry.target)?.(1);
         visibleObserver?.unobserve(entry.target);
         nearObserver?.unobserve(entry.target);
       }
@@ -534,7 +728,7 @@ function ensureVisibilityObservers() {
 function observeCardVisibility(canvas: HTMLCanvasElement, callback: (priority: RasterPriority) => void) {
   const observers = ensureVisibilityObservers();
   if (!observers) {
-    const frame = requestAnimationFrame(() => callback(0));
+    const frame = requestAnimationFrame(() => callback(1));
     return () => cancelAnimationFrame(frame);
   }
   visibilityCallbacks.set(canvas, callback);
@@ -544,7 +738,21 @@ function observeCardVisibility(canvas: HTMLCanvasElement, callback: (priority: R
     visibilityCallbacks.delete(canvas);
     observers.nearObserver.unobserve(canvas);
     observers.visibleObserver.unobserve(canvas);
+    cleanupVisibilityObserversIfIdle();
   };
+}
+
+function releaseDetachedCanvasSoon(canvas: HTMLCanvasElement) {
+  queueMicrotask(() => {
+    if (canvas.isConnected) return;
+    try { canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height); } catch { /* detached */ }
+    canvas.width = 0;
+    canvas.height = 0;
+  });
+}
+
+function delegatesToCleanHeroRuntime(canvas: HTMLCanvasElement, page: number) {
+  return CLEAN_HERO_PAGES.has(page) && !canvas.closest(".screen-game .game-stage");
 }
 
 type RemoteCardArtProps = {
@@ -568,6 +776,16 @@ function RemoteCardArtComponent({ page, name, className = "", style, priority = 
     setFailed(false);
     delete canvas.dataset.loaded;
     delete canvas.dataset.artQuality;
+
+    if (delegatesToCleanHeroRuntime(canvas, page)) {
+      delete canvas.dataset.loading;
+      return () => {
+        disposed = true;
+        renderGeneration.current += 1;
+        releaseDetachedCanvasSoon(canvas);
+      };
+    }
+
     canvas.dataset.loading = "true";
     if (canvas.dataset.renderedPage && canvas.dataset.renderedPage !== String(page)) {
       canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
@@ -576,6 +794,7 @@ function RemoteCardArtComponent({ page, name, className = "", style, priority = 
     const requestPaint = (nextPriority: RasterPriority) => {
       if (requestedPriority !== null && nextPriority >= requestedPriority) return;
       requestedPriority = nextPriority;
+      promoteRemoteCardArtPage(page, nextPriority, priority && nextPriority === 0);
       const generation = ++renderGeneration.current;
       void paintCardArt(
         canvas,
@@ -586,7 +805,7 @@ function RemoteCardArtComponent({ page, name, className = "", style, priority = 
       ).then(() => {
         if (!disposed && renderGeneration.current === generation) setFailed(false);
       }).catch((error: unknown) => {
-        if (!disposed && renderGeneration.current === generation && (error as { name?: string }).name !== "RenderingCancelledException") {
+        if (!disposed && renderGeneration.current === generation && !["RenderingCancelledException", "AbortError"].includes((error as { name?: string }).name || "")) {
           delete canvas.dataset.loading;
           setFailed(true);
         }
@@ -601,8 +820,7 @@ function RemoteCardArtComponent({ page, name, className = "", style, priority = 
       disposed = true;
       renderGeneration.current += 1;
       stopObserving();
-      // Keep completed pixels on a still-owned DOM canvas; detached transient
-      // presentation canvases are released by PresentationMemoryRuntime.
+      releaseDetachedCanvasSoon(canvas);
     };
   }, [page, priority]);
 
