@@ -3,7 +3,7 @@
 import { memo, useEffect, useRef, useState, type CSSProperties } from "react";
 
 const CATALOG_URL = "/api/hemsfell-card-catalog.pdf";
-const MAX_CACHED_PAGE_PROMISES = 48;
+const MAX_CACHED_PAGE_PROMISES = 12;
 const MAX_CACHED_RASTER_PROMISES = 48;
 const MIN_COMPONENT_RASTER_CSS_WIDTH = 64;
 const COMPACT_RASTER_CSS_WIDTH = 144;
@@ -29,6 +29,7 @@ type RasterJob = {
 
 let catalogPromise: Promise<import("pdfjs-dist").PDFDocumentProxy> | null = null;
 const pagePromises = new Map<number, Promise<import("pdfjs-dist").PDFPageProxy>>();
+const activePageRenders = new Map<number, number>();
 const rasterPromises = new Map<string, Promise<HTMLCanvasElement>>();
 const rasterPriority = new Map<string, RasterPriority>();
 const rasterJobs = new Map<string, RasterJob>();
@@ -61,7 +62,7 @@ function rasterCacheLimit() {
 }
 
 function pageCacheLimit() {
-  return isMemoryConstrainedDevice() ? 24 : MAX_CACHED_PAGE_PROMISES;
+  return isMemoryConstrainedDevice() ? 8 : MAX_CACHED_PAGE_PROMISES;
 }
 
 function openPersistentRasterCache() {
@@ -90,6 +91,7 @@ async function loadCatalog() {
     }).catch((error) => {
       catalogPromise = null;
       pagePromises.clear();
+      activePageRenders.clear();
       rasterPromises.clear();
       rasterPriority.clear();
       throw error;
@@ -103,7 +105,9 @@ export async function preloadRemoteCardCatalog() {
   await loadCatalog();
 }
 
-/** Reuse PDF page proxies across menu, collection, setup, match and inspector. */
+/** Reuse a small number of PDF page proxies. The expensive decoded page
+ * resources are explicitly cleaned after rasterization, so this Map is only a
+ * request/proxy reuse layer rather than a hidden native-memory cache. */
 function loadCatalogPage(page: number) {
   let pending = pagePromises.get(page);
   if (pending) {
@@ -214,16 +218,29 @@ function promoteRasterJob(key: string, priority: RasterPriority) {
 
 async function renderPdfPageToCanvas(canvas: HTMLCanvasElement, page: number, cssWidth: number, pixelRatio: number) {
   const pdfPage = await loadCatalogPage(page);
-  const baseViewport = pdfPage.getViewport({ scale: 1 });
-  const viewport = pdfPage.getViewport({ scale: (cssWidth / baseViewport.width) * pixelRatio });
-  canvas.width = Math.ceil(viewport.width);
-  canvas.height = Math.ceil(viewport.height);
-  canvas.style.aspectRatio = `${baseViewport.width} / ${baseViewport.height}`;
-  const context = canvas.getContext("2d", { alpha: false });
-  if (!context) throw new Error("Canvas indisponível");
-  const renderTask = pdfPage.render({ canvas, canvasContext: context, viewport });
-  await renderTask.promise;
-  return canvas;
+  activePageRenders.set(page, (activePageRenders.get(page) || 0) + 1);
+  try {
+    const baseViewport = pdfPage.getViewport({ scale: 1 });
+    const viewport = pdfPage.getViewport({ scale: (cssWidth / baseViewport.width) * pixelRatio });
+    canvas.width = Math.ceil(viewport.width);
+    canvas.height = Math.ceil(viewport.height);
+    canvas.style.aspectRatio = `${baseViewport.width} / ${baseViewport.height}`;
+    const context = canvas.getContext("2d", { alpha: false });
+    if (!context) throw new Error("Canvas indisponível");
+    const renderTask = pdfPage.render({ canvas, canvasContext: context, viewport });
+    await renderTask.promise;
+    return canvas;
+  } finally {
+    const remaining = Math.max(0, (activePageRenders.get(page) || 1) - 1);
+    if (remaining) activePageRenders.set(page, remaining);
+    else {
+      activePageRenders.delete(page);
+      /* PDF.js keeps decoded image/operator resources on PDFPageProxy instances.
+         Raster canvases are self-contained, so release those native resources as
+         soon as the last concurrent render for the page finishes. */
+      try { pdfPage.cleanup(); } catch { /* A later render can rebuild the page resources. */ }
+    }
+  }
 }
 
 function persistentRasterUrl(page: number, pixelRatio: number) {
@@ -392,6 +409,11 @@ function preloadStaticImageAsset(url: string) {
   return pending;
 }
 
+function cleanupPdfDocumentResources() {
+  if (!catalogPromise) return;
+  void catalogPromise.then((catalog) => catalog.cleanup()).catch(() => undefined);
+}
+
 export function preloadMatchCardArt({
   criticalPages,
   backgroundPages,
@@ -435,6 +457,7 @@ export function preloadMatchCardArt({
     if (idleWindow.requestIdleCallback) idleWindow.cancelIdleCallback?.(idleHandle);
     else window.clearTimeout(idleHandle);
     releasePages();
+    cleanupPdfDocumentResources();
   };
 }
 
@@ -578,8 +601,8 @@ function RemoteCardArtComponent({ page, name, className = "", style, priority = 
       disposed = true;
       renderGeneration.current += 1;
       stopObserving();
-      // Keep completed pixels. Returning to a screen must never destroy useful
-      // work and force the same official PDF page to render again.
+      // Keep completed pixels on a still-owned DOM canvas; detached transient
+      // presentation canvases are released by PresentationMemoryRuntime.
     };
   }, [page, priority]);
 
