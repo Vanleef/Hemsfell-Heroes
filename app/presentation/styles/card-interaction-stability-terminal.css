@@ -64,19 +64,31 @@ html body .screen-game :is(.player-hand,.opponent-hand)
   z-index: 80 !important;
 }
 
-/* The runtime marks the actual previous/next frame. Do not depend on :has() for
-   the interaction itself: legacy hand transforms and browser selector support
-   can otherwise make the gap disappear. The gap is always at least a little
-   larger than the current overlap, so the active card is visibly uncovered. */
+/* The obsolete response-waiting popup for bot priority is never shown. The
+   canonical [data-hemsfell-ai-thinking] indicator remains the only AI wait UI. */
+html body .screen-game .response-waiting[data-hh-ai-bot-wait="true"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* The runtime marks the actual previous/next frame. Keep the gap only slightly
+   above the current overlap, then ease it in/out so neighbouring cards slide
+   rather than snap apart. */
 html body .screen-game .player-hand {
   --hh-hand-peek-gap: max(
-    calc(var(--hh-hand-overlap, 0cqi) + .55cqi),
-    clamp(.48rem, 1.9cqi, 1rem)
+    calc(var(--hh-hand-overlap, 0cqi) + .24cqi),
+    clamp(.3rem, 1.2cqi, .66rem)
   );
 }
 
 html body .screen-game .player-hand > .card-frame {
-  transition: transform 125ms ease, translate 125ms ease, filter 150ms ease !important;
+  transition:
+    transform 220ms cubic-bezier(.22, .61, .36, 1),
+    translate 220ms cubic-bezier(.22, .61, .36, 1),
+    filter 180ms ease !important;
+  will-change: transform, translate;
 }
 
 html body .screen-game .player-hand > .card-frame[data-hh-hand-neighbor="left"] {
@@ -90,8 +102,14 @@ html body .screen-game .player-hand > .card-frame[data-hh-hand-neighbor="right"]
 @media (hover: none), (pointer: coarse) {
   html body .screen-game .player-hand {
     --hh-hand-peek-gap: max(
-      calc(var(--hh-hand-overlap, 0cqi) + .72cqi),
-      clamp(.52rem, 2.35cqi, 1.08rem)
+      calc(var(--hh-hand-overlap, 0cqi) + .3cqi),
+      clamp(.34rem, 1.45cqi, .74rem)
     );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .screen-game .player-hand > .card-frame {
+    transition-duration: 1ms !important;
   }
 }
