@@ -15,7 +15,7 @@ test("tutorial is reachable from the main menu and uses the presentation layer",
   assert.match(page, /type Screen=[^;]*"tutorial"/);
   assert.match(page, /setScreen\("tutorial"\)/);
   assert.match(page, /screen==="tutorial"&&<TutorialScreen/);
-  assert.match(page, /from "\.\/presentation\/tutorial"/);
+  assert.match(page, /dynamic\([\s\S]*import\("\.\/presentation\/tutorial"\)[\s\S]*ssr: false/);
   assert.match(layout, /presentation\/styles\/tutorial\.css/);
 });
 

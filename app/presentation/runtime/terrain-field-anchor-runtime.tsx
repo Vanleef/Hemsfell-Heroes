@@ -98,6 +98,10 @@ export default function TerrainFieldAnchorRuntime() {
       slotHeight: number,
     ) => {
       const px = (value: number) => `${Math.max(0, value)}px`;
+      const geometryKey = [x, y, slotWidth, slotHeight].map((value) => Math.round(value * 100) / 100).join(":");
+      terrainEl.classList.add("is-field-anchored");
+      if (terrainEl.dataset.terrainGeometry === geometryKey) return;
+      terrainEl.dataset.terrainGeometry = geometryKey;
       terrainEl.style.setProperty("--terrain-anchor-x", px(x));
       terrainEl.style.setProperty("--terrain-anchor-y", px(y));
       terrainEl.style.setProperty("--terrain-anchor-width", `${slotWidth}px`);
@@ -124,7 +128,6 @@ export default function TerrainFieldAnchorRuntime() {
       terrainEl.style.setProperty("place-items", "center", "important");
       terrainEl.style.setProperty("box-sizing", "border-box", "important");
       terrainEl.style.setProperty("z-index", "48", "important");
-      terrainEl.classList.add("is-field-anchored");
     };
 
     const syncPlayerDragSentinel = (
@@ -183,13 +186,21 @@ export default function TerrainFieldAnchorRuntime() {
       frame = requestAnimationFrame(position);
     };
 
-    const mutationObserver = new MutationObserver(schedule);
+    const mutationTouchesTerrain = (record: MutationRecord) => {
+      const selector = ".game-content.hs-board,.paired-field,.terrain-slot,.field-slot,.field-energy,.card-frame";
+      const target = record.target instanceof Element ? record.target : record.target.parentElement;
+      if (target?.closest(selector)) return true;
+      if (record.type !== "childList") return false;
+      return [...record.addedNodes, ...record.removedNodes].some((node) => node instanceof Element && (node.matches(selector) || !!node.querySelector(selector)));
+    };
+    const mutationObserver = new MutationObserver((records) => {
+      if (records.some(mutationTouchesTerrain)) schedule();
+    });
     mutationObserver.observe(document.body, {
       childList: true,
       subtree: true,
-      characterData: true,
       attributes: true,
-      attributeFilter: ["class"],
+      attributeFilter: ["class", "aria-label"],
     });
     document.addEventListener("dragstart", schedule, true);
     document.addEventListener("dragend", schedule, true);

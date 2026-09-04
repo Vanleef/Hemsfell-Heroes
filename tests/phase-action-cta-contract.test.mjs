@@ -2,14 +2,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-const layout = fs.readFileSync("app/layout.tsx", "utf8");
+const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8");
 const runtime = fs.readFileSync("app/presentation/runtime/phase-action-runtime.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/phase-orb-copy-final.css", "utf8").replace(/\s+/g, " ");
 const centeringCss = fs.readFileSync("app/presentation/styles/match-centering-final.css", "utf8").replace(/\s+/g, " ");
 
 test("phase action runtime is mounted", () => {
-  assert.match(layout, /import PhaseActionRuntime from "\.\/presentation\/runtime\/phase-action-runtime"/);
-  assert.match(layout, /<PhaseActionRuntime \/>/);
+  assert.match(gate, /import\("\.\/phase-action-runtime"\)/);
+  assert.match(gate, /<PhaseActionRuntime \/>/);
 });
 
 test("runtime maps current phase actions to the next contextual phase", () => {

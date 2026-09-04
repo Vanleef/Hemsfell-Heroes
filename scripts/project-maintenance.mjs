@@ -34,6 +34,7 @@ const requiredFiles = [
   "app/presentation/styles/game-presentation.css",
   "app/presentation/styles/tutorial.css",
   "app/presentation/match/match-ui-runtime.tsx",
+  "app/presentation/runtime/match-runtime-gate.tsx",
   "app/presentation/runtime/game-presentation-runtime.tsx",
   "app/presentation/match/match-ui-guard.tsx",
   "app/rules-engine/card-rules.mjs",
@@ -97,11 +98,12 @@ async function validateCssImports(path) {
 await validateCssImports("app/globals.css");
 await validateCssImports("app/presentation/styles/match-ui.css");
 
-const [labStructure, matchStructure, responseStructure, layoutStructure] = await Promise.all([
+const [labStructure, matchStructure, responseStructure, layoutStructure, matchRuntimeGate] = await Promise.all([
   read("app/presentation/styles/board/lab.css"),
   read("app/presentation/styles/match-ui.css"),
   read("app/presentation/styles/response-window.css"),
   read("app/layout.tsx"),
+  read("app/presentation/runtime/match-runtime-gate.tsx"),
 ]);
 
 assertOrdered(labStructure, [
@@ -138,10 +140,17 @@ assertOrdered(layoutStructure, [
   'import "./presentation/styles/match-ui.css";',
   'import "./presentation/styles/online-match-runtime.css";',
   'import MatchUiGuard from "./presentation/match/match-ui-guard";',
-  'import MatchUiRuntime from "./presentation/match/match-ui-runtime";',
+  'import MatchRuntimeGate from "./presentation/runtime/match-runtime-gate";',
   '<MatchUiGuard />',
-  '<MatchUiRuntime />',
+  '<MatchRuntimeGate />',
 ], "app/layout.tsx runtime order");
+
+assertOrdered(matchRuntimeGate, [
+  'const MatchUiRuntime = dynamic(',
+  'const PresentationEventBridge = dynamic(',
+  '<MatchUiRuntime />',
+  '<PresentationEventBridge />',
+], "app/presentation/runtime/match-runtime-gate.tsx runtime order");
 
 for (const path of ["app/page.tsx", "app/rules-engine/effects.mjs", "app/rules-engine/engine.mjs"]) {
   const source = await read(path);

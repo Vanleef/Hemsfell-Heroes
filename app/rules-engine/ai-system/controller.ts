@@ -61,7 +61,8 @@ const generateEngineActions = (state: AIGameState, owner: number, difficulty: st
 
 export const defaultAIAdapter: EngineAdapter = {
   generateLegalActions: generateEngineActions,
-  applyAction: (state, action) => executeCommand(structuredClone(state), action, { priority: true }).state as AIGameState,
+  // executeCommand already clones its input before resolution.
+  applyAction: (state, action) => executeCommand(state, action, { priority: true }).state as AIGameState,
   cloneState,
 };
 

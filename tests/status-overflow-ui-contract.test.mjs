@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 
 const layout = fs.readFileSync("app/layout.tsx", "utf8").replace(/\s+/g, " ");
+const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8").replace(/\s+/g, " ");
 const abilityRuntime = fs.readFileSync("app/presentation/runtime/hero-ability-rail-runtime.tsx", "utf8").replace(/\s+/g, " ");
 const statusRuntime = fs.readFileSync("app/presentation/runtime/status-overflow-runtime.tsx", "utf8").replace(/\s+/g, " ");
 const css = fs.readFileSync("app/presentation/styles/hero-status-overlay.css", "utf8").replace(/\s+/g, " ");
@@ -24,8 +25,8 @@ test("status overlay loads after targeting while pile footer remains terminal", 
   assert.ok(targeting >= 0);
   assert.ok(status > targeting);
   assert.ok(pile > status);
-  assert.match(layout, /import StatusOverflowRuntime from "\.\/presentation\/runtime\/status-overflow-runtime"/);
-  assert.match(layout, /<HeroAbilityRailRuntime \/> <StatusOverflowRuntime \/>/);
+  assert.match(gate, /import\("\.\/status-overflow-runtime"\)/);
+  assert.match(gate, /<HeroAbilityRailRuntime \/>\s*<StatusOverflowRuntime \/>/);
 });
 
 test("hero ability tooltip uses a body portal above every board stacking context", () => {

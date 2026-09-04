@@ -2,15 +2,15 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const [layout, runtime, css] = await Promise.all([
-  readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+const [gate, runtime, css] = await Promise.all([
+  readFile(new URL("../app/presentation/runtime/match-runtime-gate.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/presentation/runtime/hero-panel-expand-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/presentation/styles/hero-panel-reference-tuning.css", import.meta.url), "utf8"),
 ]);
 
-test("hero panel compact/expanded runtime is globally mounted", () => {
-  assert.match(layout, /HeroPanelExpandRuntime/);
-  assert.match(layout, /<HeroPanelExpandRuntime\s*\/>/);
+test("hero panel compact/expanded runtime is match-gated", () => {
+  assert.match(gate, /HeroPanelExpandRuntime/);
+  assert.match(gate, /<HeroPanelExpandRuntime\s*\/>/);
   assert.match(runtime, /canonical-hero-panel/);
   assert.match(runtime, /classList\.toggle\("is-expanded"/);
   assert.match(runtime, /aria-expanded/);

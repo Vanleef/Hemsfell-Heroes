@@ -3,9 +3,10 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
 
-const [runtime, layout, css, machine, clock, page, packageJson] = await Promise.all([
+const [runtime, layout, gate, css, machine, clock, page, packageJson] = await Promise.all([
   readFile(new URL("../app/application/online/online-match-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/presentation/runtime/match-runtime-gate.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/presentation/styles/online-match-runtime.css", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/online-clock.mjs", import.meta.url), "utf8"),
@@ -26,7 +27,8 @@ test("staged Online runtime is syntactically valid TypeScript", () => {
 test("root layout mounts the Online HUD after the canonical match UI runtime", () => {
   assert.match(layout, /import OnlineMatchRuntime from "\.\/application\/online\/online-match-runtime"/);
   assert.match(layout, /import "\.\/presentation\/styles\/online-match-runtime\.css"/);
-  assert.match(layout, /<MatchUiRuntime \/>[\s\S]*?<OnlineMatchRuntime \/>/);
+  assert.match(layout, /<MatchRuntimeGate \/>[\s\S]*?<OnlineMatchRuntime \/>/);
+  assert.match(gate, /<MatchUiRuntime \/>/);
 });
 
 test("Online runtime consumes canonical guest orientation instead of duplicating mirror logic", () => {
@@ -85,7 +87,7 @@ test("Online HUD reuses the board snapshot instead of opening a second polling l
   assert.match(runtime, /const ONLINE_ROOM_SNAPSHOT_EVENT = "hemsfell:online-room-snapshot"/);
   assert.match(runtime, /window\.addEventListener\(ONLINE_ROOM_SNAPSHOT_EVENT, consume\)/);
   assert.match(page, /announceOnlineSnapshot/);
-  assert.match(page, /window\.setTimeout\(fn,600\)/);
+  assert.match(page, /window\.setTimeout\(fn,nextDelay\(\)\)/);
   assert.doesNotMatch(runtime, /fetch\(`\/api\/rooms/);
   assert.doesNotMatch(runtime, /POLL_MS|DISCOVERY_MS|setInterval|setTimeout\(poll/);
 });

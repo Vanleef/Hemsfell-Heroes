@@ -97,25 +97,12 @@ import "./presentation/styles/mobile-hero-ability-spacing-terminal.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
-import MatchUiRuntime from "./presentation/match/match-ui-runtime";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
 import OnlineReconnectRuntime from "./application/online/online-reconnect-runtime";
 import GameGlossaryRuntime from "./presentation/glossary/game-glossary-runtime";
 import CardDoubleClickInspectRuntime from "./presentation/cards/card-double-click-inspect-runtime";
 import CardPreviewRuntime from "./presentation/cards/card-preview-runtime";
-import PresentationEventBridge from "./presentation/runtime/presentation-event-bridge";
-import PresentationInteractionRuntime from "./presentation/runtime/presentation-interaction-runtime";
-import GamePresentationRuntime from "./presentation/runtime/game-presentation-runtime";
-import HeroPanelExpandRuntime from "./presentation/runtime/hero-panel-expand-runtime";
-import HeroAbilityDetailRuntime from "./presentation/runtime/hero-ability-detail-runtime";
-import HeroAbilityRailRuntime from "./presentation/runtime/hero-ability-rail-runtime";
-import StatusOverflowRuntime from "./presentation/runtime/status-overflow-runtime";
-import MatchRequestedUiRuntime from "./presentation/runtime/match-requested-ui-runtime";
-import TerrainFieldAnchorRuntime from "./presentation/runtime/terrain-field-anchor-runtime";
-import EvolutionTooltipPortalRuntime from "./presentation/runtime/evolution-tooltip-portal-runtime";
-import MatchFeedbackRuntime from "./presentation/runtime/match-feedback-runtime";
-import PhaseActionRuntime from "./presentation/runtime/phase-action-runtime";
-import MobileTouchInputRuntime from "./presentation/runtime/mobile-touch-input-runtime";
+import MatchRuntimeGate from "./presentation/runtime/match-runtime-gate";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -139,25 +126,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return <html lang="pt-BR" suppressHydrationWarning>
     <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       <MatchUiGuard />
-      <MatchUiRuntime />
+      <MatchRuntimeGate />
       <OnlineMatchRuntime />
       <OnlineReconnectRuntime />
       <GameGlossaryRuntime />
       <CardDoubleClickInspectRuntime />
       <CardPreviewRuntime />
-      <PresentationEventBridge />
-      <PresentationInteractionRuntime />
-      <GamePresentationRuntime />
-      <HeroPanelExpandRuntime />
-      <HeroAbilityDetailRuntime />
-      <HeroAbilityRailRuntime />
-      <StatusOverflowRuntime />
-      <MatchRequestedUiRuntime />
-      <TerrainFieldAnchorRuntime />
-      <EvolutionTooltipPortalRuntime />
-      <MatchFeedbackRuntime />
-      <PhaseActionRuntime />
-      <MobileTouchInputRuntime />
       {children}
     </body>
   </html>;

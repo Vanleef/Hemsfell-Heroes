@@ -8,6 +8,7 @@ const balanceCss = fs.readFileSync("app/presentation/styles/hero-panel-visual-ba
 const terminalCss = fs.readFileSync("app/presentation/styles/hero-panel-polish-terminal.css", "utf8");
 const dragCss = fs.readFileSync("app/presentation/styles/terrain-drag-stability.css", "utf8");
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
+const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8");
 
 test("Cruel Terrain uses half of the rendered field-slot gap with stable local dimensions", () => {
   assert.match(runtime, /\.field-slot\[data-slot="1"\]/);
@@ -37,7 +38,7 @@ test("Cruel Terrain uses half of the rendered field-slot gap with stable local d
   assert.match(terminalCss, /terrain-slot\.is-field-anchored > \.card-frame[^}]*position: absolute !important[^}]*inset: 0 !important/);
   assert.match(dragCss, /terrain-drag-sentinel\[data-active="true"\][^}]*display: grid !important/);
   assert.match(runtime, /document\.addEventListener\("dragstart", schedule, true\)/);
-  assert.match(layout, /<TerrainFieldAnchorRuntime \/>/);
+  assert.match(gate, /<TerrainFieldAnchorRuntime \/>/);
   assert.doesNotMatch(layout, /TerrainProximityRuntime/);
 });
 
