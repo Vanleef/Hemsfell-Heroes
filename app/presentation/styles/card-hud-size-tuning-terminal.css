@@ -1,95 +1,171 @@
 /*
  * Final proportional size tuning for battlefield card chrome.
  *
- * The previous readability pass overshot on both desktop and touch. Keep the
- * same container-relative model, but pull effects, markers, combat metrics and
- * activated abilities back by roughly one visual step. Touch hit slop is still
- * owned by mobile-card-icon-scale-terminal.css, so the painted control can be
- * smaller without making it harder to tap.
+ * Effects and activated abilities stay readable without covering the art.
+ * Battlefield Ofensividade/Vitalidade reuse the exact hand-medallion visual
+ * language, while action markers are a single numeric badge centered on-card.
  */
 
+/* Battlefield creature stats: same visual treatment as .hh-hand-atk/.hh-hand-hp,
+ * slightly smaller because field cards already carry more local UI. */
 html body .screen-game .card-frame[data-unit-id] > .original-card > :is(.live-atk,.live-hp) {
-  inline-size: clamp(.68rem, 24.5cqi, 1.48rem) !important;
-  block-size: clamp(.68rem, 24.5cqi, 1.48rem) !important;
-  width: clamp(.68rem, 24.5cqi, 1.48rem) !important;
-  height: clamp(.68rem, 24.5cqi, 1.48rem) !important;
-  font: 950 clamp(.43rem, 15.3cqi, .88rem)/1 system-ui, sans-serif !important;
+  position: absolute !important;
+  display: grid !important;
+  place-items: center !important;
+  inline-size: clamp(.62rem, 21.5cqi, 1.28rem) !important;
+  block-size: clamp(.62rem, 21.5cqi, 1.28rem) !important;
+  width: clamp(.62rem, 21.5cqi, 1.28rem) !important;
+  height: clamp(.62rem, 21.5cqi, 1.28rem) !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  border: max(1px, 1.1cqi) solid rgb(255 244 205 / 76%) !important;
+  border-radius: 50% !important;
+  color: #fff8e8 !important;
+  font: 950 clamp(.39rem, 13.2cqi, .74rem)/1 system-ui, sans-serif !important;
+  font-variant-numeric: tabular-nums !important;
+  text-align: center !important;
+  text-shadow: 0 1px 1px #000, 0 0 .18rem #000 !important;
+  box-shadow: inset 0 0 .28rem rgb(255 255 255 / 16%), 0 .08rem .22rem rgb(0 0 0 / 74%) !important;
+  pointer-events: none !important;
+  z-index: 40 !important;
+}
+
+html body .screen-game .card-frame[data-unit-id] > .original-card > .live-atk {
+  inset-inline-start: 4.2% !important;
+  inset-inline-end: auto !important;
+  inset-block-end: 3.8% !important;
+  background: radial-gradient(circle at 35% 28%, #fff0b6 0 10%, #b7762f 32%, #5f301a 70%, #21100a 100%) !important;
+  border-color: rgb(240 197 111 / 90%) !important;
+}
+
+html body .screen-game .card-frame[data-unit-id] > .original-card > .live-hp {
+  inset-inline-end: 4.2% !important;
+  inset-inline-start: auto !important;
+  inset-block-end: 3.8% !important;
+  background: radial-gradient(circle at 35% 28%, #ffc8bd 0 10%, #a9443d 32%, #5f1e24 70%, #220b10 100%) !important;
+  border-color: rgb(239 151 139 / 90%) !important;
 }
 
 html body .screen-game :is(.card-frame,.pile-card) {
-  --keyword-icon-size: clamp(.54rem, 13.5cqi, .92rem) !important;
-  --keyword-gap: clamp(.04rem, 2cqi, .14rem) !important;
+  --keyword-icon-size: clamp(.5rem, 12.2cqi, .82rem) !important;
+  --keyword-gap: clamp(.035rem, 1.8cqi, .12rem) !important;
 }
 
 html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
-html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+html body .screen-game .summoning-sickness-badge {
+  width: clamp(.52rem, 12.8cqi, .86rem) !important;
+  height: clamp(.52rem, 12.8cqi, .86rem) !important;
+  font-size: clamp(.3rem, 6.3cqi, .49rem) !important;
+}
+
+/* Markers keep roughly their previous readable size, but are one centered
+ * numeric counter instead of a side icon. Runtime normalizes +N to N. */
+html body .screen-game .card-frame[data-unit-id] > .card-frame-marker {
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  right: auto !important;
+  bottom: auto !important;
   width: clamp(.58rem, 14.2cqi, .96rem) !important;
   height: clamp(.58rem, 14.2cqi, .96rem) !important;
-  font-size: clamp(.33rem, 7cqi, .54rem) !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  transform: translate(-50%, -50%) !important;
+  transform-origin: 50% 50% !important;
+  border: max(1px, .9cqi) solid rgb(244 204 108 / 78%) !important;
+  border-radius: 50% !important;
+  background: radial-gradient(circle at 35% 28%, #fff0b6 0 8%, #8a6725 32%, #3a2710 72%, #130c06 100%) !important;
+  color: #fff3c7 !important;
+  font: 950 clamp(.34rem, 7.1cqi, .55rem)/1 system-ui, sans-serif !important;
+  font-style: normal !important;
+  font-variant-numeric: tabular-nums !important;
+  text-shadow: 0 1px 1px #000, 0 0 .18rem #000 !important;
+  box-shadow: inset 0 0 .24rem rgb(255 255 255 / 15%), 0 .1rem .28rem rgb(0 0 0 / 72%) !important;
+  pointer-events: none !important;
+  z-index: 44 !important;
 }
 
 html body .screen-game .card-frame > .card-frame-activation {
-  width: clamp(.78rem, 17.2cqi, 1.14rem) !important;
-  height: clamp(.78rem, 17.2cqi, 1.14rem) !important;
-  font-size: clamp(.38rem, 7.9cqi, .6rem) !important;
+  width: clamp(.7rem, 15.4cqi, 1.02rem) !important;
+  height: clamp(.7rem, 15.4cqi, 1.02rem) !important;
+  font-size: clamp(.34rem, 7.1cqi, .54rem) !important;
 }
 
 @media (hover: hover) and (pointer: fine) and (min-width: 56rem) {
   html body .screen-game :is(.card-frame,.pile-card) {
-    --keyword-icon-size: clamp(.64rem, 15cqi, 1.04rem) !important;
+    --keyword-icon-size: clamp(.57rem, 13.6cqi, .94rem) !important;
   }
 
   html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
-  html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+  html body .screen-game .summoning-sickness-badge {
+    width: clamp(.6rem, 14cqi, .96rem) !important;
+    height: clamp(.6rem, 14cqi, .96rem) !important;
+    font-size: clamp(.34rem, 6.8cqi, .52rem) !important;
+  }
+
+  html body .screen-game .card-frame[data-unit-id] > .card-frame-marker {
     width: clamp(.68rem, 15.7cqi, 1.08rem) !important;
     height: clamp(.68rem, 15.7cqi, 1.08rem) !important;
     font-size: clamp(.38rem, 7.5cqi, .58rem) !important;
   }
 
   html body .screen-game .card-frame > .card-frame-activation {
-    width: clamp(.88rem, 18.8cqi, 1.22rem) !important;
-    height: clamp(.88rem, 18.8cqi, 1.22rem) !important;
-    font-size: clamp(.43rem, 8.4cqi, .66rem) !important;
+    width: clamp(.78rem, 16.8cqi, 1.08rem) !important;
+    height: clamp(.78rem, 16.8cqi, 1.08rem) !important;
+    font-size: clamp(.38rem, 7.5cqi, .59rem) !important;
   }
 }
 
 @media (orientation: landscape) and (hover: none) and (pointer: coarse) {
   html body .screen-game :is(.card-frame,.pile-card) {
-    --keyword-icon-size: clamp(.36rem, 8.8cqi, .6rem) !important;
-    --keyword-gap: clamp(.025rem, 1.55cqi, .09rem) !important;
+    --keyword-icon-size: clamp(.33rem, 8cqi, .54rem) !important;
+    --keyword-gap: clamp(.025rem, 1.4cqi, .08rem) !important;
   }
 
   html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
-  html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+  html body .screen-game .summoning-sickness-badge {
+    width: clamp(.38rem, 9.1cqi, .61rem) !important;
+    height: clamp(.38rem, 9.1cqi, .61rem) !important;
+    font-size: clamp(.21rem, 4.7cqi, .34rem) !important;
+  }
+
+  html body .screen-game .card-frame[data-unit-id] > .card-frame-marker {
     width: clamp(.42rem, 10cqi, .68rem) !important;
     height: clamp(.42rem, 10cqi, .68rem) !important;
-    font-size: clamp(.23rem, 5.2cqi, .38rem) !important;
+    font-size: clamp(.24rem, 5.2cqi, .38rem) !important;
   }
 
   html body .screen-game .card-frame > .card-frame-activation {
-    width: clamp(.66rem, 14.5cqi, .94rem) !important;
-    height: clamp(.66rem, 14.5cqi, .94rem) !important;
-    font-size: clamp(.31rem, 6.8cqi, .47rem) !important;
+    width: clamp(.59rem, 12.9cqi, .84rem) !important;
+    height: clamp(.59rem, 12.9cqi, .84rem) !important;
+    font-size: clamp(.28rem, 6cqi, .42rem) !important;
   }
 
   html body .screen-game .card-frame[data-unit-id] > .original-card > :is(.live-atk,.live-hp) {
-    inline-size: clamp(.62rem, 23.5cqi, 1.12rem) !important;
-    block-size: clamp(.62rem, 23.5cqi, 1.12rem) !important;
-    width: clamp(.62rem, 23.5cqi, 1.12rem) !important;
-    height: clamp(.62rem, 23.5cqi, 1.12rem) !important;
-    font-size: clamp(.36rem, 14.5cqi, .64rem) !important;
+    inline-size: clamp(.56rem, 20.5cqi, 1rem) !important;
+    block-size: clamp(.56rem, 20.5cqi, 1rem) !important;
+    width: clamp(.56rem, 20.5cqi, 1rem) !important;
+    height: clamp(.56rem, 20.5cqi, 1rem) !important;
+    font-size: clamp(.33rem, 12.4cqi, .57rem) !important;
   }
 }
 
 @media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-aspect-ratio: 12 / 5) {
   html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
-  html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
-    width: clamp(.38rem, 9.4cqi, .62rem) !important;
-    height: clamp(.38rem, 9.4cqi, .62rem) !important;
+  html body .screen-game .summoning-sickness-badge {
+    width: clamp(.35rem, 8.6cqi, .56rem) !important;
+    height: clamp(.35rem, 8.6cqi, .56rem) !important;
   }
 
   html body .screen-game .card-frame > .card-frame-activation {
-    width: clamp(.62rem, 13.5cqi, .88rem) !important;
-    height: clamp(.62rem, 13.5cqi, .88rem) !important;
+    width: clamp(.56rem, 12.1cqi, .79rem) !important;
+    height: clamp(.56rem, 12.1cqi, .79rem) !important;
   }
 }

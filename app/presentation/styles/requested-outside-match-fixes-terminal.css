@@ -1,0 +1,97 @@
+/*
+ * Terminal authority for the requested out-of-match fixes.
+ * Keep these rules responsive and isolated from match geometry.
+ */
+
+/* Landing hero fan: rotated clean hero portraits must never be clipped at the
+ * lower edge of the fan/landing container. Body still owns horizontal clipping. */
+html body .screen-menu .landing {
+  overflow: visible !important;
+  padding-bottom: clamp(3.25rem, 8dvh, 6rem) !important;
+}
+
+html body .screen-menu .hero-fan {
+  min-height: clamp(29rem, 68dvh, 39rem) !important;
+  height: clamp(31rem, 72dvh, 41rem) !important;
+  overflow: visible !important;
+  padding-bottom: clamp(1.2rem, 3dvh, 2.4rem) !important;
+  box-sizing: border-box !important;
+}
+
+html body .screen-menu .hero-fan > *,
+html body .screen-menu .hero-fan .remote-card-art {
+  overflow: visible !important;
+}
+
+html body .screen-menu .hero-fan .remote-card-art {
+  top: clamp(1.5rem, 4.5dvh, 3.1rem) !important;
+  transform-origin: 50% 112% !important;
+  margin-bottom: clamp(.35rem, 1dvh, .8rem) !important;
+}
+
+/* Collection search result count belongs to the filter panel. Put it on its
+ * own final row so narrow desktop columns cannot push the output through the
+ * panel border or underneath the page scrollbar. */
+html body .screen-decks .collection-lists > .collection-toolbar {
+  grid-template-columns: minmax(0, 1fr) minmax(7rem, 10rem) !important;
+  grid-auto-flow: row !important;
+  align-items: end !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+html body .screen-decks .collection-lists > .collection-toolbar > .collection-search-field {
+  grid-column: 1 / 2 !important;
+  min-width: 0 !important;
+}
+
+html body .screen-decks .collection-lists > .collection-toolbar > label:not(.collection-search-field) {
+  grid-column: 2 / 3 !important;
+  min-width: 0 !important;
+}
+
+html body .screen-decks .collection-lists > .collection-toolbar > output {
+  grid-column: 1 / -1 !important;
+  justify-self: end !important;
+  align-self: center !important;
+  width: fit-content !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  margin: 0 !important;
+  padding: .15rem .1rem 0 !important;
+  box-sizing: border-box !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+@media (max-width: 56rem), (pointer: coarse) {
+  html body .screen-menu .landing {
+    overflow: visible !important;
+    padding-bottom: clamp(2rem, 5dvh, 3.5rem) !important;
+  }
+
+  html body .screen-menu .hero-fan {
+    min-height: clamp(18rem, 52dvh, 28rem) !important;
+    height: clamp(20rem, 57dvh, 30rem) !important;
+    padding-bottom: clamp(.8rem, 2.5dvh, 1.5rem) !important;
+  }
+
+  html body .screen-menu .hero-fan .remote-card-art {
+    top: clamp(.85rem, 2.8dvh, 1.7rem) !important;
+    transform-origin: 50% 108% !important;
+  }
+
+  html body .screen-decks .collection-lists > .collection-toolbar {
+    grid-template-columns: minmax(0, 1fr) minmax(6.6rem, 8.5rem) !important;
+  }
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 34rem) {
+  html body .screen-menu .hero-fan {
+    min-height: clamp(14rem, 72dvh, 21rem) !important;
+    height: clamp(15rem, 76dvh, 22rem) !important;
+  }
+}

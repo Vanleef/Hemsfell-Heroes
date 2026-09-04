@@ -106,6 +106,10 @@ import "./presentation/styles/ai-thinking-panel-terminal.css";
 import "./presentation/styles/card-interaction-stability-terminal.css";
 /* Static placeholder authority for PDF-backed art while shared rasters are prepared. */
 import "./presentation/styles/card-art-loading-terminal.css";
+/* Requested terminal fixes for landing clipping and collection filter containment. */
+import "./presentation/styles/requested-outside-match-fixes-terminal.css";
+/* Current tutorial board geometry mirrors the live match composition. */
+import "./presentation/styles/tutorial-current-board-terminal.css";
 /* Keep tutorial diagrams/copy aligned with the current responsive match UI. */
 import "./presentation/styles/tutorial-current-ui-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
@@ -115,6 +119,9 @@ import GameGlossaryRuntime from "./presentation/glossary/game-glossary-runtime";
 import CardDoubleClickInspectRuntime from "./presentation/cards/card-double-click-inspect-runtime";
 import CardPreviewRuntime from "./presentation/cards/card-preview-runtime";
 import CardArtWarmupRuntime from "./presentation/cards/card-art-warmup-runtime";
+import CollectionSelectedDeckPriorityRuntime from "./presentation/cards/collection-selected-deck-priority-runtime";
+import AssetContextUiCleanupRuntime from "./presentation/cards/asset-context-ui-cleanup-runtime";
+import TutorialCurrentBoardRuntime from "./presentation/tutorial/tutorial-current-board-runtime";
 import MatchRuntimeGate from "./presentation/runtime/match-runtime-gate";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -139,6 +146,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return <html lang="pt-BR" suppressHydrationWarning>
     <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       <CardArtWarmupRuntime />
+      <CollectionSelectedDeckPriorityRuntime />
+      <AssetContextUiCleanupRuntime />
+      <TutorialCurrentBoardRuntime />
       <MatchUiGuard />
       <MatchRuntimeGate />
       <OnlineMatchRuntime />

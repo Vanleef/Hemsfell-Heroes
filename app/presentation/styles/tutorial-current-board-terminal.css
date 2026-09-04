@@ -1,0 +1,301 @@
+/*
+ * Current-board tutorial reference.
+ * This diagram mirrors the live match composition rather than the obsolete
+ * pre-redesign board: hero panels left, paired field center, energy/phase near
+ * the right-center and the four side piles at the far right.
+ */
+html body .tutorial-screen .tutorial-board-visual.hh-tutorial-current-board {
+  container-type: inline-size !important;
+  position: relative !important;
+  display: grid !important;
+  grid-template-rows: auto 1fr !important;
+  width: 100% !important;
+  min-height: clamp(18rem, 54cqw, 34rem) !important;
+  aspect-ratio: 16 / 9 !important;
+  overflow: hidden !important;
+  border: 1px solid rgb(205 151 47 / 72%) !important;
+  border-radius: clamp(.45rem, .75cqw, .8rem) !important;
+  background:
+    radial-gradient(circle at 50% 48%, rgb(19 73 82 / 38%), transparent 54%),
+    linear-gradient(135deg, #08242b 0%, #071d23 52%, #06171c 100%) !important;
+  box-shadow: inset 0 0 3rem rgb(0 0 0 / 45%), 0 .45rem 1.4rem rgb(0 0 0 / 32%) !important;
+}
+
+html body .tutorial-screen .hh-tutorial-live-topbar {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: .5cqw;
+  min-height: clamp(1.35rem, 3.6cqw, 2rem);
+  padding: 0 clamp(.35rem, 1cqw, .7rem);
+  border-bottom: 1px solid rgb(211 171 72 / 34%);
+  background: #03090de8;
+  color: #cddce0;
+  font: 750 clamp(.34rem, .82cqw, .58rem)/1 system-ui, sans-serif;
+  letter-spacing: .05em;
+}
+html body .tutorial-screen .hh-tutorial-live-topbar b,
+html body .tutorial-screen .hh-tutorial-live-topbar strong { color: #f2ca63; }
+html body .tutorial-screen .hh-tutorial-live-topbar strong { justify-self: center; white-space: nowrap; }
+html body .tutorial-screen .hh-tutorial-live-topbar small { justify-self: end; }
+
+html body .tutorial-screen .hh-tutorial-live-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Hero panels */
+html body .tutorial-screen .hh-tutorial-live-hero {
+  position: absolute;
+  left: 1.25cqw;
+  width: 14.4cqw;
+  height: 14.1cqw;
+  min-width: 0;
+  border: 1px solid rgb(224 180 77 / 62%);
+  border-radius: .7cqw;
+  overflow: hidden;
+  background: linear-gradient(150deg, #132126, #071116);
+  box-shadow: 0 .35cqw .8cqw rgb(0 0 0 / 48%);
+}
+html body .tutorial-screen .hh-tutorial-live-hero.is-opponent { top: 1.5cqw; }
+html body .tutorial-screen .hh-tutorial-live-hero.is-player { bottom: 1.45cqw; border-color: rgb(85 198 133 / 62%); }
+html body .tutorial-screen .hh-tutorial-live-hero > i {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, transparent 62%, rgb(0 0 0 / 72%)),
+    radial-gradient(circle at 55% 26%, #bcc7b6 0 8%, #6b755f 22%, #28392d 48%, #0b1410 76%);
+}
+html body .tutorial-screen .hh-tutorial-live-hero.is-opponent > i {
+  background:
+    linear-gradient(to bottom, transparent 62%, rgb(0 0 0 / 72%)),
+    radial-gradient(circle at 48% 27%, #d8c5a2 0 7%, #92784b 23%, #3f2d1e 49%, #130d09 78%);
+}
+html body .tutorial-screen .hh-tutorial-live-hero > span {
+  position: absolute;
+  inset: .65cqw .55cqw .45cqw;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: .3cqw;
+  color: #fff0c2;
+  text-shadow: 0 1px 2px #000;
+  font-size: clamp(.38rem, .85cqw, .62rem);
+}
+html body .tutorial-screen .hh-tutorial-live-hero > span strong {
+  grid-column: 1 / -1;
+  align-self: end;
+  justify-self: center;
+  font-size: clamp(.45rem, 1.08cqw, .78rem);
+}
+html body .tutorial-screen .hh-tutorial-live-hero > span small { justify-self: end; color: #fff; }
+
+/* Hands */
+html body .tutorial-screen .hh-tutorial-live-hand {
+  position: absolute;
+  left: 42.5cqw;
+  width: 19cqw;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 0;
+  overflow: visible;
+}
+html body .tutorial-screen .hh-tutorial-live-hand.is-opponent { top: 1.15cqw; }
+html body .tutorial-screen .hh-tutorial-live-hand.is-player { bottom: .8cqw; }
+html body .tutorial-screen .hh-tutorial-live-hand > i {
+  flex: 0 0 3.1cqw;
+  width: 3.1cqw;
+  aspect-ratio: 5 / 7;
+  margin-inline-start: -1.25cqw;
+  border: 1px solid rgb(227 177 68 / 54%);
+  border-radius: .28cqw;
+  background:
+    linear-gradient(135deg, rgb(64 16 46 / 92%), rgb(8 57 67 / 96%)),
+    #0b1d22;
+  box-shadow: 0 .18cqw .35cqw #0008;
+}
+html body .tutorial-screen .hh-tutorial-live-hand > i:first-child { margin-inline-start: 0; }
+html body .tutorial-screen .hh-tutorial-live-hand.is-player > i {
+  border-color: rgb(85 199 143 / 55%);
+  background: linear-gradient(145deg, #273027, #101614);
+}
+
+/* Current paired field */
+html body .tutorial-screen .hh-tutorial-live-field {
+  position: absolute;
+  left: 27.5cqw;
+  top: 10.4cqw;
+  width: 47.2cqw;
+  bottom: 9.2cqw;
+  display: grid;
+  grid-template-rows: 1fr 1fr .24fr 1fr 1fr;
+  align-items: center;
+  gap: .65cqw;
+}
+html body .tutorial-screen .hh-tutorial-board-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4.6cqw;
+  align-items: center;
+  padding-inline: 1.45cqw;
+}
+html body .tutorial-screen .hh-tutorial-board-slot {
+  display: block;
+  width: 4.25cqw;
+  aspect-ratio: 5 / 7;
+  border: 1px solid rgb(126 170 181 / 55%);
+  border-radius: .35cqw;
+  background: linear-gradient(145deg, rgb(16 48 55 / 86%), rgb(4 22 28 / 88%));
+  box-shadow: inset 0 0 .55cqw rgb(0 0 0 / 32%);
+}
+html body .tutorial-screen .hh-tutorial-board-row.is-opponent.is-creature .hh-tutorial-board-slot {
+  border-color: rgb(200 91 82 / 55%);
+  background: linear-gradient(145deg, rgb(56 27 31 / 88%), rgb(22 17 21 / 92%));
+}
+html body .tutorial-screen .hh-tutorial-board-row.is-player.is-creature .hh-tutorial-board-slot {
+  border-color: rgb(78 170 190 / 62%);
+  background: linear-gradient(145deg, rgb(19 61 69 / 92%), rgb(9 31 36 / 94%));
+}
+html body .tutorial-screen .hh-tutorial-live-divider {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: .55cqw;
+  color: #d9bc6e;
+  font: 800 clamp(.28rem, .52cqw, .42rem)/1 system-ui;
+  letter-spacing: .06em;
+}
+html body .tutorial-screen .hh-tutorial-live-divider > i {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgb(214 177 87 / 55%), transparent);
+}
+
+html body .tutorial-screen .hh-tutorial-zone-badge {
+  position: absolute;
+  left: -1.65cqw;
+  top: 50%;
+  translate: 0 -50%;
+  width: 1.35cqw;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: #f1c754;
+  color: #142126;
+  font: 900 clamp(.3rem, .58cqw, .44rem)/1 system-ui;
+}
+
+/* Terrains */
+html body .tutorial-screen .hh-tutorial-live-terrain {
+  position: absolute;
+  left: 20.8cqw;
+  width: 4.6cqw;
+  aspect-ratio: 1;
+}
+html body .tutorial-screen .hh-tutorial-live-terrain.is-opponent { top: 19.3cqw; }
+html body .tutorial-screen .hh-tutorial-live-terrain.is-player { bottom: 19cqw; }
+html body .tutorial-screen .hh-tutorial-live-terrain > i {
+  position: absolute;
+  inset: 9%;
+  rotate: 45deg;
+  border: 1px solid rgb(215 168 72 / 72%);
+  background: linear-gradient(145deg, #203942, #0b1e23);
+}
+html body .tutorial-screen .hh-tutorial-live-terrain > .hh-tutorial-zone-badge {
+  left: -1.2cqw;
+  top: 50%;
+}
+
+/* Energy + phase */
+html body .tutorial-screen .hh-tutorial-live-energy {
+  position: absolute;
+  left: 76.7cqw;
+  width: 7.2cqw;
+  display: grid;
+  justify-items: center;
+  gap: .28cqw;
+  color: #f2cf72;
+  font: 800 clamp(.28rem, .56cqw, .44rem)/1 system-ui;
+}
+html body .tutorial-screen .hh-tutorial-live-energy.is-opponent { top: 8.5cqw; }
+html body .tutorial-screen .hh-tutorial-live-energy.is-player { bottom: 8.5cqw; }
+html body .tutorial-screen .hh-tutorial-live-energy > i {
+  width: 5.2cqw;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid #54c5eb;
+  border-radius: 50%;
+  color: #fff;
+  background: radial-gradient(circle, #103542, #07171d 72%);
+  font: 900 clamp(.48rem, 1.1cqw, .82rem)/1 system-ui;
+  font-style: normal;
+}
+html body .tutorial-screen .hh-tutorial-live-energy.is-opponent > i { border-color: #d06b5a; }
+html body .tutorial-screen .hh-tutorial-live-energy > small { color: #d5b7e6; white-space: nowrap; font-size: clamp(.24rem, .48cqw, .38rem); }
+
+html body .tutorial-screen .hh-tutorial-live-phase {
+  position: absolute;
+  left: 74.9cqw;
+  top: 50%;
+  translate: 0 -50%;
+  width: 10.7cqw;
+  display: grid;
+  justify-items: center;
+  gap: .18cqw;
+  color: #f4c95d;
+  font: 800 clamp(.25rem, .5cqw, .4rem)/1 system-ui;
+  text-align: center;
+}
+html body .tutorial-screen .hh-tutorial-live-phase > span {
+  margin-top: .35cqw;
+  padding: .55cqw .9cqw;
+  border: 1px solid #ffab2f;
+  border-radius: .6cqw;
+  background: #e98312;
+  color: #fff;
+  font-size: clamp(.3rem, .6cqw, .46rem);
+  box-shadow: 0 0 .65cqw #ff9c2788;
+}
+
+/* Side piles */
+html body .tutorial-screen .hh-tutorial-live-piles {
+  position: absolute;
+  right: 1.8cqw;
+  width: 12.5cqw;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .7cqw;
+}
+html body .tutorial-screen .hh-tutorial-live-piles.is-opponent { top: 5.9cqw; }
+html body .tutorial-screen .hh-tutorial-live-piles.is-player { bottom: 5.9cqw; }
+html body .tutorial-screen .hh-tutorial-live-piles > i {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  aspect-ratio: 5 / 7;
+  border: 1px solid rgb(218 171 73 / 60%);
+  border-radius: .45cqw;
+  color: #e9c968;
+  background: linear-gradient(145deg, #191d24, #080c10);
+  font: 850 clamp(.22rem, .45cqw, .36rem)/1 system-ui;
+  font-style: normal;
+}
+
+@media (max-width: 56rem) {
+  html body .tutorial-screen .tutorial-board-visual.hh-tutorial-current-board {
+    min-height: clamp(16rem, 64cqw, 28rem) !important;
+  }
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  html body .tutorial-screen .tutorial-board-visual.hh-tutorial-current-board {
+    min-height: min(72dvh, 27rem) !important;
+    aspect-ratio: 16 / 8.7 !important;
+  }
+}
