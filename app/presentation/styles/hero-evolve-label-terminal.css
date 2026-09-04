@@ -41,7 +41,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
     0 0 .42rem color-mix(in srgb, var(--deck, #d3ad56) 35%, transparent) !important;
 
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
-  font-size: clamp(.74rem, min(.98cqw, 1.62cqh), 1rem) !important;
+  font-size: clamp(.68rem, min(.88cqw, 1.46cqh), .9rem) !important;
   font-weight: 950 !important;
   font-variant-numeric: tabular-nums !important;
   line-height: 1 !important;
@@ -179,7 +179,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
     min-width: clamp(6rem, 9cqw, 7.55rem) !important;
     height: clamp(1.46rem, 2.72cqh, 1.82rem) !important;
     padding-inline: clamp(.66rem, .92cqw, .94rem) !important;
-    font-size: clamp(.66rem, min(.9cqw, 1.48cqh), .86rem) !important;
+    font-size: clamp(.6rem, min(.8cqw, 1.3cqh), .78rem) !important;
     border-radius: clamp(.4rem, .54cqw, .58rem) !important;
   }
 }
@@ -192,7 +192,7 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
     min-width: clamp(7rem, 31vw, 9.25rem) !important;
     height: clamp(2rem, 7.5vw, 2.5rem) !important;
     padding-inline: clamp(.9rem, 3.7vw, 1.25rem) !important;
-    font-size: clamp(.82rem, 3.15vw, .98rem) !important;
+    font-size: clamp(.75rem, 2.85vw, .9rem) !important;
   }
 }
 
