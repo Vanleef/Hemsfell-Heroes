@@ -115,6 +115,7 @@ import GameGlossaryRuntime from "./presentation/glossary/game-glossary-runtime";
 import CardDoubleClickInspectRuntime from "./presentation/cards/card-double-click-inspect-runtime";
 import CardPreviewRuntime from "./presentation/cards/card-preview-runtime";
 import CardArtWarmupRuntime from "./presentation/cards/card-art-warmup-runtime";
+import AssetContextUiCleanupRuntime from "./presentation/cards/asset-context-ui-cleanup-runtime";
 import MatchRuntimeGate from "./presentation/runtime/match-runtime-gate";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -139,6 +140,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return <html lang="pt-BR" suppressHydrationWarning>
     <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       <CardArtWarmupRuntime />
+      <AssetContextUiCleanupRuntime />
       <MatchUiGuard />
       <MatchRuntimeGate />
       <OnlineMatchRuntime />
