@@ -276,15 +276,44 @@ export async function chooseAdvancedAIAction(state: AIGameState, owner: number, 
   return result.action;
 }
 
+function deterministicDecisionFallback(state: AIGameState, owner: number): AIAction | null {
+  const pending = state.pendingDecision as any;
+  if (!pending || (pending.owner !== owner && pending.context?.decisionOwner !== owner)) return null;
+  const command = { type: "resolveDecision", owner } as AIAction;
+  /* Optional target choices have a rules-valid no-op representation. This is
+     the only generic fallback we issue: mandatory selectors must never be
+     guessed with an illegal target just to make the UI move. */
+  if (pending.kind === "choice-target" && pending.effect?.optional) return command;
+  const choices = Array.isArray(pending.effect?.choices) ? pending.effect.choices : [];
+  if (choices.length && ["choice", "repeat-choice"].includes(String(pending.kind))) {
+    return { ...command, choiceIndex: 0 } as AIAction;
+  }
+  if (["draw-position", "redirect"].includes(String(pending.kind))) {
+    return { ...command, choiceIndex: 0 } as AIAction;
+  }
+  return null;
+}
+
 export async function chooseAdvancedAIDecision(state: AIGameState, owner: number, difficulty: string): Promise<AIAction | null> {
   if (!state.pendingDecision) return null;
   await waitForPresentationIdle();
-  /* Mandatory engine decisions are already validated and bounded. Resolve
-     them deterministically instead of sending them through MCTS: a generated
-     Image attachment (such as Tranqueira -> Trambuco) must never stall the
-     turn because a strategic search yielded no action. */
+  /* Engine decisions are authoritative continuations, not strategic actions.
+     They must never enter worker/MCTS search: if the deterministic selector
+     cannot produce a command, strategic search cannot legally repair that
+     selector and may wait forever while the game remains in decision state. */
   const decision = chooseAIDecision(state, owner, legacyDifficultyLabel(normalizeDifficulty(difficulty))) as AIAction | null;
-  return decision ?? chooseAdvancedAIAction(state, owner, difficulty);
+  if (decision) return decision;
+  const fallback = deterministicDecisionFallback(state, owner);
+  if (fallback) return fallback;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("hemsfell:ai-debug", { detail: {
+      difficulty,
+      context: "decision-liveness",
+      pendingKind: (state.pendingDecision as any)?.kind,
+      unresolved: true,
+    } }));
+  }
+  return null;
 }
 
 export function planAdvancedAIAttacks(state: AIGameState, owner: number, difficulty: string): string[] {

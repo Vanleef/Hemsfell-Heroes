@@ -1,11 +1,11 @@
 @import "./match-responsive-rails-overlays-terminal.css";
 
 /*
- * Mobile card-local icon authority.
+ * Card-local icon sizing authority.
  *
- * Match cards are intentionally much smaller on phone landscape than on
- * desktop. Keep status/keyword/activation visuals proportional to the rendered
- * card instead of inheriting desktop-sized minimum touch dimensions.
+ * Desktop field cards need readable status/action chrome at a glance, while
+ * phone-landscape cards are intentionally much smaller. Fine-pointer desktop
+ * gets a modest increase; coarse-pointer rules below keep their existing cap.
  */
 
 /* Activated abilities are actions, not positive/negative status rails. Keep the
@@ -47,6 +47,36 @@ html body .screen-game :is(.field-keywords,.field-negative-statuses)
   opacity: 0 !important;
   visibility: hidden !important;
   pointer-events: none !important;
+}
+
+/* Desktop/fine-pointer cards have enough physical room for larger semantic
+   markers. cqi keeps them proportional to the actual card; the max cap stops
+   large monitors from turning them into oversized badges. */
+@media (hover: hover) and (pointer: fine) and (min-width: 56rem) {
+  html body .screen-game :is(.card-frame,.pile-card) {
+    --keyword-icon-size: clamp(.62rem, 14.5cqi, .98rem) !important;
+    --keyword-gap: clamp(.055rem, 2.45cqi, .17rem) !important;
+  }
+
+  html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
+  html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+    width: clamp(.68rem, 15.5cqi, 1.04rem) !important;
+    height: clamp(.68rem, 15.5cqi, 1.04rem) !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    font-size: clamp(.38rem, 7.6cqi, .58rem) !important;
+    line-height: 1 !important;
+  }
+
+  html body .screen-game .card-frame-activation {
+    width: clamp(.82rem, 18cqi, 1.18rem) !important;
+    height: clamp(.82rem, 18cqi, 1.18rem) !important;
+    min-inline-size: 0 !important;
+    min-block-size: 0 !important;
+    padding: 0 !important;
+    font-size: clamp(.4rem, 8.3cqi, .62rem) !important;
+    line-height: 1 !important;
+  }
 }
 
 @media (orientation: landscape) and (hover: none) and (pointer: coarse) {

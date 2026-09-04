@@ -64,6 +64,17 @@ html body .screen-game :is(.player-hand,.opponent-hand)
   z-index: 80 !important;
 }
 
+/* React may already hold pendingResponse while the played card is still flying.
+   This terminal authority guarantees that no later legacy/modal rule can paint
+   the response window before the presentation transaction reaches idle. */
+html.hh-presentation-locked body .screen-game :is(.response-overlay,.response-waiting),
+html body .screen-game :is(.response-overlay,.response-waiting)[data-hh-deferred-by-presentation="true"] {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 /* The obsolete response-waiting popup for bot priority is never shown. The
    canonical [data-hemsfell-ai-thinking] indicator remains the only AI wait UI. */
 html body .screen-game .response-waiting[data-hh-ai-bot-wait="true"] {

@@ -11,6 +11,7 @@ const PRESENTATION_EVENTS = [
   "hemsfell:presentation-idle",
 ];
 const BLOCKED_EVENTS = ["pointerdown", "click", "dblclick", "contextmenu", "dragstart", "drop", "keydown"] as const;
+const DEFERRED_RESPONSE_SELECTOR = ".screen-game .response-overlay,.screen-game .response-waiting";
 
 const locked = () => {
   const presentationWindow = window as PresentationWindow;
@@ -19,6 +20,21 @@ const locked = () => {
 
 export default function PresentationInteractionRuntime() {
   useEffect(() => {
+    const syncDeferredResponseUi = (active: boolean) => {
+      document.querySelectorAll<HTMLElement>(DEFERRED_RESPONSE_SELECTOR).forEach((node) => {
+        if (active) {
+          node.dataset.hhDeferredByPresentation = "true";
+          node.hidden = true;
+          node.setAttribute("aria-hidden", "true");
+          return;
+        }
+        if (node.dataset.hhDeferredByPresentation !== "true") return;
+        delete node.dataset.hhDeferredByPresentation;
+        node.hidden = false;
+        node.removeAttribute("aria-hidden");
+      });
+    };
+
     const apply = () => {
       const active = locked();
       document.documentElement.classList.toggle("hh-presentation-locked", active);
@@ -31,6 +47,11 @@ export default function PresentationInteractionRuntime() {
           screen.removeAttribute("aria-busy");
         }
       });
+      /* Priority belongs to the resolved action, but its dialog belongs after
+         the source card has visually arrived. React may already contain the
+         pendingResponse while presentation is running, so keep that UI
+         explicitly deferred until the canonical idle event. */
+      syncDeferredResponseUi(active);
     };
 
     const guard = (event: Event) => {
@@ -57,6 +78,7 @@ export default function PresentationInteractionRuntime() {
       PRESENTATION_EVENTS.forEach((eventName) => window.removeEventListener(eventName, apply));
       BLOCKED_EVENTS.forEach((eventName) => document.removeEventListener(eventName, guard, true));
       document.documentElement.classList.remove("hh-presentation-locked");
+      syncDeferredResponseUi(false);
       document.querySelectorAll<HTMLElement>(".screen-game").forEach((screen) => {
         screen.removeAttribute("data-presentation-busy");
         screen.removeAttribute("aria-busy");
