@@ -44,6 +44,7 @@ type GlossaryState = {
 
 const CARD_SELECTOR = ".original-card[data-card-preview='true']";
 const NATIVE_TITLE_SELECTOR = `${CARD_SELECTOR}[title], ${CARD_SELECTOR} [title], [data-tip][title], .remote-card-art[title]`;
+const ASSET_CONTEXT_CHANGE_EVENT = "hemsfell:asset-context-change";
 const INSPECTION_HOLD_MS = 1_000;
 const INSPECTION_PROGRESS_DELAY_MS = 500;
 const INSPECTION_PROGRESS_MS = INSPECTION_HOLD_MS - INSPECTION_PROGRESS_DELAY_MS;
@@ -367,6 +368,12 @@ export default function CardPreviewRuntime() {
       clearInspectionHold();
       closePreview();
     };
+    const onAssetContextChange = () => {
+      clearHoverOpen();
+      clearInspectionHold();
+      cancelScheduledClose();
+      closePreview();
+    };
 
     document.addEventListener("pointerover", onPointerOver, true);
     document.addEventListener("pointerout", onPointerOut, true);
@@ -378,6 +385,7 @@ export default function CardPreviewRuntime() {
     document.addEventListener("contextmenu", onContextMenu, true);
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("dragstart", onDragStart, true);
+    window.addEventListener(ASSET_CONTEXT_CHANGE_EVENT, onAssetContextChange);
 
     return () => {
       clearHoverOpen();
@@ -393,6 +401,7 @@ export default function CardPreviewRuntime() {
       document.removeEventListener("contextmenu", onContextMenu, true);
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("dragstart", onDragStart, true);
+      window.removeEventListener(ASSET_CONTEXT_CHANGE_EVENT, onAssetContextChange);
     };
   }, [cancelScheduledClose, closePreview, previewFloating.refs, scheduleCompactClose]);
 
