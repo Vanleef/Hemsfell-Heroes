@@ -1,0 +1,95 @@
+/*
+ * Final proportional size tuning for battlefield card chrome.
+ *
+ * The previous readability pass overshot on both desktop and touch. Keep the
+ * same container-relative model, but pull effects, markers, combat metrics and
+ * activated abilities back by roughly one visual step. Touch hit slop is still
+ * owned by mobile-card-icon-scale-terminal.css, so the painted control can be
+ * smaller without making it harder to tap.
+ */
+
+html body .screen-game .card-frame[data-unit-id] > .original-card > :is(.live-atk,.live-hp) {
+  inline-size: clamp(.68rem, 24.5cqi, 1.48rem) !important;
+  block-size: clamp(.68rem, 24.5cqi, 1.48rem) !important;
+  width: clamp(.68rem, 24.5cqi, 1.48rem) !important;
+  height: clamp(.68rem, 24.5cqi, 1.48rem) !important;
+  font: 950 clamp(.43rem, 15.3cqi, .88rem)/1 system-ui, sans-serif !important;
+}
+
+html body .screen-game :is(.card-frame,.pile-card) {
+  --keyword-icon-size: clamp(.54rem, 13.5cqi, .92rem) !important;
+  --keyword-gap: clamp(.04rem, 2cqi, .14rem) !important;
+}
+
+html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
+html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+  width: clamp(.58rem, 14.2cqi, .96rem) !important;
+  height: clamp(.58rem, 14.2cqi, .96rem) !important;
+  font-size: clamp(.33rem, 7cqi, .54rem) !important;
+}
+
+html body .screen-game .card-frame > .card-frame-activation {
+  width: clamp(.78rem, 17.2cqi, 1.14rem) !important;
+  height: clamp(.78rem, 17.2cqi, 1.14rem) !important;
+  font-size: clamp(.38rem, 7.9cqi, .6rem) !important;
+}
+
+@media (hover: hover) and (pointer: fine) and (min-width: 56rem) {
+  html body .screen-game :is(.card-frame,.pile-card) {
+    --keyword-icon-size: clamp(.64rem, 15cqi, 1.04rem) !important;
+  }
+
+  html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
+  html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+    width: clamp(.68rem, 15.7cqi, 1.08rem) !important;
+    height: clamp(.68rem, 15.7cqi, 1.08rem) !important;
+    font-size: clamp(.38rem, 7.5cqi, .58rem) !important;
+  }
+
+  html body .screen-game .card-frame > .card-frame-activation {
+    width: clamp(.88rem, 18.8cqi, 1.22rem) !important;
+    height: clamp(.88rem, 18.8cqi, 1.22rem) !important;
+    font-size: clamp(.43rem, 8.4cqi, .66rem) !important;
+  }
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  html body .screen-game :is(.card-frame,.pile-card) {
+    --keyword-icon-size: clamp(.36rem, 8.8cqi, .6rem) !important;
+    --keyword-gap: clamp(.025rem, 1.55cqi, .09rem) !important;
+  }
+
+  html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
+  html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+    width: clamp(.42rem, 10cqi, .68rem) !important;
+    height: clamp(.42rem, 10cqi, .68rem) !important;
+    font-size: clamp(.23rem, 5.2cqi, .38rem) !important;
+  }
+
+  html body .screen-game .card-frame > .card-frame-activation {
+    width: clamp(.66rem, 14.5cqi, .94rem) !important;
+    height: clamp(.66rem, 14.5cqi, .94rem) !important;
+    font-size: clamp(.31rem, 6.8cqi, .47rem) !important;
+  }
+
+  html body .screen-game .card-frame[data-unit-id] > .original-card > :is(.live-atk,.live-hp) {
+    inline-size: clamp(.62rem, 23.5cqi, 1.12rem) !important;
+    block-size: clamp(.62rem, 23.5cqi, 1.12rem) !important;
+    width: clamp(.62rem, 23.5cqi, 1.12rem) !important;
+    height: clamp(.62rem, 23.5cqi, 1.12rem) !important;
+    font-size: clamp(.36rem, 14.5cqi, .64rem) !important;
+  }
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-aspect-ratio: 12 / 5) {
+  html body .screen-game :is(.field-keywords,.field-negative-statuses) > i,
+  html body .screen-game :is(.card-frame-marker,.summoning-sickness-badge) {
+    width: clamp(.38rem, 9.4cqi, .62rem) !important;
+    height: clamp(.38rem, 9.4cqi, .62rem) !important;
+  }
+
+  html body .screen-game .card-frame > .card-frame-activation {
+    width: clamp(.62rem, 13.5cqi, .88rem) !important;
+    height: clamp(.62rem, 13.5cqi, .88rem) !important;
+  }
+}
