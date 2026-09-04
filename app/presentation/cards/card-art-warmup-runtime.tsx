@@ -127,6 +127,17 @@ function selectedHeroIds() {
   return ids;
 }
 
+function collectionSelectedHeroIds() {
+  const ids = new Set<string>();
+  document.querySelectorAll<HTMLCanvasElement>(
+    ".collection .deck-rail button.active canvas.remote-card-art[data-page], .collection .collection-hero-inspect canvas.remote-card-art[data-page]",
+  ).forEach((canvas) => {
+    const hero = heroFromCanvas(canvas);
+    if (hero) ids.add(hero.id);
+  });
+  return ids;
+}
+
 function syncHeroCanvases(selected: Set<string>) {
   document.querySelectorAll<HTMLCanvasElement>("canvas.remote-card-art[data-hh-clean-hero-art]").forEach((canvas) => {
     if (!HERO_BY_PAGE.has(numberPage(canvas)) || canvas.closest(".screen-game .game-stage")) clearHeroCanvasOverride(canvas);
@@ -178,7 +189,7 @@ function promoteCardAtTarget(target: EventTarget | null) {
  * Global card-art warmup and out-of-match priority coordinator.
  *
  * PDF-backed cards still share one catalogue, but the currently selected hero,
- * focused/hovered card and the front of a selected deck are promoted ahead of
+ * focused/hovered card and the visible collection are promoted ahead of generic
  * background work. Hero portraits outside a match use the same lightweight clean
  * WEBP art as the in-match hero panel, painted as the canvas background so React
  * keeps owning the DOM node and PDF renders cannot create duplicate hero elements.
@@ -199,7 +210,7 @@ export default function CardArtWarmupRuntime() {
       deckTimers.delete(id);
     };
 
-    const startDeckWarm = (hero: HeroMeta) => {
+    const startCollectionWarm = (hero: HeroMeta) => {
       if (deckControllers.has(hero.id)) return;
       const controller = new AbortController();
       deckControllers.set(hero.id, controller);
@@ -235,15 +246,18 @@ export default function CardArtWarmupRuntime() {
       }
 
       const selected = selectedHeroIds();
+      const collectionSelected = collectionSelectedHeroIds();
       syncHeroCanvases(selected);
       selected.forEach((id) => {
         const hero = HERO_BY_ID.get(id);
-        if (!hero) return;
-        void primeHeroImage(hero, true).catch(() => undefined);
-        startDeckWarm(hero);
+        if (hero) void primeHeroImage(hero, true).catch(() => undefined);
+      });
+      collectionSelected.forEach((id) => {
+        const hero = HERO_BY_ID.get(id);
+        if (hero) startCollectionWarm(hero);
       });
       [...deckControllers.keys()].forEach((id) => {
-        if (!selected.has(id)) stopDeckWarm(id);
+        if (!collectionSelected.has(id)) stopDeckWarm(id);
       });
     };
 
