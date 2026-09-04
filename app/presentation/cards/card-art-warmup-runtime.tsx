@@ -39,6 +39,7 @@ const FRONT_DECK_PREWARM_COUNT = 5;
 const CARD_PREWARM_WIDTH = 144;
 const PROMOTED_CARD_WIDTH = 240;
 const PROMOTION_THROTTLE_MS = 1800;
+const CATALOGUE_WARMUP_DELAY_MS = 80;
 
 const isMatchMounted = () => !!document.querySelector(".screen-game .game-stage");
 const numberPage = (canvas: HTMLCanvasElement) => Number(canvas.dataset.page || 0);
@@ -81,6 +82,11 @@ function applyCleanHeroArt(canvas: HTMLCanvasElement, hero: HeroMeta, highPriori
   canvas.style.backgroundSize = "cover";
   canvas.style.backgroundPosition = hero.position;
   canvas.style.backgroundRepeat = "no-repeat";
+
+  if (canvas.dataset.hhCleanHeroArt === hero.id && canvas.dataset.artQuality === "clean-hero") {
+    if (highPriority) void primeHeroImage(hero, true).catch(() => undefined);
+    return;
+  }
 
   void primeHeroImage(hero, highPriority).then(() => {
     if (!canvas.isConnected || numberPage(canvas) !== hero.page || canvas.closest(".screen-game .game-stage")) return;
@@ -181,6 +187,7 @@ export default function CardArtWarmupRuntime() {
   useEffect(() => {
     let syncFrame = 0;
     let disposed = false;
+    let catalogueTimer = 0;
     const deckControllers = new Map<string, AbortController>();
     const deckTimers = new Map<string, number>();
 
@@ -260,7 +267,12 @@ export default function CardArtWarmupRuntime() {
     };
 
     const observer = new MutationObserver((records) => {
-      if (records.some((record) => record.type === "childList" || record.type === "attributes")) scheduleSync();
+      const needsSync = records.some((record) => {
+        if (record.type === "childList") return true;
+        if (!(record.target instanceof HTMLCanvasElement)) return false;
+        return record.target.dataset.artQuality !== "clean-hero";
+      });
+      if (needsSync) scheduleSync();
     });
     observer.observe(document.body, {
       subtree: true,
@@ -274,10 +286,13 @@ export default function CardArtWarmupRuntime() {
     document.addEventListener("focusin", onPriorityInteraction, true);
     document.addEventListener("pointerdown", onPointerDown, true);
 
-    // Keep the shared catalogue promise warm, but critical local hero art and
-    // selected-card promotions can start in the same frame with higher priority.
-    void preloadRemoteCardCatalog().catch(() => undefined);
-    scheduleSync();
+    // Issue local selected/visible work first, then warm the shared PDF catalogue.
+    // This prevents a large catalogue request from being the first network task on
+    // menu/setup screens where a lightweight hero portrait is the real priority.
+    sync();
+    catalogueTimer = window.setTimeout(() => {
+      void preloadRemoteCardCatalog().catch(() => undefined);
+    }, CATALOGUE_WARMUP_DELAY_MS);
 
     return () => {
       disposed = true;
@@ -287,6 +302,7 @@ export default function CardArtWarmupRuntime() {
       document.removeEventListener("focusin", onPriorityInteraction, true);
       document.removeEventListener("pointerdown", onPointerDown, true);
       if (syncFrame) window.cancelAnimationFrame(syncFrame);
+      if (catalogueTimer) window.clearTimeout(catalogueTimer);
       [...deckControllers.keys()].forEach(stopDeckWarm);
     };
   }, []);
