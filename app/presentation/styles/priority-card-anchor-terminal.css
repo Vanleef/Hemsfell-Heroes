@@ -161,6 +161,33 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
   border-radius: clamp(.34rem, .48cqw, .52rem) !important;
 }
 
+/* The local compact HUD historically hid the semantic copy and painted
+   `PRÓX. NÍVEL X/Y` through hero-evolution::after. The runtime now supplies the
+   hero-specific concise text, so that legacy pseudo-copy must never win. */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded)
+  > .player-hero > .hero-level-row > .hero-evolution::after {
+  content: none !important;
+  display: none !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel.player:not(.is-expanded)
+  > .player-hero > .hero-level-row > .hero-evolution
+  > .hero-evolution-copy[data-hh-short-progress="true"] {
+  position: absolute !important;
+  inset: 0 !important;
+  display: flex !important;
+  visibility: visible !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  margin: 0 !important;
+  padding-inline: clamp(.18rem, .3cqw, .34rem) !important;
+  z-index: 2 !important;
+}
+
 html body .screen-game.screen-game .game-stage > .game-content.hs-board
   > .hero-panel-stack.canonical-hero-panel
   .hero-evolution-copy[data-hh-short-progress="true"] {
@@ -188,10 +215,13 @@ html body .screen-game.screen-game .game-stage > .game-content.hs-board
   text-overflow: clip !important;
   white-space: nowrap !important;
   text-align: center !important;
+  color: #fff0b1 !important;
+  -webkit-text-fill-color: #fff0b1 !important;
   font-size: clamp(.64rem, min(.78cqw, 1.16cqh), .82rem) !important;
   font-weight: 900 !important;
   line-height: 1 !important;
   letter-spacing: .012em !important;
+  text-shadow: 0 1px 1px #000, 0 0 .18rem #000 !important;
 }
 
 html body .screen-game.screen-game .game-stage > .game-content.hs-board
