@@ -98,6 +98,12 @@ import "./presentation/styles/mobile-hero-ability-spacing-terminal.css";
 import "./presentation/styles/hero-progress-text-fit-terminal.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
+/* Responsive interlaced hand, stable card-local icon behavior and one AI-thinking panel. */
+import "./presentation/styles/hand-ai-ui-terminal.css";
+/* Higher-specificity pair guard so PILHA never forces the AI copy into ellipsis. */
+import "./presentation/styles/ai-thinking-panel-terminal.css";
+/* Keep tutorial diagrams/copy aligned with the current responsive match UI. */
+import "./presentation/styles/tutorial-current-ui-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";
 import OnlineMatchRuntime from "./application/online/online-match-runtime";
 import OnlineReconnectRuntime from "./application/online/online-reconnect-runtime";

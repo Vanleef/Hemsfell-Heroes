@@ -5,6 +5,7 @@ import fs from "node:fs";
 const layout = fs.readFileSync("app/layout.tsx", "utf8");
 const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8");
 const css = fs.readFileSync("app/presentation/styles/match-requested-corrections-terminal.css", "utf8");
+const handCss = fs.readFileSync("app/presentation/styles/hand-ai-ui-terminal.css", "utf8");
 const runtime = fs.readFileSync("app/presentation/runtime/match-requested-ui-runtime.tsx", "utf8");
 
 test("requested terminal corrections load after mobile/hero authorities and before pile terminal", () => {
@@ -43,12 +44,13 @@ test("legacy icon pseudo-tooltips are suppressed in favor of one portal tooltip"
   assert.match(css, /visibility:\s*hidden\s*!important/);
 });
 
-test("presentation flights mirror live status/action anchors without rotating them", () => {
-  assert.match(runtime, /LIVE_FRAME_SELECTOR/);
-  assert.match(runtime, /ICON_FRAGMENT_SELECTOR = "\.field-negative-statuses,\.field-keywords,\.card-frame-activation"/);
-  assert.match(runtime, /hh-flight-status-shell/);
+test("presentation flights never mirror card-local status or action icons", () => {
+  assert.doesNotMatch(runtime, /ICON_FRAGMENT_SELECTOR/);
+  assert.doesNotMatch(runtime, /decorateFlight/);
+  assert.doesNotMatch(runtime, /className = "hh-flight-status-shell"/);
   assert.match(runtime, /hemsfell:presentation-action/);
-  assert.match(css, /\.hh-flight-status-shell[\s\S]*?transform:\s*none\s*!important/);
+  assert.match(handCss, /data-hh-card-presenting="true"[\s\S]*?field-negative-statuses/);
+  assert.match(handCss, /\.hh-flight-face > \.hh-flight-status-shell[\s\S]*?display:\s*none\s*!important/);
 });
 
 test("hero level-up says evolution and AI priority sits beside stack when both exist", () => {

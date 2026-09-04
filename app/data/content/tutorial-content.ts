@@ -55,9 +55,9 @@ export const QUICK_FACTS: TutorialReference[] = [
 ];
 
 export const CARD_ANATOMY: TutorialReference[] = [
-  { title: "Custo", description: "A Energia necessária para jogar a carta.", badge: "1" },
-  { title: "Ofensividade", description: "O dano que a criatura causa em combate.", badge: "2" },
-  { title: "Vitalidade", description: "O dano que a criatura suporta antes de ser destruída.", badge: "3" },
+  { title: "Custo", description: "Na mão, fica sempre no canto superior esquerdo e indica a Energia necessária para jogar a carta.", badge: "1" },
+  { title: "Ofensividade", description: "Em Criaturas na mão, fica no canto inferior esquerdo e indica o dano causado em combate.", badge: "2" },
+  { title: "Vitalidade", description: "Em Criaturas na mão, fica no canto inferior direito e indica quanto dano a criatura suporta.", badge: "3" },
   { title: "Tipo e subtipo", description: "Ficam na faixa final, abaixo da descrição, no formato “Criatura — Goblin”.", badge: "4" },
   { title: "Nome e descrição", description: "O painel informa o nome, as condições, os alvos e os efeitos da carta.", badge: "5" },
 ];
@@ -70,17 +70,17 @@ export const TURN_STEPS: TutorialReference[] = [
 ];
 
 export const BASIC_COMMANDS: TutorialReference[] = [
-  { title: "Hover por 1s", description: "Mostra o resumo da carta." },
-  { title: "Segurar por 1s", description: "Abre a inspeção detalhada da carta." },
-  { title: "Arrastar", description: "Joga a carta em uma zona válida." },
-  { title: "Clique", description: "Escolhe alvos, cartas e opções destacadas." },
+  { title: "Hover", description: "No mouse, traz a carta da mão para a frente; após 1s, mostra o resumo." },
+  { title: "Clique / toque", description: "Destaca uma carta da mão ou escolhe um alvo, carta ou opção disponível." },
+  { title: "Segurar por 1s", description: "Abre a inspeção detalhada da carta, inclusive em telas touch." },
+  { title: "Arrastar", description: "Traz a carta para a frente e permite soltá-la em uma zona válida com mouse ou toque." },
   { title: "Habilidade", description: "Ativa uma habilidade disponível da carta." },
-  { title: "Passar", description: "Devolve a prioridade ou avança quando a interface permitir." },
+  { title: "Passar", description: "Devolve a prioridade em uma janela de resposta. Para avançar a fase, use a ação central indicada na interface." },
 ];
 
 export const BOARD_ZONES: TutorialReference[] = [
-  { title: "Herói", description: "Mostra Vida, nível, evolução e habilidades disponíveis.", badge: "30 Vida" },
-  { title: "Deck e Mão", description: "O Deck compra cartas; a Mão guarda suas opções atuais.", badge: "Privado" },
+  { title: "Herói", description: "Mostra Vida, nível, progresso de evolução e habilidades. Quando o requisito é cumprido, EVOLUIR aparece; no nível máximo o progresso deixa de ser exibido.", badge: "30 Vida" },
+  { title: "Deck e Mão", description: "O Deck compra cartas. A Mão entrelaça as opções e reduz as cartas gradualmente quando a quantidade aumenta; a carta em interação vem para a frente.", badge: "Privado" },
   { title: "Cemitério e Obscuro", description: "O Cemitério recebe cartas descartadas, destruídas e Feitiços resolvidos. O Obscuro recebe cartas banidas.", badge: "Públicos" },
   { title: "Deck Extra", description: "Guarda Imagens acessadas por efeitos específicos.", badge: "Imagens" },
 ];

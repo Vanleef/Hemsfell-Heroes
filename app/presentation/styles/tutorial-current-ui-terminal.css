@@ -1,0 +1,217 @@
+/* Current-UI tutorial additions: hand density, card metrics and AI wait state. */
+
+/* The small board diagram now hints at the real interlaced hand instead of a
+   row of unrelated card backs. */
+html body .tutorial-screen .tutorial-board-hand {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 0 !important;
+  overflow: visible !important;
+}
+html body .tutorial-screen .tutorial-board-hand > i {
+  flex: 0 0 clamp(.48rem, 1.22cqw, .8rem) !important;
+  width: clamp(.48rem, 1.22cqw, .8rem) !important;
+  aspect-ratio: 5 / 7 !important;
+  margin-inline-start: clamp(-.34rem, -.48cqw, -.18rem) !important;
+  transform: none !important;
+}
+html body .tutorial-screen .tutorial-board-hand > i:first-child {
+  margin-inline-start: 0 !important;
+}
+
+html body .tutorial-screen .tutorial-hand-current {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: minmax(15rem, .92fr) minmax(16rem, 1.08fr);
+  align-items: center;
+  gap: clamp(.85rem, 2.2cqw, 1.55rem);
+  margin: clamp(1rem, 2.5cqh, 1.6rem) 0;
+  padding: clamp(.85rem, 2cqw, 1.35rem);
+  border: 1px solid rgb(223 191 111 / 28%);
+  border-radius: clamp(.65rem, 1.2cqw, .95rem);
+  background: linear-gradient(145deg, rgb(11 28 34 / 94%), rgb(6 13 19 / 96%));
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 3%);
+  overflow: hidden;
+}
+
+html body .tutorial-screen .tutorial-hand-demo {
+  min-width: 0;
+  min-height: clamp(10rem, 30cqi, 15rem);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: clamp(.65rem, 2cqi, 1.1rem) clamp(1rem, 4cqi, 2rem);
+  overflow: visible;
+  isolation: isolate;
+}
+
+html body .tutorial-screen .tutorial-hand-demo-card {
+  position: relative;
+  flex: 0 0 clamp(4.4rem, 21cqi, 7rem);
+  width: clamp(4.4rem, 21cqi, 7rem);
+  aspect-ratio: 5 / 7;
+  margin-inline-start: clamp(-2.35rem, -7.5cqi, -1.25rem);
+  transform-origin: 50% 100%;
+  filter: brightness(.84) saturate(.88);
+  z-index: 1;
+}
+html body .tutorial-screen .tutorial-hand-demo-card:first-child { margin-inline-start: 0; }
+html body .tutorial-screen .tutorial-hand-demo-card.is-active {
+  z-index: 12;
+  transform: translateY(clamp(-1.45rem, -4.5cqi, -.72rem)) scale(1.08);
+  filter: drop-shadow(0 .65rem .7rem rgb(0 0 0 / 58%));
+}
+html body .tutorial-screen .tutorial-hand-demo-card > .tutorial-card-art {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  aspect-ratio: 5 / 7 !important;
+  object-fit: contain !important;
+}
+
+html body .tutorial-screen .tutorial-hand-demo-card > i {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: clamp(1.05rem, 5.6cqi, 1.48rem);
+  aspect-ratio: 1;
+  border: 1px solid rgb(255 244 210 / 78%);
+  border-radius: 50%;
+  color: #fff9e7;
+  font: 950 clamp(.6rem, 3.1cqi, .86rem)/1 system-ui, sans-serif;
+  font-style: normal;
+  text-shadow: 0 1px 1px #000;
+  box-shadow: inset 0 0 .3rem rgb(255 255 255 / 13%), 0 .1rem .25rem rgb(0 0 0 / 68%);
+  z-index: 8;
+}
+html body .tutorial-screen .tutorial-hand-demo-card > i.is-cost {
+  top: 4%; left: 4%;
+  background: radial-gradient(circle at 35% 28%, #dffaff, #347e98 34%, #102b3b 72%);
+}
+html body .tutorial-screen .tutorial-hand-demo-card > i.is-atk {
+  bottom: 4%; left: 4%;
+  background: radial-gradient(circle at 35% 28%, #fff0b6, #b7762f 34%, #5f301a 72%);
+}
+html body .tutorial-screen .tutorial-hand-demo-card > i.is-hp {
+  bottom: 4%; right: 4%;
+  background: radial-gradient(circle at 35% 28%, #ffc8bd, #a9443d 34%, #5f1e24 72%);
+}
+
+html body .tutorial-screen .tutorial-hand-copy {
+  min-width: 0;
+}
+html body .tutorial-screen .tutorial-hand-copy > span {
+  color: #d9b85f;
+  font: 900 clamp(.62rem, 1.45cqi, .78rem)/1 system-ui, sans-serif;
+  letter-spacing: .12em;
+}
+html body .tutorial-screen .tutorial-hand-copy > h3 {
+  margin: clamp(.35rem, .8cqi, .55rem) 0;
+  color: #fff1cf;
+  font-size: clamp(1rem, 3cqi, 1.45rem);
+  line-height: 1.08;
+}
+html body .tutorial-screen .tutorial-hand-copy > p {
+  margin: 0;
+  color: #c8d1d7;
+  font-size: clamp(.72rem, 1.75cqi, .9rem);
+  line-height: 1.48;
+}
+html body .tutorial-screen .tutorial-hand-copy > ul {
+  display: grid;
+  gap: clamp(.35rem, .8cqi, .55rem);
+  margin: clamp(.7rem, 1.5cqi, .95rem) 0 0;
+  padding: 0;
+  list-style: none;
+}
+html body .tutorial-screen .tutorial-hand-copy > ul > li {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: clamp(.45rem, 1cqi, .65rem);
+  align-items: baseline;
+  color: #aebbc3;
+  font-size: clamp(.66rem, 1.55cqi, .82rem);
+}
+html body .tutorial-screen .tutorial-hand-copy > ul b { color: #efd07c; }
+
+html body .tutorial-screen .tutorial-ai-thinking-note {
+  display: flex;
+  align-items: center;
+  gap: clamp(.7rem, 1.4cqw, 1rem);
+  width: max-content;
+  max-width: min(100%, 43rem);
+  margin: clamp(1rem, 2.2cqh, 1.5rem) auto 0;
+  padding: clamp(.65rem, 1.2cqw, .9rem) clamp(.8rem, 1.55cqw, 1.15rem);
+  border: 1px solid rgb(222 179 75 / 48%);
+  border-radius: 999px;
+  background: rgb(5 24 31 / 96%);
+  color: #d7e2e7;
+  box-shadow: 0 .45rem 1rem rgb(0 0 0 / 28%);
+}
+html body .tutorial-screen .tutorial-ai-thinking-note > i {
+  flex: 0 0 clamp(.65rem, 1.2cqw, .82rem);
+  width: clamp(.65rem, 1.2cqw, .82rem);
+  aspect-ratio: 1;
+  border: 2px solid rgb(239 205 111 / 34%);
+  border-top-color: #efd06f;
+  border-radius: 50%;
+  animation: hhTutorialAiSpin .9s linear infinite;
+}
+html body .tutorial-screen .tutorial-ai-thinking-note > div {
+  min-width: 0;
+  display: grid;
+  gap: .12rem;
+}
+html body .tutorial-screen .tutorial-ai-thinking-note b {
+  color: #f0d27d;
+  font-size: clamp(.72rem, 1.2cqw, .88rem);
+}
+html body .tutorial-screen .tutorial-ai-thinking-note span {
+  color: #c6d1d7;
+  font-size: clamp(.65rem, 1cqw, .8rem);
+  line-height: 1.32;
+}
+@keyframes hhTutorialAiSpin { to { transform: rotate(360deg); } }
+
+@media (max-width: 56rem) {
+  html body .tutorial-screen .tutorial-hand-current {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  html body .tutorial-screen .tutorial-hand-demo {
+    min-height: clamp(9rem, 42vw, 13rem);
+  }
+  html body .tutorial-screen .tutorial-hand-demo-card {
+    flex-basis: clamp(3.8rem, 18vw, 5.8rem);
+    width: clamp(3.8rem, 18vw, 5.8rem);
+    margin-inline-start: clamp(-2rem, -6vw, -1rem);
+  }
+  html body .tutorial-screen .tutorial-ai-thinking-note {
+    width: auto;
+    border-radius: clamp(.65rem, 2vw, .9rem);
+  }
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  html body .tutorial-screen .tutorial-hand-current {
+    grid-template-columns: minmax(12rem, .85fr) minmax(15rem, 1.15fr);
+    gap: clamp(.65rem, 1.6dvw, 1rem);
+    padding: clamp(.65rem, 1.2dvh, .9rem);
+  }
+  html body .tutorial-screen .tutorial-hand-demo {
+    min-height: clamp(7.5rem, 32dvh, 10.5rem);
+  }
+  html body .tutorial-screen .tutorial-hand-demo-card {
+    flex-basis: clamp(3.2rem, 9dvh, 4.6rem);
+    width: clamp(3.2rem, 9dvh, 4.6rem);
+    margin-inline-start: clamp(-1.55rem, -3.6dvw, -.75rem);
+  }
+  html body .tutorial-screen .tutorial-hand-copy > h3 { font-size: clamp(.85rem, 2.5dvh, 1.15rem); }
+  html body .tutorial-screen .tutorial-hand-copy > p,
+  html body .tutorial-screen .tutorial-hand-copy > ul > li { font-size: clamp(.58rem, 1.65dvh, .72rem); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body .tutorial-screen .tutorial-ai-thinking-note > i { animation: none; }
+}
