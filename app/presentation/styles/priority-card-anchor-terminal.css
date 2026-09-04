@@ -137,11 +137,56 @@ html body .screen-game :is(.paired-field .field-slot,.terrain-slot)
   transform-origin: 50% 50% !important;
 }
 
+/* -------------------------------------------------------------------------
+   Concise hero evolution progress copy
+   ------------------------------------------------------------------------- */
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel
+  .hero-evolution-copy[data-hh-short-progress="true"] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  padding-inline: clamp(.12rem, .22cqw, .24rem) !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel
+  .hero-evolution-copy[data-hh-short-progress="true"] > small {
+  display: block !important;
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  font-size: clamp(.5rem, min(.63cqw, .96cqh), .68rem) !important;
+  line-height: 1 !important;
+  letter-spacing: .015em !important;
+}
+
+html body .screen-game.screen-game .game-stage > .game-content.hs-board
+  > .hero-panel-stack.canonical-hero-panel
+  .hero-evolution-copy[data-hh-short-progress="true"] > strong[hidden] {
+  display: none !important;
+}
+
 @media (orientation: landscape) and (hover: none) and (pointer: coarse) {
   html body:has(.screen-game .priority-stack-indicator):has([data-hemsfell-ai-thinking])
     .screen-game.screen-game .game-stage > .game-content.hs-board > .priority-stack-indicator,
   html body:has(.screen-game .priority-stack-indicator):has([data-hemsfell-ai-thinking])
     [data-hemsfell-ai-thinking] {
     max-width: min(19rem, calc(50dvw - .9rem)) !important;
+  }
+
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board
+    > .hero-panel-stack.canonical-hero-panel
+    .hero-evolution-copy[data-hh-short-progress="true"] > small {
+    font-size: clamp(.46rem, 1.45dvh, .61rem) !important;
   }
 }
