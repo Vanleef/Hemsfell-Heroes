@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import MatchLoadingRuntime from "./match-loading-runtime";
 
 const MatchUiRuntime = dynamic(() => import("../match/match-ui-runtime"), { ssr: false });
 const PresentationEventBridge = dynamic(() => import("./presentation-event-bridge"), { ssr: false });
@@ -38,6 +39,7 @@ export default function MatchRuntimeGate() {
 
   if (!active) return null;
   return <>
+    <MatchLoadingRuntime />
     <MatchUiRuntime />
     <PresentationEventBridge />
     <PresentationInteractionRuntime />
