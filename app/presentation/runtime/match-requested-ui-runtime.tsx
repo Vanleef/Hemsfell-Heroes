@@ -12,6 +12,19 @@ type IconSnapshot = {
 const LIVE_FRAME_SELECTOR = ".screen-game .game-stage .card-frame[data-unit-id]";
 const FLIGHT_FACE_SELECTOR = ".hh-flight-face";
 const ICON_FRAGMENT_SELECTOR = ".field-negative-statuses,.field-keywords,.card-frame-activation";
+const HERO_PROGRESS_LABELS: Record<string, string> = {
+  "Gimble": "Dragões em campo",
+  "Sr. Goblin": "Cartas neste turno",
+  "Uruk": "Feitiços conjurados",
+  "Tifon": "Mortes aliadas",
+  "Saymon": "Perdas de vida",
+  "Tessália": "Ataques do Comandante",
+  "Quarion": "Criaturas aliadas únicas",
+  "Rasmus": "Gatos",
+  "Ngoro": "Pistas",
+  "Zayan": "Constantes",
+  "Campeão de Natureza": "Marcadores",
+};
 
 function cleanFlightFragment(fragment: HTMLElement) {
   fragment.removeAttribute("title");
@@ -113,6 +126,25 @@ export default function MatchRequestedUiRuntime() {
       });
     };
 
+    const syncHeroProgressCopy = () => {
+      document.querySelectorAll<HTMLElement>(".screen-game .hero-panel-stack.canonical-hero-panel").forEach((panel) => {
+        const heroName = panel.querySelector<HTMLElement>(".hero-short-name")?.textContent?.trim() || "";
+        const label = HERO_PROGRESS_LABELS[heroName];
+        const copy = panel.querySelector<HTMLElement>(".hero-evolution-copy");
+        const small = copy?.querySelector<HTMLElement>(":scope > small") || null;
+        const strong = copy?.querySelector<HTMLElement>(":scope > strong") || null;
+        if (!label || !copy || !small || !strong) return;
+
+        const counter = (strong.textContent || "").trim();
+        const completed = counter === "3/3" || small.textContent?.trim() === "EVOLUÇÃO CONCLUÍDA";
+        const next = completed ? "EVOLUÇÃO CONCLUÍDA" : `${counter} ${label}`.trim();
+        if (small.textContent !== next) small.textContent = next;
+        if (!strong.hidden) strong.hidden = true;
+        if (copy.dataset.hhShortProgress !== "true") copy.dataset.hhShortProgress = "true";
+        if (copy.getAttribute("aria-label") !== next) copy.setAttribute("aria-label", next);
+      });
+    };
+
     const syncPriorityPair = () => {
       const ai = document.querySelector<HTMLElement>("[data-hemsfell-ai-thinking]");
       const stack = document.querySelector<HTMLElement>(".screen-game .priority-stack-indicator");
@@ -147,16 +179,18 @@ export default function MatchRequestedUiRuntime() {
         captureAll();
         document.querySelectorAll<HTMLElement>(FLIGHT_FACE_SELECTOR).forEach((face) => decorateFlight(face));
         syncEvolutionCopy();
+        syncHeroProgressCopy();
         syncPriorityPair();
       });
     };
 
     captureAll();
     syncEvolutionCopy();
+    syncHeroProgressCopy();
     syncPriorityPair();
 
     const observer = new MutationObserver(sync);
-    observer.observe(document.body, { subtree: true, childList: true });
+    observer.observe(document.body, { subtree: true, childList: true, characterData: true });
     const onPresentationAction = () => captureAll();
     const onResize = () => syncPriorityPair();
     window.addEventListener("hemsfell:presentation-action", onPresentationAction, true);
