@@ -6,6 +6,7 @@ const CATALOG_URL = "/api/hemsfell-card-catalog.pdf";
 const MAX_CACHED_PAGE_PROMISES = 48;
 const MAX_CACHED_RASTER_PROMISES = 40;
 const MAX_CACHED_RASTER_CSS_WIDTH = 240;
+const MIN_COMPONENT_RASTER_CSS_WIDTH = 96;
 const RASTER_WIDTH_STEP = 24;
 let catalogPromise: Promise<import("pdfjs-dist").PDFDocumentProxy> | null = null;
 const pagePromises = new Map<number, Promise<import("pdfjs-dist").PDFPageProxy>>();
@@ -64,7 +65,7 @@ function cardPixelRatio() {
 }
 
 function rasterWidthBucket(cssWidth: number) {
-  const normalized = Math.max(120, Math.min(MAX_CACHED_RASTER_CSS_WIDTH, cssWidth));
+  const normalized = Math.max(MIN_COMPONENT_RASTER_CSS_WIDTH, Math.min(MAX_CACHED_RASTER_CSS_WIDTH, cssWidth));
   return Math.ceil(normalized / RASTER_WIDTH_STEP) * RASTER_WIDTH_STEP;
 }
 
@@ -114,7 +115,7 @@ function loadCardRaster(page: number, cssWidth: number) {
 }
 
 async function paintCardArt(canvas: HTMLCanvasElement, page: number, cssWidth: number) {
-  const width = Math.max(cssWidth, canvas.clientWidth, 120);
+  const width = Math.max(cssWidth, canvas.clientWidth, MIN_COMPONENT_RASTER_CSS_WIDTH);
   if (width <= MAX_CACHED_RASTER_CSS_WIDTH) {
     const raster = await loadCardRaster(page, width);
     canvas.width = raster.width;
@@ -175,7 +176,7 @@ export function RemoteCardArt({ page, name, className = "", style, priority = fa
     if (!canvas) return;
     let cancelled = false;
 
-    void paintCardArt(canvas, page, Math.max(canvas.clientWidth, 120))
+    void paintCardArt(canvas, page, Math.max(canvas.clientWidth, MIN_COMPONENT_RASTER_CSS_WIDTH))
       .then(() => {
         if (!cancelled) setFailed(false);
       })
