@@ -1,0 +1,104 @@
+/*
+ * Terminal interaction authority for targeting, presentation flights and hand peeking.
+ * Keeps semantic card orientation stable, removes card-local chrome from moving faces,
+ * preserves revealed-hand information and opens a small visual gap around the card
+ * currently being inspected/dragged without reflowing the hand.
+ */
+
+/* Exhausted/turned cards are represented upright with the VIRADA state. Targeting
+   must never reintroduce an old transform through hover or selection classes. */
+html body .screen-game .original-card.is-exhausted:is(.target-ally,.target-enemy),
+html body .screen-game .original-card.is-exhausted:is(.target-ally,.target-enemy):hover,
+html body .screen-game .visual-card-choice .original-card.is-exhausted,
+html body .screen-game .visual-card-choice .original-card.is-exhausted:hover {
+  transform: none !important;
+  translate: none !important;
+  rotate: none !important;
+  scale: 1 !important;
+  transform-origin: 50% 50% !important;
+}
+
+/* A live field frame owns icons only while its face is stable. :has() derives the
+   state directly from the canonical presentation classes, so no polling/runtime
+   mirror attribute can become stale during target popups or animation queues. */
+html body .screen-game .card-frame:has(> .original-card:is(.hh-presentation-hidden,.is-impacting)) > :is(
+  .field-negative-statuses,
+  .field-keywords,
+  .card-frame-marker,
+  .card-frame-activation,
+  .summoning-sickness-badge
+) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Presentation clones are faces only. No status/keyword/action/reveal/hand metric
+   is allowed to travel with them; the stable live card restores its own chrome. */
+html body .hh-flight-face :is(
+  .field-negative-statuses,
+  .field-keywords,
+  .card-frame-marker,
+  .card-frame-activation,
+  .summoning-sickness-badge,
+  .summoning-sickness-icon,
+  .revealed-badge,
+  .hh-hand-metric,
+  .effective-cost
+) {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Revealed is public information and remains visible on stable cards in either
+   hand. This deliberately sits after the flight rule and is scoped outside it. */
+html body .screen-game :is(.player-hand,.opponent-hand)
+  .original-card:not(.hh-presentation-hidden) > .revealed-badge {
+  display: grid !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: none !important;
+  z-index: 80 !important;
+}
+
+/* Hand peek: move only the immediate neighbours, avoiding flex reflow/layout
+   churn while exposing the full active card. The active card keeps the existing
+   lift/scale authority from hand-ai-ui-terminal.css. */
+html body .screen-game .player-hand {
+  --hh-hand-peek-gap: clamp(.26rem, 1.35cqi, .72rem);
+}
+
+html body .screen-game .player-hand > .card-frame {
+  transition: transform 125ms ease, filter 150ms ease !important;
+}
+
+html body .screen-game .player-hand > .card-frame:has(+ .card-frame[data-hh-hand-peek="true"]),
+html body .screen-game .player-hand > .card-frame:has(+ .card-frame:focus-within),
+html body .screen-game .player-hand > .card-frame:has(+ .card-frame:has(> .original-card.hh-touch-drag-source)) {
+  transform: translateX(calc(-1 * var(--hh-hand-peek-gap))) !important;
+}
+
+html body .screen-game .player-hand > .card-frame[data-hh-hand-peek="true"] + .card-frame,
+html body .screen-game .player-hand > .card-frame:focus-within + .card-frame,
+html body .screen-game .player-hand > .card-frame:has(> .original-card.hh-touch-drag-source) + .card-frame {
+  transform: translateX(var(--hh-hand-peek-gap)) !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html body .screen-game .player-hand > .card-frame:has(+ .card-frame:hover) {
+    transform: translateX(calc(-1 * var(--hh-hand-peek-gap))) !important;
+  }
+
+  html body .screen-game .player-hand > .card-frame:hover + .card-frame {
+    transform: translateX(var(--hh-hand-peek-gap)) !important;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  html body .screen-game .player-hand {
+    --hh-hand-peek-gap: clamp(.3rem, 1.7cqi, .78rem);
+  }
+}
