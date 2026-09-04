@@ -6,6 +6,8 @@ import { useEffect, useState } from "react";
 const MatchUiRuntime = dynamic(() => import("../match/match-ui-runtime"), { ssr: false });
 const PresentationEventBridge = dynamic(() => import("./presentation-event-bridge"), { ssr: false });
 const PresentationInteractionRuntime = dynamic(() => import("./presentation-interaction-runtime"), { ssr: false });
+const PresentationLivenessRuntime = dynamic(() => import("./presentation-liveness-runtime"), { ssr: false });
+const PresentationMemoryRuntime = dynamic(() => import("./presentation-memory-runtime"), { ssr: false });
 const GamePresentationRuntime = dynamic(() => import("./game-presentation-runtime"), { ssr: false });
 const HeroPanelExpandRuntime = dynamic(() => import("./hero-panel-expand-runtime"), { ssr: false });
 const HeroAbilityDetailRuntime = dynamic(() => import("./hero-ability-detail-runtime"), { ssr: false });
@@ -40,6 +42,8 @@ export default function MatchRuntimeGate() {
     <PresentationEventBridge />
     <PresentationInteractionRuntime />
     <GamePresentationRuntime />
+    <PresentationLivenessRuntime />
+    <PresentationMemoryRuntime />
     <HeroPanelExpandRuntime />
     <HeroAbilityDetailRuntime />
     <HeroAbilityRailRuntime />
