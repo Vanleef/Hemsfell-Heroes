@@ -41,6 +41,13 @@ test("local hero renders the same semantic concise progress copy as the opponent
   assert.match(css, /hero-evolution-copy\[data-hh-short-progress="true"\] > small[\s\S]*color:\s*#fff0b1\s*!important/);
 });
 
+test("hero progress is prominent and uses only the outer meter", () => {
+  assert.match(css, /--hh-player-progress-height:\s*clamp\(1\.72rem,\s*3\.08cqh,\s*2\.12rem\)\s*!important/);
+  assert.match(css, /--hh-enemy-progress-height:\s*clamp\(1\.72rem,\s*3\.08cqh,\s*2\.12rem\)\s*!important/);
+  assert.match(css, /font-size:\s*clamp\(\.78rem,\s*min\(\.98cqw,\s*1\.48cqh\),\s*1rem\)\s*!important/);
+  assert.match(css, /hero-evolution > \.evolution-track\s*\{[\s\S]*display:\s*none\s*!important[\s\S]*visibility:\s*hidden\s*!important/);
+});
+
 test("max-level heroes expose neither progress nor evolve controls", () => {
   assert.match(runtime, /const MAX_HERO_LEVEL = 3/);
   assert.match(runtime, /\.hero-level/);
