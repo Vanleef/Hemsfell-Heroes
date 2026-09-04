@@ -1,0 +1,181 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147482000;
+  display: grid;
+  place-items: center;
+  min-width: 100vw;
+  min-height: 100dvh;
+  padding:
+    max(1rem, env(safe-area-inset-top))
+    max(1rem, env(safe-area-inset-right))
+    max(1rem, env(safe-area-inset-bottom))
+    max(1rem, env(safe-area-inset-left));
+  overflow: hidden;
+  pointer-events: auto;
+  touch-action: none;
+  overscroll-behavior: none;
+  color: #f7edcf;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(72, 119, 126, .22), transparent 28%),
+    radial-gradient(circle at 50% 50%, rgba(220, 175, 74, .08), transparent 44%),
+    linear-gradient(180deg, rgba(3, 12, 18, .985), rgba(4, 10, 17, .995));
+  backdrop-filter: blur(10px);
+}
+
+.overlay::before,
+.overlay::after {
+  content: "";
+  position: absolute;
+  inset: auto;
+  width: min(68vw, 48rem);
+  aspect-ratio: 1;
+  border: 1px solid rgba(217, 173, 85, .08);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.overlay::before {
+  transform: scale(.82);
+}
+
+.overlay::after {
+  transform: scale(.56);
+  border-color: rgba(111, 190, 202, .08);
+}
+
+.panel {
+  position: relative;
+  z-index: 1;
+  width: min(35rem, 92vw);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(.58rem, 1.4vmin, .9rem);
+  padding: clamp(1.25rem, 4vmin, 2.35rem);
+  border: 1px solid rgba(217, 173, 85, .34);
+  border-radius: clamp(.9rem, 2vw, 1.35rem);
+  background: linear-gradient(155deg, rgba(15, 29, 39, .94), rgba(7, 16, 24, .965));
+  box-shadow:
+    0 1.4rem 4rem rgba(0, 0, 0, .5),
+    inset 0 0 0 1px rgba(255, 255, 255, .025),
+    0 0 2.5rem rgba(78, 145, 154, .08);
+  text-align: center;
+}
+
+.sigil {
+  width: clamp(3.2rem, 8vmin, 4.65rem);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(226, 184, 91, .7);
+  border-radius: 50%;
+  color: #f0ca73;
+  background:
+    radial-gradient(circle, rgba(226, 184, 91, .15), transparent 62%),
+    rgba(7, 19, 27, .9);
+  box-shadow:
+    0 0 0 .35rem rgba(226, 184, 91, .035),
+    0 0 1.8rem rgba(226, 184, 91, .18);
+  font-size: clamp(1.2rem, 3.4vmin, 1.85rem);
+}
+
+.eyebrow {
+  margin: .1rem 0 0;
+  color: rgba(229, 194, 117, .9);
+  font: 800 clamp(.62rem, 1.35vw, .74rem)/1 system-ui, sans-serif;
+  letter-spacing: .22em;
+}
+
+.title {
+  margin: 0;
+  color: #fff4d6;
+  font: 800 clamp(1.38rem, 4vw, 2.05rem)/1.08 Georgia, "Times New Roman", serif;
+  letter-spacing: .02em;
+  text-shadow: 0 .12rem .55rem rgba(0, 0, 0, .45);
+}
+
+.subtitle {
+  max-width: 29rem;
+  margin: 0;
+  color: rgba(218, 228, 232, .76);
+  font: 600 clamp(.77rem, 1.9vw, .94rem)/1.45 system-ui, sans-serif;
+  text-wrap: balance;
+}
+
+.track {
+  width: min(25rem, 78vw);
+  height: clamp(.22rem, .62vmin, .31rem);
+  margin-top: clamp(.25rem, .8vmin, .5rem);
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(236, 221, 180, .1);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .025);
+}
+
+.bar {
+  display: block;
+  width: 42%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, rgba(219, 175, 80, .18), rgba(242, 207, 128, .95), rgba(94, 180, 193, .62));
+  box-shadow: 0 0 .9rem rgba(226, 184, 91, .35);
+  animation: matchLoadingSweep 1.05s cubic-bezier(.65, 0, .35, 1) infinite alternate;
+}
+
+@keyframes matchLoadingSweep {
+  from { transform: translateX(-8%); }
+  to { transform: translateX(146%); }
+}
+
+@media (max-width: 48rem), (pointer: coarse) {
+  .overlay {
+    backdrop-filter: blur(6px);
+  }
+
+  .panel {
+    width: min(31rem, 94vw);
+    padding: clamp(1rem, 4.8vmin, 1.65rem);
+  }
+
+  .subtitle {
+    max-width: 24rem;
+  }
+}
+
+@media (max-height: 34rem) and (orientation: landscape) {
+  .panel {
+    width: min(34rem, 76vw);
+    gap: .4rem;
+    padding: .75rem 1.2rem .95rem;
+  }
+
+  .sigil {
+    width: 2.7rem;
+  }
+
+  .eyebrow {
+    font-size: .56rem;
+  }
+
+  .title {
+    font-size: clamp(1.08rem, 3.8vh, 1.45rem);
+  }
+
+  .subtitle {
+    font-size: clamp(.65rem, 2.2vh, .78rem);
+    line-height: 1.3;
+  }
+
+  .track {
+    margin-top: .15rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    width: 100%;
+    opacity: .72;
+    animation: none;
+  }
+}
