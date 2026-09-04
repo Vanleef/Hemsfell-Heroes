@@ -31,9 +31,11 @@ test("responsive hand runtime mounts only with match runtimes", () => {
 
 test("hand cost and creature stats are derived from the existing authoritative card summary", () => {
   assert.match(runtime, /card-tooltip > em/);
-  assert.match(runtime, /hh-hand-cost/);
-  assert.match(runtime, /hh-hand-atk/);
-  assert.match(runtime, /hh-hand-hp/);
+  assert.match(runtime, /kind: "cost" \| "atk" \| "hp"/);
+  assert.match(runtime, /hh-hand-metric hh-hand-\$\{kind\}/);
+  assert.match(runtime, /ensureMetric\(card, "cost", cost\)/);
+  assert.match(runtime, /ensureMetric\(card, "atk", stats\[1\]\)/);
+  assert.match(runtime, /ensureMetric\(card, "hp", stats\[2\]\)/);
   assert.match(runtime, /\^Criatura\\b/i);
   assert.match(css, /hh-hand-cost[\s\S]*?inset-block-start:\s*3\.8%/);
   assert.match(css, /hh-hand-atk[\s\S]*?inset-inline-start:\s*4\.2%[\s\S]*?inset-block-end:\s*3\.8%/);

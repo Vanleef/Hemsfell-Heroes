@@ -18,9 +18,17 @@ const ruleBody = (sheet, marker) => {
   return sheet.slice(open + 1, close);
 };
 
-test("side-pile text shadow contract is the final CSS authority", () => {
+test("side-pile text shadow remains final for pile styling before scoped hand/tutorial authorities", () => {
   const imports = [...layout.matchAll(/import\s+"([^"]+\.css)";/g)].map((match) => match[1]);
-  assert.equal(imports.at(-1), "./presentation/styles/side-pile-text-shadow-terminal.css");
+  const pileIndex = imports.indexOf("./presentation/styles/side-pile-text-shadow-terminal.css");
+  const handIndex = imports.indexOf("./presentation/styles/hand-ai-ui-terminal.css");
+  const aiIndex = imports.indexOf("./presentation/styles/ai-thinking-panel-terminal.css");
+  const tutorialIndex = imports.indexOf("./presentation/styles/tutorial-current-ui-terminal.css");
+  assert.ok(pileIndex >= 0);
+  assert.ok(handIndex > pileIndex);
+  assert.ok(aiIndex > handIndex);
+  assert.ok(tutorialIndex > aiIndex);
+  assert.equal(imports.at(-1), "./presentation/styles/tutorial-current-ui-terminal.css");
 });
 
 test("phase runtime separates current phase hierarchy without replacing gameplay button", () => {
