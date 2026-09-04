@@ -140,12 +140,6 @@ export default function HandAiUiRuntime() {
       if (!frame) frame = requestAnimationFrame(flush);
     };
 
-    const queueHand = (hand: HTMLElement | null) => {
-      if (!hand) return;
-      dirtyHands.add(hand);
-      schedule();
-    };
-
     const queueMountedHands = (root: ParentNode = document) => {
       root.querySelectorAll<HTMLElement>(HAND_SELECTOR).forEach((hand) => dirtyHands.add(hand));
       schedule();
@@ -187,6 +181,13 @@ export default function HandAiUiRuntime() {
       schedule();
     };
 
+    /* Drop legacy mirror attributes once. Presentation state is now derived in
+       CSS from canonical classes instead of computed transforms. */
+    document.querySelectorAll<HTMLElement>("[data-hh-local-rotation],[data-hh-card-presenting]").forEach((node) => {
+      delete node.dataset.hhLocalRotation;
+      delete node.dataset.hhCardPresenting;
+    });
+
     queueMountedHands();
     aiDirty = true;
     schedule();
@@ -206,8 +207,8 @@ export default function HandAiUiRuntime() {
         record.addedNodes.forEach((node) => {
           if (!(node instanceof Element)) return;
           if (node.matches(HAND_SELECTOR)) dirtyHands.add(node as HTMLElement);
-          node.querySelectorAll?.<HTMLElement>(HAND_SELECTOR).forEach((mountedHand) => dirtyHands.add(mountedHand));
-          if (node.matches("[data-hemsfell-ai-thinking],.response-waiting") || node.querySelector?.("[data-hemsfell-ai-thinking],.response-waiting")) aiDirty = true;
+          node.querySelectorAll<HTMLElement>(HAND_SELECTOR).forEach((mountedHand) => dirtyHands.add(mountedHand));
+          if (node.matches("[data-hemsfell-ai-thinking],.response-waiting") || node.querySelector("[data-hemsfell-ai-thinking],.response-waiting")) aiDirty = true;
         });
       }
       if (dirtyHands.size || aiDirty) schedule();
