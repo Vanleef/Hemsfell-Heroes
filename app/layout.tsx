@@ -92,6 +92,8 @@ import "./presentation/styles/hero-active-effects-anchor-terminal.css";
 import "./presentation/styles/match-requested-corrections-terminal.css";
 /* Final collision/anchor authority: priority pair and battlefield card-local overlays. */
 import "./presentation/styles/priority-card-anchor-terminal.css";
+/* Final short-mobile hero spacing: keep ability shortcuts clear of progression strips. */
+import "./presentation/styles/mobile-hero-ability-spacing-terminal.css";
 /* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
 import "./presentation/styles/side-pile-text-shadow-terminal.css";
 import MatchUiGuard from "./presentation/match/match-ui-guard";

@@ -1,0 +1,12 @@
+/*
+ * Final mobile hero-ability spacing authority.
+ *
+ * The short-phone progress strip is intentionally wider than the portrait.
+ * Keep the 1/2/3 ability rail anchored to the hero, but add a small horizontal
+ * gutter so the first orb never touches the progression panel.
+ */
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) and (max-height: 34rem) {
+  html body .screen-game .canonical-hero-panel > .player-hero > .hero-ability-rail {
+    left: calc(var(--hh-hero-art-right, 100%) + clamp(2.05rem, 3.5dvw, 2.55rem)) !important;
+  }
+}
