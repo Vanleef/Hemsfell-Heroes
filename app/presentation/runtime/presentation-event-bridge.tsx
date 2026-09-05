@@ -169,11 +169,14 @@ export default function PresentationEventBridge() {
       const room = detail?.room;
       const revision = Number(room?.revision ?? -1);
       const status = String(room?.status || "");
+      /* orientOnlineGameForRole already returns a detached deep copy, including
+         for the host. Retain that immutable revision instead of cloning the
+         complete GameState again at every presentation boundary. */
       const after = orientGame(room?.game, isHost);
       if (!roomId || !after || !Number.isFinite(revision)) return;
 
       const previous = snapshots.get(roomId);
-      snapshots.set(roomId, { revision, game: clone(after), isHost, status });
+      snapshots.set(roomId, { revision, game: after, isHost, status });
       if (!previous || revision <= previous.revision) return;
 
       /* Mulligan replaces the complete hand as preparation, not as an in-game
@@ -195,7 +198,7 @@ export default function PresentationEventBridge() {
       const ack = confirmed.get(key);
       if (ack) {
         confirmed.delete(key);
-        emit({ before: clone(ack.before), after: clone(after), command: clone(ack.command), commandId: ack.commandId, revision });
+        emit({ before: ack.before, after, command: ack.command, commandId: ack.commandId, revision });
         return;
       }
 
@@ -205,8 +208,8 @@ export default function PresentationEventBridge() {
       const combatCommand = hasPresentableDelta(previous.game, after) ? attackFromCombat(previous.game?.combatAction) : null;
       const opponentPlayCommand = hasPresentableDelta(previous.game, after) ? inferOpponentPlayCommand(previous.game, after) : null;
       emit({
-        before: clone(previous.game),
-        after: clone(after),
+        before: previous.game,
+        after,
         command: combatCommand || opponentPlayCommand || { type: "onlineSnapshot", owner: 1 },
         commandId: `online:${roomId}:${revision}`,
         revision,
@@ -219,7 +222,7 @@ export default function PresentationEventBridge() {
       const payload = roomId ? requestPayload(init) : null;
       const isCommand = init?.method?.toUpperCase() === "POST" && payload?.action === "command" && payload?.command && payload?.commandId;
       const snapshot = roomId ? snapshots.get(roomId) : undefined;
-      const before = isCommand && snapshot ? clone(snapshot.game) : null;
+      const before = isCommand && snapshot ? snapshot.game : null;
       const command = isCommand ? { ...clone(payload.command), owner: 0 } : null;
       const commandId = isCommand ? String(payload.commandId) : "";
 
