@@ -1,0 +1,77 @@
+/* Focused QA corrections: local indicators must never consume board space. */
+html body .screen-game .card-frame > .card-frame-marker {
+  box-sizing: border-box !important;
+  inline-size: clamp(.9rem, 2.15cqi, 1.3rem) !important;
+  block-size: clamp(.9rem, 2.15cqi, 1.3rem) !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: grid !important;
+  place-items: center !important;
+  line-height: 1 !important;
+  aspect-ratio: 1 / 1 !important;
+}
+
+html body .screen-game .paired-field .field-slot.drop-accepted::after {
+  content: "✓";
+  position: absolute;
+  inset: 50% auto auto 50%;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  inline-size: clamp(1.7rem, 5cqi, 2.5rem);
+  block-size: clamp(1.7rem, 5cqi, 2.5rem);
+  border: 2px solid #fff0a1;
+  border-radius: 50%;
+  background: #1a4127e8;
+  color: #fff8ca;
+  font: 900 clamp(.9rem, 3cqi, 1.35rem)/1 system-ui;
+  transform: translate(-50%, -50%);
+  animation: hh-drop-accepted .56s ease-out both;
+  pointer-events: none;
+}
+@keyframes hh-drop-accepted { from { opacity: 0; scale: .62; } 25% { opacity: 1; scale: 1.08; } to { opacity: 0; scale: 1.25; } }
+
+.response-dialog .priority-source {
+  display: grid;
+  gap: .16rem;
+  margin: .55rem 0;
+  padding: .45rem .55rem;
+  border: 1px solid rgb(255 226 139 / 46%);
+  border-radius: .45rem;
+  background: rgb(20 29 42 / 88%);
+}
+.response-dialog .priority-source > b { color: #ffe49a; font-size: .68rem; letter-spacing: .08em; }
+.response-dialog .priority-source > span { color: #fff6d8; font-weight: 700; }
+
+@media (hover: none) and (pointer: coarse), (max-width: 760px) {
+  html body .screen-game .paired-field .field-slot > .card-frame > .original-card > .live-atk {
+    inset-inline: 4% auto !important;
+    inset-block: auto 4% !important;
+    transform: none !important;
+  }
+  html body .screen-game .paired-field .field-slot > .card-frame > .original-card > .live-hp {
+    inset-inline: auto 4% !important;
+    inset-block: auto 4% !important;
+    transform: none !important;
+  }
+  html body .screen-game .paired-field .field-slot > .card-frame > .original-card > :is(.live-atk,.live-hp) {
+    inline-size: clamp(.84rem, 4.8cqi, 1.22rem) !important;
+    min-inline-size: 0 !important;
+    font-size: clamp(.5rem, 2.7cqi, .78rem) !important;
+    text-align: center !important;
+  }
+  /* Reserve a compact edge lane for heroes; field and hand retain the center. */
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel {
+    max-inline-size: min(23cqw, 8.2rem) !important;
+    scale: .76 !important;
+  }
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.player {
+    transform-origin: left bottom !important;
+  }
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel.enemy {
+    transform-origin: right top !important;
+  }
+  html body .screen-game .hero-ability-rail { max-inline-size: 2.25rem !important; }
+}
