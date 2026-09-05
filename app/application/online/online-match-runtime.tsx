@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { orientOnlineGameForRole } from "../session/online-state-orientation.mjs";
 
 type Session = { id: string; isHost: boolean };
 type PriorityView = {
@@ -54,6 +53,16 @@ type RoomSnapshot = {
 };
 
 const ONLINE_ROOM_SNAPSHOT_EVENT = "hemsfell:online-room-snapshot";
+const ACTION_SURFACE_SELECTORS = [
+  ".screen-game .phase-orb",
+  ".screen-game .player-hand",
+  ".screen-game .player-field",
+  ".screen-game .player-terrain",
+  ".screen-game .player-hero:not(.enemy)",
+  ".screen-game .hero-abilities:not(.enemy)",
+  ".screen-game .hero-command-bar:not(.enemy)",
+] as const;
+
 const WINDOW_NAMES: Record<string, string> = {
   "maintenance-triggers": "Manutenção",
   "main-action-response": "Ação da Principal",
@@ -79,6 +88,27 @@ const INTERACTION_NAMES: Record<string, string> = {
   reposition: "Reposicionamento obrigatório",
   resolving: "Resolvendo",
 };
+
+const flipOwner = (owner: 0 | 1 | null | undefined) => owner == null ? owner : owner === 0 ? 1 : 0;
+
+/**
+ * The board already orients the full authoritative game for the guest. The HUD
+ * only needs a tiny public subset, so avoid structuredClone/orientation of the
+ * complete decks, hands and board on every 450-800ms room snapshot.
+ */
+function orientHudGame(game: OnlineGame, isHost: boolean): OnlineGame {
+  if (isHost) return game;
+  return {
+    active: game.active === 0 ? 1 : 0,
+    phase: game.phase,
+    round: game.round,
+    winner: game.winner == null ? game.winner : game.winner === 0 ? 1 : 0,
+    priority: game.priority ? { ...game.priority, owner: flipOwner(game.priority.owner) } : undefined,
+    stack: game.stack?.map((frame) => ({ ...frame, controller: flipOwner(frame.controller) })),
+    combatAction: game.combatAction ? { ...game.combatAction, attackerOwner: flipOwner(game.combatAction.attackerOwner) as 0 | 1 } : null,
+    onlineFinalization: game.onlineFinalization ? { ...game.onlineFinalization, owner: flipOwner(game.onlineFinalization.owner) as 0 | 1 | undefined } : undefined,
+  };
+}
 
 function combatStatus(game: OnlineGame) {
   const combat = game.combatAction;
@@ -114,9 +144,6 @@ export default function OnlineMatchRuntime() {
   const [game, setGame] = useState<OnlineGame | null>(null);
   const commandTypesKey = (game?.priority?.commandTypes || []).join(",");
 
-  /* The match screen owns the only HTTP poll. The HUD consumes those canonical
-     snapshots through a same-document event so it cannot double the request
-     rate, race the board snapshot, or send a second Assisted auto-pass. */
   useEffect(() => {
     const consume = (event: Event) => {
       const detail = (event as CustomEvent<{ session?: Session; room?: RoomSnapshot }>).detail;
@@ -125,54 +152,35 @@ export default function OnlineMatchRuntime() {
       if (!nextSession || typeof nextSession.id !== "string" || !snapshot || snapshot.id !== nextSession.id || !Number.isFinite(Number(snapshot.revision))) return;
       setSession(nextSession);
       setRoom(snapshot);
-      setGame(snapshot.game ? orientOnlineGameForRole(snapshot.game, nextSession.isHost ? "host" : "guest") as OnlineGame : null);
+      setGame(snapshot.game ? orientHudGame(snapshot.game, nextSession.isHost) : null);
     };
     window.addEventListener(ONLINE_ROOM_SNAPSHOT_EVENT, consume);
     return () => window.removeEventListener(ONLINE_ROOM_SNAPSHOT_EVENT, consume);
   }, []);
 
-  /* Local player is always oriented as owner 0.  The canonical input owner
-     therefore gates the entire normal action surface during opponent priority,
-     blocker selection, server resolution and mandatory decisions. */
   useEffect(() => {
     const started = room?.status === "started" && game?.winner == null;
     const owner = game?.priority?.owner;
     const blocked = !!started && owner !== 0;
-    const selectors = [
-      ".screen-game .phase-orb",
-      ".screen-game .player-hand",
-      ".screen-game .player-field",
-      ".screen-game .player-terrain",
-      ".screen-game .player-hero:not(.enemy)",
-      ".screen-game .hero-abilities:not(.enemy)",
-      ".screen-game .hero-command-bar:not(.enemy)",
-    ];
-    const apply = () => {
-      const board = document.querySelector<HTMLElement>(".screen-game .hs-board");
-      if (board) {
-        board.dataset.onlineActionBlocked = blocked ? "true" : "false";
-        board.dataset.onlineInteractionState = game?.priority?.interactionState || "unknown";
-        board.dataset.onlineCommandTypes = commandTypesKey;
-      }
-      for (const selector of selectors) {
-        document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
-          if (blocked) element.setAttribute("inert", "");
-          else element.removeAttribute("inert");
-        });
-      }
-    };
-    apply();
-    const observer = new MutationObserver(apply);
-    observer.observe(document.body, { childList: true, subtree: true });
+    const board = document.querySelector<HTMLElement>(".screen-game .hs-board");
+    if (board) {
+      board.dataset.onlineActionBlocked = blocked ? "true" : "false";
+      board.dataset.onlineInteractionState = game?.priority?.interactionState || "unknown";
+      board.dataset.onlineCommandTypes = commandTypesKey;
+    }
+    for (const selector of ACTION_SURFACE_SELECTORS) {
+      document.querySelectorAll<HTMLElement>(selector).forEach((element) => {
+        if (blocked) element.setAttribute("inert", "");
+        else element.removeAttribute("inert");
+      });
+    }
     return () => {
-      observer.disconnect();
-      for (const selector of selectors) document.querySelectorAll<HTMLElement>(selector).forEach((element) => element.removeAttribute("inert"));
-      const board = document.querySelector<HTMLElement>(".screen-game .hs-board");
+      for (const selector of ACTION_SURFACE_SELECTORS) document.querySelectorAll<HTMLElement>(selector).forEach((element) => element.removeAttribute("inert"));
       board?.removeAttribute("data-online-action-blocked");
       board?.removeAttribute("data-online-interaction-state");
       board?.removeAttribute("data-online-command-types");
     };
-  }, [room?.status, room?.revision, game?.winner, game?.priority?.owner, game?.priority?.interactionState, commandTypesKey]);
+  }, [room?.status, game?.winner, game?.priority?.owner, game?.priority?.interactionState, commandTypesKey]);
 
   if (!session || !room || !game || room.status !== "started" || game.winner != null) return null;
   return <OnlinePriorityHud game={game} />;
