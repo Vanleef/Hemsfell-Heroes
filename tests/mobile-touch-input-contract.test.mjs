@@ -59,7 +59,7 @@ test("trusted browser drag is suppressed while the coarse-pointer bridge owns th
 });
 
 test("touch taps have a guarded click fallback without turning inspection holds into clicks", () => {
-  assert.match(runtime, /TAP_FALLBACK_DELAY_MS = 220/);
+  assert.match(runtime, /TAP_FALLBACK_DELAY_MS = 32/);
   assert.match(runtime, /TAP_MAX_DURATION_MS = 520/);
   assert.match(runtime, /lastClickControl === control/);
   assert.match(runtime, /if \(!nativeClickArrived\) control\.click\(\)/);
