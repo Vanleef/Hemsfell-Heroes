@@ -56,48 +56,6 @@ jobs:
       - name: Typecheck online surfaces
         run: npm run typecheck:online
 
-      - name: Diagnostic tests 0-D
-        continue-on-error: true
-        shell: bash
-        run: |
-          files=(tests/[0-9a-dA-D]*.test.mjs)
-          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${files[@]}"
-
-      - name: Diagnostic tests E-H
-        continue-on-error: true
-        shell: bash
-        run: |
-          files=(tests/[e-hE-H]*.test.mjs)
-          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${files[@]}"
-
-      - name: Diagnostic tests I-L
-        continue-on-error: true
-        shell: bash
-        run: |
-          files=(tests/[i-lI-L]*.test.mjs)
-          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${files[@]}"
-
-      - name: Diagnostic tests M-P
-        continue-on-error: true
-        shell: bash
-        run: |
-          files=(tests/[m-pM-P]*.test.mjs)
-          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${files[@]}"
-
-      - name: Diagnostic tests Q-T
-        continue-on-error: true
-        shell: bash
-        run: |
-          files=(tests/[q-tQ-T]*.test.mjs)
-          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${files[@]}"
-
-      - name: Diagnostic tests U-Z
-        continue-on-error: true
-        shell: bash
-        run: |
-          files=(tests/[u-zU-Z]*.test.mjs)
-          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${files[@]}"
-
       - name: Run node rules and regression tests
         run: npm run test:node
 
