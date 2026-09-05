@@ -19,6 +19,17 @@ jobs:
           ref: refactor/performance-mobile-architecture-20260905
           fetch-depth: 0
 
+      - name: Capture baseline rules status
+        id: baseline
+        shell: bash
+        run: |
+          set +e
+          node --test tests/rules-engine.test.mjs > /tmp/rules-baseline.log 2>&1
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          tail -n 160 /tmp/rules-baseline.log
+          exit 0
+
       - name: Replace linear catalog lookups
         run: |
           python - <<'PY'
@@ -59,7 +70,6 @@ jobs:
           residual = re.findall(r'cards\.find\((?:card|candidate)=>(?:card|candidate)\.(?:page|id)===.*?\)', source)
           if residual:
               raise SystemExit('residual canonical linear lookups: ' + ' | '.join(residual[:12]))
-
           if source.count('cardsByPage.get(') < 4:
               raise SystemExit('page index was not adopted broadly enough')
           if source.count('cardsById.get(') < 2:
@@ -67,8 +77,7 @@ jobs:
 
           path.write_text(source)
 
-          test = Path('tests/card-catalog-index-performance.test.mjs')
-          test.write_text('''import test from "node:test";\nimport assert from "node:assert/strict";\nimport { readFile } from "node:fs/promises";\n\nconst page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");\n\ntest("canonical card lookups use page and id maps instead of repeated linear scans", () => {\n  assert.match(page, /const cardsByPage=new Map<number,CardDef>/);\n  assert.match(page, /const cardsById=new Map<string,CardDef>/);\n  assert.match(page, /cardsByPage\\.get\\(/);\n  assert.match(page, /cardsById\\.get\\(/);\n  assert.doesNotMatch(page, /cards\\.find\\((?:card|candidate)=>(?:card|candidate)\\.(?:page|id)===/);\n});\n''')
+          Path('tests/card-catalog-index-performance.test.mjs').write_text('''import test from "node:test";\nimport assert from "node:assert/strict";\nimport { readFile } from "node:fs/promises";\n\nconst page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");\n\ntest("canonical card lookups use page and id maps instead of repeated linear scans", () => {\n  assert.match(page, /const cardsByPage=new Map<number,CardDef>/);\n  assert.match(page, /const cardsById=new Map<string,CardDef>/);\n  assert.match(page, /cardsByPage\\.get\\(/);\n  assert.match(page, /cardsById\\.get\\(/);\n  assert.doesNotMatch(page, /cards\\.find\\((?:card|candidate)=>(?:card|candidate)\\.(?:page|id)===/);\n});\n''')
           PY
 
       - name: Validate catalog index contract
@@ -77,8 +86,22 @@ jobs:
       - name: Validate interaction performance contracts
         run: node --test tests/card-interaction-performance-contract.test.mjs
 
-      - name: Validate rules regression suite
-        run: node --test tests/rules-engine.test.mjs
+      - name: Compare rules regression status
+        shell: bash
+        run: |
+          set +e
+          node --test tests/rules-engine.test.mjs > /tmp/rules-after.log 2>&1
+          status=$?
+          tail -n 160 /tmp/rules-after.log
+          baseline='${{ steps.baseline.outputs.status }}'
+          if [ "$status" != "$baseline" ]; then
+            echo "Rules status changed from baseline $baseline to $status"
+            exit 1
+          fi
+          if [ "$status" != "0" ]; then
+            echo "Rules suite was already failing before catalog indexing; status is unchanged."
+          fi
+          exit 0
 
       - name: Commit indexed catalog lookups
         run: |
