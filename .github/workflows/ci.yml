@@ -56,45 +56,47 @@ jobs:
       - name: Typecheck online surfaces
         run: npm run typecheck:online
 
-      - name: Diagnostic card art context
+      - name: Diagnostic tests 0-D
         continue-on-error: true
-        run: node --test tests/card-art-context-memory-policy.test.mjs
+        shell: bash
+        run: |
+          files=(tests/[0-9a-dA-D]*.test.mjs)
+          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${files[@]}"
 
-      - name: Diagnostic card art lifecycle
+      - name: Diagnostic tests E-H
         continue-on-error: true
-        run: node --test tests/card-art-lifecycle.test.mjs
+        shell: bash
+        run: |
+          files=(tests/[e-hE-H]*.test.mjs)
+          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${files[@]}"
 
-      - name: Diagnostic card inspection
+      - name: Diagnostic tests I-L
         continue-on-error: true
-        run: node --test tests/card-double-click-inspection-contract.test.mjs
+        shell: bash
+        run: |
+          files=(tests/[i-lI-L]*.test.mjs)
+          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${files[@]}"
 
-      - name: Diagnostic deck setup
+      - name: Diagnostic tests M-P
         continue-on-error: true
-        run: node --test tests/deck-picker-layout.test.mjs
+        shell: bash
+        run: |
+          files=(tests/[m-pM-P]*.test.mjs)
+          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${files[@]}"
 
-      - name: Diagnostic mobile touch
+      - name: Diagnostic tests Q-T
         continue-on-error: true
-        run: node --test tests/mobile-touch-input-contract.test.mjs
+        shell: bash
+        run: |
+          files=(tests/[q-tQ-T]*.test.mjs)
+          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${files[@]}"
 
-      - name: Diagnostic online HUD
+      - name: Diagnostic tests U-Z
         continue-on-error: true
-        run: node --test tests/online-match-runtime.test.mjs
-
-      - name: Diagnostic presentation system
-        continue-on-error: true
-        run: node --test tests/presentation-system.test.mjs
-
-      - name: Diagnostic Rasmus UI contracts
-        continue-on-error: true
-        run: node --test tests/rasmus-hero-cat-regressions.test.mjs
-
-      - name: Diagnostic runtime performance
-        continue-on-error: true
-        run: node --test tests/runtime-performance-contract.test.mjs
-
-      - name: Diagnostic screen-gated UI neighbors
-        continue-on-error: true
-        run: node --test tests/match-ui-guard-regression.test.mjs tests/card-preview-collection-quality.test.mjs tests/hand-ai-tutorial-ui-contract.test.mjs
+        shell: bash
+        run: |
+          files=(tests/[u-zU-Z]*.test.mjs)
+          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${files[@]}"
 
       - name: Run node rules and regression tests
         run: npm run test:node
