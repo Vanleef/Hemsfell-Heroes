@@ -114,7 +114,9 @@ export default function CollectionSelectedDeckPriorityRuntime() {
       if (!signatureChanged || !deckPages.length) return;
 
       const visibleSet = new Set(visiblePages);
-      const eagerCount = constrained() ? 8 : 14;
+      // Only the immediate neighbours are allowed ahead of idle work. Starting
+      // half a deck here was the reason canvases still waited after ten seconds.
+      const eagerCount = constrained() ? 3 : 5;
       const eagerPages = deckPages.filter((page) => !visibleSet.has(page)).slice(0, eagerCount);
       eagerPages.forEach((page) => promoteRemoteCardArtPage(page, 1, false));
       if (eagerPages.length) {

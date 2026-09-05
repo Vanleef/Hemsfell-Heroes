@@ -36,7 +36,7 @@ test("selected collection deck outranks unrelated idle work and reprioritizes on
   assert.match(collectionPriority, /SELECTED_DECK_CARD_SELECTOR/);
   assert.match(collectionPriority, /visiblePages\.forEach\(\(page\) => promoteRemoteCardArtPage\(page, 0, false\)\)/);
   assert.match(collectionPriority, /priority:\s*0,[\s\S]*?concurrency:\s*constrained\(\) \? 1 : 2/);
-  assert.match(collectionPriority, /const eagerCount = constrained\(\) \? 8 : 14/);
+  assert.match(collectionPriority, /const eagerCount = constrained\(\) \? 3 : 5/);
   assert.match(collectionPriority, /priority:\s*1,[\s\S]*?signal:\s*deckController\.signal/);
   assert.match(collectionPriority, /priority:\s*2,[\s\S]*?concurrency:\s*1/);
   assert.match(collectionPriority, /deckController\.abort\(\)/);

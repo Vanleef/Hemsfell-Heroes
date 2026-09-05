@@ -109,6 +109,7 @@ import "./presentation/styles/card-art-loading-terminal.css";
 /* Requested terminal fixes for landing clipping and collection filter containment. */
 import "./presentation/styles/requested-outside-match-fixes-terminal.css";
 import "./presentation/styles/mobile-priority-hero-details.css";
+import "./presentation/styles/qa-art-mobile-corrections.css";
 /* Current tutorial board geometry mirrors the live match composition. */
 import "./presentation/styles/tutorial-current-board-terminal.css";
 /* Keep tutorial diagrams/copy aligned with the current responsive match UI. */

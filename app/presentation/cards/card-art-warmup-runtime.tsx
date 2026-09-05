@@ -119,7 +119,8 @@ function clearHeroCanvasOverride(canvas: HTMLCanvasElement) {
 }
 
 function applyCleanHeroArt(canvas: HTMLCanvasElement, hero: HeroMeta, priority: HeroImagePriority) {
-  if (canvas.closest(".screen-game .game-stage")) {
+  const forceCleanHeroArt = canvas.dataset.preferCleanHeroArt === "true";
+  if (canvas.closest(".screen-game .game-stage") && !forceCleanHeroArt) {
     clearHeroCanvasOverride(canvas);
     return;
   }
@@ -131,7 +132,7 @@ function applyCleanHeroArt(canvas: HTMLCanvasElement, hero: HeroMeta, priority: 
 
   canvas.dataset.hhHeroRequested = hero.id;
   void primeHeroImage(hero, priority).then(() => {
-    if (!canvas.isConnected || numberPage(canvas) !== hero.page || canvas.closest(".screen-game .game-stage")) return;
+    if (!canvas.isConnected || numberPage(canvas) !== hero.page || (canvas.closest(".screen-game .game-stage") && !forceCleanHeroArt)) return;
     if (canvas.dataset.hhHeroRequested !== hero.id) return;
     try {
       canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
@@ -351,7 +352,13 @@ export default function CardArtWarmupRuntime() {
         observedHeroCanvases.delete(canvas);
       }
 
-      if (isMatchMounted()) return;
+      if (isMatchMounted()) {
+        document.querySelectorAll<HTMLCanvasElement>('canvas.remote-card-art[data-prefer-clean-hero-art="true"][data-page]').forEach((canvas) => {
+          const hero = heroFromCanvas(canvas);
+          if (hero) applyCleanHeroArt(canvas, hero, "high");
+        });
+        return;
+      }
 
       document.querySelectorAll<HTMLCanvasElement>("canvas.remote-card-art[data-page]").forEach((canvas) => {
         const hero = heroFromCanvas(canvas);

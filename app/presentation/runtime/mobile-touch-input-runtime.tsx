@@ -12,7 +12,7 @@ const TAP_CONTROL_SELECTOR = [
 const ASCENSION_TEXT_RE = /\bAscens(?:ão|ao)\s+\d+\s*:/i;
 const DRAG_THRESHOLD_PX = 10;
 const TAP_SLOP_PX = 10;
-const TAP_FALLBACK_DELAY_MS = 220;
+const TAP_FALLBACK_DELAY_MS = 32;
 const TAP_MAX_DURATION_MS = 520;
 
 class TouchDataTransfer {
@@ -321,6 +321,10 @@ export default function MobileTouchInputRuntime() {
       const duration = current ? upAt - current.startedAt : 0;
       if (Math.hypot(event.clientX - downX, event.clientY - downY) > TAP_SLOP_PX || duration > TAP_MAX_DURATION_MS) return;
       const sequence = ++tapSequence;
+      // Do not wait for Chrome's delayed compatibility click. Dispatch the
+      // intentional action immediately, then discard only the trusted native
+      // duplicate that follows it.
+      suppressClicksUntil = upAt + 360;
       window.setTimeout(() => {
         if (sequence !== tapSequence || !control.isConnected) return;
         const nativeClickArrived = lastClickControl === control && lastClickAt >= upAt - 8;
@@ -351,7 +355,7 @@ export default function MobileTouchInputRuntime() {
         lastClickControl = control;
         lastClickAt = performance.now();
       }
-      if (performance.now() >= suppressClicksUntil) return;
+      if (!event.isTrusted || performance.now() >= suppressClicksUntil) return;
       const target = event.target instanceof Element ? event.target : null;
       if (!target?.closest(".screen-game")) return;
       event.preventDefault();
