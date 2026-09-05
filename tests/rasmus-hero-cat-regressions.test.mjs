@@ -70,7 +70,7 @@ test('Café Expresso choice popup derives concise summaries from canonical effec
  assert.match(guard,/Ofensividade/);
  assert.match(guard,/Vitalidade/);
  assert.match(guard,/button\.dataset\.effectSummary = "true"/);
- assert.match(guard,/enhanceDecisionChoiceSummaries\(\)/);
+ assert.match(guard,/enhanceDecisionChoiceSummaries\(root\)/);
 });
 
 test('Gato Multidimensional cannot be replaced by another played creature',()=>{

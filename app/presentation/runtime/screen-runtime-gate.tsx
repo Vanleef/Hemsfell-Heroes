@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 
+const CrossScreenUiRuntime = dynamic(() => import("./cross-screen-ui-runtime"), { ssr: false });
 const MatchUiGuard = dynamic(() => import("../match/match-ui-guard"), { ssr: false });
 const MatchRuntimeGate = dynamic(() => import("./match-runtime-gate"), { ssr: false });
 const OnlineMatchRuntime = dynamic(() => import("../../application/online/online-match-runtime"), { ssr: false });
@@ -93,5 +94,7 @@ export default function ScreenRuntimeGate() {
     </>;
   }
   if (screen === "decks") return <>{cardRuntimes}<CollectionSelectedDeckPriorityRuntime /></>;
+  if (screen === "setup") return <>{cardRuntimes}<CrossScreenUiRuntime mode="setup" /></>;
+  if (screen === "menu") return <CrossScreenUiRuntime mode="menu" />;
   return cardRuntimes;
 }

@@ -24,6 +24,7 @@ function harness({ mobile = true, match, draw, render } = {}) {
     }) },
     createImageBitmap: async () => ({ width: 144, height: 202, close() { bitmapsClosed++; } }),
   }, {
+    '../../data/catalog/card-art.generated.json': { default: { version: 'test', widths: [160, 320, 640], pages: [] } },
     'pdfjs-dist': {
       GlobalWorkerOptions: {},
       getDocument: () => ({ promise: Promise.resolve({
@@ -132,7 +133,6 @@ test('match retention protects compact art while allowing detail tiers to expire
   assert.equal(h.renders.length, before + 1, 'old detail art does not become pinned with its compact variant');
   release();
 });
-
 
 test('match background starts only after essentials and cleanup cannot release a newer loading gate', async () => {
   const gate = deferred();

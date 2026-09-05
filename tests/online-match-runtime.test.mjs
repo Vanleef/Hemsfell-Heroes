@@ -3,9 +3,10 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import ts from "typescript";
 
-const [runtime, layout, gate, css, machine, clock, page, packageJson] = await Promise.all([
+const [runtime, layout, screenGate, gate, css, machine, clock, page, packageJson] = await Promise.all([
   readFile(new URL("../app/application/online/online-match-runtime.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+  readFile(new URL("../app/presentation/runtime/screen-runtime-gate.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/presentation/runtime/match-runtime-gate.tsx", import.meta.url), "utf8"),
   readFile(new URL("../app/presentation/styles/online-match-runtime.css", import.meta.url), "utf8"),
   readFile(new URL("../app/api/rooms/machine.ts", import.meta.url), "utf8"),
@@ -24,16 +25,21 @@ test("staged Online runtime is syntactically valid TypeScript", () => {
   assert.deepEqual(errors.map((diagnostic) => ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n")), []);
 });
 
-test("root layout mounts the Online HUD after the canonical match UI runtime", () => {
-  assert.match(layout, /import OnlineMatchRuntime from "\.\/application\/online\/online-match-runtime"/);
-  assert.match(layout, /import "\.\/presentation\/styles\/online-match-runtime\.css"/);
-  assert.match(layout, /<MatchRuntimeGate \/>[\s\S]*?<OnlineMatchRuntime \/>/);
+test("Online HUD is screen-gated after the canonical match runtime instead of mounted globally", () => {
+  assert.match(layout, /<ScreenRuntimeGate \/>/);
+  assert.match(screenGate, /import\("\.\.\/\.\.\/application\/online\/online-match-runtime"\)/);
+  assert.match(screenGate, /screen === "game"[\s\S]*?<MatchRuntimeGate \/>[\s\S]*?<OnlineMatchRuntime \/>/);
   assert.match(gate, /<MatchUiRuntime \/>/);
+  assert.doesNotMatch(layout, /<OnlineMatchRuntime \/>/);
 });
 
-test("Online runtime consumes canonical guest orientation instead of duplicating mirror logic", () => {
-  assert.match(runtime, /orientOnlineGameForRole/);
-  assert.match(runtime, /nextSession\.isHost \? "host" : "guest"/);
+test("Online HUD orients only its tiny public subset and never clones the full game snapshot", () => {
+  assert.match(runtime, /function orientHudGame\(game: OnlineGame, isHost: boolean\)/);
+  assert.match(runtime, /active: game\.active === 0 \? 1 : 0/);
+  assert.match(runtime, /priority: game\.priority \? \{ \.\.\.game\.priority, owner: flipOwner/);
+  assert.match(runtime, /stack: game\.stack\?\.map/);
+  assert.match(runtime, /combatAction: game\.combatAction \?/);
+  assert.doesNotMatch(runtime, /structuredClone/);
   assert.doesNotMatch(runtime, /mirrored\.players\s*=/);
 });
 
@@ -90,6 +96,11 @@ test("Online HUD reuses the board snapshot instead of opening a second polling l
   assert.match(page, /window\.setTimeout\(fn,nextDelay\(\)\)/);
   assert.doesNotMatch(runtime, /fetch\(`\/api\/rooms/);
   assert.doesNotMatch(runtime, /POLL_MS|DISCOVERY_MS|setInterval|setTimeout\(poll/);
+});
+
+test("unchanged online HUD snapshots do not trigger React work", () => {
+  assert.match(runtime, /const signature = hudSignature\(snapshot\.status, snapshot\.game \|\| null, nextSession\.isHost\)/);
+  assert.match(runtime, /if \(current\?\.signature === signature && current\.session\.id === nextSession\.id && current\.session\.isHost === nextSession\.isHost\) return current/);
 });
 
 test("confirmed Online snapshots use one canonical presentation owner for milestones too", () => {

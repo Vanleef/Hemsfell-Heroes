@@ -4,23 +4,24 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
 
-test("presentation runtimes are mounted after card preview and before the game page", () => {
+test("presentation runtimes are card-screen gated and ordered before match presentation", () => {
   const layout = read("app/layout.tsx");
+  const screenGate = read("app/presentation/runtime/screen-runtime-gate.tsx");
   const gate = read("app/presentation/runtime/match-runtime-gate.tsx");
-  const glossary = layout.indexOf("<GameGlossaryRuntime />");
-  const preview = layout.indexOf("<CardPreviewRuntime />");
-  const matchGate = layout.indexOf("<MatchRuntimeGate />");
-  const children = layout.indexOf("{children}");
+  const glossary = screenGate.indexOf("<GameGlossaryRuntime />");
+  const preview = screenGate.indexOf("<CardPreviewRuntime />");
+  const matchGate = screenGate.indexOf("<MatchRuntimeGate />");
   const bridge = gate.indexOf("<PresentationEventBridge />");
   const interaction = gate.indexOf("<PresentationInteractionRuntime />");
   const runtime = gate.indexOf("<GamePresentationRuntime />");
-  assert.ok(glossary >= 0 && preview > glossary && matchGate >= 0 && children > matchGate);
+  assert.ok(glossary >= 0 && preview > glossary && matchGate > preview);
   assert.ok(bridge >= 0 && interaction > bridge && runtime > interaction);
+  assert.match(layout, /<ScreenRuntimeGate \/>/);
   assert.doesNotMatch(layout, /GameActionCuesRuntime/);
   assert.ok(layout.indexOf('import "./presentation/styles/game-presentation.css"') < layout.indexOf('import "./presentation/styles/command-bar-fixes.css"'));
 });
 
-test("canonical glossary feeds the legacy semantic spans used by card preview", () => {
+test("canonical glossary feeds semantic spans used by card preview", () => {
   const glossary = read("app/data/content/game-glossary.ts");
   const runtime = read("app/presentation/glossary/game-glossary-runtime.tsx");
   assert.match(glossary, /export function gameGlossaryEntry/);

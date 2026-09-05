@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), "utf8");
 
-const [page, deadlineClock, guard, matchRuntime, terrainRuntime, cardArt, listCss, engine, runtimeGate, aiRuntime, aiWorkerClient, aiAdapter, terminalCss] = await Promise.all([
+const [page, deadlineClock, guard, matchRuntime, terrainRuntime, cardArt, listCss, engine, runtimeGate, screenGate, aiRuntime, aiWorkerClient, aiAdapter, terminalCss] = await Promise.all([
   read("app/page.tsx"),
   read("app/presentation/runtime/deadline-clock.tsx"),
   read("app/presentation/match/match-ui-guard.tsx"),
@@ -14,6 +14,7 @@ const [page, deadlineClock, guard, matchRuntime, terrainRuntime, cardArt, listCs
   read("app/presentation/styles/card-list-scrollviews.css"),
   read("app/rules-engine/engine-base.mjs"),
   read("app/presentation/runtime/match-runtime-gate.tsx"),
+  read("app/presentation/runtime/screen-runtime-gate.tsx"),
   read("app/rules-engine/ai-system/runtime.ts"),
   read("app/application/ai/browser-ai-worker.ts"),
   read("app/rules-engine/ai-system/controller.ts"),
@@ -32,12 +33,13 @@ test("global match guards do not poll the DOM for expired priority", () => {
   assert.match(guard, /requestAnimationFrame\(sync\)/);
 });
 
-test("heavy presentation runtimes are dynamically loaded only during a match", () => {
+test("heavy presentation runtimes are dynamically loaded only while ScreenRuntimeGate owns a match", () => {
   assert.match(runtimeGate, /dynamic\(\(\) => import/);
-  assert.match(runtimeGate, /data-match-active/);
-  assert.match(runtimeGate, /if \(!active\) return null/);
   assert.match(runtimeGate, /presentation-liveness-runtime/);
   assert.match(runtimeGate, /presentation-memory-runtime/);
+  assert.match(screenGate, /dynamic\(\(\) => import\("\.\/match-runtime-gate"\)/);
+  assert.match(screenGate, /if \(screen === "game"\)[\s\S]*?<MatchRuntimeGate \/>/);
+  assert.doesNotMatch(runtimeGate, /MutationObserver|data-match-active/);
 });
 
 test("geometry observers ignore their own inline style writes", () => {
@@ -46,7 +48,9 @@ test("geometry observers ignore their own inline style writes", () => {
   assert.doesNotMatch(terrainRuntime, /characterData:\s*true/);
 });
 
-test("PDF cards use bounded range loading and release decoded page resources", () => {
+test("static card art is preferred while bounded PDF fallback releases decoded resources", () => {
+  assert.match(cardArt, /STATIC_ART_ENABLED/);
+  assert.match(cardArt, /staticCardArtSrcSet/);
   assert.match(cardArt, /disableRange:\s*false/);
   assert.match(cardArt, /disableAutoFetch:\s*true/);
   assert.match(cardArt, /MAX_CACHED_PAGE_PROMISES\s*=\s*12/);

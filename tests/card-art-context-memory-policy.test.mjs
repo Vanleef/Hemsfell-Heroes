@@ -11,12 +11,12 @@ const layout = readFileSync(new URL("../app/layout.tsx", import.meta.url), "utf8
 
 test("art queue exposes four strict tiers and lower outside-match concurrency", () => {
   assert.match(art, /RemoteCardArtPriority = 0 \| 1 \| 2 \| 3/);
-  assert.match(art, /visible 1, nearby 2, idle\/background 3/);
   assert.match(art, /visibilityCallbacks\.get\(entry\.target\)\?\.\(2\)/);
   assert.match(art, /visibilityCallbacks\.get\(entry\.target\)\?\.\(1\)/);
   assert.match(art, /return constrained \? 1 : 2/);
   assert.match(art, /if \(isMatchContext\(\)\) return constrained \? 2 : 3/);
   assert.match(art, /priority < rasterQueue\[bestIndex\]\.priority/);
+  assert.match(art, /STATIC_ART_ENABLED/);
 });
 
 test("outside-match LRU is explicitly smaller and mobile is more aggressive", () => {
@@ -81,11 +81,11 @@ test("presentation clones are temporary, cleaned at idle, on timeout and on matc
 
 test("warmup context mapping matches the app screen model and cleanup is abortable", () => {
   for (const pair of [
-    ['screen-game', 'match'],
-    ['screen-decks', 'collection'],
-    ['screen-setup', 'setup'],
-    ['screen-tutorial', 'tutorial'],
-    ['screen-menu', 'menu'],
+    ["screen-game", "match"],
+    ["screen-decks", "collection"],
+    ["screen-setup", "setup"],
+    ["screen-tutorial", "tutorial"],
+    ["screen-menu", "menu"],
   ]) {
     assert.ok(warmup.includes(`app.classList.contains("${pair[0]}")`) && warmup.includes(`return "${pair[1]}"`));
   }

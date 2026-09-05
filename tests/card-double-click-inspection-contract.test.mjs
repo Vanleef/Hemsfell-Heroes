@@ -2,16 +2,17 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 
-const layout = fs.readFileSync("app/layout.tsx", "utf8");
+const gate = fs.readFileSync("app/presentation/runtime/screen-runtime-gate.tsx", "utf8");
 const runtime = fs.readFileSync("app/presentation/cards/card-double-click-inspect-runtime.tsx", "utf8");
 
-test("double-click inspection runtime mounts before legacy card preview runtime", () => {
-  const doubleClickImport = layout.indexOf('import CardDoubleClickInspectRuntime from "./presentation/cards/card-double-click-inspect-runtime"');
-  const previewImport = layout.indexOf('import CardPreviewRuntime from "./presentation/cards/card-preview-runtime"');
-  const doubleClickMount = layout.indexOf("<CardDoubleClickInspectRuntime />");
-  const previewMount = layout.indexOf("<CardPreviewRuntime />");
+test("double-click inspection runtime is card-screen gated before card preview", () => {
+  const doubleClickImport = gate.indexOf('import("../cards/card-double-click-inspect-runtime")');
+  const previewImport = gate.indexOf('import("../cards/card-preview-runtime")');
+  const doubleClickMount = gate.indexOf("<CardDoubleClickInspectRuntime />");
+  const previewMount = gate.indexOf("<CardPreviewRuntime />");
   assert.ok(doubleClickImport >= 0 && previewImport > doubleClickImport);
   assert.ok(doubleClickMount >= 0 && previewMount > doubleClickMount);
+  assert.match(gate, /const cardRuntimes = carriesCards\(screen\)/);
 });
 
 test("legacy press-and-hold is suppressed before document capture sees pointerdown", () => {
