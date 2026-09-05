@@ -2,117 +2,14 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import "./presentation/styles/base/brand.css";
-import "./presentation/styles/match-ui.css";
-import "./presentation/styles/online-match-runtime.css";
-import "./presentation/styles/game-presentation.css";
 import "./presentation/styles/tutorial.css";
-/* Keep the command-bar typography as the final legacy CSS authority. */
-import "./presentation/styles/command-bar-fixes.css";
-/* Single responsive authority for the complete match-table composition. */
-import "./presentation/styles/match-reference.css";
-/* Final, isolated authority for the canonical in-match hero card. */
-import "./presentation/styles/hero-panel-reference.css";
-/* Small continuation of the same canonical positioning model. */
-import "./presentation/styles/hero-panel-reference-tuning.css";
-/* Final narrow geometry pass for compact/expanded hero breathing room. */
-import "./presentation/styles/hero-panel-breathing-room.css";
-/* Compact portrait level badge and readable progress/evolve spacing. */
-import "./presentation/styles/hero-panel-compact-fix.css";
-/* Last authority for the visible NÍVEL badge in compact and expanded panels. */
-import "./presentation/styles/hero-panel-level-final.css";
-/* External geometry only: hero panels are overlays and never size board tracks. */
-import "./presentation/styles/hero-panel-overlay-isolation.css";
-/* Restored commit 22b1999b canonical refinement. */
-import "./presentation/styles/hero-panel-final-refinement.css";
-/* Requested polish only: dimensions/offsets, never a replacement layout model. */
-import "./presentation/styles/hero-panel-requested-polish.css";
-/* Latest screenshot corrections: single progress label and terrain clearance. */
-import "./presentation/styles/hero-panel-screenshot-fixes.css";
-/* Interaction-only authority: evolution tooltip stays outside the hero panel. */
-import "./presentation/styles/hero-panel-tooltip-final.css";
-/* Final geometry authority: safe margins, contained compact footer and owner terrain. */
-import "./presentation/styles/hero-panel-layout-final.css";
-/* Terminal balance: edge-to-edge hero artwork and readable compact ability rows. */
-import "./presentation/styles/hero-panel-visual-balance-final.css";
-/* True terminal polish: readable progress, stable terrain drop footprint and hero-art identity. */
-import "./presentation/styles/hero-panel-polish-terminal.css";
-/* Drag-cycle invariant: terrain targets remain visible while React toggles can-drop. */
-import "./presentation/styles/terrain-drag-stability.css";
-/* Final responsive type/space distribution for expanded abilities and the match header. */
-import "./presentation/styles/match-readability-final.css";
-/* Final interaction state: stable EVOLUIR swap, actionable aura and always-visible active effects. */
-import "./presentation/styles/hero-panel-interaction-status-final.css";
-/* Specificity guard: state-qualified legacy rules may never hide active hero effects again. */
-import "./presentation/styles/hero-status-visibility-final.css";
-/* Requested terminal polish: tooltip, larger HUD copy and phase-orb affordance. */
-import "./presentation/styles/requested-match-polish-final.css";
-/* Absolute terminal authority for tooltip stacking and active phase-orb readability. */
-import "./presentation/styles/match-overlay-visibility-final.css";
-/* Body-level evolution criteria portal escapes every match-board stacking context. */
-import "./presentation/styles/evolution-tooltip-portal-final.css";
-/* Regression guard: ability help stays visible and local hero progress stays above the compact card. */
-import "./presentation/styles/hero-ability-progress-regression-final.css";
-/* Every floating tooltip/portal gets the final visual layer over cards and overlays. */
+/* Shared card/tooltip surfaces also render in collection, setup and inspectors. */
 import "./presentation/styles/global-tooltip-layer-final.css";
-/* Final gameplay feedback authority: evolution, defender lane, priority center and phase copy. */
-import "./presentation/styles/match-feedback-final.css";
-/* Contextual phase CTA: next-phase copy, state feedback and responsive hit area. */
-import "./presentation/styles/phase-orb-copy-final.css";
-/* Blocking combat decisions receive spotlight feedback; level-up never swaps to a scaled clone. */
-import "./presentation/styles/critical-flow-feedback.css";
-/* Large pile artwork plus high-contrast footer labels/counts. */
-import "./presentation/styles/side-piles-readability-final.css";
-/* Canonical ability-row contract: numbers, description and external kind label. */
-import "./presentation/styles/hero-ability-layout-contract.css";
-/* Paint one shared capsule around number + description only; kind remains outside. */
-import "./presentation/styles/hero-ability-capsule-structure-final.css";
-/* Absolute final authority for transient priority layers, level-up motion and field hover stacking. */
-import "./presentation/styles/match-interaction-terminal.css";
-/* Final visual authority: phase CTA pseudo-elements and pile thumbnail crop. */
-import "./presentation/styles/match-visual-terminal.css";
-/* Terminal centering authority for phase tracker markers and phase action copy. */
-import "./presentation/styles/match-centering-final.css";
-/* Target spotlight, Mulligan tooltip authority and portrait-anchored hero controls. */
-import "./presentation/styles/targeting-hero-ui-terminal.css";
-/* Global hero/card status overflow and top-of-panel progression authority. */
-import "./presentation/styles/hero-status-overlay.css";
-/* Merge regression guard: ability tooltip visibility and player progress sit outside the card. */
-import "./presentation/styles/hero-hud-merge-regression-final.css";
-/* Terminal correction: clickable ability ownership, tooltip placement and compact level meter. */
-import "./presentation/styles/hero-ability-progress-tooltip-terminal.css";
-/* Absolute final authority for a materially readable local EVOLUIR label. */
-import "./presentation/styles/hero-evolve-label-terminal.css";
-/* Mobile touch density/input authority. */
-import "./presentation/styles/mobile-touch-layout-terminal.css";
-/* Mobile-only card-local icon sizing; keep painted controls proportional to cards. */
-import "./presentation/styles/mobile-card-icon-scale-terminal.css";
-/* Final hero status geometry: portrait-only compact cards and mirrored active-effect docks. */
-import "./presentation/styles/hero-active-effects-anchor-terminal.css";
-/* Screenshot/request authority: stable icon anchors, compact transient HUD and mobile dialogs. */
-import "./presentation/styles/match-requested-corrections-terminal.css";
-/* Final collision/anchor authority: priority pair and battlefield card-local overlays. */
-import "./presentation/styles/priority-card-anchor-terminal.css";
-/* Final short-mobile hero spacing: keep ability shortcuts clear of progression strips. */
-import "./presentation/styles/mobile-hero-ability-spacing-terminal.css";
-/* Final panel-relative authority: level-progress copy grows with the actual meter width. */
-import "./presentation/styles/hero-progress-text-fit-terminal.css";
-/* Terminal pile footer authority: backdrop follows text bounds, never the card panel. */
-import "./presentation/styles/side-pile-text-shadow-terminal.css";
-/* Responsive interlaced hand, stable card-local icon behavior and one AI-thinking panel. */
-import "./presentation/styles/hand-ai-ui-terminal.css";
-/* Higher-specificity pair guard so PILHA never forces the AI copy into ellipsis. */
-import "./presentation/styles/ai-thinking-panel-terminal.css";
-/* Stable target orientation, animation icon gating, revealed badge and hand-neighbour peek. */
-import "./presentation/styles/card-interaction-stability-terminal.css";
-/* Static placeholder authority for PDF-backed art while shared rasters are prepared. */
 import "./presentation/styles/card-art-loading-terminal.css";
-/* Requested terminal fixes for landing clipping and collection filter containment. */
 import "./presentation/styles/requested-outside-match-fixes-terminal.css";
-import "./presentation/styles/mobile-priority-hero-details.css";
 import "./presentation/styles/qa-art-mobile-corrections.css";
 /* Current tutorial board geometry mirrors the live match composition. */
 import "./presentation/styles/tutorial-current-board-terminal.css";
-/* Keep tutorial diagrams/copy aligned with the current responsive match UI. */
 import "./presentation/styles/tutorial-current-ui-terminal.css";
 import OnlineReconnectRuntime from "./application/online/online-reconnect-runtime";
 import GameGlossaryRuntime from "./presentation/glossary/game-glossary-runtime";
