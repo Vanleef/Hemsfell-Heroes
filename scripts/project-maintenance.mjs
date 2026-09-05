@@ -28,12 +28,17 @@ const assertOrdered = (source, tokens, label) => {
 
 const requiredFiles = [
   "app/page.tsx",
+  "app/home-shell.tsx",
+  "app/home-client.tsx",
   "app/data/catalog/cards.generated.json",
+  "app/data/catalog/card-art.generated.json",
   "app/globals.css",
   "app/presentation/styles/match-ui.css",
+  "app/presentation/styles/match-runtime-bundle.css",
   "app/presentation/styles/game-presentation.css",
   "app/presentation/styles/tutorial.css",
   "app/presentation/match/match-ui-runtime.tsx",
+  "app/presentation/runtime/screen-runtime-gate.tsx",
   "app/presentation/runtime/match-runtime-gate.tsx",
   "app/presentation/runtime/game-presentation-runtime.tsx",
   "app/presentation/match/match-ui-guard.tsx",
@@ -97,13 +102,17 @@ async function validateCssImports(path) {
 
 await validateCssImports("app/globals.css");
 await validateCssImports("app/presentation/styles/match-ui.css");
+await validateCssImports("app/presentation/styles/match-runtime-bundle.css");
 
-const [labStructure, matchStructure, responseStructure, layoutStructure, matchRuntimeGate] = await Promise.all([
+const [labStructure, matchStructure, responseStructure, layoutStructure, screenRuntimeGate, matchRuntimeGate, matchRuntimeBundle, pageEntry] = await Promise.all([
   read("app/presentation/styles/board/lab.css"),
   read("app/presentation/styles/match-ui.css"),
   read("app/presentation/styles/response-window.css"),
   read("app/layout.tsx"),
+  read("app/presentation/runtime/screen-runtime-gate.tsx"),
   read("app/presentation/runtime/match-runtime-gate.tsx"),
+  read("app/presentation/styles/match-runtime-bundle.css"),
+  read("app/page.tsx"),
 ]);
 
 assertOrdered(labStructure, [
@@ -137,29 +146,52 @@ assertOrdered(responseStructure, [
 
 assertOrdered(layoutStructure, [
   'import "./globals.css";',
-  'import "./presentation/styles/match-ui.css";',
-  'import "./presentation/styles/online-match-runtime.css";',
-  'import MatchUiGuard from "./presentation/match/match-ui-guard";',
-  'import MatchRuntimeGate from "./presentation/runtime/match-runtime-gate";',
+  'import "./presentation/styles/base/brand.css";',
+  'import "./presentation/styles/tutorial.css";',
+  'import ScreenRuntimeGate from "./presentation/runtime/screen-runtime-gate";',
+  '<ScreenRuntimeGate />',
+], "app/layout.tsx shared runtime order");
+
+if (layoutStructure.includes('import "./presentation/styles/match-reference.css";')) {
+  fail("app/layout.tsx must not eagerly import the match-only cascade.");
+}
+
+assertOrdered(screenRuntimeGate, [
+  'const MatchUiGuard = dynamic(',
+  'const MatchRuntimeGate = dynamic(',
   '<MatchUiGuard />',
   '<MatchRuntimeGate />',
-], "app/layout.tsx runtime order");
+], "app/presentation/runtime/screen-runtime-gate.tsx match order");
 
 assertOrdered(matchRuntimeGate, [
+  'import "../styles/match-runtime-bundle.css";',
   'const MatchUiRuntime = dynamic(',
   'const PresentationEventBridge = dynamic(',
   '<MatchUiRuntime />',
   '<PresentationEventBridge />',
 ], "app/presentation/runtime/match-runtime-gate.tsx runtime order");
 
-for (const path of ["app/page.tsx", "app/rules-engine/effects.mjs", "app/rules-engine/engine.mjs"]) {
+assertOrdered(matchRuntimeBundle, [
+  '@import "./match-ui.css";',
+  '@import "./online-match-runtime.css";',
+  '@import "./game-presentation.css";',
+  '@import "./command-bar-fixes.css";',
+  '@import "./match-reference.css";',
+  '@import "./mobile-priority-hero-details.css";',
+], "match-only CSS bundle order");
+
+if (!pageEntry.includes('import HomeShell from "./home-shell";') || pageEntry.includes('"use client"')) {
+  fail("app/page.tsx must remain the lightweight server route entry backed by HomeShell.");
+}
+
+for (const path of ["app/home-client.tsx", "app/rules-engine/effects.mjs", "app/rules-engine/engine.mjs"]) {
   const source = await read(path);
   if (/\.\.\.sourceId\b/.test(source)) fail(`${path} contains the malformed legacy ...sourceId shorthand.`);
 }
 
 notes.push(`${scriptFiles.length} reusable executable scripts remain under scripts/`);
 notes.push(`${workflowFiles.length} canonical GitHub workflow(s) remain`);
-notes.push("runtime/build source and presentation cascade are canonical; no mirror or source-mutating patch chain is executed");
+notes.push("route shell, screen-gated runtimes, match-only CSS and presentation cascade are canonical");
 
 if (failures.length) {
   console.error("Project maintenance checks failed:\n" + failures.map((item) => ` - ${item}`).join("\n"));
