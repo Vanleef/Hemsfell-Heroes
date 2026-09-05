@@ -12,10 +12,6 @@ import "./presentation/styles/qa-art-mobile-corrections.css";
 import "./presentation/styles/tutorial-current-board-terminal.css";
 import "./presentation/styles/tutorial-current-ui-terminal.css";
 import OnlineReconnectRuntime from "./application/online/online-reconnect-runtime";
-import GameGlossaryRuntime from "./presentation/glossary/game-glossary-runtime";
-import CardDoubleClickInspectRuntime from "./presentation/cards/card-double-click-inspect-runtime";
-import CardPreviewRuntime from "./presentation/cards/card-preview-runtime";
-import CardArtWarmupRuntime from "./presentation/cards/card-art-warmup-runtime";
 import AssetContextUiCleanupRuntime from "./presentation/cards/asset-context-ui-cleanup-runtime";
 import ScreenRuntimeGate from "./presentation/runtime/screen-runtime-gate";
 
@@ -40,13 +36,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return <html lang="pt-BR" suppressHydrationWarning>
     <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-      <CardArtWarmupRuntime />
       <AssetContextUiCleanupRuntime />
       <ScreenRuntimeGate />
       <OnlineReconnectRuntime />
-      <GameGlossaryRuntime />
-      <CardDoubleClickInspectRuntime />
-      <CardPreviewRuntime />
       {children}
     </body>
   </html>;
