@@ -32,14 +32,18 @@ test("responsive hand runtime mounts only with match runtimes", () => {
   assert.match(runtime, /Math\.max\(0\.78, 1 - overflow \* 0\.035\)/);
 });
 
-test("hand cost and creature stats are derived from the existing authoritative card summary", () => {
-  assert.match(runtime, /card-tooltip > em/);
+test("hand cost and creature stats come from live badges plus canonical catalog fallback", () => {
+  assert.match(runtime, /catalogCardByPage\(cardPage\(card\)\)/);
+  assert.match(runtime, /querySelector\(":scope > \.effective-cost"\)/);
+  assert.match(runtime, /querySelector\(":scope > \.live-atk"\)/);
+  assert.match(runtime, /querySelector\(":scope > \.live-hp"\)/);
+  assert.doesNotMatch(runtime, /card-tooltip > em|const summary =/);
   assert.match(runtime, /kind: "cost" \| "atk" \| "hp"/);
   assert.match(runtime, /hh-hand-metric hh-hand-\$\{kind\}/);
   assert.match(runtime, /ensureMetric\(card, "cost", cost\)/);
-  assert.match(runtime, /ensureMetric\(card, "atk", stats\[1\]\)/);
-  assert.match(runtime, /ensureMetric\(card, "hp", stats\[2\]\)/);
-  assert.match(runtime, /\^Criatura\\b/i);
+  assert.match(runtime, /ensureMetric\(card, "atk", atk\)/);
+  assert.match(runtime, /ensureMetric\(card, "hp", hp\)/);
+  assert.match(runtime, /catalog\?\.type === "Criatura"/);
   assert.match(css, /hh-hand-cost[\s\S]*?inset-block-start:\s*3\.8%/);
   assert.match(css, /hh-hand-atk[\s\S]*?inset-inline-start:\s*4\.2%[\s\S]*?inset-block-end:\s*3\.8%/);
   assert.match(css, /hh-hand-hp[\s\S]*?inset-inline-end:\s*4\.2%[\s\S]*?inset-block-end:\s*3\.8%/);
