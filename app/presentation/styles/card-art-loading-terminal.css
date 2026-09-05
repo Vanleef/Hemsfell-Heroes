@@ -1,9 +1,10 @@
 @import "./card-hud-size-tuning-terminal.css";
 
 /*
- * Terminal loading authority for official PDF-backed card art.
- * Keep the placeholder static: dozens of animated skeletons cost more than they help,
- * especially on mobile collection grids.
+ * Terminal loading authority for official card art.
+ * Production uses generated WebP images; PDF/canvas remains the fallback.
+ * Keep placeholders static because animated skeletons multiply compositor work
+ * in the collection and on low-end mobile devices.
  */
 
 html body .remote-card-art {
@@ -12,6 +13,16 @@ html body .remote-card-art {
     radial-gradient(circle at 50% 38%, rgba(92,126,139,.18), transparent 46%),
     linear-gradient(180deg, #14242a 0%, #0b151a 58%, #091116 100%);
   background-color: #0b151a;
+}
+
+html body img.remote-card-art-static {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  image-rendering: auto;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 
 html body .remote-card-art:not([data-loaded="true"]) {
@@ -24,9 +35,6 @@ html body .remote-card-art[data-loaded="true"] {
   box-shadow: none;
 }
 
-/* A compact cached thumbnail may be shown for a few frames before the detail
-   raster replaces it. Never blur/filter that thumbnail: readable card text is
-   preferable to decorative loading effects. */
 html body .remote-card-art[data-art-quality="preview"] {
   image-rendering: auto;
 }
