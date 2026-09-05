@@ -121,7 +121,6 @@ const matchArtPreloadPlan=(state:Game)=>{
   ...player.support,
   ...(player.terrain?[player.terrain]:[]),
  ]);
- const topCards=state.players.flatMap(player=>player.deck.slice(0,2));
  const allMatchCards=state.players.flatMap(player=>[
   ...player.hand,
   ...player.deck,
@@ -133,7 +132,10 @@ const matchArtPreloadPlan=(state:Game)=>{
   ...player.obscuro,
  ]);
  return{
-  criticalPages:[...heroPages,...visibleCards.map(card=>card.page),...topCards.map(card=>card.page),...state.players.flatMap(player=>player.extraDeck.map(card=>card.page))],
+  // The board is usable as soon as the portraits, opening hands and permanent
+  // cards are painted. Deck/extra-deck art stays cached, but must never delay
+  // the first actionable turn on a phone.
+  criticalPages:[...heroPages,...visibleCards.map(card=>card.page)],
   backgroundPages:allMatchCards.map(card=>card.page),
  };
 };
