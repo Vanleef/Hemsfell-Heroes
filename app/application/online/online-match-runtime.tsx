@@ -51,6 +51,12 @@ type RoomSnapshot = {
   createdAt?: number;
   game?: OnlineGame | null;
 };
+type HudView = {
+  session: Session;
+  status: string;
+  game: OnlineGame | null;
+  signature: string;
+};
 
 const ONLINE_ROOM_SNAPSHOT_EVENT = "hemsfell:online-room-snapshot";
 const ACTION_SURFACE_SELECTORS = [
@@ -91,11 +97,8 @@ const INTERACTION_NAMES: Record<string, string> = {
 
 const flipOwner = (owner: 0 | 1 | null | undefined) => owner == null ? owner : owner === 0 ? 1 : 0;
 
-/**
- * The board already orients the full authoritative game for the guest. The HUD
- * only needs a tiny public subset, so avoid structuredClone/orientation of the
- * complete decks, hands and board on every 450-800ms room snapshot.
- */
+/** The board already orients the full authoritative game for the guest. The
+ * HUD only needs a tiny public subset, so avoid cloning decks/hands/board. */
 function orientHudGame(game: OnlineGame, isHost: boolean): OnlineGame {
   if (isHost) return game;
   return {
@@ -108,6 +111,31 @@ function orientHudGame(game: OnlineGame, isHost: boolean): OnlineGame {
     combatAction: game.combatAction ? { ...game.combatAction, attackerOwner: flipOwner(game.combatAction.attackerOwner) as 0 | 1 } : null,
     onlineFinalization: game.onlineFinalization ? { ...game.onlineFinalization, owner: flipOwner(game.onlineFinalization.owner) as 0 | 1 | undefined } : undefined,
   };
+}
+
+function hudSignature(status: string, game: OnlineGame | null, isHost: boolean) {
+  if (!game) return `${status}|none|${isHost ? 1 : 0}`;
+  const priority = game.priority;
+  const stack = game.stack || [];
+  const combat = game.combatAction;
+  return [
+    status,
+    isHost ? 1 : 0,
+    game.active,
+    game.phase || "",
+    game.round || 0,
+    game.winner ?? "",
+    priority?.model || "",
+    priority?.mode || "",
+    priority?.owner ?? "",
+    priority?.window || "",
+    priority?.interactionState || "",
+    (priority?.commandTypes || []).join(","),
+    priority?.stackDepth || 0,
+    stack.map((frame) => `${frame.id || ""}:${frame.controller ?? ""}:${frame.label || frame.kind || ""}`).join(";"),
+    combat ? `${combat.attackerOwner}:${combat.attackerUid || ""}:${combat.defenderUid || ""}:${combat.targetHero ? 1 : 0}:${combat.stage || ""}` : "",
+    game.onlineFinalization ? `${game.onlineFinalization.owner ?? ""}:${game.onlineFinalization.stage || ""}` : "",
+  ].join("|");
 }
 
 function combatStatus(game: OnlineGame) {
@@ -139,9 +167,8 @@ function OnlinePriorityHud({ game }: { game: OnlineGame }) {
 }
 
 export default function OnlineMatchRuntime() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [room, setRoom] = useState<RoomSnapshot | null>(null);
-  const [game, setGame] = useState<OnlineGame | null>(null);
+  const [view, setView] = useState<HudView | null>(null);
+  const game = view?.game ?? null;
   const commandTypesKey = (game?.priority?.commandTypes || []).join(",");
 
   useEffect(() => {
@@ -150,16 +177,23 @@ export default function OnlineMatchRuntime() {
       const nextSession = detail?.session;
       const snapshot = detail?.room;
       if (!nextSession || typeof nextSession.id !== "string" || !snapshot || snapshot.id !== nextSession.id || !Number.isFinite(Number(snapshot.revision))) return;
-      setSession(nextSession);
-      setRoom(snapshot);
-      setGame(snapshot.game ? orientHudGame(snapshot.game, nextSession.isHost) : null);
+      const signature = hudSignature(snapshot.status, snapshot.game || null, nextSession.isHost);
+      setView((current) => {
+        if (current?.signature === signature && current.session.id === nextSession.id && current.session.isHost === nextSession.isHost) return current;
+        return {
+          session: nextSession,
+          status: snapshot.status,
+          game: snapshot.game ? orientHudGame(snapshot.game, nextSession.isHost) : null,
+          signature,
+        };
+      });
     };
     window.addEventListener(ONLINE_ROOM_SNAPSHOT_EVENT, consume);
     return () => window.removeEventListener(ONLINE_ROOM_SNAPSHOT_EVENT, consume);
   }, []);
 
   useEffect(() => {
-    const started = room?.status === "started" && game?.winner == null;
+    const started = view?.status === "started" && game?.winner == null;
     const owner = game?.priority?.owner;
     const blocked = !!started && owner !== 0;
     const board = document.querySelector<HTMLElement>(".screen-game .hs-board");
@@ -180,8 +214,8 @@ export default function OnlineMatchRuntime() {
       board?.removeAttribute("data-online-interaction-state");
       board?.removeAttribute("data-online-command-types");
     };
-  }, [room?.status, game?.winner, game?.priority?.owner, game?.priority?.interactionState, commandTypesKey]);
+  }, [view?.status, game?.winner, game?.priority?.owner, game?.priority?.interactionState, commandTypesKey]);
 
-  if (!session || !room || !game || room.status !== "started" || game.winner != null) return null;
+  if (!view || !game || view.status !== "started" || game.winner != null) return null;
   return <OnlinePriorityHud game={game} />;
 }
