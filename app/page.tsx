@@ -1,5 +1,6 @@
 "use client";
 
+import { HeroDetailsTrigger } from "./match/hero-details-trigger";
 import CardMarkerCounter from "./presentation/runtime/card-marker-counter-runtime";
 
 import { useDeferredValue, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
@@ -22,6 +23,7 @@ import { MAIN_DECK_SIZE, defaultUserDeck, disabledDeckCardIds as sharedDisabledD
 import type { UserDeck } from "./model/decks/user-deck.mjs";
 import { CombatAnimation } from "./match/combat-animation";
 import { PriorityControlToggle, ResponseModal } from "./match/priority-ui";
+import { useResponsePresentationReady } from "./match/use-response-presentation-ready";
 import { usePriorityControl } from "./match/use-priority-control";
 import { MatchResultOverlay } from "./presentation/match/match-result-overlay";
 import { DeadlineText, MatchTurnClock, useDeadlineSeconds } from "./presentation/runtime/deadline-clock";
@@ -131,7 +133,7 @@ const matchArtPreloadPlan=(state:Game)=>{
   ...player.obscuro,
  ]);
  return{
-  criticalPages:[...heroPages,...visibleCards.map(card=>card.page),...topCards.map(card=>card.page)],
+  criticalPages:[...heroPages,...visibleCards.map(card=>card.page),...topCards.map(card=>card.page),...state.players.flatMap(player=>player.extraDeck.map(card=>card.page))],
   backgroundPages:allMatchCards.map(card=>card.page),
  };
 };
@@ -933,9 +935,18 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
  const localPriorityOptions=useMemo(()=>game?usableAcceleratedResponses(game,0):[],[game]);
  const localHeroPriorityOptions=useMemo(()=>game?heroPriorityResponses(game,0):[],[game]);
  const presentationBlocked=presentationBusy||!!visualFx||visualFxQueue.length>0||shufflingDeck!==null;
- const visibleResponseWindow=presentationBlocked?null:responseWindow;
+ const responseKey=responseWindow?`${responseWindow.actor}:${responseWindow.responder}:${responseWindow.passes??0}:${responseWindow.action}:${responseWindow.deadline??0}`:null;
+ const responsePresentationReady=useResponsePresentationReady(responseKey,presentationBlocked);
+ const visibleResponseWindow=responsePresentationReady?responseWindow:null;
+ const [responseFeedbackState,setResponseFeedbackState]=useState<{key:string|null;text:string}>({key:null,text:""});
+ const responseFeedback=responseFeedbackState.key===responseKey?responseFeedbackState.text:"";
+ const setResponseFeedback=(text:string)=>setResponseFeedbackState({key:responseKey,text});
+ const sourceCommand=game?.priorityStack?.at(-1)?.command??game?.pendingAction;
+ const sourcePlayer=game&&responseWindow?game.players[responseWindow.actor]:undefined;
+ const sourceUnits=sourcePlayer?[...sourcePlayer.board,...sourcePlayer.support,...(sourcePlayer.terrain?[sourcePlayer.terrain]:[])].filter(unit=>unit.name===responseWindow?.action):[];
+ const responseSourceId=typeof sourceCommand?.sourceId==="string"?sourceCommand.sourceId:typeof sourceCommand?.cardId==="string"?sourceCommand.cardId:sourceUnits.length===1?sourceUnits[0].uid:undefined;
  const priorityInteractionActive=!!(game?.pendingResponse||responseWindow||game?.pendingAction||game?.priorityStack?.length||(combatAction&&["declared","priority"].includes(combatAction.stage))||targeting?.response);
- const priorityControl=usePriorityControl({interactionActive:priorityInteractionActive,pendingResponse:visibleResponseWindow,hasUsableResponse:localPriorityOptions.length>0||localHeroPriorityOptions.length>0,getCurrentPending:()=>presentationBlocked?null:currentGameRef.current?.pendingResponse??null,onAutoPass:()=>passPriorityWindow(0,true)});
+ const priorityControl=usePriorityControl({interactionActive:priorityInteractionActive,pendingResponse:visibleResponseWindow,hasUsableResponse:localPriorityOptions.length>0||localHeroPriorityOptions.length>0,getCurrentPending:()=>!responsePresentationReady?null:currentGameRef.current?.pendingResponse??null,onAutoPass:()=>passPriorityWindow(0,true)});
  useEffect(()=>{const pending=game?.pendingResponse;if(presentationBusy||mode!=="bot"||pending?.responder!==0||!pending.deadline)return;const key=`${pending.actor}:${pending.responder}:${pending.passes??0}:${pending.action}:${pending.deadline}`;const expire=()=>{const current=currentGameRef.current?.pendingResponse,currentKey=current?`${current.actor}:${current.responder}:${current.passes??0}:${current.action}:${current.deadline??0}`:"";if(currentKey===key)void passPriorityWindow(0,true)};const delay=pending.deadline-Date.now();if(delay<=0){expire();return}const timer=window.setTimeout(expire,delay+25);return()=>window.clearTimeout(timer)},[presentationBusy,mode,game?.pendingResponse?.actor,game?.pendingResponse?.responder,game?.pendingResponse?.passes,game?.pendingResponse?.action,game?.pendingResponse?.deadline]);
 
  const selectedDeck=deckById(mine);
@@ -972,8 +983,8 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
  const enemyHeroTarget=targeting?.kind==="saymon"||targeting?.kind==="uruk-fire"||(targeting?.kind==="spell"&&allowsHeroTarget(targetCard,targeting?.selected?.length||0)&&enemyTarget);
  const allyHeroTarget=targeting?.kind==="spell"&&allowsHeroTarget(targetCard,targeting?.selected?.length||0)&&allyTarget;
  const currentScope=targeting?.kind==="elemental-optional"?TargetScope.ANY_CREATURE:targetCard?targetScopeAt(targetCard,targeting?.selected?.length||0):TargetScope.NONE,permanentTarget=[TargetScope.ANY_PERMANENT,TargetScope.ALLY_PERMANENT,TargetScope.ENEMY_PERMANENT].includes(currentScope),allyPermanentTarget=allyTarget&&permanentTarget,enemyPermanentTarget=enemyTarget&&permanentTarget;
- const chooseResponse=(idx:number)=>{if(!game)return;const c=game.players[0].hand[idx],policy=c?playTargetPolicy(c):undefined;if(!c||!isFast(c)||effectiveCost(c,game.players[0])>responseBudget(game,0))return;if(policy&&policy.selections>0){if(!canChooseAllTargets(c,policy.steps||[])){update(g=>log(g,`${c.name} não pode responder porque não existem alvos válidos.`,"danger"));return}setResponseWindow(null);setTargeting({kind:c.type==="Artefato"?"attach":"spell",source:`Resposta: ${c.name}`,cardIndex:idx,response:true,required:policy.selections,selected:[]});return}playCard(idx,0,undefined,undefined,undefined,true)};
- const chooseHeroResponse=(abilityId:string)=>{if(!game)return;const command=legalPriorityResponses(game,0).find((candidate:any)=>candidate.type==="activateHero"&&candidate.abilityId===abilityId);if(command)void runRulesCommand(command,0)};
+ const chooseResponse=(idx:number)=>{if(!game)return;const latest=currentGameRef.current,c=latest?.players[0].hand[idx],policy=c?playTargetPolicy(c):undefined;if(!latest||!c||c.id!==game.players[0].hand[idx]?.id||!responsePresentationReady||(window as Window&{__hemsfellPresentationBusy?:boolean}).__hemsfellPresentationBusy||!legalPriorityResponses(latest,0).some((command:{type:string;cardId?:string})=>command.type==="playCard"&&command.cardId===c.id)){setResponseFeedback("Esta resposta não está mais disponível. Confira energia, alvos e condições da carta.");return}setResponseFeedback("");if(policy&&policy.selections>0){if(!canChooseAllTargets(c,policy.steps||[])){setResponseFeedback(`${c.name} não pode responder porque não existem alvos válidos.`);return}setResponseWindow(null);setTargeting({kind:c.type==="Artefato"?"attach":"spell",source:`Resposta: ${c.name}`,cardIndex:idx,response:true,required:policy.selections,selected:[]});return}playCard(idx,0,undefined,undefined,undefined,true)};
+ const chooseHeroResponse=(abilityId:string)=>{if(!game)return;const latest=currentGameRef.current,command=latest&&responsePresentationReady&&!(window as Window&{__hemsfellPresentationBusy?:boolean}).__hemsfellPresentationBusy?legalPriorityResponses(latest,0).find((candidate:any)=>candidate.type==="activateHero"&&candidate.abilityId===abilityId):undefined;if(command)void runRulesCommand(command,0);else setResponseFeedback("Habilidade indisponível: confira energia, alvos e condições do herói.")};
  const declineResponse=()=>{void passPriorityWindow(0)};
  const engineDecision=presentationBlocked?null:game?.pendingDecision,decisionForLocal=!!engineDecision&&engineDecision.owner===0;
  const decisionEffectLabel=(effect:any)=>effect?.type==="selectFirstAct"?`Ativar Primeiro Ato de ${effect.name}`:effect?.type==="investigate"?`Investigar ${effect.amount||1} no ${effect.target==="opponentDeck"?"deck adversário":"seu deck"}`:effect?.type==="createImagesAcrossFields"?`Criar ${effect.amount||1} Gatos Multidimensionais`:effect?.type==="levelHero"?"Subir o herói de nível":effect?.type==="draw"?`Comprar ${effect.amount||1} carta(s)`:effect?.type==="mill"?`Triturar ${effect.amount||1} carta(s)`:effect?.type==="loseLife"?`Perder ${effect.amount||1} de vida`:effect?.type==="moveTopToBottom"?"Mover o topo para o fundo":effect?.type==="heal"?`Restaurar ${effect.amount||1} de vida`:effect?.type==="damage"?`Causar ${effect.amount||1} de dano`:"Aplicar o efeito";
@@ -1136,7 +1147,7 @@ useEffect(()=>{if(mode!=="online"||roomInfo?.status!=="mulligan")return;const pa
    {visualFx&&<VisualEffect fx={visualFx} onComplete={()=>setVisualFx(current=>current?.id===visualFx.id?null:current)}/>} {shufflingDeck!==null&&<DeckShuffleEffect owner={shufflingDeck} onComplete={()=>setShufflingDeck(current=>current===shufflingDeck?null:current)}/>}<button className="surrender-button" onClick={()=>setConfirmSurrender(true)}>⚑ Render-se</button>
    <PriorityControlToggle mode={priorityControl.displayMode} queued={priorityControl.changeQueued} onToggle={priorityControl.toggle}/>
    {(game.pendingAction||game.priorityStack?.length)&&<div className="priority-stack-indicator" title="Ações aguardando resolução por prioridade"><span>PILHA</span><b>{Math.max(1,game.priorityStack?.length||0)}</b></div>}
-   {priorityControl.showWindow&&visibleResponseWindow&&<ResponseModal action={visibleResponseWindow.action} available={localPriorityOptions} heroAbilities={localHeroPriorityOptions} budget={responseBudget(game,0)} offTurn={game.active!==0} deadline={visibleResponseWindow.deadline} passes={visibleResponseWindow.passes??0} cardName={card=>card.name} renderCard={(card,_index,onPlay)=><OriginalCard card={card} small inspectable={false} activeEffect="RESPOSTA ACELERADA" onClick={onPlay}/>} onPlay={chooseResponse} onHeroAbility={chooseHeroResponse} onPass={declineResponse}/>} {!presentationBlocked&&game.pendingResponse?.responder===1&&<div className="response-waiting"><i></i>{mode==="online"?<>Aguardando resposta do oponente <b><DeadlineText deadline={game.pendingResponse.deadline} suffix="s"/></b></>:"A IA está avaliando a prioridade…"}</div>}
+   {priorityControl.showWindow&&visibleResponseWindow&&<ResponseModal sourceId={responseSourceId} feedback={responseFeedback} action={visibleResponseWindow.action} available={localPriorityOptions} heroAbilities={localHeroPriorityOptions} budget={responseBudget(game,0)} offTurn={game.active!==0} deadline={visibleResponseWindow.deadline} passes={visibleResponseWindow.passes??0} cardName={card=>card.name} renderCard={(card,_index,onPlay)=><OriginalCard card={card} small inspectable={false} activeEffect="RESPOSTA ACELERADA" onClick={onPlay}/>} onPlay={chooseResponse} onHeroAbility={chooseHeroResponse} onPass={declineResponse}/>} {!presentationBlocked&&game.pendingResponse?.responder===1&&<div className="response-waiting"><i></i>{mode==="online"?<>Aguardando resposta do oponente <b><DeadlineText deadline={game.pendingResponse.deadline} suffix="s"/></b></>:"A IA está avaliando a prioridade…"}</div>}
    {showLog&&<aside className="test-log"><header><div><b>Registro do teste</b><span>{game.events} eventos</span></div><button onClick={()=>setShowLog(false)}>×</button></header><div className="metrics"><span><b>{game.round}</b>turnos</span><span><b>{me.damageDealt}</b>dano</span><span><b>{me.cardsPlayed}</b>cartas</span><span><b>{me.spellsPlayed}</b>feitiços</span></div><div className="events">{game.log.map(x=><p key={x.id} className={x.tone}><i></i>{x.text}</p>)}</div></aside>}
    {maintenanceOpen&&game.active===0&&game.winner===null&&<MaintenanceModal player={me} firstTurn={game.round===1} onChoose={doMaintenance}/>} 
    {mode==="online"&&roomInfo?.status==="mulligan"&&<MulliganModal player={me} count={myRoomParticipant?.mulliganCount??0} waiting={!!myRoomParticipant?.mulliganDone} pending={mulliganActionPending} deadline={myRoomParticipant?.mulliganDeadline} onDecision={confirmMulligan}/>}
@@ -1182,14 +1193,14 @@ function PlayerHero({player,enemy=false,onLevel,canEvolveThisTurn=true,targetCla
  if(discount>0)heroCueItems.push({key:"cost-discount",label:`Custo -${discount}`,title:`A próxima carta aplicável custa ${discount} a menos.`,tone:"cost"});
  if(player.nextCreaturePaysLife||player.nextSummonPaysLife)heroCueItems.push({key:"life-cost",label:"Próxima criatura: Vida",title:"Sua próxima criatura aplicável pode usar Vida em vez de Energia.",tone:"life"});
  if(player.noReserveStorageThisTurn)heroCueItems.push({key:"reserve-lock",label:"Reserva bloqueada",title:"Você não pode armazenar energia na Reserva neste turno.",tone:"warning"});
- return <div className={`player-hero ${enemy?"enemy":""} ${progressReady?"level-ready":""} ${heroHurt?"hero-hurt":""} ${targetClass}`} style={{"--deck":d.color} as React.CSSProperties} onClick={onTarget} role={onTarget?"button":undefined}>
+ return <div className={`player-hero ${enemy?"enemy":""} ${progressReady?"level-ready":""} ${heroHurt?"hero-hurt":""} ${targetClass}`} style={{"--deck":d.color} as React.CSSProperties} onClick={onTarget}>
   {/* Only this trigger opens the power tooltip. Keeping evolution outside it prevents both tooltips from opening together. */}
-  <div className="hero-power-trigger" data-hero-role={enemy?"enemy":"ally"} tabIndex={0} role="button" aria-label={`Ver detalhes de ${heroDisplayName(player.heroId)}`} onClick={event=>{if(!onTarget){event.stopPropagation();onInspect?.()}}}>
+  <HeroDetailsTrigger name={heroDisplayName(player.heroId)} enemy={enemy} onTarget={onTarget} onInspect={onInspect}>
    <span className="hero-short-name">{player.heroId==="goblin"?"Sr. Goblin":heroDisplayName(player.heroId)}</span>
     <HeroPortrait heroId={player.heroId as DeckId} page={d.heroPage} name={d.name}/>
    {player.heroId==="ngoro"&&<span className="hero-clue-counter" title="Pistas" aria-label={`${clueCount} Pistas`}><i aria-hidden="true">⌕</i><b>{clueCount}</b></span>}
    <strong className="hero-life"><span aria-hidden="true">♥</span><b>{player.life}</b></strong>
-  </div>
+  </HeroDetailsTrigger>
   <div className="hero-level-row">
    <span className="hero-level">NÍVEL {player.level}</span>
    <div className="hero-evolution" tabIndex={0} aria-label={`Critérios de evolução de ${heroDisplayName(player.heroId)}`}>

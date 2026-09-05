@@ -92,9 +92,8 @@ test("landscape maintenance overrides portrait legacy stacking and remains insid
 });
 
 test("coarse pointers never expand ability prose inline over the battlefield", () => {
-  assert.match(heroRuntime, /COARSE_POINTER_QUERY = "\(hover: none\) and \(pointer: coarse\)"/);
-  assert.match(heroRuntime, /if \(compactTouch && panel\.classList\.contains\("is-expanded"\)\) syncExpandedState\(panel, false\)/);
-  assert.match(heroRuntime, /if \(isCoarsePointer\(\)\) \{ closeAll\(\); return; \}/);
+  assert.match(heroRuntime, /classList\.remove\("is-expanded"\)/);
+  assert.doesNotMatch(heroRuntime, /addEventListener\("click"/);
   assert.match(css, /canonical-hero-panel\.is-expanded[^}]*hero-ability-copy > :is\(b,p\)[^{]*\{[^}]*display: none !important/);
 });
 

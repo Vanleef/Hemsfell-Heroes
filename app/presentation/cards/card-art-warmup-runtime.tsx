@@ -139,8 +139,8 @@ function applyCleanHeroArt(canvas: HTMLCanvasElement, hero: HeroMeta, priority: 
       // The local hero image is a visual fast path and never controls navigation.
     }
     canvas.style.backgroundImage = `url("${hero.src}")`;
-    canvas.style.backgroundSize = "cover";
-    canvas.style.backgroundPosition = hero.position;
+    canvas.style.backgroundSize = "contain";
+    canvas.style.backgroundPosition = "center bottom";
     canvas.style.backgroundRepeat = "no-repeat";
     canvas.dataset.hhCleanHeroArt = hero.id;
     canvas.dataset.loaded = "true";

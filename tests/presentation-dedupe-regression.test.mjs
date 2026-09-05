@@ -139,7 +139,7 @@ test("interactive card results stay behind the complete presentation barrier", (
   const facade = read("app/rules-engine/engine.mjs");
 
   assert.match(page, /presentationBlocked=presentationBusy\|\|!!visualFx\|\|visualFxQueue\.length>0\|\|shufflingDeck!==null/);
-  assert.match(page, /visibleResponseWindow=presentationBlocked\?null:responseWindow/);
+  assert.match(page, /visibleResponseWindow=responsePresentationReady\?responseWindow:null/);
   assert.match(page, /engineDecision=presentationBlocked\?null:game\?\.pendingDecision/);
   assert.match(page, /!presentationBlocked&&searchChoice&&<SearchDeckModal/);
   assert.match(page, /!presentationBlocked&&!!game\?\.pendingReposition/);
