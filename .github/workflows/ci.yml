@@ -93,7 +93,7 @@ jobs:
 
   discover-node-regression-groups:
     if: github.ref == 'refs/heads/refactor/performance-mobile-architecture-20260905'
-    name: Discover node regression groups
+    name: Discover failing regression files
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.matrix.outputs.matrix }}
@@ -106,16 +106,66 @@ jobs:
         run: |
           node <<'NODE'
           const fs = require('node:fs');
-          const files = fs.readdirSync('tests').filter((name) => name.endsWith('.test.mjs')).sort();
-          const groupSize = 6;
-          const include = [];
-          for (let index = 0; index < files.length; index += groupSize) {
-            const group = files.slice(index, index + groupSize);
-            include.push({
-              label: group.map((name) => name.replace(/\.test\.mjs$/, '')).join(' + '),
-              files: group.map((name) => `tests/${name}`).join(' '),
-            });
-          }
+          const candidates = new Set(`
+          card-art-context-memory-policy.test.mjs
+          card-art-lifecycle.test.mjs
+          card-double-click-inspection-contract.test.mjs
+          card-interaction-performance-contract.test.mjs
+          card-preview-collection-quality.test.mjs
+          card-semantics-v2.test.mjs
+          match-reference-layout.test.mjs
+          match-ui-guard-regression.test.mjs
+          match-visual-terminal-contract.test.mjs
+          mobile-card-icon-scale-contract.test.mjs
+          mobile-hero-ability-spacing-contract.test.mjs
+          mobile-short-landscape-fit.test.mjs
+          presentation-system.test.mjs
+          priority-card-anchor-regression.test.mjs
+          priority-clock-resilience.test.mjs
+          priority-hero-interaction.test.mjs
+          priority-wedding-ring-regressions.test.mjs
+          project-documentation.test.mjs
+          magic-barrier-visual.test.mjs
+          match-feedback-contract.test.mjs
+          match-interaction-terminal.test.mjs
+          match-loading-card-preload.test.mjs
+          match-loading-lifecycle.test.mjs
+          match-log-ui.test.mjs
+          mobile-touch-input-contract.test.mjs
+          multiplayer-room-store-fallback.test.mjs
+          online-assisted-response-autopass.test.mjs
+          online-authoritative-audit.test.mjs
+          online-authoritative-state.test.mjs
+          online-clock-authority.test.mjs
+          online-maintenance-choice.test.mjs
+          online-match-runtime.test.mjs
+          online-mulligan-revision.test.mjs
+          online-presence-expiry.test.mjs
+          online-priority-decision-suspension.test.mjs
+          online-priority-flow.test.mjs
+          quarion-authoritative.test.mjs
+          rasmus-authoritative.test.mjs
+          rasmus-catnip-regression.test.mjs
+          rasmus-coffee-priority-regressions.test.mjs
+          rasmus-deck-no-images.test.mjs
+          rasmus-hero-cat-regressions.test.mjs
+          responsive-card-visual-polish.test.mjs
+          responsive-match-ui.test.mjs
+          room-crypto.test.mjs
+          rules-and-multiplayer.test.mjs
+          rules-engine.test.mjs
+          runtime-performance-contract.test.mjs
+          deck-picker-layout.test.mjs
+          draconic-illusion-space-regression.test.mjs
+          energy-pile-footer-alignment.test.mjs
+          evolution-tooltip-portal.test.mjs
+          field-keyword-semantics.test.mjs
+          field-reveal-metadata.test.mjs
+          `.trim().split(/\s+/));
+          const include = fs.readdirSync('tests')
+            .filter((name) => candidates.has(name))
+            .sort()
+            .map((name) => ({ label: name.replace(/\.test\.mjs$/, ''), files: `tests/${name}` }));
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `matrix=${JSON.stringify({ include })}\n`);
           NODE
 
@@ -138,6 +188,6 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Run regression group
+      - name: Run regression file
         shell: bash
         run: node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" ${{ matrix.files }}
