@@ -208,14 +208,14 @@ jobs:
           '      const reservation = { arrivalGate, stateGate, heldUnits, unitDiff };',
           'reservation payload')
 
-          if source.count('unitPresentationFingerprint(') != 3:
-              raise SystemExit(f'expected fingerprint definition plus two cached comparisons, found {source.count("unitPresentationFingerprint(")}')
+          if source.count('unitPresentationFingerprint(') != 2:
+              raise SystemExit(f'expected exactly two cached fingerprint calls, found {source.count("unitPresentationFingerprint(")}')
           if source.count('buildUnitPresentationDiff(detail)') != 1:
               raise SystemExit('unit diff must be built exactly once per action')
 
           path.write_text(source)
 
-          Path('tests/game-presentation-diff-performance.test.mjs').write_text('''import test from "node:test";\nimport assert from "node:assert/strict";\nimport { readFile } from "node:fs/promises";\n\nconst runtime = await readFile(new URL("../app/presentation/runtime/game-presentation-runtime.tsx", import.meta.url), "utf8");\n\ntest("presentation state fingerprints are derived once per queued action and reused", () => {\n  assert.match(runtime, /type UnitPresentationDiff =/);\n  assert.match(runtime, /function buildUnitPresentationDiff\(detail: PresentationDetail\)/);\n  assert.equal((runtime.match(/buildUnitPresentationDiff\(detail\)/g) || []).length, 1);\n  assert.equal((runtime.match(/unitPresentationFingerprint\(/g) || []).length, 3);\n  assert.match(runtime, /installStateGate\(unitDiff\)/);\n  assert.match(runtime, /reserveChangedUnits\(layers\.motion, capturedDom, unitDiff\)/);\n  assert.match(runtime, /holdChangedState\(layers\.motion, beforeDom, afterDom, detail, unitDiff, heldUnits\)/);\n  assert.match(runtime, /changedTargetRects\(detail, beforeDom, afterDom, unitDiff\)/);\n});\n''')
+          Path('tests/game-presentation-diff-performance.test.mjs').write_text('''import test from "node:test";\nimport assert from "node:assert/strict";\nimport { readFile } from "node:fs/promises";\n\nconst runtime = await readFile(new URL("../app/presentation/runtime/game-presentation-runtime.tsx", import.meta.url), "utf8");\n\ntest("presentation state fingerprints are derived once per queued action and reused", () => {\n  assert.match(runtime, /type UnitPresentationDiff =/);\n  assert.match(runtime, /function buildUnitPresentationDiff\(detail: PresentationDetail\)/);\n  assert.equal((runtime.match(/buildUnitPresentationDiff\(detail\)/g) || []).length, 1);\n  assert.equal((runtime.match(/unitPresentationFingerprint\(/g) || []).length, 2);\n  assert.match(runtime, /installStateGate\(unitDiff\)/);\n  assert.match(runtime, /reserveChangedUnits\(layers\.motion, capturedDom, unitDiff\)/);\n  assert.match(runtime, /holdChangedState\(layers\.motion, beforeDom, afterDom, detail, unitDiff, heldUnits\)/);\n  assert.match(runtime, /changedTargetRects\(detail, beforeDom, afterDom, unitDiff\)/);\n});\n''')
           PY
 
       - name: Validate presentation diff performance contract
