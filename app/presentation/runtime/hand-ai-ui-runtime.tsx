@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { catalogCardByPage } from "../../data/catalog/card-catalog-index";
 import { preloadRemoteCardCatalog, prewarmRemoteCardArtPages } from "../cards/remote-card-art";
 
 const HAND_SELECTOR = ".screen-game .player-hand, .screen-game .opponent-hand";
@@ -31,6 +32,21 @@ function removeMetric(card: HTMLElement, kind: "cost" | "atk" | "hp") {
   card.querySelector<HTMLElement>(`:scope > .hh-hand-${kind}`)?.remove();
 }
 
+function numericText(element: Element | null | undefined) {
+  const match = element?.textContent?.match(/-?\d+/);
+  return match?.[0] ?? null;
+}
+
+function cardPage(card: HTMLElement) {
+  return Number(card.dataset.cardPage || card.querySelector<HTMLElement>(".remote-card-art[data-page]")?.dataset.page || 0);
+}
+
+/**
+ * Hand metrics use already-rendered authoritative UI values. Dynamic stats are
+ * read from the live badges; dynamic cost comes from effective-cost when it is
+ * present, otherwise the canonical catalogue is the unchanged base value.
+ * This removes the need to keep/parse a full hidden .card-tooltip per card.
+ */
 function syncHandCard(frame: HTMLElement, index: number) {
   frame.style.setProperty("--hh-hand-order", String(index + 1));
   frame.dataset.hhHandFrame = "true";
@@ -38,17 +54,24 @@ function syncHandCard(frame: HTMLElement, index: number) {
   if (!card) return;
 
   card.dataset.hhHandCard = "true";
-  const summary = card.querySelector<HTMLElement>(":scope > .card-tooltip > em")?.textContent?.trim() || "";
-  const cost = summary.match(/\bcusto\s+(-?\d+)/i)?.[1];
+  const catalog = catalogCardByPage(cardPage(card));
+  const effectiveCost = numericText(card.querySelector(":scope > .effective-cost"));
+  const baseCost = Number(catalog?.cost);
+  const cost = effectiveCost ?? (Number.isFinite(baseCost) ? String(baseCost) : null);
   if (cost != null) ensureMetric(card, "cost", cost);
   else removeMetric(card, "cost");
 
-  const creature = /^Criatura\b/i.test(summary);
+  const liveAtk = numericText(card.querySelector(":scope > .live-atk"));
+  const liveHp = numericText(card.querySelector(":scope > .live-hp"));
+  const creature = catalog?.type === "Criatura" || liveAtk != null || liveHp != null;
   card.dataset.hhHandCreature = creature ? "true" : "false";
-  const stats = creature ? summary.match(/(-?\d+)\s*\/\s*(-?\d+)\s*$/) : null;
-  if (stats) {
-    ensureMetric(card, "atk", stats[1]);
-    ensureMetric(card, "hp", stats[2]);
+  if (creature) {
+    const baseAtk = Number(catalog && "atk" in catalog ? catalog.atk : NaN);
+    const baseHp = Number(catalog && "hp" in catalog ? catalog.hp : NaN);
+    const atk = liveAtk ?? (Number.isFinite(baseAtk) ? String(baseAtk) : null);
+    const hp = liveHp ?? (Number.isFinite(baseHp) ? String(baseHp) : null);
+    if (atk != null) ensureMetric(card, "atk", atk); else removeMetric(card, "atk");
+    if (hp != null) ensureMetric(card, "hp", hp); else removeMetric(card, "hp");
   } else {
     removeMetric(card, "atk");
     removeMetric(card, "hp");
@@ -57,8 +80,8 @@ function syncHandCard(frame: HTMLElement, index: number) {
 
 function warmHandArt(hand: HTMLElement, items: HTMLElement[]) {
   const pages = items.flatMap((item) =>
-    Array.from(item.querySelectorAll<HTMLCanvasElement>("canvas.remote-card-art[data-page]"))
-      .map((canvas) => Number(canvas.dataset.page))
+    Array.from(item.querySelectorAll<HTMLElement>(".remote-card-art[data-page]"))
+      .map((surface) => Number(surface.dataset.page))
       .filter((page) => Number.isFinite(page) && page > 0),
   );
   const key = [...new Set(pages)].join(",");
@@ -178,9 +201,6 @@ export default function HandAiUiRuntime() {
     let aiDirty = false;
     const dirtyHands = new Set<HTMLElement>();
 
-    // Start PDF.js/document metadata as soon as the match runtime mounts. This
-    // overlaps the network setup with the first React paint instead of waiting
-    // for the user to interact with an individual card.
     void preloadRemoteCardCatalog().catch(() => undefined);
 
     const flush = () => {
@@ -188,7 +208,6 @@ export default function HandAiUiRuntime() {
       if (peekFrame && !peekFrame.isConnected) clearPeekState();
       for (const hand of dirtyHands) {
         syncHand(hand);
-        // A draw/removal can change neighbours without a pointer transition.
         if (peekFrame?.parentElement === hand) {
           const current = peekFrame;
           clearPeekState();
