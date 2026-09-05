@@ -76,7 +76,7 @@ test("each hero and its ability bar share an isolated responsive stack", () => {
 });
 
 test("the canonical hero card follows the approved portrait metadata powers action model", () => {
-  assert.match(page, /hero-power-trigger[\s\S]*?hero-short-name[\s\S]*?<HeroPortrait[\s\S]*?hero-life/);
+  assert.match(page, /HeroDetailsTrigger[\s\S]*?hero-short-name[\s\S]*?<HeroPortrait[\s\S]*?hero-life/);
   assert.match(page, /className="hero-level-row"[\s\S]*?className="hero-level"[\s\S]*?className="hero-evolution"/);
   assert.match(page, /hero-evolution-copy[\s\S]*?PRÓX\. NÍVEL[\s\S]*?evolution-track/);
   assert.match(page, /hero-ability-slot[\s\S]*?hero-ability-copy[\s\S]*?ATIVA[\s\S]*?PASSIVA/);

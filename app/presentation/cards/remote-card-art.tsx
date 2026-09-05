@@ -624,13 +624,16 @@ function preloadStaticImageAsset(url: string) {
   pending = new Promise<void>((resolve) => {
     const image = new window.Image();
     image.decoding = "async";
-    image.onload = image.onerror = () => resolve();
+    image.onload = () => resolve();
+    image.onerror = () => { assetPreloadPromises.delete(url); resolve(); };
     image.src = url;
     if (image.complete) resolve();
   });
   assetPreloadPromises.set(url, pending);
   return pending;
 }
+
+let matchArtPreloadGeneration = 0;
 
 export function preloadMatchCardArt({
   criticalPages,
@@ -647,20 +650,26 @@ export function preloadMatchCardArt({
   const releasePages = retainMatchPages([...critical, ...background]);
   const controller = new AbortController();
 
-  assetUrls.forEach((url) => void preloadStaticImageAsset(url));
-  void prewarmRemoteCardArtPages(critical, COMPACT_RASTER_CSS_WIDTH, {
+  const generation = ++matchArtPreloadGeneration;
+  document.documentElement.dataset.matchArtWarming = "true";
+  const essential = Promise.all([
+    ...assetUrls.map(preloadStaticImageAsset),
+    prewarmRemoteCardArtPages(critical, COMPACT_RASTER_CSS_WIDTH, {
     priority: 0,
-    concurrency: 2,
+    concurrency: isMemoryConstrainedDevice() ? 1 : 2,
     signal: controller.signal,
+  }),
+  ]).then(() => {
+    if (!controller.signal.aborted && generation === matchArtPreloadGeneration) delete document.documentElement.dataset.matchArtWarming;
   });
 
   const runBackground = () => {
     if (controller.signal.aborted) return;
-    void prewarmRemoteCardArtPages(background, COMPACT_RASTER_CSS_WIDTH, {
+    void essential.then(() => controller.signal.aborted ? undefined : prewarmRemoteCardArtPages(background, COMPACT_RASTER_CSS_WIDTH, {
       priority: 3,
       concurrency: isMemoryConstrainedDevice() ? 1 : 2,
       signal: controller.signal,
-    });
+    }));
   };
   const idleWindow = window as unknown as {
     requestIdleCallback?: (callback: () => void, options?: { timeout: number }) => number;
@@ -672,6 +681,7 @@ export function preloadMatchCardArt({
 
   return () => {
     controller.abort();
+    if (generation === matchArtPreloadGeneration) delete document.documentElement.dataset.matchArtWarming;
     if (idleWindow.requestIdleCallback) idleWindow.cancelIdleCallback?.(idleHandle);
     else window.clearTimeout(idleHandle);
     releasePages();

@@ -10,11 +10,12 @@ function harness({ mobile = true, match, draw, render } = {}) {
     getContext: () => ({ drawImage: draw ?? (() => {}), clearRect() {} }),
     toBlob(callback) { encodes.push(() => callback(new Blob(['art']))); },
   });
+  const root = { dataset: {} };
   const api = loadPresentationModule('app/presentation/cards/remote-card-art.tsx', {
     navigator: { deviceMemory: mobile ? 4 : 8 },
     matchMedia: () => ({ matches: mobile }),
     location: { origin: 'https://game.test' },
-    document: { createElement: canvas },
+    document: { createElement: canvas, documentElement: root },
     window: { requestIdleCallback: (fn) => { idle.push(fn); return idle.length; }, cancelIdleCallback() {}, dispatchEvent() {} },
     CustomEvent: class {},
     caches: { open: async () => ({
@@ -35,7 +36,7 @@ function harness({ mobile = true, match, draw, render } = {}) {
       }) }),
     },
   });
-  return { api, canvas, reads, renders, idle, encodes, writes, get bitmapsClosed() { return bitmapsClosed; } };
+  return { api, root, canvas, reads, renders, idle, encodes, writes, get bitmapsClosed() { return bitmapsClosed; } };
 }
 
 for (const [mobile, limit] of [[true, 1], [false, 2]]) {
@@ -130,4 +131,25 @@ test('match retention protects compact art while allowing detail tiers to expire
   await h.api.prewarmRemoteCardArtPages([1], 360);
   assert.equal(h.renders.length, before + 1, 'old detail art does not become pinned with its compact variant');
   release();
+});
+
+
+test('match background starts only after essentials and cleanup cannot release a newer loading gate', async () => {
+  const gate = deferred();
+  const h = harness({ mobile: true, render: page => page === 10 ? gate.promise : Promise.resolve() });
+  const releaseOld = h.api.preloadMatchCardArt({ criticalPages: [10], backgroundPages: [20] });
+  h.idle.shift()();
+  await flush();
+  assert.deepEqual(h.renders, [10]);
+  assert.equal(h.root.dataset.matchArtWarming, 'true');
+  const releaseNew = h.api.preloadMatchCardArt({ criticalPages: [11], backgroundPages: [] });
+  releaseOld();
+  assert.equal(h.root.dataset.matchArtWarming, 'true');
+  gate.resolve();
+  await flush();
+  await flush();
+  assert.ok(h.renders.includes(11));
+  assert.ok(!h.renders.includes(20), 'obsolete match background must never start');
+  assert.equal(h.root.dataset.matchArtWarming, undefined);
+  releaseNew();
 });

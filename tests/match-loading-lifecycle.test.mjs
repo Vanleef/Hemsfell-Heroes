@@ -96,3 +96,16 @@ test('loading rejects stale or released pixels even if a previous load flag rema
   assert.equal(h.visible, false);
   cleanup();
 });
+
+
+test('ready hands cannot bypass essential deck and hero preloading', () => {
+  const h = mountGate();
+  const cleanup = h.setup();
+  h.root.dataset.matchArtWarming = 'true';
+  h.check();
+  assert.equal(h.visible, true);
+  delete h.root.dataset.matchArtWarming;
+  h.check();
+  assert.equal(h.visible, false);
+  cleanup();
+});

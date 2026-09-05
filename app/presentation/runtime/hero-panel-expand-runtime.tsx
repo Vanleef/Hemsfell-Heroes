@@ -3,15 +3,6 @@
 import { useEffect } from "react";
 
 const PANEL_SELECTOR = ".screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel";
-const TRIGGER_SELECTOR = ".hero-power-trigger";
-const COARSE_POINTER_QUERY = "(hover: none) and (pointer: coarse)";
-
-const isCoarsePointer = () => typeof window !== "undefined" && window.matchMedia(COARSE_POINTER_QUERY).matches;
-
-const isHeroTargeting = (panel: Element) => {
-  const hero = panel.querySelector(".player-hero");
-  return !!hero && (hero.classList.contains("target-ally") || hero.classList.contains("target-enemy"));
-};
 
 const syncLevelBadge = (panel: Element, trigger: HTMLElement) => {
   const semanticLevel = panel.querySelector<HTMLElement>(".hero-level")?.textContent ?? "";
@@ -36,110 +27,22 @@ const syncAbilityInteractivity = (panel: Element) => {
   }
 };
 
-const syncExpandedState = (panel: Element, expanded: boolean) => {
-  panel.classList.toggle("is-expanded", expanded);
-  const trigger = panel.querySelector<HTMLElement>(TRIGGER_SELECTOR);
-  trigger?.setAttribute("aria-expanded", expanded ? "true" : "false");
-  trigger?.setAttribute("aria-label", expanded ? "Recolher detalhes do herói" : "Expandir detalhes do herói");
-};
-
+/** Compact HUD metadata only. Portrait interaction belongs to React. */
 export default function HeroPanelExpandRuntime() {
   useEffect(() => {
-    const panels = () => Array.from(document.querySelectorAll(PANEL_SELECTOR));
-
     const initialize = () => {
-      const compactTouch = isCoarsePointer();
-      for (const panel of panels()) {
-        if (compactTouch && panel.classList.contains("is-expanded")) syncExpandedState(panel, false);
-        const trigger = panel.querySelector<HTMLElement>(TRIGGER_SELECTOR);
-        if (trigger) {
-          const expanded = !compactTouch && panel.classList.contains("is-expanded");
-          trigger.setAttribute("aria-expanded", expanded ? "true" : "false");
-          trigger.setAttribute("aria-label", compactTouch ? "Ver detalhes do herói" : expanded ? "Recolher detalhes do herói" : "Expandir detalhes do herói");
-          syncLevelBadge(panel, trigger);
-        }
+      for (const panel of document.querySelectorAll(PANEL_SELECTOR)) {
+        if (panel.classList.contains("is-expanded")) panel.classList.remove("is-expanded");
+        const trigger = panel.querySelector<HTMLElement>(".hero-power-trigger");
+        if (trigger) syncLevelBadge(panel, trigger);
         syncAbilityInteractivity(panel);
       }
     };
-
-    const closeAll = (except?: Element | null) => {
-      for (const panel of panels()) {
-        if (panel === except) continue;
-        if (panel.classList.contains("is-expanded")) syncExpandedState(panel, false);
-      }
-    };
-
-    const togglePanel = (panel: Element) => {
-      const next = !panel.classList.contains("is-expanded");
-      closeAll(panel);
-      syncExpandedState(panel, next);
-    };
-
-    const onClick = (event: MouseEvent) => {
-      const target = event.target instanceof Element ? event.target : null;
-      if (!target) return;
-      const panel = target.closest(PANEL_SELECTOR);
-      if (!panel) {
-        closeAll();
-        return;
-      }
-
-      const trigger = target.closest(TRIGGER_SELECTOR);
-      if (!trigger || isHeroTargeting(panel) || event.button !== 0) return;
-
-      /* Inline expansion needs horizontal room for the three full ability rows.
-         On touch landscape keep the HUD compact and let React's normal portrait
-         click open the dedicated hero/card inspector instead. */
-      if (isCoarsePointer()) {
-        closeAll();
-        return;
-      }
-
-      /* The portrait used to open the generic card inspector. It now owns the
-         requested compact/expanded hero interaction on fine pointers. */
-      event.preventDefault();
-      event.stopPropagation();
-      togglePanel(panel);
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        closeAll();
-        return;
-      }
-
-      if (event.key !== "Enter" && event.key !== " ") return;
-      const target = event.target instanceof Element ? event.target : null;
-      const trigger = target?.closest(TRIGGER_SELECTOR);
-      const panel = trigger?.closest(PANEL_SELECTOR);
-      if (!trigger || !panel || isHeroTargeting(panel)) return;
-
-      event.preventDefault();
-      event.stopPropagation();
-      togglePanel(panel);
-    };
-
     initialize();
     const observer = new MutationObserver(initialize);
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: ["class", "aria-disabled"],
-    });
-    const coarseMedia = window.matchMedia(COARSE_POINTER_QUERY);
-    coarseMedia.addEventListener?.("change", initialize);
-    document.addEventListener("click", onClick, true);
-    document.addEventListener("keydown", onKeyDown, true);
-
-    return () => {
-      observer.disconnect();
-      coarseMedia.removeEventListener?.("change", initialize);
-      document.removeEventListener("click", onClick, true);
-      document.removeEventListener("keydown", onKeyDown, true);
-    };
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true,
+      attributes: true, attributeFilter: ["class", "aria-disabled"] });
+    return () => observer.disconnect();
   }, []);
-
   return null;
 }

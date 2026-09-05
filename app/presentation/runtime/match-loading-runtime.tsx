@@ -81,7 +81,7 @@ export default function MatchLoadingRuntime() {
     const tryFinish = () => {
       if (disposed || !visibleRef.current) return;
       const elapsed = performance.now() - startedAt;
-      if (elapsed >= MIN_MATCH_LOADING_MS && bothOpeningHandsReady()) {
+      if (elapsed >= MIN_MATCH_LOADING_MS && document.documentElement.dataset.matchArtWarming !== "true" && bothOpeningHandsReady()) {
         finish();
         return;
       }

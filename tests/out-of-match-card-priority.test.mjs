@@ -11,7 +11,7 @@ test("outside-match heroes reuse clean local portrait assets without PDF hero ra
   }
   assert.match(runtime, /image\.setAttribute\("fetchpriority", priority\)/);
   assert.match(runtime, /canvas\.style\.backgroundImage = `url\("\$\{hero\.src\}"\)`/);
-  assert.match(runtime, /canvas\.style\.backgroundPosition = hero\.position/);
+  assert.match(runtime, /canvas\.style\.backgroundPosition = "center bottom"/);
   assert.match(runtime, /canvas\.dataset\.artQuality = "clean-hero"/);
   assert.match(art, /CLEAN_HERO_PAGES/);
   assert.match(art, /delegatesToCleanHeroRuntime\(canvas, page\)/);
