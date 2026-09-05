@@ -14,6 +14,8 @@ import {
   useFloating,
 } from "@floating-ui/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { catalogCardByPage } from "../../data/catalog/card-catalog-index";
+import { GAME_GLOSSARY, gameGlossaryEntry } from "../glossary/game-glossary";
 import { RemoteCardArt } from "./remote-card-art";
 
 type GlossaryKind = "keyword" | "subtype";
@@ -44,6 +46,8 @@ type GlossaryState = {
 
 const CARD_SELECTOR = ".original-card[data-card-preview='true']";
 const NATIVE_TITLE_SELECTOR = `${CARD_SELECTOR}[title], ${CARD_SELECTOR} [title], [data-tip][title], .remote-card-art[title]`;
+const INLINE_TOOLTIP_SELECTOR = ".original-card > .card-tooltip:not(.card-preview-floating)";
+const HAND_SELECTOR = ".player-hand,.opponent-hand";
 const ASSET_CONTEXT_CHANGE_EVENT = "hemsfell:asset-context-change";
 const INSPECTION_HOLD_MS = 1_000;
 const INSPECTION_PROGRESS_DELAY_MS = 500;
@@ -56,6 +60,10 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^\${}()|[\]\\]/g, "\\$&");
 }
 
+function normalized(value: string) {
+  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR");
+}
+
 function subtypeTerm(label: string): GlossaryTerm {
   return {
     label,
@@ -64,69 +72,72 @@ function subtypeTerm(label: string): GlossaryTerm {
   };
 }
 
-function splitSubtypeParts(text: string, subtypes: GlossaryTerm[]): RulePart[] {
-  if (!text || !subtypes.length) return text ? [{ text }] : [];
-  const byName = new Map(subtypes.map((term) => [term.label.toLocaleLowerCase("pt-BR"), term]));
-  const pattern = new RegExp(`(${subtypes.map((term) => escapeRegExp(term.label)).join("|")})`, "gi");
-  return text.split(pattern).filter(Boolean).map((part) => ({
-    text: part,
-    term: byName.get(part.toLocaleLowerCase("pt-BR")),
-  }));
+function glossaryTerm(label: string): GlossaryTerm | null {
+  const entry = gameGlossaryEntry(label);
+  if (!entry) return null;
+  return { label: entry.label, description: entry.description, kind: "keyword" };
 }
+
+const CARD_RULE_GLOSSARY_TERMS = Object.values(GAME_GLOSSARY)
+  .filter((entry) => ["keyword", "positive", "negative", "state"].includes(entry.tone))
+  .flatMap((entry) => [entry.label, ...(entry.aliases || [])])
+  .filter(Boolean)
+  .sort((a, b) => b.length - a.length);
 
 function uniqueTerms(terms: GlossaryTerm[]) {
   const seen = new Set<string>();
   return terms.filter((term) => {
-    const key = `${term.kind}:${term.label.toLocaleLowerCase("pt-BR")}`;
+    const key = `${term.kind}:${normalized(term.label)}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
 }
 
+function ruleParts(text: string, subtypes: GlossaryTerm[]) {
+  if (!text) return [] as RulePart[];
+  const glossaryLabels = CARD_RULE_GLOSSARY_TERMS.filter((label) =>
+    new RegExp(`(^|[^\\p{L}\\p{N}])${escapeRegExp(label)}(?=$|[^\\p{L}\\p{N}])`, "iu").test(text),
+  );
+  const labels = [...new Set([...glossaryLabels, ...subtypes.map((term) => term.label)])].sort((a, b) => b.length - a.length);
+  if (!labels.length) return [{ text }];
+  const subtypeByName = new Map(subtypes.map((term) => [normalized(term.label), term]));
+  const pattern = new RegExp(`(${labels.map(escapeRegExp).join("|")})`, "giu");
+  return text.split(pattern).filter(Boolean).map((part): RulePart => {
+    const subtype = subtypeByName.get(normalized(part));
+    if (subtype) return { text: part, term: subtype };
+    const term = glossaryTerm(part);
+    return term ? { text: part, term } : { text: part };
+  });
+}
+
 function previewData(card: HTMLElement, expanded: boolean): PreviewState | null {
   const page = Number(card.dataset.cardPage || card.querySelector<HTMLElement>(".remote-card-art")?.dataset.page);
-  const name = card.dataset.cardName || card.getAttribute("aria-label") || "Carta";
   if (!Number.isInteger(page) || page <= 0) return null;
-
-  const source = card.querySelector<HTMLElement>(":scope > .card-tooltip") ?? card.querySelector<HTMLElement>(".card-tooltip");
-  const title = source?.querySelector<HTMLElement>(":scope > b")?.textContent?.trim() || name;
-  const meta = source?.querySelector<HTMLElement>(":scope > em")?.textContent?.trim() || "";
+  const catalogCard = catalogCardByPage(page);
+  const name = catalogCard?.name || card.dataset.cardName || card.getAttribute("aria-label") || "Carta";
   const subtypes = uniqueTerms((card.dataset.cardSubtypes || "")
     .split("·")
     .map((label) => label.trim())
     .filter(Boolean)
     .map(subtypeTerm));
-  const richRules = source?.querySelector<HTMLElement>(".rich-card-text");
-  const rules = richRules
-    ? Array.from(richRules.childNodes).flatMap((node): RulePart[] => {
-        const text = node.textContent || "";
-        if (node instanceof HTMLElement && node.classList.contains("keyword-term")) {
-          return [{
-            text,
-            term: {
-              label: text.trim(),
-              description: node.dataset.tip || "Palavra-chave com uma regra especial do jogo.",
-              kind: "keyword",
-            },
-          }];
-        }
-        return splitSubtypeParts(text, subtypes);
-      })
-    : splitSubtypeParts(Array.from(source?.children ?? [])
-        .filter((element) => element.tagName !== "B" && element.tagName !== "EM" && !element.classList.contains("keyword-list"))
-        .map((element) => element.textContent?.trim() || "")
-        .filter(Boolean)
-        .join(" "), subtypes);
-  const keywords = uniqueTerms(Array.from(source?.querySelectorAll<HTMLElement>(".keyword-list > *") ?? [])
-    .map((element): GlossaryTerm => ({
-      label: element.getAttribute("data-keyword") || element.textContent?.trim() || "",
-      description: element.dataset.tip || "Palavra-chave com uma regra especial do jogo.",
-      kind: "keyword",
-    }))
-    .filter((term) => Boolean(term.label)));
-
-  return { reference: card, page, name, expanded, title, meta, rules, keywords, subtypes };
+  const cost = Number(catalogCard?.cost);
+  const atk = Number(catalogCard && "atk" in catalogCard ? catalogCard.atk : NaN);
+  const hp = Number(catalogCard && "hp" in catalogCard ? catalogCard.hp : NaN);
+  const meta = [
+    catalogCard?.type || "",
+    subtypes.map((term) => term.label).join(" · "),
+    Number.isFinite(cost) ? `custo ${cost}` : "",
+    Number.isFinite(atk) && Number.isFinite(hp) ? `${atk} / ${hp}` : "",
+  ].filter(Boolean).join(" · ");
+  const text = String(catalogCard?.text || "").trim();
+  const rules = ruleParts(text, subtypes);
+  const tagTerms = Array.isArray(catalogCard?.tags)
+    ? catalogCard.tags.map((tag) => glossaryTerm(String(tag))).filter((term): term is GlossaryTerm => Boolean(term))
+    : [];
+  const inlineTerms = rules.flatMap((part) => part.term?.kind === "keyword" ? [part.term] : []);
+  const keywords = uniqueTerms([...tagTerms, ...inlineTerms]);
+  return { reference: card, page, name, expanded, title: name, meta, rules, keywords, subtypes };
 }
 
 function stripNativeTitle(element: Element) {
@@ -134,14 +145,25 @@ function stripNativeTitle(element: Element) {
   element.querySelectorAll(NATIVE_TITLE_SELECTOR).forEach((child) => child.removeAttribute("title"));
 }
 
+function pruneInlineSemanticTooltips(root: ParentNode) {
+  const candidates: HTMLElement[] = [];
+  if (root instanceof HTMLElement && root.matches(INLINE_TOOLTIP_SELECTOR)) candidates.push(root);
+  root.querySelectorAll<HTMLElement>(INLINE_TOOLTIP_SELECTOR).forEach((tooltip) => candidates.push(tooltip));
+  for (const tooltip of candidates) {
+    if (tooltip.closest(HAND_SELECTOR)) continue;
+    tooltip.remove();
+  }
+}
+
+function matchGestureOwnedByMobileRuntime(card: HTMLElement, event: PointerEvent) {
+  if (!card.closest(".screen-game")) return false;
+  return event.pointerType === "touch" || event.pointerType === "pen" || window.matchMedia("(pointer: coarse)").matches;
+}
+
 /**
- * One interactive tooltip authority for every card surface.
- *
- * The semantic copy remains inside each card, while the visible surface is
- * rendered in a body-level Floating UI portal. Mouse hover must remain on the
- * same card for one second before opening. A short close delay then bridges
- * the gap from the card to the portal so users can enter it and inspect
- * glossary terms without losing the preview.
+ * One interactive tooltip authority for every card surface. Preview content is
+ * reconstructed from the canonical catalogue on demand, so collection/setup
+ * cards no longer need to keep a complete hidden tooltip subtree alive.
  */
 export default function CardPreviewRuntime() {
   const [preview, setPreview] = useState<PreviewState | null>(null);
@@ -171,11 +193,7 @@ export default function CardPreviewRuntime() {
     placement: "top",
     strategy: "fixed",
     whileElementsMounted: autoUpdate,
-    middleware: [
-      offset(7),
-      flip({ fallbackPlacements: ["bottom", "right", "left"] }),
-      shift({ padding: 8 }),
-    ],
+    middleware: [offset(7), flip({ fallbackPlacements: ["bottom", "right", "left"] }), shift({ padding: 8 })],
   });
 
   const cancelScheduledClose = useCallback(() => {
@@ -207,16 +225,21 @@ export default function CardPreviewRuntime() {
   }, [cancelScheduledClose, glossaryFloating.refs]);
 
   useEffect(() => {
-    stripNativeTitle(document.documentElement);
+    const root = document.querySelector<HTMLElement>("main.hh-app");
+    if (!root) return;
+    stripNativeTitle(root);
+    pruneInlineSemanticTooltips(root);
     const observer = new MutationObserver((records) => {
-      records.forEach((record) => {
+      for (const record of records) {
         if (record.type === "attributes" && record.target instanceof Element) stripNativeTitle(record.target);
-        record.addedNodes.forEach((node) => {
-          if (node instanceof Element) stripNativeTitle(node);
-        });
-      });
+        for (const node of record.addedNodes) {
+          if (!(node instanceof Element)) continue;
+          stripNativeTitle(node);
+          pruneInlineSemanticTooltips(node);
+        }
+      }
     });
-    observer.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ["title"] });
+    observer.observe(root, { subtree: true, childList: true, attributes: true, attributeFilter: ["title"] });
     return () => observer.disconnect();
   }, []);
 
@@ -270,13 +293,11 @@ export default function CardPreviewRuntime() {
       clearInspectionHold();
       holdCard = card;
       holdStart = { x: event.clientX, y: event.clientY };
-
       holdDelayTimer = window.setTimeout(() => {
         if (holdCard !== card || !card.isConnected) {
           clearInspectionHold();
           return;
         }
-
         const progress = document.createElement("span");
         progress.className = "card-inspection-hold-progress";
         progress.setAttribute("aria-hidden", "true");
@@ -285,7 +306,6 @@ export default function CardPreviewRuntime() {
         card.append(progress);
         holdProgress = progress;
         holdDelayTimer = 0;
-
         holdTimer = window.setTimeout(() => {
           const inspectedCard = holdCard;
           if (!inspectedCard?.isConnected) {
@@ -338,6 +358,7 @@ export default function CardPreviewRuntime() {
       const insidePreview = event.target instanceof Node && previewFloating.refs.floating.current?.contains(event.target);
       if (!insidePreview) closePreview();
       if (!card || card.dataset.cardInspectable !== "true" || !event.isPrimary || event.button > 0) return;
+      if (matchGestureOwnedByMobileRuntime(card, event)) return;
       beginInspectionHold(card, event);
     };
 
@@ -473,10 +494,7 @@ export default function CardPreviewRuntime() {
         <FloatingPortal>
           <aside
             ref={glossaryFloating.refs.setFloating}
-            style={{
-              ...glossaryFloating.floatingStyles,
-              visibility: glossaryFloating.isPositioned ? "visible" : "hidden",
-            }}
+            style={{ ...glossaryFloating.floatingStyles, visibility: glossaryFloating.isPositioned ? "visible" : "hidden" }}
             className="card-glossary-floating"
             data-kind={glossary.term.kind}
             role="tooltip"
