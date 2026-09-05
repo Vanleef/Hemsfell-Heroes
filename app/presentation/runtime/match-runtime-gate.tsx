@@ -21,6 +21,7 @@ const EvolutionTooltipPortalRuntime = dynamic(() => import("./evolution-tooltip-
 const MatchFeedbackRuntime = dynamic(() => import("./match-feedback-runtime"), { ssr: false });
 const PhaseActionRuntime = dynamic(() => import("./phase-action-runtime"), { ssr: false });
 const MobileTouchInputRuntime = dynamic(() => import("./mobile-touch-input-runtime"), { ssr: false });
+const MatchPerformanceRuntime = dynamic(() => import("./match-performance-runtime"), { ssr: false });
 
 /**
  * ScreenRuntimeGate mounts this bundle only while the match screen exists.
@@ -47,5 +48,6 @@ export default function MatchRuntimeGate() {
     <MatchFeedbackRuntime />
     <PhaseActionRuntime />
     <MobileTouchInputRuntime />
+    <MatchPerformanceRuntime />
   </>;
 }
