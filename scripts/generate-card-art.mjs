@@ -1,7 +1,9 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
-import { fileURLToPath } from "node:url";
+import { execFileSync } from "node:child_process";
+import { createRequire } from "node:module";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const CATALOG_PATH = path.join(ROOT, "app/data/catalog/cards.generated.json");
@@ -9,8 +11,11 @@ const MANIFEST_PATH = path.join(ROOT, "app/data/catalog/card-art.generated.json"
 const VERSION = process.env.HEMSFELL_CARD_ART_VERSION || "v1";
 const WIDTHS = [160, 320, 640];
 const OUTPUT_DIR = path.join(ROOT, "public/cards/generated", VERSION);
+const TOOL_DIR = path.join(ROOT, ".card-art-tools");
+const CANVAS_VERSION = "1.0.8";
 const STRICT = process.env.HEMSFELL_CARD_ART_STRICT === "1";
 const FORCE = process.argv.includes("--force");
+const SKIP = process.env.HEMSFELL_CARD_ART_SKIP === "1";
 const CONCURRENCY = Math.max(1, Math.min(4, Number(process.env.HEMSFELL_CARD_ART_CONCURRENCY || 2)));
 const FILE_ID = "1gI26HASPp9KM_GtloaqBIj8ukY7Nq3CC";
 const CATALOG_URLS = [
@@ -40,6 +45,29 @@ async function completeOnDisk(pages) {
     }
   }
   return true;
+}
+
+async function loadCanvasModule() {
+  try {
+    return await import("@napi-rs/canvas");
+  } catch {
+    // Keep the application lockfile unchanged: this renderer exists only while
+    // producing build artifacts and is installed in an isolated tool prefix.
+    await fs.mkdir(TOOL_DIR, { recursive: true });
+    await fs.writeFile(path.join(TOOL_DIR, "package.json"), JSON.stringify({ private: true }, null, 2) + "\n");
+    const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+    console.log(`[card-art] installing isolated @napi-rs/canvas@${CANVAS_VERSION} renderer...`);
+    execFileSync(npm, [
+      "install",
+      "--prefix", TOOL_DIR,
+      "--no-package-lock",
+      "--no-save",
+      "--omit=dev",
+      `@napi-rs/canvas@${CANVAS_VERSION}`,
+    ], { cwd: ROOT, stdio: "inherit", env: process.env });
+    const toolRequire = createRequire(path.join(TOOL_DIR, "package.json"));
+    return import(pathToFileURL(toolRequire.resolve("@napi-rs/canvas")).href);
+  }
 }
 
 async function fetchCatalogue() {
@@ -76,6 +104,11 @@ async function encodeScaled(master, width, height, createCanvas) {
 }
 
 async function generate() {
+  if (SKIP) {
+    console.log("[card-art] skipped by HEMSFELL_CARD_ART_SKIP=1; runtime PDF fallback remains enabled");
+    return;
+  }
+
   const cards = JSON.parse(await fs.readFile(CATALOG_PATH, "utf8"));
   const pages = [...new Set(cards.map((card) => Number(card.page)).filter((page) => Number.isInteger(page) && page > 0))].sort((a, b) => a - b);
   await fs.mkdir(OUTPUT_DIR, { recursive: true });
@@ -86,7 +119,7 @@ async function generate() {
 
   const [{ getDocument }, canvasModule] = await Promise.all([
     import("pdfjs-dist/legacy/build/pdf.mjs"),
-    import("@napi-rs/canvas"),
+    loadCanvasModule(),
   ]);
   const { createCanvas, DOMMatrix, ImageData, Path2D } = canvasModule;
   globalThis.DOMMatrix ??= DOMMatrix;
@@ -127,9 +160,7 @@ async function generate() {
       const pageNumber = pages[cursor++];
       await renderPage(pageNumber);
       completed += 1;
-      if (completed % 20 === 0 || completed === pages.length) {
-        console.log(`[card-art] ${completed}/${pages.length}`);
-      }
+      if (completed % 20 === 0 || completed === pages.length) console.log(`[card-art] ${completed}/${pages.length}`);
     }
   };
 
