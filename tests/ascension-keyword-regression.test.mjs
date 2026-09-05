@@ -93,12 +93,12 @@ test("Valorian Ascensão 10 resolves automatically at maxEnergy 10 without spend
   assert.equal(result.players[0].deck.some((card) => Number(card.page) === 11), false);
 });
 
-test("activation affordance is centered above cards and Ascensão UI is never activatable", () => {
+test("activation affordance stays centered and Ascensão never needs a DOM repair pass", () => {
   const css = fs.readFileSync("app/presentation/styles/mobile-card-icon-scale-terminal.css", "utf8");
   const runtime = fs.readFileSync("app/presentation/runtime/mobile-touch-input-runtime.tsx", "utf8");
+  const activation = fs.readFileSync("app/rules-engine/cards/card-activation.mjs", "utf8");
   assert.match(css, /\.card-frame > \.card-frame-activation\s*\{[^}]*top:\s*0\s*!important[^}]*bottom:\s*auto\s*!important[^}]*left:\s*50%\s*!important[^}]*translate\(-50%,/s);
-  assert.match(css, /\[data-hh-ascension="true"\][^{]*> \.card-frame-activation\s*\{[^}]*display:\s*none\s*!important/s);
-  assert.match(runtime, /ASCENSION_TEXT_RE/);
-  assert.match(runtime, /data-hh-ascension/);
-  assert.match(runtime, /control\.hidden = true/);
+  assert.match(activation, /!isLegacyAscensionAbility\(compiled, ability\)/);
+  assert.doesNotMatch(runtime, /ASCENSION_TEXT_RE|data-hh-ascension|querySelectorAll<HTMLElement>\("\.screen-game \.card-frame"\)/);
+  assert.doesNotMatch(runtime, /new MutationObserver/);
 });
