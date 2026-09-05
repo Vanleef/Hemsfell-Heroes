@@ -42,6 +42,8 @@ next-env.d.ts
 /outputs/
 /work/
 /.ai-runtime/
+/.card-art-tools/
+/public/cards/generated/
 /reports/ai/
 
 # local editor files
