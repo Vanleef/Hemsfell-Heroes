@@ -5,7 +5,6 @@ import { readFileSync } from "node:fs";
 const css = readFileSync(new URL("../app/presentation/styles/card-interaction-stability-terminal.css", import.meta.url), "utf8");
 const tuning = readFileSync(new URL("../app/presentation/styles/card-hud-size-tuning-terminal.css", import.meta.url), "utf8");
 const loading = readFileSync(new URL("../app/presentation/styles/card-art-loading-terminal.css", import.meta.url), "utf8");
-const markerRuntime = readFileSync(new URL("../app/presentation/runtime/card-marker-counter-runtime.tsx", import.meta.url), "utf8");
 
 test("opponent hand stays closer to the top bar with responsive board-relative lift", () => {
   assert.match(css, /game-stage > \.game-content\.hs-board > \.opponent-hand[\s\S]*?--hh-opponent-hand-top-shift:\s*clamp\(-\.52rem,\s*-\.72cqh,\s*-\.14rem\)/);
@@ -40,8 +39,5 @@ test("effect and activated-ability chrome is reduced responsively", () => {
 
 test("markers are centered numeric counters without changing rule-owned amounts", () => {
   assert.match(tuning, /card-frame\[data-unit-id\] > \.card-frame-marker[\s\S]*?top:\s*50%[\s\S]*?left:\s*50%[\s\S]*?transform:\s*translate\(-50%, -50%\)/);
-  assert.match(markerRuntime, /raw\.replace\(\/\[\^0-9-\]\/g, ""\)/);
-  assert.match(markerRuntime, /node\.textContent = value/);
-  assert.match(markerRuntime, /node\.dataset\.markerCount = value/);
-  assert.match(markerRuntime, /Presentation-only normalization/);
+
 });

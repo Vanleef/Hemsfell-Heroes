@@ -24,6 +24,8 @@ export default function MatchLoadingRuntime() {
   const visibleRef = useRef(true);
 
   useEffect(() => {
+    // React Strict Mode replays setup/cleanup with the same ref in development.
+    visibleRef.current = true;
     const startedAt = performance.now();
     let disposed = false;
     let mutationFrame = 0;
@@ -56,7 +58,9 @@ export default function MatchLoadingRuntime() {
 
       return cards.every((card) => {
         const art = card.querySelector<HTMLCanvasElement>(REMOTE_ART_SELECTOR);
-        return !art || art.dataset.loaded === "true";
+        return !art || (art.dataset.loaded === "true"
+          && art.dataset.renderedPage === art.dataset.page
+          && art.width > 0 && art.height > 0);
       });
     };
 

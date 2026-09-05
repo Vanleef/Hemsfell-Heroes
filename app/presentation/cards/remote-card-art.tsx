@@ -144,7 +144,8 @@ function trimRasterCache() {
   while (rasterPromises.size > limit) {
     const candidates = [...rasterPromises.keys()].filter((key) => {
       const page = pageFromRasterKey(key);
-      return !isProtectedPage(page) && !rasterJobs.has(key);
+      // Retain the match's compact working set, not every detail/preview tier.
+      return !contextHotPages.has(page) && !isRetainedCompactRaster(key) && !rasterJobs.has(key);
     });
     const oldest = candidates.find((key) => !sessionRecentPages.has(pageFromRasterKey(key))) ?? candidates[0];
     if (!oldest) break;
@@ -390,6 +391,9 @@ function drainRasterQueue() {
     void job.run().then(job.resolve, job.reject).finally(() => {
       activeRasterJobs -= 1;
       rasterJobs.delete(job.key);
+      // Pending jobs are protected during insertion; enforce the budget again
+      // after they settle, including a burst with no subsequent card requests.
+      trimRasterCache();
       queueMicrotask(drainRasterQueue);
     });
   }
@@ -469,18 +473,20 @@ async function restorePersistentCompactRaster(page: number, pixelRatio: number) 
     if (!response) return null;
     const blob = await response.blob();
     const bitmap = await createImageBitmap(blob);
-    const canvas = document.createElement("canvas");
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    canvas.style.aspectRatio = response.headers.get("x-hemsfell-aspect") || "5 / 7";
-    const context = canvas.getContext("2d", { alpha: false });
-    if (!context) {
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      canvas.style.aspectRatio = response.headers.get("x-hemsfell-aspect") || "5 / 7";
+      const context = canvas.getContext("2d", { alpha: false });
+      if (!context) {
+        return null;
+      }
+      context.drawImage(bitmap, 0, 0);
+      return canvas;
+    } finally {
       bitmap.close();
-      return null;
     }
-    context.drawImage(bitmap, 0, 0);
-    bitmap.close();
-    return canvas;
   } catch {
     return null;
   }
@@ -491,9 +497,11 @@ function requestPersistentWriteDrain() {
   persistentWriteScheduled = true;
 
   const run = () => {
-    persistentWriteScheduled = false;
     const entry = persistentWriteQueue.shift();
-    if (!entry) return;
+    if (!entry) {
+      persistentWriteScheduled = false;
+      return;
+    }
     void (async () => {
       try {
         const blob = await new Promise<Blob | null>((resolve) => entry.canvas.toBlob(resolve, "image/webp", 0.84));
@@ -511,6 +519,7 @@ function requestPersistentWriteDrain() {
         // Cache Storage is opportunistic; PDF.js remains the canonical fallback.
       } finally {
         persistentWriteKeys.delete(entry.key);
+        persistentWriteScheduled = false;
         requestPersistentWriteDrain();
       }
     })();
@@ -532,23 +541,25 @@ function schedulePersistentWrite(key: string, page: number, canvas: HTMLCanvasEl
 }
 
 async function createRaster(page: number, bucket: number, pixelRatio: number, key: string, priority: RasterPriority) {
-  if (bucket === COMPACT_RASTER_CSS_WIDTH) {
-    const persisted = await restorePersistentCompactRaster(page, pixelRatio);
-    if (persisted) return persisted;
-  }
-
-  void loadCatalogPage(page);
   const desiredPriority = rasterPriority.get(key) ?? priority;
-  const raster = await scheduleRasterRender(
+  return scheduleRasterRender(
     key,
     page,
     desiredPriority,
-    () => renderPdfPageToCanvas(document.createElement("canvas"), page, bucket, pixelRatio),
+    async () => {
+      // Cache reads and bitmap decoding consume memory too. Keep the entire
+      // pipeline behind the same mobile/desktop priority and concurrency gate.
+      if (bucket === COMPACT_RASTER_CSS_WIDTH) {
+        const persisted = await restorePersistentCompactRaster(page, pixelRatio);
+        if (persisted) return persisted;
+      }
+      const raster = await renderPdfPageToCanvas(document.createElement("canvas"), page, bucket, pixelRatio);
+      if (bucket === COMPACT_RASTER_CSS_WIDTH) {
+        schedulePersistentWrite(persistentRasterUrl(page, pixelRatio), page, raster);
+      }
+      return raster;
+    },
   );
-  if (bucket === COMPACT_RASTER_CSS_WIDTH) {
-    schedulePersistentWrite(persistentRasterUrl(page, pixelRatio), page, raster);
-  }
-  return raster;
 }
 
 /** Cache the expensive PDF raster. Repeated copies and repeated screens share
@@ -568,8 +579,11 @@ function loadCardRaster(page: number, cssWidth: number, priority: RasterPriority
   }
 
   pending = createRaster(page, bucket, pixelRatio, key, priority).catch((error) => {
-    rasterPromises.delete(key);
-    rasterPriority.delete(key);
+    // A cancelled request can settle after the next screen requests this key.
+    if (rasterPromises.get(key) === pending) {
+      rasterPromises.delete(key);
+      rasterPriority.delete(key);
+    }
     throw error;
   });
   rasterPromises.set(key, pending);

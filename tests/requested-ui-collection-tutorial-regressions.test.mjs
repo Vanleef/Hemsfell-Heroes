@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 
 const layout = readFileSync("app/layout.tsx", "utf8");
 const outsideCss = readFileSync("app/presentation/styles/requested-outside-match-fixes-terminal.css", "utf8");
-const boardRuntime = readFileSync("app/presentation/tutorial/tutorial-current-board-runtime.tsx", "utf8");
+const tutorial = readFileSync("app/presentation/tutorial/tutorial-screen.tsx", "utf8");
 const boardCss = readFileSync("app/presentation/styles/tutorial-current-board-terminal.css", "utf8");
 const collectionPriority = readFileSync("app/presentation/cards/collection-selected-deck-priority-runtime.tsx", "utf8");
 
@@ -23,16 +23,9 @@ test("collection result count is contained by the filter panel on desktop and mo
   assert.match(outsideCss, /collection-toolbar > output[\s\S]*?max-width:\s*100%/);
 });
 
-test("tutorial board is rebuilt with the current live-match composition", () => {
-  assert.match(layout, /TutorialCurrentBoardRuntime/);
-  assert.match(boardRuntime, /tutorial-board-visual/);
-  assert.match(boardRuntime, /hh-tutorial-live-topbar/);
-  assert.match(boardRuntime, /hh-tutorial-live-hero/);
-  assert.match(boardRuntime, /hh-tutorial-live-energy/);
-  assert.match(boardRuntime, /hh-tutorial-live-piles/);
-  assert.match(boardRuntime, /slotRow\("aux", "opponent", "1"\)/);
-  assert.match(boardRuntime, /slotRow\("creature", "player", "4"\)/);
-  assert.match(boardCss, /hero panels left, paired field center/i);
+test("current tutorial board is rendered by the chapter and retains responsive styling", () => {
+  assert.match(tutorial, /<TutorialCurrentBoard \/>/);
+  assert.doesNotMatch(layout, /TutorialCurrentBoardRuntime/);
   assert.match(boardCss, /aspect-ratio:\s*16 \/ 9/);
   assert.match(boardCss, /orientation:\s*landscape[\s\S]*?pointer:\s*coarse/);
 });
@@ -41,7 +34,7 @@ test("selected collection deck outranks unrelated idle work and reprioritizes on
   assert.match(layout, /CollectionSelectedDeckPriorityRuntime/);
   assert.match(collectionPriority, /SELECTED_HERO_SELECTOR/);
   assert.match(collectionPriority, /SELECTED_DECK_CARD_SELECTOR/);
-  assert.match(collectionPriority, /visiblePages\.forEach\(\(page\) => promoteRemoteCardArtPage\(page, 0, true\)\)/);
+  assert.match(collectionPriority, /visiblePages\.forEach\(\(page\) => promoteRemoteCardArtPage\(page, 0, false\)\)/);
   assert.match(collectionPriority, /priority:\s*0,[\s\S]*?concurrency:\s*constrained\(\) \? 1 : 2/);
   assert.match(collectionPriority, /const eagerCount = constrained\(\) \? 8 : 14/);
   assert.match(collectionPriority, /priority:\s*1,[\s\S]*?signal:\s*deckController\.signal/);

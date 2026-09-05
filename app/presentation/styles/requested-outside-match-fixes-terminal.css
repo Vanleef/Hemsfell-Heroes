@@ -11,6 +11,8 @@ html body .screen-menu .landing {
 }
 
 html body .screen-menu .hero-fan {
+  container-type: inline-size;
+  min-width: 0;
   min-height: clamp(29rem, 68dvh, 39rem) !important;
   height: clamp(31rem, 72dvh, 41rem) !important;
   overflow: visible !important;
@@ -24,6 +26,9 @@ html body .screen-menu .hero-fan .remote-card-art {
 }
 
 html body .screen-menu .hero-fan .remote-card-art {
+  left: 50% !important;
+  width: min(42%, 19.375rem) !important;
+  transform: translateX(calc(-50% + var(--hero-fan-offset, 0) * clamp(1rem, 7cqi, 3.125rem))) rotate(calc(var(--hero-fan-offset, 0) * 7deg)) !important;
   top: clamp(1.5rem, 4.5dvh, 3.1rem) !important;
   transform-origin: 50% 112% !important;
   margin-bottom: clamp(.35rem, 1dvh, .8rem) !important;
@@ -93,5 +98,16 @@ html body .screen-decks .collection-lists > .collection-toolbar > output {
   html body .screen-menu .hero-fan {
     min-height: clamp(14rem, 72dvh, 21rem) !important;
     height: clamp(15rem, 76dvh, 22rem) !important;
+  }
+}
+
+/* Keep filters and their result count in normal flow at phone widths. */
+@media (max-width: 30rem) {
+  html body .screen-decks .collection-lists > .collection-toolbar {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  html body .screen-decks .collection-lists > .collection-toolbar > :is(label,output) {
+    grid-column: 1 / -1 !important;
+    justify-self: stretch !important;
   }
 }

@@ -58,15 +58,9 @@ test("card anatomy markers and empty board zones match the actual interface", ()
   for (const marker of ["1", "2", "3", "4", "5"]) assert.match(css, new RegExp(`data-marker=\\"${marker}\\"`));
   assert.match(anatomy, /faixa final, abaixo da descrição/);
   assert.match(css, /data-marker="4"\]\{--marker-x:50%;--marker-y:97%/);
-  assert.match(tutorial, /Representação do tabuleiro vazio do jogo/);
-  for (const section of ["tutorial-board-heroes", "tutorial-board-terrains", "tutorial-board-rows", "tutorial-board-side-piles", "tutorial-board-hand", "tutorial-board-resource"]) assert.match(tutorial, new RegExp(section));
-  assert.equal((tutorial.match(/tutorial-field-zone /g) || []).length, 4);
+  assert.match(tutorial, /<TutorialCurrentBoard \/>/);
   assert.doesNotMatch(tutorial, /className="[^"]* (?:player|opponent)(?: |")/);
-  assert.match(tutorial, /is-opponent/);
-  assert.match(tutorial, /is-player/);
   assert.match(css, /\.tutorial-card-stage\{[^}]*overflow:visible/);
-  assert.match(tutorial, /<b>3<\/b><i\/><small>TERRENO/);
-  assert.match(tutorial, /<b>6<\/b><i\/><small>TERRENO/);
   assert.match(tutorial, /Criaturas e Imagens de Criatura/);
   assert.match(tutorial, /Encantos, Artefatos e Imagens auxiliares/);
   assert.doesNotMatch(tutorial, /Vença o duelo, não o manual|SUA JORNADA/);

@@ -67,12 +67,12 @@ html body .tutorial-screen .hh-tutorial-live-hero > i {
   inset: 0;
   background:
     linear-gradient(to bottom, transparent 62%, rgb(0 0 0 / 72%)),
-    radial-gradient(circle at 55% 26%, #bcc7b6 0 8%, #6b755f 22%, #28392d 48%, #0b1410 76%);
+    url("/heroes/gimble.webp") 58% 18% / cover;
 }
 html body .tutorial-screen .hh-tutorial-live-hero.is-opponent > i {
   background:
     linear-gradient(to bottom, transparent 62%, rgb(0 0 0 / 72%)),
-    radial-gradient(circle at 48% 27%, #d8c5a2 0 7%, #92784b 23%, #3f2d1e 49%, #130d09 78%);
+    url("/heroes/goblin.webp") 50% 19% / cover;
 }
 html body .tutorial-screen .hh-tutorial-live-hero > span {
   position: absolute;
@@ -87,7 +87,8 @@ html body .tutorial-screen .hh-tutorial-live-hero > span {
 }
 html body .tutorial-screen .hh-tutorial-live-hero > span strong {
   grid-column: 1 / -1;
-  align-self: end;
+  grid-row: 1;
+  align-self: start;
   justify-self: center;
   font-size: clamp(.45rem, 1.08cqw, .78rem);
 }

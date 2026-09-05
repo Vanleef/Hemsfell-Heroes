@@ -102,7 +102,7 @@ test("confirmed Online snapshots use one canonical presentation owner for milest
 test("strict Online typecheck remains in every validation path", () => {
   const pkg = JSON.parse(packageJson);
   assert.equal(pkg.scripts["typecheck:online"], "tsc -p tsconfig.online.json --noEmit");
-  assert.match(pkg.scripts["vercel-build"], /typecheck:online/);
+  assert.match(pkg.scripts["vercel-build"], /npm run test:rules/);
   assert.match(pkg.scripts["test:rules"], /typecheck:online/);
 });
 

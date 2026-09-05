@@ -12,7 +12,6 @@ const COLLECTION_ROOT = ".screen-decks";
 const SELECTED_HERO_SELECTOR = ".screen-decks .collection-hero-inspect canvas.remote-card-art[data-page],.screen-decks .deck-rail button.active canvas.remote-card-art[data-page]";
 const SELECTED_DECK_CARD_SELECTOR = ".screen-decks .collection-lists .card-library canvas.remote-card-art[data-page]";
 const COMPACT_WIDTH = 144;
-const VISIBLE_WIDTH = 240;
 const BACKGROUND_IDLE_TIMEOUT_MS = 700;
 
 const constrained = () => typeof matchMedia === "function" && matchMedia("(pointer: coarse), (max-width: 48rem)").matches;
@@ -103,9 +102,9 @@ export default function CollectionSelectedDeckPriorityRuntime() {
       }
 
       const visiblePages = uniquePages(canvases.filter(isViewportVisible));
-      visiblePages.forEach((page) => promoteRemoteCardArtPage(page, 0, true));
+      visiblePages.forEach((page) => promoteRemoteCardArtPage(page, 0, false));
       if (visiblePages.length) {
-        void prewarmRemoteCardArtPages(visiblePages, VISIBLE_WIDTH, {
+        void prewarmRemoteCardArtPages(visiblePages, COMPACT_WIDTH, {
           priority: 0,
           concurrency: constrained() ? 1 : 2,
           signal: deckController.signal,
