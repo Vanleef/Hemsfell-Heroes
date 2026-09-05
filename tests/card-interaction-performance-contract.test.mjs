@@ -116,13 +116,13 @@ test("PDF catalogue warmup is contextual and match-specific prewarm remains avai
   assert.match(runtime, /data-page/);
 });
 
-test("match start preloads only the two real decks in critical and background layers", () => {
+test("match start releases after opening cards while retaining both decks for background warmup", () => {
   assert.match(page, /preloadMatchCardArt/);
   assert.match(page, /matchArtPreloadPlan=\(state:Game\)/);
   assert.match(page, /\.\.\.player\.hand,[\s\S]*?\.\.\.player\.deck,[\s\S]*?\.\.\.player\.extraDeck/);
-  assert.match(page, /player\.deck\.slice\(0,2\)/);
   assert.match(page, /criticalPages:\[\.\.\.heroPages,\.\.\.visibleCards\.map/);
   assert.match(page, /backgroundPages:allMatchCards\.map/);
+  assert.doesNotMatch(page, /criticalPages:[^\n]*player\.extraDeck/);
   assert.match(page, /heroAssetUrls=game\.players\.map/);
   assert.match(page, /assetUrls:\[MATCH_CARD_BACK_URL,\.\.\.heroAssetUrls\]/);
   assert.doesNotMatch(page, /preloadMatchCardArt\([\s\S]{0,200}cards\.map/);
