@@ -56,6 +56,46 @@ jobs:
       - name: Typecheck online surfaces
         run: npm run typecheck:online
 
+      - name: Diagnostic card art context
+        continue-on-error: true
+        run: node --test tests/card-art-context-memory-policy.test.mjs
+
+      - name: Diagnostic card art lifecycle
+        continue-on-error: true
+        run: node --test tests/card-art-lifecycle.test.mjs
+
+      - name: Diagnostic card inspection
+        continue-on-error: true
+        run: node --test tests/card-double-click-inspection-contract.test.mjs
+
+      - name: Diagnostic deck setup
+        continue-on-error: true
+        run: node --test tests/deck-picker-layout.test.mjs
+
+      - name: Diagnostic mobile touch
+        continue-on-error: true
+        run: node --test tests/mobile-touch-input-contract.test.mjs
+
+      - name: Diagnostic online HUD
+        continue-on-error: true
+        run: node --test tests/online-match-runtime.test.mjs
+
+      - name: Diagnostic presentation system
+        continue-on-error: true
+        run: node --test tests/presentation-system.test.mjs
+
+      - name: Diagnostic Rasmus UI contracts
+        continue-on-error: true
+        run: node --test tests/rasmus-hero-cat-regressions.test.mjs
+
+      - name: Diagnostic runtime performance
+        continue-on-error: true
+        run: node --test tests/runtime-performance-contract.test.mjs
+
+      - name: Diagnostic screen-gated UI neighbors
+        continue-on-error: true
+        run: node --test tests/match-ui-guard-regression.test.mjs tests/card-preview-collection-quality.test.mjs tests/hand-ai-tutorial-ui-contract.test.mjs
+
       - name: Run node rules and regression tests
         run: npm run test:node
 
