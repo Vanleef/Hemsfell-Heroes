@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState, type KeyboardEvent } from "react";
+import TutorialCurrentBoard from "./tutorial-current-board-runtime";
 import { RemoteCardArt } from "../cards/remote-card-art";
 import {
   BASIC_COMMANDS,
@@ -51,38 +52,8 @@ function TurnFlowVisual() {
 }
 
 function BoardVisual() {
-  const slots = (prefix: string) => <div className="tutorial-board-slot-row" aria-hidden="true">
-    {Array.from({ length: 5 }, (_, index) => <i key={`${prefix}-${index}`}/>) }
-  </div>;
-  const backs = (prefix: string) => <div className="tutorial-board-hand" aria-hidden="true">
-    {Array.from({ length: 7 }, (_, index) => <i key={`${prefix}-${index}`}/>) }
-  </div>;
-  const piles = (owner: "opponent" | "player") => <div className={`tutorial-board-piles is-${owner}`} aria-hidden="true">
-    <i>DECK</i><i>EXTRA</i><i>CEM.</i><i>OBS.</i>
-  </div>;
   return <div className="tutorial-board-diagram">
-    <div className="tutorial-board-visual" aria-label="Representação do tabuleiro vazio do jogo com as zonas do oponente e do jogador">
-      <div className="tutorial-board-phase">MANUTENÇÃO · PRINCIPAL · COMBATE · FINALIZAÇÃO</div>
-      <div className="tutorial-board-hand-area is-opponent">{backs("opponent-hand")}</div>
-      <div className="tutorial-board-resource is-opponent"><span>ENERGIA E RESERVA DO OPONENTE</span><i/></div>
-      <div className="tutorial-board-playfield">
-        <div className="tutorial-board-heroes" aria-hidden="true"><i><b>♥ 30</b></i><i><b>♥ 30</b></i></div>
-        <div className="tutorial-board-terrains">
-          <div><b>3</b><i/><small>TERRENO</small></div>
-          <div><b>6</b><i/><small>TERRENO</small></div>
-        </div>
-        <div className="tutorial-board-rows">
-          <div className="tutorial-field-zone is-opponent auxiliary"><b>1</b>{slots("opponent-auxiliary")}</div>
-          <div className="tutorial-field-zone is-opponent creature"><b>2</b>{slots("opponent-creature")}</div>
-          <div className="tutorial-field-divider"><i/><span>CAMPO CENTRAL</span><i/></div>
-          <div className="tutorial-field-zone is-player creature"><b>4</b>{slots("player-creature")}</div>
-          <div className="tutorial-field-zone is-player auxiliary"><b>5</b>{slots("player-auxiliary")}</div>
-        </div>
-        <div className="tutorial-board-side-piles">{piles("opponent")}{piles("player")}</div>
-      </div>
-      <div className="tutorial-board-resource is-player"><span>SUA ENERGIA E RESERVA</span><i/></div>
-      <div className="tutorial-board-hand-area is-player">{backs("player-hand")}</div>
-    </div>
+    <TutorialCurrentBoard />
     <div className="tutorial-board-legend" aria-label="Tipos permitidos em cada zona">
       <article><b>1</b><span><strong>Auxiliares do oponente</strong><small>Encantos, Artefatos e Imagens auxiliares.</small></span></article>
       <article><b>2</b><span><strong>Criaturas do oponente</strong><small>Criaturas e Imagens de Criatura.</small></span></article>

@@ -6,7 +6,7 @@ function mountGate() {
   let effect, now = 0, state = true, ready = false, frameId = 0;
   const frames = new Map(), timers = new Map(), listeners = new Set();
   const root = { dataset: {} };
-  const art = { dataset: {} };
+  const art = { dataset: { page: "3", renderedPage: "3" }, width: 144, height: 202 };
   const card = { querySelector: () => art };
   const hand = { querySelectorAll: () => ready ? [card] : [], querySelector: () => null };
   const observers = [];
@@ -34,7 +34,7 @@ function mountGate() {
   });
   api.default();
   return {
-    setup: () => effect(), root, frames, timers, listeners, observers,
+    setup: () => effect(), root, art, frames, timers, listeners, observers,
     get visible() { return state; },
     check({ hands = true, loaded = true, elapsed = 1500 } = {}) {
       ready = hands; art.dataset.loaded = String(loaded); now = elapsed;
@@ -79,4 +79,20 @@ test('unmounting a loading match cancels observers, timers and keyboard intercep
   assert.equal(h.frames.size + h.timers.size + h.listeners.size, 0);
   assert.equal(h.observers.at(-1).connected, false);
   assert.equal(h.root.dataset.hemsfellMatchLoading, undefined);
+});
+
+test('loading rejects stale or released pixels even if a previous load flag remains', () => {
+  const h = mountGate();
+  const cleanup = h.setup();
+  h.art.dataset.renderedPage = "4";
+  h.check();
+  assert.equal(h.visible, true);
+  h.art.dataset.renderedPage = "3";
+  h.art.width = 0;
+  h.check();
+  assert.equal(h.visible, true);
+  h.art.width = 144;
+  h.check();
+  assert.equal(h.visible, false);
+  cleanup();
 });

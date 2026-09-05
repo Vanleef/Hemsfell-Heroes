@@ -121,7 +121,6 @@ import CardPreviewRuntime from "./presentation/cards/card-preview-runtime";
 import CardArtWarmupRuntime from "./presentation/cards/card-art-warmup-runtime";
 import CollectionSelectedDeckPriorityRuntime from "./presentation/cards/collection-selected-deck-priority-runtime";
 import AssetContextUiCleanupRuntime from "./presentation/cards/asset-context-ui-cleanup-runtime";
-import TutorialCurrentBoardRuntime from "./presentation/tutorial/tutorial-current-board-runtime";
 import MatchRuntimeGate from "./presentation/runtime/match-runtime-gate";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -148,7 +147,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <CardArtWarmupRuntime />
       <CollectionSelectedDeckPriorityRuntime />
       <AssetContextUiCleanupRuntime />
-      <TutorialCurrentBoardRuntime />
       <MatchUiGuard />
       <MatchRuntimeGate />
       <OnlineMatchRuntime />
