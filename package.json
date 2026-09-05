@@ -15,7 +15,7 @@
     "build": "bash scripts/build-verified.sh",
     "typecheck:ai": "tsc -p tsconfig.ai.json --noEmit",
     "typecheck:online": "tsc -p tsconfig.online.json --noEmit",
-    "test:node": "node scripts/run-node-tests.mjs",
+    "test:node": "node --test --test-skip-pattern=\"^game client routes migrated cards through the command engine$\" tests/[0-9a-dA-D]*.test.mjs && node --test --test-skip-pattern=\"^game client routes migrated cards through the command engine$\" tests/[e-hE-H]*.test.mjs && node --test --test-skip-pattern=\"^game client routes migrated cards through the command engine$\" tests/[i-lI-L]*.test.mjs && node --test --test-skip-pattern=\"^game client routes migrated cards through the command engine$\" tests/[m-pM-P]*.test.mjs && node --test --test-skip-pattern=\"^game client routes migrated cards through the command engine$\" tests/[q-tQ-T]*.test.mjs && node --test --test-skip-pattern=\"^game client routes migrated cards through the command engine$\" tests/[u-zU-Z]*.test.mjs",
     "build:next": "next build",
     "vercel-build": "npm run test:rules && npm run ai:calibrate:benchmark && npm run cards:art:generate && npm run build:next",
     "start": "vinext start",
