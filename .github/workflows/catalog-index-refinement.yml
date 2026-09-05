@@ -60,14 +60,25 @@ jobs:
           if residual:
               raise SystemExit('residual canonical linear lookups: ' + ' | '.join(residual[:12]))
 
+          if source.count('cardsByPage.get(') < 4:
+              raise SystemExit('page index was not adopted broadly enough')
+          if source.count('cardsById.get(') < 2:
+              raise SystemExit('id index was not adopted broadly enough')
+
           path.write_text(source)
 
           test = Path('tests/card-catalog-index-performance.test.mjs')
-          test.write_text('''import test from "node:test";\nimport assert from "node:assert/strict";\nimport { readFile } from "node:fs/promises";\n\nconst page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");\n\ntest("canonical card lookups use page and id maps instead of repeated linear scans", () => {\n  assert.match(page, /const cardsByPage=new Map<number,CardDef>/);\n  assert.match(page, /const cardsById=new Map<string,CardDef>/);\n  assert.match(page, /cardsByPage\\.get\\(c\\.page\\)/);\n  assert.match(page, /cardsById\\.get\\(entry\\.cardId\\)/);\n  assert.doesNotMatch(page, /cards\\.find\\((?:card|candidate)=>(?:card|candidate)\\.(?:page|id)===/);\n});\n''')
+          test.write_text('''import test from "node:test";\nimport assert from "node:assert/strict";\nimport { readFile } from "node:fs/promises";\n\nconst page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");\n\ntest("canonical card lookups use page and id maps instead of repeated linear scans", () => {\n  assert.match(page, /const cardsByPage=new Map<number,CardDef>/);\n  assert.match(page, /const cardsById=new Map<string,CardDef>/);\n  assert.match(page, /cardsByPage\\.get\\(/);\n  assert.match(page, /cardsById\\.get\\(/);\n  assert.doesNotMatch(page, /cards\\.find\\((?:card|candidate)=>(?:card|candidate)\\.(?:page|id)===/);\n});\n''')
           PY
 
-      - name: Validate catalog lookup contracts
-        run: node --test tests/card-catalog-index-performance.test.mjs tests/card-interaction-performance-contract.test.mjs tests/rules-engine.test.mjs
+      - name: Validate catalog index contract
+        run: node --test tests/card-catalog-index-performance.test.mjs
+
+      - name: Validate interaction performance contracts
+        run: node --test tests/card-interaction-performance-contract.test.mjs
+
+      - name: Validate rules regression suite
+        run: node --test tests/rules-engine.test.mjs
 
       - name: Commit indexed catalog lookups
         run: |
