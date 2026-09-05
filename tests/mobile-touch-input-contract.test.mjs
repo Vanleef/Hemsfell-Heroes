@@ -4,10 +4,16 @@ import fs from "node:fs";
 
 const runtime = fs.readFileSync("app/presentation/runtime/mobile-touch-input-runtime.tsx", "utf8");
 const gate = fs.readFileSync("app/presentation/runtime/match-runtime-gate.tsx", "utf8");
+const mobileGate = fs.readFileSync("app/presentation/runtime/mobile-match-runtime-gate.tsx", "utf8");
 
-test("mobile input runtime is mounted after phase controls inside the match gate", () => {
+test("mobile input runtime is mounted after phase controls through a coarse-pointer gate", () => {
   const normalized = gate.replace(/\s+/g, " ");
-  assert.match(normalized, /<PhaseActionRuntime \/> <MobileTouchInputRuntime \/>/);
+  assert.match(normalized, /<PhaseActionRuntime \/> <MobileMatchRuntimeGate \/>/);
+  assert.match(gate, /import\("\.\/mobile-match-runtime-gate"\)/);
+  assert.doesNotMatch(gate, /import\("\.\/mobile-touch-input-runtime"\)/);
+  assert.match(mobileGate, /COARSE_POINTER_QUERY = "\(any-pointer: coarse\)"/);
+  assert.match(mobileGate, /import\("\.\/mobile-touch-input-runtime"\)/);
+  assert.match(mobileGate, /return active \? <MobileTouchInputRuntime \/> : null/);
 });
 
 test("touch drag reuses React drag handlers but caches geometry instead of hit-testing the whole DOM every move", () => {

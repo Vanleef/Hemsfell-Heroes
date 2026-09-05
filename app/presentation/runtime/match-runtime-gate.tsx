@@ -20,7 +20,7 @@ const TerrainFieldAnchorRuntime = dynamic(() => import("./terrain-field-anchor-r
 const EvolutionTooltipPortalRuntime = dynamic(() => import("./evolution-tooltip-portal-runtime"), { ssr: false });
 const MatchFeedbackRuntime = dynamic(() => import("./match-feedback-runtime"), { ssr: false });
 const PhaseActionRuntime = dynamic(() => import("./phase-action-runtime"), { ssr: false });
-const MobileTouchInputRuntime = dynamic(() => import("./mobile-touch-input-runtime"), { ssr: false });
+const MobileMatchRuntimeGate = dynamic(() => import("./mobile-match-runtime-gate"), { ssr: false });
 const MatchPerformanceRuntime = dynamic(() => import("./match-performance-runtime"), { ssr: false });
 
 /**
@@ -47,7 +47,7 @@ export default function MatchRuntimeGate() {
     <EvolutionTooltipPortalRuntime />
     <MatchFeedbackRuntime />
     <PhaseActionRuntime />
-    <MobileTouchInputRuntime />
+    <MobileMatchRuntimeGate />
     <MatchPerformanceRuntime />
   </>;
 }
