@@ -28,8 +28,6 @@ const assertOrdered = (source, tokens, label) => {
 
 const requiredFiles = [
   "app/page.tsx",
-  "app/home-shell.tsx",
-  "app/home-client.tsx",
   "app/data/catalog/cards.generated.json",
   "app/data/catalog/card-art.generated.json",
   "app/globals.css",
@@ -104,7 +102,7 @@ await validateCssImports("app/globals.css");
 await validateCssImports("app/presentation/styles/match-ui.css");
 await validateCssImports("app/presentation/styles/match-runtime-bundle.css");
 
-const [labStructure, matchStructure, responseStructure, layoutStructure, screenRuntimeGate, matchRuntimeGate, matchRuntimeBundle, pageEntry] = await Promise.all([
+const [labStructure, matchStructure, responseStructure, layoutStructure, screenRuntimeGate, matchRuntimeGate, matchRuntimeBundle] = await Promise.all([
   read("app/presentation/styles/board/lab.css"),
   read("app/presentation/styles/match-ui.css"),
   read("app/presentation/styles/response-window.css"),
@@ -112,7 +110,6 @@ const [labStructure, matchStructure, responseStructure, layoutStructure, screenR
   read("app/presentation/runtime/screen-runtime-gate.tsx"),
   read("app/presentation/runtime/match-runtime-gate.tsx"),
   read("app/presentation/styles/match-runtime-bundle.css"),
-  read("app/page.tsx"),
 ]);
 
 assertOrdered(labStructure, [
@@ -180,18 +177,14 @@ assertOrdered(matchRuntimeBundle, [
   '@import "./mobile-priority-hero-details.css";',
 ], "match-only CSS bundle order");
 
-if (!pageEntry.includes('import HomeShell from "./home-shell";') || pageEntry.includes('"use client"')) {
-  fail("app/page.tsx must remain the lightweight server route entry backed by HomeShell.");
-}
-
-for (const path of ["app/home-client.tsx", "app/rules-engine/effects.mjs", "app/rules-engine/engine.mjs"]) {
+for (const path of ["app/page.tsx", "app/rules-engine/effects.mjs", "app/rules-engine/engine.mjs"]) {
   const source = await read(path);
   if (/\.\.\.sourceId\b/.test(source)) fail(`${path} contains the malformed legacy ...sourceId shorthand.`);
 }
 
 notes.push(`${scriptFiles.length} reusable executable scripts remain under scripts/`);
 notes.push(`${workflowFiles.length} canonical GitHub workflow(s) remain`);
-notes.push("route shell, screen-gated runtimes, match-only CSS and presentation cascade are canonical");
+notes.push("canonical page contracts are preserved; match DOM runtimes and CSS are screen-gated");
 
 if (failures.length) {
   console.error("Project maintenance checks failed:\n" + failures.map((item) => ` - ${item}`).join("\n"));
