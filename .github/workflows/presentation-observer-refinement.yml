@@ -1,0 +1,97 @@
+name: Presentation observer refinement
+
+on:
+  push:
+    branches:
+      - refactor/performance-mobile-architecture-20260905
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/performance-mobile-architecture-20260905
+          fetch-depth: 0
+
+      - name: Refine presentation snapshot observer
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app/presentation/runtime/game-presentation-runtime.tsx')
+          source = path.read_text()
+          old = '''    const mutationTouchesPresentationState = (record: MutationRecord) => {
+                const target = record.target instanceof Element ? record.target : record.target.parentElement;
+                if (!target || target.closest(".hh-motion-layer,.hh-effect-layer")) return false;
+                const relevantSelector = ".card-frame,.player-hand,.opponent-hand,.player-hero,.player-piles,.enemy-piles,.player-field,.enemy-field,.player-terrain,.enemy-terrain";
+                if (target.closest(relevantSelector)) return true;
+                if (record.type !== "childList") return false;
+                return [...record.addedNodes, ...record.removedNodes].some((node) => node instanceof Element && (node.matches(relevantSelector) || !!node.querySelector(relevantSelector)));
+              };
+
+              const observer = new MutationObserver((records) => {
+                if (queued) return;
+                // Ignore clocks, logs and unrelated UI churn. Previously every text tick
+                // could clone the entire board, which caused avoidable jank in long games.
+                if (!records.some(mutationTouchesPresentationState) || refreshFrame) return;
+                refreshFrame = requestAnimationFrame(() => {
+                  refreshFrame = 0;
+                  if (!queued) stableDom = snapshotDom();
+                });
+              });
+              observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["class", "data-unit-id"] });'''
+          # The source block uses four-space indentation in the current runtime.
+          old = old.replace('              ', '    ')
+          new = '''    const SNAPSHOT_STRUCTURAL_TARGET_SELECTOR = ".card-frame,.field-slot,.terrain-slot,.player-hand,.opponent-hand,.player-hero,.pile-zone,.player-piles,.enemy-piles,.player-field,.enemy-field,.player-terrain,.enemy-terrain";
+              const SNAPSHOT_STRUCTURAL_NODE_SELECTOR = ".card-frame[data-unit-id],.original-card,.opponent-card-back,.player-hero,.pile-zone";
+              const SNAPSHOT_VALUE_SELECTOR = ".live-atk,.live-hp,.hero-life,.pile-zone strong";
+
+              const mutationTouchesPresentationState = (record: MutationRecord) => {
+                const target = record.target instanceof Element ? record.target : record.target.parentElement;
+                if (!target || target.closest(".hh-motion-layer,.hh-effect-layer")) return false;
+                if (record.type === "characterData") return !!target.closest(SNAPSHOT_VALUE_SELECTOR);
+                if (record.type === "attributes") return record.attributeName === "data-unit-id" && target.matches(".card-frame");
+                if (record.type !== "childList") return false;
+                if (target.matches(SNAPSHOT_STRUCTURAL_TARGET_SELECTOR) || !!target.closest(SNAPSHOT_VALUE_SELECTOR)) return true;
+                return [...record.addedNodes, ...record.removedNodes].some((node) =>
+                  node instanceof Element && (node.matches(SNAPSHOT_STRUCTURAL_NODE_SELECTOR) || !!node.querySelector(SNAPSHOT_STRUCTURAL_NODE_SELECTOR)),
+                );
+              };
+
+              const observer = new MutationObserver((records) => {
+                if (queued) return;
+                // Hover, targeting, selection and drag feedback mutate classes frequently.
+                // Only structural/card-value mutations need a new expensive DOM snapshot.
+                if (!records.some(mutationTouchesPresentationState) || refreshFrame) return;
+                refreshFrame = requestAnimationFrame(() => {
+                  refreshFrame = 0;
+                  if (!queued) stableDom = snapshotDom();
+                });
+              });
+              observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["data-unit-id"] });'''
+          new = new.replace('              ', '    ')
+          if source.count(old) != 1:
+              raise SystemExit(f'expected exactly one observer block, found {source.count(old)}')
+          path.write_text(source.replace(old, new))
+
+          test = Path('tests/presentation-observer-performance.test.mjs')
+          test.write_text('''import test from "node:test";\nimport assert from "node:assert/strict";\nimport { readFile } from "node:fs/promises";\n\nconst runtime = await readFile(new URL("../app/presentation/runtime/game-presentation-runtime.tsx", import.meta.url), "utf8");\n\ntest("presentation snapshot observer ignores cosmetic class churn", () => {\n  assert.match(runtime, /SNAPSHOT_STRUCTURAL_TARGET_SELECTOR/);\n  assert.match(runtime, /SNAPSHOT_VALUE_SELECTOR/);\n  assert.match(runtime, /record\\.type === "characterData"/);\n  assert.match(runtime, /record\\.attributeName === "data-unit-id"/);\n  assert.match(runtime, /target\\.matches\\(SNAPSHOT_STRUCTURAL_TARGET_SELECTOR\\)/);\n  assert.match(runtime, /attributeFilter:\\s*\\["data-unit-id"\\]/);\n  assert.doesNotMatch(runtime, /attributeFilter:\\s*\\[[^\\]]*"class"/);\n});\n''')
+          PY
+
+      - name: Validate focused presentation contracts
+        run: node --test tests/presentation-system.test.mjs tests/runtime-performance-contract.test.mjs tests/presentation-observer-performance.test.mjs
+
+      - name: Commit refined runtime
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/presentation-observer-refinement.yml
+          git add app/presentation/runtime/game-presentation-runtime.tsx tests/presentation-observer-performance.test.mjs
+          git commit -m "perf: ignore cosmetic presentation mutations"
+          git push origin HEAD:refactor/performance-mobile-architecture-20260905
