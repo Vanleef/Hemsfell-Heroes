@@ -3,28 +3,31 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "./match-loading-runtime.module.css";
 
-const MIN_MATCH_LOADING_MS = 1300;
-const HAND_RECHECK_MS = 350;
+const MIN_MATCH_LOADING_MS = 900;
+const HAND_RECHECK_MS = 180;
 const PLAYER_HAND_SELECTOR = ".screen-game .player-hand";
 const OPPONENT_HAND_SELECTOR = ".screen-game .opponent-hand";
 const HAND_CARD_SELECTOR = ".card-frame,.opponent-card-back,.official-card-back";
-const REMOTE_ART_SELECTOR = "canvas.remote-card-art[data-page]";
+const REMOTE_ART_SELECTOR = ".remote-card-art[data-page]";
 const MATCH_CARD_BACK_URL = "/cards/card-back-hemsfell.webp";
 
+function artReady(art: HTMLElement) {
+  if (art.dataset.loaded !== "true" || art.dataset.renderedPage !== art.dataset.page) return false;
+  if (art instanceof HTMLCanvasElement) return art.width > 0 && art.height > 0;
+  if (art instanceof HTMLImageElement) return art.complete && art.naturalWidth > 0 && art.naturalHeight > 0;
+  return true;
+}
+
 /**
- * Covers the board immediately after a match is mounted while match art warms.
- * The gate has one non-negotiable visual contract: it cannot disappear until
- * both opening hands have mounted and every visible/revealed hand raster is
- * usable. Hidden opponent cards are gated by the shared card-back image.
- * Higher-resolution upgrades and the rest of the match universe may continue
- * progressively after the overlay is gone.
+ * Covers the board only while the opening hand's essential visuals are missing.
+ * Static WebP art can release this gate as soon as the browser decodes it;
+ * development/PDF fallback canvases retain the same readiness contract.
  */
 export default function MatchLoadingRuntime() {
   const [visible, setVisible] = useState(true);
   const visibleRef = useRef(true);
 
   useEffect(() => {
-    // React Strict Mode replays setup/cleanup with the same ref in development.
     visibleRef.current = true;
     const startedAt = performance.now();
     let disposed = false;
@@ -53,14 +56,10 @@ export default function MatchLoadingRuntime() {
       if (!hand) return false;
       const cards = [...hand.querySelectorAll<HTMLElement>(`:scope > ${HAND_CARD_SELECTOR.split(",").join(",:scope > ")}`)];
       if (!cards.length) return false;
-
       if (opponent && hand.querySelector(".opponent-card-back,.official-card-back") && !cardBackReady) return false;
-
       return cards.every((card) => {
-        const art = card.querySelector<HTMLCanvasElement>(REMOTE_ART_SELECTOR);
-        return !art || (art.dataset.loaded === "true"
-          && art.dataset.renderedPage === art.dataset.page
-          && art.width > 0 && art.height > 0);
+        const art = card.querySelector<HTMLElement>(REMOTE_ART_SELECTOR);
+        return !art || artReady(art);
       });
     };
 
@@ -110,24 +109,18 @@ export default function MatchLoadingRuntime() {
 
     const cardBack = new Image();
     cardBack.decoding = "async";
-    cardBack.onload = () => {
-      cardBackReady = true;
-      scheduleCheck();
-    };
-    cardBack.onerror = () => {
-      // Do not falsely unlock the gate. The next retry remains behind loading
-      // until the browser can provide the shared hidden-card visual.
-      cardBackReady = false;
-    };
+    cardBack.onload = () => { cardBackReady = true; scheduleCheck(); };
+    cardBack.onerror = () => { cardBackReady = false; };
     cardBack.src = MATCH_CARD_BACK_URL;
     if (cardBack.complete && cardBack.naturalWidth > 0) cardBackReady = true;
 
     markMatchBusy(true);
-    observer.observe(document.body, {
+    const stage = document.querySelector(".screen-game .game-stage") ?? document.body;
+    observer.observe(stage, {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ["data-loaded", "data-page"],
+      attributeFilter: ["data-loaded", "data-page", "data-rendered-page"],
     });
     document.addEventListener("keydown", blockKeyboard, true);
     minimumTimer = window.setTimeout(tryFinish, MIN_MATCH_LOADING_MS);
