@@ -6,6 +6,10 @@ import { useEffect, useRef, useState } from "react";
 const MatchUiGuard = dynamic(() => import("../match/match-ui-guard"), { ssr: false });
 const MatchRuntimeGate = dynamic(() => import("./match-runtime-gate"), { ssr: false });
 const OnlineMatchRuntime = dynamic(() => import("../../application/online/online-match-runtime"), { ssr: false });
+const CardArtWarmupRuntime = dynamic(() => import("../cards/card-art-warmup-runtime"), { ssr: false });
+const GameGlossaryRuntime = dynamic(() => import("../glossary/game-glossary-runtime"), { ssr: false });
+const CardDoubleClickInspectRuntime = dynamic(() => import("../cards/card-double-click-inspect-runtime"), { ssr: false });
+const CardPreviewRuntime = dynamic(() => import("../cards/card-preview-runtime"), { ssr: false });
 const CollectionSelectedDeckPriorityRuntime = dynamic(
   () => import("../cards/collection-selected-deck-priority-runtime"),
   { ssr: false },
@@ -23,10 +27,12 @@ function screenFromApp(app: Element | null): RuntimeScreen {
   return "other";
 }
 
+const carriesCards = (screen: RuntimeScreen) => ["setup", "decks", "tutorial", "game"].includes(screen);
+
 /**
- * One small observer owns screen detection for every DOM-oriented runtime.
- * Match and collection helpers are code-split and do not mount on the landing,
- * setup or tutorial screens. This replaces several always-on body observers.
+ * One small observer owns screen detection for DOM-oriented runtimes. Card
+ * preview/glossary/warmup code does not exist on the landing screen, while
+ * match-only observers and CSS remain absent until the actual board mounts.
  */
 export default function ScreenRuntimeGate() {
   const [screen, setScreen] = useState<RuntimeScreen>("other");
@@ -58,8 +64,6 @@ export default function ScreenRuntimeGate() {
       frame = requestAnimationFrame(sync);
     };
 
-    // The application <main> is a direct body child. Observe only body child
-    // replacement instead of every descendant mutation in the application.
     const rootObserver = new MutationObserver(scheduleSync);
     rootObserver.observe(document.body, { childList: true });
     sync();
@@ -73,13 +77,21 @@ export default function ScreenRuntimeGate() {
     };
   }, []);
 
+  const cardRuntimes = carriesCards(screen) ? <>
+    <CardArtWarmupRuntime />
+    <GameGlossaryRuntime />
+    <CardDoubleClickInspectRuntime />
+    <CardPreviewRuntime />
+  </> : null;
+
   if (screen === "game") {
     return <>
+      {cardRuntimes}
       <MatchUiGuard />
       <MatchRuntimeGate />
       <OnlineMatchRuntime />
     </>;
   }
-  if (screen === "decks") return <CollectionSelectedDeckPriorityRuntime />;
-  return null;
+  if (screen === "decks") return <>{cardRuntimes}<CollectionSelectedDeckPriorityRuntime /></>;
+  return cardRuntimes;
 }
