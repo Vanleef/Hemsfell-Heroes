@@ -30,6 +30,7 @@ const cards = (rawCards as Card[])
   .map((card) => compileCard(card.page === 252
     ? { ...card, type: "Feitiço", tags: [...new Set([...(card.tags || []), "Acelerado"])] }
     : card) as Card);
+const cardsByPage = new Map(cards.map((card) => [card.page, card] as const));
 
 const uid = () => globalThis.crypto.randomUUID();
 const secureIndex = (maxExclusive: number) => {
@@ -55,7 +56,7 @@ const allFor = (id: DeckId) => {
 const poolFor = (id: DeckId) => {
   const supplied = suppliedDeckPages[id];
   return supplied
-    ? supplied.map(([page]) => cards.find((card) => card.page === page)).filter((card): card is Card => !!card && !card.imageCard && !disabledDeckCardIds.has(card.id))
+    ? supplied.map(([page]) => cardsByPage.get(page)).filter((card): card is Card => !!card && !card.imageCard && !disabledDeckCardIds.has(card.id))
     : allFor(id).filter((card) => !card.imageCard && !disabledDeckCardIds.has(card.id));
 };
 const extraFor = (id: DeckId) => allFor(id).filter((card) => card.imageCard && !disabledDeckCardIds.has(card.id) && (id !== "uruk" || [71,72,73,74,81].includes(card.page)));
@@ -69,7 +70,7 @@ const buildDeck = (id: DeckId, configured: UserDeck | null = null) => {
   if (configured) return expandUserDeckMain(configured, cards, (cardId, copy) => `${cardId}-${id}-${copy}-${uid()}`) as Card[];
   const supplied = suppliedDeckPages[id];
   if (supplied) return supplied.flatMap(([page, quantity]) => {
-    const card = cards.find((candidate) => candidate.page === page);
+    const card = cardsByPage.get(page);
     return card && !disabledDeckCardIds.has(card.id)
       ? Array.from({ length: quantity }, (_, copy) => ({ ...structuredClone(card), id: `${card.id}-${id}-${copy}-${uid()}` }))
       : [];
