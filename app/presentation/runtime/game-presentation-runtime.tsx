@@ -1319,26 +1319,33 @@ export default function GamePresentationRuntime() {
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
 
+    const SNAPSHOT_STRUCTURAL_TARGET_SELECTOR = ".card-frame,.field-slot,.terrain-slot,.player-hand,.opponent-hand,.player-hero,.pile-zone,.player-piles,.enemy-piles,.player-field,.enemy-field,.player-terrain,.enemy-terrain";
+    const SNAPSHOT_STRUCTURAL_NODE_SELECTOR = ".card-frame[data-unit-id],.original-card,.opponent-card-back,.player-hero,.pile-zone";
+    const SNAPSHOT_VALUE_SELECTOR = ".live-atk,.live-hp,.hero-life,.pile-zone strong";
+
     const mutationTouchesPresentationState = (record: MutationRecord) => {
       const target = record.target instanceof Element ? record.target : record.target.parentElement;
       if (!target || target.closest(".hh-motion-layer,.hh-effect-layer")) return false;
-      const relevantSelector = ".card-frame,.player-hand,.opponent-hand,.player-hero,.player-piles,.enemy-piles,.player-field,.enemy-field,.player-terrain,.enemy-terrain";
-      if (target.closest(relevantSelector)) return true;
+      if (record.type === "characterData") return !!target.closest(SNAPSHOT_VALUE_SELECTOR);
+      if (record.type === "attributes") return record.attributeName === "data-unit-id" && target.matches(".card-frame");
       if (record.type !== "childList") return false;
-      return [...record.addedNodes, ...record.removedNodes].some((node) => node instanceof Element && (node.matches(relevantSelector) || !!node.querySelector(relevantSelector)));
+      if (target.matches(SNAPSHOT_STRUCTURAL_TARGET_SELECTOR) || !!target.closest(SNAPSHOT_VALUE_SELECTOR)) return true;
+      return [...record.addedNodes, ...record.removedNodes].some((node) =>
+        node instanceof Element && (node.matches(SNAPSHOT_STRUCTURAL_NODE_SELECTOR) || !!node.querySelector(SNAPSHOT_STRUCTURAL_NODE_SELECTOR)),
+      );
     };
 
     const observer = new MutationObserver((records) => {
       if (queued) return;
-      // Ignore clocks, logs and unrelated UI churn. Previously every text tick
-      // could clone the entire board, which caused avoidable jank in long games.
+      // Hover, targeting, selection and drag feedback mutate classes frequently.
+      // Only structural/card-value mutations need a new expensive DOM snapshot.
       if (!records.some(mutationTouchesPresentationState) || refreshFrame) return;
       refreshFrame = requestAnimationFrame(() => {
         refreshFrame = 0;
         if (!queued) stableDom = snapshotDom();
       });
     });
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["class", "data-unit-id"] });
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["data-unit-id"] });
 
     return () => {
       disposed = true;
