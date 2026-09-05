@@ -1,9 +1,8 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
-import MatchLoadingRuntime from "./match-loading-runtime";
 
+const MatchLoadingRuntime = dynamic(() => import("./match-loading-runtime"), { ssr: false });
 const MatchUiRuntime = dynamic(() => import("../match/match-ui-runtime"), { ssr: false });
 const PresentationEventBridge = dynamic(() => import("./presentation-event-bridge"), { ssr: false });
 const PresentationInteractionRuntime = dynamic(() => import("./presentation-interaction-runtime"), { ssr: false });
@@ -22,22 +21,12 @@ const MatchFeedbackRuntime = dynamic(() => import("./match-feedback-runtime"), {
 const PhaseActionRuntime = dynamic(() => import("./phase-action-runtime"), { ssr: false });
 const MobileTouchInputRuntime = dynamic(() => import("./mobile-touch-input-runtime"), { ssr: false });
 
-/** Load match-only DOM runtimes after the board exists, not on menus/collection/tutorial. */
+/**
+ * ScreenRuntimeGate mounts this bundle only while the match screen exists.
+ * Keeping this component observer-free avoids a second global match detector
+ * while retaining per-feature code splitting inside the match chunk.
+ */
 export default function MatchRuntimeGate() {
-  const [active, setActive] = useState(false);
-
-  useEffect(() => {
-    const sync = () => {
-      const next = document.body.dataset.matchActive === "true" || !!document.querySelector(".game-stage");
-      setActive((current) => current === next ? current : next);
-    };
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, { attributes: true, attributeFilter: ["data-match-active"] });
-    sync();
-    return () => observer.disconnect();
-  }, []);
-
-  if (!active) return null;
   return <>
     <MatchLoadingRuntime />
     <MatchUiRuntime />
