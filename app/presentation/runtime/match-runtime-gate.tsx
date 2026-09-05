@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import "../styles/match-runtime-bundle.css";
 
 const MatchLoadingRuntime = dynamic(() => import("./match-loading-runtime"), { ssr: false });
 const MatchUiRuntime = dynamic(() => import("../match/match-ui-runtime"), { ssr: false });
