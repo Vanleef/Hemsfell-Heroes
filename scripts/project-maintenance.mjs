@@ -25,6 +25,7 @@ const assertOrdered = (source, tokens, label) => {
     cursor = index;
   }
 };
+const executableSource = (source) => source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
 
 const requiredFiles = [
   "app/page.tsx",
@@ -149,7 +150,7 @@ assertOrdered(layoutStructure, [
   '<ScreenRuntimeGate />',
 ], "app/layout.tsx shared runtime order");
 
-if (layoutStructure.includes('import "./presentation/styles/match-reference.css";')) {
+if (executableSource(layoutStructure).includes('import "./presentation/styles/match-reference.css";')) {
   fail("app/layout.tsx must not eagerly import the match-only cascade.");
 }
 
