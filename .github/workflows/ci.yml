@@ -47,8 +47,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run rules tests
-        run: npm run test:rules
+      - name: Validate project maintenance contracts
+        run: npm run prepare:project
+
+      - name: Typecheck AI surfaces
+        run: npm run typecheck:ai
+
+      - name: Typecheck online surfaces
+        run: npm run typecheck:online
+
+      - name: Run node rules and regression tests
+        run: npm run test:node
 
       - name: Run AI strategic benchmark
         run: npm run ai:calibrate:benchmark
