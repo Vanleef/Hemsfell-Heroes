@@ -15,6 +15,7 @@ on:
       - ui/fixed-board-composition
       - fix/mobile-responsive-layout-20260831
       - feat/targeting-hero-ui-20260903
+      - refactor/performance-mobile-architecture-20260905
   pull_request:
     branches:
       - main
@@ -78,6 +79,9 @@ jobs:
           name: card-implementation-audit
           path: docs/card-implementation-audit.json
           if-no-files-found: error
+
+      - name: Generate static card art
+        run: npm run cards:art:generate
 
       - name: Build Next.js application
         run: npm run build:next
