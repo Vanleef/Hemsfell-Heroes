@@ -91,15 +91,43 @@ jobs:
       - name: Build Next.js application
         run: npm run build:next
 
-  node-regression-shards:
+  discover-node-regression-groups:
     if: github.ref == 'refs/heads/refactor/performance-mobile-architecture-20260905'
-    name: Node regression shard ${{ matrix.shard }}
+    name: Discover node regression groups
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Build diagnostic matrix
+        id: matrix
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const files = fs.readdirSync('tests').filter((name) => name.endsWith('.test.mjs')).sort();
+          const groupSize = 6;
+          const include = [];
+          for (let index = 0; index < files.length; index += groupSize) {
+            const group = files.slice(index, index + groupSize);
+            include.push({
+              label: group.map((name) => name.replace(/\.test\.mjs$/, '')).join(' + '),
+              files: group.map((name) => `tests/${name}`).join(' '),
+            });
+          }
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `matrix=${JSON.stringify({ include })}\n`);
+          NODE
+
+  node-regression-groups:
+    if: github.ref == 'refs/heads/refactor/performance-mobile-architecture-20260905'
+    needs: discover-node-regression-groups
+    name: Node ${{ matrix.label }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     strategy:
       fail-fast: false
-      matrix:
-        shard: [0, 1, 2, 3]
+      matrix: ${{ fromJSON(needs.discover-node-regression-groups.outputs.matrix) }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -110,15 +138,6 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Run regression shard
+      - name: Run regression group
         shell: bash
-        env:
-          SHARD: ${{ matrix.shard }}
-        run: |
-          mapfile -t files < <(find tests -maxdepth 1 -name '*.test.mjs' -print | sort)
-          selected=()
-          for i in "${!files[@]}"; do
-            if (( i % 4 == SHARD )); then selected+=("${files[$i]}"); fi
-          done
-          printf 'Shard %s: %s files\n' "$SHARD" "${#selected[@]}"
-          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${selected[@]}"
+        run: node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" ${{ matrix.files }}
