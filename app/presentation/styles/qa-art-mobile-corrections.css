@@ -45,22 +45,46 @@ html body .screen-game .paired-field .field-slot.drop-accepted::after {
 .response-dialog .priority-source > b { color: #ffe49a; font-size: .68rem; letter-spacing: .08em; }
 .response-dialog .priority-source > span { color: #fff6d8; font-weight: 700; }
 
+/* Battlefield units use the same rune discs as cards in hand. The live values
+   are rule-owned; this only normalizes their visual shell and corner anchors. */
+html body .screen-game .card-frame[data-unit-id] > .original-card > :is(.live-atk,.live-hp) {
+  inline-size: clamp(.72rem, 27cqi, 1.35rem) !important;
+  block-size: clamp(.72rem, 27cqi, 1.35rem) !important;
+  min-inline-size: 0 !important;
+  min-block-size: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 50% !important;
+  font-size: clamp(.46rem, 17cqi, .78rem) !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  text-align: center !important;
+  transform: none !important;
+}
+html body .screen-game .card-frame[data-unit-id] > .original-card > .live-atk {
+  inset-inline: 4.2% auto !important;
+  inset-block: auto 3.8% !important;
+}
+html body .screen-game .card-frame[data-unit-id] > .original-card > .live-hp {
+  inset-inline: auto 4.2% !important;
+  inset-block: auto 3.8% !important;
+}
+
 @media (hover: none) and (pointer: coarse), (max-width: 760px) {
   html body .screen-game .paired-field .field-slot > .card-frame > .original-card > .live-atk {
-    inset-inline: 4% auto !important;
-    inset-block: auto 4% !important;
+    inset-inline: 4.2% auto !important;
+    inset-block: auto 3.8% !important;
     transform: none !important;
   }
   html body .screen-game .paired-field .field-slot > .card-frame > .original-card > .live-hp {
-    inset-inline: auto 4% !important;
-    inset-block: auto 4% !important;
+    inset-inline: auto 4.2% !important;
+    inset-block: auto 3.8% !important;
     transform: none !important;
   }
   html body .screen-game .paired-field .field-slot > .card-frame > .original-card > :is(.live-atk,.live-hp) {
-    inline-size: clamp(.84rem, 4.8cqi, 1.22rem) !important;
-    min-inline-size: 0 !important;
-    font-size: clamp(.5rem, 2.7cqi, .78rem) !important;
-    text-align: center !important;
+    inline-size: clamp(.72rem, 27cqi, 1.18rem) !important;
+    block-size: clamp(.72rem, 27cqi, 1.18rem) !important;
+    font-size: clamp(.46rem, 17cqi, .72rem) !important;
   }
   /* Reserve a compact edge lane for heroes; field and hand retain the center. */
   html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel {
@@ -74,4 +98,16 @@ html body .screen-game .paired-field .field-slot.drop-accepted::after {
     transform-origin: right top !important;
   }
   html body .screen-game .hero-ability-rail { max-inline-size: 2.25rem !important; }
+}
+
+@media (orientation: landscape) and (hover: none) and (pointer: coarse) {
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board {
+    --hero-overlay-edge-x: max(.4rem, env(safe-area-inset-left)) !important;
+    --hero-overlay-enemy-top: max(2.7rem, calc(env(safe-area-inset-top) + 2.15rem)) !important;
+    --hero-overlay-player-bottom: max(.48rem, env(safe-area-inset-bottom)) !important;
+  }
+  html body .screen-game.screen-game .game-stage > .game-content.hs-board > .hero-panel-stack.canonical-hero-panel {
+    inline-size: min(19cqw, 8.4rem) !important;
+    max-inline-size: min(19cqw, 8.4rem) !important;
+  }
 }
