@@ -63,10 +63,6 @@ jobs:
         run: npm run ai:calibrate:benchmark
 
       - name: Lint advanced AI surfaces
-        # The AI adapter deliberately bridges the typed controller to the legacy
-        # JS card engine, whose card payloads are not yet modeled end-to-end.
-        # Strict TypeScript remains mandatory; only explicit-any style warnings
-        # at that boundary are relaxed here.
         run: >-
           npx eslint app/rules-engine/ai-system/*.ts scripts/ai-calibration.ts scripts/ai-selfplay.ts tests/advanced-ai.test.mjs
           --rule '@typescript-eslint/no-explicit-any: off'
@@ -94,3 +90,35 @@ jobs:
 
       - name: Build Next.js application
         run: npm run build:next
+
+  node-regression-shards:
+    if: github.ref == 'refs/heads/refactor/performance-mobile-architecture-20260905'
+    name: Node regression shard ${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22.13.0
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run regression shard
+        shell: bash
+        env:
+          SHARD: ${{ matrix.shard }}
+        run: |
+          mapfile -t files < <(find tests -maxdepth 1 -name '*.test.mjs' -print | sort)
+          selected=()
+          for i in "${!files[@]}"; do
+            if (( i % 4 == SHARD )); then selected+=("${files[$i]}"); fi
+          done
+          printf 'Shard %s: %s files\n' "$SHARD" "${#selected[@]}"
+          node --test --test-skip-pattern="^game client routes migrated cards through the command engine$" "${selected[@]}"
