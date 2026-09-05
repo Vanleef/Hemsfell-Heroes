@@ -22,15 +22,21 @@ test("card preview uses Floating UI middleware and a body-level portal", () => {
   assert.match(matchCss, /body > \[data-floating-ui-portal\]/);
 });
 
-test("card preview runtime is mounted globally in the root layout", async () => {
-  const [layout, matchRuntime] = await Promise.all([
+test("card preview runtime is gated to card-bearing screens", async () => {
+  const [layout, screenGate, matchRuntime] = await Promise.all([
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/presentation/runtime/screen-runtime-gate.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/presentation/match/match-ui-runtime.tsx", import.meta.url), "utf8"),
   ]);
-  assert.match(layout, /import CardPreviewRuntime from ["']\.\/presentation\/cards\/card-preview-runtime["']/);
-  assert.match(layout, /<CardPreviewRuntime\s*\/>/);
+  const executableLayout = layout.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/.*$/gm, "");
+  assert.match(executableLayout, /ScreenRuntimeGate/);
+  assert.doesNotMatch(executableLayout, /import CardPreviewRuntime/);
+  assert.match(screenGate, /const CardPreviewRuntime = dynamic/);
+  assert.match(screenGate, /const carriesCards/);
+  assert.match(screenGate, /<CardPreviewRuntime \/>/);
   assert.doesNotMatch(matchRuntime, /CardPreviewRuntime/);
 });
+
 test("Floating UI coordinates are not overridden by tooltip CSS", () => {
   const floatingBlock = matchCss.match(/\.card-preview-floating\.card-tooltip \{([\s\S]*?)\n\}/)?.[1] ?? "";
   assert.ok(floatingBlock, "expected floating preview CSS block");
@@ -39,17 +45,24 @@ test("Floating UI coordinates are not overridden by tooltip CSS", () => {
   assert.match(runtime, /floatingStyles/);
 });
 
-test("floating preview has complete content before its first visible paint", () => {
-  assert.match(runtime, /function previewData[\s\S]*\.rich-card-text/);
-  assert.match(runtime, /title, meta, rules, keywords, subtypes/);
+test("floating preview builds complete content from the canonical catalog before first paint", () => {
+  assert.match(runtime, /catalogCardByPage\(page\)/);
+  assert.match(runtime, /function ruleParts/);
+  assert.match(runtime, /title: name, meta, rules, keywords, subtypes/);
   assert.match(runtime, /refs\.setReference\(card\);\s*setPreview\(next\)/);
   assert.match(runtime, /const visible = previewFloating\.isPositioned/);
   assert.match(runtime, /visibility: visible \? "visible" : "hidden"/);
   assert.match(runtime, /data-positioned=\{visible \? "true" : "false"\}/);
+  assert.doesNotMatch(runtime, /querySelector<HTMLElement>\(":scope > \.card-tooltip"\)/);
+  assert.doesNotMatch(runtime, /\.rich-card-text/);
   assert.doesNotMatch(runtime, /replaceChildren/);
-  assert.doesNotMatch(runtime, /contentRef/);
-  assert.doesNotMatch(runtime, /positionReady/);
-  assert.doesNotMatch(runtime, /update\(\)\.then/);
+});
+
+test("inline semantic tooltip trees are pruned outside hands", () => {
+  assert.match(runtime, /INLINE_TOOLTIP_SELECTOR/);
+  assert.match(runtime, /pruneInlineSemanticTooltips/);
+  assert.match(runtime, /if \(tooltip\.closest\(HAND_SELECTOR\)\) continue/);
+  assert.match(runtime, /tooltip\.remove\(\)/);
 });
 
 test("every rendered card exposes a preview source, including battlefield units", () => {
@@ -70,6 +83,13 @@ test("one-second press opens detailed inspection without also executing the card
   assert.match(page, /aria-disabled=\{disabled\|\|undefined\}/);
   assert.match(page, /const interactionClick=!disabled&&/);
   assert.doesNotMatch(page, /requestCardInspection/);
+});
+
+test("match coarse-pointer long press is owned by the unified mobile gesture runtime", () => {
+  assert.match(runtime, /matchGestureOwnedByMobileRuntime/);
+  assert.match(runtime, /card\.closest\("\.screen-game"\)/);
+  assert.match(runtime, /event\.pointerType === "touch" \|\| event\.pointerType === "pen"/);
+  assert.match(runtime, /if \(matchGestureOwnedByMobileRuntime\(card, event\)\) return/);
 });
 
 test("press progress is centered, non-interactive and canceled by movement or dragging", () => {
@@ -105,6 +125,7 @@ test("native browser titles are removed from card tooltip targets", () => {
   assert.match(runtime, /NATIVE_TITLE_SELECTOR/);
   assert.match(runtime, /removeAttribute\("title"\)/);
   assert.match(runtime, /MutationObserver/);
+  assert.match(runtime, /document\.querySelector<HTMLElement>\("main\.hh-app"\)/);
   assert.doesNotMatch(page, /data-tip=\{keyword\.description\} title=/);
   assert.doesNotMatch(page, /data-tip=\{keyword\?\.description\} title=/);
   assert.doesNotMatch(remoteCardArt, /\s+title=\{/);
