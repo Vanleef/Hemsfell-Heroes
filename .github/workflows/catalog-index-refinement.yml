@@ -1,0 +1,73 @@
+name: Catalog index refinement
+
+on:
+  push:
+    branches:
+      - refactor/performance-mobile-architecture-20260905
+
+permissions:
+  contents: write
+
+jobs:
+  refine:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/performance-mobile-architecture-20260905
+          fetch-depth: 0
+
+      - name: Replace linear catalog lookups
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('app/page.tsx')
+          source = path.read_text()
+
+          anchor = 'const cards=(rawCards as CardDef[]).filter(card=>!removedCatalogPages.has(card.page)).map(card=>compileCard(card.page===252?{...card,type:"Feitiço",tags:[...new Set([...(card.tags||[]),"Acelerado"])]}:card) as CardDef);'
+          indexed = anchor + '\nconst cardsByPage=new Map<number,CardDef>(cards.map(card=>[card.page,card]));\nconst cardsById=new Map<string,CardDef>(cards.map(card=>[card.id,card]));'
+          if source.count(anchor) != 1:
+              raise SystemExit(f'catalog anchor count={source.count(anchor)}')
+          source = source.replace(anchor, indexed, 1)
+
+          replacements = {
+            'supplied.map(([page])=>cards.find(card=>card.page===page))': 'supplied.map(([page])=>cardsByPage.get(page))',
+            '{card:cards.find(candidate=>candidate.page===page),quantity}': '{card:cardsByPage.get(page),quantity}',
+            'const card=cards.find(candidate=>candidate.page===page);': 'const card=cardsByPage.get(page);',
+            'const template=cards.find(card=>card.page===c.page)??c;': 'const template=cardsByPage.get(c.page)??c;',
+            'printed=cards.find(card=>card.page===page);': 'printed=cardsByPage.get(page);',
+            'const heroCard=cards.find(card=>card.page===deckById(p.heroId).heroPage),spellName=': 'const heroCard=cardsByPage.get(deckById(p.heroId).heroPage),spellName=',
+            'cards.find(card=>card.id===sourceCommand.cardId)': 'cardsById.get(sourceCommand.cardId)',
+            'cards.find(candidate=>candidate.id===entry.cardId)': 'cardsById.get(entry.cardId)',
+            'cards.find(card=>card.id===cardId)': 'cardsById.get(cardId)',
+            'cards.find(card=>card.page===deckById(player.heroId).heroPage)!': 'cardsByPage.get(deckById(player.heroId).heroPage)!',
+            'cards.find(card=>card.page===selectedDeck.heroPage)||null': 'cardsByPage.get(selectedDeck.heroPage)||null',
+            'cards.find(card=>card.page===deckById(foe.heroId).heroPage)||null': 'cardsByPage.get(deckById(foe.heroId).heroPage)||null',
+            'cards.find(card=>card.page===deckById(me.heroId).heroPage)||null': 'cardsByPage.get(deckById(me.heroId).heroPage)||null',
+          }
+          for old, new in replacements.items():
+              count = source.count(old)
+              if count < 1:
+                  raise SystemExit(f'missing expected lookup: {old}')
+              source = source.replace(old, new)
+
+          path.write_text(source)
+
+          test = Path('tests/card-catalog-index-performance.test.mjs')
+          test.write_text('''import test from "node:test";\nimport assert from "node:assert/strict";\nimport { readFile } from "node:fs/promises";\n\nconst page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");\n\ntest("canonical card lookups use page and id maps instead of repeated linear scans", () => {\n  assert.match(page, /const cardsByPage=new Map<number,CardDef>/);\n  assert.match(page, /const cardsById=new Map<string,CardDef>/);\n  assert.match(page, /cardsByPage\\.get\\(c\\.page\\)/);\n  assert.match(page, /cardsById\\.get\\(entry\\.cardId\\)/);\n  assert.doesNotMatch(page, /cards\\.find\\((?:card|candidate)=>(?:card|candidate)\\.(?:page|id)===/);\n});\n''')
+          PY
+
+      - name: Validate catalog lookup contracts
+        run: node --test tests/card-catalog-index-performance.test.mjs tests/card-interaction-performance-contract.test.mjs tests/rules-engine.test.mjs
+
+      - name: Commit indexed catalog lookups
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/catalog-index-refinement.yml
+          git add app/page.tsx tests/card-catalog-index-performance.test.mjs
+          git commit -m "perf: index canonical card lookups"
+          git push origin HEAD:refactor/performance-mobile-architecture-20260905
