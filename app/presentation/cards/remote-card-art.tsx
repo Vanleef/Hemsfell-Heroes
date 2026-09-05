@@ -656,7 +656,9 @@ export function preloadMatchCardArt({
     ...assetUrls.map(preloadStaticImageAsset),
     prewarmRemoteCardArtPages(critical, COMPACT_RASTER_CSS_WIDTH, {
     priority: 0,
-    concurrency: isMemoryConstrainedDevice() ? 1 : 2,
+    // Match startup only renders compact rasters. Two workers substantially
+    // reduce the opening-hand wait on mobile without opening unbounded PDF work.
+    concurrency: 2,
     signal: controller.signal,
   }),
   ]).then(() => {
@@ -667,7 +669,7 @@ export function preloadMatchCardArt({
     if (controller.signal.aborted) return;
     void essential.then(() => controller.signal.aborted ? undefined : prewarmRemoteCardArtPages(background, COMPACT_RASTER_CSS_WIDTH, {
       priority: 3,
-      concurrency: isMemoryConstrainedDevice() ? 1 : 2,
+      concurrency: 1,
       signal: controller.signal,
     }));
   };
