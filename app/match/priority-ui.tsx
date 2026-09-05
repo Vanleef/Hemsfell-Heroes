@@ -29,6 +29,8 @@ type ResponseOption<TCard> = { card: TCard; index: number; cost: number };
 export function ResponseModal<TCard>({
   action,
   sourceId,
+  sourceLabel,
+  stackDepth = 0,
   feedback,
   available,
   heroAbilities,
@@ -44,6 +46,8 @@ export function ResponseModal<TCard>({
 }: {
   action: string;
   sourceId?: string;
+  sourceLabel?: string;
+  stackDepth?: number;
   feedback?: string;
   available: Array<ResponseOption<TCard>>;
   heroAbilities: Array<{ abilityId: string; label: string }>;
@@ -80,5 +84,5 @@ export function ResponseModal<TCard>({
   }, []);
   const seconds = useDeadlineSeconds(deadline);
   const hasResponses = available.length > 0 || heroAbilities.length > 0;
-  return <div className="overlay response-overlay"><ResponseSpotlight sourceId={sourceId}/><section ref={dialogRef} tabIndex={-1} className="response-dialog" role="dialog" aria-modal="true" aria-labelledby="response-title"><header><span>JANELA DE RESPOSTA</span><b className={seconds <= 5 ? "urgent" : ""}>⏱ {seconds}s</b><b>{offTurn ? "Reserva" : "Energia"} · {budget}</b></header><h2 id="response-title">Sua prioridade</h2><div className="priority-status"><b>{passes === 0 ? "Primeiro passe" : "Segundo passe"}</b><span>{passes === 0 ? "A prioridade voltará ao jogador da ação" : "A ação será encerrada após este passe."}</span></div><p>O oponente realizou: <strong>{action}</strong>. Use um Feitiço Acelerado, uma habilidade ativa disponível do seu Herói ou passe.</p>{available.length ? <div className="response-cards">{available.map(({ card, index, cost }) => <div key={`${cardName(card)}-${index}`}>{renderCard(card, index, () => onPlay(index))}<b>{cardName(card)}</b><small>Responder · custo {cost}</small></div>)}</div> : null}{heroAbilities.length ? <div className="response-hero-abilities">{heroAbilities.map(ability => <button key={ability.abilityId} onClick={() => onHeroAbility(ability.abilityId)}><i>⚡</i><span><b>{ability.label}</b><small>Habilidade ativa do Herói</small></span></button>)}</div> : null}{!hasResponses ? <div className="no-response-card"><i>◇</i><b>Nenhuma resposta utilizável</b><span>Não há Feitiço Acelerado nem habilidade ativa de Herói legal neste momento. Passe para devolver a prioridade.</span></div> : null}{feedback&&<p role="alert" className="response-feedback">{feedback}</p>}<footer><button className="pass-response" onClick={onPass}>Passar prioridade</button></footer></section></div>;
+  return <div className="overlay response-overlay"><ResponseSpotlight sourceId={sourceId}/><section ref={dialogRef} tabIndex={-1} className="response-dialog" role="dialog" aria-modal="true" aria-labelledby="response-title"><header><span>JANELA DE RESPOSTA</span><b className={seconds <= 5 ? "urgent" : ""}>⏱ {seconds}s</b><b>{offTurn ? "Reserva" : "Energia"} · {budget}</b></header><h2 id="response-title">Sua prioridade</h2><div className="priority-status"><b>{passes === 0 ? "Primeiro passe" : "Segundo passe"}</b><span>{passes === 0 ? "A prioridade voltará ao jogador da ação" : "A ação será encerrada após este passe."}</span></div>{sourceLabel&&<div className="priority-source" aria-label={`Origem da prioridade: ${sourceLabel}`}><b>ORIGEM {stackDepth > 1 ? `· PILHA ${stackDepth}` : ""}</b><span>{sourceLabel}</span></div>}<p>O oponente realizou: <strong>{action}</strong>. Use um Feitiço Acelerado, uma habilidade ativa disponível do seu Herói ou passe.</p>{available.length ? <div className="response-cards">{available.map(({ card, index, cost }) => <div key={`${cardName(card)}-${index}`}>{renderCard(card, index, () => onPlay(index))}<b>{cardName(card)}</b><small>Responder · custo {cost}</small></div>)}</div> : null}{heroAbilities.length ? <div className="response-hero-abilities">{heroAbilities.map(ability => <button key={ability.abilityId} onClick={() => onHeroAbility(ability.abilityId)}><i>⚡</i><span><b>{ability.label}</b><small>Habilidade ativa do Herói</small></span></button>)}</div> : null}{!hasResponses ? <div className="no-response-card"><i>◇</i><b>Nenhuma resposta utilizável</b><span>Não há Feitiço Acelerado nem habilidade ativa de Herói legal neste momento. Passe para devolver a prioridade.</span></div> : null}{feedback&&<p role="alert" className="response-feedback">{feedback}</p>}<footer><button className="pass-response" onClick={onPass}>Passar prioridade</button></footer></section></div>;
 }
