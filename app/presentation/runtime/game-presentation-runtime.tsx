@@ -48,10 +48,17 @@ type Flight = {
   uid?: string;
   sourcePlay?: boolean;
 };
+type UnitPresentationDiff = {
+  beforeById: Map<string, any>;
+  afterById: Map<string, any>;
+  changedIds: Set<string>;
+  afterIds: Set<string>;
+};
 type PresentationReservation = {
   arrivalGate: HTMLStyleElement | null;
   stateGate: HTMLStyleElement | null;
   heldUnits: HeldStateVisual[];
+  unitDiff: UnitPresentationDiff;
 };
 type PresentationWindow = Window & { __hemsfellPresentationBusy?: boolean };
 
@@ -144,22 +151,33 @@ function installArrivalGate(detail: PresentationDetail) {
   return gate;
 }
 
-function changedStateUnitIds(detail: PresentationDetail) {
-  const ids = new Set<string>();
+function buildUnitPresentationDiff(detail: PresentationDetail): UnitPresentationDiff {
+  const beforeById = new Map<string, any>();
+  const afterById = new Map<string, any>();
   for (const owner of [0, 1] as const) {
-    const before = new Map(stateFields(detail.before?.players?.[owner]).map((card: any) => [stateId(card), card]));
-    const after = new Map(stateFields(detail.after?.players?.[owner]).map((card: any) => [stateId(card), card]));
-    for (const [uid, old] of before) {
-      if (!uid) continue;
-      const fresh = after.get(uid);
-      if (!fresh || unitPresentationFingerprint(old) !== unitPresentationFingerprint(fresh)) ids.add(uid);
+    for (const card of stateFields(detail.before?.players?.[owner])) {
+      const uid = stateId(card);
+      if (uid) beforeById.set(uid, card);
+    }
+    for (const card of stateFields(detail.after?.players?.[owner])) {
+      const uid = stateId(card);
+      if (uid) afterById.set(uid, card);
     }
   }
-  return ids;
+  const changedIds = new Set<string>();
+  for (const [uid, old] of beforeById) {
+    const fresh = afterById.get(uid);
+    if (!fresh || unitPresentationFingerprint(old) !== unitPresentationFingerprint(fresh)) changedIds.add(uid);
+  }
+  return { beforeById, afterById, changedIds, afterIds: new Set(afterById.keys()) };
 }
 
-function installStateGate(detail: PresentationDetail) {
-  const selectors = [...changedStateUnitIds(detail)].map((uid) =>
+function changedStateUnitIds(unitDiff: UnitPresentationDiff) {
+  return unitDiff.changedIds;
+}
+
+function installStateGate(unitDiff: UnitPresentationDiff) {
+  const selectors = [...changedStateUnitIds(unitDiff)].map((uid) =>
     `.game-stage .card-frame[data-unit-id="${escapedSelectorValue(uid)}"] > .original-card`,
   );
   if (!selectors.length) return null;
@@ -397,14 +415,12 @@ function holdStateVisual(layer: HTMLElement, destination: HTMLElement | null, fa
   return { destination, overlay, uid, deferredDeath, levelUp, zoneTransfer, released: false };
 }
 
-function reserveChangedUnits(layer: HTMLElement, captured: DomSnapshot, detail: PresentationDetail) {
-  const changed = changedStateUnitIds(detail);
-  const afterIds = new Set(stateFields(detail.after?.players?.[0]).concat(stateFields(detail.after?.players?.[1])).map(stateId));
+function reserveChangedUnits(layer: HTMLElement, captured: DomSnapshot, unitDiff: UnitPresentationDiff) {
   const held: HeldStateVisual[] = [];
-  for (const uid of changed) {
+  for (const uid of changedStateUnitIds(unitDiff)) {
     const old = captured.units.get(uid);
     if (!old) continue;
-    held.push(holdStateVisual(layer, old.element, old.clone, old.rect, uid, !afterIds.has(uid)));
+    held.push(holdStateVisual(layer, old.element, old.clone, old.rect, uid, !unitDiff.afterIds.has(uid)));
   }
   return held;
 }
@@ -461,18 +477,17 @@ function pileStateChanged(detail: PresentationDetail, owner: Owner, kind: "grave
   return JSON.stringify(before.map(stateId)) !== JSON.stringify(after.map(stateId));
 }
 
-function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSnapshot, detail: PresentationDetail, reserved: HeldStateVisual[] = []) {
+function holdChangedState(layer: HTMLElement, before: DomSnapshot, after: DomSnapshot, detail: PresentationDetail, unitDiff: UnitPresentationDiff, reserved: HeldStateVisual[] = []) {
   const held: HeldStateVisual[] = [...reserved];
   const reservedUids = new Set(reserved.map((visual) => visual.uid).filter((uid): uid is string => !!uid));
   for (const [uid, fresh] of after.units) {
     if (reservedUids.has(uid)) continue;
     const old = before.units.get(uid);
-    const oldState = stateUnitById(detail.before, uid);
-    const freshState = stateUnitById(detail.after, uid);
     // Statuses, markers, exhaustion, granted keywords and stat changes are all
     // player-visible effects. Keep the old rendering until the matching cue
-    // has reached its readable checkpoint.
-    if (!old || !oldState || !freshState || unitPresentationFingerprint(oldState) === unitPresentationFingerprint(freshState)) continue;
+    // has reached its readable checkpoint. The expensive state fingerprint was
+    // already computed once when this action entered the presentation queue.
+    if (!old || !unitDiff.beforeById.has(uid) || !unitDiff.afterById.has(uid) || !unitDiff.changedIds.has(uid)) continue;
     held.push(holdStateVisual(layer, fresh.element, old.clone, old.rect, uid));
   }
   for (const owner of [0, 1] as const) {
@@ -695,13 +710,11 @@ function uniqueRects(rects: RectLike[]) {
   });
 }
 
-function changedTargetRects(detail: PresentationDetail, before: DomSnapshot, after: DomSnapshot) {
+function changedTargetRects(detail: PresentationDetail, before: DomSnapshot, after: DomSnapshot, unitDiff: UnitPresentationDiff) {
   const rects: RectLike[] = [];
   for (const [uid, old] of before.units) {
     const fresh = after.units.get(uid);
-    const oldState = stateUnitById(detail.before, uid);
-    const freshState = stateUnitById(detail.after, uid);
-    if (!fresh || !oldState || !freshState || unitPresentationFingerprint(oldState) !== unitPresentationFingerprint(freshState)) rects.push(fresh?.rect || old.rect);
+    if (!fresh || !unitDiff.beforeById.has(uid) || !unitDiff.afterById.has(uid) || unitDiff.changedIds.has(uid)) rects.push(fresh?.rect || old.rect);
   }
   for (const owner of [0, 1] as const) {
     const old = before.heroes.get(owner), fresh = after.heroes.get(owner);
@@ -1144,7 +1157,7 @@ export default function GamePresentationRuntime() {
     };
 
     const present = async (detail: PresentationDetail, capturedDom: DomSnapshot, cue: ActionCue | null, reservation: PresentationReservation, generation: number) => {
-    const { arrivalGate, stateGate, heldUnits } = reservation;
+    const { arrivalGate, stateGate, heldUnits, unitDiff } = reservation;
     const aborted = () => disposed || generation !== presentationGeneration || document.visibilityState === "hidden";
     const afterDom = await committedDom(detail.after);
     if (aborted()) { arrivalGate?.remove(); stateGate?.remove(); releaseChangedState(heldUnits); return; }
@@ -1161,7 +1174,7 @@ export default function GamePresentationRuntime() {
     const sourceArrivals = detail.command?.type === "playCard" ? arrivals.filter((flight) => flight.sourcePlay) : [];
     const resultArrivals = detail.command?.type === "playCard" ? arrivals.filter((flight) => !flight.sourcePlay) : arrivals;
     bindReservedDestinations(heldUnits, afterDom);
-    const heldState = holdChangedState(layers.motion, beforeDom, afterDom, detail, heldUnits);
+    const heldState = holdChangedState(layers.motion, beforeDom, afterDom, detail, unitDiff, heldUnits);
     arrivals.forEach((flight) => flight.destination?.classList.add("hh-presentation-hidden"));
     // Destination nodes now own a persistent hidden class, so the synchronous
     // pre-paint stylesheet can be removed without exposing the resolved state.
@@ -1185,7 +1198,7 @@ export default function GamePresentationRuntime() {
         const explicitTargets = spellFlight.targets || [];
         const reticles = await animateSpellTargeting(layers.effect, explicitTargets);
         if (aborted()) return;
-        const impacts = explicitTargets.length ? explicitTargets : changedTargetRects(detail, beforeDom, afterDom);
+        const impacts = explicitTargets.length ? explicitTargets : changedTargetRects(detail, beforeDom, afterDom, unitDiff);
         await animateSpellImpact(layers.effect, avatar.rect, impacts, reticles);
         if (aborted()) return;
         const heroShake = animateHeroShake(heldState, beforeDom, afterDom);
@@ -1292,13 +1305,14 @@ export default function GamePresentationRuntime() {
       }
       const capturedDom = snapshotDom();
       const cue = captureActionCue(detail);
+      const unitDiff = buildUnitPresentationDiff(detail);
       // Install this synchronously, before React commits `detail.after`. A card
       // recovered from a hidden zone therefore cannot paint at its destination
       // even once before its flight begins.
       const arrivalGate = installArrivalGate(detail);
-      const stateGate = installStateGate(detail);
-      const heldUnits = reserveChangedUnits(layers.motion, capturedDom, detail);
-      const reservation = { arrivalGate, stateGate, heldUnits };
+      const stateGate = installStateGate(unitDiff);
+      const heldUnits = reserveChangedUnits(layers.motion, capturedDom, unitDiff);
+      const reservation = { arrivalGate, stateGate, heldUnits, unitDiff };
       activeReservations.add(reservation);
       queued += 1;
       setBusy(true);
