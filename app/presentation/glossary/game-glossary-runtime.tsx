@@ -23,21 +23,41 @@ function applyCanonicalGlossary(root: ParentNode) {
   }
 }
 
+function minimalDirtyRoots(roots: Set<HTMLElement>) {
+  const connected = [...roots].filter((root) => root.isConnected);
+  return connected.filter((root, index) => !connected.some((other, otherIndex) => otherIndex !== index && other.contains(root)));
+}
+
 /**
- * This runtime is mounted only on card-bearing screens by ScreenRuntimeGate.
- * Observe the active app subtree rather than documentElement so font/runtime/
- * portal mutations outside Hemsfell never cause glossary scans.
+ * Mounted only on card-bearing screens by ScreenRuntimeGate. Mutation bursts
+ * are coalesced into one animation-frame pass and nested dirty roots collapse
+ * to their highest ancestor, avoiding repeated subtree scans during React
+ * commits that insert many cards/keyword badges at once.
  */
 export default function GameGlossaryRuntime() {
   useEffect(() => {
     const root = document.querySelector<HTMLElement>("main.hh-app");
     if (!root) return;
     applyCanonicalGlossary(root);
+
+    const dirtyRoots = new Set<HTMLElement>();
+    let frame = 0;
+    const flush = () => {
+      frame = 0;
+      const batch = minimalDirtyRoots(dirtyRoots);
+      dirtyRoots.clear();
+      batch.forEach(applyCanonicalGlossary);
+    };
+    const schedule = () => {
+      if (!frame) frame = requestAnimationFrame(flush);
+    };
+
     const observer = new MutationObserver((records) => {
       for (const record of records) {
-        if (record.type === "attributes" && record.target instanceof HTMLElement) applyCanonicalGlossary(record.target);
-        for (const node of record.addedNodes) if (node instanceof HTMLElement) applyCanonicalGlossary(node);
+        if (record.type === "attributes" && record.target instanceof HTMLElement) dirtyRoots.add(record.target);
+        for (const node of record.addedNodes) if (node instanceof HTMLElement) dirtyRoots.add(node);
       }
+      if (dirtyRoots.size) schedule();
     });
     observer.observe(root, {
       subtree: true,
@@ -45,7 +65,11 @@ export default function GameGlossaryRuntime() {
       attributes: true,
       attributeFilter: ["data-keyword", "data-status"],
     });
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (frame) cancelAnimationFrame(frame);
+      dirtyRoots.clear();
+    };
   }, []);
 
   return null;
