@@ -4,16 +4,20 @@ import { useEffect } from "react";
 
 const DRAG_SOURCE_SELECTOR = ".screen-game [draggable='true']";
 const DROP_ZONE_SELECTOR = ".screen-game .field-slot, .screen-game .terrain-slot";
+const INSPECTABLE_CARD_SELECTOR = ".screen-game .original-card[data-card-inspectable='true']";
 const TAP_CONTROL_SELECTOR = [
   ".screen-game button:not(.original-card):not(:disabled)",
   ".screen-game .original-card:is(.target-ally,.target-enemy,.combat-attack-ready):not(:disabled)",
   ".screen-game [role='button']:not([aria-disabled='true'])",
 ].join(",");
-const ASCENSION_TEXT_RE = /\bAscens(?:ão|ao)\s+\d+\s*:/i;
-const DRAG_THRESHOLD_PX = 10;
+
+const DRAG_THRESHOLD_PX = 9;
 const TAP_SLOP_PX = 10;
-const TAP_FALLBACK_DELAY_MS = 32;
 const TAP_MAX_DURATION_MS = 520;
+const INSPECTION_HOLD_MS = 1_000;
+const INSPECTION_PROGRESS_DELAY_MS = 500;
+const INSPECTION_PROGRESS_MS = INSPECTION_HOLD_MS - INSPECTION_PROGRESS_DELAY_MS;
+const HOLD_SLOP_PX = 12;
 
 class TouchDataTransfer {
   dropEffect = "move";
@@ -44,15 +48,19 @@ class TouchDataTransfer {
 }
 
 type Point = { x: number; y: number };
+type DropCandidate = { zone: HTMLElement; rect: DOMRectReadOnly };
 
 type DragSession = {
   pointerId: number;
-  source: HTMLElement;
+  source: HTMLElement | null;
+  inspectCard: HTMLElement | null;
   startX: number;
   startY: number;
   startedAt: number;
   dragging: boolean;
+  inspected: boolean;
   dataTransfer: TouchDataTransfer;
+  dropCandidates: DropCandidate[];
   dropTarget: HTMLElement | null;
   latestPoint: Point;
   syncFrame: number;
@@ -60,6 +68,9 @@ type DragSession = {
   sourcePointerEvents: string;
   sourcePointerEventsPriority: string;
   sourceAriaGrabbed: string | null;
+  holdDelayTimer: number;
+  holdTimer: number;
+  holdProgress: HTMLElement | null;
 };
 
 function coarsePointer(event: PointerEvent) {
@@ -92,95 +103,91 @@ function controlFrom(target: EventTarget | null) {
   return target instanceof Element ? target.closest<HTMLElement>(TAP_CONTROL_SELECTOR) : null;
 }
 
-function candidateDropZones(point: Point) {
-  const seen = new Set<HTMLElement>();
-  const zones: HTMLElement[] = [];
-  for (const element of document.elementsFromPoint(point.x, point.y)) {
-    const zone = element.closest<HTMLElement>(DROP_ZONE_SELECTOR);
-    if (!zone || seen.has(zone)) continue;
-    seen.add(zone);
-    zones.push(zone);
-  }
-  return zones;
+function inspectableCardFrom(target: EventTarget | null) {
+  return target instanceof Element ? target.closest<HTMLElement>(INSPECTABLE_CARD_SELECTOR) : null;
 }
 
-function acceptedDropZone(point: Point, dataTransfer: TouchDataTransfer) {
-  for (const zone of candidateDropZones(point)) {
-    // React paints .can-drop after the synthetic dragstart updates the hand
-    // drag state. When that render has not committed yet, ask the real
-    // onDragOver handler whether it accepts the current DataTransfer instead.
-    if (zone.classList.contains("can-drop")) return zone;
-    const notCancelled = dispatchDrag(zone, "dragover", dataTransfer, point);
-    if (!notCancelled) return zone;
+function pointInside(rect: DOMRectReadOnly, point: Point) {
+  return point.x >= rect.left && point.x <= rect.right && point.y >= rect.top && point.y <= rect.bottom;
+}
+
+function zoneProbePoint(rect: DOMRectReadOnly): Point {
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+}
+
+function collectDropCandidates(dataTransfer: TouchDataTransfer) {
+  const candidates: DropCandidate[] = [];
+  document.querySelectorAll<HTMLElement>(DROP_ZONE_SELECTOR).forEach((zone) => {
+    const rect = zone.getBoundingClientRect();
+    if (rect.width <= 0 || rect.height <= 0) return;
+    const acceptedByState = zone.classList.contains("can-drop");
+    const acceptedByHandler = acceptedByState ? true : !dispatchDrag(zone, "dragover", dataTransfer, zoneProbePoint(rect));
+    if (acceptedByHandler) candidates.push({ zone, rect });
+  });
+  return candidates;
+}
+
+function matchingDropZone(candidates: readonly DropCandidate[], point: Point) {
+  for (const candidate of candidates) {
+    if (candidate.zone.isConnected && pointInside(candidate.rect, point)) return candidate.zone;
   }
   return null;
 }
 
-function syncAscensionActivationUi() {
-  document.querySelectorAll<HTMLElement>(".screen-game .card-frame").forEach((frame) => {
-    const card = frame.querySelector<HTMLElement>(":scope > .original-card");
-    const rulesText = card?.querySelector<HTMLElement>(":scope > .card-tooltip")?.textContent || "";
-    const ascension = ASCENSION_TEXT_RE.test(rulesText);
-    if (ascension) frame.setAttribute("data-hh-ascension", "true");
-    else frame.removeAttribute("data-hh-ascension");
-    const control = frame.querySelector<HTMLButtonElement>(":scope > .card-frame-activation");
-    if (ascension && control) {
-      control.hidden = true;
-      control.disabled = true;
-      control.setAttribute("aria-hidden", "true");
-      control.tabIndex = -1;
-    }
-  });
-}
-
 export default function MobileTouchInputRuntime() {
-  /* This runtime is mounted globally even though it owns mobile gestures. Use
-     that stable mount to migrate legacy Ascensão UI in desktop and mobile: an
-     automatic play keyword must never retain a stale activation button. */
-  useEffect(() => {
-    let frame = 0;
-    const sync = () => {
-      if (frame) cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(() => {
-        frame = 0;
-        syncAscensionActivationUi();
-      });
-    };
-    sync();
-    const observer = new MutationObserver(sync);
-    observer.observe(document.body, { subtree: true, childList: true });
-    return () => {
-      if (frame) cancelAnimationFrame(frame);
-      observer.disconnect();
-    };
-  }, []);
-
   useEffect(() => {
     let session: DragSession | null = null;
     let suppressClicksUntil = 0;
-    let lastClickControl: HTMLElement | null = null;
-    let lastClickAt = 0;
-    let tapSequence = 0;
 
-    const clearDropTarget = (point: Point) => {
-      if (!session?.dropTarget) return;
-      const previous = session.dropTarget;
-      session.dropTarget = null;
-      previous.classList.remove("hh-touch-drop-target");
-      dispatchDrag(previous, "dragleave", session.dataTransfer, point);
+    const clearInspectionHold = (current: DragSession) => {
+      window.clearTimeout(current.holdDelayTimer);
+      window.clearTimeout(current.holdTimer);
+      current.holdDelayTimer = 0;
+      current.holdTimer = 0;
+      current.holdProgress?.remove();
+      current.holdProgress = null;
+    };
+
+    const beginInspectionHold = (current: DragSession) => {
+      const card = current.inspectCard;
+      if (!card) return;
+      current.holdDelayTimer = window.setTimeout(() => {
+        if (session !== current || current.dragging || current.inspected || !card.isConnected) return;
+        const progress = document.createElement("span");
+        progress.className = "card-inspection-hold-progress";
+        progress.setAttribute("aria-hidden", "true");
+        progress.style.setProperty("--card-inspection-hold-duration", `${INSPECTION_PROGRESS_MS}ms`);
+        progress.append(document.createElement("i"));
+        card.append(progress);
+        current.holdProgress = progress;
+        current.holdDelayTimer = 0;
+        current.holdTimer = window.setTimeout(() => {
+          if (session !== current || current.dragging || !card.isConnected) return;
+          const page = Number(card.dataset.cardPage);
+          current.inspected = true;
+          suppressClicksUntil = performance.now() + 500;
+          clearInspectionHold(current);
+          if (Number.isInteger(page) && page > 0) {
+            window.dispatchEvent(new CustomEvent("hemsfell:inspect-card", { detail: { page } }));
+            navigator.vibrate?.(18);
+          }
+        }, INSPECTION_PROGRESS_MS);
+      }, INSPECTION_PROGRESS_DELAY_MS);
     };
 
     const restoreSource = (current: DragSession) => {
-      current.source.classList.remove("hh-touch-drag-source");
+      const source = current.source;
+      if (!source) return;
+      source.classList.remove("hh-touch-drag-source");
       if (current.sourcePointerEvents) {
-        current.source.style.setProperty("pointer-events", current.sourcePointerEvents, current.sourcePointerEventsPriority);
+        source.style.setProperty("pointer-events", current.sourcePointerEvents, current.sourcePointerEventsPriority);
       } else {
-        current.source.style.removeProperty("pointer-events");
+        source.style.removeProperty("pointer-events");
       }
-      if (current.sourceAriaGrabbed == null) current.source.removeAttribute("aria-grabbed");
-      else current.source.setAttribute("aria-grabbed", current.sourceAriaGrabbed);
-      if (current.captured && current.source.hasPointerCapture?.(current.pointerId)) {
-        try { current.source.releasePointerCapture(current.pointerId); } catch { /* pointer already released */ }
+      if (current.sourceAriaGrabbed == null) source.removeAttribute("aria-grabbed");
+      else source.setAttribute("aria-grabbed", current.sourceAriaGrabbed);
+      if (current.captured && source.hasPointerCapture?.(current.pointerId)) {
+        try { source.releasePointerCapture(current.pointerId); } catch { /* pointer already released */ }
       }
     };
 
@@ -188,6 +195,7 @@ export default function MobileTouchInputRuntime() {
       if (!session) return;
       const current = session;
       session = null;
+      clearInspectionHold(current);
       if (current.syncFrame) cancelAnimationFrame(current.syncFrame);
       if (current.dropTarget) {
         current.dropTarget.classList.remove("hh-touch-drop-target");
@@ -196,49 +204,55 @@ export default function MobileTouchInputRuntime() {
       restoreSource(current);
       document.documentElement.classList.remove("hh-touch-drag-active");
       document.body.removeAttribute("data-hh-touch-dragging");
-      if (emitDragEnd && current.dragging) dispatchDrag(current.source, "dragend", current.dataTransfer, point);
+      if (emitDragEnd && current.dragging && current.source) dispatchDrag(current.source, "dragend", current.dataTransfer, point);
     };
 
-    const updateDropTarget = (point: Point) => {
-      if (!session?.dragging) return null;
-      session.latestPoint = point;
-      const next = acceptedDropZone(point, session.dataTransfer);
-      if (next !== session.dropTarget) {
-        clearDropTarget(point);
-        if (next && session) {
-          session.dropTarget = next;
+    const updateDropTarget = (current: DragSession, point: Point) => {
+      if (!current.dragging) return null;
+      current.latestPoint = point;
+      const next = matchingDropZone(current.dropCandidates, point);
+      if (next !== current.dropTarget) {
+        if (current.dropTarget) {
+          current.dropTarget.classList.remove("hh-touch-drop-target");
+          dispatchDrag(current.dropTarget, "dragleave", current.dataTransfer, point);
+        }
+        current.dropTarget = next;
+        if (next) {
           next.classList.add("hh-touch-drop-target");
-          dispatchDrag(next, "dragenter", session.dataTransfer, point);
+          dispatchDrag(next, "dragenter", current.dataTransfer, point);
         }
       }
-      if (session?.dropTarget) dispatchDrag(session.dropTarget, "dragover", session.dataTransfer, point);
-      return session?.dropTarget ?? null;
+      return current.dropTarget;
     };
 
-    /* Coalesce high-frequency touch/pen pointermove events into one expensive
-       elementsFromPoint + synthetic dragover pass per painted frame. */
     const scheduleDropTargetSync = () => {
       if (!session?.dragging || session.syncFrame) return;
       const current = session;
       current.syncFrame = requestAnimationFrame(() => {
         if (session !== current) return;
         current.syncFrame = 0;
-        updateDropTarget(current.latestPoint);
+        updateDropTarget(current, current.latestPoint);
       });
     };
 
     const beginDrag = (current: DragSession, point: Point) => {
+      const source = current.source;
+      if (!source) return;
+      clearInspectionHold(current);
       current.dragging = true;
       current.latestPoint = point;
       document.documentElement.classList.add("hh-touch-drag-active");
       document.body.dataset.hhTouchDragging = "true";
-      current.source.classList.add("hh-touch-drag-source");
-      current.source.setAttribute("aria-grabbed", "true");
-      // Keep the captured pointer stream on the source, but remove the source
-      // from hit-testing so cards/overlays cannot mask the board slot below it.
-      current.source.style.setProperty("pointer-events", "none", "important");
-      dispatchDrag(current.source, "dragstart", current.dataTransfer, point);
-      scheduleDropTargetSync();
+      source.classList.add("hh-touch-drag-source");
+      source.setAttribute("aria-grabbed", "true");
+      source.style.setProperty("pointer-events", "none", "important");
+      dispatchDrag(source, "dragstart", current.dataTransfer, point);
+      current.syncFrame = requestAnimationFrame(() => {
+        if (session !== current || !current.dragging) return;
+        current.syncFrame = 0;
+        current.dropCandidates = collectDropCandidates(current.dataTransfer);
+        updateDropTarget(current, current.latestPoint);
+      });
       navigator.vibrate?.(8);
     };
 
@@ -246,43 +260,60 @@ export default function MobileTouchInputRuntime() {
       if (!coarsePointer(event) || !event.isPrimary || event.button > 0) return;
       const target = event.target instanceof Element ? event.target : null;
       if (!target?.closest(".screen-game")) return;
+
       const source = target.closest<HTMLElement>(DRAG_SOURCE_SELECTOR);
-      if (!source || source.getAttribute("aria-disabled") === "true" || source.matches(":disabled")) return;
+      const inspectCard = inspectableCardFrom(target);
+      const sourceBlocked = source && (source.getAttribute("aria-disabled") === "true" || source.matches(":disabled"));
+      if (sourceBlocked && !inspectCard) return;
+      if (!source && !inspectCard) return;
 
       if (session) cleanup(session.latestPoint, true);
       const point = { x: event.clientX, y: event.clientY };
       session = {
         pointerId: event.pointerId,
-        source,
+        source: sourceBlocked ? null : source,
+        inspectCard,
         startX: point.x,
         startY: point.y,
         startedAt: performance.now(),
         dragging: false,
+        inspected: false,
         dataTransfer: new TouchDataTransfer(),
+        dropCandidates: [],
         dropTarget: null,
         latestPoint: point,
         syncFrame: 0,
         captured: false,
-        sourcePointerEvents: source.style.getPropertyValue("pointer-events"),
-        sourcePointerEventsPriority: source.style.getPropertyPriority("pointer-events"),
-        sourceAriaGrabbed: source.getAttribute("aria-grabbed"),
+        sourcePointerEvents: source?.style.getPropertyValue("pointer-events") || "",
+        sourcePointerEventsPriority: source?.style.getPropertyPriority("pointer-events") || "",
+        sourceAriaGrabbed: source?.getAttribute("aria-grabbed") ?? null,
+        holdDelayTimer: 0,
+        holdTimer: 0,
+        holdProgress: null,
       };
+
+      const captureTarget = source || inspectCard;
       try {
-        source.setPointerCapture(event.pointerId);
-        session.captured = source.hasPointerCapture(event.pointerId);
+        captureTarget?.setPointerCapture(event.pointerId);
+        session.captured = !!captureTarget?.hasPointerCapture(event.pointerId);
       } catch {
         session.captured = false;
       }
+      beginInspectionHold(session);
+      event.stopPropagation();
     };
 
     const onPointerMove = (event: PointerEvent) => {
       if (!session || event.pointerId !== session.pointerId) return;
+      const current = session;
       const point = { x: event.clientX, y: event.clientY };
-      session.latestPoint = point;
-      const distance = Math.hypot(point.x - session.startX, point.y - session.startY);
-      if (!session.dragging && distance >= DRAG_THRESHOLD_PX) beginDrag(session, point);
-      if (!session?.dragging) return;
+      current.latestPoint = point;
+      const distance = Math.hypot(point.x - current.startX, point.y - current.startY);
+      if (distance > HOLD_SLOP_PX) clearInspectionHold(current);
+      if (!current.dragging && !current.inspected && current.source && distance >= DRAG_THRESHOLD_PX) beginDrag(current, point);
+      if (!current.dragging) return;
       event.preventDefault();
+      event.stopPropagation();
       scheduleDropTargetSync();
     };
 
@@ -290,46 +321,40 @@ export default function MobileTouchInputRuntime() {
       const upAt = performance.now();
       const point = { x: event.clientX, y: event.clientY };
       const current = session && event.pointerId === session.pointerId ? session : null;
-      if (current?.dragging) {
+      if (!current) return;
+
+      if (current.dragging) {
         event.preventDefault();
+        event.stopPropagation();
         current.latestPoint = point;
         suppressClicksUntil = upAt + 420;
         if (current.syncFrame) {
           cancelAnimationFrame(current.syncFrame);
           current.syncFrame = 0;
         }
-        current.syncFrame = requestAnimationFrame(() => {
-          if (session !== current) return;
-          current.syncFrame = 0;
-          const target = updateDropTarget(point);
-          if (target) {
-            dispatchDrag(target, "dragover", current.dataTransfer, point);
-            dispatchDrag(target, "drop", current.dataTransfer, point);
-            navigator.vibrate?.(12);
-          }
-          cleanup(point, true);
-        });
+        const target = updateDropTarget(current, point);
+        if (target) {
+          dispatchDrag(target, "dragover", current.dataTransfer, point);
+          dispatchDrag(target, "drop", current.dataTransfer, point);
+          navigator.vibrate?.(12);
+        }
+        cleanup(point, true);
         return;
       }
 
-      if (current) cleanup(point, false);
-      if (!coarsePointer(event)) return;
+      const inspected = current.inspected;
+      const duration = upAt - current.startedAt;
+      const moved = Math.hypot(event.clientX - current.startX, event.clientY - current.startY);
+      cleanup(point, false);
+      if (inspected || moved > TAP_SLOP_PX || duration > TAP_MAX_DURATION_MS) {
+        suppressClicksUntil = upAt + 360;
+        return;
+      }
+
       const control = controlFrom(event.target);
       if (!control || !control.isConnected) return;
-      const downX = current?.startX ?? event.clientX;
-      const downY = current?.startY ?? event.clientY;
-      const duration = current ? upAt - current.startedAt : 0;
-      if (Math.hypot(event.clientX - downX, event.clientY - downY) > TAP_SLOP_PX || duration > TAP_MAX_DURATION_MS) return;
-      const sequence = ++tapSequence;
-      // Do not wait for Chrome's delayed compatibility click. Dispatch the
-      // intentional action immediately, then discard only the trusted native
-      // duplicate that follows it.
       suppressClicksUntil = upAt + 360;
-      window.setTimeout(() => {
-        if (sequence !== tapSequence || !control.isConnected) return;
-        const nativeClickArrived = lastClickControl === control && lastClickAt >= upAt - 8;
-        if (!nativeClickArrived) control.click();
-      }, TAP_FALLBACK_DELAY_MS);
+      control.click();
     };
 
     const onPointerCancel = (event: PointerEvent) => {
@@ -337,12 +362,8 @@ export default function MobileTouchInputRuntime() {
       cleanup({ x: event.clientX, y: event.clientY }, true);
     };
 
-    // Chrome/Android may still attempt its own HTML5 drag for draggable=true.
-    // While a coarse-pointer session is armed, our pointer bridge is the sole
-    // drag authority; suppressing the trusted native drag avoids duplicate
-    // dragstart/dragend sequences and pointercancel races.
     const onNativeDragStartCapture = (event: DragEvent) => {
-      if (!session || !event.isTrusted) return;
+      if (!session?.source || !event.isTrusted) return;
       const target = event.target instanceof Node ? event.target : null;
       if (!target || target !== session.source && !session.source.contains(target)) return;
       event.preventDefault();
@@ -350,11 +371,6 @@ export default function MobileTouchInputRuntime() {
     };
 
     const onClickCapture = (event: MouseEvent) => {
-      const control = controlFrom(event.target);
-      if (control) {
-        lastClickControl = control;
-        lastClickAt = performance.now();
-      }
       if (!event.isTrusted || performance.now() >= suppressClicksUntil) return;
       const target = event.target instanceof Element ? event.target : null;
       if (!target?.closest(".screen-game")) return;
@@ -362,28 +378,33 @@ export default function MobileTouchInputRuntime() {
       event.stopImmediatePropagation();
     };
 
-    const onVisibilityChange = () => {
-      if (!document.hidden || !session) return;
+    const cancelGesture = () => {
+      if (!session) return;
       cleanup(session.latestPoint, true);
     };
+    const onVisibilityChange = () => {
+      if (document.hidden) cancelGesture();
+    };
 
-    document.addEventListener("pointerdown", onPointerDown, true);
-    document.addEventListener("pointermove", onPointerMove, { capture: true, passive: false });
-    document.addEventListener("pointerup", onPointerUp, { capture: true, passive: false });
-    document.addEventListener("pointercancel", onPointerCancel, true);
+    window.addEventListener("pointerdown", onPointerDown, true);
+    window.addEventListener("pointermove", onPointerMove, { capture: true, passive: false });
+    window.addEventListener("pointerup", onPointerUp, { capture: true, passive: false });
+    window.addEventListener("pointercancel", onPointerCancel, true);
     document.addEventListener("dragstart", onNativeDragStartCapture, true);
     document.addEventListener("click", onClickCapture, true);
     document.addEventListener("visibilitychange", onVisibilityChange);
+    window.addEventListener("resize", cancelGesture, { passive: true });
 
     return () => {
-      if (session) cleanup(session.latestPoint, true);
-      document.removeEventListener("pointerdown", onPointerDown, true);
-      document.removeEventListener("pointermove", onPointerMove, true);
-      document.removeEventListener("pointerup", onPointerUp, true);
-      document.removeEventListener("pointercancel", onPointerCancel, true);
+      cancelGesture();
+      window.removeEventListener("pointerdown", onPointerDown, true);
+      window.removeEventListener("pointermove", onPointerMove, true);
+      window.removeEventListener("pointerup", onPointerUp, true);
+      window.removeEventListener("pointercancel", onPointerCancel, true);
       document.removeEventListener("dragstart", onNativeDragStartCapture, true);
       document.removeEventListener("click", onClickCapture, true);
       document.removeEventListener("visibilitychange", onVisibilityChange);
+      window.removeEventListener("resize", cancelGesture);
     };
   }, []);
 
