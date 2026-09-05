@@ -787,7 +787,7 @@ function releaseDetachedCanvasSoon(canvas: HTMLCanvasElement) {
 }
 
 function delegatesToCleanHeroRuntime(canvas: HTMLCanvasElement, page: number) {
-  return CLEAN_HERO_PAGES.has(page) && !canvas.closest(".screen-game .game-stage");
+  return CLEAN_HERO_PAGES.has(page) && (!canvas.closest(".screen-game .game-stage") || canvas.dataset.preferCleanHeroArt === "true");
 }
 
 type RemoteCardArtProps = {
@@ -796,9 +796,11 @@ type RemoteCardArtProps = {
   className?: string;
   style?: CSSProperties;
   priority?: boolean;
+  /** Hero inspectors use the curated portrait asset even while the match is mounted. */
+  preferCleanHeroArt?: boolean;
 };
 
-function RemoteCardArtComponent({ page, name, className = "", style, priority = false }: RemoteCardArtProps) {
+function RemoteCardArtComponent({ page, name, className = "", style, priority = false, preferCleanHeroArt = false }: RemoteCardArtProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [failed, setFailed] = useState(false);
   const renderGeneration = useRef(0);
@@ -857,7 +859,7 @@ function RemoteCardArtComponent({ page, name, className = "", style, priority = 
       stopObserving();
       releaseDetachedCanvasSoon(canvas);
     };
-  }, [page, priority]);
+  }, [page, priority, preferCleanHeroArt]);
 
   return (
     <canvas
@@ -867,6 +869,7 @@ function RemoteCardArtComponent({ page, name, className = "", style, priority = 
       role="img"
       aria-label={name}
       data-page={page}
+      data-prefer-clean-hero-art={preferCleanHeroArt ? "true" : undefined}
     />
   );
 }
