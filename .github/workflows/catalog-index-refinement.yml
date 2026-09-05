@@ -23,6 +23,7 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('app/page.tsx')
           source = path.read_text()
@@ -33,26 +34,27 @@ jobs:
               raise SystemExit(f'catalog anchor count={source.count(anchor)}')
           source = source.replace(anchor, indexed, 1)
 
-          replacements = {
-            'supplied.map(([page])=>cards.find(card=>card.page===page))': 'supplied.map(([page])=>cardsByPage.get(page))',
-            '{card:cards.find(candidate=>candidate.page===page),quantity}': '{card:cardsByPage.get(page),quantity}',
-            'const card=cards.find(candidate=>candidate.page===page);': 'const card=cardsByPage.get(page);',
-            'const template=cards.find(card=>card.page===c.page)??c;': 'const template=cardsByPage.get(c.page)??c;',
-            'printed=cards.find(card=>card.page===page);': 'printed=cardsByPage.get(page);',
-            'const heroCard=cards.find(card=>card.page===deckById(p.heroId).heroPage),spellName=': 'const heroCard=cardsByPage.get(deckById(p.heroId).heroPage),spellName=',
-            'cards.find(card=>card.id===sourceCommand.cardId)': 'cardsById.get(sourceCommand.cardId)',
-            'cards.find(candidate=>candidate.id===entry.cardId)': 'cardsById.get(entry.cardId)',
-            'cards.find(card=>card.id===cardId)': 'cardsById.get(cardId)',
-            'cards.find(card=>card.page===deckById(player.heroId).heroPage)!': 'cardsByPage.get(deckById(player.heroId).heroPage)!',
-            'cards.find(card=>card.page===selectedDeck.heroPage)||null': 'cardsByPage.get(selectedDeck.heroPage)||null',
-            'cards.find(card=>card.page===deckById(foe.heroId).heroPage)||null': 'cardsByPage.get(deckById(foe.heroId).heroPage)||null',
-            'cards.find(card=>card.page===deckById(me.heroId).heroPage)||null': 'cardsByPage.get(deckById(me.heroId).heroPage)||null',
-          }
-          for old, new in replacements.items():
-              count = source.count(old)
-              if count < 1:
-                  raise SystemExit(f'missing expected lookup: {old}')
+          replacements = (
+            ('supplied.map(([page])=>cards.find(card=>card.page===page))', 'supplied.map(([page])=>cardsByPage.get(page))'),
+            ('{card:cards.find(candidate=>candidate.page===page),quantity}', '{card:cardsByPage.get(page),quantity}'),
+            ('const card=cards.find(candidate=>candidate.page===page);', 'const card=cardsByPage.get(page);'),
+            ('const template=cards.find(card=>card.page===c.page)??c;', 'const template=cardsByPage.get(c.page)??c;'),
+            ('printed=cards.find(card=>card.page===page);', 'printed=cardsByPage.get(page);'),
+            ('const heroCard=cards.find(card=>card.page===deckById(p.heroId).heroPage),spellName=', 'const heroCard=cardsByPage.get(deckById(p.heroId).heroPage),spellName='),
+            ('cards.find(card=>card.id===sourceCommand.cardId)', 'cardsById.get(sourceCommand.cardId)'),
+            ('cards.find(candidate=>candidate.id===entry.cardId)', 'cardsById.get(entry.cardId)'),
+            ('cards.find(card=>card.id===cardId)', 'cardsById.get(cardId)'),
+            ('cards.find(card=>card.page===deckById(player.heroId).heroPage)!', 'cardsByPage.get(deckById(player.heroId).heroPage)!'),
+            ('cards.find(card=>card.page===selectedDeck.heroPage)||null', 'cardsByPage.get(selectedDeck.heroPage)||null'),
+            ('cards.find(card=>card.page===deckById(foe.heroId).heroPage)||null', 'cardsByPage.get(deckById(foe.heroId).heroPage)||null'),
+            ('cards.find(card=>card.page===deckById(me.heroId).heroPage)||null', 'cardsByPage.get(deckById(me.heroId).heroPage)||null'),
+          )
+          for old, new in replacements:
               source = source.replace(old, new)
+
+          residual = re.findall(r'cards\.find\((?:card|candidate)=>(?:card|candidate)\.(?:page|id)===.*?\)', source)
+          if residual:
+              raise SystemExit('residual canonical linear lookups: ' + ' | '.join(residual[:12]))
 
           path.write_text(source)
 
