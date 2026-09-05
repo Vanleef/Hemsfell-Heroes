@@ -114,16 +114,13 @@ import "./presentation/styles/qa-art-mobile-corrections.css";
 import "./presentation/styles/tutorial-current-board-terminal.css";
 /* Keep tutorial diagrams/copy aligned with the current responsive match UI. */
 import "./presentation/styles/tutorial-current-ui-terminal.css";
-import MatchUiGuard from "./presentation/match/match-ui-guard";
-import OnlineMatchRuntime from "./application/online/online-match-runtime";
 import OnlineReconnectRuntime from "./application/online/online-reconnect-runtime";
 import GameGlossaryRuntime from "./presentation/glossary/game-glossary-runtime";
 import CardDoubleClickInspectRuntime from "./presentation/cards/card-double-click-inspect-runtime";
 import CardPreviewRuntime from "./presentation/cards/card-preview-runtime";
 import CardArtWarmupRuntime from "./presentation/cards/card-art-warmup-runtime";
-import CollectionSelectedDeckPriorityRuntime from "./presentation/cards/collection-selected-deck-priority-runtime";
 import AssetContextUiCleanupRuntime from "./presentation/cards/asset-context-ui-cleanup-runtime";
-import MatchRuntimeGate from "./presentation/runtime/match-runtime-gate";
+import ScreenRuntimeGate from "./presentation/runtime/screen-runtime-gate";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
@@ -147,11 +144,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return <html lang="pt-BR" suppressHydrationWarning>
     <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       <CardArtWarmupRuntime />
-      <CollectionSelectedDeckPriorityRuntime />
       <AssetContextUiCleanupRuntime />
-      <MatchUiGuard />
-      <MatchRuntimeGate />
-      <OnlineMatchRuntime />
+      <ScreenRuntimeGate />
       <OnlineReconnectRuntime />
       <GameGlossaryRuntime />
       <CardDoubleClickInspectRuntime />
